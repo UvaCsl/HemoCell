@@ -74,7 +74,6 @@ profileFlags = -pg
 ##########################################################################
 
 SCons     = $(palabosRoot)/scons/scons.py -j 8 -f $(palabosRoot)/SConstruct
-
 SConsArgs = palabosRoot=$(palabosRoot) \
             projectFiles="$(projectFiles)" \
             precompiled=$(precompiled) \
@@ -95,6 +94,9 @@ SConsArgs = palabosRoot=$(palabosRoot) \
 	    libraryPaths="$(libraryPaths)" \
 	    includePaths="$(includePaths)" \
 	    libraries="$(libraries)"
+
+all:
+	python $(SCons) $(SConsArgs)
 
 compile:
 	python $(SCons) $(SConsArgs)

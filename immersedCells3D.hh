@@ -29,15 +29,10 @@ using namespace std;
 plint xDirection  = 0;
 plint yDirection  = 1;
 plint zDirection  = 2;
-plint borderWidth     = 1;  // Because Guo acts in a one-cell layer.
-// Requirement: margin>=borderWidth.
 plint margin          = 3;  // Extra margin of allocated cells around the obstacle,
                              //   for moving walls.
-plint extraLayer      = 0;  // Make the bounding box larger; for visualization purposes
-                            //   only. For the simulation, it is OK to have extraLayer=0.
-const plint blockSize = 0; // Zero means: no sparse representation.
-const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
-const plint particleEnvelopeWidth = 6;
+//const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
+//const plint particleEnvelopeWidth = 6;
 
 
 
@@ -143,6 +138,14 @@ void createBloodCells(TriangleBoundary3D<T> &bloodCells,
 }
 
 template<typename T>
+TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles) {
+	TriangleSet<T> RBC("./lib/RBC.stl");
+	RBC.scale(radius/3.91);
+	RBC.translate(center);
+	return RBC;
+}
+
+template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
     const std::vector<Array<T,3> > &centers, const std::vector<plint> &radii,
     std::vector<plint> &tags, plint &numPartsPerBloodCell)
@@ -155,7 +158,8 @@ TriangleBoundary3D<T> createCompleteMesh(
     for (pluint iA = 0; iA < centers.size(); ++iA) {
         Array<T,3> center(centers[iA]);
         plint radius = radii[iA];
-        allTriangles.push_back(constructSphere<T>(center, radius, 100));
+        allTriangles.push_back(constructRBC<T>(center, radius, 100));
+//        allTriangles.push_back(constructSphere<T>(center, radius, 100));
         tags.push_back(iA);
     }
     wholeTriangleSet.merge(allTriangles);
@@ -181,45 +185,6 @@ TriangleBoundary3D<T> createCompleteMesh(
     return bloodCells;
 }
 
-//template<typename T>
-//TriangleBoundary3D<T> createCompleteMeshRBCs(
-//	    const std::vector<Array<T,3> > &centers, const std::vector<plint> &radii,
-//	std::vector<plint> &tags, plint &numPartsPerBloodCell)
-//{
-//	PLB_ASSERT(centers.size() == radii.size());
-//
-//	// creation of the whole mesh including the one that is not used by particles
-//	std::vector<TriangleSet<T> > allTriangles;
-//	TriangleSet<T> wholeTriangleSet;
-//	for (pluint iA = 0; iA < centers.size(); ++iA) {
-//		Array<T,3> center(centers[iA]);
-//		plint radius = radii[iA];
-//		constructRBC<T> RBC(center, radius, 100);
-//		allTriangles.push_back(RBC);
-//		tags.push_back(iA);
-//	}
-//	wholeTriangleSet.merge(allTriangles);
-//
-//	Dot3D location(centers[0][0]-radii[0],centers[0][1]-radii[0],centers[0][2]-radii[0]);
-//	DEFscaledMesh<T> defMesh (
-//			wholeTriangleSet, 10, xDirection, margin, location );
-////         pcout << "Original sphere at location [" << location.x << ","
-////             << location.y << "," << location.z << "] with radius " << radius << std::endl;
-//
-//	TriangleBoundary3D<T> bloodCells(defMesh);
-//	bloodCells.getMesh().inflate();
-//
-//	numPartsPerBloodCell = bloodCells.getMesh().getNumVertices() / centers.size();
-//	plint modulo = bloodCells.getMesh().getNumVertices() % centers.size();
-////     pcout << "num parts per triangles = " << numPartsPerBloodCell << ", modulo = " << modulo << std::endl;
-//	pcout << "num vertices = " << bloodCells.getMesh().getNumVertices() << ", centers = " << centers.size() << std::endl;
-//	pcout << "num parts per triangles = " << numPartsPerBloodCell << ", modulo = " << modulo << std::endl;
-//	PLB_ASSERT(modulo == 0);
-//
-//	bloodCells.cloneVertexSet(0);
-//
-//	return bloodCells;
-//}
 
 #endif  // IMMERSED_CELLS_3D_HH
 
