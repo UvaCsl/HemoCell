@@ -168,8 +168,8 @@ TriangleBoundary3D<T> createCompleteMesh(
     for (pluint iA = 0; iA < centers.size(); ++iA) {
         Array<T,3> center(centers[iA]);
         plint radius = radii[iA];
-        allTriangles.push_back(constructRBC<T>(center, radius, 100));
-//        allTriangles.push_back(constructSphere<T>(center, radius, 100));
+//        allTriangles.push_back(constructRBC<T>(center, radius, 100));
+        allTriangles.push_back(constructSphere<T>(center, radius, 100));
         tags.push_back(iA);
     }
     wholeTriangleSet.merge(allTriangles);

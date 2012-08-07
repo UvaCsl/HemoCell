@@ -2,22 +2,22 @@
 
 <cell>
 	<shellDensity> 1 </shellDensity>
-	<k_rest> 0.0 </k_rest>
-	<k_stretch> 1.0e-4 </k_stretch>
-	<k_shear> 1.0e-4 </k_shear>
-	<k_bend> 1.0e-4 </k_bend>
+	<k_rest> 0.0e-6 </k_rest>
+	<k_stretch> 1.0e-6 </k_stretch>
+	<k_shear> 1.0e-6 </k_shear>
+	<k_bend> 1.0e-6 </k_bend>
 </cell>
 
 <parameters>
 	<u> 0.01 </u>
-	<Re> 20. </Re>
+	<Re> 1. </Re>
 	<N> 1 </N>
-	<lx> 20. </lx>
-	<ly> 20. </ly>
-	<lz> 20. </lz>
+	<lx> 30. </lx>
+	<ly> 30. </ly>
+	<lz> 30. </lz>
 </parameters>
 
 <ibm>
-	<forceToFluid> 0 </forceToFluid>
+	<forceToFluid> 1 </forceToFluid>
 	<RBCradius> 2. </RBCradius> 
 </ibm>

@@ -35,6 +35,8 @@
 #include "ficsionInit.hh"
 #include "immersedCells3D.h"
 #include "immersedCells3D.hh"
+#include "immersedCellsFunctional3D.h"
+#include "immersedCellsFunctional3D.hh"
 
 
 using namespace plb;
@@ -286,20 +288,12 @@ int main(int argc, char* argv[])
     plint imageIter = 10;
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();
+    applyProcessingFunctional ( // copy fluid velocity on particles
+        new FluidVelocityToImmersedWall3D<T,DESCRIPTOR>(),
+        immersedParticles.getBoundingBox(), particleLatticeArg);
+    plint itotParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox());
+
     for (plint i=0; i<maxIter; ++i) {
-
-        applyProcessingFunctional ( // copy fluid velocity on particles
-            new FluidVelocityToImmersedWall3D<T,DESCRIPTOR>(),
-            immersedParticles.getBoundingBox(), particleLatticeArg);
-        applyProcessingFunctional ( // advance particles in time according to a velocity, acceleration, ...
-            new AdvanceParticlesFunctional3D<T,DESCRIPTOR>,
-            immersedParticles.getBoundingBox(), particleArg );
-
-        bloodCells.pushSelect(0,1);
-        applyProcessingFunctional ( // update mesh position
-            new CopyParticleToVertex3D<T,DESCRIPTOR>(bloodCells.getMesh()),
-            immersedParticles.getBoundingBox(), particleArg);
-        bloodCells.popSelect();
 
     	applyProcessingFunctional ( // compute force applied on the particles by springs
             new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
@@ -313,6 +307,21 @@ int main(int argc, char* argv[])
 					immersedParticles.getBoundingBox(), particleLatticeArg );
         }
         lattice.collideAndStream();
+
+        applyProcessingFunctional ( // copy fluid velocity on particles
+            new FluidVelocityToImmersedWall3D<T,DESCRIPTOR>(),
+            immersedParticles.getBoundingBox(), particleLatticeArg);
+
+        applyProcessingFunctional ( // advance particles in time according to a velocity, acceleration, ...
+            new AdvanceParticlesFunctional3D<T,DESCRIPTOR>,
+            immersedParticles.getBoundingBox(), particleArg );
+
+        bloodCells.pushSelect(0,1);
+        applyProcessingFunctional ( // update mesh position
+            new CopyParticleToVertex3D<T,DESCRIPTOR>(bloodCells.getMesh()),
+            immersedParticles.getBoundingBox(), particleArg);
+        bloodCells.popSelect();
+
 
 
         
@@ -328,8 +337,10 @@ int main(int argc, char* argv[])
 //        }
 
         if (i%imageIter==0) {
-            pcout << "totParticles = " << countParticles(immersedParticles, immersedParticles.getBoundingBox()) << std::endl;
-            pcout << "Write Particle VTK" << std::endl;
+        	plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox());
+            pcout << i << " totParticles = " << totParticles << std::endl;
+            PLB_ASSERT(itotParticles == totParticles);
+            pcout << "Write Particle VTK. " ;
             std::vector<std::string> force_scalarNames;
             force_scalarNames.push_back("pressure");
             force_scalarNames.push_back("wss");
@@ -340,7 +351,7 @@ int main(int argc, char* argv[])
             velocity_vectorNames.push_back("velocity");
 			bool dynamicMesh = true;
 			plint tag = -1; // Take all triangles.
-
+//			bloodCells.writeAsciiSTL("tmp.stl");
 			// serialize the particle information to write them.
 			// a correspondance between the mesh and the particles is made.
 			writeImmersedSurfaceVTK (
@@ -350,6 +361,8 @@ int main(int argc, char* argv[])
 					global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag );
 
             writeVTK(lattice, parameters, i);
+            pcout << "Timer: " << global::timer("sim").stop() << endl;
+            global::timer("sim").restart();
         }
     }
 

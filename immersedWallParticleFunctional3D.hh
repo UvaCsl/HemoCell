@@ -162,7 +162,7 @@ void FluidVelocityToImmersedWall3D<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::dynamicVariables; // Particle field.
-    modified[1] = modif::nothing; // Particle field.
+    modified[1] = modif::nothing; // Fluid field.
 }
 
 

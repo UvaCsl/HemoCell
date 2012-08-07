@@ -37,7 +37,8 @@ public:
     ImmersedWallParticle3D( plint tag_, Array<T,3> const& position, plint kind_ = -1 );
     ImmersedWallParticle3D( plint tag_, Array<T,3> const& position,
                           Array<T,3> const& v_, Array<T,3> const& vHalfTime_,
-                            Array<T,3> const& a_, Array<T,3> const& force_, plint kind_ = -1);
+                            Array<T,3> const& a_, Array<T,3> const& force_, Array<T,3> const& vPrevious_,
+                            plint kind_ = -1);
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
     virtual void fluidToParticle(BlockLattice3D<T,Descriptor>& fluid, T scaling=1.) { }
     /// Implements "steps 1 and 2" of the Verlet algorithm: given
@@ -54,16 +55,18 @@ public:
     virtual bool getVector(plint whichVector, Array<T,3>& vector) const;
     Array<T,3> const& get_v() const { return v; }
     Array<T,3> const& get_vHalfTime() const { return vHalfTime; }
+    Array<T,3> const& get_vPrevious() const { return vPrevious; }
     Array<T,3> const& get_a() const { return a; }
     Array<T,3> const& get_force() const { return force; }
     plint const& get_kind() const { return kind; }
     Array<T,3>& get_v() { return v; }
     Array<T,3>& get_vHalfTime() { return vHalfTime; }
+    Array<T,3>& get_vPrevious() { return vPrevious; }
     Array<T,3>& get_a() { return a; }
     Array<T,3>& get_force() { return force; }
     plint& get_kind() { return kind; }
 private:
-    Array<T,3> v, vHalfTime, a, force;
+    Array<T,3> v, vHalfTime, a, force, vPrevious;
     plint kind;
     static int id;
 };
@@ -87,14 +90,15 @@ class ImmersedWallParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         unserializer.readValue(tag);
         Array<T,3> position;
         unserializer.readValues<T,3>(position);
-        Array<T,3> v, vHalfTime, a, force;
+        Array<T,3> v, vHalfTime, vPrevious, a, force;
         unserializer.readValues<T,3>(v);
         unserializer.readValues<T,3>(vHalfTime);
         unserializer.readValues<T,3>(a);
         unserializer.readValues<T,3>(force);
+        unserializer.readValues<T,3>(vPrevious);
         plint kind;
         unserializer.readValue(kind);
-        return new ImmersedWallParticle(tag, position, v, vHalfTime, a, force, kind);
+        return new ImmersedWallParticle(tag, position, v, vHalfTime, vHalfTime, a, force, kind);
     }
 };
 
