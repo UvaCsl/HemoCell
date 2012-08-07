@@ -23,14 +23,14 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
-#include "immersedWallParticle3D.h"
-#include "immersedWallParticle3D.hh"
-#include "immersedWallParticleFunctional3D.h"
-#include "immersedWallParticleFunctional3D.hh"
-#include "immersedWallParticleVtk3D.h"
-#include "immersedWallParticleVtk3D.hh"
-#include "shellModel3D.h"
-#include "shellModel3D.hh"
+//#include "immersedWallParticle3D.h"
+//#include "immersedWallParticle3D.hh"
+//#include "immersedWallParticleFunctional3D.h"
+//#include "immersedWallParticleFunctional3D.hh"
+//#include "immersedWallParticleVtk3D.h"
+//#include "immersedWallParticleVtk3D.hh"
+//#include "shellModel3D.h"
+//#include "shellModel3D.hh"
 
 #include "ficsionInit.hh"
 #include "immersedCells3D.h"
@@ -139,108 +139,6 @@ void iniLattice( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
 }
 
 
-//template<typename T, template<typename U> class Descriptor>
-//void createImmersedWallParticles (
-//        MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
-//        TriangleBoundary3D<T>& boundary, plint tag, plint numPartsPerBloodCell )
-//{
-//    boundary.pushSelect(0,1);
-//    std::vector<MultiBlock3D*> particleArg;
-//    particleArg.push_back(&particleField);
-//    applyProcessingFunctional (
-//        new CreateTaggedImmersedWallParticle3D<T,Descriptor>(boundary,tag,numPartsPerBloodCell),
-//        particleField.getBoundingBox(), particleArg );
-//    boundary.popSelect();
-//}
-//
-//template<typename T, template<typename U> class Descriptor>
-//void deleteBloodCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
-//                   const Box3D &outlet, std::vector<plint> &numParts,
-//                   std::vector<plint> &tags, TriangleBoundary3D<T> &bloodCells,
-//                   std::vector<Array<T,3> > &centers, std::vector<plint > &radii )
-//{
-//    bool erased = false;
-//    for (pluint iA = 0; iA < tags.size(); ++iA) {
-//        // count all particles of a certain tag in a buffer zone
-//        plint numPartsPerTag = countParticles(particleField,outlet,tags[iA]);
-//        // if all the particle of a certain tag are in a buffer zone
-//        if (numPartsPerTag == numParts[iA] && numPartsPerTag > 0) {
-//            // then delete these particles in all the buffer zones
-//            plint before = countParticles(particleField,outlet,tags[iA]);
-//            std::vector<MultiBlock3D*> particleArg;
-//            particleArg.push_back(&particleField);
-//
-//            applyProcessingFunctional (
-//                new AbsorbTaggedParticlesFunctional3D<T,DESCRIPTOR>(tags[iA]),
-//                    outlet, particleArg );
-//
-//            plint after = countParticles(particleField,outlet,tags[iA]);
-//
-//            pcout << "erased particles = " << before << ", " << after << std::endl;
-//
-////             delete bloodCells[iA];                     // delete the iA-th pointer mesh
-////             numParts.erase(numParts.begin()+iA);        // erase the iA-th number of particles
-////             tags.erase(tags.begin()+iA);                // erase the iA-th tag
-////             bloodCells.erase(bloodCells.begin()+iA);  // erase the iA-th mesh
-////             centers.erase(centers.begin()+iA);          // delete the iA-th center
-////             radii.erase(radii.begin()+iA);              // delete the iA-th radius
-////             --iA;
-//
-//            erased = true;
-//        }
-//    }
-//
-//    if (erased) {
-//        pcout << "Particles absorbed : Number of particles per tag." << std::endl;
-//        for (pluint iA = 0; iA < centers.size(); ++iA) {
-//            pcout << tags[iA] << " , " <<  countParticles(particleField, particleField.getBoundingBox(), tags[iA]) << std::endl;
-//        }
-//    }
-//}
-//
-//template<typename T, template<typename U> class Descriptor>
-//bool generateBloodCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
-//                      const Box3D &inlet, std::vector<plint> &tags, TriangleBoundary3D<T> &bloodCells,
-//                      plint numPartsPerBloodCell, plint numOfBloodCellsPerInlet, plint &slice )
-//{
-//    bool created = false;
-//    plint numPartsPerTag = 0;
-//    for (pluint iA = 0; iA < tags.size(); ++iA) {
-//        // count all particles of a certain tag in a buffer zone
-//        numPartsPerTag += countParticles(particleField,inlet,tags[iA]);
-//    }
-//
-//    std::vector<plint> newTags;
-//    for (plint iA = slice*numOfBloodCellsPerInlet; iA < (slice+1)*numOfBloodCellsPerInlet; ++iA) {
-//        newTags.push_back(tags[iA]);
-//    }
-//
-//    if (numPartsPerTag == 0) {
-//        createBloodCells(bloodCells, newTags, numPartsPerBloodCell, particleField);
-//        created = true;
-//        ++slice;
-//    }
-//
-//    if (created) {
-//        pcout << "Particles created : Number of particles per tag." << std::endl;
-//        for (pluint iA = 0; iA < newTags.size(); ++iA) {
-//            pcout << newTags[iA] << " , " <<  countParticles(particleField, particleField.getBoundingBox(), newTags[iA]) << std::endl;
-//        }
-//    }
-//    return created;
-//}
-//
-//void createBloodCells(TriangleBoundary3D<T> &bloodCells,
-//                    const std::vector<plint> &tags,
-//                    plint numPartsPerBloodCell,
-//                    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > &immersedParticles)
-//{
-//    for (pluint iA = 0; iA < tags.size(); ++iA) {
-//        createImmersedWallParticles(immersedParticles, bloodCells, tags[iA], numPartsPerBloodCell);
-//    }
-//}
-
-
 
 template<class BlockLatticeT>
 void writeVTK(BlockLatticeT& lattice,
@@ -250,13 +148,17 @@ void writeVTK(BlockLatticeT& lattice,
     T dt = parameters.getDeltaT();
     
     MultiTensorField3D<T,3> force(lattice);
-    
     applyProcessingFunctional(new GetTensorFieldFromExternalVectorFunctional3D<T,DESCRIPTOR,3>(
         DESCRIPTOR<T>::ExternalField::forceBeginsAt), lattice.getBoundingBox(), lattice, force);
                               
     VtkImageOutput3D<T> vtkOut(createFileName("vtk", iter, 6), dx);
     vtkOut.writeData<float>(*computeVelocityNorm(lattice), "velocityNorm", dx/dt);
     vtkOut.writeData<3,float>(force, "force", (T)1);
+
+//    ImageWriter<T> imageWriter("leeloo");
+//    add(force, forceScalar, force.getBoundingBox());
+//    imageWriter.writeScaledPpm(scalarField, createFileName("PPM", iter, 6));
+
 //     vtkOut.writeData<3,float>(*computeVelocity(lattice), "velocity", dx/dt);
 //     vtkOut.writeData<3,float>(*computeVorticity(*computeVelocity(lattice)), "vorticity", 1./dt);
 }
@@ -274,23 +176,42 @@ int main(int argc, char* argv[])
     T k_shear = 0.;
     T k_bend = 0.;
 
+    T u = 0.01;
+    T Re = 100;
+    plint N = 20;
+    T lx = 5.;
+    T ly = 0.5;
+    T lz = 0.5;
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
 
-    XMLreader document(paramXmlFileName);
-    document["shellDensity"].read(shellDensity);
-    document["k_rest"].read(k_rest);
-    document["k_stretch"].read(k_stretch);
-    document["k_shear"].read(k_shear);
-    document["k_bend"].read(k_bend);
+	XMLreader document(paramXmlFileName);
+	pcout << "reading.." <<std::endl;
+	document["cell"]["shellDensity"].read(shellDensity);
+	document["cell"]["k_rest"].read(k_rest);
+	document["cell"]["k_stretch"].read(k_stretch);
+	document["cell"]["k_shear"].read(k_shear);
+	document["cell"]["k_bend"].read(k_bend);
+
+	document["parameters"]["u"].read(u);
+	document["parameters"]["Re"].read(Re);
+	document["parameters"]["N"].read(N);
+	document["parameters"]["lx"].read(lx);
+	document["parameters"]["ly"].read(ly);
+	document["parameters"]["lz"].read(lz);
+	plint forceToFluid = 0;
+	T RBCradius = 0.0;
+	document["ibm"]["forceToFluid"].read(forceToFluid);
+	document["ibm"]["RBCradius"].read(RBCradius);
+
 
     IncomprFlowParam<T> parameters(
-            0.01, // u 
-            100., // Re
-            60,   // N
-            10.,        // lx
-            1.,        // ly
-            1.         // lz
+            u, // u
+            Re, // Re
+            N,   // N
+            lx,        // lx
+            ly,        // ly
+            lz         // lz
     );
 
     plint nx = parameters.getNx();
@@ -311,25 +232,22 @@ int main(int argc, char* argv[])
 
     pcout << std::endl << "Initializing lattice" << std::endl;
     iniLattice(lattice, parameters, *boundaryCondition);
-
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
-    MultiBlockManagement3D particleManagement (
+	MultiBlockManagement3D particleManagement (
             latticeManagement.getSparseBlockStructure(),
             latticeManagement.getThreadAttribution().clone(),
             particleEnvelopeWidth,
             latticeManagement.getRefinementLevel() );
-
     MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > immersedParticles (
             particleManagement,
             defaultMultiBlockPolicy3D().getCombinedStatistics() );
-
-    plint x0 = 22; plint x1 = nx-x0;
+    plint x0 = 10; plint x1 = nx-x0;
 
     Box3D inlet(0,  x0,  0, ny-1, 0, nz-1);
     Box3D outlet(x1, nx-1,0, ny-1, 0, nz-1);
 
     std::vector<plint> pos;
-    pos.push_back(30); pos.push_back(10);pos.push_back(50);
+    pos.push_back(5); //pos.push_back(30);pos.push_back(50);
     
     std::vector<Array<T,3> > centers;
     std::vector<plint > radii;
@@ -337,8 +255,8 @@ int main(int argc, char* argv[])
     for (plint iN = 0; iN < nMax; ++iN) { // create 40 * inlet amount of particles
         for (pluint iA = 0; iA < pos.size(); ++iA) {
             for (pluint iB = 0; iB < pos.size(); ++iB) {
-                centers.push_back(Array<T,3>(10+iN,pos[iA],pos[iB]));
-                radii.push_back(3.91);
+                centers.push_back(Array<T,3>(5+iN,pos[iA],pos[iB]));
+                radii.push_back(RBCradius);
             }
         }
     }
@@ -348,7 +266,8 @@ int main(int argc, char* argv[])
     std::vector<plint> tags;
     plint numPartsPerBloodCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
     TriangleBoundary3D<T> bloodCells = createCompleteMesh(centers, radii, tags, numPartsPerBloodCell);
-    bool created = generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice );
+//    bool created = generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice );
+	generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice );
 
     std::vector<plint> numParts(tags.size());
     for (pluint iA = 0; iA < tags.size(); ++iA) {
@@ -370,13 +289,12 @@ int main(int argc, char* argv[])
     global::timer("sim").start();
     for (plint i=0; i<maxIter; ++i) {
 
-        applyProcessingFunctional ( // advance particles in time according to a velocity, acceleration, ...
-            new AdvanceParticlesFunctional3D<T,DESCRIPTOR>,
-            immersedParticles.getBoundingBox(), particleArg );
-
         applyProcessingFunctional ( // copy fluid velocity on particles
             new FluidVelocityToImmersedWall3D<T,DESCRIPTOR>(),
             immersedParticles.getBoundingBox(), particleLatticeArg);
+        applyProcessingFunctional ( // advance particles in time according to a velocity, acceleration, ...
+            new AdvanceParticlesFunctional3D<T,DESCRIPTOR>,
+            immersedParticles.getBoundingBox(), particleArg );
 
         bloodCells.pushSelect(0,1);
         applyProcessingFunctional ( // update mesh position
@@ -384,28 +302,31 @@ int main(int argc, char* argv[])
             immersedParticles.getBoundingBox(), particleArg);
         bloodCells.popSelect();
 
-        applyProcessingFunctional ( // compute force applied on the particles by springs
+    	applyProcessingFunctional ( // compute force applied on the particles by springs
             new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
                 bloodCells, springModel.clone() ), // used because pushSelect is not used
             immersedParticles.getBoundingBox(), particleArg );
-        
-        setExternalVector( lattice, lattice.getBoundingBox(), 
-                           DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
-        
-        applyProcessingFunctional ( // compute force applied on the particles by springs
-            new ForceToFluid3D<T,DESCRIPTOR> (), // used because pushSelect is not used
-                immersedParticles.getBoundingBox(), particleLatticeArg );
-        
+        if (forceToFluid != 0) {
+			setExternalVector( lattice, lattice.getBoundingBox(),
+							   DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
+			applyProcessingFunctional ( // compute force applied on the fluid by the particles
+				new ForceToFluid3D<T,DESCRIPTOR> (),
+					immersedParticles.getBoundingBox(), particleLatticeArg );
+        }
         lattice.collideAndStream();
+
+
         
 //         applyProcessingFunctional (
 //             new ComputeFluidForceOnParticle3D<T,DESCRIPTOR> (
 //                 boundary, springModel.getDensity(), flowType ),
 //             dynamicMeshParticles.getBoundingBox(), fluidForceArg );
 
-        deleteBloodCell(immersedParticles, outlet, numParts, tags, bloodCells, centers, radii );
+//        deleteBloodCell(immersedParticles, outlet, numParts, tags, bloodCells, centers, radii );
+
         if (slice < 1) {
             bool created = generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice );
+            pcout << "Used \n";
         }
 
         if (i%imageIter==0) {
@@ -419,22 +340,16 @@ int main(int argc, char* argv[])
             force_vectorNames.push_back("force");
             std::vector<std::string> velocity_vectorNames;
             velocity_vectorNames.push_back("velocity");
-//             for (pluint iA = 0; iA < centers.size(); ++iA) {
-                bool dynamicMesh = true;
-                plint tag = -1; // Take all triangles.
+			bool dynamicMesh = true;
+			plint tag = -1; // Take all triangles.
 
-                // serialize the particle information to write them.
-                // a correspondance between the mesh and the particles is made.
-                writeImmersedSurfaceVTK (
-                        bloodCells,
-                        *getParticlePosAndVelocity(immersedParticles),
-                        velocity_scalarNames, velocity_vectorNames,
-                        global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag );
-    //             bool printHeader = true;
-    //             VtkImageOutput3D<T> vtkOut(createFileName("volume",i,6), boundary.getDx(), boundary.getPhysicalLocation());
-    //             vtkOut.writeData<float>(*boundaryCondition->computePressure(), "p", 1.);
-    //             vtkOut.writeData<float>(*boundaryCondition->computeVelocityNorm(), "uNorm", 1.);
-//             }
+			// serialize the particle information to write them.
+			// a correspondance between the mesh and the particles is made.
+			writeImmersedSurfaceVTK (
+					bloodCells,
+					*getParticlePosAndVelocity(immersedParticles),
+					velocity_scalarNames, velocity_vectorNames,
+					global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag );
 
             writeVTK(lattice, parameters, i);
         }

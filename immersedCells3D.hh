@@ -26,6 +26,14 @@
 using namespace plb;
 using namespace std;
 
+
+#ifndef PI__
+#define PI__
+const T pi = 4.*atan(1.);
+#endif  // PI__
+
+
+
 plint xDirection  = 0;
 plint yDirection  = 1;
 plint zDirection  = 2;
@@ -121,7 +129,7 @@ bool generateBloodCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> 
     if (created) {
         pcout << "Particles created : Number of particles per tag." << std::endl;
         for (pluint iA = 0; iA < newTags.size(); ++iA) {
-            pcout << newTags[iA] << " , " <<  countParticles(particleField, particleField.getBoundingBox(), newTags[iA]) << std::endl;
+            pcout << newTags[iA] + 1<< " : " <<  countParticles(particleField, particleField.getBoundingBox(), newTags[iA]) << std::endl;
         }
     }
     return created;
@@ -141,6 +149,8 @@ template<typename T>
 TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles) {
 	TriangleSet<T> RBC("./lib/RBC.stl");
 	RBC.scale(radius/3.91);
+	RBC.rotate(pi/2.0, pi/2.0, 0.);
+
 	RBC.translate(center);
 	return RBC;
 }
@@ -167,8 +177,8 @@ TriangleBoundary3D<T> createCompleteMesh(
     Dot3D location(centers[0][0]-radii[0],centers[0][1]-radii[0],centers[0][2]-radii[0]);
     DEFscaledMesh<T> defMesh (
             wholeTriangleSet, 10, xDirection, margin, location );
-//         pcout << "Original sphere at location [" << location.x << ","
-//             << location.y << "," << location.z << "] with radius " << radius << std::endl;
+         pcout << "Original sphere at location [" << location.x << ","
+             << location.y << "," << location.z << "] " << std::endl;
 
     TriangleBoundary3D<T> bloodCells(defMesh);
     bloodCells.getMesh().inflate();

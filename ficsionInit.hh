@@ -25,7 +25,10 @@ typedef Array<T,3> Velocity;
 
 #define NMAX 50
 
+#ifndef PI__
+#define PI__
 const T pi = 4.*atan(1.);
+#endif  // PI__
 
 
 static T poiseuillePressure(IncomprFlowParam<T> const &parameters, plint maxN)
