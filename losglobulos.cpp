@@ -247,7 +247,7 @@ int main(int argc, char* argv[])
     Box3D outlet(x1, nx-1,0, ny-1, 0, nz-1);
 
     std::vector<plint> pos;
-    pos.push_back(5); //pos.push_back(30);pos.push_back(50);
+    pos.push_back(nx/2); //pos.push_back(30);pos.push_back(50);
     
     std::vector<Array<T,3> > centers;
     std::vector<plint > radii;
@@ -266,7 +266,6 @@ int main(int argc, char* argv[])
     std::vector<plint> tags;
     plint numPartsPerBloodCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
     TriangleBoundary3D<T> bloodCells = createCompleteMesh(centers, radii, tags, numPartsPerBloodCell);
-//    bool created = generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice );
 	generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice );
 
     std::vector<plint> numParts(tags.size());
@@ -323,11 +322,10 @@ int main(int argc, char* argv[])
 //             dynamicMeshParticles.getBoundingBox(), fluidForceArg );
 
 //        deleteBloodCell(immersedParticles, outlet, numParts, tags, bloodCells, centers, radii );
-
-        if (slice < 1) {
-            bool created = generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice );
-            pcout << "Used \n";
-        }
+//        if (slice < 1) {
+//            bool created = generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice );
+//            pcout << "Used \n";
+//        }
 
         if (i%imageIter==0) {
             pcout << "totParticles = " << countParticles(immersedParticles, immersedParticles.getBoundingBox()) << std::endl;
