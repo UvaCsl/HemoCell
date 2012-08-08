@@ -120,8 +120,8 @@ namespace membraneBendingModelHelper3D {
 
 template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
-                   TriangularSurfaceMesh<T> const& dynMesh, 
-                   TriangularSurfaceMesh<T> const& eqMesh, 
+                   TriangularSurfaceMesh<T> const& dynMesh,
+                   TriangularSurfaceMesh<T> const& eqMesh,
                    T Y, T nu, T h, T k);
 
 template<typename T>

@@ -3,21 +3,23 @@
 <cell>
 	<shellDensity> 1. </shellDensity>
 	<k_rest> 0.0e-6 </k_rest>
-	<k_stretch> 1.0e-6 </k_stretch>
-	<k_shear> 1.0e-6 </k_shear>
-	<k_bend> 1.0e-6 </k_bend>
+	<k_stretch> 1.0e-10 </k_stretch>
+	<k_shear> 1.0e-10 </k_shear>
+	<k_bend> 1.0e-10 </k_bend>
 </cell>
 
 <parameters>
-	<u> 0.01 </u>
+	<u> 0.001 </u>
 	<Re> 100. </Re>
 	<N> 1 </N>
-	<lx> 60. </lx>
+	<lx> 30. </lx>
 	<ly> 30. </ly>
 	<lz> 30. </lz>
 </parameters>
 
 <ibm>
 	<forceToFluid> 1 </forceToFluid>
-	<RBCradius> 2. </RBCradius> 
+	<!-- shape: Sphere:0, RBC:1 -->
+	<shape> 0 </shape> 
+	<radius> 2. </radius> 
 </ibm>

@@ -72,7 +72,7 @@ void createBloodCells(TriangleBoundary3D<T> &bloodCells,
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
     const std::vector<Array<T,3> > &centers, const std::vector<plint> &radii,
-    std::vector<plint> &tags, plint &numPartsPerBloodCell) ;
+    std::vector<plint> &tags, plint &numPartsPerBloodCell, plint shape) ;
 
 template<typename T>
 TriangleBoundary3D<T> createCompleteMeshRBCs	(

@@ -14,6 +14,8 @@
 #include "immersedWallParticleVtk3D.hh"
 #include "shellModel3D.h"
 #include "shellModel3D.hh"
+#include "cellModel3D.h"
+#include "cellModel3D.hh"
 
 using namespace plb;
 using namespace std;

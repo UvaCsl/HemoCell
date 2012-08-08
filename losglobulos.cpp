@@ -201,10 +201,11 @@ int main(int argc, char* argv[])
 	document["parameters"]["lx"].read(lx);
 	document["parameters"]["ly"].read(ly);
 	document["parameters"]["lz"].read(lz);
-	plint forceToFluid = 0;
-	T RBCradius = 0.0;
+	plint forceToFluid = 0, shape = 0;
+	T radius = 0.0;
 	document["ibm"]["forceToFluid"].read(forceToFluid);
-	document["ibm"]["RBCradius"].read(RBCradius);
+	document["ibm"]["shape"].read(shape);
+	document["ibm"]["radius"].read(radius);
 
 
     IncomprFlowParam<T> parameters(
@@ -249,7 +250,8 @@ int main(int argc, char* argv[])
     Box3D outlet(x1, nx-1,0, ny-1, 0, nz-1);
 
     std::vector<plint> pos;
-    pos.push_back(ny/2); //pos.push_back(30);pos.push_back(50);
+//    pos.push_back(ny/2); //pos.push_back(30);pos.push_back(50);
+    pos.push_back(ny/3);pos.push_back((2*ny)/3);
     
     std::vector<Array<T,3> > centers;
     std::vector<plint > radii;
@@ -258,7 +260,7 @@ int main(int argc, char* argv[])
         for (pluint iA = 0; iA < pos.size(); ++iA) {
             for (pluint iB = 0; iB < pos.size(); ++iB) {
                 centers.push_back(Array<T,3>(5+iN,pos[iA],pos[iB]));
-                radii.push_back(RBCradius);
+                radii.push_back(radius);
             }
         }
     }
@@ -267,8 +269,8 @@ int main(int argc, char* argv[])
 
     std::vector<plint> tags;
     plint numPartsPerBloodCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    TriangleBoundary3D<T> bloodCells = createCompleteMesh(centers, radii, tags, numPartsPerBloodCell);
-	generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice );
+    TriangleBoundary3D<T> bloodCells = createCompleteMesh(centers, radii, tags, numPartsPerBloodCell, shape);
+	generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice);
 
     std::vector<plint> numParts(tags.size());
     for (pluint iA = 0; iA < tags.size(); ++iA) {
@@ -282,7 +284,7 @@ int main(int argc, char* argv[])
     particleLatticeArg.push_back(&immersedParticles);
     particleLatticeArg.push_back(&lattice);
 
-    SpringModel3D<T> springModel(shellDensity, k_rest, k_stretch, k_shear, k_bend );
+    CellModel3D<T> cellModel(shellDensity, k_rest, k_stretch, k_shear, k_bend, k_shear, k_shear);
 
     plint maxIter = 100000;
     plint imageIter = 10;
@@ -297,7 +299,7 @@ int main(int argc, char* argv[])
 
     	applyProcessingFunctional ( // compute force applied on the particles by springs
             new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
-                bloodCells, springModel.clone() ), // used because pushSelect is not used
+                bloodCells, cellModel.clone() ), // used because pushSelect is not used
             immersedParticles.getBoundingBox(), particleArg );
         if (forceToFluid != 0) {
 			setExternalVector( lattice, lattice.getBoundingBox(),

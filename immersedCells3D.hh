@@ -158,8 +158,9 @@ TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTr
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
     const std::vector<Array<T,3> > &centers, const std::vector<plint> &radii,
-    std::vector<plint> &tags, plint &numPartsPerBloodCell)
+    std::vector<plint> &tags, plint &numPartsPerBloodCell, plint shape)
 {
+//	shape 0:Sphere, 1:RBC
     PLB_ASSERT(centers.size() == radii.size());
 
     // creation of the whole mesh including the one that is not used by particles
@@ -168,8 +169,12 @@ TriangleBoundary3D<T> createCompleteMesh(
     for (pluint iA = 0; iA < centers.size(); ++iA) {
         Array<T,3> center(centers[iA]);
         plint radius = radii[iA];
-        allTriangles.push_back(constructRBC<T>(center, radius, 100));
-//        allTriangles.push_back(constructSphere<T>(center, radius, 100));
+        if (shape == 0) {
+        	allTriangles.push_back(constructSphere<T>(center, radius, 100));
+        }
+        else if (shape == 1) {
+        	allTriangles.push_back(constructRBC<T>(center, radius, 100));
+        }
         tags.push_back(iA);
     }
     wholeTriangleSet.merge(allTriangles);
