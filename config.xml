@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 
 <cell>
-	<shellDensity> 1 </shellDensity>
+	<shellDensity> 1. </shellDensity>
 	<k_rest> 0.0e-6 </k_rest>
 	<k_stretch> 1.0e-6 </k_stretch>
 	<k_shear> 1.0e-6 </k_shear>
@@ -10,9 +10,9 @@
 
 <parameters>
 	<u> 0.01 </u>
-	<Re> 1. </Re>
+	<Re> 100. </Re>
 	<N> 1 </N>
-	<lx> 30. </lx>
+	<lx> 60. </lx>
 	<ly> 30. </ly>
 	<lz> 30. </lz>
 </parameters>

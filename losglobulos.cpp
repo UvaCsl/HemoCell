@@ -249,7 +249,7 @@ int main(int argc, char* argv[])
     Box3D outlet(x1, nx-1,0, ny-1, 0, nz-1);
 
     std::vector<plint> pos;
-    pos.push_back(nx/2); //pos.push_back(30);pos.push_back(50);
+    pos.push_back(ny/2); //pos.push_back(30);pos.push_back(50);
     
     std::vector<Array<T,3> > centers;
     std::vector<plint > radii;
@@ -323,13 +323,7 @@ int main(int argc, char* argv[])
         bloodCells.popSelect();
 
 
-
         
-//         applyProcessingFunctional (
-//             new ComputeFluidForceOnParticle3D<T,DESCRIPTOR> (
-//                 boundary, springModel.getDensity(), flowType ),
-//             dynamicMeshParticles.getBoundingBox(), fluidForceArg );
-
 //        deleteBloodCell(immersedParticles, outlet, numParts, tags, bloodCells, centers, radii );
 //        if (slice < 1) {
 //            bool created = generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice );

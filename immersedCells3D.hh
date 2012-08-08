@@ -168,15 +168,15 @@ TriangleBoundary3D<T> createCompleteMesh(
     for (pluint iA = 0; iA < centers.size(); ++iA) {
         Array<T,3> center(centers[iA]);
         plint radius = radii[iA];
-//        allTriangles.push_back(constructRBC<T>(center, radius, 100));
-        allTriangles.push_back(constructSphere<T>(center, radius, 100));
+        allTriangles.push_back(constructRBC<T>(center, radius, 100));
+//        allTriangles.push_back(constructSphere<T>(center, radius, 100));
         tags.push_back(iA);
     }
     wholeTriangleSet.merge(allTriangles);
 
     Dot3D location(centers[0][0]-radii[0],centers[0][1]-radii[0],centers[0][2]-radii[0]);
     DEFscaledMesh<T> defMesh (
-            wholeTriangleSet, 10, xDirection, margin, location );
+            wholeTriangleSet, 1, xDirection, margin, location );
          pcout << "Original sphere at location [" << location.x << ","
              << location.y << "," << location.z << "] " << std::endl;
 
