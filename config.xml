@@ -9,12 +9,12 @@
 </cell>
 
 <parameters>
-	<u> 0.001 </u>
-	<Re> 100. </Re>
-	<N> 1 </N>
-	<lx> 30. </lx>
-	<ly> 30. </ly>
-	<lz> 30. </lz>
+	<u> 0.0016666 </u>
+	<Re> 100 </Re>
+	<N> 10000 </N>
+	<lx> 0.003 </lx>
+	<ly> 0.003 </ly>
+	<lz> 0.003 </lz>
 </parameters>
 
 <ibm>
@@ -23,3 +23,8 @@
 	<shape> 0 </shape> 
 	<radius> 2. </radius> 
 </ibm>
+
+<sim>
+	<tmax> 100000 </tmax> <!-- total number of iterations -->
+	<tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
+</sim>

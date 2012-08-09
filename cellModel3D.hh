@@ -22,7 +22,7 @@
 #define CELL_MODEL_3D_HH
 
 #include <cmath>
-#include "CellModel3D.h"
+#include "cellModel3D.h"
 
 namespace plb {
 

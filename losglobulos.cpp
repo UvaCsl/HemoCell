@@ -206,6 +206,10 @@ int main(int argc, char* argv[])
 	document["ibm"]["forceToFluid"].read(forceToFluid);
 	document["ibm"]["shape"].read(shape);
 	document["ibm"]["radius"].read(radius);
+    plint tmax = 100000;
+    plint tmeas = 100;
+	document["sim"]["tmax"].read(tmax);
+	document["sim"]["tmeas"].read(tmeas);
 
 
     IncomprFlowParam<T> parameters(
@@ -220,7 +224,8 @@ int main(int argc, char* argv[])
     plint nx = parameters.getNx();
     plint ny = parameters.getNy();
     plint nz = parameters.getNz();
-    
+    T tau = parameters.getTau();
+
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz,
                                                             extendedEnvelopeWidth),
@@ -233,7 +238,7 @@ int main(int argc, char* argv[])
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
 
-    pcout << std::endl << "Initializing lattice" << std::endl;
+    pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
     iniLattice(lattice, parameters, *boundaryCondition);
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
@@ -258,7 +263,7 @@ int main(int argc, char* argv[])
     plint nMax = 1;
     for (plint iN = 0; iN < nMax; ++iN) { // create 40 * inlet amount of particles
         for (pluint iA = 0; iA < pos.size(); ++iA) {
-            for (pluint iB = 0; iB < pos.size(); ++iB) {
+            for (plint iB = 0; iB < pos.size(); ++iB) {
                 centers.push_back(Array<T,3>(5+iN,pos[iA],pos[iB]));
                 radii.push_back(radius);
             }
@@ -286,8 +291,6 @@ int main(int argc, char* argv[])
 
     CellModel3D<T> cellModel(shellDensity, k_rest, k_stretch, k_shear, k_bend, k_shear, k_shear);
 
-    plint maxIter = 100000;
-    plint imageIter = 10;
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();
     applyProcessingFunctional ( // copy fluid velocity on particles
@@ -295,7 +298,7 @@ int main(int argc, char* argv[])
         immersedParticles.getBoundingBox(), particleLatticeArg);
     plint itotParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox());
 
-    for (plint i=0; i<maxIter; ++i) {
+    for (plint i=0; i<tmax; ++i) {
 
     	applyProcessingFunctional ( // compute force applied on the particles by springs
             new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
@@ -332,11 +335,12 @@ int main(int argc, char* argv[])
 //            pcout << "Used \n";
 //        }
 
-        if (i%imageIter==0) {
+        if (i%tmeas==0) {
         	plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox());
             pcout << i << " totParticles = " << totParticles << std::endl;
             PLB_ASSERT(itotParticles == totParticles);
-            pcout << "Write Particle VTK. " ;
+            pcout << "Timer (w/o output): " << global::timer("sim").stop() << ". ";
+            pcout << "Write Particle VTK. " << std::endl; ;
             std::vector<std::string> force_scalarNames;
             force_scalarNames.push_back("pressure");
             force_scalarNames.push_back("wss");
@@ -347,7 +351,10 @@ int main(int argc, char* argv[])
             velocity_vectorNames.push_back("velocity");
 			bool dynamicMesh = true;
 			plint tag = -1; // Take all triangles.
-//			bloodCells.writeAsciiSTL("tmp.stl");
+	        bloodCells.pushSelect(0,1);
+			bloodCells.getMesh().writeAsciiSTL(global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
+	        bloodCells.popSelect();
+
 			// serialize the particle information to write them.
 			// a correspondance between the mesh and the particles is made.
 			writeImmersedSurfaceVTK (
@@ -357,7 +364,6 @@ int main(int argc, char* argv[])
 					global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag );
 
             writeVTK(lattice, parameters, i);
-            pcout << "Timer: " << global::timer("sim").stop() << endl;
             global::timer("sim").restart();
         }
     }
