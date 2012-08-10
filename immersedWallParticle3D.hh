@@ -36,33 +36,33 @@ template<typename T, template<typename U> class Descriptor>
 ImmersedWallParticle3D<T,Descriptor>::ImmersedWallParticle3D()
     : v(T(),T(),T()),
       vHalfTime(T(),T(),T()),
-      a(T(),T(),T()), force(T(),T(),T()), vPrevious(T(),T(),T()), kind(-1)
+      a(T(),T(),T()), force(T(),T(),T()), vPrevious(T(),T(),T()), cellId(-1)
 { }
 
 template<typename T, template<typename U> class Descriptor>
 ImmersedWallParticle3D<T,Descriptor>::ImmersedWallParticle3D (
-        plint tag_, Array<T,3> const& position, plint kind_ )
+        plint tag_, Array<T,3> const& position, plint cellId_ )
     : Particle3D<T,Descriptor>(tag_, position), 
       v(T(),T(),T()),
       vHalfTime(T(),T(),T()),
       a(T(),T(),T()),
       force(T(),T(),T()),
       vPrevious(T(),T(),T()),
-      kind(kind_)
+      cellId(cellId_)
 { }
 
 template<typename T, template<typename U> class Descriptor>
 ImmersedWallParticle3D<T,Descriptor>::ImmersedWallParticle3D (
         plint tag_, Array<T,3> const& position,
         Array<T,3> const& v_, Array<T,3> const& vHalfTime_,
-        Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_, plint kind_ )
+        Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_, plint cellId_ )
     : Particle3D<T,Descriptor>(tag_, position),
       v(v_),
       vHalfTime(vHalfTime_),
       a(a_),
       force(force_),
       vPrevious(vPrevious_),
-      kind(kind_)
+      cellId(cellId_)
 { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -100,7 +100,7 @@ void ImmersedWallParticle3D<T,Descriptor>::serialize(HierarchicSerializer& seria
     serializer.addValues<T,3>(a);
     serializer.addValues<T,3>(force);
     serializer.addValues<T,3>(vPrevious);
-    serializer.addValue<plint>(kind);
+    serializer.addValue<plint>(cellId);
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -112,7 +112,7 @@ void ImmersedWallParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& u
     unserializer.readValues<T,3>(a);
     unserializer.readValues<T,3>(force);
     unserializer.readValues<T,3>(vPrevious);
-    unserializer.readValue<plint>(kind);
+    unserializer.readValue<plint>(cellId);
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -123,7 +123,7 @@ ImmersedWallParticle3D<T,Descriptor>* ImmersedWallParticle3D<T,Descriptor>::clon
 template<typename T, template<typename U> class Descriptor>
 bool ImmersedWallParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) const {
     if (whichScalar==0) {
-        scalar = get_kind();
+        scalar = get_cellId();
         return true;
     }
     return Particle3D<T,Descriptor>::getScalar(whichScalar, scalar);

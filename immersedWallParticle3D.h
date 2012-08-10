@@ -34,11 +34,11 @@ template<typename T, template<typename U> class Descriptor>
 class ImmersedWallParticle3D : public Particle3D<T,Descriptor> {
 public:
     ImmersedWallParticle3D();
-    ImmersedWallParticle3D( plint tag_, Array<T,3> const& position, plint kind_ = -1 );
+    ImmersedWallParticle3D( plint tag_, Array<T,3> const& position, plint cellId_ = -1 );
     ImmersedWallParticle3D( plint tag_, Array<T,3> const& position,
                           Array<T,3> const& v_, Array<T,3> const& vHalfTime_,
                             Array<T,3> const& a_, Array<T,3> const& force_, Array<T,3> const& vPrevious_,
-                            plint kind_ = -1);
+                            plint cellId_ = -1);
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
     virtual void fluidToParticle(BlockLattice3D<T,Descriptor>& fluid, T scaling=1.) { }
     /// Implements "steps 1 and 2" of the Verlet algorithm: given
@@ -49,7 +49,7 @@ public:
     virtual int getId() const;
     virtual void reset(Array<T,3> const& position);
     virtual ImmersedWallParticle3D<T,Descriptor>* clone() const;
-    /// Return the kind through a generic interface (vector id=0).
+    /// Return the cellId through a generic interface (vector id=0).
     virtual bool getScalar(plint whichScalar, T& scalar) const;
     /// Return the velocity, acceleration or vHalfTime through a generic interface (vector id=0,1,2).
     virtual bool getVector(plint whichVector, Array<T,3>& vector) const;
@@ -58,16 +58,16 @@ public:
     Array<T,3> const& get_vPrevious() const { return vPrevious; }
     Array<T,3> const& get_a() const { return a; }
     Array<T,3> const& get_force() const { return force; }
-    plint const& get_kind() const { return kind; }
+    plint const& get_cellId() const { return cellId; }
     Array<T,3>& get_v() { return v; }
     Array<T,3>& get_vHalfTime() { return vHalfTime; }
     Array<T,3>& get_vPrevious() { return vPrevious; }
     Array<T,3>& get_a() { return a; }
     Array<T,3>& get_force() { return force; }
-    plint& get_kind() { return kind; }
+    plint& get_cellId() { return cellId; }
 private:
     Array<T,3> v, vHalfTime, a, force, vPrevious;
-    plint kind;
+    plint cellId;
     static int id;
 };
 
@@ -96,9 +96,9 @@ class ImmersedWallParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         unserializer.readValues<T,3>(a);
         unserializer.readValues<T,3>(force);
         unserializer.readValues<T,3>(vPrevious);
-        plint kind;
-        unserializer.readValue(kind);
-        return new ImmersedWallParticle(tag, position, v, vHalfTime, vHalfTime, a, force, kind);
+        plint cellId;
+        unserializer.readValue(cellId);
+        return new ImmersedWallParticle(tag, position, v, vHalfTime, vHalfTime, a, force, cellId);
     }
 };
 

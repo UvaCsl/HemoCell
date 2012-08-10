@@ -51,7 +51,7 @@ plint borderWidth     = 1;  // Because Guo acts in a one-cell layer.
 plint extraLayer      = 0;  // Make the bounding box larger; for visualization purposes
                             //   only. For the simulation, it is OK to have extraLayer=0.
 const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
-const plint particleEnvelopeWidth = 6;
+const plint particleEnvelopeWidth = 2;
 
 
 
@@ -263,7 +263,7 @@ int main(int argc, char* argv[])
     plint nMax = 1;
     for (plint iN = 0; iN < nMax; ++iN) { // create 40 * inlet amount of particles
         for (pluint iA = 0; iA < pos.size(); ++iA) {
-            for (plint iB = 0; iB < pos.size(); ++iB) {
+            for (pluint iB = 0; iB < pos.size(); ++iB) {
                 centers.push_back(Array<T,3>(5+iN,pos[iA],pos[iB]));
                 radii.push_back(radius);
             }
@@ -279,8 +279,13 @@ int main(int argc, char* argv[])
 
     std::vector<plint> numParts(tags.size());
     for (pluint iA = 0; iA < tags.size(); ++iA) {
-        numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), tags[iA]);
-    }
+            numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), tags[iA]);
+	}
+    std::vector<T> cellVolumes =  countCellVolume(bloodCells, immersedParticles, immersedParticles.getBoundingBox(), tags.size());
+    for (pluint iA = 0; iA < tags.size(); ++iA) {
+            pcout << "tag: " << tags[iA] << ", Volume: "
+            		<< cellVolumes[iA]<< std::endl;
+	}
     
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&immersedParticles);

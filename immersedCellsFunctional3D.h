@@ -11,7 +11,7 @@
 #include <map>
 
 
-/// Count the number of particles, no matter which kind, found inside the domain.
+/// Count the number of particles, no matter which cellId, found inside the domain.
 template<typename T, template<typename U> class Descriptor>
 class CountCellVolumeFunctional3D : public PlainReductiveBoxProcessingFunctional3D
 {
@@ -20,11 +20,15 @@ public:
     /// Argument: Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual CountCellVolumeFunctional3D<T,Descriptor>* clone() const;
-    plint getNumParticles() const;
+    T getVollumeCell() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
     plint cellVolumeId, tag;
 };
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+plint countCellVolume (
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, plint tag);
 
 
 #endif  // IMMERSED_CELLS_FUNCTIONAL_3D_H
