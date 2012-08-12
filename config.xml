@@ -12,7 +12,7 @@
 	<u> 0.0016666 </u>
 	<Re> 100 </Re>
 	<N> 10000 </N>
-	<lx> 0.003 </lx>
+	<lx> 0.004 </lx>
 	<ly> 0.003 </ly>
 	<lz> 0.003 </lz>
 </parameters>
@@ -26,5 +26,5 @@
 
 <sim>
 	<tmax> 100000 </tmax> <!-- total number of iterations -->
-	<tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
+	<tmeas> 20 </tmeas> <!-- interval after which data is written -->> 
 </sim>

@@ -105,12 +105,11 @@ public:
     /// Argument: Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual ComputeCellVolumeParticlesFunctional3D<T,Descriptor>* clone() const;
-    T getCellVolume() const;
-    std::vector<T>&  getCellVolumeArray() const;
+    void  getCellVolumeArray(std::vector<T>& cellVolumes) const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
-    TriangleBoundary3D<T> const& triangleBoundary;
     plint numberOfCells;
+    TriangleBoundary3D<T> const& triangleBoundary;
 };
 
 

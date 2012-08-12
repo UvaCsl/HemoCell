@@ -260,7 +260,7 @@ int main(int argc, char* argv[])
     
     std::vector<Array<T,3> > centers;
     std::vector<plint > radii;
-    plint nMax = 1;
+    plint nMax = 4;
     for (plint iN = 0; iN < nMax; ++iN) { // create 40 * inlet amount of particles
         for (pluint iA = 0; iA < pos.size(); ++iA) {
             for (pluint iB = 0; iB < pos.size(); ++iB) {
@@ -281,7 +281,8 @@ int main(int argc, char* argv[])
     for (pluint iA = 0; iA < tags.size(); ++iA) {
             numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), tags[iA]);
 	}
-    std::vector<T> cellVolumes =  countCellVolume(bloodCells, immersedParticles, immersedParticles.getBoundingBox(), tags.size());
+    std::vector<T> cellVolumes;
+    countCellVolume(bloodCells, immersedParticles, immersedParticles.getBoundingBox(), tags.size(), cellVolumes);
     for (pluint iA = 0; iA < tags.size(); ++iA) {
             pcout << "tag: " << tags[iA] << ", Volume: "
             		<< cellVolumes[iA]<< std::endl;

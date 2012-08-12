@@ -315,10 +315,12 @@ void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::processGenericBlocks 
 	triangleBoundary.popSelect();
 
 	for (pluint i=0; i< (pluint) numberOfCells+1; ++i) {
-		this->getStatistics().subscribeSum();
+		pcout << this->getStatistics().subscribeSum() << std::endl;
 	}
+	pcout << "done" << std::endl;
 	for ( tagsVolumeIterator=tagsVolume.begin() ; tagsVolumeIterator != tagsVolume.end(); tagsVolumeIterator++ ) {
 		cellId = (*tagsVolumeIterator).first;
+		pcout << cellId << std::endl;
 		triangleVolume = (*tagsVolumeIterator).second;
 		this->getStatistics().gatherSum(cellId, (T) triangleVolume);
 	}
@@ -378,18 +380,11 @@ void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::getTypeOfModification
     modified[0] = modif::nothing;
 }
 
-template<typename T, template<typename U> class Descriptor>
-T ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::getCellVolume() const {
-    return this->getStatistics().getSum();
-}
 
 template<typename T, template<typename U> class Descriptor>
-std::vector<T>& ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::getCellVolumeArray() const {
-	std::vector<T> cellsVolumes;
-	for (pluint i=0; i< (pluint) numberOfCells; ++i) {
-		cellsVolumes.push_back(this->getStatistics().getSum(i));
-	}
-	return cellsVolumes;
+void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::getCellVolumeArray(std::vector<T>& cellVolumes) const {
+	for (pluint i=0; i< (pluint) numberOfCells; ++i)
+		cellVolumes.push_back(this->getStatistics().getSum(i));
 }
 
 

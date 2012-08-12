@@ -15,14 +15,15 @@
 /* ******** CountCellVolumeFunctional3D *********************************** */
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-std::vector<T>&  countCellVolume (TriangleBoundary3D<T> Cells,
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, plint numberOfCells )
+void countCellVolume (TriangleBoundary3D<T> Cells,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, plint numberOfCells,
+                std::vector<T>& cellVolumes)
 {
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
     ComputeCellVolumeParticlesFunctional3D<T,Descriptor> functional(Cells, numberOfCells);
     applyProcessingFunctional(functional, domain, particleArg);
-    return functional.getCellVolumeArray();
+    functional.getCellVolumeArray(cellVolumes);
 }
 
 

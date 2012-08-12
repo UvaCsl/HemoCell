@@ -25,10 +25,12 @@ public:
 private:
     plint cellVolumeId, tag;
 };
+
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-plint countCellVolume (
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, plint tag);
+void countCellVolume (TriangleBoundary3D<T> Cells,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, plint numberOfCells,
+                std::vector<T>& cellVolumes);
 
 
 #endif  // IMMERSED_CELLS_FUNCTIONAL_3D_H
