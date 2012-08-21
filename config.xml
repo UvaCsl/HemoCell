@@ -10,21 +10,22 @@
 
 <parameters>
 	<u> 0.0016666 </u>
-	<Re> 100 </Re>
-	<N> 10000 </N>
-	<lx> 0.004 </lx>
-	<ly> 0.003 </ly>
-	<lz> 0.003 </lz>
+	<Re> 0.01 </Re>
+	<N> 1 </N>
+	<lx> 80</lx>
+	<ly> 30 </ly>
+	<lz> 30 </lz>
 </parameters>
 
 <ibm>
 	<forceToFluid> 1 </forceToFluid>
 	<!-- shape: Sphere:0, RBC:1 -->
-	<shape> 0 </shape> 
+	<shape> 1 </shape> 
 	<radius> 2. </radius> 
 </ibm>
 
 <sim>
 	<tmax> 100000 </tmax> <!-- total number of iterations -->
-	<tmeas> 20 </tmeas> <!-- interval after which data is written -->> 
+	<tmeas> 50 </tmeas> <!-- interval after which data is written -->> 
+	<npar> 27 </npar> <!-- Number of particles -->> 
 </sim>

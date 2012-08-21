@@ -154,8 +154,9 @@ void writeVTK(BlockLatticeT& lattice,
         DESCRIPTOR<T>::ExternalField::forceBeginsAt), lattice.getBoundingBox(), lattice, force);
                               
     VtkImageOutput3D<T> vtkOut(createFileName("vtk", iter, 6), dx);
-    vtkOut.writeData<float>(*computeVelocityNorm(lattice), "velocityNorm", dx/dt);
-    vtkOut.writeData<3,float>(force, "force", (T)1);
+    vtkOut.writeData<T>(*computeVelocityNorm(lattice), "velocityNorm", dx/dt);
+    vtkOut.writeData<3,T>(force, "force",  (T) dx/dt/dt);
+    vtkOut.writeData<T>(*computeNorm(force, force.getBoundingBox()), "forceNorm",  dx/dt/dt);
 
 //    ImageWriter<T> imageWriter("leeloo");
 //    add(force, forceScalar, force.getBoundingBox());
@@ -208,8 +209,10 @@ int main(int argc, char* argv[])
 	document["ibm"]["radius"].read(radius);
     plint tmax = 100000;
     plint tmeas = 100;
+    plint npar = 1;
 	document["sim"]["tmax"].read(tmax);
-	document["sim"]["tmeas"].read(tmeas);
+    document["sim"]["tmeas"].read(tmeas);
+    document["sim"]["npar"].read(npar);
 
 
     IncomprFlowParam<T> parameters(
@@ -249,44 +252,44 @@ int main(int argc, char* argv[])
     MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > immersedParticles (
             particleManagement,
             defaultMultiBlockPolicy3D().getCombinedStatistics() );
-    plint x0 = 10; plint x1 = nx-x0;
 
-    Box3D inlet(0,  x0,  0, ny-1, 0, nz-1);
-    Box3D outlet(x1, nx-1,0, ny-1, 0, nz-1);
+    Box3D inlet(0,  nx-1, 0, ny-1, 0, nz-1);
+    Box3D outlet(0, nx-1, 0, ny-1, 0, nz-1);
 
     std::vector<plint> pos;
 //    pos.push_back(ny/2); //pos.push_back(30);pos.push_back(50);
-    pos.push_back(ny/3);pos.push_back((2*ny)/3);
-    
+    pos.push_back(ny*0.25); pos.push_back(ny*0.5); pos.push_back(ny*0.75);
     std::vector<Array<T,3> > centers;
     std::vector<plint > radii;
-    plint nMax = 4;
-    for (plint iN = 0; iN < nMax; ++iN) { // create 40 * inlet amount of particles
+    plint diameter = 2*radius;
+    plint n=0;
+    for (plint iN = diameter; (iN < nx-(6*radius)); iN+=3*radius) { // create 40 * inlet amount of particles
         for (pluint iA = 0; iA < pos.size(); ++iA) {
-            for (pluint iB = 0; iB < pos.size(); ++iB) {
-                centers.push_back(Array<T,3>(5+iN,pos[iA],pos[iB]));
+            for (pluint iB = 0; iB < pos.size() && (n < npar); ++iB) {
+                centers.push_back(Array<T,3>(iN,pos[iA],pos[iB]));
                 radii.push_back(radius);
+                n++;
             }
         }
     }
 
-    plint numOfBloodCellsPerInlet = pos.size() * pos.size(); // number used for the generation of bloodCells at inlet
+    plint numOfBloodCellsPerInlet = radii.size(); // number used for the generation of bloodCells at inlet
 
     std::vector<plint> tags;
     plint numPartsPerBloodCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    TriangleBoundary3D<T> bloodCells = createCompleteMesh(centers, radii, tags, numPartsPerBloodCell, shape);
+    TriangleBoundary3D<T> bloodCells = createCompleteMesh(centers, radii, tags, numPartsPerBloodCell, parameters, shape);
 	generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice);
 
     std::vector<plint> numParts(tags.size());
     for (pluint iA = 0; iA < tags.size(); ++iA) {
             numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), tags[iA]);
 	}
-    std::vector<T> cellVolumes;
-    countCellVolume(bloodCells, immersedParticles, immersedParticles.getBoundingBox(), tags.size(), cellVolumes);
-    for (pluint iA = 0; iA < tags.size(); ++iA) {
-            pcout << "tag: " << tags[iA] << ", Volume: "
-            		<< cellVolumes[iA]<< std::endl;
-	}
+//    std::vector<T> cellVolumes;
+//    countCellVolume(bloodCells, immersedParticles, immersedParticles.getBoundingBox(), tags.size(), cellVolumes);
+//    for (pluint iA = 0; iA < tags.size(); ++iA) {
+//            pcout << "tag: " << tags[iA] << ", Volume: "
+//            		<< cellVolumes[iA]<< std::endl;
+//	}
     
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&immersedParticles);
@@ -358,6 +361,7 @@ int main(int argc, char* argv[])
 			bool dynamicMesh = true;
 			plint tag = -1; // Take all triangles.
 	        bloodCells.pushSelect(0,1);
+            // Needs scaling with 1.0/N
 			bloodCells.getMesh().writeAsciiSTL(global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
 	        bloodCells.popSelect();
 

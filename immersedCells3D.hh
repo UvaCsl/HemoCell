@@ -158,7 +158,8 @@ TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTr
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
     const std::vector<Array<T,3> > &centers, const std::vector<plint> &radii,
-    std::vector<plint> &tags, plint &numPartsPerBloodCell, plint shape)
+    std::vector<plint> &tags, plint &numPartsPerBloodCell, IncomprFlowParam<T> const& parameters,
+    plint shape)
 {
 //	shape 0:Sphere, 1:RBC
     PLB_ASSERT(centers.size() == radii.size());
@@ -180,11 +181,12 @@ TriangleBoundary3D<T> createCompleteMesh(
     wholeTriangleSet.merge(allTriangles);
 
     Dot3D location(centers[0][0]-radii[0],centers[0][1]-radii[0],centers[0][2]-radii[0]);
-    DEFscaledMesh<T> defMesh (
-            wholeTriangleSet, 1, xDirection, margin, location );
+    DEFscaledMesh<T> defMesh (wholeTriangleSet);
+//    DEFscaledMesh<T> defMesh (
+//            wholeTriangleSet, parameters.getResolution(), xDirection, margin, location );
          pcout << "Original sphere at location [" << location.x << ","
              << location.y << "," << location.z << "] " << std::endl;
-
+    defMesh.setDx(parameters.getDeltaX());
     TriangleBoundary3D<T> bloodCells(defMesh);
     bloodCells.getMesh().inflate();
 
