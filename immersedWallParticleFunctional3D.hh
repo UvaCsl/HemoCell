@@ -280,112 +280,51 @@ plint countParticles (
 }
 
 
-/* ******** ComputeCellVolumeParticlesFunctional3D *********************************** */
 
-template<typename T, template<typename U> class Descriptor>
-ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::ComputeCellVolumeParticlesFunctional3D(
-		TriangleBoundary3D<T> const& triangleBoundary_, plint numberOfCells_)
-    : numberOfCells(numberOfCells_), triangleBoundary(triangleBoundary_)
-{ }
-
-template<typename T, template<typename U> class Descriptor>
-void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::processGenericBlocks (
-        Box3D domain, std::vector<AtomicBlock3D*> blocks )
-{
-	PLB_PRECONDITION( blocks.size()==1 );
-	std::map<plint, T> tagsVolume;
-	typename std::map<plint, T>::iterator tagsVolumeIterator;
-
-	plint meshID = 1, cellId;
-	triangleBoundary.pushSelect(0,meshID);
-	std::vector<Particle3D<T,Descriptor>*> found;
-	TriangularSurfaceMesh<T> triangleMesh = triangleBoundary.getMesh();
-	T triangleVolume;
-	Array<T,3> areaTimesNormal;
-    Array<T,3> v0, v1, v2, tmp;
-
-    for (plint iTriangle=0; iTriangle<triangleMesh.getNumTriangles(); ++iTriangle) {
-    	v0 = triangleMesh.getVertex(iTriangle, 0);
-    	v1 = triangleMesh.getVertex(iTriangle, 1);
-    	v2 = triangleMesh.getVertex(iTriangle, 2);
-    	crossProduct(v2, v1, tmp);
-    	cellId = triangleMesh.getVertexId(iTriangle, 0);
-		tagsVolume[cellId] += VectorTemplate<T,Descriptor>::scalarProduct(tmp,v0)/(T) 6.0;
-	}
-	triangleBoundary.popSelect();
-
-	for (pluint i=0; i< (pluint) numberOfCells+1; ++i) {
-		pcout << this->getStatistics().subscribeSum() << std::endl;
-	}
-	pcout << "done" << std::endl;
-	for ( tagsVolumeIterator=tagsVolume.begin() ; tagsVolumeIterator != tagsVolume.end(); tagsVolumeIterator++ ) {
-		cellId = (*tagsVolumeIterator).first;
-		pcout << cellId << std::endl;
-		triangleVolume = (*tagsVolumeIterator).second;
-		this->getStatistics().gatherSum(cellId, (T) triangleVolume);
-	}
-}
 
 //template<typename T, template<typename U> class Descriptor>
 //void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::processGenericBlocks (
 //        Box3D domain, std::vector<AtomicBlock3D*> blocks )
 //{
-//	PLB_PRECONDITION( blocks.size()==1 );
-//	ParticleField3D<T,Descriptor>& particleField =
-//		*dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+//  PLB_PRECONDITION( blocks.size()==1 );
+//  ParticleField3D<T,Descriptor>& particleField =
+//      *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
 //
-//	std::vector<Particle3D<T,Descriptor>*> found;
-//	particleField.findParticles(domain, found);
+//  std::vector<Particle3D<T,Descriptor>*> found;
+//  particleField.findParticles(domain, found);
 //
-//	T totalVolume = (T) 0.0;
-//	plint meshID = 1;
-//	for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
-//		Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
-//		ImmersedWallParticle3D<T,Descriptor>* particle =
-//			dynamic_cast<ImmersedWallParticle3D<T,Descriptor>*> (nonTypedParticle);
-//		if (particle->get_cellId() == cellId) {
-//			plint vertexId = particle->getTag();
+//  T totalVolume = (T) 0.0;
+//  plint meshID = 1;
+//  for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
+//      Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
+//      ImmersedWallParticle3D<T,Descriptor>* particle =
+//          dynamic_cast<ImmersedWallParticle3D<T,Descriptor>*> (nonTypedParticle);
+//      if (particle->get_cellId() == cellId) {
+//          plint vertexId = particle->getTag();
 //
-//			triangleBoundary.pushSelect(0,meshID);
-//			Array<T,3> centralVertex = triangleBoundary.getMesh().getVertex(vertexId);
-//			std::vector<plint> neighbors = triangleBoundary.getMesh().getNeighborVertexIds(vertexId);
-//			for (pluint iA = 0; iA < neighbors.size()-1; ++iA) {
-//				Array<T,3> vertexOne = triangleBoundary.getMesh().getVertex(neighbors[iA]);
-//				Array<T,3> vertexTwo = triangleBoundary.getMesh().getVertex(neighbors[iA+1]);
+//          triangleBoundary.pushSelect(0,meshID);
+//          Array<T,3> centralVertex = triangleBoundary.getMesh().getVertex(vertexId);
+//          std::vector<plint> neighbors = triangleBoundary.getMesh().getNeighborVertexIds(vertexId);
+//          for (pluint iA = 0; iA < neighbors.size()-1; ++iA) {
+//              Array<T,3> vertexOne = triangleBoundary.getMesh().getVertex(neighbors[iA]);
+//              Array<T,3> vertexTwo = triangleBoundary.getMesh().getVertex(neighbors[iA+1]);
 //
-//				Array<T,3> baryCenter = (centralVertex + vertexOne + vertexTwo)/(T)3;
-//				Array<T,3> normal = triangleBoundary.getMesh().computeTriangleNormal(vertexId,neighbors[iA],neighbors[iA+1]);
-//				T surface = triangleBoundary.getMesh().computeTriangleArea(vertexId,neighbors[iA],neighbors[iA+1]);
+//              Array<T,3> baryCenter = (centralVertex + vertexOne + vertexTwo)/(T)3;
+//              Array<T,3> normal = triangleBoundary.getMesh().computeTriangleNormal(vertexId,neighbors[iA],neighbors[iA+1]);
+//              T surface = triangleBoundary.getMesh().computeTriangleArea(vertexId,neighbors[iA],neighbors[iA+1]);
 //
-//				T volumeFraction =
-//						surface * VectorTemplate<T,Descriptor>::scalarProduct(normal,baryCenter) / (T)3;
-//				volumeFraction /= (T)3; // all the volumes are computed three times
+//              T volumeFraction =
+//                      surface * VectorTemplate<T,Descriptor>::scalarProduct(normal,baryCenter) / (T)3;
+//              volumeFraction /= (T)3; // all the volumes are computed three times
 //
-//				totalVolume += volumeFraction;
-//			}
-//			triangleBoundary.popSelect();
-//		}
-//	}
+//              totalVolume += volumeFraction;
+//          }
+//          triangleBoundary.popSelect();
+//      }
+//  }
 //
 //    this->getStatistics().gatherSum(cellVolumeId, (T) totalVolume);
 //}
-
-template<typename T, template<typename U> class Descriptor>
-ComputeCellVolumeParticlesFunctional3D<T,Descriptor>* ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::clone() const {
-    return new ComputeCellVolumeParticlesFunctional3D<T,Descriptor>(*this);
-}
-
-template<typename T, template<typename U> class Descriptor>
-void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::getTypeOfModification(std::vector<modif::ModifT>& modified) const {
-    modified[0] = modif::nothing;
-}
-
-
-template<typename T, template<typename U> class Descriptor>
-void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::getCellVolumeArray(std::vector<T>& cellVolumes) const {
-	for (pluint i=0; i< (pluint) numberOfCells; ++i)
-		cellVolumes.push_back(this->getStatistics().getSum(i));
-}
 
 
 /* ******** AbsorbTaggedParticlesFunctional3D *********************************** */
@@ -405,20 +344,20 @@ void AbsorbTaggedParticlesFunctional3D<T,Descriptor>::processGenericBlocks (
 
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
-    std::vector<plint> tags;
+    std::vector<plint> cellIds;
     for (pluint iP = 0; iP < particles.size(); ++iP) {
         Particle3D<T,Descriptor>* nonTypedParticle = particles[iP];
         ImmersedWallParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedWallParticle3D<T,Descriptor>*> (nonTypedParticle);
 
         if (particle->get_cellId() == tag) {
-            tags.push_back(particle->getTag());
+            cellIds.push_back(particle->getTag());
         }
     }
 
-//     pcout << tags.size() << std::endl;
-    for (pluint iP = 0; iP < tags.size(); ++iP) {
-        particleField.removeParticles(domain,tags[iP]);
+//     pcout << cellIds.size() << std::endl;
+    for (pluint iP = 0; iP < cellIds.size(); ++iP) {
+        particleField.removeParticles(domain,cellIds[iP]);
     }
 
 //     particleField.removeParticles(domain,tag);

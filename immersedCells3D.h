@@ -46,38 +46,38 @@ using namespace std;
 template<typename T, template<typename U> class Descriptor>
 void createImmersedWallParticles (
         MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
-        TriangleBoundary3D<T>& boundary, plint tag, plint numPartsPerBloodCell );
+        TriangleBoundary3D<T>& boundary, plint tag, plint numPartsPerCell );
 
 
 
 template<typename T, template<typename U> class Descriptor>
-void deleteBloodCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
+void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
                    const Box3D &outlet, std::vector<plint> &numParts,
-                   std::vector<plint> &tags, TriangleBoundary3D<T> &bloodCells,
+                   std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
                    std::vector<Array<T,3> > &centers, std::vector<plint > &radii );
 
 
 
 template<typename T, template<typename U> class Descriptor>
-bool generateBloodCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
-                      const Box3D &inlet, std::vector<plint> &tags, TriangleBoundary3D<T> &bloodCells,
-                      plint numPartsPerBloodCell, plint numOfBloodCellsPerInlet, plint &slice );
+bool generateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
+                      const Box3D &inlet, std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
+                      plint numPartsPerCell, plint numOfCellsPerInlet, plint &slice );
 
 template<typename T, template<typename U> class Descriptor>
-void createBloodCells(TriangleBoundary3D<T> &bloodCells,
-                    const std::vector<plint> &tags,
-                    plint numPartsPerBloodCell,
+void createCells(TriangleBoundary3D<T> &Cells,
+                    const std::vector<plint> &cellIds,
+                    plint numPartsPerCell,
                     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > &immersedParticles);
 
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
     const std::vector<Array<T,3> > &centers, const std::vector<plint> &radii,
-    std::vector<plint> &tags, plint &numPartsPerBloodCell, plint shape) ;
+    std::vector<plint> &cellIds, plint &numPartsPerCell, plint shape) ;
 
 template<typename T>
 TriangleBoundary3D<T> createCompleteMeshRBCs	(
     const std::vector<Array<T,3> > &centers, const std::vector<plint> &radii,
-    std::vector<plint> &tags, plint &numPartsPerBloodCell) ;
+    std::vector<plint> &cellIds, plint &numPartsPerCell) ;
 
 #endif  // IMMERSED_CELLS_3D_H
 

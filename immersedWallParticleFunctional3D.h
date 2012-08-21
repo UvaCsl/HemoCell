@@ -96,23 +96,6 @@ private:
     plint numParticlesId, tag;
 };
 
-/// Count the number of particles, no matter which cellId, found inside the domain.
-template<typename T, template<typename U> class Descriptor>
-class ComputeCellVolumeParticlesFunctional3D : public PlainReductiveBoxProcessingFunctional3D
-{
-public:
-	ComputeCellVolumeParticlesFunctional3D(TriangleBoundary3D<T> const& triangleBoundary_,plint numberOfCells_);
-    /// Argument: Particle-field.
-    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
-    virtual ComputeCellVolumeParticlesFunctional3D<T,Descriptor>* clone() const;
-    void  getCellVolumeArray(std::vector<T>& cellVolumes) const;
-    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
-private:
-    plint numberOfCells;
-    TriangleBoundary3D<T> const& triangleBoundary;
-};
-
-
 /// Remove all particles of a certain tag from a given domain.
 template<typename T, template<typename U> class Descriptor>
 class AbsorbTaggedParticlesFunctional3D : public BoxProcessingFunctional3D

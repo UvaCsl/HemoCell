@@ -273,22 +273,22 @@ int main(int argc, char* argv[])
         }
     }
 
-    plint numOfBloodCellsPerInlet = radii.size(); // number used for the generation of bloodCells at inlet
+    plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
 
-    std::vector<plint> tags;
-    plint numPartsPerBloodCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    TriangleBoundary3D<T> bloodCells = createCompleteMesh(centers, radii, tags, numPartsPerBloodCell, parameters, shape);
-	generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice);
+    std::vector<plint> cellIds;
+    plint numPartsPerCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
+    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, 150);
+	generateCells(immersedParticles, inlet, cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice);
 
-    std::vector<plint> numParts(tags.size());
-    for (pluint iA = 0; iA < tags.size(); ++iA) {
-            numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), tags[iA]);
+    std::vector<plint> numParts(cellIds.size());
+    for (pluint iA = 0; iA < cellIds.size(); ++iA) {
+            numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), cellIds[iA]);
 	}
 //    std::vector<T> cellVolumes;
-//    countCellVolume(bloodCells, immersedParticles, immersedParticles.getBoundingBox(), tags.size(), cellVolumes);
-//    for (pluint iA = 0; iA < tags.size(); ++iA) {
-//            pcout << "tag: " << tags[iA] << ", Volume: "
-//            		<< cellVolumes[iA]<< std::endl;
+//    countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellVolumes);
+//    for (pluint iA = 0; iA < cellVolumes.size(); ++iA) {
+//            pcout << "tag: " << cellIds[iA] << ", Volume: "
+//            		<< cellVolumes[iA] << std::endl;
 //	}
     
     std::vector<MultiBlock3D*> particleArg;
@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
 
     	applyProcessingFunctional ( // compute force applied on the particles by springs
             new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
-                bloodCells, cellModel.clone() ), // used because pushSelect is not used
+                Cells, cellModel.clone() ), // used because pushSelect is not used
             immersedParticles.getBoundingBox(), particleArg );
         if (forceToFluid != 0) {
 			setExternalVector( lattice, lattice.getBoundingBox(),
@@ -330,17 +330,17 @@ int main(int argc, char* argv[])
             new AdvanceParticlesFunctional3D<T,DESCRIPTOR>,
             immersedParticles.getBoundingBox(), particleArg );
 
-        bloodCells.pushSelect(0,1);
+        Cells.pushSelect(0,1);
         applyProcessingFunctional ( // update mesh position
-            new CopyParticleToVertex3D<T,DESCRIPTOR>(bloodCells.getMesh()),
+            new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
             immersedParticles.getBoundingBox(), particleArg);
-        bloodCells.popSelect();
+        Cells.popSelect();
 
 
         
-//        deleteBloodCell(immersedParticles, outlet, numParts, tags, bloodCells, centers, radii );
+//        deleteCell(immersedParticles, outlet, numParts, cellIds, Cells, centers, radii );
 //        if (slice < 1) {
-//            bool created = generateBloodCells(immersedParticles, inlet, tags, bloodCells, numPartsPerBloodCell, numOfBloodCellsPerInlet, slice );
+//            bool created = generateCells(immersedParticles, inlet, cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice );
 //            pcout << "Used \n";
 //        }
 
@@ -360,15 +360,15 @@ int main(int argc, char* argv[])
             velocity_vectorNames.push_back("velocity");
 			bool dynamicMesh = true;
 			plint tag = -1; // Take all triangles.
-	        bloodCells.pushSelect(0,1);
+	        Cells.pushSelect(0,1);
             // Needs scaling with 1.0/N
-			bloodCells.getMesh().writeAsciiSTL(global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
-	        bloodCells.popSelect();
+			Cells.getMesh().writeAsciiSTL(global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
+	        Cells.popSelect();
 
 			// serialize the particle information to write them.
 			// a correspondance between the mesh and the particles is made.
 			writeImmersedSurfaceVTK (
-					bloodCells,
+					Cells,
 					*getParticlePosAndVelocity(immersedParticles),
 					velocity_scalarNames, velocity_vectorNames,
 					global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag );

@@ -20,12 +20,12 @@
 <ibm>
 	<forceToFluid> 1 </forceToFluid>
 	<!-- shape: Sphere:0, RBC:1 -->
-	<shape> 1 </shape> 
-	<radius> 2. </radius> 
+	<shape> 0 </shape> 
+	<radius> 1. </radius> 
 </ibm>
 
 <sim>
 	<tmax> 100000 </tmax> <!-- total number of iterations -->
 	<tmeas> 50 </tmeas> <!-- interval after which data is written -->> 
-	<npar> 27 </npar> <!-- Number of particles -->> 
+	<npar> 2 </npar> <!-- Number of particles -->> 
 </sim>

@@ -47,46 +47,46 @@ plint margin          = 3;  // Extra margin of allocated cells around the obstac
 template<typename T, template<typename U> class Descriptor>
 void createImmersedWallParticles (
         MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
-        TriangleBoundary3D<T>& boundary, plint tag, plint numPartsPerBloodCell )
+        TriangleBoundary3D<T>& boundary, plint tag, plint numPartsPerCell )
 {
     boundary.pushSelect(0,1);
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particleField);
     applyProcessingFunctional (
-        new CreateTaggedImmersedWallParticle3D<T,Descriptor>(boundary,tag,numPartsPerBloodCell),
+        new CreateTaggedImmersedWallParticle3D<T,Descriptor>(boundary,tag,numPartsPerCell),
         particleField.getBoundingBox(), particleArg );
     boundary.popSelect();
 }
 
 template<typename T, template<typename U> class Descriptor>
-void deleteBloodCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
+void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
                    const Box3D &outlet, std::vector<plint> &numParts,
-                   std::vector<plint> &tags, TriangleBoundary3D<T> &bloodCells,
+                   std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
                    std::vector<Array<T,3> > &centers, std::vector<plint > &radii )
 {
     bool erased = false;
-    for (pluint iA = 0; iA < tags.size(); ++iA) {
+    for (pluint iA = 0; iA < cellIds.size(); ++iA) {
         // count all particles of a certain tag in a buffer zone
-        plint numPartsPerTag = countParticles(particleField,outlet,tags[iA]);
+        plint numPartsPerTag = countParticles(particleField,outlet,cellIds[iA]);
         // if all the particle of a certain tag are in a buffer zone
         if (numPartsPerTag == numParts[iA] && numPartsPerTag > 0) {
             // then delete these particles in all the buffer zones
-            plint before = countParticles(particleField,outlet,tags[iA]);
+            plint before = countParticles(particleField,outlet,cellIds[iA]);
             std::vector<MultiBlock3D*> particleArg;
             particleArg.push_back(&particleField);
 
             applyProcessingFunctional (
-                new AbsorbTaggedParticlesFunctional3D<T,Descriptor>(tags[iA]),
+                new AbsorbTaggedParticlesFunctional3D<T,Descriptor>(cellIds[iA]),
                     outlet, particleArg );
 
-            plint after = countParticles(particleField,outlet,tags[iA]);
+            plint after = countParticles(particleField,outlet,cellIds[iA]);
 
             pcout << "erased particles = " << before << ", " << after << std::endl;
             
-//             delete bloodCells[iA];                     // delete the iA-th pointer mesh
+//             delete Cells[iA];                     // delete the iA-th pointer mesh
 //             numParts.erase(numParts.begin()+iA);        // erase the iA-th number of particles
-//             tags.erase(tags.begin()+iA);                // erase the iA-th tag
-//             bloodCells.erase(bloodCells.begin()+iA);  // erase the iA-th mesh
+//             cellIds.erase(cellIds.begin()+iA);                // erase the iA-th tag
+//             Cells.erase(Cells.begin()+iA);  // erase the iA-th mesh
 //             centers.erase(centers.begin()+iA);          // delete the iA-th center
 //             radii.erase(radii.begin()+iA);              // delete the iA-th radius
 //             --iA;
@@ -98,50 +98,50 @@ void deleteBloodCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& 
     if (erased) {
         pcout << "Particles absorbed : Number of particles per tag." << std::endl;
         for (pluint iA = 0; iA < centers.size(); ++iA) {
-            pcout << tags[iA] << " , " <<  countParticles(particleField, particleField.getBoundingBox(), tags[iA]) << std::endl;
+            pcout << cellIds[iA] << " , " <<  countParticles(particleField, particleField.getBoundingBox(), cellIds[iA]) << std::endl;
         }
     }
 }
 
 template<typename T, template<typename U> class Descriptor>
-bool generateBloodCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
-                      const Box3D &inlet, std::vector<plint> &tags, TriangleBoundary3D<T> &bloodCells,
-                      plint numPartsPerBloodCell, plint numOfBloodCellsPerInlet, plint &slice )
+bool generateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
+                      const Box3D &inlet, std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
+                      plint numPartsPerCell, plint numOfCellsPerInlet, plint &slice )
 {
     bool created = false;
     plint numPartsPerTag = 0;
-    for (pluint iA = 0; iA < tags.size(); ++iA) {
+    for (pluint iA = 0; iA < cellIds.size(); ++iA) {
         // count all particles of a certain tag in a buffer zone
-        numPartsPerTag += countParticles(particleField,inlet,tags[iA]);
+        numPartsPerTag += countParticles(particleField,inlet,cellIds[iA]);
     }
 
-    std::vector<plint> newTags;
-    for (plint iA = slice*numOfBloodCellsPerInlet; iA < (slice+1)*numOfBloodCellsPerInlet; ++iA) {
-        newTags.push_back(tags[iA]);
+    std::vector<plint> newcellIds;
+    for (plint iA = slice*numOfCellsPerInlet; iA < (slice+1)*numOfCellsPerInlet; ++iA) {
+        newcellIds.push_back(cellIds[iA]);
     }
     
     if (numPartsPerTag == 0) {
-        createBloodCells(bloodCells, newTags, numPartsPerBloodCell, particleField);
+        createCells(Cells, newcellIds, numPartsPerCell, particleField);
         created = true;
         ++slice;
     }
 
     if (created) {
         pcout << "Particles created : Number of particles per tag." << std::endl;
-        for (pluint iA = 0; iA < newTags.size(); ++iA) {
-            pcout << newTags[iA] + 1<< " : " <<  countParticles(particleField, particleField.getBoundingBox(), newTags[iA]) << std::endl;
+        for (pluint iA = 0; iA < newcellIds.size(); ++iA) {
+            pcout << newcellIds[iA] + 1<< " : " <<  countParticles(particleField, particleField.getBoundingBox(), newcellIds[iA]) << std::endl;
         }
     }
     return created;
 }
 template<typename T, template<typename U> class Descriptor>
-void createBloodCells(TriangleBoundary3D<T> &bloodCells,
-                    const std::vector<plint> &tags,
-                    plint numPartsPerBloodCell,
+void createCells(TriangleBoundary3D<T> &Cells,
+                    const std::vector<plint> &cellIds,
+                    plint numPartsPerCell,
                     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > &immersedParticles)
 {
-    for (pluint iA = 0; iA < tags.size(); ++iA) {
-        createImmersedWallParticles(immersedParticles, bloodCells, tags[iA], numPartsPerBloodCell);
+    for (pluint iA = 0; iA < cellIds.size(); ++iA) {
+        createImmersedWallParticles(immersedParticles, Cells, cellIds[iA], numPartsPerCell);
     }
 }
 
@@ -158,8 +158,8 @@ TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTr
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
     const std::vector<Array<T,3> > &centers, const std::vector<plint> &radii,
-    std::vector<plint> &tags, plint &numPartsPerBloodCell, IncomprFlowParam<T> const& parameters,
-    plint shape)
+    std::vector<plint> &cellIds, plint &numPartsPerCell, IncomprFlowParam<T> const& parameters,
+    plint shape, plint minNumOfTriangles=100)
 {
 //	shape 0:Sphere, 1:RBC
     PLB_ASSERT(centers.size() == radii.size());
@@ -171,35 +171,36 @@ TriangleBoundary3D<T> createCompleteMesh(
         Array<T,3> center(centers[iA]);
         plint radius = radii[iA];
         if (shape == 0) {
-        	allTriangles.push_back(constructSphere<T>(center, radius, 100));
+        	allTriangles.push_back(constructSphere<T>(center, radius, minNumOfTriangles));
         }
         else if (shape == 1) {
-        	allTriangles.push_back(constructRBC<T>(center, radius, 100));
+        	allTriangles.push_back(constructRBC<T>(center, radius, minNumOfTriangles));
         }
-        tags.push_back(iA);
+        cellIds.push_back(iA);
     }
     wholeTriangleSet.merge(allTriangles);
 
-    Dot3D location(centers[0][0]-radii[0],centers[0][1]-radii[0],centers[0][2]-radii[0]);
+//    Dot3D location(centers[0][0]-radii[0],centers[0][1]-radii[0],centers[0][2]-radii[0]);
     DEFscaledMesh<T> defMesh (wholeTriangleSet);
 //    DEFscaledMesh<T> defMesh (
 //            wholeTriangleSet, parameters.getResolution(), xDirection, margin, location );
-         pcout << "Original sphere at location [" << location.x << ","
-             << location.y << "," << location.z << "] " << std::endl;
-    defMesh.setDx(parameters.getDeltaX());
-    TriangleBoundary3D<T> bloodCells(defMesh);
-    bloodCells.getMesh().inflate();
+//    defMesh.setDx(parameters.getDeltaX());
+    pcout << "Original sphere at location [" << centers[0][0] << ","
+             << centers[0][1] << "," << centers[0][2] << "] " << std::endl;
 
-    numPartsPerBloodCell = bloodCells.getMesh().getNumVertices() / centers.size();
-    plint modulo = bloodCells.getMesh().getNumVertices() % centers.size();
-//     pcout << "num parts per triangles = " << numPartsPerBloodCell << ", modulo = " << modulo << std::endl;
-    pcout << "num vertices = " << bloodCells.getMesh().getNumVertices() << ", centers = " << centers.size() << std::endl;
-    pcout << "num parts per triangles = " << numPartsPerBloodCell << ", modulo = " << modulo << std::endl;
+    TriangleBoundary3D<T> Cells(defMesh);
+    Cells.getMesh().inflate();
+
+    numPartsPerCell = Cells.getMesh().getNumVertices() / centers.size();
+    plint modulo = Cells.getMesh().getNumVertices() % centers.size();
+//     pcout << "num parts per triangles = " << numPartsPerCell << ", modulo = " << modulo << std::endl;
+    pcout << "num vertices = " << Cells.getMesh().getNumVertices() << ", centers = " << centers.size() << std::endl;
+    pcout << "num parts per triangles = " << numPartsPerCell << ", modulo = " << modulo << std::endl;
     PLB_ASSERT(modulo == 0);
 
-    bloodCells.cloneVertexSet(0);
+    Cells.cloneVertexSet(0);
     
-    return bloodCells;
+    return Cells;
 }
 
 
