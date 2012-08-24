@@ -54,7 +54,7 @@ template<typename T, template<typename U> class Descriptor>
 void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
                    const Box3D &outlet, std::vector<plint> &numParts,
                    std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
-                   std::vector<Array<T,3> > &centers, std::vector<plint > &radii );
+                   std::vector<Array<T,3> > &centers, std::vector<T > &radii );
 
 
 
@@ -71,12 +71,12 @@ void createCells(TriangleBoundary3D<T> &Cells,
 
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
-    const std::vector<Array<T,3> > &centers, const std::vector<plint> &radii,
+    const std::vector<Array<T,3> > &centers, const std::vector<T> &radii,
     std::vector<plint> &cellIds, plint &numPartsPerCell, plint shape) ;
 
 template<typename T>
 TriangleBoundary3D<T> createCompleteMeshRBCs	(
-    const std::vector<Array<T,3> > &centers, const std::vector<plint> &radii,
+    const std::vector<Array<T,3> > &centers, const std::vector<T> &radii,
     std::vector<plint> &cellIds, plint &numPartsPerCell) ;
 
 #endif  // IMMERSED_CELLS_3D_H

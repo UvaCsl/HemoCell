@@ -39,7 +39,7 @@ ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::ComputeCellVolumeParticles
             numberOfCells = cellIds_[var];
 
     for (pluint i=0; i< (pluint) numberOfCells+1; ++i)
-        pcout << "Subscribe sum:" << this->getStatistics().subscribeSum() << std::endl;
+        this->getStatistics().subscribeSum() ;
 //    pcout << "Done subscribing" << std::endl;
 }
 
@@ -95,7 +95,6 @@ void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::processGenericBlocks 
     for ( tagsNrIterator=tagsNr.begin() ; tagsNrIterator != tagsNr.end(); tagsNrIterator++ )
         pcout << "cellId " << (*tagsNrIterator).first << " num " << (*tagsNrIterator).second <<std::endl;
     for ( tagsVolumeIterator=tagsVolume.begin() ; tagsVolumeIterator != tagsVolume.end(); tagsVolumeIterator++ ) {
-        pcout << "Volumes: " << (*tagsVolumeIterator).first << ", volume:" << (*tagsVolumeIterator).second/6.0 << std::endl;
         this->getStatistics().gatherSum((*tagsVolumeIterator).first, (*tagsVolumeIterator).second/6.0);
     }
 

@@ -12,9 +12,9 @@
 	<u> 0.0016666 </u>
 	<Re> 0.01 </Re>
 	<N> 1 </N>
-	<lx> 80</lx>
-	<ly> 30 </ly>
-	<lz> 30 </lz>
+	<lx> 30</lx>
+	<ly> 20 </ly>
+	<lz> 20 </lz>
 </parameters>
 
 <ibm>
@@ -25,7 +25,7 @@
 </ibm>
 
 <sim>
-	<tmax> 100000 </tmax> <!-- total number of iterations -->
-	<tmeas> 50 </tmeas> <!-- interval after which data is written -->> 
-	<npar> 2 </npar> <!-- Number of particles -->> 
+	<tmax> 11 </tmax> <!-- total number of iterations -->
+	<tmeas> 10 </tmeas> <!-- interval after which data is written -->> 
+	<npar> 500000 </npar> <!-- Number of particles > -->
 </sim>

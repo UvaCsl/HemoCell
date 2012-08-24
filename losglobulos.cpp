@@ -256,14 +256,15 @@ int main(int argc, char* argv[])
     Box3D inlet(0,  nx-1, 0, ny-1, 0, nz-1);
     Box3D outlet(0, nx-1, 0, ny-1, 0, nz-1);
 
-    std::vector<plint> pos;
-//    pos.push_back(ny/2); //pos.push_back(30);pos.push_back(50);
-    pos.push_back(ny*0.25); pos.push_back(ny*0.5); pos.push_back(ny*0.75);
+    std::vector<T> pos;
     std::vector<Array<T,3> > centers;
-    std::vector<plint > radii;
-    plint diameter = 2*radius;
+    std::vector<T> radii;
+    T diameter = 2*radius;
+    for (T r = diameter; r < ny-diameter; r+=1.1*diameter) {
+        pos.push_back(r);
+    }
     plint n=0;
-    for (plint iN = diameter; (iN < nx-(6*radius)); iN+=3*radius) { // create 40 * inlet amount of particles
+    for (T iN = diameter; (iN < nx-(diameter)); iN+=1.1*diameter) { // create 40 * inlet amount of particles
         for (pluint iA = 0; iA < pos.size(); ++iA) {
             for (pluint iB = 0; iB < pos.size() && (n < npar); ++iB) {
                 centers.push_back(Array<T,3>(iN,pos[iA],pos[iB]));
@@ -277,20 +278,21 @@ int main(int argc, char* argv[])
 
     std::vector<plint> cellIds;
     plint numPartsPerCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, 150);
+    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, 100);
 	generateCells(immersedParticles, inlet, cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice);
 
     std::vector<plint> numParts(cellIds.size());
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
             numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), cellIds[iA]);
+//            pcout << "Cell: " << iA << ", Particles: " << numParts[iA] << std::endl;
 	}
 //    std::vector<T> cellVolumes;
 //    countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellVolumes);
 //    for (pluint iA = 0; iA < cellVolumes.size(); ++iA) {
-//            pcout << "tag: " << cellIds[iA] << ", Volume: "
+//            pcout << "Cell: " << cellIds[iA] << ", Volume: "
 //            		<< cellVolumes[iA] << std::endl;
 //	}
-    
+//
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&immersedParticles);
 
@@ -306,10 +308,11 @@ int main(int argc, char* argv[])
         new FluidVelocityToImmersedWall3D<T,DESCRIPTOR>(),
         immersedParticles.getBoundingBox(), particleLatticeArg);
     plint itotParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox());
+    plint LU=(1+nx)*(1+ny)*(1+nz), nTriangles = Cells.getMesh().getNumTriangles(), nProcessors = MPI::COMM_WORLD.Get_size() ;
 
+    pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
     for (plint i=0; i<tmax; ++i) {
-
-    	applyProcessingFunctional ( // compute force applied on the particles by springs
+        applyProcessingFunctional ( // compute force applied on the particles by springs
             new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
                 Cells, cellModel.clone() ), // used because pushSelect is not used
             immersedParticles.getBoundingBox(), particleArg );
@@ -348,7 +351,9 @@ int main(int argc, char* argv[])
         	plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox());
             pcout << i << " totParticles = " << totParticles << std::endl;
             PLB_ASSERT(itotParticles == totParticles);
-            pcout << "Timer (w/o output): " << global::timer("sim").stop() << ". ";
+            T dt = global::timer("sim").stop();
+//            pcout << "Timer (w/o output): " << dt << " .";
+            pcout << "Timer (w/o Output); " << i <<"; " << LU << "; " << radii.size() << "; " << itotParticles << "; " << nTriangles << "; " <<nProcessors << "; " <<  dt << ";" << std::endl;
             pcout << "Write Particle VTK. " << std::endl; ;
             std::vector<std::string> force_scalarNames;
             force_scalarNames.push_back("pressure");
@@ -377,5 +382,5 @@ int main(int argc, char* argv[])
             global::timer("sim").restart();
         }
     }
-
+//    MPI_Finalize();
 }

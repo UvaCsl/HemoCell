@@ -62,7 +62,7 @@ template<typename T, template<typename U> class Descriptor>
 void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
                    const Box3D &outlet, std::vector<plint> &numParts,
                    std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
-                   std::vector<Array<T,3> > &centers, std::vector<plint > &radii )
+                   std::vector<Array<T,3> > &centers, std::vector<T> &radii )
 {
     bool erased = false;
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
@@ -126,12 +126,12 @@ bool generateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& pa
         ++slice;
     }
 
-    if (created) {
-        pcout << "Particles created : Number of particles per tag." << std::endl;
-        for (pluint iA = 0; iA < newcellIds.size(); ++iA) {
-            pcout << newcellIds[iA] + 1<< " : " <<  countParticles(particleField, particleField.getBoundingBox(), newcellIds[iA]) << std::endl;
-        }
-    }
+//    if (created) {
+//        pcout << "Particles created : Number of particles per tag." << std::endl;
+//        for (pluint iA = 0; iA < newcellIds.size(); ++iA) {
+//            pcout << newcellIds[iA] + 1<< " : " <<  countParticles(particleField, particleField.getBoundingBox(), newcellIds[iA]) << std::endl;
+//        }
+//    }
     return created;
 }
 template<typename T, template<typename U> class Descriptor>
@@ -157,7 +157,7 @@ TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTr
 
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
-    const std::vector<Array<T,3> > &centers, const std::vector<plint> &radii,
+    const std::vector<Array<T,3> > &centers, const std::vector<T> &radii,
     std::vector<plint> &cellIds, plint &numPartsPerCell, IncomprFlowParam<T> const& parameters,
     plint shape, plint minNumOfTriangles=100)
 {
@@ -169,7 +169,7 @@ TriangleBoundary3D<T> createCompleteMesh(
     TriangleSet<T> wholeTriangleSet; 
     for (pluint iA = 0; iA < centers.size(); ++iA) {
         Array<T,3> center(centers[iA]);
-        plint radius = radii[iA];
+        T radius = radii[iA];
         if (shape == 0) {
         	allTriangles.push_back(constructSphere<T>(center, radius, minNumOfTriangles));
         }
