@@ -27,12 +27,12 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
-#include "immersedWallParticle3D.h"
-#include "immersedWallParticle3D.hh"
-#include "immersedWallParticleFunctional3D.h"
-#include "immersedWallParticleFunctional3D.hh"
-#include "immersedWallParticleVtk3D.h"
-#include "immersedWallParticleVtk3D.hh"
+#include "immersedCellParticle3D.h"
+#include "immersedCellParticle3D.hh"
+#include "immersedCellParticleFunctional3D.h"
+#include "immersedCellParticleFunctional3D.hh"
+#include "immersedCellParticleVtk3D.h"
+#include "immersedCellParticleVtk3D.hh"
 #include "shellModel3D.h"
 #include "shellModel3D.hh"
 #include "immersedCells3D.h"
@@ -44,7 +44,7 @@ using namespace std;
 
 
 template<typename T, template<typename U> class Descriptor>
-void createImmersedWallParticles (
+void createImmersedCellParticles (
         MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
         TriangleBoundary3D<T>& boundary, plint tag, plint numPartsPerCell );
 

@@ -45,7 +45,7 @@ plint margin          = 3;  // Extra margin of allocated cells around the obstac
 
 
 template<typename T, template<typename U> class Descriptor>
-void createImmersedWallParticles (
+void createImmersedCellParticles (
         MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
         TriangleBoundary3D<T>& boundary, plint tag, plint numPartsPerCell )
 {
@@ -53,7 +53,7 @@ void createImmersedWallParticles (
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particleField);
     applyProcessingFunctional (
-        new CreateTaggedImmersedWallParticle3D<T,Descriptor>(boundary,tag,numPartsPerCell),
+        new CreateTaggedImmersedCellParticle3D<T,Descriptor>(boundary,tag,numPartsPerCell),
         particleField.getBoundingBox(), particleArg );
     boundary.popSelect();
 }
@@ -141,7 +141,7 @@ void createCells(TriangleBoundary3D<T> &Cells,
                     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > &immersedParticles)
 {
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
-        createImmersedWallParticles(immersedParticles, Cells, cellIds[iA], numPartsPerCell);
+        createImmersedCellParticles(immersedParticles, Cells, cellIds[iA], numPartsPerCell);
     }
 }
 
