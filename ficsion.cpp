@@ -23,15 +23,6 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
-//#include "ImmersedCellParticle3D.h"
-//#include "ImmersedCellParticle3D.hh"
-//#include "ImmersedCellParticleFunctional3D.h"
-//#include "ImmersedCellParticleFunctional3D.hh"
-//#include "ImmersedCellParticleVtk3D.h"
-//#include "ImmersedCellParticleVtk3D.hh"
-//#include "shellModel3D.h"
-//#include "shellModel3D.hh"
-
 #include "ficsionInit.hh"
 #include "immersedCells3D.h"
 #include "immersedCells3D.hh"
@@ -253,21 +244,27 @@ int main(int argc, char* argv[])
             particleManagement,
             defaultMultiBlockPolicy3D().getCombinedStatistics() );
 
-    Box3D inlet(0,  nx-1, 0, ny-1, 0, nz-1);
-    Box3D outlet(0, nx-1, 0, ny-1, 0, nz-1);
+    Box3D inlet(0,  3, 0, ny-1, 0, nz-1);
+    Box3D outlet(nx-3, nx-1, 0, ny-1, 0, nz-1);
 
-    std::vector<T> pos;
+    std::vector<T> posY, posZ;
     std::vector<Array<T,3> > centers;
     std::vector<T> radii;
     T diameter = 2*radius;
-    for (T r = diameter; r < ny-diameter; r+=1.05*diameter) {
-        pos.push_back(r);
+    for (T r =1 + diameter; r < ny-diameter-1; r+=1.05*diameter) posZ.push_back(r);
+    if (shape==1) {
+        T dY =    0.265106361*radius; // RBC is not spherical
+        for (T r = 1 + 2*dY; r < ny-2*dY - 1; r+=2*1.05*2*dY) posY.push_back(r);
+    } else {
+        posY = posZ;
     }
+
+
     plint n=0;
-    for (T iN = diameter; (iN < nx-(diameter)); iN+=1.05*diameter) { // create 40 * inlet amount of particles
-        for (pluint iA = 0; iA < pos.size(); ++iA) {
-            for (pluint iB = 0; iB < pos.size() && (n < npar); ++iB) {
-                centers.push_back(Array<T,3>(iN,pos[iA],pos[iB]));
+    for (T iN = 1+diameter; (iN < nx-(diameter) - 1); iN+=1.05*diameter) { // create 40 * inlet amount of particles
+        for (pluint iA = 0; iA < posY.size(); ++iA) {
+            for (pluint iB = 0; iB < posZ.size() && (n < npar); ++iB) {
+                centers.push_back(Array<T,3>(iN,posY[iA],posZ[iB]));
                 radii.push_back(radius);
                 n++;
             }
@@ -280,7 +277,7 @@ int main(int argc, char* argv[])
     plint numPartsPerCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
     TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, 100);
     pcout << "Mesh Created" << std::endl;
-	generateCells(immersedParticles, inlet, cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice);
+	generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice);
 
     std::vector<plint> numParts(cellIds.size());
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
@@ -354,8 +351,9 @@ int main(int argc, char* argv[])
         Cells.popSelect();
 
         
-//        deleteCell(immersedParticles, outlet, numParts, cellIds, Cells, centers, radii );
-//        if (slice < 1) {
+        deleteCell(immersedParticles, outlet, numParts, cellIds, Cells, centers, radii );
+        //        if (slice < 1) {
+//        if (countParticles(immersedParticles, inlet) == 0) {
 //            bool created = generateCells(immersedParticles, inlet, cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice );
 //            pcout << "Used \n";
 //        }
@@ -363,7 +361,7 @@ int main(int argc, char* argv[])
         if (i%tmeas==0) {
         	plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox());
             pcout << i << " totParticles = " << totParticles << std::endl;
-            PLB_ASSERT(itotParticles == totParticles);
+//            PLB_ASSERT(itotParticles == totParticles);
             T dt = global::timer("sim").stop();
 //            pcout << "Timer (w/o output): " << dt << " .";
             pcout << "Timer (w/o Output); " << i <<"; " << LU << "; " << radii.size() << "; " << itotParticles << "; " << nTriangles << "; " <<nProcessors << "; " <<  dt << ";" << std::endl;
@@ -385,11 +383,12 @@ int main(int argc, char* argv[])
 
 			// serialize the particle information to write them.
 			// a correspondance between the mesh and the particles is made.
-			writeImmersedSurfaceVTK (
-					Cells,
-					*getParticlePosAndVelocity(immersedParticles),
-					velocity_scalarNames, velocity_vectorNames,
-					global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag );
+
+//			writeImmersedSurfaceVTK (
+//					Cells,
+//					*getParticlePosAndVelocity(immersedParticles),
+//					velocity_scalarNames, velocity_vectorNames,
+//					global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag );
 
             writeVTK(lattice, parameters, i);
             global::timer("sim").restart();

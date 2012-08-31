@@ -94,13 +94,12 @@ void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& parti
             erased = true;
         }
     }
-
-    if (erased) {
-        pcout << "Particles absorbed : Number of particles per tag." << std::endl;
-        for (pluint iA = 0; iA < centers.size(); ++iA) {
-            pcout << cellIds[iA] << " , " <<  countParticles(particleField, particleField.getBoundingBox(), cellIds[iA]) << std::endl;
-        }
-    }
+//    if (erased) {
+//        pcout << "Particles absorbed : Number of particles per tag." << std::endl;
+//        for (pluint iA = 0; iA < centers.size(); ++iA) {
+//            pcout << cellIds[iA] << " , " <<  countParticles(particleField, particleField.getBoundingBox(), cellIds[iA]) << std::endl;
+//        }
+//    }
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -148,9 +147,8 @@ void createCells(TriangleBoundary3D<T> &Cells,
 template<typename T>
 TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles) {
 	TriangleSet<T> RBC("./lib/RBC.stl");
-	RBC.scale(radius/3.91);
+	RBC.scale(radius/3.93);
 	RBC.rotate(pi/2.0, pi/2.0, 0.);
-
 	RBC.translate(center);
 	return RBC;
 }

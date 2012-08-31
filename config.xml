@@ -2,30 +2,29 @@
 
 <cell>
 	<shellDensity> 1. </shellDensity>
-	<k_rest> 0.0e-6 </k_rest>
-	<k_stretch> 1.0e-10 </k_stretch>
-	<k_shear> 1.0e-10 </k_shear>
-	<k_bend> 1.0e-10 </k_bend>
+	<k_rest> 0.0e-0 </k_rest>
+	<k_stretch> 1.0e-6 </k_stretch>
+	<k_shear> 1.0e-6 </k_shear>
+	<k_bend> 1.0e-6 </k_bend>
 </cell>
 
 <parameters>
 	<u> 0.0016666 </u>
 	<Re> 0.01 </Re>
 	<N> 1 </N>
-	<lx> 50</lx>
-	<ly> 20 </ly>
-	<lz> 20 </lz>
+	<lx> 10</lx>
+	<ly> 10 </ly>
+	<lz> 10 </lz>
 </parameters>
 
 <ibm>
 	<forceToFluid> 1 </forceToFluid>
-	<!-- shape: Sphere:0, RBC:1 -->
-	<shape> 0 </shape> 
-	<radius> 1. </radius> 
+	<shape> 1 </shape> <!-- shape: Sphere:0, RBC:1 -->
+	<radius> 1 </radius> 
 </ibm>
 
 <sim>
-	<tmax> 101 </tmax> <!-- total number of iterations -->
-	<tmeas> 10 </tmeas> <!-- interval after which data is written -->> 
-	<npar> 5 </npar> <!-- Number of particles > -->
+	<tmax> 10000000000 </tmax> <!-- total number of iterations -->
+	<tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
+	<npar> 4 </npar> <!-- Number of particles > -->
 </sim>
