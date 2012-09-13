@@ -49,13 +49,17 @@ void createImmersedCellParticles (
         TriangleBoundary3D<T>& boundary, plint tag, plint numPartsPerCell );
 
 
+template<typename T, template<typename U> class Descriptor>
+void translateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
+                   const Box3D &outlet, std::vector<plint> &numParts,
+                   std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
+                   std::vector<Array<T,3> > &centers, std::vector<T> &radii, Array<T,3> const& translation );
 
 template<typename T, template<typename U> class Descriptor>
 void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
                    const Box3D &outlet, std::vector<plint> &numParts,
                    std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
                    std::vector<Array<T,3> > &centers, std::vector<T > &radii );
-
 
 
 template<typename T, template<typename U> class Descriptor>

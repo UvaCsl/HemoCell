@@ -200,10 +200,11 @@ int main(int argc, char* argv[])
 	document["ibm"]["radius"].read(radius);
     plint tmax = 100000;
     plint tmeas = 100;
-    plint npar = 1;
+    plint npar = 1, PBC=0;
 	document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
     document["sim"]["npar"].read(npar);
+    document["sim"]["PBC"].read(PBC);
 
 
     IncomprFlowParam<T> parameters(
@@ -244,8 +245,8 @@ int main(int argc, char* argv[])
             particleManagement,
             defaultMultiBlockPolicy3D().getCombinedStatistics() );
 
-    Box3D inlet(0,  3, 0, ny-1, 0, nz-1);
-    Box3D outlet(nx-3, nx-1, 0, ny-1, 0, nz-1);
+    Box3D inlet(0, 3, 0, ny-1, 0, nz-1);
+    Box3D outlet(nx-2, nx-1, 0, ny-1, 0, nz-1);
 
     std::vector<T> posY, posZ;
     std::vector<Array<T,3> > centers;
@@ -311,7 +312,7 @@ int main(int argc, char* argv[])
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
 
     Array<T,3> positie;
-    positie[0] = nx/3.;
+    positie[0] =  -nx + 5;
     positie[1] = 0;
     positie[2] = 0;
 
@@ -333,7 +334,6 @@ int main(int argc, char* argv[])
             new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
             immersedParticles.getBoundingBox(), particleLatticeArg);
 
-
 //        if (false) {
 //            applyProcessingFunctional ( // copy fluid velocity on particles
 //                new AddToParticleFunctional3D<T,DESCRIPTOR>(positie),
@@ -350,8 +350,14 @@ int main(int argc, char* argv[])
             immersedParticles.getBoundingBox(), particleArg);
         Cells.popSelect();
 
-        
-        deleteCell(immersedParticles, outlet, numParts, cellIds, Cells, centers, radii );
+        Cells.pushSelect(0,1);
+        if (PBC > 0) {
+        	translateCells(immersedParticles, outlet, numParts, cellIds, Cells, centers, radii, positie);
+        }
+        else {
+        	deleteCell(immersedParticles, outlet, numParts, cellIds, Cells, centers, radii );
+        }
+        Cells.popSelect();
         //        if (slice < 1) {
 //        if (countParticles(immersedParticles, inlet) == 0) {
 //            bool created = generateCells(immersedParticles, inlet, cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice );
@@ -374,8 +380,8 @@ int main(int argc, char* argv[])
             force_vectorNames.push_back("force");
             std::vector<std::string> velocity_vectorNames;
             velocity_vectorNames.push_back("velocity");
-			bool dynamicMesh = true;
-			plint tag = -1; // Take all triangles.
+//			bool dynamicMesh = true;
+//			plint tag = -1; // Take all triangles.
 	        Cells.pushSelect(0,1);
             // Needs scaling with 1.0/N
 			Cells.getMesh().writeAsciiSTL(global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");

@@ -180,60 +180,7 @@ void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::getTypeOfModification
 //
 
 
-/// Execute the iteration step during which particles advance.
 
-template<typename T, template<typename U> class Descriptor>
-class AddToParticleFunctional3D : public BoxProcessingFunctional3D
-{
-public:
-    AddToParticleFunctional3D(Array<T,3> const& position_);
-    /// Arguments: [0] Particle-field. [1] Lattice.
-    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
-    virtual AddToParticleFunctional3D<T,Descriptor>* clone() const;
-    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
-private:
-    Array<T,3> position;
-};
-
-/* ******** AddToParticleFunctional3D *********************************** */
-
-template<typename T, template<typename U> class Descriptor>
-AddToParticleFunctional3D<T,Descriptor>::AddToParticleFunctional3D(Array<T,3> const& position_)
-    : position(position_)
-{ }
-
-template<typename T, template<typename U> class Descriptor>
-void AddToParticleFunctional3D<T,Descriptor>::processGenericBlocks (
-        Box3D domain, std::vector<AtomicBlock3D*> blocks )
-{
-    PLB_PRECONDITION( blocks.size()==2 );
-    ParticleField3D<T,Descriptor>& particleField =
-        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
-    BlockLattice3D<T,Descriptor>& fluid =
-        *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
-
-    std::vector<Particle3D<T,Descriptor>*> particles;
-    particleField.findParticles(domain, particles);
-    for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        Particle3D<T,Descriptor>* nonTypedParticle = particles[iParticle];
-        ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
-        particle->getPosition() = particle->getPosition() + position;
-    }
-}
-
-template<typename T, template<typename U> class Descriptor>
-AddToParticleFunctional3D<T,Descriptor>* AddToParticleFunctional3D<T,Descriptor>::clone() const {
-    return new AddToParticleFunctional3D<T,Descriptor>(*this);
-}
-
-template<typename T, template<typename U> class Descriptor>
-void AddToParticleFunctional3D<T,Descriptor>::getTypeOfModification (
-        std::vector<modif::ModifT>& modified ) const
-{
-    modified[0] = modif::allVariables; // Particle field.
-    modified[1] = modif::nothing; // Fluid field.
-}
 
 
 #endif  // IMMERSED_CELLS_FUNCTIONAL_3D_H

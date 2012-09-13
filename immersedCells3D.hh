@@ -23,6 +23,9 @@
 
 #include "core/globalDefs.h"
 #include "immersedCells3D.h"
+#include "immersedCellsFunctional3D.h"
+#include "immersedCellsFunctional3D.hh"
+
 using namespace plb;
 using namespace std;
 
@@ -59,12 +62,55 @@ void createImmersedCellParticles (
 }
 
 template<typename T, template<typename U> class Descriptor>
+void translateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
+                   const Box3D &outlet, std::vector<plint> &numParts,
+                   std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
+                   std::vector<Array<T,3> > &centers, std::vector<T> &radii, Array<T,3> const& translation )
+{
+    std::vector<MultiBlock3D*> particleArg;
+    particleArg.push_back(&particleField);
+
+    for (pluint iA = 0; iA < cellIds.size(); ++iA) {
+        // count all particles of a certain tag in a buffer zone
+        plint numPartsPerTag = countParticles(particleField, outlet, cellIds[iA]);
+        // if all the particle of a certain tag are in a buffer zone
+        if (numPartsPerTag > 0) {
+            // then delete these particles in all the buffer zones
+            plint before = countParticles(particleField,outlet,cellIds[iA]);
+
+            applyProcessingFunctional ( // copy fluid velocity on particles
+                            new TranslateTaggedParticlesFunctional3D<T,DESCRIPTOR>(translation, cellIds[iA]),
+                            particleField.getBoundingBox(), particleArg);
+
+//            applyProcessingFunctional (
+//                new AbsorbTaggedParticlesFunctional3D<T,Descriptor>(translation, cellIds[iA]),
+//                    outlet, particleArg );
+
+            plint after = countParticles(particleField,outlet,cellIds[iA]);
+
+            pcout << "translated particles = " << before << ", " << after << std::endl;
+        }
+    }
+    applyProcessingFunctional ( // update mesh position
+        new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
+        particleField.getBoundingBox(), particleArg);
+
+}
+//    if (erased) {
+//        pcout << "Particles absorbed : Number of particles per tag." << std::endl;
+//        for (pluint iA = 0; iA < centers.size(); ++iA) {
+//            pcout << cellIds[iA] << " , " <<  countParticles(particleField, particleField.getBoundingBox(), cellIds[iA]) << std::endl;
+//        }
+//    }
+
+
+
+template<typename T, template<typename U> class Descriptor>
 void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
                    const Box3D &outlet, std::vector<plint> &numParts,
                    std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
                    std::vector<Array<T,3> > &centers, std::vector<T> &radii )
 {
-    bool erased = false;
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
         // count all particles of a certain tag in a buffer zone
         plint numPartsPerTag = countParticles(particleField,outlet,cellIds[iA]);
@@ -82,7 +128,7 @@ void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& parti
             plint after = countParticles(particleField,outlet,cellIds[iA]);
 
             pcout << "erased particles = " << before << ", " << after << std::endl;
-            
+
 //             delete Cells[iA];                     // delete the iA-th pointer mesh
 //             numParts.erase(numParts.begin()+iA);        // erase the iA-th number of particles
 //             cellIds.erase(cellIds.begin()+iA);                // erase the iA-th tag
@@ -91,7 +137,6 @@ void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& parti
 //             radii.erase(radii.begin()+iA);              // delete the iA-th radius
 //             --iA;
 
-            erased = true;
         }
     }
 //    if (erased) {
