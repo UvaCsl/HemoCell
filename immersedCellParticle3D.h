@@ -40,6 +40,7 @@ public:
                             Array<T,3> const& a_, Array<T,3> const& force_, Array<T,3> const& vPrevious_,
                             plint cellId_ = -1);
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
+    virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
     virtual void fluidToParticle(BlockLattice3D<T,Descriptor>& fluid, T scaling=1.) { }
     /// Implements "steps 1 and 2" of the Verlet algorithm: given
     ///   x(t), v(t), and a(t), it computes v(t+1/2) and x(t+1).

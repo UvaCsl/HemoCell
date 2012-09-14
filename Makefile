@@ -15,9 +15,9 @@
 #                optimFlags   = -O -finline-functions
 
 # Leading directory of the Palabos source code
-palabosRoot   = ./palabos/
+# palabosRoot   = ./palabos/	
 #palabosRoot   = /home/lmount/devel/palabos/
-# palabosRoot   = $(PALABOS_ROOT)
+palabosRoot   = $(PALABOS_ROOT)
 # Name of source files in current directory to compile and link with Palabos
 # projectFiles = losglobulos.cpp
 projectFiles = ficsion.cpp
@@ -32,7 +32,7 @@ debug        = true
 profile      = false
 #profile      = true
 # Set MPI-parallel mode on/off (parallelism in cluster-like environment)
-MPIparallel  = false
+MPIparallel  = true
 # Set SMP-parallel mode on/off (shared-memory parallelism)
 SMPparallel  = false
 # Decide whether to include calls to the POSIX API. On non-POSIX systems,

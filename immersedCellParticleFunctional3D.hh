@@ -94,15 +94,19 @@ void CreateTaggedImmersedCellParticle3D<T,Descriptor>::processGenericBlocks (
             
         particleField.addParticle(domain, particle);
 
-//        pcout << iVertex << " (" << vertex[0] << " " << vertex[1] << " " << vertex[2] << ") " << tag << ", " << particle->get_cellId() << std::endl;
+//        pcout << iVertex << " (" << vertex[0] << " " << vertex[1] << " " << vertex[2] << ") " << tag << ", " << particle->get_cellId() << " " << particle->getTag() << std::endl;
     }
-    std::vector<Particle3D<T,Descriptor>*> particles;
-    particleField.findParticles(domain, particles);
-    for (plint iVertex= tag * numPartsPerTag; iVertex < (tag+1) * numPartsPerTag; ++iVertex) {
-        pcout << "particles[" << iVertex << "].cellId ="  <<
-        		(dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iVertex]))->get_cellId() << ", tag = " << tag << "; " ;
-        pcout << std::endl;
-    }
+//     pcout << std::endl;
+    
+//     std::vector<Particle3D<T,Descriptor>*> particles;
+//     particleField.findParticles(domain, particles);
+//     for (plint iVertex= tag * numPartsPerTag; iVertex < (tag+1) * numPartsPerTag; ++iVertex) {
+//         pcout << "particles[" << iVertex << "].cellId ="  <<
+//         (dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iVertex]))->get_cellId() << ", real iD = " <<
+//         (dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iVertex]))->getTag() << ", tag = " << tag << "; " ;
+//         pcout << std::endl;
+//     }
+//     pcout << std::endl;
 }
 
 template<typename T, template<typename U> class Descriptor>

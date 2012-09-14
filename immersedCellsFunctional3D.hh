@@ -39,7 +39,7 @@ ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::ComputeCellVolumeParticles
             numberOfCells = cellIds_[var];
 
     for (pluint i=0; i< (pluint) numberOfCells+1; ++i)
-        this->getStatistics().subscribeSum() ;
+        volumeIds.push_back(this->getStatistics().subscribeSum());
 //    pcout << "Done subscribing" << std::endl;
 }
 
@@ -56,68 +56,49 @@ void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::processGenericBlocks 
         = *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
+    
     std::map<plint, plint> tagsNr;
     typename std::map<plint, plint>::iterator tagsNrIterator;
-//lmount
-    for (pluint iA = 0; iA < particles.size(); ++iA) {
-            pcout << "iA: " << iA << "id " << (dynamic_cast<ImmersedCellParticle3D<T,DESCRIPTOR>*> (particles[iA]))->get_cellId() << std::endl;
-	}
-
-
-    plint meshID = 1, cellId;
+    
+    plint meshID = 1;
     triangleBoundary.pushSelect(0,meshID);
     TriangularSurfaceMesh<T> triangleMesh = triangleBoundary.getMesh();
-    T triangleVolumeT6;
-    Array<T,3> areaTimesNormal;
-    Array<T,3> v0, v1, v2, tmp;
-    for (plint iTriangle=0; iTriangle<triangleMesh.getNumTriangles(); ++iTriangle) {
-        v0 = triangleMesh.getVertex(iTriangle, 0);
-        v1 = triangleMesh.getVertex(iTriangle, 1);
-        v2 = triangleMesh.getVertex(iTriangle, 2);
-        /* Calculating the volume contibution of a face based on the formula:
-         * V[j] = 1.0/6.0 * (X3[j] cross X2[j])*X1[j]  */
-        crossProduct(v1, v2, tmp);
-        triangleVolumeT6 =  VectorTemplate<T,Descriptor>::scalarProduct(v0,tmp); // * (1.0/6.0)
-        /* ************* Other Calculation ********* */
-//        areaTimesNormal = triangleMesh.computeTriangleNormal(iTriangle, true);
-//        triangleVolumeT6 = 2.0 * VectorTemplate<T,Descriptor>::scalarProduct(areaTimesNormal, ((v0+v1+v2)/3.0)) ;
-//        triangleVolume = 1.0/3.0 * VectorTemplate<T,Descriptor>::scalarProduct(areaTimesNormal, ((v0+v1+v2)/3.0)) ;
-        /* ********************************************* */
-
-        // Update
-        plint ctrlId = triangleMesh.getVertexId(iTriangle, 0);
-        plint ctrlCellId = (dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[ctrlId]))->get_cellId();
-//        pcout << iTriangle << ", id = " << ctrlId << ", cell iD = " << ctrlCellId << " ";
-//        for (plint iA = 1; iA < 3; ++iA) {
-//        	plint id = triangleMesh.getVertexId(iTriangle, iA);
-//        	plint tmpCellId = (dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[id]))->get_cellId();
-//        	pcout << ", id = " << id << ", cell iD = " << tmpCellId << " ";
-//        	PLB_ASSERT(tmpCellId==ctrlCellId);
-//        }
-//        pcout << std::endl;
-        cellId = triangleMesh.getVertexId(iTriangle, 0);
-        cellId = (dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[cellId]))->get_cellId();
-        tagsVolume[cellId] += triangleVolumeT6;
-        tagsNr[cellId] += 1;
-    }
+    for (pluint iA = 0; iA < particles.size(); ++iA) {
+        Particle3D<T,Descriptor>* nonTypedParticle = particles[iA];
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+                dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
+        
+        plint iVertex = particle->getTag();
+        std::vector<plint> neighbors = triangleMesh.getNeighborTriangleIds(iVertex);
+        for (pluint iB = 0; iB < neighbors.size(); ++iB) {
+            Array<T,3> v0 = triangleMesh.getVertex(neighbors[iB],0);
+            Array<T,3> v1 = triangleMesh.getVertex(neighbors[iB],1);
+            Array<T,3> v2 = triangleMesh.getVertex(neighbors[iB],2);
+            
+//             /* ************* Other Calculation ********* */
+//             Array<T,3> areaTimesNormal = triangleMesh.computeTriangleNormal(neighbors[iB], true);
+//             T triangleVolumeT6 = 2.0 * VectorTemplate<T,Descriptor>::scalarProduct(areaTimesNormal, ((v0+v1+v2)/3.0)) ;
+//             /* ********************************************* */
+            
+            /* Calculating the volume contibution of a face based on the formula:
+             * V[j] = 1.0/6.0 * (X3[j] cross X2[j])*X1[j]  */
+            Array<T,3> tmp;
+            crossProduct(v1, v2, tmp);
+            T triangleVolumeT6 =  VectorTemplate<T,Descriptor>::scalarProduct(v0,tmp); // * (1.0/6.0)
+            
+            this->getStatistics().gatherSum(volumeIds[particle->get_cellId()], triangleVolumeT6/6.0/3.0); // every volume is evaluated 3 times
+        }
+        
+    }    
     triangleBoundary.popSelect();
-
-    pcout << "triangleMesh.getNumTriangles " << triangleMesh.getNumTriangles() << std::endl;
-    pcout << "triangleMesh.getNumVertices " << triangleMesh.getNumVertices() << std::endl;
-    pcout << "NumberOfCells " << triangleMesh.getNumTriangles() << std::endl;
-    for ( tagsNrIterator=tagsNr.begin() ; tagsNrIterator != tagsNr.end(); tagsNrIterator++ )
-        pcout << "cellId " << (*tagsNrIterator).first << " num " << (*tagsNrIterator).second <<std::endl;
-    for ( tagsVolumeIterator=tagsVolume.begin() ; tagsVolumeIterator != tagsVolume.end(); tagsVolumeIterator++ ) {
-        this->getStatistics().gatherSum((*tagsVolumeIterator).first, (*tagsVolumeIterator).second/6.0);
-    }
-
+    
 }
 
 
 template<typename T, template<typename U> class Descriptor>
 void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::getCellVolumeArray(std::vector<T>& cellVolumes, std::vector<plint> cellIds) const {
-    for (pluint i = 0; i < (pluint) cellIds.size(); ++i)
-        cellVolumes.push_back(this->getStatistics().getSum(cellIds[i]));
+    for (pluint i = 0; i < (pluint) volumeIds.size(); ++i)
+        cellVolumes.push_back(this->getStatistics().getSum(volumeIds[i]));
 }
 
 

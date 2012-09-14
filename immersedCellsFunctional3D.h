@@ -31,6 +31,7 @@ public:
 private:
     plint numberOfCells;
     TriangleBoundary3D<T> const& triangleBoundary;
+    std::vector<plint> volumeIds;
 };
 
 

@@ -27,5 +27,5 @@
 	<tmax> 10000000000 </tmax> <!-- total number of iterations -->
 	<tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
 	<PBC> 1 </PBC> <!-- Faulty Periodic Boundaries > -->
-	<npar> 2 </npar> <!-- Number of particles > -->
+	<npar> 3 </npar> <!-- Number of particles > -->
 </sim>
