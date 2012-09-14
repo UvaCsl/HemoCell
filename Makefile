@@ -32,7 +32,7 @@ debug        = true
 profile      = false
 #profile      = true
 # Set MPI-parallel mode on/off (parallelism in cluster-like environment)
-MPIparallel  = true
+MPIparallel  = false
 # Set SMP-parallel mode on/off (shared-memory parallelism)
 SMPparallel  = false
 # Decide whether to include calls to the POSIX API. On non-POSIX systems,

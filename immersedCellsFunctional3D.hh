@@ -59,6 +59,9 @@ void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::processGenericBlocks 
     std::map<plint, plint> tagsNr;
     typename std::map<plint, plint>::iterator tagsNrIterator;
 //lmount
+    for (pluint iA = 0; iA < particles.size(); ++iA) {
+            pcout << "iA: " << iA << "id " << (dynamic_cast<ImmersedCellParticle3D<T,DESCRIPTOR>*> (particles[iA]))->get_cellId() << std::endl;
+	}
 
 
     plint meshID = 1, cellId;
@@ -82,6 +85,16 @@ void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::processGenericBlocks 
         /* ********************************************* */
 
         // Update
+        plint ctrlId = triangleMesh.getVertexId(iTriangle, 0);
+        plint ctrlCellId = (dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[ctrlId]))->get_cellId();
+//        pcout << iTriangle << ", id = " << ctrlId << ", cell iD = " << ctrlCellId << " ";
+//        for (plint iA = 1; iA < 3; ++iA) {
+//        	plint id = triangleMesh.getVertexId(iTriangle, iA);
+//        	plint tmpCellId = (dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[id]))->get_cellId();
+//        	pcout << ", id = " << id << ", cell iD = " << tmpCellId << " ";
+//        	PLB_ASSERT(tmpCellId==ctrlCellId);
+//        }
+//        pcout << std::endl;
         cellId = triangleMesh.getVertexId(iTriangle, 0);
         cellId = (dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[cellId]))->get_cellId();
         tagsVolume[cellId] += triangleVolumeT6;

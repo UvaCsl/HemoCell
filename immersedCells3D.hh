@@ -64,7 +64,7 @@ void createImmersedCellParticles (
 template<typename T, template<typename U> class Descriptor>
 void translateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
                    const Box3D &outlet, std::vector<plint> &numParts,
-                   std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
+                   std::vector<plint> &cellIds,
                    std::vector<Array<T,3> > &centers, std::vector<T> &radii, Array<T,3> const& translation )
 {
     std::vector<MultiBlock3D*> particleArg;
@@ -91,9 +91,9 @@ void translateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& p
             pcout << "translated particles = " << before << ", " << after << std::endl;
         }
     }
-    applyProcessingFunctional ( // update mesh position
-        new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
-        particleField.getBoundingBox(), particleArg);
+//    applyProcessingFunctional ( // update mesh position
+//        new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
+//        particleField.getBoundingBox(), particleArg);
 
 }
 //    if (erased) {
@@ -108,22 +108,22 @@ void translateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& p
 template<typename T, template<typename U> class Descriptor>
 void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
                    const Box3D &outlet, std::vector<plint> &numParts,
-                   std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
+                   std::vector<plint> &cellIds,
                    std::vector<Array<T,3> > &centers, std::vector<T> &radii )
 {
+    std::vector<MultiBlock3D*> particleArg;
+    particleArg.push_back(&particleField);
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
         // count all particles of a certain tag in a buffer zone
         plint numPartsPerTag = countParticles(particleField,outlet,cellIds[iA]);
         // if all the particle of a certain tag are in a buffer zone
-        if (numPartsPerTag == numParts[iA] && numPartsPerTag > 0) {
+        if (numPartsPerTag > 0) {
             // then delete these particles in all the buffer zones
             plint before = countParticles(particleField,outlet,cellIds[iA]);
-            std::vector<MultiBlock3D*> particleArg;
-            particleArg.push_back(&particleField);
 
             applyProcessingFunctional (
                 new AbsorbTaggedParticlesFunctional3D<T,Descriptor>(cellIds[iA]),
-                    outlet, particleArg );
+                particleField.getBoundingBox(), particleArg );
 
             plint after = countParticles(particleField,outlet,cellIds[iA]);
 

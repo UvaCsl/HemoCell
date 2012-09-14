@@ -12,20 +12,20 @@
 	<u> 0.0016666 </u>
 	<Re> 0.01 </Re>
 	<N> 1 </N>
-	<lx> 10 </lx>
+	<lx> 20 </lx>
 	<ly> 7 </ly>
 	<lz> 7 </lz>
 </parameters>
 
 <ibm>
 	<forceToFluid> 0 </forceToFluid>
-	<shape> 1 </shape> <!-- shape: Sphere:0, RBC:1 -->
+	<shape> 0 </shape> <!-- shape: Sphere:0, RBC:1 -->
 	<radius> 1 </radius> 
 </ibm>
 
 <sim>
 	<tmax> 10000000000 </tmax> <!-- total number of iterations -->
 	<tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
-	<npar> 1 </npar> <!-- Number of particles > -->
 	<PBC> 1 </PBC> <!-- Faulty Periodic Boundaries > -->
+	<npar> 2 </npar> <!-- Number of particles > -->
 </sim>

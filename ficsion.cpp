@@ -262,7 +262,8 @@ int main(int argc, char* argv[])
 
 
     plint n=0;
-    for (T iN = 1+diameter; (iN < nx-(diameter) - 1); iN+=1.05*diameter) { // create 40 * inlet amount of particles
+    for (T iN = 3+diameter; (iN < nx-(diameter) - 1); iN+=1.05*diameter) { // create 40 * inlet amount of particles
+//        for (T iN = 1+diameter; (iN < nx-(diameter) - 1); iN+=1.05*diameter) { // create 40 * inlet amount of particles
         for (pluint iA = 0; iA < posY.size(); ++iA) {
             for (pluint iB = 0; iB < posZ.size() && (n < npar); ++iB) {
                 centers.push_back(Array<T,3>(iN,posY[iA],posZ[iB]));
@@ -283,15 +284,15 @@ int main(int argc, char* argv[])
     std::vector<plint> numParts(cellIds.size());
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
             numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), cellIds[iA]);
-//            pcout << "Cell: " << iA << ", Particles: " << numParts[iA] << std::endl;
+            pcout << "Cell: " << iA << ", Particles: " << numParts[iA] << std::endl;
 	}
-//    std::vector<T> cellVolumes;
-//    countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellVolumes);
-//    for (pluint iA = 0; iA < cellVolumes.size(); ++iA) {
-//            pcout << "Cell: " << cellIds[iA] << ", Volume: "
-//            		<< cellVolumes[iA] << std::endl;
-//	}
-//
+    std::vector<T> cellVolumes;
+    countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellVolumes);
+    for (pluint iA = 0; iA < cellVolumes.size(); ++iA) {
+            pcout << "Cell: " << cellIds[iA] << ", Volume: "
+            		<< cellVolumes[iA] << std::endl;
+	}
+
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&immersedParticles);
 
@@ -307,7 +308,9 @@ int main(int argc, char* argv[])
         new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
         immersedParticles.getBoundingBox(), particleLatticeArg);
     plint itotParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox());
-    plint LU=(1+nx)*(1+ny)*(1+nz), nTriangles = Cells.getMesh().getNumTriangles(), nProcessors = MPI::COMM_WORLD.Get_size() ;
+    plint LU=(1+nx)*(1+ny)*(1+nz), nTriangles = Cells.getMesh().getNumTriangles();
+    plint nProcessors = 1 ;
+//  plint nProcessors = MPI::COMM_WORLD.Get_size() ;
 
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
 
@@ -315,6 +318,11 @@ int main(int argc, char* argv[])
     positie[0] =  -nx + 5;
     positie[1] = 0;
     positie[2] = 0;
+
+//    parallelIO::save(immersedParticles, "immersedParticles.dat", true);
+//    parallelIO::save(Cells, "Cells.dat", true);
+//    parallelIO::load("immersedParticles.dat", immersedParticles, true);
+//    parallelIO::load("Cells.dat", Cells, true);
 
     for (plint i=0; i<tmax; ++i) {
         applyProcessingFunctional ( // compute force applied on the particles by springs
@@ -334,15 +342,16 @@ int main(int argc, char* argv[])
             new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
             immersedParticles.getBoundingBox(), particleLatticeArg);
 
-//        if (false) {
-//            applyProcessingFunctional ( // copy fluid velocity on particles
-//                new AddToParticleFunctional3D<T,DESCRIPTOR>(positie),
-//                immersedParticles.getBoundingBox(), particleLatticeArg);
-//        }
-
         applyProcessingFunctional ( // advance particles in time according to a velocity, acceleration, ...
             new AdvanceParticlesFunctional3D<T,DESCRIPTOR>,
             immersedParticles.getBoundingBox(), particleArg );
+
+        if (PBC > 0) {
+        	translateCells(immersedParticles, outlet, numParts, cellIds, centers, radii, positie);
+        }
+        else {
+        	deleteCell(immersedParticles, outlet, numParts, cellIds, centers, radii );
+        }
 
         Cells.pushSelect(0,1);
         applyProcessingFunctional ( // update mesh position
@@ -350,14 +359,6 @@ int main(int argc, char* argv[])
             immersedParticles.getBoundingBox(), particleArg);
         Cells.popSelect();
 
-        Cells.pushSelect(0,1);
-        if (PBC > 0) {
-        	translateCells(immersedParticles, outlet, numParts, cellIds, Cells, centers, radii, positie);
-        }
-        else {
-        	deleteCell(immersedParticles, outlet, numParts, cellIds, Cells, centers, radii );
-        }
-        Cells.popSelect();
         //        if (slice < 1) {
 //        if (countParticles(immersedParticles, inlet) == 0) {
 //            bool created = generateCells(immersedParticles, inlet, cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice );
