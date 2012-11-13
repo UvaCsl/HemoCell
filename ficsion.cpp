@@ -164,6 +164,9 @@ int main(int argc, char* argv[])
     global::IOpolicy().setStlFilesHaveLowerBound(true);
     global::IOpolicy().setLowerBoundForStlFiles(-1.);
 
+    //  plint nProcessors = 1 ;
+    //  plint nProcessors = MPI::COMM_WORLD.Get_size() ;
+
     T shellDensity = 0.;
     T k_rest = 0.;
     T k_stretch = 0.;
@@ -200,11 +203,10 @@ int main(int argc, char* argv[])
 	document["ibm"]["radius"].read(radius);
     plint tmax = 100000;
     plint tmeas = 100;
-    plint npar = 1, PBC=0;
+    plint npar = 1;
 	document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
     document["sim"]["npar"].read(npar);
-    document["sim"]["PBC"].read(PBC);
 
 
     IncomprFlowParam<T> parameters(
@@ -247,23 +249,28 @@ int main(int argc, char* argv[])
 
     Box3D inlet(0, 3, 0, ny-1, 0, nz-1);
     Box3D outlet(nx-2, nx-1, 0, ny-1, 0, nz-1);
+    plint LUs=(1+nx)*(1+ny)*(1+nz);
 
+
+
+// === Initialize the positions of cells ===
     std::vector<T> posY, posZ;
     std::vector<Array<T,3> > centers;
     std::vector<T> radii;
     T diameter = 2*radius;
-    for (T r =1 + diameter; r < ny-diameter-1; r+=1.05*diameter) posZ.push_back(r);
-    if (shape==1) {
-        T dY =    0.265106361*radius; // RBC is not spherical
-        for (T r = 1 + 2*dY; r < ny-2*dY - 1; r+=2*1.05*2*dY) posY.push_back(r);
+    for (T r =1 + diameter; r < ny-diameter-1; r+=1.05*diameter) {
+        posZ.push_back(r);
+    }
+    if (shape==1) { // Y and Z for RBC are not symmetric, pack it more dense
+        T dY =    0.265106361*radius;
+        for (T r = 1 + 2*dY; r < ny-2*dY - 1; r+=2*1.05*2*dY) {
+            posY.push_back(r);
+        }
     } else {
         posY = posZ;
     }
-
-
     plint n=0;
-    for (T iN = 3+diameter; (iN < nx-(diameter) - 1); iN+=1.05*diameter) { // create 40 * inlet amount of particles
-//        for (T iN = 1+diameter; (iN < nx-(diameter) - 1); iN+=1.05*diameter) { // create 40 * inlet amount of particles
+    for (T iN = 3+diameter; (iN < nx-(diameter) - 1); iN+=1.05*diameter) { // create as many particles as possible
         for (pluint iA = 0; iA < posY.size(); ++iA) {
             for (pluint iB = 0; iB < posZ.size() && (n < npar); ++iB) {
                 centers.push_back(Array<T,3>(iN,posY[iA],posZ[iB]));
@@ -272,21 +279,28 @@ int main(int argc, char* argv[])
             }
         }
     }
+// ========================================
 
+
+//  === Create Mesh, particles and CellModel ===
     plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
-
     std::vector<plint> cellIds;
     plint numPartsPerCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, 100000);
+    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, 200);
+    plint nTriangles = Cells.getMesh().getNumTriangles();
+
+
     pcout << "Mesh Created" << std::endl;
 	generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice);
 
-    std::vector<plint> numParts(cellIds.size());
+    std::vector<plint> numParts(cellIds.size()); // Count number of particles per Cell
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
             numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), cellIds[iA]);
             pcout << "Cell: " << iA << ", Particles: " << numParts[iA] << std::endl;
 	}
-    std::vector<T> cellVolumes;
+    plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox()); //Total number of particles
+
+    std::vector<T> cellVolumes; // Count Volume per Cell
     countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellVolumes);
     for (pluint iA = 0; iA < cellVolumes.size(); ++iA) {
             pcout << "Cell: " << cellIds[iA] << ", Volume: "
@@ -301,35 +315,24 @@ int main(int argc, char* argv[])
     particleLatticeArg.push_back(&lattice);
 
     CellModel3D<T> cellModel(shellDensity, k_rest, k_stretch, k_shear, k_bend, k_shear, k_shear);
+//  ========================================
+
 
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();
     applyProcessingFunctional ( // copy fluid velocity on particles
         new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
         immersedParticles.getBoundingBox(), particleLatticeArg);
-    plint itotParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox());
-    plint LU=(1+nx)*(1+ny)*(1+nz), nTriangles = Cells.getMesh().getNumTriangles();
-    plint nProcessors = 1 ;
-//  plint nProcessors = MPI::COMM_WORLD.Get_size() ;
 
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
 
-    Array<T,3> positie;
-    positie[0] =  -nx + 5;
-    positie[1] = 0;
-    positie[2] = 0;
-
-//    parallelIO::save(immersedParticles, "immersedParticles.dat", true);
-//    parallelIO::save(Cells, "Cells.dat", true);
-//    parallelIO::load("immersedParticles.dat", immersedParticles, true);
-//    parallelIO::load("Cells.dat", Cells, true);
-
     for (plint i=0; i<tmax; ++i) {
-        applyProcessingFunctional ( // compute force applied on the particles by springs
-            new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
-                Cells, cellModel.clone() ), // used because pushSelect is not used
-            immersedParticles.getBoundingBox(), particleArg );
-        if (forceToFluid != 0) {
+
+//         applyProcessingFunctional ( // compute force applied on the particles by springs
+//             new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
+//                 Cells, cellModel.clone() ), // used because pushSelect is not used
+//             immersedParticles.getBoundingBox(), particleArg );
+        if (forceToFluid != 0) { // Force from the Cell dynamics to the Fluid
 			setExternalVector( lattice, lattice.getBoundingBox(),
 							   DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
 			applyProcessingFunctional ( // compute force applied on the fluid by the particles
@@ -346,33 +349,35 @@ int main(int argc, char* argv[])
             new AdvanceParticlesFunctional3D<T,DESCRIPTOR>,
             immersedParticles.getBoundingBox(), particleArg );
 
-        if (PBC > 0) {
-        	translateCells(immersedParticles, outlet, numParts, cellIds, centers, radii, positie);
-        }
-        else {
-        	deleteCell(immersedParticles, outlet, numParts, cellIds, centers, radii );
-        }
-
+        deleteCell(immersedParticles, outlet, numParts, cellIds, centers, radii );
         Cells.pushSelect(0,1);
         applyProcessingFunctional ( // update mesh position
             new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
             immersedParticles.getBoundingBox(), particleArg);
         Cells.popSelect();
 
-        //        if (slice < 1) {
-//        if (countParticles(immersedParticles, inlet) == 0) {
-//            bool created = generateCells(immersedParticles, inlet, cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice );
-//            pcout << "Used \n";
-//        }
-
-        if (i%tmeas==0) {
-        	plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox());
-            pcout << i << " totParticles = " << totParticles << std::endl;
-//            PLB_ASSERT(itotParticles == totParticles);
+        if (i%tmeas==0) { // Output (or screen information every tmeas
             T dt = global::timer("sim").stop();
-//            pcout << "Timer (w/o output): " << dt << " .";
-            pcout << "Timer (w/o Output); " << i <<"; " << LU << "; " << radii.size() << "; " << itotParticles << "; " << nTriangles << "; " <<nProcessors << "; " <<  dt << ";" << std::endl;
-            pcout << "Write Particle VTK. " << std::endl; ;
+
+            plint totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());
+            pcout << i << " totParticles = " << totParticles << " ";
+            PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain
+
+            std::vector<T> cellV; // Print Cell Volume
+            countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellV);
+            for (pluint iA = 0; iA < cellV.size(); ++iA) {
+                    pcout << "Cell: " << cellIds[iA] << ", Volume: "
+                            << cellV[iA] << std::endl;
+            }
+
+            Cells.pushSelect(0,1); // Print the coordinates of one particles
+            pcout << "x: " << Cells.getMesh().getVertex(0)[0] << " y: " << Cells.getMesh().getVertex(0)[1] <<
+                     " z: " << Cells.getMesh().getVertex(0)[2] <<std::endl;
+            Cells.popSelect();
+
+//            pcout << "Timer (w/o Output); " << i <<"; " << LUs << "; " << radii.size() << "; " << itotParticles << "; " << nTriangles << "; " <<nProcessors << "; " <<  dt << ";" << std::endl;
+//            pcout << "Write Particle VTK. " << std::endl; ;
+
             std::vector<std::string> force_scalarNames;
             force_scalarNames.push_back("pressure");
             force_scalarNames.push_back("wss");
@@ -381,23 +386,26 @@ int main(int argc, char* argv[])
             force_vectorNames.push_back("force");
             std::vector<std::string> velocity_vectorNames;
             velocity_vectorNames.push_back("velocity");
-//			bool dynamicMesh = true;
-//			plint tag = -1; // Take all triangles.
-	        Cells.pushSelect(0,1);
-            // Needs scaling with 1.0/N
-			Cells.getMesh().writeAsciiSTL(global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
-	        Cells.popSelect();
+            Cells.pushSelect(0,1);
+            Cells.getMesh().writeAsciiSTL(global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
+            Cells.popSelect();
 
-			// serialize the particle information to write them.
-			// a correspondance between the mesh and the particles is made.
-
-//			writeImmersedSurfaceVTK (
-//					Cells,
-//					*getParticlePosAndVelocity(immersedParticles),
-//					velocity_scalarNames, velocity_vectorNames,
-//					global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag );
-
+            // serialize the particle information to write them.
+            // a correspondance between the mesh and the particles is made. (Needs rescale)
+            bool dynamicMesh = true;
+            plint tag = -1; // Take all triangles.
+            writeImmersedSurfaceVTK (
+                Cells,
+                *getParticlePosAndVelocity(immersedParticles),
+                velocity_scalarNames, velocity_vectorNames,
+                global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag );
             writeVTK(lattice, parameters, i);
+            // === Checkpoint ===
+            //    parallelIO::save(immersedParticles, "immersedParticles.dat", true);
+            //    parallelIO::save(Cells, "Cells.dat", true);
+            //    parallelIO::load("immersedParticles.dat", immersedParticles, true);
+            //    parallelIO::load("Cells.dat", Cells, true);
+            // ==================
             global::timer("sim").restart();
         }
     }
