@@ -361,7 +361,7 @@ int main(int argc, char* argv[])
 
             plint totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());
             pcout << i << " totParticles = " << totParticles << " ";
-            PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain
+            // PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain
 
             std::vector<T> cellV; // Print Cell Volume
             countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellV);
