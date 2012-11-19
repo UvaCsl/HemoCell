@@ -81,28 +81,23 @@ void translateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& p
             applyProcessingFunctional ( // copy fluid velocity on particles
                             new TranslateTaggedParticlesFunctional3D<T,DESCRIPTOR>(translation, cellIds[iA]),
                             particleField.getBoundingBox(), particleArg);
-
 //            applyProcessingFunctional (
 //                new AbsorbTaggedParticlesFunctional3D<T,Descriptor>(translation, cellIds[iA]),
 //                    outlet, particleArg );
-
             plint after = countParticles(particleField,outlet,cellIds[iA]);
-
             pcout << "translated particles = " << before << ", " << after << std::endl;
         }
     }
 //    applyProcessingFunctional ( // update mesh position
 //        new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
 //        particleField.getBoundingBox(), particleArg);
-
-}
 //    if (erased) {
 //        pcout << "Particles absorbed : Number of particles per tag." << std::endl;
 //        for (pluint iA = 0; iA < centers.size(); ++iA) {
 //            pcout << cellIds[iA] << " , " <<  countParticles(particleField, particleField.getBoundingBox(), cellIds[iA]) << std::endl;
 //        }
 //    }
-
+}
 
 
 template<typename T, template<typename U> class Descriptor>

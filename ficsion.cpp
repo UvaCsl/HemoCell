@@ -24,11 +24,11 @@
 #include "palabos3D.hh"
 
 #include "ficsionInit.hh"
+#include "cellsInit.hh"
 #include "immersedCells3D.h"
 #include "immersedCells3D.hh"
 #include "immersedCellsFunctional3D.h"
 #include "immersedCellsFunctional3D.hh"
-
 
 using namespace plb;
 using namespace std;
@@ -44,117 +44,28 @@ plint extraLayer      = 0;  // Make the bounding box larger; for visualization p
 const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
 const plint particleEnvelopeWidth = 2;
 
-
-
-
-/* ************* Class GetTensorFieldFromExternalVectorFunctional3D ******************* */
-
-template<typename T, template<typename U> class Descriptor, int nDim>
-class GetTensorFieldFromExternalVectorFunctional3D : public BoxProcessingFunctional3D_LT<T,Descriptor, T, nDim> {
-public:
-    GetTensorFieldFromExternalVectorFunctional3D (
-        int vectorStartsAt_ ) : vectorStartsAt(vectorStartsAt_)
+void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest, T & k_stretch, T & k_shear, T & k_bend,
+        T & u, T & Re, plint & N, T & lx, T & ly, T & lz,
+        plint & forceToFluid, plint & shape, T & radius,
+        plint & tmax, plint & tmeas, plint & npar )
     {
-        PLB_ASSERT( vectorStartsAt+nDim <=
-        Descriptor<T>::ExternalField::numScalars );
-    }
-    virtual void process(Box3D domain, BlockLattice3D<T,Descriptor>& lattice, TensorField3D<T,nDim>& tensor) {
-        Dot3D offset = computeRelativeDisplacement(lattice, tensor);
-        for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
-            plint oX = iX + offset.x;
-            for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
-                plint oY = iY + offset.y;
-                for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
-                    plint oZ = iZ + offset.z;
-                    Cell<T,Descriptor>& cell = lattice.get(iX,iY,iZ);
-                    Array<T,nDim> externalVector; 
-                    
-                    for (plint iD=0; iD<nDim; ++iD) {
-                        externalVector[iD] = *cell.getExternal(vectorStartsAt+iD);
-                    }
-                    tensor.get(oX,oY,oZ) = externalVector;
-                }
-            }
-        }
-    }
-    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const {
-        modified[0] = modif::nothing;
-        modified[1] = modif::staticVariables;
-    }
-    virtual GetTensorFieldFromExternalVectorFunctional3D<T,Descriptor,nDim>* clone() const {
-        return new GetTensorFieldFromExternalVectorFunctional3D<T,Descriptor,nDim>(*this);
-    }
-    
-private:
-    int vectorStartsAt;
-};
-
-void iniLattice( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
-                 IncomprFlowParam<T> const& parameters,
-                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition )
-{
-    const plint nx = parameters.getNx();
-    const plint ny = parameters.getNy();
-    const plint nz = parameters.getNz();
-    
-    Box3D top    = Box3D(0,    nx-1, 0, ny-1, 0,    0);
-    Box3D bottom = Box3D(0,    nx-1, 0, ny-1, nz-1, nz-1);
-
-    Box3D left   = Box3D(0, nx-1, 0,    0,    1, nz-2);
-    Box3D right  = Box3D(0, nx-1, ny-1, ny-1, 1, nz-2);
-
-    Box3D inlet  = Box3D(0,    0,    1,    ny-2, 1, nz-2);
-    Box3D outlet = Box3D(nx-1, nx-1, 1,    ny-2, 1, nz-2);
-
-    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, inlet );
-    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, outlet );
-
-    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, top );
-    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, bottom );
-
-    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, left );
-    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, right );
-
-    setBoundaryVelocity(lattice, inlet, SquarePoiseuilleVelocity<T>(parameters, NMAX));
-    setBoundaryVelocity(lattice, outlet, SquarePoiseuilleVelocity<T>(parameters, NMAX));
-
-    setBoundaryVelocity(lattice, top, Array<T,3>(0.0,0.0,0.0));
-    setBoundaryVelocity(lattice, bottom, Array<T,3>(0.0,0.0,0.0));
-    setBoundaryVelocity(lattice, left, Array<T,3>(0.0,0.0,0.0));
-    setBoundaryVelocity(lattice, right, Array<T,3>(0.0,0.0,0.0));
-
-    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), SquarePoiseuilleDensityAndVelocity<T>(parameters, NMAX));
-    
-    setExternalVector( lattice, lattice.getBoundingBox(), 
-                       DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
-
-    lattice.initialize();
-}
-
-
-
-template<class BlockLatticeT>
-void writeVTK(BlockLatticeT& lattice,
-              IncomprFlowParam<T> const& parameters, plint iter)
-{
-    T dx = parameters.getDeltaX();
-    T dt = parameters.getDeltaT();
-    
-    MultiTensorField3D<T,3> force(lattice);
-    applyProcessingFunctional(new GetTensorFieldFromExternalVectorFunctional3D<T,DESCRIPTOR,3>(
-        DESCRIPTOR<T>::ExternalField::forceBeginsAt), lattice.getBoundingBox(), lattice, force);
-                              
-    VtkImageOutput3D<T> vtkOut(createFileName("vtk", iter, 6), dx);
-    vtkOut.writeData<T>(*computeVelocityNorm(lattice), "velocityNorm", dx/dt);
-    vtkOut.writeData<3,T>(force, "force",  (T) dx/dt/dt);
-    vtkOut.writeData<T>(*computeNorm(force, force.getBoundingBox()), "forceNorm",  dx/dt/dt);
-
-//    ImageWriter<T> imageWriter("leeloo");
-//    add(force, forceScalar, force.getBoundingBox());
-//    imageWriter.writeScaledPpm(scalarField, createFileName("PPM", iter, 6));
-
-//     vtkOut.writeData<3,float>(*computeVelocity(lattice), "velocity", dx/dt);
-//     vtkOut.writeData<3,float>(*computeVorticity(*computeVelocity(lattice)), "vorticity", 1./dt);
+    document["cell"]["shellDensity"].read(shellDensity);
+    document["cell"]["k_rest"].read(k_rest);
+    document["cell"]["k_stretch"].read(k_stretch);
+    document["cell"]["k_shear"].read(k_shear);
+    document["cell"]["k_bend"].read(k_bend);
+    document["parameters"]["u"].read(u);
+    document["parameters"]["Re"].read(Re);
+    document["parameters"]["N"].read(N);
+    document["parameters"]["lx"].read(lx);
+    document["parameters"]["ly"].read(ly);
+    document["parameters"]["lz"].read(lz);
+    document["ibm"]["forceToFluid"].read(forceToFluid);
+    document["ibm"]["shape"].read(shape);
+    document["ibm"]["radius"].read(radius);
+    document["sim"]["tmax"].read(tmax);
+    document["sim"]["tmeas"].read(tmeas);
+    document["sim"]["npar"].read(npar);
 }
 
 int main(int argc, char* argv[])
@@ -164,50 +75,20 @@ int main(int argc, char* argv[])
     global::IOpolicy().setStlFilesHaveLowerBound(true);
     global::IOpolicy().setLowerBoundForStlFiles(-1.);
 
-    //  plint nProcessors = 1 ;
-    //  plint nProcessors = MPI::COMM_WORLD.Get_size() ;
+    plint N;
+    plint forceToFluid, shape;
+    plint tmax, tmeas, npar;
+    T u, Re;
+    T lx, ly, lz;
+    T shellDensity, k_rest, k_stretch, k_shear, k_bend;
+    T radius;
 
-    T shellDensity = 0.;
-    T k_rest = 0.;
-    T k_stretch = 0.;
-    T k_shear = 0.;
-    T k_bend = 0.;
-
-    T u = 0.01;
-    T Re = 100;
-    plint N = 20;
-    T lx = 5.;
-    T ly = 0.5;
-    T lz = 0.5;
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
-
-	XMLreader document(paramXmlFileName);
-	pcout << "reading.." <<std::endl;
-	document["cell"]["shellDensity"].read(shellDensity);
-	document["cell"]["k_rest"].read(k_rest);
-	document["cell"]["k_stretch"].read(k_stretch);
-	document["cell"]["k_shear"].read(k_shear);
-	document["cell"]["k_bend"].read(k_bend);
-
-	document["parameters"]["u"].read(u);
-	document["parameters"]["Re"].read(Re);
-	document["parameters"]["N"].read(N);
-	document["parameters"]["lx"].read(lx);
-	document["parameters"]["ly"].read(ly);
-	document["parameters"]["lz"].read(lz);
-	plint forceToFluid = 0, shape = 0;
-	T radius = 0.0;
-	document["ibm"]["forceToFluid"].read(forceToFluid);
-	document["ibm"]["shape"].read(shape);
-	document["ibm"]["radius"].read(radius);
-    plint tmax = 100000;
-    plint tmeas = 100;
-    plint npar = 1;
-	document["sim"]["tmax"].read(tmax);
-    document["sim"]["tmeas"].read(tmeas);
-    document["sim"]["npar"].read(npar);
-
+    XMLreader document(paramXmlFileName);
+    pcout << "reading.." <<std::endl;
+    readFicsionXML(document, shellDensity, k_rest, k_stretch, k_shear, k_bend,
+            u, Re, N, lx, ly, lz,  forceToFluid, shape, radius, tmax, tmeas, npar);
 
     IncomprFlowParam<T> parameters(
             u, // u
@@ -230,11 +111,8 @@ int main(int argc, char* argv[])
         defaultMultiBlockPolicy3D().getCombinedStatistics(),
         defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
         new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(parameters.getOmega()));
-    
-
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
-
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
     iniLattice(lattice, parameters, *boundaryCondition);
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
@@ -249,45 +127,22 @@ int main(int argc, char* argv[])
 
     Box3D inlet(0, 3, 0, ny-1, 0, nz-1);
     Box3D outlet(nx-2, nx-1, 0, ny-1, 0, nz-1);
-    plint LUs=(1+nx)*(1+ny)*(1+nz);
 
 
-
-// === Initialize the positions of cells ===
-    std::vector<T> posY, posZ;
     std::vector<Array<T,3> > centers;
     std::vector<T> radii;
-    T diameter = 2*radius;
-    for (T r =1 + diameter; r < ny-diameter-1; r+=1.05*diameter) {
-        posZ.push_back(r);
-    }
-    if (shape==1) { // Y and Z for RBC are not symmetric, pack it more dense
-        T dY =    0.265106361*radius;
-        for (T r = 1 + 2*dY; r < ny-2*dY - 1; r+=2*1.05*2*dY) {
-            posY.push_back(r);
-        }
-    } else {
-        posY = posZ;
-    }
-    plint n=0;
-    for (T iN = 3+diameter; (iN < nx-(diameter) - 1); iN+=1.05*diameter) { // create as many particles as possible
-        for (pluint iA = 0; iA < posY.size(); ++iA) {
-            for (pluint iB = 0; iB < posZ.size() && (n < npar); ++iB) {
-                centers.push_back(Array<T,3>(iN,posY[iA],posZ[iB]));
-                radii.push_back(radius);
-                n++;
-            }
-        }
-    }
-// ========================================
-
+    positionCells(shape, radius, npar, parameters, centers, radii);
 
 //  === Create Mesh, particles and CellModel ===
     plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
     std::vector<plint> cellIds;
     plint numPartsPerCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
     TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, 200);
-    plint nTriangles = Cells.getMesh().getNumTriangles();
+
+    //  plint nProcessors = 1 ;
+    //  plint nProcessors = MPI::COMM_WORLD.Get_size() ;
+    //  plint LUs=(1+nx)*(1+ny)*(1+nz);
+    // plint nTriangles = Cells.getMesh().getNumTriangles();
 
 
     pcout << "Mesh Created" << std::endl;
@@ -308,36 +163,32 @@ int main(int argc, char* argv[])
 	}
 
     std::vector<MultiBlock3D*> particleArg;
-    particleArg.push_back(&immersedParticles);
-
     std::vector<MultiBlock3D*> particleLatticeArg;
+    particleArg.push_back(&immersedParticles);
     particleLatticeArg.push_back(&immersedParticles);
     particleLatticeArg.push_back(&lattice);
 
     CellModel3D<T> cellModel(shellDensity, k_rest, k_stretch, k_shear, k_bend, k_shear, k_shear);
-//  ========================================
-
 
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();
     applyProcessingFunctional ( // copy fluid velocity on particles
         new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
         immersedParticles.getBoundingBox(), particleLatticeArg);
-
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
-
+    /* ********************* Main Loop ***************************************** * */
     for (plint i=0; i<tmax; ++i) {
 
-//         applyProcessingFunctional ( // compute force applied on the particles by springs
-//             new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
-//                 Cells, cellModel.clone() ), // used because pushSelect is not used
-//             immersedParticles.getBoundingBox(), particleArg );
+         applyProcessingFunctional ( // compute force applied on the particles by springs
+             new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
+                 Cells, cellModel.clone() ), // used because pushSelect is not used
+             immersedParticles.getBoundingBox(), particleArg );
         if (forceToFluid != 0) { // Force from the Cell dynamics to the Fluid
-			setExternalVector( lattice, lattice.getBoundingBox(),
-							   DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
-			applyProcessingFunctional ( // compute force applied on the fluid by the particles
-				new ForceToFluid3D<T,DESCRIPTOR> (),
-					immersedParticles.getBoundingBox(), particleLatticeArg );
+            setExternalVector( lattice, lattice.getBoundingBox(),
+                           DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
+            applyProcessingFunctional ( // compute force applied on the fluid by the particles
+                    new ForceToFluid3D<T,DESCRIPTOR> (),
+                    immersedParticles.getBoundingBox(), particleLatticeArg );
         }
         lattice.collideAndStream();
 
@@ -358,7 +209,6 @@ int main(int argc, char* argv[])
 
         if (i%tmeas==0) { // Output (or screen information every tmeas
             T dt = global::timer("sim").stop();
-
             plint totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());
             pcout << i << " totParticles = " << totParticles << " ";
             // PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain

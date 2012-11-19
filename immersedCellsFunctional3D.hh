@@ -113,6 +113,50 @@ void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::getTypeOfModification
 }
 
 
+/* ******** TranslateTaggedParticlesFunctional3D *********************************** */
+
+template<typename T, template<typename U> class Descriptor>
+TranslateTaggedParticlesFunctional3D<T,Descriptor>::
+    TranslateTaggedParticlesFunctional3D(Array<T,3> const& translation_, plint tag_) : tag(tag_), translation(translation_)
+{ }
+
+template<typename T, template<typename U> class Descriptor>
+void TranslateTaggedParticlesFunctional3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    PLB_PRECONDITION( blocks.size()==1 );
+    ParticleField3D<T,Descriptor>& particleField =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+
+    std::vector<Particle3D<T,Descriptor>*> particles;
+    particleField.findParticles(domain, particles);
+    std::vector<plint> cellIds;
+    for (pluint iP = 0; iP < particles.size(); ++iP) {
+        Particle3D<T,Descriptor>* nonTypedParticle = particles[iP];
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
+
+        if (particle->get_cellId() == tag) {
+            particle->getPosition() = particle->getPosition() + translation;
+        }
+    }
+
+//     pcout << cellIds.size() << std::endl;
+//     particleField.removeParticles(domain,tag);
+}
+
+template<typename T, template<typename U> class Descriptor>
+TranslateTaggedParticlesFunctional3D<T,Descriptor>* TranslateTaggedParticlesFunctional3D<T,Descriptor>::clone() const {
+    return new TranslateTaggedParticlesFunctional3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void TranslateTaggedParticlesFunctional3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::dynamicVariables;  // Particle field.
+}
+
 
 //template<typename T, template<typename U> class Descriptor>
 //CountCellVolumeFunctional3D<T,Descriptor>::CountCellVolumeFunctional3D(plint tag_)
