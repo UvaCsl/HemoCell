@@ -232,8 +232,11 @@ TriangleBoundary3D<T> createCompleteMesh(
     numPartsPerCell = Cells.getMesh().getNumVertices() / centers.size();
     plint modulo = Cells.getMesh().getNumVertices() % centers.size();
 //     pcout << "num parts per triangles = " << numPartsPerCell << ", modulo = " << modulo << std::endl;
-    pcout << "num vertices = " << Cells.getMesh().getNumVertices() << ", centers = " << centers.size() << std::endl;
-    pcout << "num parts per triangles = " << numPartsPerCell << ", modulo = " << modulo << std::endl;
+    pcout << "num Vertices = " << Cells.getMesh().getNumVertices() << ", centers = " << centers.size() << std::endl;
+    pcout << "num Triangles = " << Cells.getMesh().getNumTriangles() << ", centers = " << centers.size() << std::endl;
+    pcout << "num Vertices per Cell= " << numPartsPerCell << ", modulo = " << modulo << std::endl;
+    pcout << "num Triangles per Cell= " << Cells.getMesh().getNumTriangles()/centers.size() << ", modulo = " << modulo << std::endl;
+
     PLB_ASSERT(modulo == 0);
 
     Cells.cloneVertexSet(0);

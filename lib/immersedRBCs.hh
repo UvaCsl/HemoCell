@@ -35,13 +35,18 @@
 
 namespace plb {
 
+TriangleSet<T> * rbcTriangleSet = 0;
+
 template<typename T>
 TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles)
 {
-    TriangleSet<T> RBC("RBC.stl");
+    if (0 == rbcTriangleSet) {
+        rbcTriangleSet = new TriangleSet<T>("lib/RBC.stl");
+    }
+    TriangleSet<T> RBC(*rbcTriangleSet);
     RBC.scale(radius);
     RBC.translate(center);
-    return triangleSet;
+    return RBC;
 };
 
 } // namespace plb

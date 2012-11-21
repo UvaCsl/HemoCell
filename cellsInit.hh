@@ -50,6 +50,7 @@ void positionCells(plint shape, T radius, plint npar, IncomprFlowParam<T> const&
             }
         }
     }
+    if (nz == 0) {}
 }
 
 

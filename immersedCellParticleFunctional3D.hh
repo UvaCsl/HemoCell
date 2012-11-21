@@ -292,54 +292,6 @@ plint countParticles (
     return functional.getNumParticles();
 }
 
-
-
-
-//template<typename T, template<typename U> class Descriptor>
-//void ComputeCellVolumeParticlesFunctional3D<T,Descriptor>::processGenericBlocks (
-//        Box3D domain, std::vector<AtomicBlock3D*> blocks )
-//{
-//  PLB_PRECONDITION( blocks.size()==1 );
-//  ParticleField3D<T,Descriptor>& particleField =
-//      *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
-//
-//  std::vector<Particle3D<T,Descriptor>*> found;
-//  particleField.findParticles(domain, found);
-//
-//  T totalVolume = (T) 0.0;
-//  plint meshID = 1;
-//  for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
-//      Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
-//      ImmersedCellParticle3D<T,Descriptor>* particle =
-//          dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
-//      if (particle->get_cellId() == cellId) {
-//          plint vertexId = particle->getTag();
-//
-//          triangleBoundary.pushSelect(0,meshID);
-//          Array<T,3> centralVertex = triangleBoundary.getMesh().getVertex(vertexId);
-//          std::vector<plint> neighbors = triangleBoundary.getMesh().getNeighborVertexIds(vertexId);
-//          for (pluint iA = 0; iA < neighbors.size()-1; ++iA) {
-//              Array<T,3> vertexOne = triangleBoundary.getMesh().getVertex(neighbors[iA]);
-//              Array<T,3> vertexTwo = triangleBoundary.getMesh().getVertex(neighbors[iA+1]);
-//
-//              Array<T,3> baryCenter = (centralVertex + vertexOne + vertexTwo)/(T)3;
-//              Array<T,3> normal = triangleBoundary.getMesh().computeTriangleNormal(vertexId,neighbors[iA],neighbors[iA+1]);
-//              T surface = triangleBoundary.getMesh().computeTriangleArea(vertexId,neighbors[iA],neighbors[iA+1]);
-//
-//              T volumeFraction =
-//                      surface * VectorTemplate<T,Descriptor>::scalarProduct(normal,baryCenter) / (T)3;
-//              volumeFraction /= (T)3; // all the volumes are computed three times
-//
-//              totalVolume += volumeFraction;
-//          }
-//          triangleBoundary.popSelect();
-//      }
-//  }
-//
-//    this->getStatistics().gatherSum(cellVolumeId, (T) totalVolume);
-//}
-
-
 /* ******** AbsorbTaggedParticlesFunctional3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>

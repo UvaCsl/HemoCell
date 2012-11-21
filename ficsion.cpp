@@ -25,10 +25,10 @@
 
 #include "ficsionInit.hh"
 #include "cellsInit.hh"
-#include "immersedCells3D.h"
 #include "immersedCells3D.hh"
-#include "immersedCellsFunctional3D.h"
 #include "immersedCellsFunctional3D.hh"
+#include "immersedCellsReductions.hh"
+
 
 using namespace plb;
 using namespace std;
@@ -82,6 +82,8 @@ int main(int argc, char* argv[])
     T lx, ly, lz;
     T shellDensity, k_rest, k_stretch, k_shear, k_bend;
     T radius;
+    T dt; dt = 0;
+
 
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
@@ -155,12 +157,22 @@ int main(int argc, char* argv[])
 	}
     plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox()); //Total number of particles
 
-    std::vector<T> cellVolumes; // Count Volume per Cell
-    countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellVolumes);
-    for (pluint iA = 0; iA < cellVolumes.size(); ++iA) {
-            pcout << "Cell: " << cellIds[iA] << ", Volume: "
-            		<< cellVolumes[iA] << std::endl;
-	}
+    std::vector<T> cellsVolume; // Count Volume per Cell
+    std::vector<T> cellsSurface; // Count Volume per Cell
+    std::vector<T> cellsMeanEdgeDistance;
+    std::vector<T> cellsMeanAngle, cellsMeanTriangleArea;
+    countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsVolume);
+    countCellMeanTriangleArea(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanTriangleArea);
+    countCellMeanAngle(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanAngle);
+    countCellMeanEdgeDistance(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanEdgeDistance);
+    for (pluint iA = 0; iA < cellsVolume.size(); ++iA) {
+            pcout << "Cell: " << cellIds[iA]
+                  << ", Volume: " << cellsVolume[iA]
+                  << ", Mean Triangle Surface: " << cellsMeanTriangleArea[iA]
+                  << ", Mean Edge Distance : " << cellsMeanEdgeDistance[iA]
+                  << ", Mean Angle: " << cellsMeanAngle[iA]
+                  << std::endl;
+    }
 
     std::vector<MultiBlock3D*> particleArg;
     std::vector<MultiBlock3D*> particleLatticeArg;
@@ -208,18 +220,25 @@ int main(int argc, char* argv[])
         Cells.popSelect();
 
         if (i%tmeas==0) { // Output (or screen information every tmeas
-            T dt = global::timer("sim").stop();
-            plint totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());
+            dt = global::timer("sim").stop();
+            plint totParticlesNow = 0;
+            totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());
             pcout << i << " totParticles = " << totParticles << " ";
             // PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain
 
-            std::vector<T> cellV; // Print Cell Volume
-            countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellV);
-            for (pluint iA = 0; iA < cellV.size(); ++iA) {
-                    pcout << "Cell: " << cellIds[iA] << ", Volume: "
-                            << cellV[iA] << std::endl;
+            cellsVolume.clear(); cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();cellsMeanAngle.clear();
+            countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsVolume);
+            countCellMeanTriangleArea(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanTriangleArea);
+            countCellMeanAngle(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanAngle);
+            countCellMeanEdgeDistance(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanEdgeDistance);
+            for (pluint iA = 0; iA < cellsVolume.size(); ++iA) {
+                    pcout << "Cell: " << cellIds[iA]
+                          << ", Volume: " << cellsVolume[iA]
+                          << ", Mean Triangle Surface: " << cellsMeanTriangleArea[iA]
+                          << ", Mean Edge Distance : " << cellsMeanEdgeDistance[iA]
+                          << ", Mean Angle: " << cellsMeanAngle[iA]
+                          << std::endl;
             }
-
             Cells.pushSelect(0,1); // Print the coordinates of one particles
             pcout << "x: " << Cells.getMesh().getVertex(0)[0] << " y: " << Cells.getMesh().getVertex(0)[1] <<
                      " z: " << Cells.getMesh().getVertex(0)[2] <<std::endl;
