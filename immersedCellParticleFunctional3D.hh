@@ -447,7 +447,8 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         if (!isRigid(triangleBoundary.getVertexProperty(vertexId))) {
             Array<T,3> elasticForce = shellModel->computeElasticForce (
                     triangleBoundary, vertexId );
-            T mass = shellModel->getDensity() * triangleBoundary.getMesh().computeVertexArea(vertexId);
+            T mass = shellModel->getDensity();
+//            T mass = shellModel->getDensity() * triangleBoundary.getMesh().computeVertexArea(vertexId);
             particle->get_a() += elasticForce/mass;
             particle->get_force() += elasticForce;
         }
