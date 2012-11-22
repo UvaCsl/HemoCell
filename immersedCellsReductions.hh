@@ -34,10 +34,8 @@ void CellReduceFunctional3D<T,Descriptor>::processGenericBlocks (
         = *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
-    triangleBoundary.pushSelect(0,1);
     TriangularSurfaceMesh<T> triangleMesh = triangleBoundary.getMesh();
     calculateQuantity(triangleMesh, particles, quantityIds);
-    triangleBoundary.popSelect();
 }
 
 template<typename T, template<typename U> class Descriptor>

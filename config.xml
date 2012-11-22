@@ -2,19 +2,18 @@
 
 <cell>
 	<shellDensity> 1. </shellDensity>
-	<k_rest> 0.0e-0 </k_rest>
-	<k_stretch> 1.0e-4 </k_stretch>
-	<k_shear> 1.0e-4 </k_shear>
-	<k_bend> 1.0e-4 </k_bend>
+	<k_stretch> 1.0e-3 </k_stretch>
+	<k_shear> 1.0e-3 </k_shear>
+	<k_bend> 1.0e-3 </k_bend>
 </cell>
 
 <parameters>
 	<u> 0.0016666 </u>
 	<Re> 0.01 </Re>
 	<N> 1 </N>
-	<lx> 50 </lx>
-	<ly> 7 </ly>
-	<lz> 7 </lz>
+	<lx> 25 </lx>
+	<ly> 10 </ly>
+	<lz> 10 </lz>
 </parameters>
 
 <ibm>
@@ -25,6 +24,6 @@
 
 <sim>
 	<tmax> 10000000000 </tmax> <!-- total number of iterations -->
-	<tmeas> 200 </tmeas> <!-- interval after which data is written -->> 
-	<npar> 5 </npar> <!-- Number of particles > -->
+	<tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
+	<npar> 6 </npar> <!-- Number of particles > -->
 </sim>

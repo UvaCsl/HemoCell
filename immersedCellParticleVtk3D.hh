@@ -83,12 +83,6 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
 {
     PLB_ASSERT( scalarFactor.empty() || scalarFactor.size()==scalars.size() );
     PLB_ASSERT( vectorFactor.empty() || vectorFactor.size()==vectors.size() );
-    if (dynamicMesh) {
-        boundary.pushSelect(0,1); // 0=Open, 1=Dynamic.
-    }
-    else {
-        boundary.pushSelect(0,0); // Open, Static.
-    }
     TriangularSurfaceMesh<T> const& mesh = boundary.getMesh();
     // If this assertion fails, a likely explanation is that the margin of your sparse block
     // structure is too small, and one of the particles was outside the allocated domain.
@@ -193,9 +187,6 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
         }
         ofile << "\n";
     }
-    // Restore mesh selection which was active before calling
-    //   this function.
-    boundary.popSelect();
 }
 
 }  // namespace plb

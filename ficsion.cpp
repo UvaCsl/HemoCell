@@ -44,13 +44,12 @@ plint extraLayer      = 0;  // Make the bounding box larger; for visualization p
 const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
 const plint particleEnvelopeWidth = 2;
 
-void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest, T & k_stretch, T & k_shear, T & k_bend,
+void readFicsionXML(XMLreader document,T & shellDensity, T & k_stretch, T & k_shear, T & k_bend,
         T & u, T & Re, plint & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & shape, T & radius,
         plint & tmax, plint & tmeas, plint & npar )
     {
     document["cell"]["shellDensity"].read(shellDensity);
-    document["cell"]["k_rest"].read(k_rest);
     document["cell"]["k_stretch"].read(k_stretch);
     document["cell"]["k_shear"].read(k_shear);
     document["cell"]["k_bend"].read(k_bend);
@@ -80,7 +79,7 @@ int main(int argc, char* argv[])
     plint tmax, tmeas, npar;
     T u, Re;
     T lx, ly, lz;
-    T shellDensity, k_rest, k_stretch, k_shear, k_bend;
+    T shellDensity, k_stretch, k_shear, k_bend;
     T radius;
     T dt; dt = 0;
 
@@ -89,7 +88,7 @@ int main(int argc, char* argv[])
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
-    readFicsionXML(document, shellDensity, k_rest, k_stretch, k_shear, k_bend,
+    readFicsionXML(document, shellDensity, k_stretch, k_shear, k_bend,
             u, Re, N, lx, ly, lz,  forceToFluid, shape, radius, tmax, tmeas, npar);
 
     IncomprFlowParam<T> parameters(
@@ -139,32 +138,33 @@ int main(int argc, char* argv[])
     plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
     std::vector<plint> cellIds;
     plint numPartsPerCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, 200);
+    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, 50);
+    pcout << "Mesh Created" << std::endl;
+    generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice);
 
     //  plint nProcessors = 1 ;
     //  plint nProcessors = MPI::COMM_WORLD.Get_size() ;
     //  plint LUs=(1+nx)*(1+ny)*(1+nz);
     // plint nTriangles = Cells.getMesh().getNumTriangles();
 
-
-    pcout << "Mesh Created" << std::endl;
-	generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice);
-
     std::vector<plint> numParts(cellIds.size()); // Count number of particles per Cell
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
             numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), cellIds[iA]);
             pcout << "Cell: " << iA << ", Particles: " << numParts[iA] << std::endl;
-	}
+    }
     plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox()); //Total number of particles
 
-    std::vector<T> cellsVolume; // Count Volume per Cell
-    std::vector<T> cellsSurface; // Count Volume per Cell
-    std::vector<T> cellsMeanEdgeDistance;
-    std::vector<T> cellsMeanAngle, cellsMeanTriangleArea;
+    std::vector<T> cellsVolume, cellsSurface;
+    std::vector<T> cellsMeanEdgeDistance, cellsMeanAngle, cellsMeanTriangleArea;
+    T eqArea, eqLength, eqAngle;
+
     countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsVolume);
     countCellMeanTriangleArea(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanTriangleArea);
     countCellMeanAngle(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanAngle);
     countCellMeanEdgeDistance(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanEdgeDistance);
+    eqArea = cellsMeanTriangleArea[0];
+    eqLength = cellsMeanEdgeDistance[0];
+    eqAngle = cellsMeanAngle[0];
     for (pluint iA = 0; iA < cellsVolume.size(); ++iA) {
             pcout << "Cell: " << cellIds[iA]
                   << ", Volume: " << cellsVolume[iA]
@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
     particleLatticeArg.push_back(&immersedParticles);
     particleLatticeArg.push_back(&lattice);
 
-    CellModel3D<T> cellModel(shellDensity, k_rest, k_stretch, k_shear, k_bend, k_shear, k_shear);
+    CellModel3D<T> cellModel(shellDensity, k_stretch, k_shear, k_bend, eqArea, eqLength, eqAngle);
 
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();
@@ -193,7 +193,7 @@ int main(int argc, char* argv[])
 
          applyProcessingFunctional ( // compute force applied on the particles by springs
              new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
-                 Cells, cellModel.clone() ), // used because pushSelect is not used
+                 Cells, cellModel.clone() ),
              immersedParticles.getBoundingBox(), particleArg );
         if (forceToFluid != 0) { // Force from the Cell dynamics to the Fluid
             setExternalVector( lattice, lattice.getBoundingBox(),
@@ -213,11 +213,9 @@ int main(int argc, char* argv[])
             immersedParticles.getBoundingBox(), particleArg );
 
         deleteCell(immersedParticles, outlet, numParts, cellIds, centers, radii );
-        Cells.pushSelect(0,1);
         applyProcessingFunctional ( // update mesh position
             new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
             immersedParticles.getBoundingBox(), particleArg);
-        Cells.popSelect();
 
         if (i%tmeas==0) { // Output (or screen information every tmeas
             dt = global::timer("sim").stop();
@@ -239,10 +237,8 @@ int main(int argc, char* argv[])
                           << ", Mean Angle: " << cellsMeanAngle[iA]
                           << std::endl;
             }
-            Cells.pushSelect(0,1); // Print the coordinates of one particles
             pcout << "x: " << Cells.getMesh().getVertex(0)[0] << " y: " << Cells.getMesh().getVertex(0)[1] <<
                      " z: " << Cells.getMesh().getVertex(0)[2] <<std::endl;
-            Cells.popSelect();
 
 //            pcout << "Timer (w/o Output); " << i <<"; " << LUs << "; " << radii.size() << "; " << itotParticles << "; " << nTriangles << "; " <<nProcessors << "; " <<  dt << ";" << std::endl;
 //            pcout << "Write Particle VTK. " << std::endl; ;
@@ -255,9 +251,7 @@ int main(int argc, char* argv[])
             force_vectorNames.push_back("force");
             std::vector<std::string> velocity_vectorNames;
             velocity_vectorNames.push_back("velocity");
-            Cells.pushSelect(0,1);
             Cells.getMesh().writeAsciiSTL(global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
-            Cells.popSelect();
 
             // serialize the particle information to write them.
             // a correspondance between the mesh and the particles is made. (Needs rescale)

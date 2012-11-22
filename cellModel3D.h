@@ -31,27 +31,29 @@ template<typename T>
 class CellModel3D : public ShellModel3D<T>
 {
 public:
-	CellModel3D(T density_, T k_rest_, T k_stretch_, T k_shear_, T k_bend_,
-    		T k_vol_, T k_surface_);
+    CellModel3D(T density_,
+                T k_stretch_, T k_shear_, T k_bend_,
+                T eqArea_, T eqLength_, T eqAngle_
+                    );
     virtual Array<T,3> computeElasticForce (
             TriangleBoundary3D<T> const& boundary,
             plint iVertex );
     virtual CellModel3D<T>* clone() const;
-    T const& getRestingStiffness() const { return k_rest; }
-    T& getRestingStiffness() { return k_rest; }
     T const& getStretchingStiffness() const { return k_stretch; }
     T& getStretchingStiffness() { return k_stretch; }
     T const& getShearingStiffness() const { return k_shear; }
     T& getShearingStiffness() { return k_shear; }
     T const& getBendingStiffness() const { return k_bend; }
     T& getBendingStiffness() { return k_bend; }
-    T const& getVolumeStiffness() const { return k_vol; }
-    T& getVolumeStiffness() { return k_vol; }
-    T const& getSurfaceStiffness() const { return k_surface; }
-    T& getSurfaceStiffness() { return k_surface; }
-
+    T const& getEquilibriumLength() const { return eqLength; }
+    T& getEquilibriumLength() { return eqLength; }
+    T const& getEquilibriumAngle() const { return eqAngle; }
+    T& getEquilibriumAngle() { return eqAngle; }
+    T const& getEquilibriumArea() const { return eqArea; }
+    T& getEquilibriumArea() { return eqArea; }
 private:
-    T k_rest, k_stretch, k_shear, k_bend, k_vol, k_surface;
+    T k_stretch, k_shear, k_bend;
+    T eqLength, eqArea, eqAngle;
 };
 
 
@@ -64,75 +66,29 @@ namespace cellModelHelper3D {
 template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
                    TriangularSurfaceMesh<T> const& dynMesh, 
-                   TriangularSurfaceMesh<T> const& eqMesh, 
-                   T k_rest, T k_stretch, T k_shear, T k_bend,
-                   T k_vol, T k_surface);
+                   T k_stretch, T k_shear, T k_bend,
+                   T eqArea, T eqLength, T eqAngle);
 
 template<typename T>
 T computeStretchPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
-                          Array<T,3> const& iEqPosition, Array<T,3> const& jEqPosition,
+                          T eqLength,
                           T k);
 
 template<typename T>
 T computeShearPotential(Array<T,3> const& iPosition,
                         Array<T,3> const& jPosition,
                         Array<T,3> const& kPosition,
-                        Array<T,3> const& iEqPosition,
-                        Array<T,3> const& jEqPosition,
-                        Array<T,3> const& kEqPosition,
+                        T eqArea,
                         T k);
 
 template<typename T>
 T computeBendPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
                        Array<T,3> const& kPosition, Array<T,3> const& lPosition,
-                       Array<T,3> const& iEqPosition, Array<T,3> const& jEqPosition,
-                       Array<T,3> const& kEqPosition, Array<T,3> const& lEqPosition,
-                       T k, T he);
+                       T eqAngle, T eqLength, T eqArea,
+                       T k);
 
 }  // namespace cellModelHelper3D
 
-//namespace membraneBendingModelHelper3D {
-//
-//template<typename T>
-//T computePotential(plint iVertex, Array<T,3> const& iPosition,
-//                   TriangularSurfaceMesh<T> const& dynMesh,
-//                   TriangularSurfaceMesh<T> const& eqMesh,
-//                   T Y, T nu, T h, T k);
-//
-//template<typename T>
-//void computeMembraneStrain(Array<T,3> const& iPosition,
-//                           Array<T,3> const& jPosition,
-//                           Array<T,3> const& kPosition,
-//                           Array<T,3> const& iEqPosition,
-//                           Array<T,3> const& jEqPosition,
-//                           Array<T,3> const& kEqPosition,
-//                           Array<Array<T,3>,3>& E);
-//
-//template<typename T>
-//void computeBendingStrain(Array<T,3> const* iPositionP, Array<T,3> const* jPositionP,
-//                          Array<T,3> const* kPositionP,
-//                          Array<T,3> const* lPositionP, Array<T,3> const* mPositionP,
-//                          Array<T,3> const* nPositionP,
-//                          Array<T,3> const* iEqPositionP, Array<T,3> const* jEqPositionP,
-//                          Array<T,3> const* kEqPositionP,
-//                          Array<T,3> const* lEqPositionP, Array<T,3> const* mEqPositionP,
-//                          Array<T,3> const* nEqPositionP,
-//                          Array<Array<T,3>,3>& E);
-//
-//template<typename T>
-//T computeMembranePotentialDensity(Array<Array<T,3>,3> const& E, T Y, T nu, T h);
-//
-//template<typename T>
-//T computeBendingPotentialDensity(Array<Array<T,3>,3> const& E, T Y, T nu, T h);
-//
-//}  // namespace membraneBendingModelHelper3D
-//
-//template<typename T>
-//T computeRestPotential(Array<T,3> const& iPosition, Array<T,3> const& iEqPosition, T k);
-//
-//// template<typename T>
-//// T computeTriangleArea(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
-////                       Array<T,3> const& kPosition);
 
 }  // namespace shellModelHelper3D
 

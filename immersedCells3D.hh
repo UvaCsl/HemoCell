@@ -52,13 +52,11 @@ void createImmersedCellParticles (
         MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
         TriangleBoundary3D<T>& boundary, plint tag, plint numPartsPerCell )
 {
-    boundary.pushSelect(0,1);
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particleField);
     applyProcessingFunctional (
         new CreateTaggedImmersedCellParticle3D<T,Descriptor>(boundary,tag,numPartsPerCell),
         particleField.getBoundingBox(), particleArg );
-    boundary.popSelect();
 }
 
 template<typename T, template<typename U> class Descriptor>
