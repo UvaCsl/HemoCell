@@ -187,8 +187,8 @@ int main(int argc, char* argv[])
     particleLatticeArg.push_back(&lattice);
 
     CellModel3D<T> cellModel(shellDensity, k_stretch, k_shear, k_bend, k_volume, k_surface, \
-                                                eqArea, eqLength, eqAngle, eqVolume, eqSurface);
-
+                                                eqArea, eqLength, eqAngle, eqVolume, eqSurface,
+                                                1.0, eqLength/500.0);
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();
     applyProcessingFunctional ( // copy fluid velocity on particles

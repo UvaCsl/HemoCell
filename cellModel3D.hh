@@ -24,6 +24,12 @@
 #include <cmath>
 #include "cellModel3D.h"
 
+
+#ifndef K_BT__
+#define K_BT__
+const double k_BT = 4.0409277073170736e-08; // In lattice units
+#endif  // K_BT__
+
 namespace plb {
 
 template<typename T>
@@ -31,7 +37,8 @@ CellModel3D<T>::CellModel3D (
         T density_, T k_stretch_, T k_shear_, T k_bend_,
         T k_volume_, T k_surface_,
         T eqArea_, T eqLength_, T eqAngle_,
-        T eqVolume_, T eqSurface_)
+        T eqVolume_, T eqSurface_,
+        T maxLength_, T persistenceLength_)
     : ShellModel3D<T>(density_),
       k_stretch(k_stretch_),
       k_shear(k_shear_),
@@ -42,8 +49,18 @@ CellModel3D<T>::CellModel3D (
       eqArea(eqArea_),
       eqAngle(eqAngle_),
       eqVolume(eqVolume_),
-      eqSurface(eqSurface_)
-{ }
+      eqSurface(eqSurface_),
+      maxLength(maxLength_),
+      persistenceLength(persistenceLength_)
+{
+    T x0 = eqLength*1.0/maxLength;
+    k_WLC = k_BT * maxLength/(4.0*persistenceLength);
+    C_WLC = 3.0 * sqrt(3.0)* k_BT *
+        (maxLength*maxLength*maxLength)*
+        (x0*x0*x0*x0)/(64.0*persistenceLength)*
+        (4*x0*x0 - 9*x0 + 6) /
+        (1-x0)*(1-x0);
+}
 
 
 template<typename T>
@@ -103,15 +120,15 @@ Array<T,3> CellModel3D<T>::computeElasticForce (
         Array<T,3> iPosition = vertex;
         iPosition[i] += eps;
         T up = shellModelHelper3D::cellModelHelper3D::computePotential (
-                iVertex, iPosition, dynMesh, k_stretch,
-                k_shear, k_bend,
-                eqArea, eqLength, eqAngle);
+                iVertex, iPosition, dynMesh,
+                k_stretch, k_shear, k_bend, k_WLC,
+                maxLength, eqArea, eqLength, eqAngle, C_WLC);
         iPosition = vertex;
         iPosition[i] -= eps;
         T um = shellModelHelper3D::cellModelHelper3D::computePotential (
-                iVertex, iPosition, dynMesh, k_stretch,
-                k_shear, k_bend,
-                eqArea, eqLength, eqAngle);
+                iVertex, iPosition, dynMesh,
+                k_stretch, k_shear, k_bend, k_WLC,
+                maxLength, eqArea, eqLength, eqAngle, C_WLC);
         force[i] = -(up-um) / (2.0*eps);
     }
     return force;
@@ -130,41 +147,25 @@ namespace cellModelHelper3D {
 template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
                    TriangularSurfaceMesh<T> const& dynMesh, 
-                   T k_stretch, T k_shear, T k_bend,
-                   T eqArea, T eqLength, T eqAngle)
+                   T k_stretch, T k_shear, T k_bend, T k_WLC,
+                   T maxLength, T eqArea, T eqLength, T eqAngle, T C_WLC)
 {
     T u = 0.0;
-
+    T area = 0;
     // Membrane streching mode
-
     std::vector<plint> neighborVertexIds = dynMesh.getNeighborVertexIds(iVertex);
-
     pluint sz = neighborVertexIds.size();
-
     for (pluint i = 0; i < sz; i++) {
         plint jVertex = neighborVertexIds[i];
-        u += computeStretchPotential(iPosition, dynMesh.getVertex(jVertex),
-                eqLength, k_stretch);
-    }
-
-    // Membrane shearing mode
-
-    pluint iMax = (dynMesh.isBoundaryVertex(iVertex) ? sz-1 : sz);
-
-    for (pluint i = 0; i < iMax; i++) {
-        plint jVertex = neighborVertexIds[i];
         plint kVertex = (i==sz-1 ? neighborVertexIds[0] : neighborVertexIds[i+1]);
-        u += computeShearPotential(iPosition,
-                                   dynMesh.getVertex(jVertex),
-                                   dynMesh.getVertex(kVertex),
-                                   eqArea, k_shear);
-    }
+        Array<T,3> jPosition = dynMesh.getVertex(jVertex);
+        Array<T,3> kPosition = dynMesh.getVertex(kVertex);
+        u +=  computeInPlanePotential(iPosition, jPosition, maxLength, k_WLC);
+        // Membrane shearing mode
+        u += computeShearPotential(iPosition, jPosition, kPosition,
+                                   eqArea, area, k_shear);
+        u += (C_WLC*1.0)/area; //Contribution from the WLC
 
-    // Shell bending mode
-
-    for (pluint i = 0; i < iMax; i++) {
-        plint jVertex = neighborVertexIds[i];
-        plint kVertex = (i==sz-1 ? neighborVertexIds[0] : neighborVertexIds[i+1]);
         if (dynMesh.isInteriorEdge(iVertex, jVertex)) {
             std::vector<plint> v = dynMesh.getNeighborVertexIds(iVertex, jVertex);
             PLB_ASSERT(v.size() == 2);
@@ -193,6 +194,16 @@ T computePotential(plint iVertex, Array<T,3> const& iPosition,
 
     return u;
 }
+
+template<typename T>
+T computeInPlanePotential(Array<T,3> const& iPosition,
+                          Array<T,3> const& jPosition,
+                          T maxLength, T k_WLC)
+{
+    T x = norm(iPosition - jPosition)*1.0/maxLength;
+    return k_WLC*(3*x*x - 2*x*x*x)/(1-x);
+}
+
 
 template<typename T>
 T computeStretchPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,

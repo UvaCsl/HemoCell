@@ -35,7 +35,8 @@ public:
                 T k_stretch_, T k_shear_, T k_bend_,
                 T k_volume_, T k_surface_,
                 T eqArea_, T eqLength_, T eqAngle_,
-                T eqVolume_, T eqSurface_);
+                T eqVolume_, T eqSurface_,
+                T maxLength_, T persistenceLength_);
     virtual Array<T,3> computeCellForce (
             TriangleBoundary3D<T> const& boundary,
             T cellVolume, T cellSurface,
@@ -54,6 +55,8 @@ public:
     T& getSurfaceStiffness() { return k_surface; }
     T const& getVolumeStiffness() const { return k_volume; }
     T& getVolumeStiffness() { return k_volume; }
+    T const& getWLCStiffness() const { return k_WLC; }
+    T& getWLCStiffness() { return k_WLC; }
     T const& getEquilibriumLength() const { return eqLength; }
     T& getEquilibriumLength() { return eqLength; }
     T const& getEquilibriumAngle() const { return eqAngle; }
@@ -64,10 +67,15 @@ public:
     T& getEquilibriumVolume() { return eqVolume; }
     T const& getEquilibriumSurface() const { return eqSurface; }
     T& getEquilibriumSurface() { return eqSurface; }
+    T const& getMaximumLength() const { return maxLength; }
+    T& getMaximumLength() { return maxLength; }
+    T const& getPersistenceLength() const { return persistenceLength; }
+    T& getPersistenceLength() { return persistenceLength; }
 private:
-    T k_stretch, k_shear, k_bend, k_volume, k_surface;
+    T k_stretch, k_shear, k_bend, k_volume, k_surface, k_WLC;
     T eqLength, eqArea, eqAngle;
     T eqVolume, eqSurface;
+    T maxLength, persistenceLength, C_WLC;
 };
 
 
@@ -80,8 +88,8 @@ namespace cellModelHelper3D {
 template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
                    TriangularSurfaceMesh<T> const& dynMesh, 
-                   T k_stretch, T k_shear, T k_bend,
-                   T eqArea, T eqLength, T eqAngle);
+                   T k_stretch, T k_shear, T k_bend, T k_WLC,
+                   T maxLength, T eqArea, T eqLength, T eqAngle, T C_WLC);
 
 template<typename T>
 T computeStretchPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
