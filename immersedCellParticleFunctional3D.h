@@ -27,7 +27,7 @@
 #include "offLattice/triangularSurfaceMesh.h"
 #include "immersedCellParticle3D.h"
 #include "offLattice/triangleBoundary3D.h"
-#include "shellModel3D.h"
+#include "cellModel3D.h"
 #include <map>
 
 namespace plb {
@@ -129,7 +129,8 @@ class ComputeImmersedElasticForce3D : public BoxProcessingFunctional3D
 public:
     ComputeImmersedElasticForce3D (
             TriangleBoundary3D<T> const& triangleBoundary_,
-            ShellModel3D<T>* shellModel_, int meshID_=1 );
+            CellModel3D<T>* cellModel_,
+            std::vector<T> const& cellsVolume_, std::vector<T> const& cellsSurface_);
     ~ComputeImmersedElasticForce3D();
     ComputeImmersedElasticForce3D(ComputeImmersedElasticForce3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -140,8 +141,9 @@ public:
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
     TriangleBoundary3D<T> const& triangleBoundary;
-    ShellModel3D<T>* shellModel;
-    int meshID;
+    CellModel3D<T>* cellModel;
+    std::vector<T> const& cellsVolume;
+    std::vector<T> const& cellsSurface;
 };
 
 /// Requirement: particles must be of type point-particle.

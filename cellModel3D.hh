@@ -29,15 +29,59 @@ namespace plb {
 template<typename T>
 CellModel3D<T>::CellModel3D (
         T density_, T k_stretch_, T k_shear_, T k_bend_,
-        T eqArea_, T eqLength_, T eqAngle_)
+        T k_volume_, T k_surface_,
+        T eqArea_, T eqLength_, T eqAngle_,
+        T eqVolume_, T eqSurface_)
     : ShellModel3D<T>(density_),
       k_stretch(k_stretch_),
       k_shear(k_shear_),
       k_bend(k_bend_),
+      k_volume(k_volume_),
+      k_surface(k_surface_),
       eqLength(eqLength_),
       eqArea(eqArea_),
-      eqAngle(eqAngle_)
+      eqAngle(eqAngle_),
+      eqVolume(eqVolume_),
+      eqSurface(eqSurface_)
 { }
+
+
+template<typename T>
+Array<T,3> CellModel3D<T>::computeCellForce (
+        TriangleBoundary3D<T> const& boundary,
+        T cellVolume, T cellSurface,
+        plint iVertex )
+{
+    // Force calculation according to KrugerThesis, Appendix C
+    Array<T,3> volumeForce; volumeForce.resetToZero();
+    Array<T,3> surfaceForce; surfaceForce.resetToZero();
+    T volumeCoefficient = k_volume * (cellVolume - eqVolume)*1.0/eqVolume;
+    T surfaceCoefficient= k_surface * (cellSurface - eqSurface)*1.0/eqSurface;
+    TriangularSurfaceMesh<T> const& dynMesh = boundary.getMesh();
+    Array<T,3> xi = dynMesh.getVertex(iVertex);
+
+    std::vector<plint> neighborVertexIds = dynMesh.getNeighborVertexIds(iVertex);
+    pluint sz = neighborVertexIds.size();
+    // Membrane shearing mode
+    pluint iMax = (dynMesh.isBoundaryVertex(iVertex) ? sz-1 : sz);
+
+    Array<T,3> dAdx, dVdx, tmp;
+    for (pluint i = 0; i < iMax; i++) {
+        plint jVertex = neighborVertexIds[i];
+        plint kVertex = (i==sz-1 ? neighborVertexIds[0] : neighborVertexIds[i+1]);
+        Array<T,3> xj = dynMesh.getVertex(jVertex);
+        Array<T,3> xk = dynMesh.getVertex(kVertex);
+        crossProduct(dynMesh.computeTriangleNormal(iVertex, jVertex, kVertex),
+                        xk - xj,
+                        tmp);
+        dAdx = 0.5 *tmp;
+        crossProduct(xk, xj, tmp);
+        dVdx = 1.0/6.0 * tmp;
+        volumeForce  += -volumeCoefficient  * dVdx;
+        surfaceForce += -surfaceCoefficient * dAdx;
+    }
+    return volumeForce + surfaceForce;
+}
 
 
 template<typename T>
@@ -156,7 +200,8 @@ T computeStretchPotential(Array<T,3> const& iPosition, Array<T,3> const& jPositi
                           T k)
 {
     T length   = norm(iPosition   - jPosition);
-    return 0.5*k*(length - eqLength)*(length - eqLength);
+    return 0.5*k*(length - eqLength)*(length - eqLength)/eqLength;
+//    return 0.5*k*(length - eqLength)*(length - eqLength);
 }
 
 template<typename T>
@@ -167,7 +212,19 @@ T computeShearPotential(Array<T,3> const& iPosition,
                         T k)
 {
     T area   = computeTriangleArea(iPosition,   jPosition,   kPosition);
-    return 0.5*k*(area - eqArea)*(area - eqArea);
+    return 0.5*k*(area - eqArea)*(area - eqArea)/eqArea;
+//    return 0.5*k*(area - eqArea)*(area - eqArea);
+}
+
+template<typename T>
+T computeShearPotential(Array<T,3> const& iPosition,
+                        Array<T,3> const& jPosition,
+                        Array<T,3> const& kPosition,
+                        T eqArea, T & area,
+                        T k)
+{
+    area   = computeTriangleArea(iPosition,   jPosition,   kPosition);
+    return 0.5*k*(area - eqArea)*(area - eqArea)/eqArea;
 }
 
 template<typename T>
@@ -205,8 +262,8 @@ T computeBendPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
     T Dangle = angle - eqAngle;
     T Dangle2 = Dangle * Dangle ;
     return k*Dangle2*( 0.5 + Dangle2/24.0 + Dangle2*Dangle2/720.0) ;
-    T he = (eqArea*2.0)/(3.0*eqLength);
-    return 0.5*k*(angle - eqAngle)*(angle - eqAngle)*eqLength / he;
+//    T he = (eqArea*2.0)/(3.0*eqLength);
+//    return 0.5*k*(angle - eqAngle)*(angle - eqAngle)*eqLength / he;
 }
 
 }  // namespace cellModelHelper3D

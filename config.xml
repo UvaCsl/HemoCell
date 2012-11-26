@@ -5,6 +5,8 @@
 	<k_stretch> 1.0e-3 </k_stretch>
 	<k_shear> 1.0e-3 </k_shear>
 	<k_bend> 1.0e-3 </k_bend>
+	<k_volume> 1.0e-3 </k_volume>
+	<k_surface> 1.0e-3 </k_surface>
 </cell>
 
 <parameters>

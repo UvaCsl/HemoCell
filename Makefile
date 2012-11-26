@@ -58,9 +58,9 @@ parallelCXX  = mpicxx
 # General compiler flags (e.g. -Wall to turn on all warnings on g++)
 UNAME := $(shell uname)
 ifeq ($(UNAME),Darwin)
-	compileFlags = -DPLB_MAC_OS_X # -Wall
+	compileFlags = -DPLB_MAC_OS_X -Wall
 else
-	compileFlags = # -Wall 
+	compileFlags = -Wall 
 endif
 
 # compileFlags = -Wall 

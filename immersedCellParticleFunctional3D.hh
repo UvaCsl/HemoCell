@@ -408,22 +408,28 @@ void GetTaggedParticleVelocity3D<T,Descriptor>::getTypeOfModification (
 template<typename T, template<typename U> class Descriptor>
 ComputeImmersedElasticForce3D<T,Descriptor>::ComputeImmersedElasticForce3D (
         TriangleBoundary3D<T> const& triangleBoundary_,
-        ShellModel3D<T>* shellModel_, int meshID_ )
+        CellModel3D<T>* cellModel_,
+        std::vector<T> const& cellsVolume_, std::vector<T> const& cellsSurface_)
     : triangleBoundary(triangleBoundary_),
-      shellModel(shellModel_), meshID(meshID_)
+      cellModel(cellModel_),
+      cellsVolume(cellsVolume_),
+      cellsSurface(cellsSurface_)
 { }
 
 template<typename T, template<typename U> class Descriptor>
 ComputeImmersedElasticForce3D<T,Descriptor>::~ComputeImmersedElasticForce3D()
 {
-    delete shellModel;
+    delete cellModel;
 }
 
 template<typename T, template<typename U> class Descriptor>
 ComputeImmersedElasticForce3D<T,Descriptor>::ComputeImmersedElasticForce3D (
             ComputeImmersedElasticForce3D<T,Descriptor> const& rhs)
     : triangleBoundary(rhs.triangleBoundary),
-      shellModel(rhs.shellModel->clone()), meshID(rhs.meshID)
+      cellModel(rhs.cellModel->clone()),
+      cellsVolume(rhs.cellsVolume),
+      cellsSurface(rhs.cellsSurface)
+
 { }
 
 
@@ -443,12 +449,14 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         plint vertexId = particle->getTag();
-
+        plint cellId = particle->get_cellId();
         if (!isRigid(triangleBoundary.getVertexProperty(vertexId))) {
-            Array<T,3> elasticForce = shellModel->computeElasticForce (
+            Array<T,3> elasticForce = cellModel->computeElasticForce (
                     triangleBoundary, vertexId );
-            T mass = shellModel->getDensity();
-//            T mass = shellModel->getDensity() * triangleBoundary.getMesh().computeVertexArea(vertexId);
+            elasticForce += cellModel->computeCellForce (
+                    triangleBoundary, cellsVolume[cellId], cellsSurface[cellId], vertexId );
+            T mass = cellModel->getDensity();
+//            T mass = cellModel->getDensity() * triangleBoundary.getMesh().computeVertexArea(vertexId);
             particle->get_a() += elasticForce/mass;
             particle->get_force() += elasticForce;
         }

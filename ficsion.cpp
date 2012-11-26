@@ -44,7 +44,8 @@ plint extraLayer      = 0;  // Make the bounding box larger; for visualization p
 const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
 const plint particleEnvelopeWidth = 2;
 
-void readFicsionXML(XMLreader document,T & shellDensity, T & k_stretch, T & k_shear, T & k_bend,
+void readFicsionXML(XMLreader document,T & shellDensity,
+        T & k_stretch, T & k_shear, T & k_bend, T & k_volume, T & k_surface,
         T & u, T & Re, plint & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & shape, T & radius,
         plint & tmax, plint & tmeas, plint & npar )
@@ -53,6 +54,8 @@ void readFicsionXML(XMLreader document,T & shellDensity, T & k_stretch, T & k_sh
     document["cell"]["k_stretch"].read(k_stretch);
     document["cell"]["k_shear"].read(k_shear);
     document["cell"]["k_bend"].read(k_bend);
+    document["cell"]["k_volume"].read(k_volume);
+    document["cell"]["k_surface"].read(k_surface);
     document["parameters"]["u"].read(u);
     document["parameters"]["Re"].read(Re);
     document["parameters"]["N"].read(N);
@@ -79,7 +82,7 @@ int main(int argc, char* argv[])
     plint tmax, tmeas, npar;
     T u, Re;
     T lx, ly, lz;
-    T shellDensity, k_stretch, k_shear, k_bend;
+    T shellDensity, k_stretch, k_shear, k_bend, k_volume, k_surface;
     T radius;
     T dt; dt = 0;
 
@@ -88,7 +91,7 @@ int main(int argc, char* argv[])
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
-    readFicsionXML(document, shellDensity, k_stretch, k_shear, k_bend,
+    readFicsionXML(document, shellDensity, k_stretch, k_shear, k_bend, k_volume, k_surface,
             u, Re, N, lx, ly, lz,  forceToFluid, shape, radius, tmax, tmeas, npar);
 
     IncomprFlowParam<T> parameters(
@@ -156,15 +159,18 @@ int main(int argc, char* argv[])
 
     std::vector<T> cellsVolume, cellsSurface;
     std::vector<T> cellsMeanEdgeDistance, cellsMeanAngle, cellsMeanTriangleArea;
-    T eqArea, eqLength, eqAngle;
+    T eqArea, eqLength, eqAngle, eqVolume, eqSurface;
 
     countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsVolume);
+    countCellSurface(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsSurface);
     countCellMeanTriangleArea(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanTriangleArea);
     countCellMeanAngle(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanAngle);
     countCellMeanEdgeDistance(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanEdgeDistance);
     eqArea = cellsMeanTriangleArea[0];
     eqLength = cellsMeanEdgeDistance[0];
     eqAngle = cellsMeanAngle[0];
+    eqVolume = cellsVolume[0];
+    eqSurface = cellsSurface[0];
     for (pluint iA = 0; iA < cellsVolume.size(); ++iA) {
             pcout << "Cell: " << cellIds[iA]
                   << ", Volume: " << cellsVolume[iA]
@@ -180,7 +186,8 @@ int main(int argc, char* argv[])
     particleLatticeArg.push_back(&immersedParticles);
     particleLatticeArg.push_back(&lattice);
 
-    CellModel3D<T> cellModel(shellDensity, k_stretch, k_shear, k_bend, eqArea, eqLength, eqAngle);
+    CellModel3D<T> cellModel(shellDensity, k_stretch, k_shear, k_bend, k_volume, k_surface, \
+                                                eqArea, eqLength, eqAngle, eqVolume, eqSurface);
 
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();
@@ -193,7 +200,7 @@ int main(int argc, char* argv[])
 
          applyProcessingFunctional ( // compute force applied on the particles by springs
              new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
-                 Cells, cellModel.clone() ),
+                 Cells, cellModel.clone(), cellsVolume, cellsSurface),
              immersedParticles.getBoundingBox(), particleArg );
         if (forceToFluid != 0) { // Force from the Cell dynamics to the Fluid
             setExternalVector( lattice, lattice.getBoundingBox(),

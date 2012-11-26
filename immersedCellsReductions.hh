@@ -182,7 +182,8 @@ void VolumeCellReduceFunctional3D<T,Descriptor>::calculateQuantity(TriangularSur
             Array<T,3> v2 = triangleMesh.getVertex(neighbors[iB],2);
 //       /* ************* Other Calculation ********* */
 //          Array<T,3> areaTimesNormal = triangleMesh.computeTriangleNormal(neighbors[iB], true);
-//          T triangleVolumeT6 = 2.0 * VectorTemplate<T,Descriptor>::scalarProduct(areaTimesNormal, ((v0+v1+v2)/3.0)) ;
+//          T triangleVolumeT6 = VectorTemplate<T,Descriptor>::scalarProduct(areaTimesNormal, ((v0+v1+v2)/3.0)) ;
+//          this->getStatistics().gatherSum(quantityIds_[particle->get_cellId()], triangleVolumeT6/6.0/3.0); // every volume is evaluated 3 times
 //       /* ********************************************* */
             /* Calculating the volume contibution of a face based on the formula:
              * V[j] = 1.0/6.0 * (X3[j] cross X2[j])*X1[j]  */

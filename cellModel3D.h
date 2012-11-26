@@ -33,8 +33,13 @@ class CellModel3D : public ShellModel3D<T>
 public:
     CellModel3D(T density_,
                 T k_stretch_, T k_shear_, T k_bend_,
-                T eqArea_, T eqLength_, T eqAngle_
-                    );
+                T k_volume_, T k_surface_,
+                T eqArea_, T eqLength_, T eqAngle_,
+                T eqVolume_, T eqSurface_);
+    virtual Array<T,3> computeCellForce (
+            TriangleBoundary3D<T> const& boundary,
+            T cellVolume, T cellSurface,
+            plint iVertex );
     virtual Array<T,3> computeElasticForce (
             TriangleBoundary3D<T> const& boundary,
             plint iVertex );
@@ -45,15 +50,24 @@ public:
     T& getShearingStiffness() { return k_shear; }
     T const& getBendingStiffness() const { return k_bend; }
     T& getBendingStiffness() { return k_bend; }
+    T const& getSurfaceStiffness() const { return k_surface; }
+    T& getSurfaceStiffness() { return k_surface; }
+    T const& getVolumeStiffness() const { return k_volume; }
+    T& getVolumeStiffness() { return k_volume; }
     T const& getEquilibriumLength() const { return eqLength; }
     T& getEquilibriumLength() { return eqLength; }
     T const& getEquilibriumAngle() const { return eqAngle; }
     T& getEquilibriumAngle() { return eqAngle; }
     T const& getEquilibriumArea() const { return eqArea; }
     T& getEquilibriumArea() { return eqArea; }
+    T const& getEquilibriumVolume() const { return eqVolume; }
+    T& getEquilibriumVolume() { return eqVolume; }
+    T const& getEquilibriumSurface() const { return eqSurface; }
+    T& getEquilibriumSurface() { return eqSurface; }
 private:
-    T k_stretch, k_shear, k_bend;
+    T k_stretch, k_shear, k_bend, k_volume, k_surface;
     T eqLength, eqArea, eqAngle;
+    T eqVolume, eqSurface;
 };
 
 
@@ -79,6 +93,13 @@ T computeShearPotential(Array<T,3> const& iPosition,
                         Array<T,3> const& jPosition,
                         Array<T,3> const& kPosition,
                         T eqArea,
+                        T k);
+
+template<typename T>
+T computeShearPotential(Array<T,3> const& iPosition,
+                        Array<T,3> const& jPosition,
+                        Array<T,3> const& kPosition,
+                        T eqArea, T & area,
                         T k);
 
 template<typename T>
