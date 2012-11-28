@@ -34,27 +34,29 @@ const T pi = 4.*atan(1.);
 
 /* ************* Functions poiseuillePressure and poiseuilleVelocity ******************* */
 
-static T poiseuillePressure(IncomprFlowParam<T> const &parameters, plint maxN);
-T poiseuilleVelocity(plint iY, plint iZ, IncomprFlowParam<T> const& parameters, plint maxN);
+static T poiseuillePressure(IncomprFlowParam<T> const &parameters, plint maxN, T Re);
+T poiseuilleVelocity(plint iY, plint iZ, IncomprFlowParam<T> const& parameters, plint maxN, T Re);
 
 template <typename T>
 class SquarePoiseuilleDensityAndVelocity {
 public:
-    SquarePoiseuilleDensityAndVelocity(IncomprFlowParam<T> const& parameters_, plint maxN_);
+    SquarePoiseuilleDensityAndVelocity(IncomprFlowParam<T> const& parameters_, plint maxN_, T Re_);
     void operator()(plint iX, plint iY, plint iZ, T &rho, Array<T,3>& u) const ;
 private:
     IncomprFlowParam<T> parameters;
     plint maxN;
+    T Re;
 };
 
 template <typename T>
 class SquarePoiseuilleVelocity {
 public:
-    SquarePoiseuilleVelocity(IncomprFlowParam<T> const& parameters_, plint maxN_);
+    SquarePoiseuilleVelocity(IncomprFlowParam<T> const& parameters_, plint maxN_, T Re_);
     void operator()(plint iX, plint iY, plint iZ, Array<T,3>& u) const  ;
 private:
     IncomprFlowParam<T> parameters;
     plint maxN;
+    T Re;
 };
 
 /* ************************************************************************************* */
@@ -62,7 +64,8 @@ private:
 /* ******************* iniLattice ***************************************** */
 void iniLattice( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                  IncomprFlowParam<T> const& parameters,
-                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition );
+                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition,
+                 T Re);
 
 /* ******************* writeFicsionLogFile ***************************************** */
 template<typename T>

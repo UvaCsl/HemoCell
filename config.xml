@@ -11,20 +11,21 @@
 
 
 <parameters>
+	<Re> 0.1 </Re>   <!--Reynolds number-->
 	<rho_p> 1025 </rho_p>   <!--Density, Physical units [kg/m^3]-->
 	<nu_p> 1.7e-6 </nu_p>   <!-- Dynamic viscosity, physical units [m^2/s]-->
 	<tau> 1.0 </tau>
 	<dx> 1e-6 </dx>
-	<lx> 0.00005 </lx>
-	<ly> 0.00001 </ly>
-	<lz> 0.00001 </lz>
+	<nx> 50 </nx>
+	<ny> 10 </ny>
+	<nz> 10 </nz>
 </parameters>
 
 
 <ibm>
 	<forceToFluid> 0 </forceToFluid>
-	<shape> 0 </shape> <!-- shape: Sphere:0, RBC:1 -->
-	<radius> 1.0 </radius> 
+	<shape> 1 </shape> <!-- shape: Sphere:0, RBC:1 -->
+	<radius> 1.0 </radius> <!-- Radius of the particle in Lattice Units (dx) -->
 </ibm>
 
 <sim>

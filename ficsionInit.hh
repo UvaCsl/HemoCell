@@ -10,12 +10,12 @@
 //using namespace std;
 
 /* ************* Functions poiseuillePressure and poiseuilleVelocity ******************* */
-static T poiseuillePressure(IncomprFlowParam<T> const &parameters, plint maxN)
+static T poiseuillePressure(IncomprFlowParam<T> const &parameters, plint maxN, T Re)
 {
     const T a = parameters.getNy()-1;
     const T b = parameters.getNz()-1;
     const T nu = parameters.getLatticeNu();
-    const T uMax = parameters.getLatticeU();
+    const T uMax = Re * nu/min(a,b);
     T sum = T();
     for (plint iN = 0; iN < maxN; iN += 2)
     {
@@ -32,13 +32,13 @@ static T poiseuillePressure(IncomprFlowParam<T> const &parameters, plint maxN)
     return deltaP;
 }
 
-T poiseuilleVelocity(plint iY, plint iZ, IncomprFlowParam<T> const& parameters, plint maxN)
+T poiseuilleVelocity(plint iY, plint iZ, IncomprFlowParam<T> const& parameters, plint maxN, T Re)
 {
     const T a = parameters.getNy()-1;
     const T b = parameters.getNz()-1;
     const T y = (T)iY - a / (T)2;
     const T z = (T)iZ - b / (T)2;
-    const T alpha = - poiseuillePressure(parameters,maxN) / parameters.getLatticeNu();
+    const T alpha = - poiseuillePressure(parameters,maxN, Re) / parameters.getLatticeNu();
     T sum = T();
     for (plint iN = 0; iN < maxN; iN += 2)
     {
@@ -58,27 +58,27 @@ T poiseuilleVelocity(plint iY, plint iZ, IncomprFlowParam<T> const& parameters, 
 }
 
 template <typename T>
-SquarePoiseuilleDensityAndVelocity<T>::SquarePoiseuilleDensityAndVelocity(IncomprFlowParam<T> const& parameters_, plint maxN_)
-: parameters(parameters_), maxN(maxN_)
+SquarePoiseuilleDensityAndVelocity<T>::SquarePoiseuilleDensityAndVelocity(IncomprFlowParam<T> const& parameters_, plint maxN_, T Re_)
+: parameters(parameters_), maxN(maxN_), Re(Re_)
 { }
 
 template <typename T>
 void SquarePoiseuilleDensityAndVelocity<T>::operator()(plint iX, plint iY, plint iZ, T &rho, Array<T,3>& u) const {
         rho = (T)1;
-        u[0] = poiseuilleVelocity(iY, iZ, parameters, maxN);
+        u[0] = poiseuilleVelocity(iY, iZ, parameters, maxN, Re);
         u[1] = T();
         u[2] = T();
 }
 
 
 template <typename T>
-SquarePoiseuilleVelocity<T>::SquarePoiseuilleVelocity(IncomprFlowParam<T> const& parameters_, plint maxN_)
-: parameters(parameters_), maxN(maxN_)
+SquarePoiseuilleVelocity<T>::SquarePoiseuilleVelocity(IncomprFlowParam<T> const& parameters_, plint maxN_, T Re_)
+: parameters(parameters_), maxN(maxN_), Re(Re_)
 { }
 
 template <typename T>
 void SquarePoiseuilleVelocity<T>::operator()(plint iX, plint iY, plint iZ, Array<T,3>& u) const  {
-    u[0] = poiseuilleVelocity(iY, iZ, parameters, maxN);
+    u[0] = poiseuilleVelocity(iY, iZ, parameters, maxN, Re);
     u[1] = T();
     u[2] = T();
 }
@@ -86,7 +86,7 @@ void SquarePoiseuilleVelocity<T>::operator()(plint iX, plint iY, plint iZ, Array
 /* ************* iniLattice ******************* */
 void iniLattice( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                  IncomprFlowParam<T> const& parameters,
-                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition )
+                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T Re)
 {
     const plint nx = parameters.getNx();
     const plint ny = parameters.getNy();
@@ -110,15 +110,15 @@ void iniLattice( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, left );
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, right );
 
-    setBoundaryVelocity(lattice, inlet, SquarePoiseuilleVelocity<T>(parameters, NMAX));
-    setBoundaryVelocity(lattice, outlet, SquarePoiseuilleVelocity<T>(parameters, NMAX));
+    setBoundaryVelocity(lattice, inlet, SquarePoiseuilleVelocity<T>(parameters, NMAX, Re));
+    setBoundaryVelocity(lattice, outlet, SquarePoiseuilleVelocity<T>(parameters, NMAX, Re));
 
     setBoundaryVelocity(lattice, top, Array<T,3>(0.0,0.0,0.0));
     setBoundaryVelocity(lattice, bottom, Array<T,3>(0.0,0.0,0.0));
     setBoundaryVelocity(lattice, left, Array<T,3>(0.0,0.0,0.0));
     setBoundaryVelocity(lattice, right, Array<T,3>(0.0,0.0,0.0));
 
-    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), SquarePoiseuilleDensityAndVelocity<T>(parameters, NMAX));
+    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), SquarePoiseuilleDensityAndVelocity<T>(parameters, NMAX, Re));
 
     setExternalVector( lattice, lattice.getBoundingBox(),
                        DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));

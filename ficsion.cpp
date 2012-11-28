@@ -46,12 +46,13 @@ const plint particleEnvelopeWidth = 2;
 
 void readFicsionXML(XMLreader document,T & shellDensity,
         T & k_stretch, T & k_shear, T & k_bend, T & k_volume, T & k_surface,
-        T & rho_p, T & u, T & Re, T & N, T & lx, T & ly, T & lz,
+        T & rho_p, T & u, T & Re, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & shape, T & radius,
         plint & tmax, plint & tmeas, plint & npar)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
+    T nx, ny, nz;
 
     document["cell"]["shellDensity"].read(shellDensity);
     document["cell"]["k_stretch"].read(k_stretch);
@@ -59,13 +60,14 @@ void readFicsionXML(XMLreader document,T & shellDensity,
     document["cell"]["k_bend"].read(k_bend);
     document["cell"]["k_volume"].read(k_volume);
     document["cell"]["k_surface"].read(k_surface);
+    document["parameters"]["Re"].read(Re);
     document["parameters"]["rho_p"].read(rho_p);
     document["parameters"]["nu_p"].read(nu_p);
     document["parameters"]["tau"].read(tau);
     document["parameters"]["dx"].read(dx);
-    document["parameters"]["lx"].read(lx);
-    document["parameters"]["ly"].read(ly);
-    document["parameters"]["lz"].read(lz);
+    document["parameters"]["nx"].read(nx);
+    document["parameters"]["ny"].read(ny);
+    document["parameters"]["nz"].read(nz);
     document["ibm"]["forceToFluid"].read(forceToFluid);
     document["ibm"]["shape"].read(shape);
     document["ibm"]["radius"].read(radius);
@@ -76,8 +78,11 @@ void readFicsionXML(XMLreader document,T & shellDensity,
     nu_lb = (tau-0.5)/3.0;
     dt = (nu_lb/nu_p)*dx*dx;
     u = dt*1.0/dx;
-    Re = 1.0/nu_p;
+    Re_p = 1.0/nu_p;
     N = int(1.0/dx);
+    lx = nx * dx;
+    ly = ny * dx;
+    lz = nz * dx;
 }
 
 int main(int argc, char* argv[])
@@ -92,7 +97,7 @@ int main(int argc, char* argv[])
     plint tmax, tmeas, npar;
     T dtIteration;
     T shellDensity, k_stretch, k_shear, k_bend, k_volume, k_surface;
-    T u, Re, N, lx, ly, lz;
+    T u, Re, Re_p, N, lx, ly, lz;
     T rho_p;
     T radius;
 
@@ -102,10 +107,10 @@ int main(int argc, char* argv[])
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
     readFicsionXML(document, shellDensity, k_stretch, k_shear, k_bend, k_volume, k_surface,
-            rho_p, u, Re, N, lx, ly, lz,  forceToFluid, shape, radius, tmax, tmeas, npar);
+            rho_p, u, Re, Re_p, N, lx, ly, lz,  forceToFluid, shape, radius, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
             u, // u
-            Re, // Re
+            Re_p, // Inverse viscosity (1/nu_p)
             N,   // N
             lx,        // lx
             ly,        // ly
@@ -119,7 +124,8 @@ int main(int argc, char* argv[])
     T tau = parameters.getTau();
     T dx = parameters.getDeltaX();
     T dt = parameters.getDeltaT();
-    dx += dt;
+    T dm = rho_p * (dx*dx*dx);
+    dx += dt+dm;
 
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz,
@@ -131,7 +137,7 @@ int main(int argc, char* argv[])
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
-    iniLattice(lattice, parameters, *boundaryCondition);
+    iniLattice(lattice, parameters, *boundaryCondition, Re);
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
             latticeManagement.getSparseBlockStructure(),
