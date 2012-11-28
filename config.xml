@@ -34,6 +34,16 @@
 </sim>
 
 
+<!--<parameters>-->
+<!--	<rho_p> 1025 </rho_p>   <!--Density, Physical units [kg/m^3]-->-->
+<!--	<nu_p> 0.1666666 </nu_p>   <!-- Dynamic viscosity, physical units [m^2/s]-->-->
+<!--	<tau> 1.0 </tau>-->
+<!--	<dx> 1 </dx>-->
+<!--	<lx> 50 </lx>-->
+<!--	<ly> 10 </ly>-->
+<!--	<lz> 10 </lz>-->
+<!--</parameters>-->
+
 
 <!--<parameters>-->
 <!--	<u> 0.1 </u>-->

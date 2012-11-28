@@ -217,15 +217,15 @@ TriangleBoundary3D<T> createCompleteMesh(
     wholeTriangleSet.merge(allTriangles);
 
 //    Dot3D location(centers[0][0]-radii[0],centers[0][1]-radii[0],centers[0][2]-radii[0]);
-    DEFscaledMesh<T> defMesh (wholeTriangleSet);
 //    DEFscaledMesh<T> defMesh (
 //            wholeTriangleSet, parameters.getResolution(), xDirection, margin, location );
-//    defMesh.setDx(parameters.getDeltaX());
-    pcout << "Original sphere at location [" << centers[0][0] << ","
-             << centers[0][1] << "," << centers[0][2] << "] " << std::endl;
-
+    DEFscaledMesh<T> defMesh (wholeTriangleSet);
+    defMesh.setDx(parameters.getDeltaX());
     TriangleBoundary3D<T> Cells(defMesh);
     Cells.getMesh().inflate();
+    pcout << "Original sphere at location [" << centers[0][0] << ","
+             << centers[0][1] << "," << centers[0][2] << "] " << std::endl;
+//    pcout << "defMesh.getDx = " <<  defMesh.getDx() << std::endl;
 
     numPartsPerCell = Cells.getMesh().getNumVertices() / centers.size();
     plint modulo = Cells.getMesh().getNumVertices() % centers.size();

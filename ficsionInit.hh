@@ -217,4 +217,103 @@ void writeVTK(BlockLatticeT& lattice,
 }
 
 
+template<typename T>
+void writeMeshAsciiSTL(TriangleBoundary3D<T> & Cells, std::string fname)
+{
+    TriangularSurfaceMesh<T> mesh = Cells.getMesh();
+    T dx = Cells.getDx();
+    // Output only from one MPI process.
+    if (!global::mpi().isMainProcessor()) {
+        return;
+    }
+    FILE *fp = fopen(fname.c_str(), "w");
+    PLB_ASSERT(fp != NULL);
+
+    char fmt1[64] = "  facet normal ";
+    char fmt2[64] = "      vertex ";
+    if (sizeof(T) == sizeof(long double)) {
+        strcat(fmt1, "% Le % Le % Le\n");
+        strcat(fmt2, "% Le % Le % Le\n");
+    }
+    else if (sizeof(T) == sizeof(float) ||
+             sizeof(T) == sizeof(double)) {
+        strcat(fmt1, "% e % e % e\n");
+        strcat(fmt2, "% e % e % e\n");
+    }
+    else {
+        PLB_ASSERT(false);
+    }
+
+    fprintf(fp, "solid surface\n");
+    for (plint i = 0; i < mesh.getNumTriangles(); i++) {
+        Array<T,3> n = mesh.computeTriangleNormal(i);
+        Array<T,3> v;
+        fprintf(fp, fmt1, n[0], n[1], n[2]);
+        fprintf(fp, "    outer loop\n");
+        v = dx * mesh.getVertex(i, 0);
+        fprintf(fp, fmt2, v[0], v[1], v[2]);
+        v = dx * mesh.getVertex(i, 1);
+        fprintf(fp, fmt2, v[0], v[1], v[2]);
+        v = dx * mesh.getVertex(i, 2);
+        fprintf(fp, fmt2, v[0], v[1], v[2]);
+        fprintf(fp, "    endloop\n");
+        fprintf(fp, "  endfacet\n");
+    }
+    fprintf(fp, "endsolid surface\n");
+
+    fclose(fp);
+}
+
+template<typename T>
+void writeMeshBinarySTL(TriangleBoundary3D<T> & Cells, std::string fname)
+{
+    TriangularSurfaceMesh<T> mesh = Cells.getMesh();
+    T dx = Cells.getDx();
+    // Output only from one MPI process.
+    if (!global::mpi().isMainProcessor()) {
+        return;
+    }
+    FILE *fp = fopen(fname.c_str(), "wb");
+    PLB_ASSERT(fp != NULL);
+
+    unsigned int nt = (unsigned int) mesh.getNumTriangles();
+    unsigned short abc = 0;
+    char buf[80];
+
+    for (int i = 0; i < 80; i++)
+        buf[i] = '\0';
+
+    fwrite(buf, sizeof(char), 80, fp);
+    fwrite(&nt, sizeof(unsigned int), 1, fp);
+    for (plint i = 0; i < mesh.getNumTriangles(); i++) {
+        Array<T,3> vertex;
+        Array<T,3> normal = mesh.computeTriangleNormal(i);
+        float n[3];
+        n[0] = normal[0];
+        n[1] = normal[1];
+        n[2] = normal[2];
+        fwrite((void *) n, sizeof(float), 3, fp);
+        vertex = dx * mesh.getVertex(i, 0);
+        float v[3];
+        v[0] = vertex[0];
+        v[1] = vertex[1];
+        v[2] = vertex[2];
+        fwrite((void *) v, sizeof(float), 3, fp);
+        vertex = dx * mesh.getVertex(i, 1);
+        v[0] = vertex[0];
+        v[1] = vertex[1];
+        v[2] = vertex[2];
+        fwrite((void *) v, sizeof(float), 3, fp);
+        vertex = dx * mesh.getVertex(i, 2);
+        v[0] = vertex[0];
+        v[1] = vertex[1];
+        v[2] = vertex[2];
+        fwrite((void *) v, sizeof(float), 3, fp);
+        fwrite(&abc, sizeof(unsigned short), 1, fp);
+    }
+
+    fclose(fp);
+}
+
+
 #endif  // FICSIONINIT_HH
