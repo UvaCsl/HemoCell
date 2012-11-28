@@ -126,6 +126,29 @@ void iniLattice( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
     lattice.initialize();
 }
 
+/* ************* writeFicsionLogFile ******************* */
+template<typename T>
+void writeFicsionLogFile(IncomprFlowParam<T> const& parameters,
+                  std::string const& title)
+{
+    std::string fullName = global::directories().getLogOutDir() + "plbLog.dat";
+    plb_ofstream ofile(fullName.c_str());
+    ofile << title << "\n\n";
+    ofile << "Velocity in lattice units: u=" << parameters.getLatticeU() << "\n";
+    ofile << "Reynolds number:           Re=" << parameters.getRe() << "\n";
+    ofile << "Lattice resolution:        N=" << parameters.getResolution() << "\n";
+    ofile << "Relaxation frequency:      omega=" << parameters.getOmega() << "\n";
+    ofile << "Relaxation time:           tau=" << parameters.getTau() << "\n";
+    ofile << "Grid spacing deltaX:       dx=" << parameters.getDeltaX() << "\n";
+    ofile << "Time step deltaT:          dt=" << parameters.getDeltaT() << "\n";
+    ofile << "Lattice  Nu:               nu=" << parameters.getLatticeNu() << "\n";
+    ofile << "Physical Nu:               nu_p=" << parameters.getLatticeNu()*parameters.getDeltaX()*(parameters.getDeltaX()/parameters.getDeltaT()) << "\n";
+    ofile << "Extent of the system:      lx=" << parameters.getLx() << "\n";
+    ofile << "Extent of the system:      ly=" << parameters.getLy() << "\n";
+    ofile << "Extent of the system:      lz=" << parameters.getLz() << "\n";
+}
+
+
 /* ************* Class GetTensorFieldFromExternalVectorFunctional3D ******************* */
 template<typename T, template<typename U> class Descriptor, int nDim>
 class GetTensorFieldFromExternalVectorFunctional3D : public BoxProcessingFunctional3D_LT<T,Descriptor, T, nDim> {

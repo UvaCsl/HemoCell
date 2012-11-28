@@ -9,14 +9,17 @@
 	<k_surface> 1.0e-3 </k_surface>
 </cell>
 
+
 <parameters>
-	<u> 0.0016666 </u>
-	<Re> 0.01 </Re>
-	<N> 1 </N>
-	<lx> 25 </lx>
-	<ly> 10 </ly>
-	<lz> 10 </lz>
+	<rho_p> 1025 </rho_p>   <!--Density, Physical units [kg/m^3]-->
+	<nu_p> 1.7e-6 </nu_p>   <!-- Dynamic viscosity, physical units [m^2/s]-->
+	<tau> 1.0 </tau>
+	<dx> 1e-6 </dx>
+	<lx> 0.00005 </lx>
+	<ly> 0.00001 </ly>
+	<lz> 0.00001 </lz>
 </parameters>
+
 
 <ibm>
 	<forceToFluid> 0 </forceToFluid>
@@ -29,3 +32,15 @@
 	<tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
 	<npar> 6 </npar> <!-- Number of particles > -->
 </sim>
+
+
+
+<!--<parameters>-->
+<!--	<u> 0.1 </u>-->
+<!--	<Re> 600000 </Re>-->
+<!--	<N> 1000000 </N>-->
+<!--	<lx> 0.00005 </lx>-->
+<!--	<ly> 0.00001 </ly>-->
+<!--	<lz> 0.00001 </lz>-->
+<!--</parameters>-->
+

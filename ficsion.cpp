@@ -46,19 +46,23 @@ const plint particleEnvelopeWidth = 2;
 
 void readFicsionXML(XMLreader document,T & shellDensity,
         T & k_stretch, T & k_shear, T & k_bend, T & k_volume, T & k_surface,
-        T & u, T & Re, plint & N, T & lx, T & ly, T & lz,
+        T & rho_p, T & u, T & Re, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & shape, T & radius,
-        plint & tmax, plint & tmeas, plint & npar )
+        plint & tmax, plint & tmeas, plint & npar)
     {
+    T nu_p, tau, dx;
+    T dt, nu_lb;
+
     document["cell"]["shellDensity"].read(shellDensity);
     document["cell"]["k_stretch"].read(k_stretch);
     document["cell"]["k_shear"].read(k_shear);
     document["cell"]["k_bend"].read(k_bend);
     document["cell"]["k_volume"].read(k_volume);
     document["cell"]["k_surface"].read(k_surface);
-    document["parameters"]["u"].read(u);
-    document["parameters"]["Re"].read(Re);
-    document["parameters"]["N"].read(N);
+    document["parameters"]["rho_p"].read(rho_p);
+    document["parameters"]["nu_p"].read(nu_p);
+    document["parameters"]["tau"].read(tau);
+    document["parameters"]["dx"].read(dx);
     document["parameters"]["lx"].read(lx);
     document["parameters"]["ly"].read(ly);
     document["parameters"]["lz"].read(lz);
@@ -68,23 +72,29 @@ void readFicsionXML(XMLreader document,T & shellDensity,
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
     document["sim"]["npar"].read(npar);
+
+    nu_lb = (tau-0.5)/3.0;
+    dt = (nu_lb/nu_p)*dx*dx;
+    u = dt*1.0/dx;
+    Re = 1.0/nu_p;
+    N = int(1.0/dx);
 }
 
 int main(int argc, char* argv[])
 {
     plbInit(&argc, &argv);
     global::directories().setOutputDir("./tmp/");
+    global::directories().setLogOutDir("./tmp/");
     global::IOpolicy().setStlFilesHaveLowerBound(true);
     global::IOpolicy().setLowerBoundForStlFiles(-1.);
 
-    plint N;
     plint forceToFluid, shape;
     plint tmax, tmeas, npar;
-    T u, Re;
-    T lx, ly, lz;
+    T dtIteration;
     T shellDensity, k_stretch, k_shear, k_bend, k_volume, k_surface;
+    T u, Re, N, lx, ly, lz;
+    T rho_p;
     T radius;
-    T dt; dt = 0;
 
 
     string paramXmlFileName;
@@ -92,8 +102,7 @@ int main(int argc, char* argv[])
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
     readFicsionXML(document, shellDensity, k_stretch, k_shear, k_bend, k_volume, k_surface,
-            u, Re, N, lx, ly, lz,  forceToFluid, shape, radius, tmax, tmeas, npar);
-
+            rho_p, u, Re, N, lx, ly, lz,  forceToFluid, shape, radius, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
             u, // u
             Re, // Re
@@ -103,10 +112,14 @@ int main(int argc, char* argv[])
             lz         // lz
     );
 
+    writeFicsionLogFile(parameters, "log");
     plint nx = parameters.getNx();
     plint ny = parameters.getNy();
     plint nz = parameters.getNz();
     T tau = parameters.getTau();
+    T dx = parameters.getDeltaX();
+    T dt = parameters.getDeltaT();
+    dx += dt;
 
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz,
@@ -225,7 +238,7 @@ int main(int argc, char* argv[])
             immersedParticles.getBoundingBox(), particleArg);
 
         if (i%tmeas==0) { // Output (or screen information every tmeas
-            dt = global::timer("sim").stop();
+            dtIteration = global::timer("sim").stop();
             plint totParticlesNow = 0;
             totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());
             pcout << i << " totParticles = " << totParticles << " ";

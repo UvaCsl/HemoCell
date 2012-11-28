@@ -27,7 +27,8 @@
 
 #ifndef K_BT__
 #define K_BT__
-const double k_BT = 4.0409277073170736e-08; // In lattice units
+const double k_B = 1.3806503e-23; // In SI
+const double k_BT = 4.100531391e-21; // In SI
 #endif  // K_BT__
 
 namespace plb {
@@ -160,10 +161,11 @@ T computePotential(plint iVertex, Array<T,3> const& iPosition,
         plint kVertex = (i==sz-1 ? neighborVertexIds[0] : neighborVertexIds[i+1]);
         Array<T,3> jPosition = dynMesh.getVertex(jVertex);
         Array<T,3> kPosition = dynMesh.getVertex(kVertex);
-        u +=  computeInPlanePotential(iPosition, jPosition, maxLength, k_WLC);
         // Membrane shearing mode
         u += computeShearPotential(iPosition, jPosition, kPosition,
                                    eqArea, area, k_shear);
+        // In-Plane potential
+        u +=  computeInPlanePotential(iPosition, jPosition, maxLength, k_WLC);
         u += (C_WLC*1.0)/area; //Contribution from the WLC
 
         if (dynMesh.isInteriorEdge(iVertex, jVertex)) {

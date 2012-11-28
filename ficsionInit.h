@@ -64,6 +64,12 @@ void iniLattice( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                  IncomprFlowParam<T> const& parameters,
                  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition );
 
+/* ******************* writeFicsionLogFile ***************************************** */
+template<typename T>
+void writeFicsionLogFile(IncomprFlowParam<T> const& parameters,
+                  std::string const& title);
+
+
 /* ******************* writeVTK ***************************************** */
 template<class BlockLatticeT>
 void writeVTK(BlockLatticeT& lattice,
