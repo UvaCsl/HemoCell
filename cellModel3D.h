@@ -32,7 +32,7 @@ class CellModel3D : public ShellModel3D<T>
 {
 public:
     CellModel3D(T density_,
-                T k_stretch_, T k_shear_, T k_bend_,
+                T k_shear_, T k_bend_,
                 T k_volume_, T k_surface_,
                 T eqArea_, T eqLength_, T eqAngle_,
                 T eqVolume_, T eqSurface_,
@@ -45,8 +45,6 @@ public:
             TriangleBoundary3D<T> const& boundary,
             plint iVertex );
     virtual CellModel3D<T>* clone() const;
-    T const& getStretchingStiffness() const { return k_stretch; }
-    T& getStretchingStiffness() { return k_stretch; }
     T const& getShearingStiffness() const { return k_shear; }
     T& getShearingStiffness() { return k_shear; }
     T const& getBendingStiffness() const { return k_bend; }
@@ -72,7 +70,7 @@ public:
     T const& getPersistenceLength() const { return persistenceLength; }
     T& getPersistenceLength() { return persistenceLength; }
 private:
-    T k_stretch, k_shear, k_bend, k_volume, k_surface, k_WLC;
+    T k_shear, k_bend, k_volume, k_surface, k_WLC;
     T eqLength, eqArea, eqAngle;
     T eqVolume, eqSurface;
     T maxLength, persistenceLength, C_WLC;
@@ -88,7 +86,7 @@ namespace cellModelHelper3D {
 template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
                    TriangularSurfaceMesh<T> const& dynMesh, 
-                   T k_stretch, T k_shear, T k_bend, T k_WLC,
+                   T k_shear, T k_bend, T k_WLC,
                    T maxLength, T eqArea, T eqLength, T eqAngle, T C_WLC);
 
 template<typename T>

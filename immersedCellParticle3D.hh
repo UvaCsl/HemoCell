@@ -67,11 +67,12 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
 
 template<typename T, template<typename U> class Descriptor>
 void ImmersedCellParticle3D<T,Descriptor>::advance() {
-//    vHalfTime = v + (T)0.5*a;
-//    this->getPosition() += vHalfTime;
+    vHalfTime = v + (T)0.5*a;
+    this->getPosition() += vHalfTime;
 // Adams-Bashforth update scheme
-    this->getPosition() += 1.5*v - 0.5*vPrevious;
-    vPrevious = v;
+//    this->getPosition() += 1.5*v - 0.5*vPrevious;
+//    vPrevious = v;
+
 // Euler update scheme
 //    this->getPosition() += v;
 }

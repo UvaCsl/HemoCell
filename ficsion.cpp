@@ -45,7 +45,7 @@ const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor acc
 const plint particleEnvelopeWidth = 2;
 
 void readFicsionXML(XMLreader document,T & shellDensity,
-        T & k_stretch, T & k_shear, T & k_bend, T & k_volume, T & k_surface,
+        T & k_shear, T & k_bend, T & k_volume, T & k_surface,
         T & rho_p, T & u, T & Re, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & shape, T & radius,
         plint & tmax, plint & tmeas, plint & npar)
@@ -55,7 +55,6 @@ void readFicsionXML(XMLreader document,T & shellDensity,
     T nx, ny, nz;
 
     document["cell"]["shellDensity"].read(shellDensity);
-    document["cell"]["k_stretch"].read(k_stretch);
     document["cell"]["k_shear"].read(k_shear);
     document["cell"]["k_bend"].read(k_bend);
     document["cell"]["k_volume"].read(k_volume);
@@ -96,7 +95,7 @@ int main(int argc, char* argv[])
     plint forceToFluid, shape;
     plint tmax, tmeas, npar;
     T dtIteration;
-    T shellDensity, k_stretch, k_shear, k_bend, k_volume, k_surface;
+    T shellDensity, k_shear, k_bend, k_volume, k_surface;
     T u, Re, Re_p, N, lx, ly, lz;
     T rho_p;
     T radius;
@@ -106,7 +105,7 @@ int main(int argc, char* argv[])
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
-    readFicsionXML(document, shellDensity, k_stretch, k_shear, k_bend, k_volume, k_surface,
+    readFicsionXML(document, shellDensity, k_shear, k_bend, k_volume, k_surface,
             rho_p, u, Re, Re_p, N, lx, ly, lz,  forceToFluid, shape, radius, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
             u, // u
@@ -117,7 +116,7 @@ int main(int argc, char* argv[])
             lz         // lz
     );
 
-    writeFicsionLogFile(parameters, "log");
+    writeFicsionLogFile(parameters, "log", Re);
     plint nx = parameters.getNx();
     plint ny = parameters.getNy();
     plint nz = parameters.getNz();
@@ -125,7 +124,8 @@ int main(int argc, char* argv[])
     T dx = parameters.getDeltaX();
     T dt = parameters.getDeltaT();
     T dm = rho_p * (dx*dx*dx);
-    dx += dt+dm;
+    kBT = kBT_p / ( dx*dx * dm /(dt*dt) );
+    pcout << "kT = " << kBT << std::endl;
 
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz,
@@ -192,10 +192,12 @@ int main(int argc, char* argv[])
     eqSurface = cellsSurface[0];
     for (pluint iA = 0; iA < cellsVolume.size(); ++iA) {
             pcout << "Cell: " << cellIds[iA]
-                  << ", Volume: " << cellsVolume[iA]
-                  << ", Mean Triangle Surface: " << cellsMeanTriangleArea[iA]
-                  << ", Mean Edge Distance : " << cellsMeanEdgeDistance[iA]
-                  << ", Mean Angle: " << cellsMeanAngle[iA]
+                  << ", Volume: " << cellsVolume[iA]*(dx*dx*dx)
+                  << ", Surface: " << cellsSurface[iA]*(dx*dx)
+                  << ", Mean Triangle Surface: " << cellsMeanTriangleArea[iA]*(dx*dx)
+                  << ", Mean Edge Distance : " << cellsMeanEdgeDistance[iA]*(dx)
+                  << ", Mean Angle [^o]: " << cellsMeanAngle[iA]*180.0/pi
+                  << ", Mean Edge Distance [LU]: " << cellsMeanEdgeDistance[iA]
                   << std::endl;
     }
 
@@ -205,7 +207,7 @@ int main(int argc, char* argv[])
     particleLatticeArg.push_back(&immersedParticles);
     particleLatticeArg.push_back(&lattice);
 
-    CellModel3D<T> cellModel(shellDensity, k_stretch, k_shear, k_bend, k_volume, k_surface, \
+    CellModel3D<T> cellModel(shellDensity, k_shear, k_bend, k_volume, k_surface, \
                                                 eqArea, eqLength, eqAngle, eqVolume, eqSurface,
                                                 1.0, eqLength/500.0);
     pcout << std::endl << "Starting simulation" << std::endl;
@@ -257,10 +259,12 @@ int main(int argc, char* argv[])
             countCellMeanEdgeDistance(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanEdgeDistance);
             for (pluint iA = 0; iA < cellsVolume.size(); ++iA) {
                     pcout << "Cell: " << cellIds[iA]
-                          << ", Volume: " << cellsVolume[iA]
-                          << ", Mean Triangle Surface: " << cellsMeanTriangleArea[iA]
-                          << ", Mean Edge Distance : " << cellsMeanEdgeDistance[iA]
-                          << ", Mean Angle: " << cellsMeanAngle[iA]
+                          << ", Volume: " << cellsVolume[iA]*(dx*dx*dx)
+                          << ", Surface: " << cellsSurface[iA]*(dx*dx)
+                          << ", Mean Triangle Surface: " << cellsMeanTriangleArea[iA]*(dx*dx)
+                          << ", Mean Edge Distance : " << cellsMeanEdgeDistance[iA]*(dx)
+                          << ", Mean Angle [^o]: " << cellsMeanAngle[iA]*180.0/pi
+                          << ", Mean Edge Distance [LU]: " << cellsMeanEdgeDistance[iA]
                           << std::endl;
             }
             pcout << "x: " << Cells.getMesh().getVertex(0)[0] << " y: " << Cells.getMesh().getVertex(0)[1] <<

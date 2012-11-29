@@ -70,7 +70,7 @@ void iniLattice( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
 /* ******************* writeFicsionLogFile ***************************************** */
 template<typename T>
 void writeFicsionLogFile(IncomprFlowParam<T> const& parameters,
-                  std::string const& title);
+                  std::string const& title, T Re);
 
 
 /* ******************* writeVTK ***************************************** */
@@ -80,11 +80,11 @@ void writeVTK(BlockLatticeT& lattice,
 
 /// Export the surface mesh as an ASCII STL file considering the dx.
 template<typename T> // Copied from void TriangularSurfaceMesh<T>::writeAsciiSTL(std::string fname).
-void writeMeshAsciiSTL(TriangleBoundary3D<T> & Cells, std::string fname);
+void writeMeshAsciiSTL(TriangleBoundary3D<T> & Cells, std::string fname, T dx=0.0);
 
 /// Export the surface mesh as an binary STL file considering the dx.
 template<typename T> // Copied from void TriangularSurfaceMesh<T>::writeBinarySTL(std::string fname).
-void writeMeshBinarySTL(TriangleBoundary3D<T> & Cells, std::string fname);
+void writeMeshBinarySTL(TriangleBoundary3D<T> & Cells, std::string fname, T dx=0.0);
 
 
 #endif  // FICSIONINIT_H

@@ -25,27 +25,23 @@
 #include "cellModel3D.h"
 
 
-#ifndef K_BT__
-#define K_BT__
-const double k_B = 1.3806503e-23; // In SI
-const double k_BT = 4.100531391e-21; // In SI
-#endif  // K_BT__
+#ifndef KBT__
+#define KBT__
+const double kB_p = 1.3806503e-23; // In SI, m2 kg s-2 K-1 (or J/K)
+const double kBT_p = 4.100531391e-21; // In SI, m2 kg s-2 (or J)
+double kB, kBT;
+#endif  // KBT__
 
 namespace plb {
 
 template<typename T>
 CellModel3D<T>::CellModel3D (
-        T density_, T k_stretch_, T k_shear_, T k_bend_,
+        T density_, T k_shear_, T k_bend_,
         T k_volume_, T k_surface_,
         T eqArea_, T eqLength_, T eqAngle_,
         T eqVolume_, T eqSurface_,
         T maxLength_, T persistenceLength_)
     : ShellModel3D<T>(density_),
-      k_stretch(k_stretch_),
-      k_shear(k_shear_),
-      k_bend(k_bend_),
-      k_volume(k_volume_),
-      k_surface(k_surface_),
       eqLength(eqLength_),
       eqArea(eqArea_),
       eqAngle(eqAngle_),
@@ -54,9 +50,15 @@ CellModel3D<T>::CellModel3D (
       maxLength(maxLength_),
       persistenceLength(persistenceLength_)
 {
+
+    k_bend = k_bend_  * kBT ;
+    k_shear = k_shear_ * kBT / (eqLength*eqLength);
+    k_surface = k_surface_* kBT / (eqLength*eqLength);
+    k_volume = k_volume_* kBT / (eqLength*eqLength*eqLength);
+
     T x0 = eqLength*1.0/maxLength;
-    k_WLC = k_BT * maxLength/(4.0*persistenceLength);
-    C_WLC = 3.0 * sqrt(3.0)* k_BT *
+    k_WLC = kBT * maxLength/(4.0*persistenceLength);
+    C_WLC = 3.0 * sqrt(3.0)* kBT *
         (maxLength*maxLength*maxLength)*
         (x0*x0*x0*x0)/(64.0*persistenceLength)*
         (4*x0*x0 - 9*x0 + 6) /
@@ -122,13 +124,13 @@ Array<T,3> CellModel3D<T>::computeElasticForce (
         iPosition[i] += eps;
         T up = shellModelHelper3D::cellModelHelper3D::computePotential (
                 iVertex, iPosition, dynMesh,
-                k_stretch, k_shear, k_bend, k_WLC,
+                k_shear, k_bend, k_WLC,
                 maxLength, eqArea, eqLength, eqAngle, C_WLC);
         iPosition = vertex;
         iPosition[i] -= eps;
         T um = shellModelHelper3D::cellModelHelper3D::computePotential (
                 iVertex, iPosition, dynMesh,
-                k_stretch, k_shear, k_bend, k_WLC,
+                k_shear, k_bend, k_WLC,
                 maxLength, eqArea, eqLength, eqAngle, C_WLC);
         force[i] = -(up-um) / (2.0*eps);
     }
@@ -148,11 +150,12 @@ namespace cellModelHelper3D {
 template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
                    TriangularSurfaceMesh<T> const& dynMesh, 
-                   T k_stretch, T k_shear, T k_bend, T k_WLC,
+                   T k_shear, T k_bend, T k_WLC,
                    T maxLength, T eqArea, T eqLength, T eqAngle, T C_WLC)
 {
     T u = 0.0;
     T area = 0;
+
     // Membrane streching mode
     std::vector<plint> neighborVertexIds = dynMesh.getNeighborVertexIds(iVertex);
     pluint sz = neighborVertexIds.size();

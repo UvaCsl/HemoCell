@@ -129,20 +129,27 @@ void iniLattice( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
 /* ************* writeFicsionLogFile ******************* */
 template<typename T>
 void writeFicsionLogFile(IncomprFlowParam<T> const& parameters,
-                  std::string const& title)
+                  std::string const& title, T Re)
 {
+    const T a = parameters.getNy()-1;
+    const T b = parameters.getNz()-1;
+    const T nu = parameters.getLatticeNu();
+    const T uMax = Re * nu/min(a,b);
+    const T dx = parameters.getDeltaX();
+    const T dt = parameters.getDeltaT();
     std::string fullName = global::directories().getLogOutDir() + "plbLog.dat";
     plb_ofstream ofile(fullName.c_str());
     ofile << title << "\n\n";
-    ofile << "Velocity in lattice units: u=" << parameters.getLatticeU() << "\n";
-    ofile << "Reynolds number:           Re=" << parameters.getRe() << "\n";
+    ofile << "Velocity :                 u=" << parameters.getLatticeU()*dx*1.0/dt << "\n";
+    ofile << "Mach number [x100%]:       Ma=" << uMax*sqrt(3.0)*100 << "\n";
+    ofile << "Reynolds number:           Re=" << Re << "\n";
     ofile << "Lattice resolution:        N=" << parameters.getResolution() << "\n";
-    ofile << "Relaxation frequency:      omega=" << parameters.getOmega() << "\n";
-    ofile << "Relaxation time:           tau=" << parameters.getTau() << "\n";
+    ofile << "Relaxation frequency:      omega=" << parameters.getOmega()*1.0 << "\n";
+    ofile << "Relaxation time:           tau=" << parameters.getTau()*1.0 << "\n";
     ofile << "Grid spacing deltaX:       dx=" << parameters.getDeltaX() << "\n";
     ofile << "Time step deltaT:          dt=" << parameters.getDeltaT() << "\n";
-    ofile << "Lattice  Nu:               nu=" << parameters.getLatticeNu() << "\n";
-    ofile << "Physical Nu:               nu_p=" << parameters.getLatticeNu()*parameters.getDeltaX()*(parameters.getDeltaX()/parameters.getDeltaT()) << "\n";
+    ofile << "Lattice  Nu:               nu=" << nu << "\n";
+    ofile << "Physical Nu:               nu_p=" << nu*dx*dx/dt << "\n";
     ofile << "Extent of the system:      lx=" << parameters.getLx() << "\n";
     ofile << "Extent of the system:      ly=" << parameters.getLy() << "\n";
     ofile << "Extent of the system:      lz=" << parameters.getLz() << "\n";
@@ -218,10 +225,12 @@ void writeVTK(BlockLatticeT& lattice,
 
 
 template<typename T>
-void writeMeshAsciiSTL(TriangleBoundary3D<T> & Cells, std::string fname)
+void writeMeshAsciiSTL(TriangleBoundary3D<T> & Cells, std::string fname, T dx=0.0)
 {
     TriangularSurfaceMesh<T> mesh = Cells.getMesh();
-    T dx = Cells.getDx();
+    if (0.0 == dx) {
+        dx = Cells.getDx();
+    }
     // Output only from one MPI process.
     if (!global::mpi().isMainProcessor()) {
         return;
@@ -265,10 +274,12 @@ void writeMeshAsciiSTL(TriangleBoundary3D<T> & Cells, std::string fname)
 }
 
 template<typename T>
-void writeMeshBinarySTL(TriangleBoundary3D<T> & Cells, std::string fname)
+void writeMeshBinarySTL(TriangleBoundary3D<T> & Cells, std::string fname, T dx=0.0)
 {
     TriangularSurfaceMesh<T> mesh = Cells.getMesh();
-    T dx = Cells.getDx();
+    if (0.0 == dx) {
+        dx = Cells.getDx();
+    }
     // Output only from one MPI process.
     if (!global::mpi().isMainProcessor()) {
         return;
