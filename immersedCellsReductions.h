@@ -15,7 +15,7 @@ template<typename T, template<typename U> class Descriptor>
 class CellReduceFunctional3D : public PlainReductiveBoxProcessingFunctional3D
 {
 public:
-    CellReduceFunctional3D(TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_);
+    CellReduceFunctional3D(TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_, bool findMax_=false);
     /// Argument: Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual CellReduceFunctional3D<T,Descriptor>* clone() const;
@@ -27,6 +27,7 @@ private:
     plint numberOfCells;
     std::vector<plint> quantityIds;
     TriangleBoundary3D<T> const& triangleBoundary;
+    bool findMax;
 };
 
 
@@ -54,6 +55,12 @@ template< typename T, template<typename U> class Descriptor,
 void countCellMeanEdgeDistance (TriangleBoundary3D<T> Cells,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
                 std::vector<T>& cellMeanEdgeDistance) ;
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void countCellMaxEdgeDistance (TriangleBoundary3D<T> Cells,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                std::vector<T>& cellMaxEdgeDistance) ;
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
@@ -100,6 +107,19 @@ public:
     EdgeDistanceCellReduceFunctional3D(TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_)
      : CellReduceFunctional3D<T, Descriptor>(triangleBoundary_, cellIds_) { };
     virtual EdgeDistanceCellReduceFunctional3D<T,Descriptor>* clone() const { return new EdgeDistanceCellReduceFunctional3D<T,Descriptor>(*this); };
+    virtual void calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh,
+            std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_);
+private:
+};
+
+
+/* ******** EdgeDistanceCellReduceFunctional3D *********************************** */
+template<typename T, template<typename U> class Descriptor>
+class MaxEdgeDistanceCellReduceFunctional3D : public CellReduceFunctional3D<T, Descriptor> {
+public:
+    MaxEdgeDistanceCellReduceFunctional3D(TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_)
+     : CellReduceFunctional3D<T, Descriptor>(triangleBoundary_, cellIds_, true) { }; // true refers to the max Reduction
+    virtual MaxEdgeDistanceCellReduceFunctional3D<T,Descriptor>* clone() const { return new MaxEdgeDistanceCellReduceFunctional3D<T,Descriptor>(*this); };
     virtual void calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh,
             std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_);
 private:

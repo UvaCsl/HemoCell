@@ -2,6 +2,8 @@
 
 <cell>
 	<shellDensity> 1. </shellDensity>
+	<k_WLC> 0.0 </k_WLC> <!--Worm-like chain modulus (in k_BT units)-->
+	<k_elastic> 0.0 </k_elastic> <!--elastic modulus (in k_BT units)-->
 	<k_bend> 0 </k_bend> <!--bending modulus (in k_BT units)-->
 	<k_shear> 0 </k_shear> <!--local area constrain modulus (in k_BT units)-->
 	<k_surface> 0 </k_surface> <!--surface conservation modulus (in k_BT units)-->
@@ -10,11 +12,11 @@
 
 
 <parameters>
-	<Re> 0.1 </Re>   <!--Reynolds number-->
+	<Re> 0.01 </Re>   <!--Reynolds number-->
 	<rho_p> 1025 </rho_p>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
 	<nu_p> 1.7e-6 </nu_p>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
 	<tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
-	<dx> 4.15e-6 </dx> <!--Physical length of 1 Lattice Unit -->
+	<dx> 2.3e-6 </dx> <!--Physical length of 1 Lattice Unit -->
 	<nx> 50 </nx> <!--Size of domain in Lattice Units -->
 	<ny> 20 </ny>
 	<nz> 20 </nz>
@@ -24,13 +26,13 @@
 <ibm>
 	<forceToFluid> 0 </forceToFluid>
 	<shape> 1 </shape> <!-- shape: Sphere:0, RBC:1 -->
-	<radius> 1 </radius> <!-- Radius of the particle in Lattice Units (dx) -->
+	<radius> 1.8 </radius> <!-- Radius of the particle in Lattice Units (dx) -->
 </ibm>
 
 <sim>
 	<tmax> 10000000000 </tmax> <!-- total number of iterations -->
 	<tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
-	<npar> 1 </npar> <!-- Number of particles > -->
+	<npar> 2 </npar> <!-- Number of particles > -->
 </sim>
 
 

@@ -14,15 +14,20 @@
 /* ******** CellReduceFunctional3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
 CellReduceFunctional3D<T,Descriptor>::CellReduceFunctional3D(
-        TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_)
-    : triangleBoundary(triangleBoundary_)
+        TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_, bool findMax_)
+    : triangleBoundary(triangleBoundary_), findMax(findMax_)
 {
     numberOfCells = 0;
     for (pluint var = 0; var < cellIds_.size(); ++var)
         if (cellIds_[var] > numberOfCells)
             numberOfCells = cellIds_[var];
-    for (pluint i=0; i< (pluint) numberOfCells+1; ++i)
-        quantityIds.push_back(this->getStatistics().subscribeSum());
+    if (findMax) {
+        for (pluint i=0; i< (pluint) numberOfCells+1; ++i)
+            quantityIds.push_back(this->getStatistics().subscribeMax());
+    } else {
+        for (pluint i=0; i< (pluint) numberOfCells+1; ++i)
+            quantityIds.push_back(this->getStatistics().subscribeSum());
+    }
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -44,8 +49,13 @@ void CellReduceFunctional3D<T,Descriptor>::calculateQuantity(TriangularSurfaceMe
 
 template<typename T, template<typename U> class Descriptor>
 void CellReduceFunctional3D<T,Descriptor>::getCellQuantityArray(std::vector<T>& cellQuantity, std::vector<plint> cellIds) const {
-    for (pluint i = 0; i < (pluint) quantityIds.size(); ++i)
-        cellQuantity.push_back(this->getStatistics().getSum(quantityIds[i]));
+    if (findMax) {
+        for (pluint i = 0; i < (pluint) quantityIds.size(); ++i)
+            cellQuantity.push_back(this->getStatistics().getMax(quantityIds[i]));
+    } else {
+        for (pluint i = 0; i < (pluint) quantityIds.size(); ++i)
+            cellQuantity.push_back(this->getStatistics().getSum(quantityIds[i]));
+    }
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -127,6 +137,20 @@ void countCellMeanEdgeDistance (TriangleBoundary3D<T> Cells,
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
         cellMeanEdgeDistance[iA] /= cellNumVertices[iA];
     }
+}
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void countCellMaxEdgeDistance (TriangleBoundary3D<T> Cells,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                std::vector<T>& cellMaxEdgeDistance) //Perhaps add TAGS
+{
+    // We assume homogeneous Cells
+    std::vector<MultiBlock3D*> particleArg;
+    particleArg.push_back(&particles);
+    MaxEdgeDistanceCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    applyProcessingFunctional(functional, domain, particleArg);
+    functional.getCellQuantityArray(cellMaxEdgeDistance, cellIds);
 }
 
 template< typename T, template<typename U> class Descriptor,
@@ -227,6 +251,25 @@ void EdgeDistanceCellReduceFunctional3D<T,Descriptor>::calculateQuantity(Triangu
         }
         edgeDistance = edgeDistance*1.0/neighbors.size();
         this->getStatistics().gatherSum(quantityIds_[particle->get_cellId()], edgeDistance);
+    }
+}
+
+
+/* ******** MaxEdgeDistanceCellReduceFunctional3D *********************************** */
+template<typename T, template<typename U> class Descriptor>
+void MaxEdgeDistanceCellReduceFunctional3D<T,Descriptor>::calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh, std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_)
+{
+    for (pluint iA = 0; iA < particles.size(); ++iA) {
+        Particle3D<T,Descriptor>* nonTypedParticle = particles[iA];
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+                dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
+        plint iVertex = particle->getTag();
+        std::vector<plint> neighbors = triangleMesh.getNeighborVertexIds(iVertex);
+        T edgeDistance = 0.0;
+        for (pluint iB = 0; iB < neighbors.size(); ++iB) {
+            edgeDistance =  max(edgeDistance, triangleMesh.computeEdgeLength(iVertex, neighbors[iB])) ;
+        }
+        this->getStatistics().gatherMax(quantityIds_[particle->get_cellId()], edgeDistance);
     }
 }
 

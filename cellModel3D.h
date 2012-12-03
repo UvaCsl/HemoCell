@@ -32,7 +32,7 @@ class CellModel3D : public ShellModel3D<T>
 {
 public:
     CellModel3D(T density_,
-                T k_shear_, T k_bend_,
+                T k_shear_, T k_bend_, T k_WLC_, T k_elastic_,
                 T k_volume_, T k_surface_,
                 T eqArea_, T eqLength_, T eqAngle_,
                 T eqVolume_, T eqSurface_,
@@ -70,10 +70,10 @@ public:
     T const& getPersistenceLength() const { return persistenceLength; }
     T& getPersistenceLength() { return persistenceLength; }
 private:
-    T k_shear, k_bend, k_volume, k_surface, k_WLC;
+    T k_shear, k_bend, k_volume, k_surface, k_WLC, k_elastic;
     T eqLength, eqArea, eqAngle;
     T eqVolume, eqSurface;
-    T maxLength, persistenceLength, C_WLC;
+    T maxLength, persistenceLength, C_WLC, C_elastic;
 };
 
 
@@ -87,7 +87,7 @@ template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
                    TriangularSurfaceMesh<T> const& dynMesh, 
                    T k_shear, T k_bend, T k_WLC,
-                   T maxLength, T eqArea, T eqLength, T eqAngle, T C_WLC);
+                   T maxLength, T eqArea, T eqLength, T eqAngle, T C_elastic);
 
 template<typename T>
 T computeStretchPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
