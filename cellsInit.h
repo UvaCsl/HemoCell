@@ -24,8 +24,8 @@
 #include "immersedCellsFunctional3D.h"
 #include "immersedCellsFunctional3D.hh"
 
-void positionCells(plint shape, T radius, plint npar, IncomprFlowParam<T> const& parameters,
-        std::vector<Array<T,3> > & centers, std::vector<T> & radii) ;
+void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> const& parameters,
+        std::vector<Array<T,3> > & centers, std::vector<T> & radii, plint flowType) ;
 
 
 

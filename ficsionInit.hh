@@ -83,8 +83,8 @@ void SquarePoiseuilleVelocity<T>::operator()(plint iX, plint iY, plint iZ, Array
     u[2] = T();
 }
 
-/* ************* iniLattice ******************* */
-void iniLattice( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+/* ************* iniLatticeSquarePoiseuille ******************* */
+void iniLatticeSquarePoiseuille( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                  IncomprFlowParam<T> const& parameters,
                  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T Re)
 {
@@ -126,33 +126,88 @@ void iniLattice( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
     lattice.initialize();
 }
 
+/* ************* iniLatticeSquareCouette ******************* */
+void iniLatticeSquareCouette( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+                 IncomprFlowParam<T> const& parameters,
+                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T shearRate)
+{
+    const plint nx = parameters.getNx();
+    const plint ny = parameters.getNy();
+    const plint nz = parameters.getNz();
+
+//    Box3D top    = Box3D(0,    nx-1, 0, ny-1, 0,    0);
+//    Box3D bottom = Box3D(0,    nx-1, 0, ny-1, nz-1, nz-1);
+
+    Box3D left   = Box3D(0, nx-1, 0,    0,    1, nz-2);
+    Box3D right  = Box3D(0, nx-1, ny-1, ny-1, 1, nz-2);
+
+//    Box3D inlet  = Box3D(0,    0,    1,    ny-2, 1, nz-2);
+//    Box3D outlet = Box3D(nx-1, nx-1, 1,    ny-2, 1, nz-2);
+
+    lattice.periodicity().toggle(0, true);
+    lattice.periodicity().toggle(2, true);
+//    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, inlet );
+//    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, outlet );
+
+//    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, top );
+//    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, bottom );
+
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, left );
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, right );
+
+//    setBoundaryVelocity(lattice, inlet, SquarePoiseuilleVelocity<T>(parameters, NMAX, Re));
+//    setBoundaryVelocity(lattice, outlet, SquarePoiseuilleVelocity<T>(parameters, NMAX, Re));
+    T vHalf = (nz-1)*shearRate*0.5;
+    setBoundaryVelocity(lattice, left, Array<T,3>(vHalf,0.0,0.0));
+    setBoundaryVelocity(lattice, right, Array<T,3>(-vHalf,0.0,0.0));
+//    setBoundaryVelocity(lattice, top, Array<T,3>(0.0,0.0,0.0));
+//    setBoundaryVelocity(lattice, bottom, Array<T,3>(0.0,0.0,0.0));
+
+//    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), SquarePoiseuilleDensityAndVelocity<T>(parameters, NMAX, Re));
+
+    setExternalVector( lattice, lattice.getBoundingBox(),
+                       DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
+
+    lattice.initialize();
+}
+
 /* ************* writeFicsionLogFile ******************* */
 template<typename T>
 void writeFicsionLogFile(IncomprFlowParam<T> const& parameters,
-                  std::string const& title, T Re)
+                  std::string const& title, T Re, T shearRate, plint flowType)
 {
     const T a = parameters.getNy()-1;
     const T b = parameters.getNz()-1;
     const T nu = parameters.getLatticeNu();
-    const T uMax = Re * nu/min(a,b);
+    T uMax ;
+    if (flowType != 1) {
+        uMax = Re * nu/min(a,b);
+    } else {
+        uMax = b * shearRate / 2.0;
+    }
     const T dx = parameters.getDeltaX();
     const T dt = parameters.getDeltaT();
     std::string fullName = global::directories().getLogOutDir() + "plbLog.dat";
     plb_ofstream ofile(fullName.c_str());
     ofile << title << "\n\n";
-    ofile << "Velocity :                 u=" << parameters.getLatticeU()*dx*1.0/dt << "\n";
-    ofile << "Mach number [x100%]:       Ma=" << uMax*sqrt(3.0)*100 << "\n";
-    ofile << "Reynolds number:           Re=" << Re << "\n";
-    ofile << "Lattice resolution:        N=" << parameters.getResolution() << "\n";
-    ofile << "Relaxation frequency:      omega=" << parameters.getOmega()*1.0 << "\n";
-    ofile << "Relaxation time:           tau=" << parameters.getTau()*1.0 << "\n";
-    ofile << "Grid spacing deltaX:       dx=" << parameters.getDeltaX() << "\n";
-    ofile << "Time step deltaT:          dt=" << parameters.getDeltaT() << "\n";
-    ofile << "Lattice  Nu:               nu=" << nu << "\n";
-    ofile << "Physical Nu:               nu_p=" << nu*dx*dx/dt << "\n";
-    ofile << "Extent of the system:      lx=" << parameters.getLx() << "\n";
-    ofile << "Extent of the system:      ly=" << parameters.getLy() << "\n";
-    ofile << "Extent of the system:      lz=" << parameters.getLz() << "\n";
+    ofile << "Velocity [m/s]:              u=" << parameters.getLatticeU()*dx*1.0/dt << "\n";
+    ofile << "Max Velocity [m/s]:          uMax=" << uMax*dx*1.0/dt << "\n";
+    ofile << "Mach number [x100%]:         Ma=" << uMax*sqrt(3.0)*100 << "\n";
+    if (flowType != 1) {
+        ofile << "Reynolds number:             Re=" << Re << "\n";
+    } else {
+        ofile << "Shear rate [1/s]:            ydot=" << shearRate*1.0/dt << "\n";
+    }
+    ofile << "Lattice resolution:          N=" << parameters.getResolution() << "\n";
+    ofile << "Relaxation frequency:        omega=" << parameters.getOmega()*1.0 << "\n";
+    ofile << "Relaxation time:             tau=" << parameters.getTau()*1.0 << "\n";
+    ofile << "Grid spacing deltaX [m]:     dx=" << parameters.getDeltaX() << "\n";
+    ofile << "Time step deltaT:            dt=" << parameters.getDeltaT() << "\n";
+    ofile << "Lattice  Nu:                 nu=" << nu << "\n";
+    ofile << "Physical Nu [m2/s]:          nu_p=" << nu*dx*dx/dt << "\n";
+    ofile << "Extent of the system [m]:    lx=" << parameters.getLx() << "\n";
+    ofile << "Extent of the system [m]:    ly=" << parameters.getLy() << "\n";
+    ofile << "Extent of the system [m]:    lz=" << parameters.getLz() << "\n";
 }
 
 
@@ -213,7 +268,8 @@ void writeVTK(BlockLatticeT& lattice,
     VtkImageOutput3D<T> vtkOut(createFileName("vtk", iter, 6), dx);
     vtkOut.writeData<T>(*computeVelocityNorm(lattice), "velocityNorm", dx/dt);
     vtkOut.writeData<3,T>(force, "force",  (T) dx/dt/dt);
-    vtkOut.writeData<T>(*computeNorm(force, force.getBoundingBox()), "forceNorm",  dx/dt/dt);
+//    vtkOut.writeData<T>(*computeNorm(force, force.getBoundingBox()), "forceNorm",  dx/dt/dt);
+    vtkOut.writeData<T>(*computeNorm(force, force.getBoundingBox()), "forceNorm LU",  1.0);
 
 //    ImageWriter<T> imageWriter("leeloo");
 //    add(force, forceScalar, force.getBoundingBox());

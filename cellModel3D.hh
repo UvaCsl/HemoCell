@@ -54,8 +54,11 @@ CellModel3D<T>::CellModel3D (
 
     k_bend = k_bend_  * kBT ;
     k_shear = k_shear_ * kBT / (eqLength*eqLength);
-    k_surface = k_surface_* kBT / (eqLength*eqLength);
-    k_volume = k_volume_* kBT / (eqLength*eqLength*eqLength);
+    k_surface = k_surface_;
+    k_volume = k_volume_;
+//    pcout << "K_surf " << k_surface* kBT *1.0/ (eqLength*eqLength) << std::endl;
+    k_surface = k_surface* kBT / (eqLength*eqLength);
+    k_volume = k_volume* kBT / (eqLength*eqLength*eqLength);
 
     k_WLC = k_WLC_ * kBT;
     C_WLC = k_WLC * maxLength/(4.0*persistenceLength);
@@ -290,11 +293,11 @@ T computeBendPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
     crossProduct(lkEdge, kjEdge, nlkj);
 
     T angle = angleBetweenVectors(nijk, nlkj);
-    //pcout << "angle: " << angle << std::endl;
     T Dangle = angle - eqAngle;
+//    pcout << "Dangle: " << Dangle << std::endl;
     T Dangle2 = Dangle * Dangle ;
-//    return k*Dangle2*( 0.5 + Dangle2/24.0 + Dangle2*Dangle2/720.0) ;
-    return k*( 1 - cos(Dangle) ) ;
+    return k*Dangle2*( 0.5 + Dangle2/24.0 + Dangle2*Dangle2/720.0) ;
+//    return k*( 1 - cos(Dangle) ) ;
 //    T he = (eqArea*2.0)/(3.0*eqLength);
 //    return 0.5*k*(angle - eqAngle)*(angle - eqAngle)*eqLength / he;
 }

@@ -46,7 +46,7 @@ const plint particleEnvelopeWidth = 2;
 
 void readFicsionXML(XMLreader document,T & shellDensity,
         T & k_shear, T & k_bend, T & k_WLC, T & k_elastic, T & k_volume, T & k_surface,
-        T & rho_p, T & u, T & Re, T & Re_p, T & N, T & lx, T & ly, T & lz,
+        T & rho_p, T & u, plint & flowType, T & shearRate, T & Re, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & shape, T & radius,
         plint & tmax, plint & tmeas, plint & npar)
     {
@@ -62,6 +62,8 @@ void readFicsionXML(XMLreader document,T & shellDensity,
     document["cell"]["k_volume"].read(k_volume);
     document["cell"]["k_surface"].read(k_surface);
     document["parameters"]["Re"].read(Re);
+    document["parameters"]["shearRate"].read(shearRate);
+    document["parameters"]["flowType"].read(flowType);
     document["parameters"]["rho_p"].read(rho_p);
     document["parameters"]["nu_p"].read(nu_p);
     document["parameters"]["tau"].read(tau);
@@ -101,14 +103,15 @@ int main(int argc, char* argv[])
     T u, Re, Re_p, N, lx, ly, lz;
     T rho_p;
     T radius;
-
+    plint flowType;
+    T shearRate, shearRate_p;
 
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
     readFicsionXML(document, shellDensity, k_shear, k_bend, k_WLC, k_elastic, k_volume, k_surface,
-            rho_p, u, Re, Re_p, N, lx, ly, lz,  forceToFluid, shape, radius, tmax, tmeas, npar);
+            rho_p, u, flowType, shearRate_p, Re, Re_p, N, lx, ly, lz,  forceToFluid, shape, radius, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -118,7 +121,6 @@ int main(int argc, char* argv[])
             lz         // lz
     );
 
-    writeFicsionLogFile(parameters, "log", Re);
     plint nx = parameters.getNx();
     plint ny = parameters.getNy();
     plint nz = parameters.getNz();
@@ -127,6 +129,9 @@ int main(int argc, char* argv[])
     T dt = parameters.getDeltaT();
     T dm = rho_p * (dx*dx*dx);
     kBT = kBT_p / ( dx*dx * dm /(dt*dt) );
+    shearRate = shearRate_p * dt;
+
+    writeFicsionLogFile(parameters, "log", Re, shearRate, flowType);
     pcout << "kT = " << kBT << std::endl;
 
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
@@ -139,7 +144,11 @@ int main(int argc, char* argv[])
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
-    iniLattice(lattice, parameters, *boundaryCondition, Re);
+    if (flowType == 1) {
+        iniLatticeSquareCouette(lattice, parameters, *boundaryCondition, shearRate);
+    } else {
+        iniLatticeSquarePoiseuille(lattice, parameters, *boundaryCondition, Re);
+    }
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
             latticeManagement.getSparseBlockStructure(),
@@ -156,13 +165,13 @@ int main(int argc, char* argv[])
 
     std::vector<Array<T,3> > centers;
     std::vector<T> radii;
-    positionCells(shape, radius, npar, parameters, centers, radii);
+    positionCells(shape, radius, npar, parameters, centers, radii, flowType);
 
 //  === Create Mesh, particles and CellModel ===
     plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
     std::vector<plint> cellIds;
     plint numPartsPerCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, 50);
+    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, 500);
     pcout << "Mesh Created" << std::endl;
     generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice);
 
@@ -202,7 +211,6 @@ int main(int argc, char* argv[])
     pcout << std::endl <<"Mean Edge Distance [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA] << ", ";
     pcout << std::endl <<"Max Edge Distance [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMaxEdgeDistance[iA] << ", ";
 
-
     std::vector<MultiBlock3D*> particleArg;
     std::vector<MultiBlock3D*> particleLatticeArg;
     particleArg.push_back(&immersedParticles);
@@ -225,8 +233,15 @@ int main(int argc, char* argv[])
         immersedParticles.getBoundingBox(), particleLatticeArg);
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
     /* ********************* Main Loop ***************************************** * */
+    T eqVolumeInitial, eqVolumeFinal, ifinal=10000.;
+    eqVolumeInitial = eqVolume;
+    eqVolumeFinal = eqVolume; // 0.65 * eqVolumeInitial ;
+//    eqVolumeFinal = 0.65 * eqVolumeInitial ;
     for (plint i=0; i<tmax; ++i) {
-
+        if (i<=ifinal) {
+            eqVolume = eqVolumeInitial + (i*1.0)/ifinal * (eqVolumeFinal - eqVolumeInitial) ;
+            cellModel.setEquilibriumVolume(eqVolume);
+        }
          applyProcessingFunctional ( // compute force applied on the particles by springs
              new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
                  Cells, cellModel.clone(), cellsVolume, cellsSurface),
@@ -260,7 +275,7 @@ int main(int argc, char* argv[])
             pcout << i << " totParticles = " << totParticles << std::endl;
             // PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain
             if (i%(2*tmeas)==0) {
-                cellsVolume.clear(); cellsSurface.clear(); cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();cellsMeanAngle.clear();
+                cellsVolume.clear(); cellsSurface.clear(); cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear(); cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear();
                 countCellVolume(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsVolume);
                 countCellSurface(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsSurface);
                 countCellMeanTriangleArea(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanTriangleArea);
@@ -268,10 +283,10 @@ int main(int argc, char* argv[])
                 countCellMeanEdgeDistance(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMeanEdgeDistance);
                 countCellMaxEdgeDistance(Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsMaxEdgeDistance);
                 pcout << "=== " << i << " === " << std::endl;
-                pcout << "Volume: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsVolume[iA]*1.0/eqVolume <<", ";
-                pcout << std::endl <<"Surface: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsSurface[iA]*1.0/eqSurface << ", ";
-                pcout << std::endl <<"Mean Triangle Surface: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanTriangleArea[iA]*1.0/eqArea << ", ";
-                pcout << std::endl <<"Mean Edge Distance: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA]*1.0/eqLength<< ", ";
+                pcout << "Volume: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsVolume[iA]*100.0/eqVolumeInitial - 100 <<"%, ";
+                pcout << std::endl <<"Surface: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsSurface[iA]*100.0/eqSurface - 100 << "%, ";
+                pcout << std::endl <<"Mean Triangle Surface: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanTriangleArea[iA]*100.0/eqArea - 100<< "%, ";
+                pcout << std::endl <<"Mean Edge Distance: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA]*100.0/eqLength - 100<< "%, ";
                 pcout << std::endl <<"Mean Angle [^o]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanAngle[iA]*180.0/pi << ", ";
                 pcout << std::endl <<"Mean Edge Distance [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA] << ", ";
                 pcout << std::endl <<"Max Edge Distance [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMaxEdgeDistance[iA] << ", ";

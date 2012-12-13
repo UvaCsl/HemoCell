@@ -69,6 +69,8 @@ public:
     T& getMaximumLength() { return maxLength; }
     T const& getPersistenceLength() const { return persistenceLength; }
     T& getPersistenceLength() { return persistenceLength; }
+    void setEquilibriumVolume(T eqVolume_) { eqVolume = eqVolume_; }
+    void setEquilibriumSurface(T eqSurface_) { eqSurface = eqSurface_; }
 private:
     T k_shear, k_bend, k_volume, k_surface, k_WLC, k_elastic;
     T eqLength, eqArea, eqAngle;

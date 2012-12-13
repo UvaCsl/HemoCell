@@ -62,15 +62,19 @@ private:
 /* ************************************************************************************* */
 
 /* ******************* iniLattice ***************************************** */
-void iniLattice( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+void iniLatticeSquarePoiseuille( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                  IncomprFlowParam<T> const& parameters,
                  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition,
                  T Re);
 
+void iniLatticeSquareCouette( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+                 IncomprFlowParam<T> const& parameters,
+                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T shearRate);
+
 /* ******************* writeFicsionLogFile ***************************************** */
 template<typename T>
 void writeFicsionLogFile(IncomprFlowParam<T> const& parameters,
-                  std::string const& title, T Re);
+                  std::string const& title, T Re, T shearRate, plint flowType);
 
 
 /* ******************* writeVTK ***************************************** */

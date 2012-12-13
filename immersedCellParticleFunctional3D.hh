@@ -155,10 +155,10 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         }
         cellOnVertex = new Cell<T,Descriptor>(*cells[0]);
         for (plint iPop=0; iPop<Descriptor<T>::q; ++iPop) {
-            (*cellOnVertex)[iPop] =
-                weights[0]*(*cells[0])[iPop] + weights[1]*(*cells[1])[iPop] + weights[2]*(*cells[2])[iPop] +
-                weights[3]*(*cells[3])[iPop] + weights[4]*(*cells[4])[iPop] + weights[5]*(*cells[5])[iPop] +
-                weights[6]*(*cells[6])[iPop] + weights[7]*(*cells[7])[iPop];
+            (*cellOnVertex)[iPop] = 0;
+            for (int iPos = 0; iPos < 8; ++iPos) {
+                (*cellOnVertex)[iPop] += weights[iPos]*(*cells[iPos])[iPop];
+            }
         }
         cellOnVertex->computeVelocity(particle->get_v());
         delete cellOnVertex;

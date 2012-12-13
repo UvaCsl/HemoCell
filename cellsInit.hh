@@ -18,39 +18,62 @@
 #define CELLS_INIT_HH
 
 
-#include "cellsInit.hh"
+#include "cellsInit.h"
 
 
-void positionCells(plint shape, T radius, plint npar, IncomprFlowParam<T> const& parameters,
-        std::vector<Array<T,3> > & centers, std::vector<T> & radii) {
+void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> const& parameters,
+        std::vector<Array<T,3> > & centers, std::vector<T> & radii, plint flowType) {
 
-    std::vector<T> posY, posZ;
-    T diameter = 2*radius;
-    const plint nx = parameters.getNx();
-    const plint ny = parameters.getNy();
-    const plint nz = parameters.getNz();
-    for (T r =1 + diameter; r < ny-diameter-1; r+=1.05*diameter) {
-        posZ.push_back(r);
-    }
-    if (shape==1) { // Y and Z for RBC are not symmetric, pack it more dense
-        T dY =    0.265106361*radius;
-        for (T r = 1 + 2*dY; r < ny-2*dY - 1; r+=2*1.05*2*dY) {
-            posY.push_back(r);
-        }
-    } else {
-        posY = posZ;
-    }
-    plint n=0;
-    for (T iN = 3+diameter; (iN < nx-(diameter) - 1); iN+=1.05*diameter) { // create as many particles as possible
-        for (pluint iA = 0; iA < posY.size(); ++iA) {
-            for (pluint iB = 0; iB < posZ.size() && (n < npar); ++iB) {
-                centers.push_back(Array<T,3>(iN,posY[iA],posZ[iB]));
-                radii.push_back(radius);
-                n++;
+    std::vector<T> posX, posY, posZ;
+    const plint nx = parameters.getNx() ;
+    const plint ny = parameters.getNy()  ;
+    const plint nz = parameters.getNz()  ;
+    const T dX = 2.1 * radius ;
+    const T dY = 2.1 * radius * ( (shape==1) ? 0.265106361 : 1 );
+    const T dZ = 2.1 * radius;
+
+    plint NdX = (nx-1)*1.0/dX;
+    plint NdY = (ny-1)*1.0/dY;
+    plint NdZ = (nz-1)*1.0/dZ;
+    npar = npar<(NdX*NdY*NdZ)?npar:(NdX*NdY*NdZ);
+    plint slices = npar/(NdY*NdZ);
+
+    for (plint i = 0; i < slices; ++i) {
+        for (plint iy = 0; iy < NdY; ++iy) {
+            for (plint iz = 0; iz < NdZ; ++iz) {
+                posX.push_back((i+0.5)*dX);
+                posY.push_back((iy+0.5)*dY);
+                posZ.push_back((iz+0.5)*dZ);
             }
         }
     }
-    if (nz == 0) {}
+    plint lastSlice = npar%(NdY*NdZ);
+    plint rows = lastSlice/NdZ;
+    for (plint iy = 1; iy <= rows; ++iy) {
+        for (plint iz = 0; iz < NdZ; ++iz) {
+            posX.push_back((slices+0.5)*dX);
+            posY.push_back(ny * iy*1.0/(rows+1 + 1.0));
+            posZ.push_back((iz+0.5)*dZ);
+        }
+    }
+
+    plint mods = lastSlice%NdZ;
+    for (plint iz = 1; iz <= mods; ++iz) {
+        posX.push_back((slices+0.5)*dX);
+        posY.push_back(ny * (rows+1)*1.0/(rows+1 + 1.0));
+        posZ.push_back(nz * iz*1.0/(mods + 1.0));
+    }
+
+    T addToX = 0.0;
+    if (flowType == 1) {
+        addToX = (NdX - slices) * dX * 0.5;
+    }
+
+
+    for (pluint iA = 0; iA < posX.size(); ++iA) {
+        centers.push_back(Array<T,3>(posX[iA]+addToX,posY[iA],posZ[iA]));
+        radii.push_back(radius);
+    }
 }
 
 
