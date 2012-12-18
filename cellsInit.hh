@@ -20,7 +20,7 @@
 
 #include "cellsInit.h"
 
-
+template<typename T>
 void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> const& parameters,
         std::vector<Array<T,3> > & centers, std::vector<T> & radii, plint flowType) {
 
@@ -76,9 +76,57 @@ void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> cons
     }
 }
 
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles,
+                           std::vector<plint> & cellIds,
+                           std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
+                           std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle)
+    {
+    cellsVolume.clear(); cellsSurface.clear(); cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear(); cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear();
+    countCellVolume(Cells, particles, particles.getBoundingBox(), cellIds, cellsVolume);
+    countCellSurface(Cells, particles, particles.getBoundingBox(), cellIds, cellsSurface);
+    countCellMeanTriangleArea(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanTriangleArea);
+    countCellMeanAngle(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanAngle);
+    countCellMeanEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanEdgeDistance);
+    countCellMaxEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, cellsMaxEdgeDistance);
+}
 
 
+template<typename T>
+void printCellMeasures(plint i, TriangleBoundary3D<T> Cells,
+                       std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
+                       std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
+                       T eqVolume, T eqSurface, T eqArea, T eqLength) {
+    pcout << "=== " << i << " === " << std::endl;
+    pcout << "Volume: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsVolume[iA]*100.0/eqVolume - 100 <<"%, ";
+    pcout << std::endl <<"Surface: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsSurface[iA]*100.0/eqSurface - 100 << "%, ";
+    pcout << std::endl <<"Mean Triangle Surface: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanTriangleArea[iA]*100.0/eqArea - 100<< "%, ";
+    pcout << std::endl <<"Mean Edge Distance: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA]*100.0/eqLength - 100<< "%, ";
+    pcout << std::endl <<"Mean Angle [^o]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanAngle[iA]*180.0/pi << ", ";
+    pcout << std::endl <<"Mean Edge Distance [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA] << ", ";
+    pcout << std::endl <<"Max Edge Distance [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMaxEdgeDistance[iA] << ", ";
+    pcout << std::endl <<"Coordinates: (" << Cells.getMesh().getVertex(0)[0] << ", " << Cells.getMesh().getVertex(0)[1] <<
+             ", " << Cells.getMesh().getVertex(0)[2] << ")" << std::endl;
+}
 
+
+template<typename T>
+void writeCellLog(plint i, plb_ofstream & logFile,
+                  std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea, std::vector<T> & cellsMeanEdgeDistance,
+                  std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
+                  T eqVolume, T eqSurface, T eqArea, T eqLength) {
+    std::string delim(" , ");
+    logFile << i*1.0 << delim
+            << cellsVolume[0]*100.0/eqVolume - 100 <<  delim
+            << cellsSurface[0]*100.0/eqSurface - 100 << delim
+            << cellsMeanTriangleArea[0]*100.0/eqArea - 100 << delim
+            << cellsMeanEdgeDistance[0]*100.0/eqLength - 100 << delim
+            << cellsMeanAngle[0]*180.0/pi << delim
+            << cellsMeanEdgeDistance[0] << delim
+            << cellsMaxEdgeDistance[0]
+            << std::endl;
+}
 
 #endif  // CELLS_INIT_HH
 

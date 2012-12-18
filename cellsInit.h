@@ -19,16 +19,35 @@
 
 
 #include "ficsionInit.hh"
-#include "immersedCells3D.h"
 #include "immersedCells3D.hh"
-#include "immersedCellsFunctional3D.h"
 #include "immersedCellsFunctional3D.hh"
+#include "immersedCellsReductions.hh"
 
+// Position Cells inside the domain
+template<typename T>
 void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> const& parameters,
         std::vector<Array<T,3> > & centers, std::vector<T> & radii, plint flowType) ;
 
+// Calculate Cell measures
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles,
+                           std::vector<plint> & cellIds,
+                           std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
+                           std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle);
+
+template<typename T>
+void printCellMeasures(plint i, TriangleBoundary3D<T> Cells,
+                       std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
+                       std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
+                       T eqVolume, T eqSurface, T eqArea, T eqLength) ;
 
 
+template<typename T>
+void writeCellLog(plint i, plb_ofstream & logFile,
+                  std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea, std::vector<T> & cellsMeanEdgeDistance,
+                  std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
+                  T eqVolume, T eqSurface, T eqArea, T eqLength) ;
 
 #endif  // CELLS_INIT_H
 

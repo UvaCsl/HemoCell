@@ -32,7 +32,7 @@ class CellModel3D : public ShellModel3D<T>
 {
 public:
     CellModel3D(T density_,
-                T k_shear_, T k_bend_, T k_WLC_, T k_elastic_,
+                T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
                 T k_volume_, T k_surface_,
                 T eqArea_, T eqLength_, T eqAngle_,
                 T eqVolume_, T eqSurface_,
@@ -72,13 +72,18 @@ public:
     void setEquilibriumVolume(T eqVolume_) { eqVolume = eqVolume_; }
     void setEquilibriumSurface(T eqSurface_) { eqSurface = eqSurface_; }
 private:
-    T k_shear, k_bend, k_volume, k_surface, k_WLC, k_elastic;
+    T k_shear, k_bend, k_stretch, k_volume, k_surface, k_WLC, k_elastic;
     T eqLength, eqArea, eqAngle;
     T eqVolume, eqSurface;
     T maxLength, persistenceLength, C_WLC, C_elastic;
 };
 
 
+template<typename T>
+Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
+                                Array<T,3> const& x3, Array<T,3> const& x4,
+                                Array<T,3> const& ni, Array<T,3> const& nj,
+                                T Ai, T Aj, T eqAngle, T k);
 
 
 namespace shellModelHelper3D {
@@ -88,7 +93,7 @@ namespace cellModelHelper3D {
 template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
                    TriangularSurfaceMesh<T> const& dynMesh, 
-                   T k_shear, T k_bend, T k_WLC,
+                   T k_shear, T k_bend, T k_stretch, T k_WLC,
                    T maxLength, T eqArea, T eqLength, T eqAngle, T C_elastic);
 
 template<typename T>
@@ -111,10 +116,16 @@ T computeShearPotential(Array<T,3> const& iPosition,
                         T k);
 
 template<typename T>
+T computeBendPotential(Array<T,3> const& niTriangle, Array<T,3> const& njTriangle,
+                       T eqAngle, T eqLength, T eqArea,
+                       T k);
+
+template<typename T>
 T computeBendPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
                        Array<T,3> const& kPosition, Array<T,3> const& lPosition,
                        T eqAngle, T eqLength, T eqArea,
                        T k);
+
 
 }  // namespace cellModelHelper3D
 

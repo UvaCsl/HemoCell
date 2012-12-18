@@ -196,7 +196,8 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
     particleField.findParticles(domain, particles);
     std::vector<Dot3D> cellPos(8);
     std::vector<T> weights(8);
-    std::vector<Cell<T,Descriptor>*> cells(8);
+//    std::vector<Cell<T,Descriptor>*> cells(8);
+    Cell<T,Descriptor>* cell;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
         Particle3D<T,Descriptor>* nonTypedParticle = particles[iParticle];
         ImmersedCellParticle3D<T,Descriptor>* particle =
@@ -204,17 +205,14 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
         linearInterpolationCoefficients(fluid, position, cellPos, weights);
-        
-        Array<T,3> elasticForce = particle->get_force();
 
+        Array<T,3> elasticForce = particle->get_force();
         // Use copy constructor in order to initialize dynamics object.
-        for (plint iCell=0; iCell<8; ++iCell) {
-            cells[iCell] = &fluid.get(cellPos[iCell].x,cellPos[iCell].y,cellPos[iCell].z);
-        }
         for (plint iCell = 0; iCell < 8; ++iCell) {
-            T *locForce = cells[iCell]->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
+            cell = &fluid.get(cellPos[iCell].x,cellPos[iCell].y,cellPos[iCell].z);
+            T *locForce = cell->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
             for (plint iA = 0; iA < 3; ++iA) {
-                locForce[iA] += weights[iCell]*elasticForce[iA];
+                locForce[iA] -= weights[iCell]*elasticForce[iA];
             }
         }
     }
