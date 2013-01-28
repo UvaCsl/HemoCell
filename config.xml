@@ -2,20 +2,20 @@
 
 <cell>
     <shellDensity> 1. </shellDensity>
-    <k_WLC> 0.01 </k_WLC> <!--Worm-like chain modulus (in k_BT units)-->
-    <k_elastic> 0.01 </k_elastic> <!--elastic modulus (in k_BT units)-->
-    <k_bend> .00 </k_bend> <!--bending modulus (in k_BT units) [75]-->
+    <k_WLC> 0.00 </k_WLC> <!--Worm-like chain modulus (in k_BT units)-->
+    <k_elastic> 0.0 </k_elastic> <!--elastic modulus (in k_BT units)-->
+    <k_bend> -0.01</k_bend> <!--bending modulus (in k_BT units) [75]-->
     <k_stretch> 0.0 </k_stretch> <!--bending modulus (in k_BT units) [0]-->
     <k_shear> 0.0 </k_shear> <!--local area constrain modulus (in k_BT units) [75]-->
-    <k_surface> 500.0 </k_surface> <!--surface conservation modulus (in k_BT units) [500]--> 
-    <k_volume> 100.0 </k_volume> <!--volume conservation modulus (in k_BT units) [100]-->
+    <k_surface> 100.0 </k_surface> <!--surface conservation modulus (in k_BT units) [500]--> 
+    <k_volume> 0.0 </k_volume> <!--volume conservation modulus (in k_BT units) [100]-->
 </cell>
 
 
 <parameters>
     <flowType> 1 </flowType>   <!--flowType: Poisseuille:0 Couette:1-->
-    <Re> 1. </Re>   <!--Reynolds number-->
-    <shearRate> 0. </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
+    <Re> 0. </Re>   <!--Reynolds number-->
+    <shearRate> 10 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <rho_p> 1025 </rho_p>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nu_p> 1.7e-6 </nu_p>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->

@@ -209,7 +209,7 @@ int main(int argc, char* argv[])
     particleLatticeArg.push_back(&immersedParticles);
     particleLatticeArg.push_back(&lattice);
 
-    T persistenceLength = 7.5e-9 * sqrt(23865/(numParts[0]-2)) / dx;
+    T persistenceLength = 7.5e-9 * sqrt(23865.0/(numParts[0]-2)) / dx;
     T maxLength = 2.2*eqLength;
     pcout << "persistenceLength = " << persistenceLength
             << " maxLength = " << maxLength << std::endl;
