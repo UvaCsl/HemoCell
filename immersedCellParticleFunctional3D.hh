@@ -212,7 +212,7 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
             cell = &fluid.get(cellPos[iCell].x,cellPos[iCell].y,cellPos[iCell].z);
             T *locForce = cell->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
             for (plint iA = 0; iA < 3; ++iA) {
-                locForce[iA] -= weights[iCell]*elasticForce[iA];
+                locForce[iA] += weights[iCell]*elasticForce[iA];
             }
         }
     }

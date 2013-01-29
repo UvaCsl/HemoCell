@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
     plint forceToFluid, shape;
     plint tmax, tmeas, npar;
     T dtIteration = 0;
-    T shellDensity, k_shear, k_bend, k_stretch, k_WLC, k_elastic,  k_volume, k_surface;
+    T shellDensity, k_shear, k_bend, k_stretch, k_WLC, k_elastic,  k_volume, k_surface, eta_m=0;
     T u, Re, Re_p, N, lx, ly, lz;
     T rho_p;
     T radius;
@@ -134,6 +134,7 @@ int main(int argc, char* argv[])
     T dt = parameters.getDeltaT();
     T dm = rho_p * (dx*dx*dx);
     kBT = kBT_p / ( dx*dx * dm /(dt*dt) );
+    dNewton = (dm*dx/(dt*dt)) ;
     shearRate = shearRate_p * dt;
 
     writeFicsionLogFile(parameters, "log", Re, shearRate, flowType);
@@ -215,8 +216,16 @@ int main(int argc, char* argv[])
             << " maxLength = " << maxLength << std::endl;
     PLB_PRECONDITION( maxLength < 1.0 );
 //    eqVolume = pow(eqSurface,1.5)/(6*pi);
+    k_WLC *= 1;
+    k_elastic *= 1;
+    k_bend *= kBT;
+    k_volume /= dNewton/(dx*dx);
+    k_surface /= dNewton/dx;
+    /* == */
+    k_shear /= dNewton/dx;
+    k_stretch /= dNewton;
     CellModel3D<T> cellModel(shellDensity, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, \
-                                                eqArea, eqLength, eqAngle, eqVolume, eqSurface,
+                                                eqArea, eqLength, eqAngle, eqVolume, eqSurface, eta_m,
                                                 maxLength, persistenceLength);
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();

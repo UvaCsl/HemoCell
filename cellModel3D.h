@@ -31,11 +31,13 @@ template<typename T>
 class CellModel3D : public ShellModel3D<T>
 {
 public:
+    /* All input should be in dimensionless units */
     CellModel3D(T density_,
                 T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
                 T k_volume_, T k_surface_,
                 T eqArea_, T eqLength_, T eqAngle_,
                 T eqVolume_, T eqSurface_,
+                T eta_m_,
                 T maxLength_, T persistenceLength_);
     virtual Array<T,3> computeCellForce (
             TriangleBoundary3D<T> const& boundary,
@@ -72,10 +74,11 @@ public:
     void setEquilibriumVolume(T eqVolume_) { eqVolume = eqVolume_; }
     void setEquilibriumSurface(T eqSurface_) { eqSurface = eqSurface_; }
 private:
-    T k_shear, k_bend, k_stretch, k_volume, k_surface, k_WLC, k_elastic;
+    T k_shear, k_bend, k_stretch, k_surface, k_volume, k_WLC, k_elastic;
     T eqLength, eqArea, eqAngle;
     T eqVolume, eqSurface;
-    T maxLength, persistenceLength, C_WLC, C_elastic;
+    T eta_m, gamma_T, gamma_C;
+    T maxLength, persistenceLength, wlcCoefficient, C_elastic;
 };
 
 
