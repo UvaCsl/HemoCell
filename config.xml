@@ -3,11 +3,11 @@
 <cell>
     <rbc_model> 1 </rbc_model> <!--Krueger: [0], WLC: [1], FENE: [2], LD-RBC: [3] (Non implemented)-->
     <shellDensity> 1. </shellDensity>
-    <k_WLC> 1.00 </k_WLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
-    <k_elastic> 1.0 </k_elastic> <!--elastic modulus coefficient (dimensionless) [1.0] -->
-    <k_bend> 75 </k_bend> <!--bending modulus (in k_BT units) [75] {KruegerThesis2011, FedosovCaswell2010b}-->
-    <k_surface> 0.5 </k_surface> <!--surface conservation modulus (in N/m units) [0.5] {KruegerThesis2011, Dupin2007}--> 
-    <k_volume> 7.23e5 </k_volume> <!--volume conservation modulus (in N/m2 units) [7.23e5] {KruegerThesis2011}-->
+    <k_WLC> 0.00 </k_WLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
+    <k_elastic> 0.0 </k_elastic> <!--elastic modulus coefficient (dimensionless) [1.0] -->
+    <k_bend> 0 </k_bend> <!--bending modulus (in k_BT units) [75] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <k_surface> 0.0 </k_surface> <!--surface conservation modulus (in N/m units) [0.5] {KruegerThesis2011, Dupin2007}--> 
+    <k_volume> 0.0e0 </k_volume> <!--volume conservation modulus (in N/m2 units) [7.23e5] {KruegerThesis2011}-->
     <eta_m> 0.022 </eta_m> <!--membrane viscosity (in N s/m2 (Pa s) units ) [0.022] {Fedosov2010b}-->
 <!-- Testing phase-->
     <k_stretch> 0.0 </k_stretch> <!--spring modulus (in N) [0]-->

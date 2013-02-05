@@ -201,6 +201,14 @@ Array<T,3> CellModel3D<T>::computeCellForce (
                             trianglesArea[iTriangle], trianglesArea[jTriangle],
                             eqAngle, k_bend);
     }
+    pcout <<std::setprecision (15) <<
+            "v: " << T(volumeForce[0]*2.0) << " " << T(volumeForce[1]*2.0) << " " << T(volumeForce[2]*2.0) << " " <<
+            "s: " << T(surfaceForce[0]*2.0) << " " << T(surfaceForce[1]*2.0) << " " << T(surfaceForce[2]*2.0) << " " <<
+            "i: " << T(surfaceForce[0]*2.0) << " " << T(surfaceForce[1]*2.0) << " " << T(surfaceForce[2]*2.0) << " " <<
+            "e: " << T(elasticForce[0]*2.0) << " " << T(elasticForce[1]*2.0) << " " << T(elasticForce[2]*2.0) << " " <<
+            "b: " << T(bendingForce[0]*2.0) << " " << T(bendingForce[1]*2.0) << " " << T(bendingForce[2]*2.0) << " " <<
+            "all: " << T((volumeForce + surfaceForce + inPlaneForce + elasticForce + bendingForce)[0]) << " " << T((volumeForce + surfaceForce + inPlaneForce + elasticForce + bendingForce)[1]) << " " << T((volumeForce + surfaceForce + inPlaneForce + elasticForce + bendingForce)[2]) << " " <<
+            std::endl;
     return volumeForce + surfaceForce + inPlaneForce + elasticForce + bendingForce;
 }
 
