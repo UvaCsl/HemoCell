@@ -146,60 +146,60 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         dVdx = 1.0/6.0 * tmp;
         volumeForce  += -volumeCoefficient  * dVdx;
     }
-
-    /* Run through all the neighboring vertices of iVertex and calculate:
-     *
-     x In plane force
-     x Bending force
-     *
-     */
-    std::vector<plint> neighborVertexIds = dynMesh.getNeighborVertexIds(iVertex);
-    for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
-        plint jVertex = neighborVertexIds[jV];
-        x3 = dynMesh.getVertex(jVertex);
-        /* In Plane Force (WLC) */
-        dl = (x3 - x1)*1.0;
-        r = norm(dl)/maxLength;
-        eij = dl/(r*maxLength);
-
-        inPlaneForce += - wlcCoefficient * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
-        inPlaneForce += 0.0;
-
-        /*  Bending Forces Calculations */
-        std::vector<plint> triangles = dynMesh.getAdjacentTriangleIds(iVertex, jVertex);
-        iTriangle = triangles[0];
-        jTriangle = triangles[1];
-        for (pluint i = 0; i < 3; ++i) {
-            xi[i] = dynMesh.getVertex(iTriangle,i);
-            xj[i] = dynMesh.getVertex(jTriangle,i);
-
-        }
-        // Identify indices of iTriangle
-        if (xi[0] ==x1) { iX1 = 0;}
-        else if (xi[1] ==x1) { iX1 = 1;}
-        else { iX1 = 2;}
-        iX2 = (iX1 + 1)%3;
-        iX3 = (iX1 + 2)%3;
-        // Identify x2
-        if (x3 == xi[iX2]) { x2 = xi[iX3]; }
-        else { x2 = xi[iX2]; }
-
-        // Identify indices of jTriangle
-        if (xj[0] ==x3) { jX1 = 0;}
-        else if (xj[1] == x3) { jX1 = 1;}
-        else { jX1 = 2;}
-        jX2 = (jX1 + 1)%3;
-        jX3 = (jX1 + 2)%3;
-        // Identify x4
-        if (x3 == xj[jX2]) { x4 = xj[jX3]; }
-        else { x4 = xj[jX2]; }
-
-        // Bending Force
-        bendingForce += computeBendingForce (x1, x2, x3, x4,
-                            trianglesNormal[iTriangle], trianglesNormal[jTriangle],
-                            trianglesArea[iTriangle], trianglesArea[jTriangle],
-                            eqAngle, k_bend);
-    }
+//
+//    /* Run through all the neighboring vertices of iVertex and calculate:
+//     *
+//     x In plane force
+//     x Bending force
+//     *
+//     */
+//    std::vector<plint> neighborVertexIds = dynMesh.getNeighborVertexIds(iVertex);
+//    for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
+//        plint jVertex = neighborVertexIds[jV];
+//        x3 = dynMesh.getVertex(jVertex);
+//        /* In Plane Force (WLC) */
+//        dl = (x3 - x1)*1.0;
+//        r = norm(dl)/maxLength;
+//        eij = dl/(r*maxLength);
+//
+//        inPlaneForce += - wlcCoefficient * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
+//        inPlaneForce += 0.0;
+//
+//        /*  Bending Forces Calculations */
+//        std::vector<plint> triangles = dynMesh.getAdjacentTriangleIds(iVertex, jVertex);
+//        iTriangle = triangles[0];
+//        jTriangle = triangles[1];
+//        for (pluint i = 0; i < 3; ++i) {
+//            xi[i] = dynMesh.getVertex(iTriangle,i);
+//            xj[i] = dynMesh.getVertex(jTriangle,i);
+//
+//        }
+//        // Identify indices of iTriangle
+//        if (xi[0] ==x1) { iX1 = 0;}
+//        else if (xi[1] ==x1) { iX1 = 1;}
+//        else { iX1 = 2;}
+//        iX2 = (iX1 + 1)%3;
+//        iX3 = (iX1 + 2)%3;
+//        // Identify x2
+//        if (x3 == xi[iX2]) { x2 = xi[iX3]; }
+//        else { x2 = xi[iX2]; }
+//
+//        // Identify indices of jTriangle
+//        if (xj[0] ==x3) { jX1 = 0;}
+//        else if (xj[1] == x3) { jX1 = 1;}
+//        else { jX1 = 2;}
+//        jX2 = (jX1 + 1)%3;
+//        jX3 = (jX1 + 2)%3;
+//        // Identify x4
+//        if (x3 == xj[jX2]) { x4 = xj[jX3]; }
+//        else { x4 = xj[jX2]; }
+//
+//        // Bending Force
+//        bendingForce += computeBendingForce (x1, x2, x3, x4,
+//                            trianglesNormal[iTriangle], trianglesNormal[jTriangle],
+//                            trianglesArea[iTriangle], trianglesArea[jTriangle],
+//                            eqAngle, k_bend);
+//    }
     return volumeForce + surfaceForce + inPlaneForce + elasticForce + bendingForce;
 }
 
@@ -275,32 +275,70 @@ Array<T,3> CellModel3D<T>::computeElasticForce (
         plint iVertex )
 {
     // Select dynamic, open mesh.
+    boundary.pushSelect(0,1);
     TriangularSurfaceMesh<T> const& dynMesh = boundary.getMesh();
+    boundary.popSelect();
+    // Select static, open mesh.
+    boundary.pushSelect(0,0);
+    TriangularSurfaceMesh<T> const& eqMesh = boundary.getMesh();
+    boundary.popSelect();
 
     Array<T,3> force; force.resetToZero();
-    static T eps = 16 * (sizeof(T) == sizeof(float) ?
+    static T eps = (sizeof(T) == sizeof(float) ?
             100.0 * std::numeric_limits<T>::epsilon() :
             std::numeric_limits<float>::epsilon());
 
     Array<T,3> vertex = dynMesh.getVertex(iVertex);
-    T C_WLC=0;
+
     for (int i = 0; i < 3; i++) {
         Array<T,3> iPosition = vertex;
         iPosition[i] += eps;
-        T up = shellModelHelper3D::cellModelHelper3D::computePotential (
-                iVertex, iPosition, dynMesh,
-                k_shear, k_bend, k_stretch, C_WLC,
-                maxLength, eqArea, eqLength, eqAngle, C_elastic);
+        T up = shellModelHelper3D::springModelHelper3D::computePotential (
+                iVertex, iPosition, dynMesh, eqMesh, k_rest, k_stretch,
+                k_shear, k_bend );
         iPosition = vertex;
         iPosition[i] -= eps;
-        T um = shellModelHelper3D::cellModelHelper3D::computePotential (
-                iVertex, iPosition, dynMesh,
-                k_shear, k_bend, k_stretch, C_WLC,
-                maxLength, eqArea, eqLength, eqAngle, C_elastic);
+        T um = shellModelHelper3D::springModelHelper3D::computePotential (
+                iVertex, iPosition, dynMesh, eqMesh, k_rest, k_stretch,
+                k_shear, k_bend );
         force[i] = -(up-um) / (2.0*eps);
     }
     return force;
 }
+
+
+//template<typename T>
+//Array<T,3> CellModel3D<T>::computeElasticForce (
+//        TriangleBoundary3D<T> const& boundary,
+//        plint iVertex )
+//{
+//    // Select dynamic, open mesh.
+//    TriangularSurfaceMesh<T> const& dynMesh = boundary.getMesh();
+//
+//    Array<T,3> force; force.resetToZero();
+//    static T eps = 16 * (sizeof(T) == sizeof(float) ?
+//            100.0 * std::numeric_limits<T>::epsilon() :
+//            std::numeric_limits<float>::epsilon());
+//
+//    Array<T,3> vertex = dynMesh.getVertex(iVertex);
+//    T C_WLC=0;
+//    for (int i = 0; i < 3; i++) {
+//        Array<T,3> iPosition = vertex;
+//        iPosition[i] += eps;
+//        T up = shellModelHelper3D::cellModelHelper3D::computePotential (
+//                iVertex, iPosition, dynMesh,
+//                k_shear, k_bend, k_stretch, C_WLC,
+//                maxLength, eqArea, eqLength, eqAngle, C_elastic);
+//        iPosition = vertex;
+//        iPosition[i] -= eps;
+//        T um = shellModelHelper3D::cellModelHelper3D::computePotential (
+//                iVertex, iPosition, dynMesh,
+//                k_shear, k_bend, k_stretch, C_WLC,
+//                maxLength, eqArea, eqLength, eqAngle, C_elastic);
+//        force[i] = -(up-um) / (2.0*eps);
+//    }
+//    return force;
+//}
 
 template<typename T>
 CellModel3D<T>* CellModel3D<T>::clone() const {
