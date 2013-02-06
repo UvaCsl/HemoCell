@@ -54,6 +54,8 @@ CellModel3D<T>::CellModel3D (
       k_shear(k_shear_),
       k_bend(k_bend_),
       k_stretch(k_stretch_),
+      k_WLC(k_WLC_),
+      k_elastic(k_elastic_),
       k_surface(k_surface_),
       k_volume(k_volume_),
       eqLength(eqLength_),
@@ -71,13 +73,10 @@ CellModel3D<T>::CellModel3D (
 //    k_surface = k_surface* kBT / (eqLength*eqLength);
 //    k_volume = k_volume* kBT / (eqLength*eqLength*eqLength);
 
-    wlcCoefficient = kBT/(4.0*persistenceLength);
     gamma_T = eta_m * 4 * sqrt(3.0) / 13.0;
     gamma_C = gamma_T/3.0;
 
-    k_WLC = k_WLC_ * kBT;
-
-    k_elastic = k_elastic_ * kBT ;
+    wlcCoefficient = k_WLC * kBT/(4.0*persistenceLength);
     C_elastic = k_elastic * 3.0 * sqrt(3.0)*
         (maxLength*maxLength*maxLength)*
         (x0*x0*x0*x0)/(64.0*persistenceLength)*
@@ -201,14 +200,6 @@ Array<T,3> CellModel3D<T>::computeCellForce (
                             trianglesArea[iTriangle], trianglesArea[jTriangle],
                             eqAngle, k_bend);
     }
-    pcout <<std::setprecision (15) <<
-            "v: " << T(volumeForce[0]*2.0) << " " << T(volumeForce[1]*2.0) << " " << T(volumeForce[2]*2.0) << " " <<
-            "s: " << T(surfaceForce[0]*2.0) << " " << T(surfaceForce[1]*2.0) << " " << T(surfaceForce[2]*2.0) << " " <<
-            "i: " << T(surfaceForce[0]*2.0) << " " << T(surfaceForce[1]*2.0) << " " << T(surfaceForce[2]*2.0) << " " <<
-            "e: " << T(elasticForce[0]*2.0) << " " << T(elasticForce[1]*2.0) << " " << T(elasticForce[2]*2.0) << " " <<
-            "b: " << T(bendingForce[0]*2.0) << " " << T(bendingForce[1]*2.0) << " " << T(bendingForce[2]*2.0) << " " <<
-            "all: " << T((volumeForce + surfaceForce + inPlaneForce + elasticForce + bendingForce)[0]) << " " << T((volumeForce + surfaceForce + inPlaneForce + elasticForce + bendingForce)[1]) << " " << T((volumeForce + surfaceForce + inPlaneForce + elasticForce + bendingForce)[2]) << " " <<
-            std::endl;
     return volumeForce + surfaceForce + inPlaneForce + elasticForce + bendingForce;
 }
 
