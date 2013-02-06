@@ -17,7 +17,8 @@
 # Leading directory of the Palabos source code
 # palabosRoot   = ./palabos/	
 #palabosRoot   = /home/lmount/devel/palabos/
-palabosRoot   = $(PALABOS_ROOT)
+#palabosRoot   = $(PALABOS_ROOT)
+palabosRoot   = ./palabos
 # Name of source files in current directory to compile and link with Palabos
 # projectFiles = losglobulos.cpp
 projectFiles = ficsion.cpp
