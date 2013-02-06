@@ -333,7 +333,7 @@ void AngleCellReduceFunctional3D<T,Descriptor>::calculateQuantity(TriangularSurf
             std::vector<plint>  adjacentTriangles = triangleMesh.getAdjacentTriangleIds(iVertex, neighbors[iB]) ;
             Array<T,3> V1 = triangleMesh.computeTriangleNormal(adjacentTriangles[0]);
             Array<T,3> V2 = triangleMesh.computeTriangleNormal(adjacentTriangles[1]);
-            edgeAngle += angleBetweenVectors(V1, V2) + pi ; // - pi + 2*pi
+            edgeAngle += angleBetweenVectors(V1, V2);
             iEdgeAngle++;
         }
         edgeAngle /= 1.0*iEdgeAngle;
