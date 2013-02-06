@@ -225,13 +225,13 @@ Array<T,3> CellModel3D<T>::computeElasticForce (
         T up = shellModelHelper3D::cellModelHelper3D::computePotential (
                 iVertex, iPosition, mesh,
                 k_WLC, k_elastic, k_shear, k_bend,
-                eqLength, eqArea, eqAngle, eqTileSpan);
+                eqLength, maxLength, eqArea, eqAngle, eqTileSpan);
         iPosition = vertex;
         iPosition[i] -= eps;
         T um = shellModelHelper3D::cellModelHelper3D::computePotential (
                 iVertex, iPosition, mesh,
                 k_WLC, k_elastic, k_shear, k_bend,
-                eqLength, eqArea, eqAngle, eqTileSpan);
+                eqLength, maxLength, eqArea, eqAngle, eqTileSpan);
         force[i] = -(up-um) / (2.0*eps);
     }
     return force;
@@ -278,7 +278,7 @@ template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
                    TriangularSurfaceMesh<T> const& mesh,
                    T k_WLC, T k_elastic, T k_shear, T k_bend,
-                   T eqLength, T eqArea, T eqAngle, T eqTileSpan
+                   T eqLength, T maxLength, T eqArea, T eqAngle, T eqTileSpan
 				   )
 {
     T u = 0.0;
@@ -292,7 +292,7 @@ T computePotential(plint iVertex, Array<T,3> const& iPosition,
     for (pluint i = 0; i < sz; i++) {
         plint jVertex = neighborVertexIds[i];
         u += computeInPlanePotential(iPosition, mesh.getVertex(jVertex),
-        		k_WLC, eqLength);
+        		k_WLC, maxLength);
     }
 
     // Cell bending mode
@@ -330,10 +330,10 @@ T computePotential(plint iVertex, Array<T,3> const& iPosition,
 
 template<typename T>
 T computeInPlanePotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
-                          T k, T eqLength)
+                          T k, T maxLength)
 {
-    T length   = norm(iPosition   - jPosition);
-    return 0.5*k*(length - eqLength)*(length - eqLength);
+    T x   = norm(iPosition   - jPosition) / maxLength;
+    return k * (x*x) * (3.0 - 2 *x) / (1 - x);
 }
 
 template<typename T>

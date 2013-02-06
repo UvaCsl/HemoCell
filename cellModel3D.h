@@ -97,12 +97,12 @@ template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
                    TriangularSurfaceMesh<T> const& mesh,
                    T k_WLC, T k_elastic, T k_shear, T k_bend,
-                   T eqLength, T eqArea, T eqAngle, T eqTileSpan
+                   T eqLength, T maxLength, T eqArea, T eqAngle, T eqTileSpan
 				   );
 
 template<typename T>
 T computeInPlanePotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
-                          T k, T eqLength);
+                          T k, T maxLength);
 
 template<typename T>
 T computeShearPotential(Array<T,3> const& iPosition,
