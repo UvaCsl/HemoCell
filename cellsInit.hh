@@ -81,14 +81,17 @@ template< typename T, template<typename U> class Descriptor,
 void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles,
                            std::vector<plint> & cellIds,
                            std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
-                           std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle)
+                           std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
+                           std::vector<T> & cellsMeanTileSpan)
     {
-    cellsVolume.clear(); cellsSurface.clear(); cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear(); cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear();
+    cellsVolume.clear(); cellsSurface.clear(); cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();
+    cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsMeanTileSpan.clear();
     countCellVolume(Cells, particles, particles.getBoundingBox(), cellIds, cellsVolume);
     countCellSurface(Cells, particles, particles.getBoundingBox(), cellIds, cellsSurface);
     countCellMeanTriangleArea(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanTriangleArea);
     countCellMeanAngle(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanAngle);
     countCellMeanEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanEdgeDistance);
+    countCellMeanTileSpan(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanTileSpan);
     countCellMaxEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, cellsMaxEdgeDistance);
 }
 

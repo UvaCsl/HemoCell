@@ -36,7 +36,7 @@ public:
                 T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
                 T k_volume_, T k_surface_,
                 T eqArea_, T eqLength_, T eqAngle_,
-                T eqVolume_, T eqSurface_,
+                T eqVolume_, T eqSurface_, T eqTileSpan_,
                 T eta_m_,
                 T maxLength_, T persistenceLength_);
     virtual Array<T,3> computeCellForce (
@@ -74,9 +74,9 @@ public:
     void setEquilibriumVolume(T eqVolume_) { eqVolume = eqVolume_; }
     void setEquilibriumSurface(T eqSurface_) { eqSurface = eqSurface_; }
 private:
-    T k_shear, k_bend, k_stretch, k_surface, k_volume, k_WLC, k_elastic;
+    T k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_surface, k_volume;
     T eqLength, eqArea, eqAngle;
-    T eqVolume, eqSurface;
+    T eqVolume, eqSurface, eqTileSpan;
     T eta_m, gamma_T, gamma_C;
     T maxLength, persistenceLength, wlcCoefficient, C_elastic;
 };
@@ -95,14 +95,14 @@ namespace cellModelHelper3D {
 
 template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
-                   TriangularSurfaceMesh<T> const& dynMesh, 
-                   T k_shear, T k_bend, T k_stretch, T k_WLC,
-                   T maxLength, T eqArea, T eqLength, T eqAngle, T C_elastic);
+                   TriangularSurfaceMesh<T> const& mesh,
+                   T k_WLC, T k_elastic, T k_shear, T k_bend,
+                   T eqLength, T eqArea, T eqAngle, T eqTileSpan
+				   );
 
 template<typename T>
-T computeStretchPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
-                          T eqLength,
-                          T k);
+T computeInPlanePotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
+                          T k, T eqLength);
 
 template<typename T>
 T computeShearPotential(Array<T,3> const& iPosition,
@@ -112,23 +112,9 @@ T computeShearPotential(Array<T,3> const& iPosition,
                         T k);
 
 template<typename T>
-T computeShearPotential(Array<T,3> const& iPosition,
-                        Array<T,3> const& jPosition,
-                        Array<T,3> const& kPosition,
-                        T eqArea, T & area,
-                        T k);
-
-template<typename T>
-T computeBendPotential(Array<T,3> const& niTriangle, Array<T,3> const& njTriangle,
-                       T eqAngle, T eqLength, T eqArea,
-                       T k);
-
-template<typename T>
 T computeBendPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
                        Array<T,3> const& kPosition, Array<T,3> const& lPosition,
-                       T eqAngle, T eqLength, T eqArea,
-                       T k);
-
+                       T k, T eqAngle, T eqLength, T eqTileSpan);
 
 }  // namespace cellModelHelper3D
 

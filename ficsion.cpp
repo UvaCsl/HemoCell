@@ -194,13 +194,13 @@ int main(int argc, char* argv[])
     plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox()); //Total number of particles
 
     std::vector<T> cellsVolume, cellsSurface;
-    std::vector<T> cellsMeanEdgeDistance, cellsMaxEdgeDistance, cellsMeanAngle, cellsMeanTriangleArea;
-    T eqArea, eqLength, eqAngle, eqVolume, eqSurface;
+    std::vector<T> cellsMeanEdgeDistance, cellsMaxEdgeDistance, cellsMeanAngle, cellsMeanTriangleArea, cellsMeanTileSpan;
+    T eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan;
     calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                        cellsMaxEdgeDistance, cellsMeanAngle);
+                        cellsMaxEdgeDistance, cellsMeanAngle, cellsMeanTileSpan);
     eqArea = cellsMeanTriangleArea[0];     eqLength = cellsMeanEdgeDistance[0];
     eqAngle = cellsMeanAngle[0];     eqVolume = cellsVolume[0];
-    eqSurface = cellsSurface[0];
+    eqSurface = cellsSurface[0];	eqTileSpan = cellsMeanTileSpan[0];
     printCellMeasures(0, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                            cellsMaxEdgeDistance, cellsMeanAngle, eqVolume, eqSurface, eqArea, eqLength) ;
 
@@ -225,7 +225,7 @@ int main(int argc, char* argv[])
     k_shear /= dNewton/dx;
     k_stretch /= dNewton;
     CellModel3D<T> cellModel(shellDensity, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, \
-                                                eqArea, eqLength, eqAngle, eqVolume, eqSurface, eta_m,
+                                                eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan, eta_m,
                                                 maxLength, persistenceLength);
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();
@@ -278,7 +278,7 @@ int main(int argc, char* argv[])
             pcout << i << " totParticles = " << totParticles << std::endl;
             // PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain
             calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                                cellsMaxEdgeDistance, cellsMeanAngle);
+                                cellsMaxEdgeDistance, cellsMeanAngle, cellsMeanTileSpan);
             printCellMeasures(i, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                                    cellsMaxEdgeDistance, cellsMeanAngle, eqVolume, eqSurface, eqArea, eqLength) ;
             writeCellLog(i, logFile,

@@ -58,6 +58,12 @@ void countCellMeanEdgeDistance (TriangleBoundary3D<T> Cells,
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void countCellMeanTileSpan (TriangleBoundary3D<T> Cells,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                std::vector<T>& cellMeanTileSpan) ;
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellMaxEdgeDistance (TriangleBoundary3D<T> Cells,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
                 std::vector<T>& cellMaxEdgeDistance) ;
@@ -107,6 +113,19 @@ public:
     EdgeDistanceCellReduceFunctional3D(TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_)
      : CellReduceFunctional3D<T, Descriptor>(triangleBoundary_, cellIds_) { };
     virtual EdgeDistanceCellReduceFunctional3D<T,Descriptor>* clone() const { return new EdgeDistanceCellReduceFunctional3D<T,Descriptor>(*this); };
+    virtual void calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh,
+            std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_);
+private:
+};
+
+
+/* ******** TileSpanCellReduceFunctional3D *********************************** */
+template<typename T, template<typename U> class Descriptor>
+class TileSpanCellReduceFunctional3D : public CellReduceFunctional3D<T, Descriptor> {
+public:
+	TileSpanCellReduceFunctional3D(TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_)
+     : CellReduceFunctional3D<T, Descriptor>(triangleBoundary_, cellIds_) { };
+    virtual TileSpanCellReduceFunctional3D<T,Descriptor>* clone() const { return new TileSpanCellReduceFunctional3D<T,Descriptor>(*this); };
     virtual void calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh,
             std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_);
 private:

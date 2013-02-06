@@ -141,6 +141,28 @@ void countCellMeanEdgeDistance (TriangleBoundary3D<T> Cells,
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void countCellMeanTileSpan (TriangleBoundary3D<T> Cells,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                std::vector<T>& cellMeanTileSpan) //Perhaps add TAGS
+{
+    // We assume homogeneous Cells
+    std::vector<MultiBlock3D*> particleArg;
+    particleArg.push_back(&particles);
+    TileSpanCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    applyProcessingFunctional(functional, domain, particleArg);
+    functional.getCellQuantityArray(cellMeanTileSpan, cellIds);
+    std::vector<T> cellNumVertices;
+    NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds);
+    applyProcessingFunctional(nfunctional, domain, particleArg);
+    nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
+    for (pluint iA = 0; iA < cellIds.size(); ++iA) {
+    	cellMeanTileSpan[iA] /= cellNumVertices[iA];
+    }
+}
+
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellMaxEdgeDistance (TriangleBoundary3D<T> Cells,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
                 std::vector<T>& cellMaxEdgeDistance) //Perhaps add TAGS
@@ -248,6 +270,26 @@ void EdgeDistanceCellReduceFunctional3D<T,Descriptor>::calculateQuantity(Triangu
         T edgeDistance = 0.0;
         for (pluint iB = 0; iB < neighbors.size(); ++iB) {
             edgeDistance +=  triangleMesh.computeEdgeLength(iVertex, neighbors[iB]) ;
+        }
+        edgeDistance = edgeDistance*1.0/neighbors.size();
+        this->getStatistics().gatherSum(quantityIds_[particle->get_cellId()], edgeDistance);
+    }
+}
+
+
+/* ******** TileSpanCellReduceFunctional3D *********************************** */
+template<typename T, template<typename U> class Descriptor>
+void TileSpanCellReduceFunctional3D<T,Descriptor>::calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh, std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_)
+{
+    for (pluint iA = 0; iA < particles.size(); ++iA) {
+        Particle3D<T,Descriptor>* nonTypedParticle = particles[iA];
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+                dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
+        plint iVertex = particle->getTag();
+        std::vector<plint> neighbors = triangleMesh.getNeighborVertexIds(iVertex);
+        T edgeDistance = 0.0;
+        for (pluint iB = 0; iB < neighbors.size(); ++iB) {
+            edgeDistance +=  triangleMesh.computeEdgeTileSpan(iVertex, neighbors[iB]) ;
         }
         edgeDistance = edgeDistance*1.0/neighbors.size();
         this->getStatistics().gatherSum(quantityIds_[particle->get_cellId()], edgeDistance);
