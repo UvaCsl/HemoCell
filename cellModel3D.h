@@ -78,7 +78,7 @@ private:
     T eqLength, eqArea, eqAngle;
     T eqVolume, eqSurface, eqTileSpan;
     T eta_m, gamma_T, gamma_C;
-    T maxLength, persistenceLength, wlcCoefficient, C_elastic;
+    T maxLength, persistenceLength, C_elastic;
 };
 
 

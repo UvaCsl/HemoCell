@@ -54,7 +54,6 @@ CellModel3D<T>::CellModel3D (
       k_shear(k_shear_),
       k_bend(k_bend_),
       k_stretch(k_stretch_),
-      k_WLC(k_WLC_),
       k_elastic(k_elastic_),
       k_surface(k_surface_),
       k_volume(k_volume_),
@@ -77,7 +76,7 @@ CellModel3D<T>::CellModel3D (
     gamma_T = eta_m * 4 * sqrt(3.0) / 13.0;
     gamma_C = gamma_T/3.0;
 
-    wlcCoefficient = k_WLC * kBT/(4.0*persistenceLength);
+    k_WLC = k_WLC_ * kBT * maxLength/(4.0*persistenceLength);
     C_elastic = k_elastic * 3.0 * sqrt(3.0)*
         (maxLength*maxLength*maxLength)*
         (x0*x0*x0*x0)/(64.0*persistenceLength)*
@@ -103,6 +102,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     Array<T,3> elasticForce; elasticForce.resetToZero();
     Array<T,3> bendingForce; bendingForce.resetToZero();
     Array<T,3> surfaceForce; surfaceForce.resetToZero();
+    Array<T,3> shearForce; shearForce.resetToZero();
     Array<T,3> volumeForce; volumeForce.resetToZero();
 
 
@@ -113,9 +113,9 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     std::map<plint, Array<T,3> > trianglesNormal;
 
     plint iTriangle, iX1, iX2, iX3;
-//    T r;
-    Array<T,3> xi[3], tmp; //, xj[3], tmp;
-//    plint jTriangle, jX1, jX2, jX3;
+    T r;
+    Array<T,3> xi[3], tmp;
+    plint jTriangle;
     /* Run through all the neighboring faces of iVertex and calculate:
      *
      x Volume conservation force
@@ -126,7 +126,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     std::vector<plint> neighborTriangles = dynMesh.getNeighborTriangleIds(iVertex);
     for (pluint iB = 0; iB < neighborTriangles.size(); ++iB) {
         iTriangle = neighborTriangles[iB];
-        for (pluint i = 0; i < 3; ++i) { xi[i] = dynMesh.getVertex(iTriangle,i); }
+        for (pluint id = 0; id < 3; ++id) { xi[id] = dynMesh.getVertex(iTriangle,id); }
         if (xi[0] ==x1) { iX1 = 0;}
         else if (xi[1] ==x1) { iX1 = 1;}
         else { iX1 = 2;}
@@ -140,6 +140,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
                     tmp);
         dAdx = 0.5 *tmp;
         surfaceForce += -surfaceCoefficient * dAdx;
+        shearForce += - k_shear * (trianglesArea[iTriangle] - eqArea)*1.0/eqArea * dAdx;
         // /* Elastice Force */
         // elasticForce += - (C_elastic*1.0)/(trianglesArea[iTriangle]*trianglesArea[iTriangle]) * dAdx;
         /* Volume conservation force */
@@ -147,61 +148,51 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         dVdx = 1.0/6.0 * tmp;
         volumeForce  += -volumeCoefficient  * dVdx;
     }
-//
-//    /* Run through all the neighboring vertices of iVertex and calculate:
-//     *
-//     x In plane force
-//     x Bending force
-//     *
-//     */
-//    std::vector<plint> neighborVertexIds = dynMesh.getNeighborVertexIds(iVertex);
-//    for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
-//        plint jVertex = neighborVertexIds[jV];
-//        x3 = dynMesh.getVertex(jVertex);
-//        /* In Plane Force (WLC) */
-//        dl = (x3 - x1)*1.0;
-//        r = norm(dl)/maxLength;
-//        eij = dl/(r*maxLength);
-//
-//        inPlaneForce += - wlcCoefficient * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
-//        inPlaneForce += 0.0;
-//
-//        /*  Bending Forces Calculations */
-//        std::vector<plint> triangles = dynMesh.getAdjacentTriangleIds(iVertex, jVertex);
-//        iTriangle = triangles[0];
-//        jTriangle = triangles[1];
-//        for (pluint i = 0; i < 3; ++i) {
-//            xi[i] = dynMesh.getVertex(iTriangle,i);
-//            xj[i] = dynMesh.getVertex(jTriangle,i);
-//
-//        }
-//        // Identify indices of iTriangle
-//        if (xi[0] ==x1) { iX1 = 0;}
-//        else if (xi[1] ==x1) { iX1 = 1;}
-//        else { iX1 = 2;}
-//        iX2 = (iX1 + 1)%3;
-//        iX3 = (iX1 + 2)%3;
-//        // Identify x2
-//        if (x3 == xi[iX2]) { x2 = xi[iX3]; }
-//        else { x2 = xi[iX2]; }
-//
-//        // Identify indices of jTriangle
-//        if (xj[0] ==x3) { jX1 = 0;}
-//        else if (xj[1] == x3) { jX1 = 1;}
-//        else { jX1 = 2;}
-//        jX2 = (jX1 + 1)%3;
-//        jX3 = (jX1 + 2)%3;
-//        // Identify x4
-//        if (x3 == xj[jX2]) { x4 = xj[jX3]; }
-//        else { x4 = xj[jX2]; }
-//
-//        // Bending Force
-//        bendingForce += computeBendingForce (x1, x2, x3, x4,
-//                            trianglesNormal[iTriangle], trianglesNormal[jTriangle],
-//                            trianglesArea[iTriangle], trianglesArea[jTriangle],
-//                            eqAngle, k_bend);
-//    }
-    return volumeForce + surfaceForce + inPlaneForce + elasticForce + bendingForce;
+
+    /* Run through all the neighboring vertices of iVertex and calculate:
+     *
+     x In plane force
+     x Bending force
+     *
+     */
+    std::vector<plint> neighborVertexIds = dynMesh.getNeighborVertexIds(iVertex);
+    for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
+        plint jVertex = neighborVertexIds[jV];
+        x3 = dynMesh.getVertex(jVertex);
+        /* In Plane Force (WLC) */
+        dl = (x3 - x1)*1.0;
+        r = norm(dl)/maxLength;
+        eij = dl/(r*maxLength);
+
+        inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
+        inPlaneForce += 0.0;
+
+        /*  Bending Forces Calculations */
+        std::vector<plint> triangles = dynMesh.getAdjacentTriangleIds(iVertex, jVertex);
+        iTriangle = triangles[0];
+        jTriangle = triangles[1];
+        plint kVertex, lVertex;
+        for (pluint id = 0; id < 3; ++id) {
+        	kVertex = dynMesh.getVertexId(iTriangle,id);
+        	if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
+            	x2 = dynMesh.getVertex(kVertex);
+        		break;
+        	}
+        }
+        for (pluint id = 0; id < 3; ++id) {
+        	lVertex = dynMesh.getVertexId(jTriangle,id);
+        	if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
+            	x4 = dynMesh.getVertex(lVertex);
+        		break;
+        	}
+        }
+        // Bending Force
+        bendingForce += computeBendingForce (x1, x2, x3, x4,
+                            trianglesNormal[iTriangle], trianglesNormal[jTriangle],
+                            trianglesArea[iTriangle], trianglesArea[jTriangle],
+                            eqAngle, k_bend);
+    }
+    return volumeForce + surfaceForce + shearForce + inPlaneForce + elasticForce + bendingForce;
 }
 
 
@@ -253,7 +244,7 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
     Array<T,3> dAngledx; dAngledx.resetToZero();
     Array<T,3> dninjdx; dninjdx.resetToZero();
     Array<T,3> tmp; tmp.resetToZero();
-    T angle = angleBetweenVectors(ni,nj) - pi;
+    T angle = angleBetweenVectors(ni,nj);
     T ninj = dot(ni, nj);
     crossProduct(
             x2-x3,
@@ -295,8 +286,22 @@ T computePotential(plint iVertex, Array<T,3> const& iPosition,
         		k_WLC, maxLength);
     }
 
-    // Cell bending mode
     pluint iMax = (mesh.isBoundaryVertex(iVertex) ? sz-1 : sz);
+
+    // Membrane shearing mode
+
+    for (pluint i = 0; i < iMax; i++) {
+        plint jVertex = neighborVertexIds[i];
+        plint kVertex = (i==sz-1 ? neighborVertexIds[0] : neighborVertexIds[i+1]);
+        u += computeShearPotential(iPosition,
+                                   mesh.getVertex(jVertex),
+                                   mesh.getVertex(kVertex),
+								   eqArea, k_shear);
+    }
+
+
+
+    // Cell bending mode
 
     for (pluint i = 0; i < iMax; i++) {
         plint jVertex = neighborVertexIds[i];
@@ -344,7 +349,7 @@ T computeShearPotential(Array<T,3> const& iPosition,
                         T k)
 {
     T area   = computeTriangleArea(iPosition,   jPosition,   kPosition);
-    return 0.5*k*(area - eqArea)*(area - eqArea);
+    return 0.5*k*(area - eqArea)*(area - eqArea)/eqArea;
 }
 
 template<typename T>
@@ -369,7 +374,7 @@ T computeBendPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
 
     T angle = angleBetweenVectors(nijk, nlkj);
 
-    return 0.5*k*(angle - eqAngle)*(angle - eqAngle)*eqLength / eqTileSpan;
+    return 0.5*k*(angle - eqAngle)*(angle - eqAngle); // eqLength / eqTileSpan;
 }
 
 }  // namespace cellModelHelper3D
