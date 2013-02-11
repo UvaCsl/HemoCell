@@ -201,6 +201,7 @@ Array<T,3> CellModel3D<T>::computeElasticForce (
         TriangleBoundary3D<T> const& boundary,
         plint iVertex )
 {
+    return Array<T,3>(0,0,0);
     TriangularSurfaceMesh<T> const& mesh = boundary.getMesh();
 
     Array<T,3> force; force.resetToZero();

@@ -454,12 +454,12 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
                     triangleBoundary, vertexId );
             Array<T,3> cellForce = cellModel->computeCellForce (
                     triangleBoundary, cellsVolume[cellId], cellsSurface[cellId], vertexId );
-            T neF=norm(elasticForce), ncF=norm(cellForce);
-            pcout << "forces: "<< neF << " " << ncF << " " << neF/ncF  << ", " << norm(elasticForce-cellForce) <<
-                    " (" << (elasticForce/neF)[0] << ", "  << (cellForce/ncF)[0] << "), " <<
-                    " (" << (elasticForce/neF)[1] << ", "  << (cellForce/ncF)[1] << "), " <<
-                    " (" << (elasticForce/neF)[2] << ", "  << (cellForce/ncF)[2] << "), " <<
-                    std::endl;
+//            T neF=norm(elasticForce), ncF=norm(cellForce);
+//            pcout << "forces: "<< neF << " " << ncF << " " << neF/ncF  << ", " << norm(elasticForce-cellForce) <<
+//                    " (" << (elasticForce/neF)[0] << ", "  << (cellForce/ncF)[0] << "), " <<
+//                    " (" << (elasticForce/neF)[1] << ", "  << (cellForce/ncF)[1] << "), " <<
+//                    " (" << (elasticForce/neF)[2] << ", "  << (cellForce/ncF)[2] << "), " <<
+//                    std::endl;
             force = elasticForce + cellForce;
             T mass = cellModel->getDensity();
 //            T mass = cellModel->getDensity() * triangleBoundary.getMesh().computeVertexArea(vertexId);
