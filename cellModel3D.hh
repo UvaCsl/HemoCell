@@ -215,19 +215,18 @@ Array<T,3> CellModel3D<T>::computeElasticForce (
         iPosition[i] += eps;
         T up = shellModelHelper3D::cellModelHelper3D::computePotential (
                 iVertex, iPosition, mesh,
-                k_WLC, k_elastic, k_shear, k_bend,
-                eqLength, maxLength, eqArea, eqAngle, eqTileSpan);
+                eqLength, maxLength, eqArea, eqAngle, eqTileSpan,
+                k_WLC, k_elastic, k_shear, k_bend);
         iPosition = vertex;
         iPosition[i] -= eps;
         T um = shellModelHelper3D::cellModelHelper3D::computePotential (
                 iVertex, iPosition, mesh,
-                k_WLC, k_elastic, k_shear, k_bend,
-                eqLength, maxLength, eqArea, eqAngle, eqTileSpan);
+                eqLength, maxLength, eqArea, eqAngle, eqTileSpan,
+                k_WLC, k_elastic, k_shear, k_bend);
         force[i] = -(up-um) / (2.0*eps);
     }
     return force;
 }
-
 
 template<typename T>
 CellModel3D<T>* CellModel3D<T>::clone() const {
@@ -252,16 +251,23 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
     // crossProduct(x3 - x4, x1 - x3, nlkj);
 
     Array<T,3> v1, v2, D1, D2, dAngledx,tmp;
-    v1 = 2 * Ai * ni;
-    pcout << "aN1 = (" << v1[0] << ", " << v1[1] << ", " << v1[2] << ") " << std::endl;
+    Array<T,3> x32=x2-x3, x43=x3-x4;
+//    =============================================================
+//     Probably the following computations are the correct ones,
+//     but they do not agree with the potential calculation.
+//    =============================================================
+//    v1 = 2 * Ai * ni;
+//    v2 = 2 * Aj * nj;
+//    pcout << "aN1 = (" << v1[0] << ", " << v1[1] << ", " << v1[2] << ") " << std::endl;
+//    pcout << "aN2 = (" << v2[0] << ", " << v2[1] << ", " << v2[2] << ") " << std::endl;
+//    =============================================================
+//     Probably the following computations are incorrect,
+//     but they do agree with the potential calculation.
+//    =============================================================
     crossProduct(x1 - x2, x2 - x3, v1);
-    pcout << "cP1 = (" << v1[0] << ", " << v1[1] << ", " << v1[2] << ") " << std::endl;
-
-    v2 = 2 * Aj * nj;
-    pcout << "aN2 = (" << v2[0] << ", " << v2[1] << ", " << v2[2] << ") " << std::endl;
     crossProduct(x1 - x3, x3 - x4, v2);
-    pcout << "cP2 = (" << v2[0] << ", " << v2[1] << ", " << v2[2] << ") " << std::endl;
-
+//    pcout << "cP1 = (" << v1[0] << ", " << v1[1] << ", " << v1[2] << ") " << std::endl;
+//    pcout << "cP2 = (" << v2[0] << ", " << v2[1] << ", " << v2[2] << ") " << std::endl;
     T angle = angleBetweenVectors(v1, v2);
     T cosAngle=cos(angle),overSinAngle=1.0/sin(angle);
     T nv1 = 2 * Ai, nv2 = 2 * Aj;
@@ -269,14 +275,14 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
     for (int var = 0; var < 3; ++var) {
         D1.resetToZero(); D2.resetToZero(); tmp.resetToZero();
         tmp[var] = 1.0;
-        crossProduct(tmp, x2-x3, D1);
-        crossProduct(tmp, x3-x4, D2);
+        crossProduct(tmp, x32, D1);
+        crossProduct(tmp, x43, D2);
         dAngledx[var] = (dot(D1,v2) + dot(D2,v1))/nv1/nv2;
         dAngledx[var] -= cosAngle*(dot(D1,v1)/nv1/nv1 + dot(D2,v2)/nv2/nv2);
         dAngledx[var] *= -overSinAngle;
     }
-    pcout << "fangle:" << angle << " " << eqAngle << std::endl;
-    return -k*(angle - eqAngle) * dAngledx * eqLength / eqTileSpan;;
+//    pcout << "fangle: " << angle << " " << eqAngle << std::endl;
+    return -k*(angle - eqAngle) * dAngledx; // * eqLength / eqTileSpan;;
 }
 
 
@@ -287,9 +293,8 @@ namespace cellModelHelper3D {
 template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
                    TriangularSurfaceMesh<T> const& mesh,
-                   T k_WLC, T k_elastic, T k_shear, T k_bend,
-                   T eqLength, T maxLength, T eqArea, T eqAngle, T eqTileSpan
-				   )
+                   T eqLength, T maxLength, T eqArea, T eqAngle, T eqTileSpan,
+                   T k_WLC, T k_elastic, T k_shear, T k_bend)
 {
     T u = 0.0;
 
@@ -382,7 +387,7 @@ T computeBendPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
 
     T angle = angleBetweenVectors(nijk, nlkj);
 
-    return 0.5*k*(angle - eqAngle)*(angle - eqAngle) * eqLength / eqTileSpan;
+    return 0.5*k*(angle - eqAngle)*(angle - eqAngle);// * eqLength / eqTileSpan;
 }
 
 }  // namespace cellModelHelper3D
