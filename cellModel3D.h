@@ -87,7 +87,7 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
                                 Array<T,3> const& x3, Array<T,3> const& x4,
                                 Array<T,3> const& ni, Array<T,3> const& nj,
                                 T Ai, T Aj,
-                                T k, T eqAngle, T eqLength, T eqTileSpan);
+                                T eqTileSpan, T eqLength, T eqAngle, T k);
 
 
 namespace shellModelHelper3D {
@@ -97,13 +97,12 @@ namespace cellModelHelper3D {
 template<typename T>
 T computePotential(plint iVertex, Array<T,3> const& iPosition,
                    TriangularSurfaceMesh<T> const& mesh,
-                   T k_WLC, T k_elastic, T k_shear, T k_bend,
-                   T eqLength, T maxLength, T eqArea, T eqAngle, T eqTileSpan
-				   );
+                   T eqLength, T maxLength, T eqArea, T eqAngle, T eqTileSpan,
+                   T k_WLC, T k_elastic, T k_shear, T k_bend );
 
 template<typename T>
 T computeInPlanePotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
-                          T k, T maxLength);
+                             T maxLength, T k);
 
 template<typename T>
 T computeShearPotential(Array<T,3> const& iPosition,
@@ -115,7 +114,7 @@ T computeShearPotential(Array<T,3> const& iPosition,
 template<typename T>
 T computeBendPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
                        Array<T,3> const& kPosition, Array<T,3> const& lPosition,
-                       T k, T eqAngle, T eqLength, T eqTileSpan);
+                       T eqTileSpan, T eqLength, T eqAngle, T k);
 
 }  // namespace cellModelHelper3D
 

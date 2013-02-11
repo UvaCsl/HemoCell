@@ -110,7 +110,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     Array<T,3> dl, eij; dl.resetToZero(); eij.resetToZero();
     Array<T,3> triangleNormal;
     std::map<plint, T> trianglesArea;
-    std::map<plint, Array<T,3> > trianglesNormal, trianglesdAdx;
+    std::map<plint, Array<T,3> > trianglesNormal;
 
     plint iTriangle, iX1, iX2, iX3;
     T r;
@@ -133,12 +133,12 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         iX2 = (iX1 + 1)%3;
         iX3 = (iX1 + 2)%3;
         trianglesArea[iTriangle] = dynMesh.computeTriangleArea(iTriangle);
-        triangleNormal = trianglesNormal[iTriangle] = dynMesh.computeTriangleNormal(iTriangle);
+        trianglesNormal[iTriangle] = triangleNormal = dynMesh.computeTriangleNormal(iTriangle);
         /* Surface conservation force */
         crossProduct(triangleNormal,
                     xi[iX3] - xi[iX2],
                     tmp);
-        trianglesdAdx[iTriangle] = dAdx = 0.5 *tmp;
+        dAdx = 0.5 *tmp;
         surfaceForce += -surfaceCoefficient * dAdx;
         shearForce += - k_shear * (trianglesArea[iTriangle] - eqArea)*1.0/eqArea * dAdx;
         // /* Elastice Force */
@@ -190,8 +190,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         bendingForce += computeBendingForce (x1, x2, x3, x4,
                             trianglesNormal[iTriangle], trianglesNormal[jTriangle],
                             trianglesArea[iTriangle], trianglesArea[jTriangle],
-                            trianglesdAdx[iTriangle], trianglesdAdx[jTriangle],
-                            eqAngle, k_bend);
+                            eqTileSpan, eqLength, eqAngle, k_bend);
     }
     return volumeForce + surfaceForce + shearForce + inPlaneForce + elasticForce + bendingForce;
 }
@@ -241,8 +240,7 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
                                 Array<T,3> const& x3, Array<T,3> const& x4,
                                 Array<T,3> const& ni, Array<T,3> const& nj,
                                 T Ai, T Aj,
-                                Array<T,3> const& dAidx, Array<T,3> const& dAjdx,
-                                T eqAngle, T k)
+                                T eqTileSpan, T eqLength, T eqAngle, T k)
 {
     // (i, j, k) and (l, k, j). These triangles share
     // (x2, x1, x3) and (x4, x3, x1). These triangles share
@@ -254,23 +252,31 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
     // crossProduct(x3 - x4, x1 - x3, nlkj);
 
     Array<T,3> v1, v2, D1, D2, dAngledx,tmp;
-    crossProduct(x1 - x2, x3 - x1, v1);
-    crossProduct(x3 - x4, x1 - x3, v2);
+    v1 = 2 * Ai * ni;
+    pcout << "aN1 = (" << v1[0] << ", " << v1[1] << ", " << v1[2] << ") " << std::endl;
+    crossProduct(x1 - x2, x2 - x3, v1);
+    pcout << "cP1 = (" << v1[0] << ", " << v1[1] << ", " << v1[2] << ") " << std::endl;
+
+    v2 = 2 * Aj * nj;
+    pcout << "aN2 = (" << v2[0] << ", " << v2[1] << ", " << v2[2] << ") " << std::endl;
+    crossProduct(x1 - x3, x3 - x4, v2);
+    pcout << "cP2 = (" << v2[0] << ", " << v2[1] << ", " << v2[2] << ") " << std::endl;
+
     T angle = angleBetweenVectors(v1, v2);
     T cosAngle=cos(angle),overSinAngle=1.0/sin(angle);
-    T nv1 = norm(v1), nv2 = norm(v2);
+    T nv1 = 2 * Ai, nv2 = 2 * Aj;
     dAngledx.resetToZero();
     for (int var = 0; var < 3; ++var) {
         D1.resetToZero(); D2.resetToZero(); tmp.resetToZero();
         tmp[var] = 1.0;
-        crossProduct(tmp, x3-x2, D1);
-        crossProduct(tmp, x4-x3, D2);
+        crossProduct(tmp, x2-x3, D1);
+        crossProduct(tmp, x3-x4, D2);
         dAngledx[var] = (dot(D1,v2) + dot(D2,v1))/nv1/nv2;
         dAngledx[var] -= cosAngle*(dot(D1,v1)/nv1/nv1 + dot(D2,v2)/nv2/nv2);
         dAngledx[var] *= -overSinAngle;
     }
     pcout << "fangle:" << angle << " " << eqAngle << std::endl;
-    return -k*(angle - eqAngle)*dAngledx;
+    return -k*(angle - eqAngle) * dAngledx * eqLength / eqTileSpan;;
 }
 
 
@@ -296,7 +302,7 @@ T computePotential(plint iVertex, Array<T,3> const& iPosition,
     for (pluint i = 0; i < sz; i++) {
         plint jVertex = neighborVertexIds[i];
         u += computeInPlanePotential(iPosition, mesh.getVertex(jVertex),
-        		k_WLC, maxLength);
+                maxLength, k_WLC);
     }
 
     pluint iMax = (mesh.isBoundaryVertex(iVertex) ? sz-1 : sz);
@@ -309,7 +315,7 @@ T computePotential(plint iVertex, Array<T,3> const& iPosition,
         u += computeShearPotential(iPosition,
                                    mesh.getVertex(jVertex),
                                    mesh.getVertex(kVertex),
-								   eqArea, k_shear);
+                                   eqArea, k_shear);
     }
 
 
@@ -328,7 +334,7 @@ T computePotential(plint iVertex, Array<T,3> const& iPosition,
                                       iPosition,
                                       mesh.getVertex(jVertex),
                                       mesh.getVertex(lVertex),
-                                      k_bend, eqAngle, eqLength, eqTileSpan);
+                                      eqTileSpan, eqLength, eqAngle, k_bend);
         }
     }
 
@@ -337,7 +343,7 @@ T computePotential(plint iVertex, Array<T,3> const& iPosition,
 
 template<typename T>
 T computeInPlanePotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
-                          T k, T maxLength)
+                             T maxLength, T k)
 {
     T x   = norm(iPosition   - jPosition) / maxLength;
     return k * (x*x) * (3.0 - 2 *x) / (1 - x);
@@ -357,7 +363,7 @@ T computeShearPotential(Array<T,3> const& iPosition,
 template<typename T>
 T computeBendPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
                        Array<T,3> const& kPosition, Array<T,3> const& lPosition,
-                       T k, T eqAngle, T eqLength, T eqTileSpan)
+                       T eqTileSpan, T eqLength, T eqAngle, T k)
 {
     // The position arrays specify two oriented triangles, namely
     // (i, j, k) and (l, k, j). These triangles share
@@ -376,7 +382,7 @@ T computeBendPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
 
     T angle = angleBetweenVectors(nijk, nlkj);
 
-    return 0.5*k*(angle - eqAngle)*(angle - eqAngle)* eqLength / eqTileSpan;
+    return 0.5*k*(angle - eqAngle)*(angle - eqAngle) * eqLength / eqTileSpan;
 }
 
 }  // namespace cellModelHelper3D
