@@ -110,7 +110,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     Array<T,3> dl, eij; dl.resetToZero(); eij.resetToZero();
     Array<T,3> triangleNormal;
     std::map<plint, T> trianglesArea;
-    std::map<plint, Array<T,3> > trianglesNormal;
+    std::map<plint, Array<T,3> > trianglesNormal, trianglesdAdx;
 
     plint iTriangle, iX1, iX2, iX3;
     T r;
@@ -138,7 +138,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         crossProduct(triangleNormal,
                     xi[iX3] - xi[iX2],
                     tmp);
-        dAdx = 0.5 *tmp;
+        trianglesdAdx[iTriangle] = dAdx = 0.5 *tmp;
         surfaceForce += -surfaceCoefficient * dAdx;
         shearForce += - k_shear * (trianglesArea[iTriangle] - eqArea)*1.0/eqArea * dAdx;
         // /* Elastice Force */
@@ -190,6 +190,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         bendingForce += computeBendingForce (x1, x2, x3, x4,
                             trianglesNormal[iTriangle], trianglesNormal[jTriangle],
                             trianglesArea[iTriangle], trianglesArea[jTriangle],
+                            trianglesdAdx[iTriangle], trianglesdAdx[jTriangle],
                             eqAngle, k_bend);
     }
     return volumeForce + surfaceForce + shearForce + inPlaneForce + elasticForce + bendingForce;
@@ -239,24 +240,36 @@ template<typename T>
 Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
                                 Array<T,3> const& x3, Array<T,3> const& x4,
                                 Array<T,3> const& ni, Array<T,3> const& nj,
-                                T Ai, T Aj, T eqAngle, T k)
+                                T Ai, T Aj,
+                                Array<T,3> const& dAidx, Array<T,3> const& dAjdx,
+                                T eqAngle, T k)
 {
-    Array<T,3> dAngledx; dAngledx.resetToZero();
-    Array<T,3> dninjdx; dninjdx.resetToZero();
-    Array<T,3> tmp; tmp.resetToZero();
-    T angle = angleBetweenVectors(ni,nj);
-    T ninj = dot(ni, nj);
-    crossProduct(
-            x2-x3,
-            nj - ninj*ni,
-            tmp);
-    dninjdx = 0.5/Ai*tmp;
-    crossProduct(
-            x3-x4,
-            ni - ninj*nj,
-            tmp);
-    dninjdx += 0.5/Aj*tmp;
-    dAngledx = -1/sqrt(1 - ninj*ninj) * dninjdx;
+    // (i, j, k) and (l, k, j). These triangles share
+    // (x2, x1, x3) and (x4, x3, x1). These triangles share
+    // the common edge j-k.
+    // crossProduct(jPosition - iPosition, kPosition - jPosition, nijk);
+    // crossProduct(kPosition - lPosition, jPosition - kPosition, nlkj);
+
+    // crossProduct(x1 - x2, x3 - x1, nijk);
+    // crossProduct(x3 - x4, x1 - x3, nlkj);
+
+    Array<T,3> v1, v2, D1, D2, dAngledx,tmp;
+    crossProduct(x1 - x2, x3 - x1, v1);
+    crossProduct(x3 - x4, x1 - x3, v2);
+    T angle = angleBetweenVectors(v1, v2);
+    T cosAngle=cos(angle),overSinAngle=1.0/sin(angle);
+    T nv1 = norm(v1), nv2 = norm(v2);
+    dAngledx.resetToZero();
+    for (int var = 0; var < 3; ++var) {
+        D1.resetToZero(); D2.resetToZero(); tmp.resetToZero();
+        tmp[var] = 1.0;
+        crossProduct(tmp, x3-x2, D1);
+        crossProduct(tmp, x4-x3, D2);
+        dAngledx[var] = (dot(D1,v2) + dot(D2,v1))/nv1/nv2;
+        dAngledx[var] -= cosAngle*(dot(D1,v1)/nv1/nv1 + dot(D2,v2)/nv2/nv2);
+        dAngledx[var] *= -overSinAngle;
+    }
+    pcout << "fangle:" << angle << " " << eqAngle << std::endl;
     return -k*(angle - eqAngle)*dAngledx;
 }
 
@@ -355,7 +368,7 @@ T computeBendPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
     Array<T,3> jkEdge = kPosition - jPosition;
     Array<T,3> kjEdge = -jkEdge;
     Array<T,3> lkEdge = kPosition - lPosition;
-	Array<T,3> nijk, nlkj;
+        Array<T,3> nijk, nlkj;
 
     crossProduct(ijEdge, jkEdge, nijk);
 

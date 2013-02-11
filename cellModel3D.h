@@ -86,7 +86,8 @@ template<typename T>
 Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
                                 Array<T,3> const& x3, Array<T,3> const& x4,
                                 Array<T,3> const& ni, Array<T,3> const& nj,
-                                T Ai, T Aj, T eqAngle, T k);
+                                T Ai, T Aj,
+                                T k, T eqAngle, T eqLength, T eqTileSpan);
 
 
 namespace shellModelHelper3D {
