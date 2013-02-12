@@ -44,12 +44,13 @@ namespace plb {
 
 template<typename T>
 CellModel3D<T>::CellModel3D (
-        T density_, T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
+        T density_, T k_rest_, T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
         T k_volume_, T k_surface_, T eta_m_,
         T eqArea_, T eqLength_, T eqAngle_,
         T eqVolume_, T eqSurface_, T eqTileSpan_,
         T maxLength_, T persistenceLength_)
     : ShellModel3D<T>(density_),
+      k_rest(k_rest_),
       k_shear(k_shear_),
       k_bend(k_bend_),
       k_stretch(k_stretch_),
@@ -84,15 +85,16 @@ CellModel3D<T>::CellModel3D (
     pcout << std::endl;
     pcout << " ============================================= " << std::endl;
     pcout << "k_WLC: " << k_WLC << ", eqLength: " << eqLength << std::endl;
-    pcout << "k_shear: " << k_shear << ", eqArea: " << eqArea << std::endl;
     pcout << "k_bend: " << k_bend << ", eqAngle: " << eqAngle << std::endl;
-    pcout << "k_stretch: " << k_stretch << ", eqTileSpan: " << eqTileSpan << std::endl;
     pcout << "C_elastic: " << C_elastic << ", eqLength: " << eqLength << std::endl;
     pcout << "k_surface: " << k_surface << ", eqSurface: " << eqSurface << std::endl;
     pcout << "k_volume: " << k_volume << ", eqVolume: " << eqVolume << std::endl;
     pcout << "eta_m: " << eta_m << ", x0: " << x0 << std::endl;
     pcout << "gamma_T: " << gamma_T << ", persistenceLength: " << persistenceLength << std::endl;
     pcout << "gamma_C: " << gamma_C << ", maxLength: " << maxLength << std::endl;
+    pcout << "k_rest: " << k_rest << ", 0 : " << 0 << std::endl;
+    pcout << "k_shear: " << k_shear << ", eqArea: " << eqArea << std::endl;
+    pcout << "k_stretch: " << k_stretch << ", eqTileSpan: " << eqTileSpan << std::endl;
     pcout << " ============================================= " << std::endl;
 }
 
@@ -130,6 +132,19 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     T r;
     Array<T,3> xi[3], tmp;
     plint jTriangle;
+    /*
+     * If this is a boundary element (k_rest != 0), get the reference locations
+     * of iVertex and calculate and return the force for quasi-rigid objects.
+     *          (FengMichaelides2004, J.Comp.Phys. 195(2))
+     *
+     * */
+    Array<T,3> x1ref;
+    if (k_rest != 0.0) {
+        boundary.pushSelect(0,1);
+        x1ref = boundary.getMesh().getVertex(iVertex);
+        boundary.popSelect();
+        return -k_rest*(x1-x1ref);
+    }
     /* Run through all the neighboring faces of iVertex and calculate:
      *
      x Volume conservation force

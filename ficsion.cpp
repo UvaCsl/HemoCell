@@ -44,7 +44,7 @@ plint extraLayer      = 0;  // Make the bounding box larger; for visualization p
 const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
 const plint particleEnvelopeWidth = 2;
 
-void readFicsionXML(XMLreader document,T & shellDensity,
+void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & shearRate, T & Re, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & shape, T & radius,
@@ -57,12 +57,13 @@ void readFicsionXML(XMLreader document,T & shellDensity,
     document["cell"]["shellDensity"].read(shellDensity);
     document["cell"]["k_WLC"].read(k_WLC);
     document["cell"]["k_elastic"].read(k_elastic);
-    document["cell"]["k_shear"].read(k_shear);
     document["cell"]["k_bend"].read(k_bend);
-    document["cell"]["k_stretch"].read(k_stretch);
     document["cell"]["k_volume"].read(k_volume);
     document["cell"]["k_surface"].read(k_surface);
     document["cell"]["eta_m"].read(eta_m);
+    document["cell"]["k_rest"].read(k_rest);
+    document["cell"]["k_shear"].read(k_shear);
+    document["cell"]["k_stretch"].read(k_stretch);
     document["parameters"]["Re"].read(Re);
     document["parameters"]["shearRate"].read(shearRate);
     document["parameters"]["flowType"].read(flowType);
@@ -105,7 +106,7 @@ int main(int argc, char* argv[])
     plint forceToFluid, shape;
     plint tmax, tmeas, npar;
     T dtIteration = 0;
-    T shellDensity, k_shear, k_bend, k_stretch, k_WLC, k_elastic,  k_volume, k_surface, eta_m;
+    T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic,  k_volume, k_surface, eta_m;
     T u, Re, Re_p, N, lx, ly, lz;
     T rho_p;
     T radius;
@@ -116,7 +117,7 @@ int main(int argc, char* argv[])
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
-    readFicsionXML(document, shellDensity, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+    readFicsionXML(document, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, shearRate_p, Re, Re_p, N, lx, ly, lz,  forceToFluid, shape, radius, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
             u, // u
@@ -220,11 +221,13 @@ int main(int argc, char* argv[])
     k_bend *= kBT;
     k_volume /= dNewton/(dx*dx);
     k_surface /= dNewton/dx;
+    eta_m /= dNewton*dt/dx/dx;
     /* == */
     k_shear /= dNewton/dx;
     k_stretch /= dNewton;
-    eta_m /= dNewton*dt/dx/dx;
-    CellModel3D<T> cellModel(shellDensity, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
+    k_rest /= dNewton/dx;
+    pcout << k_rest<< std::endl;
+    CellModel3D<T> cellModel(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
                                                 eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan,
                                                 maxLength, persistenceLength);
     pcout << std::endl << "Starting simulation" << std::endl;

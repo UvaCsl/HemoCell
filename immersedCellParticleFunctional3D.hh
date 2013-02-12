@@ -147,6 +147,7 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
+        Array<T,3> velocity;
         linearInterpolationCoefficients(fluid, position, cellPos, weights);
 
         // Use copy constructor in order to initialize dynamics object.
@@ -161,7 +162,8 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
                 (*cellOnVertex)[iPop] += weights[iPos]*(*cells[iPos])[iPop];
             }
         }
-        cellOnVertex->computeVelocity(particle->get_v());
+        cellOnVertex->computeVelocity(velocity);
+        particle->get_v() = velocity;
         delete cellOnVertex;
     }
 }

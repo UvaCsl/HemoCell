@@ -32,7 +32,7 @@ class CellModel3D : public ShellModel3D<T>
 {
 public:
     /* All input should be in dimensionless units */
-    CellModel3D(T density_,
+    CellModel3D(T density_, T k_rest_,
                 T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
                 T k_volume_, T k_surface_, T eta_m_,
                 T eqArea_, T eqLength_, T eqAngle_,
@@ -74,7 +74,7 @@ public:
     void setEquilibriumVolume(T eqVolume_) { eqVolume = eqVolume_; }
     void setEquilibriumSurface(T eqSurface_) { eqSurface = eqSurface_; }
 private:
-    T k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_surface, k_volume;
+    T k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_surface, k_volume;
     T eta_m, gamma_T, gamma_C;
     T eqLength, eqArea, eqAngle;
     T eqVolume, eqSurface, eqTileSpan;
