@@ -30,6 +30,7 @@
 #include "atomicBlock/atomicBlock3D.h"
 #include "atomicBlock/blockLattice3D.h"
 #include "latticeBoltzmann/geometricOperationTemplates.h"
+#include <map>
 
 namespace plb {
 
@@ -442,25 +443,33 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> found;
     particleField.findParticles(domain, found);
 
+    std::map< plint, Array<T,3> > particleVelocity;
+    for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
+        Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
+        plint vertexId = particle->getTag();
+        particleVelocity[vertexId] = particle->get_v();
+    }
+
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
         Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         plint vertexId = particle->getTag();
         plint cellId = particle->get_cellId();
-        Array<T,3> force;
         if (!isRigid(triangleBoundary.getVertexProperty(vertexId))) {
             Array<T,3> elasticForce = cellModel->computeElasticForce (
                     triangleBoundary, vertexId );
             Array<T,3> cellForce = cellModel->computeCellForce (
-                    triangleBoundary, cellsVolume[cellId], cellsSurface[cellId], vertexId );
+                    triangleBoundary, cellsVolume[cellId], cellsSurface[cellId], particleVelocity, vertexId );
 //            T neF=norm(elasticForce), ncF=norm(cellForce);
 //            pcout << "forces: "<< neF << " " << ncF << " " << neF/ncF  << ", " << norm(elasticForce-cellForce) <<
 //                    " (" << (elasticForce/neF)[0] << ", "  << (cellForce/ncF)[0] << "), " <<
 //                    " (" << (elasticForce/neF)[1] << ", "  << (cellForce/ncF)[1] << "), " <<
 //                    " (" << (elasticForce/neF)[2] << ", "  << (cellForce/ncF)[2] << "), " <<
 //                    std::endl;
-            force = elasticForce + cellForce;
+            Array<T,3> force = elasticForce + cellForce;
             T mass = cellModel->getDensity();
 //            T mass = cellModel->getDensity() * triangleBoundary.getMesh().computeVertexArea(vertexId);
             particle->get_a() += force/mass;

@@ -34,14 +34,14 @@ public:
     /* All input should be in dimensionless units */
     CellModel3D(T density_,
                 T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
-                T k_volume_, T k_surface_,
+                T k_volume_, T k_surface_, T eta_m_,
                 T eqArea_, T eqLength_, T eqAngle_,
                 T eqVolume_, T eqSurface_, T eqTileSpan_,
-                T eta_m_,
                 T maxLength_, T persistenceLength_);
     virtual Array<T,3> computeCellForce (
             TriangleBoundary3D<T> const& boundary,
             T cellVolume, T cellSurface,
+            std::map< plint, Array<T,3> > particleVelocity,
             plint iVertex );
     virtual Array<T,3> computeElasticForce (
             TriangleBoundary3D<T> const& boundary,
@@ -75,9 +75,9 @@ public:
     void setEquilibriumSurface(T eqSurface_) { eqSurface = eqSurface_; }
 private:
     T k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_surface, k_volume;
+    T eta_m, gamma_T, gamma_C;
     T eqLength, eqArea, eqAngle;
     T eqVolume, eqSurface, eqTileSpan;
-    T eta_m, gamma_T, gamma_C;
     T maxLength, persistenceLength, C_elastic;
 };
 

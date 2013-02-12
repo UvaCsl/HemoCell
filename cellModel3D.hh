@@ -45,10 +45,9 @@ namespace plb {
 template<typename T>
 CellModel3D<T>::CellModel3D (
         T density_, T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
-        T k_volume_, T k_surface_,
+        T k_volume_, T k_surface_, T eta_m_,
         T eqArea_, T eqLength_, T eqAngle_,
         T eqVolume_, T eqSurface_, T eqTileSpan_,
-        T eta_m_,
         T maxLength_, T persistenceLength_)
     : ShellModel3D<T>(density_),
       k_shear(k_shear_),
@@ -57,13 +56,13 @@ CellModel3D<T>::CellModel3D (
       k_elastic(k_elastic_),
       k_surface(k_surface_),
       k_volume(k_volume_),
+      eta_m(eta_m_),
       eqLength(eqLength_),
       eqArea(eqArea_),
       eqAngle(eqAngle_),
       eqVolume(eqVolume_),
       eqSurface(eqSurface_),
       eqTileSpan(eqTileSpan_),
-      eta_m(eta_m_),
       maxLength(maxLength_),
       persistenceLength(persistenceLength_)
 {
@@ -82,6 +81,19 @@ CellModel3D<T>::CellModel3D (
         (x0*x0*x0*x0)/(64.0*persistenceLength)*
         (4*x0*x0 - 9*x0 + 6) /
         (1-x0)*(1-x0);
+    pcout << std::endl;
+    pcout << " ============================================= " << std::endl;
+    pcout << "k_WLC: " << k_WLC << ", eqLength: " << eqLength << std::endl;
+    pcout << "k_shear: " << k_shear << ", eqArea: " << eqArea << std::endl;
+    pcout << "k_bend: " << k_bend << ", eqAngle: " << eqAngle << std::endl;
+    pcout << "k_stretch: " << k_stretch << ", eqTileSpan: " << eqTileSpan << std::endl;
+    pcout << "C_elastic: " << C_elastic << ", eqLength: " << eqLength << std::endl;
+    pcout << "k_surface: " << k_surface << ", eqSurface: " << eqSurface << std::endl;
+    pcout << "k_volume: " << k_volume << ", eqVolume: " << eqVolume << std::endl;
+    pcout << "eta_m: " << eta_m << ", x0: " << x0 << std::endl;
+    pcout << "gamma_T: " << gamma_T << ", persistenceLength: " << persistenceLength << std::endl;
+    pcout << "gamma_C: " << gamma_C << ", maxLength: " << maxLength << std::endl;
+    pcout << " ============================================= " << std::endl;
 }
 
 
@@ -89,12 +101,13 @@ template<typename T>
 Array<T,3> CellModel3D<T>::computeCellForce (
         TriangleBoundary3D<T> const& boundary,
         T cellVolume, T cellSurface,
+        std::map< plint, Array<T,3> > particleVelocity,
         plint iVertex )
  /* Force calculation according to KrugerThesis, Appendix C */
 {
     TriangularSurfaceMesh<T> const& dynMesh = boundary.getMesh();
     Array<T,3> x1 = dynMesh.getVertex(iVertex), x2, x3, x4;
-
+    Array<T,3> iVelocity = particleVelocity[iVertex];
     T volumeCoefficient = k_volume * (cellVolume - eqVolume)*1.0/eqVolume;
     T surfaceCoefficient= k_surface * (cellSurface - eqSurface)*1.0/eqSurface;
     /* Force initializations */
@@ -104,6 +117,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     Array<T,3> surfaceForce; surfaceForce.resetToZero();
     Array<T,3> shearForce; shearForce.resetToZero();
     Array<T,3> volumeForce; volumeForce.resetToZero();
+    Array<T,3> dissipativeForce; dissipativeForce.resetToZero();
 
 
     Array<T,3> dAdx, dVdx;
@@ -166,7 +180,9 @@ Array<T,3> CellModel3D<T>::computeCellForce (
 
         inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
         inPlaneForce += 0.0;
-
+        /*  Dissipative Forces Calculations */
+        Array<T,3> vij = particleVelocity[jVertex] - iVelocity;
+        dissipativeForce += -gamma_T*vij -gamma_C*dot(vij,eij)*eij;
         /*  Bending Forces Calculations */
         std::vector<plint> triangles = dynMesh.getAdjacentTriangleIds(iVertex, jVertex);
         iTriangle = triangles[0];
@@ -192,7 +208,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
                             trianglesArea[iTriangle], trianglesArea[jTriangle],
                             eqTileSpan, eqLength, eqAngle, k_bend);
     }
-    return volumeForce + surfaceForce + shearForce + inPlaneForce + elasticForce + bendingForce;
+    return volumeForce + surfaceForce + shearForce + inPlaneForce + elasticForce + bendingForce + dissipativeForce;
 }
 
 
