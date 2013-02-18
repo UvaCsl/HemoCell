@@ -141,6 +141,7 @@ int main(int argc, char* argv[])
 
     writeFicsionLogFile(parameters, "log", Re, shearRate, flowType);
     pcout << "kT = " << kBT << std::endl;
+    pcout << "dm = " << dm << std::endl;
 
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz,
@@ -216,9 +217,9 @@ int main(int argc, char* argv[])
     T maxLength = 2.2*eqLength;
     PLB_PRECONDITION( maxLength < 1.0 );
 //    eqVolume = pow(eqSurface,1.5)/(6*pi);
-    k_WLC *= 1;
-    k_elastic *= 1;
-    k_bend *= kBT;
+    k_WLC /= 1.0;
+    k_elastic /= dNewton/dx;
+    k_bend /= 1.0/kBT;
     k_volume /= dNewton/(dx*dx);
     k_surface /= dNewton/dx;
     eta_m /= dNewton*dt/dx/dx;

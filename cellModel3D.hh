@@ -77,11 +77,11 @@ CellModel3D<T>::CellModel3D (
     gamma_C = gamma_T/3.0;
 
     k_WLC = k_WLC_ * kBT * maxLength/(4.0*persistenceLength);
-    C_elastic = k_elastic * 3.0 * sqrt(3.0)*
-        (maxLength*maxLength*maxLength)*
-        (x0*x0*x0*x0)/(64.0*persistenceLength)*
-        (4*x0*x0 - 9*x0 + 6) /
-        (1-x0)*(1-x0);
+//    C_elastic = k_elastic * 3.0 * sqrt(3.0)*
+//        (maxLength*maxLength*maxLength)*
+//        (x0*x0*x0*x0)/(64.0*persistenceLength)*
+//        (4*x0*x0 - 9*x0 + 6) /
+//        (1-x0)*(1-x0);
     pcout << std::endl;
     pcout << " ============================================= " << std::endl;
     pcout << "k_WLC: " << k_WLC << ", eqLength: " << eqLength << std::endl;
@@ -123,7 +123,8 @@ Array<T,3> CellModel3D<T>::computeCellForce (
 
 
     Array<T,3> dAdx, dVdx;
-    Array<T,3> dl, eij; dl.resetToZero(); eij.resetToZero();
+    Array<T,3> dL, eij; dL.resetToZero(); eij.resetToZero();
+    T L;
     Array<T,3> triangleNormal;
     std::map<plint, T> trianglesArea;
     std::map<plint, Array<T,3> > trianglesNormal;
@@ -143,7 +144,9 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         boundary.pushSelect(0,1);
         x1ref = boundary.getMesh().getVertex(iVertex);
         boundary.popSelect();
-        return -k_rest*(x1-x1ref);
+        Array<T,3> dx = x1-x1ref;
+        dissipativeForce += -gamma_T*iVelocity -gamma_C*dot(iVelocity,dx)*dx;
+        return (-k_rest*dx) + dissipativeForce;
     }
     /* Run through all the neighboring faces of iVertex and calculate:
      *
@@ -174,7 +177,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         // elasticForce += - (C_elastic*1.0)/(trianglesArea[iTriangle]*trianglesArea[iTriangle]) * dAdx;
         /* Volume conservation force */
         crossProduct(xi[iX3], xi[iX2], tmp);
-        dVdx = 1.0/6.0 * tmp;
+        dVdx = - 1.0/6.0 * tmp;
         volumeForce  += -volumeCoefficient  * dVdx;
     }
 
@@ -189,12 +192,15 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         plint jVertex = neighborVertexIds[jV];
         x3 = dynMesh.getVertex(jVertex);
         /* In Plane Force (WLC) */
-        dl = (x3 - x1)*1.0;
-        r = norm(dl)/maxLength;
-        eij = dl/(r*maxLength);
+        dL = (x3 - x1)*1.0;
+        L = norm(dL);
+        r = L/maxLength;
+        eij = dL/L;
 
-        inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
-        inPlaneForce += 0.0;
+        // inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
+        inPlaneForce += eij * (k_WLC*r*(-6 + (9 - 4*r)*r))/(maxLength*pow(-1 + r,2));
+        /* Elastic Force */
+        elasticForce +=  eij * k_elastic/(L);
         /*  Dissipative Forces Calculations */
         Array<T,3> vij = particleVelocity[jVertex] - iVelocity;
         dissipativeForce += -gamma_T*vij -gamma_C*dot(vij,eij)*eij;
@@ -296,8 +302,8 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
 //     Probably the following computations are incorrect,
 //     but they do agree with the potential calculation.
 //    =============================================================
-    crossProduct(x1 - x2, x2 - x3, v1);
-    crossProduct(x1 - x3, x3 - x4, v2);
+    crossProduct(x1 - x2, x32, v1);
+    crossProduct(x1 - x3, x43, v2);
 //    pcout << "cP1 = (" << v1[0] << ", " << v1[1] << ", " << v1[2] << ") " << std::endl;
 //    pcout << "cP2 = (" << v2[0] << ", " << v2[1] << ", " << v2[2] << ") " << std::endl;
     T angle = angleBetweenVectors(v1, v2);
@@ -314,7 +320,8 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
         dAngledx[var] *= -overSinAngle;
     }
 //    pcout << "fangle: " << angle << " " << eqAngle << std::endl;
-    return -k*(angle - eqAngle) * dAngledx; // * eqLength / eqTileSpan;;
+    T dAngle = (angle - eqAngle);
+    return -k* (dAngle*(1 - dAngle*dAngle/6.0)) * dAngledx * eqLength / eqTileSpan;
 }
 
 
