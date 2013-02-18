@@ -28,6 +28,7 @@
 #include "immersedCellParticle3D.h"
 #include "offLattice/triangleBoundary3D.h"
 #include "cellModel3D.h"
+#include "immersedBoundaryMethod3D.h"
 #include <map>
 
 namespace plb {

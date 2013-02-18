@@ -86,7 +86,7 @@ CellModel3D<T>::CellModel3D (
     pcout << " ============================================= " << std::endl;
     pcout << "k_WLC: " << k_WLC << ", eqLength: " << eqLength << std::endl;
     pcout << "k_bend: " << k_bend << ", eqAngle: " << eqAngle << std::endl;
-    pcout << "C_elastic: " << C_elastic << ", eqLength: " << eqLength << std::endl;
+    pcout << "k_elastic: " << k_elastic << ", eqLength: " << eqLength << std::endl;
     pcout << "k_surface: " << k_surface << ", eqSurface: " << eqSurface << std::endl;
     pcout << "k_volume: " << k_volume << ", eqVolume: " << eqVolume << std::endl;
     pcout << "eta_m: " << eta_m << ", x0: " << x0 << std::endl;
@@ -191,14 +191,12 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
         plint jVertex = neighborVertexIds[jV];
         x3 = dynMesh.getVertex(jVertex);
-        /* In Plane Force (WLC) */
         dL = (x3 - x1)*1.0;
         L = norm(dL);
         r = L/maxLength;
         eij = dL/L;
-
-        // inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
-        inPlaneForce += eij * (k_WLC*r*(-6 + (9 - 4*r)*r))/(maxLength*pow(-1 + r,2));
+        /* In Plane Force (WLC) */
+        inPlaneForce += eij * (k_WLC*r*(-6 + (9 - 4*r)*r))/(maxLength*pow(-1 + r,2)); // inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
         /* Elastic Force */
         elasticForce +=  eij * k_elastic/(L);
         /*  Dissipative Forces Calculations */
@@ -238,8 +236,8 @@ Array<T,3> CellModel3D<T>::computeElasticForce (
         TriangleBoundary3D<T> const& boundary,
         plint iVertex )
 {
-    return Array<T,3>(0,0,0);
     TriangularSurfaceMesh<T> const& mesh = boundary.getMesh();
+    return Array<T,3>(0,0,0);
 
     Array<T,3> force; force.resetToZero();
     static T eps = (sizeof(T) == sizeof(float) ?
@@ -270,6 +268,35 @@ template<typename T>
 CellModel3D<T>* CellModel3D<T>::clone() const {
     return new CellModel3D<T>(*this);
 }
+
+//template<typename T>
+//Array<T,3> computeStrainForce (Array<T,3> const& x1, Array<T,3> const& x2, Array<T,3> const& x3,
+//                               T Ai, T eqArea, T eqLength, T k_s, T k_a)
+//{
+//    T I1, dI1dx;
+//    T I2, dI2dx;
+//
+//    x21 = x1 - x2;
+//    x31 = x1 - x3;
+//
+//    T sin_phi = 2*Ai/(norm(x21)*norm(x31));
+//    T cos_phi = sqrt(1 - sin_phi*sin_phi);
+//
+//    T sin_phi0 = 2*eqArea/(eqLength*eqLength);
+//    T cos_phi0 = sqrt(1 - sin_phi0*sin_phi0);
+//
+//    Dxx = x21/eqLength;
+//    dDxxdx = 1.0/eqLength;
+//
+//
+//
+//    I1 = Dxx*Dxx + Dyy*Dyy + Dxy*Dxy - 2.0;
+//    I2 = Dxx*Dxx*Dyy*Dyy - 1.0;
+//
+//
+//    T desdx = k_s/12.0*(2*I1*dI1dx + 2*dI1dx - 2*dI2dx);
+//    desdx += k_a/12.0*(2*I2*dI2dx);
+//}
 
 
 template<typename T>

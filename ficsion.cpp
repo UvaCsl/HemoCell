@@ -47,7 +47,7 @@ const plint particleEnvelopeWidth = 2;
 void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & shearRate, T & Re, T & Re_p, T & N, T & lx, T & ly, T & lz,
-        plint & forceToFluid, plint & shape, T & radius,
+        plint & forceToFluid, plint & shape, T & radius, plint & minNumOfTriangles,
         plint & tmax, plint & tmeas, plint & npar)
     {
     T nu_p, tau, dx;
@@ -77,6 +77,7 @@ void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest,
     document["ibm"]["forceToFluid"].read(forceToFluid);
     document["ibm"]["shape"].read(shape);
     document["ibm"]["radius"].read(radius);
+    document["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
     document["sim"]["npar"].read(npar);
@@ -103,7 +104,7 @@ int main(int argc, char* argv[])
     plb_ofstream logFile(logFileName.c_str());
     logFile << "# Iteration; Volume, Surface, Mean Triangle Surface, Mean Edge Distance, Mean Angle [^o], Mean Edge Distance [LU], Max Edge Distance [LU]" << std::endl;
 
-    plint forceToFluid, shape;
+    plint forceToFluid, shape, minNumOfTriangles;
     plint tmax, tmeas, npar;
     T dtIteration = 0;
     T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic,  k_volume, k_surface, eta_m;
@@ -118,7 +119,7 @@ int main(int argc, char* argv[])
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
     readFicsionXML(document, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-            rho_p, u, flowType, shearRate_p, Re, Re_p, N, lx, ly, lz,  forceToFluid, shape, radius, tmax, tmeas, npar);
+            rho_p, u, flowType, shearRate_p, Re, Re_p, N, lx, ly, lz,  forceToFluid, shape, radius, minNumOfTriangles, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -180,7 +181,7 @@ int main(int argc, char* argv[])
     plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
     std::vector<plint> cellIds;
     plint numPartsPerCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, 500);
+    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, minNumOfTriangles);
     pcout << "Mesh Created" << std::endl;
     generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice);
 

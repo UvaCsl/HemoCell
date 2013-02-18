@@ -21,8 +21,6 @@
 #ifndef IMMERSED_WALL_PARTICLE_FUNCTIONAL_3D_HH
 #define IMMERSED_WALL_PARTICLE_FUNCTIONAL_3D_HH
 
-#include "immersedCellParticleFunctional3D.h"
-#include "immersedCellParticle3D.h"
 #include "particles/particleField3D.h"
 #include "dataProcessors/metaStuffFunctional3D.h"
 #include "core/plbDebug.h"
@@ -30,6 +28,9 @@
 #include "atomicBlock/atomicBlock3D.h"
 #include "atomicBlock/blockLattice3D.h"
 #include "latticeBoltzmann/geometricOperationTemplates.h"
+#include "immersedCellParticleFunctional3D.h"
+#include "immersedCellParticle3D.h"
+#include "immersedBoundaryMethod3D.h"
 #include <map>
 
 namespace plb {
@@ -148,17 +149,17 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
         Array<T,3> velocity;
-        linearInterpolationCoefficients(fluid, position, cellPos, weights);
+        linearInterpolationCoefficientsPhi2(fluid, position, cellPos, weights);
 
         // Use copy constructor in order to initialize dynamics object.
         Cell<T,Descriptor>* cellOnVertex;
-        for (plint iCell=0; iCell<8; ++iCell) {
+        for (plint iCell=0; iCell < weights.size(); ++iCell) {
             cells[iCell] = &fluid.get(cellPos[iCell].x,cellPos[iCell].y,cellPos[iCell].z);
         }
         cellOnVertex = new Cell<T,Descriptor>(*cells[0]);
         for (plint iPop=0; iPop<Descriptor<T>::q; ++iPop) {
             (*cellOnVertex)[iPop] = 0;
-            for (int iPos = 0; iPos < 8; ++iPos) {
+            for (int iPos = 0; iPos < weights.size(); ++iPos) {
                 (*cellOnVertex)[iPop] += weights[iPos]*(*cells[iPos])[iPop];
             }
         }
@@ -207,11 +208,11 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
-        linearInterpolationCoefficients(fluid, position, cellPos, weights);
+        linearInterpolationCoefficientsPhi2(fluid, position, cellPos, weights);
 
         Array<T,3> elasticForce = particle->get_force();
         // Use copy constructor in order to initialize dynamics object.
-        for (plint iCell = 0; iCell < 8; ++iCell) {
+        for (plint iCell = 0; iCell < weights.size(); ++iCell) {
             cell = &fluid.get(cellPos[iCell].x,cellPos[iCell].y,cellPos[iCell].z);
             T *locForce = cell->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
             for (plint iA = 0; iA < 3; ++iA) {
