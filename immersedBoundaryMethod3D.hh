@@ -53,10 +53,10 @@ void linearInterpolationCoefficients8PointStensil (
                 } else {
                     weights[i] = (1.-u) * (1.-v) * (1.-w);
                 }
-                pcout << "i" << i<< " dx " << dx << " " <<
-                        "dy " << dy << " " <<
-                        "dz " << dz << " " <<
-                        "weight " << weights[i] << "\n";
+//                pcout << "i" << i<< " dx " << dx << " " <<
+//                        "dy " << dy << " " <<
+//                        "dz " << dz << " " <<
+//                        "weight " << weights[i] << "\n";
             i+=1;
             }
         }
