@@ -35,7 +35,27 @@
 namespace plb {
 
 template<typename T>
-void linearInterpolationCoefficientsPhi2 (
+T phi2 (T x) ;
+
+template<typename T>
+T phi3 (T x) ;
+
+template<typename T>
+T phi4 (T x) ;
+
+
+template<typename T>
+void interpolationCoefficientsPhi2 (
+        AtomicBlock3D const& block, Array<T,3> const& position,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights );
+
+template<typename T>
+void interpolationCoefficientsPhi3 (
+        AtomicBlock3D const& block, Array<T,3> const& position,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights );
+
+template<typename T>
+void interpolationCoefficientsPhi4 (
         AtomicBlock3D const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights );
 

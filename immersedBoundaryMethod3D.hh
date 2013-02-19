@@ -34,38 +34,174 @@
 namespace plb {
 
 template<typename T>
-void linearInterpolationCoefficientsPhi2 (
+T phi2 (T x) {
+    x = fabs(x);
+    if (x <= 1.0) {
+        return (1.0 - x);
+    } else {
+        return 0;
+    }
+}
+
+template<typename T>
+T phi3 (T x) {
+    x = fabs(x);
+    if (x <= 0.5) {
+        return (1 + sqrt(1 + 3*x*x))/3.0;
+    } else if (x<= 1.5) {
+        return (5 - 3*x - sqrt(-2 + 6*x - 3*x*x) );
+    } else {
+        return 0;
+    }
+}
+
+template<typename T>
+T phi4 (T x) {
+    x = fabs(x);
+    if (x <= 1.0) {
+        return 1.0/8.0 * (3 - 2*x + sqrt(1 + 4*x - 4*x*x));
+    } else if (x<= 2.0) {
+        return 1.0/8.0 * (5 - 2*x + sqrt(-7 + 12*x - 4*x*x));
+    } else {
+        return 0;
+    }
+}
+
+template<typename T>
+void interpolationCoefficientsPhi2 (
         AtomicBlock3D const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights )
 {
-    cellPos.resize(8);
-    weights.resize(8);
+    cellPos.clear();
+    weights.clear();
     plint i = 0;
-    for (int dx = 0; dx < 2; ++dx) {
-        for (int dy = 0; dy < 2; ++dy) {
-            for (int dz = 0; dz < 2; ++dz) {
-                cellPos[i] = Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz);
-                T u = fabs(position[0] - (T)cellPos[i].x);
-                T v = fabs(position[1] - (T)cellPos[i].y);
-                T w = fabs(position[2] - (T)cellPos[i].z);
-                if ( (u > 1.0) || (v > 1.0) || (w > 1.0)) {
-                    weights[i] = 0.0;
-                } else {
-                    weights[i] = (1.-u) * (1.-v) * (1.-w);
+    plint x0=-1, x1=2;
+    Box3D boundingBox(block.getBoundingBox());
+    for (int dx = x0; dx < x1; ++dx) {
+        for (int dy = x0; dy < x1; ++dy) {
+            for (int dz = x0; dz < x1; ++dz) {
+                Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
+                if (contained(cellPosition,boundingBox)) {
+                    T phi[3];
+                    phi[0] = (position[0] - (T)cellPosition.x);
+                    phi[1] = (position[1] - (T)cellPosition.y);
+                    phi[2] = (position[2] - (T)cellPosition.z);
+                    T weight = phi2(phi[0]) * phi2(phi[1]) * phi2(phi[2]);
+                    if (weight>0) {
+                        weights.push_back(weight);
+                        cellPos.push_back(cellPosition);
+                        i+=1;
+                    }
                 }
-//                pcout << "i" << i<< " dx " << dx << " " <<
-//                        "dy " << dy << " " <<
-//                        "dz " << dz << " " <<
-//                        "weight " << weights[i] << "\n";
-            i+=1;
             }
         }
     }
     // Convert cell position to local coordinates.
-    for (plint iPos=0; iPos<8; ++iPos) {
+    for (pluint iPos=0; iPos<cellPos.size(); ++iPos) {
         cellPos[iPos] -= block.getLocation();
     }
 }
+
+
+template<typename T>
+void interpolationCoefficientsPhi3 (
+        AtomicBlock3D const& block, Array<T,3> const& position,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights )
+{
+    cellPos.clear();
+    weights.clear();
+    plint i = 0;
+    plint x0=-2, x1=3;
+    Box3D boundingBox(block.getBoundingBox());
+    pcout << "location( " << block.getLocation().x <<
+            block.getLocation().y <<
+            block.getLocation().z <<
+            "), bB =(" << boundingBox.x0 <<
+            ", " << boundingBox.x1 <<
+            "), (" << boundingBox.y0 <<
+            ", " << boundingBox.y1 <<
+            "), " << boundingBox.z0 <<
+            "," << boundingBox.z1 <<
+             "), p.x = (" << position[0] <<
+             ", " << position[1] <<
+             ", " << position[2] << ")" << std::endl;
+
+
+    for (int dx = x0; dx < x1; ++dx) {
+        for (int dy = x0; dy < x1; ++dy) {
+            for (int dz = x0; dz < x1; ++dz) {
+                Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
+                if (contained(cellPosition,boundingBox)) {
+                    T phi[3];
+                    phi[0] = (position[0] - (T)cellPosition.x);
+                    phi[1] = (position[1] - (T)cellPosition.y);
+                    phi[2] = (position[2] - (T)cellPosition.z);
+                    T weight = phi3(phi[0]) * phi3(phi[1]) * phi3(phi[2]);
+                    if (weight>0) {
+                        weights.push_back(weight);
+                        cellPos.push_back(cellPosition);
+                        i+=1;
+                    }
+                }
+            }
+        }
+    }
+    // Convert cell position to local coordinates.
+    for (pluint iPos=0; iPos<cellPos.size(); ++iPos) {
+        cellPos[iPos] -= block.getLocation();
+    }
+}
+
+
+template<typename T>
+void interpolationCoefficientsPhi4 (
+        AtomicBlock3D const& block, Array<T,3> const& position,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights )
+{
+    cellPos.clear();
+    weights.clear();
+    plint i = 0;
+    plint x0=-2, x1=3;
+    Box3D boundingBox(block.getBoundingBox());
+//    pcout << "location( " << block.getLocation().x <<
+//            block.getLocation().y <<
+//            block.getLocation().z <<
+//            "), bB =(" << boundingBox.x0 <<
+//            ", " << boundingBox.x1 <<
+//            "), (" << boundingBox.y0 <<
+//            ", " << boundingBox.y1 <<
+//            "), " << boundingBox.z0 <<
+//            "," << boundingBox.z1 <<
+//             "), p.x = (" << position[0] <<
+//             ", " << position[1] <<
+//             ", " << position[2] << ")" << std::endl;
+
+
+    for (int dx = x0; dx < x1; ++dx) {
+        for (int dy = x0; dy < x1; ++dy) {
+            for (int dz = x0; dz < x1; ++dz) {
+                Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
+                if (contained(cellPosition,boundingBox)) {
+                    T phi[3];
+                    phi[0] = (position[0] - (T)cellPosition.x);
+                    phi[1] = (position[1] - (T)cellPosition.y);
+                    phi[2] = (position[2] - (T)cellPosition.z);
+                    T weight = phi4(phi[0]) * phi4(phi[1]) * phi4(phi[2]);
+                    if (weight>0) {
+                        weights.push_back(weight);
+                        cellPos.push_back(cellPosition);
+                        i+=1;
+                    }
+                }
+            }
+        }
+    }
+    // Convert cell position to local coordinates.
+    for (pluint iPos=0; iPos<cellPos.size(); ++iPos) {
+        cellPos[iPos] -= block.getLocation();
+    }
+}
+
 
 }
 #endif  // IMMERSEDBOUNDARYMETHOD_3D_HH

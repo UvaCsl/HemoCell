@@ -139,9 +139,9 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
 
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
-    std::vector<Dot3D> cellPos(8);
-    std::vector<T> weights(8);
-    std::vector<Cell<T,Descriptor>*> cells(8);
+    std::vector<Dot3D> cellPos;
+    std::vector<T> weights;
+    std::vector<Cell<T,Descriptor>*> cells;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
         Particle3D<T,Descriptor>* nonTypedParticle = particles[iParticle];
         ImmersedCellParticle3D<T,Descriptor>* particle =
@@ -149,23 +149,22 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
         Array<T,3> velocity;
-        linearInterpolationCoefficientsPhi2(fluid, position, cellPos, weights);
+        interpolationCoefficientsPhi2(fluid, position, cellPos, weights);
 
         // Use copy constructor in order to initialize dynamics object.
-        Cell<T,Descriptor>* cellOnVertex;
-        for (plint iCell=0; iCell < weights.size(); ++iCell) {
-            cells[iCell] = &fluid.get(cellPos[iCell].x,cellPos[iCell].y,cellPos[iCell].z);
+        for (pluint iCell=0; iCell < weights.size(); ++iCell) {
+            cells.push_back(&fluid.get(cellPos[iCell].x,cellPos[iCell].y,cellPos[iCell].z));
         }
-        cellOnVertex = new Cell<T,Descriptor>(*cells[0]);
-        for (plint iPop=0; iPop<Descriptor<T>::q; ++iPop) {
-            (*cellOnVertex)[iPop] = 0;
-            for (int iPos = 0; iPos < weights.size(); ++iPos) {
-                (*cellOnVertex)[iPop] += weights[iPos]*(*cells[iPos])[iPop];
+        Cell<T,Descriptor> cellOnVertex = Cell<T,Descriptor>(*cells[0]);
+        for (pluint iPop=0; iPop < Descriptor<T>::q; ++iPop) {
+            cellOnVertex[iPop] = 0;
+            for (pluint iPos = 0; iPos < weights.size(); ++iPos) {
+                cellOnVertex[iPop] += weights[iPos] * ( (*cells[iPos])[iPop] );
             }
         }
-        cellOnVertex->computeVelocity(velocity);
+        cellOnVertex.computeVelocity(velocity);
         particle->get_v() = velocity;
-        delete cellOnVertex;
+        // delete cellOnVertex;
     }
 }
 
@@ -198,9 +197,8 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
 
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
-    std::vector<Dot3D> cellPos(8);
-    std::vector<T> weights(8);
-//    std::vector<Cell<T,Descriptor>*> cells(8);
+    std::vector<Dot3D> cellPos;
+    std::vector<T> weights;
     Cell<T,Descriptor>* cell;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
         Particle3D<T,Descriptor>* nonTypedParticle = particles[iParticle];
@@ -208,14 +206,14 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
-        linearInterpolationCoefficientsPhi2(fluid, position, cellPos, weights);
+        interpolationCoefficientsPhi2(fluid, position, cellPos, weights);
 
         Array<T,3> elasticForce = particle->get_force();
         // Use copy constructor in order to initialize dynamics object.
-        for (plint iCell = 0; iCell < weights.size(); ++iCell) {
+        for (pluint iCell = 0; iCell < weights.size(); ++iCell) {
             cell = &fluid.get(cellPos[iCell].x,cellPos[iCell].y,cellPos[iCell].z);
             T *locForce = cell->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
-            for (plint iA = 0; iA < 3; ++iA) {
+            for (pluint iA = 0; iA < 3; ++iA) {
                 locForce[iA] += weights[iCell]*elasticForce[iA];
             }
         }
