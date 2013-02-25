@@ -81,7 +81,8 @@ void interpolationCoefficientsPhi2 (
         for (int dy = x0; dy < x1; ++dy) {
             for (int dz = x0; dz < x1; ++dz) {
                 Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
-                if (contained(cellPosition,boundingBox)) {
+                Dot3D cellPositionInDomain = cellPosition - block.getLocation();
+                if (contained(cellPositionInDomain,boundingBox)) {
                     T phi[3];
                     phi[0] = (position[0] - (T)cellPosition.x);
                     phi[1] = (position[1] - (T)cellPosition.y);
@@ -89,7 +90,7 @@ void interpolationCoefficientsPhi2 (
                     T weight = phi2(phi[0]) * phi2(phi[1]) * phi2(phi[2]);
                     if (weight>0) {
                         weights.push_back(weight);
-                        cellPos.push_back(cellPosition);
+                        cellPos.push_back(cellPositionInDomain);
                         i+=1;
                     }
                 }
@@ -97,9 +98,9 @@ void interpolationCoefficientsPhi2 (
         }
     }
     // Convert cell position to local coordinates.
-    for (pluint iPos=0; iPos<cellPos.size(); ++iPos) {
-        cellPos[iPos] -= block.getLocation();
-    }
+//    for (pluint iPos=0; iPos<cellPos.size(); ++iPos) {
+//        cellPos[iPos] -= block.getLocation();
+//    }
 }
 
 
@@ -131,7 +132,8 @@ void interpolationCoefficientsPhi3 (
         for (int dy = x0; dy < x1; ++dy) {
             for (int dz = x0; dz < x1; ++dz) {
                 Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
-                if (contained(cellPosition,boundingBox)) {
+                Dot3D cellPositionInDomain = cellPosition - block.getLocation();
+                if (contained(cellPositionInDomain,boundingBox)) {
                     T phi[3];
                     phi[0] = (position[0] - (T)cellPosition.x);
                     phi[1] = (position[1] - (T)cellPosition.y);
@@ -139,7 +141,7 @@ void interpolationCoefficientsPhi3 (
                     T weight = phi3(phi[0]) * phi3(phi[1]) * phi3(phi[2]);
                     if (weight>0) {
                         weights.push_back(weight);
-                        cellPos.push_back(cellPosition);
+                        cellPos.push_back(cellPositionInDomain);
                         i+=1;
                     }
                 }
@@ -147,9 +149,9 @@ void interpolationCoefficientsPhi3 (
         }
     }
     // Convert cell position to local coordinates.
-    for (pluint iPos=0; iPos<cellPos.size(); ++iPos) {
-        cellPos[iPos] -= block.getLocation();
-    }
+//    for (pluint iPos=0; iPos<cellPos.size(); ++iPos) {
+//        cellPos[iPos] -= block.getLocation();
+//    }
 }
 
 
@@ -181,7 +183,8 @@ void interpolationCoefficientsPhi4 (
         for (int dy = x0; dy < x1; ++dy) {
             for (int dz = x0; dz < x1; ++dz) {
                 Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
-                if (contained(cellPosition,boundingBox)) {
+                Dot3D cellPositionInDomain = cellPosition - block.getLocation();
+                if (contained(cellPositionInDomain,boundingBox)) {
                     T phi[3];
                     phi[0] = (position[0] - (T)cellPosition.x);
                     phi[1] = (position[1] - (T)cellPosition.y);
@@ -189,7 +192,7 @@ void interpolationCoefficientsPhi4 (
                     T weight = phi4(phi[0]) * phi4(phi[1]) * phi4(phi[2]);
                     if (weight>0) {
                         weights.push_back(weight);
-                        cellPos.push_back(cellPosition);
+                        cellPos.push_back(cellPositionInDomain);
                         i+=1;
                     }
                 }
@@ -197,9 +200,9 @@ void interpolationCoefficientsPhi4 (
         }
     }
     // Convert cell position to local coordinates.
-    for (pluint iPos=0; iPos<cellPos.size(); ++iPos) {
-        cellPos[iPos] -= block.getLocation();
-    }
+//    for (pluint iPos=0; iPos<cellPos.size(); ++iPos) {
+//        cellPos[iPos] -= block.getLocation();
+//    }
 }
 
 

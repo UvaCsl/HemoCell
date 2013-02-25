@@ -149,7 +149,7 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
         Array<T,3> velocity; velocity.resetToZero();
-        interpolationCoefficientsPhi2(fluid, position, cellPos, weights);
+        interpolationCoefficientsPhi4(fluid, position, cellPos, weights);
 
         // Use copy constructor in order to initialize dynamics object.
         for (pluint iCell=0; iCell < weights.size(); ++iCell) {
@@ -214,7 +214,7 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
-        interpolationCoefficientsPhi2(fluid, position, cellPos, weights);
+        interpolationCoefficientsPhi4(fluid, position, cellPos, weights);
 
         Array<T,3> elasticForce = particle->get_force();
         // pcout << "elastic force: (" << elasticForce[0] << ", "<< elasticForce[1] << ", "<< elasticForce[2] << ")\n";
