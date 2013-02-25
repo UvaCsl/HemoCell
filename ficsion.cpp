@@ -296,20 +296,25 @@ int main(int argc, char* argv[])
             force_scalarNames.push_back("wss");
             std::vector<std::string> velocity_scalarNames;
             std::vector<std::string> force_vectorNames;
+            force_vectorNames.push_back("velocity_scalar");
             force_vectorNames.push_back("force");
             std::vector<std::string> velocity_vectorNames;
             velocity_vectorNames.push_back("velocity");
+            velocity_vectorNames.push_back("acceleration");
+            velocity_vectorNames.push_back("vHalfTime");
+            velocity_vectorNames.push_back("force");
+
             writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
 //            Cells.getMesh().writeAsciiSTL(global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
             // serialize the particle information to write them.
             // a correspondance between the mesh and the particles is made. (Needs rescale)
 //            bool dynamicMesh = true;
 //            plint tag = -1; // Take all triangles.
-//            writeImmersedSurfaceVTK (
-//                Cells,
-//                *getParticlePosAndVelocity(immersedParticles),
-//                velocity_scalarNames, velocity_vectorNames,
-//                global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag );
+            writeImmersedSurfaceVTK (
+                Cells,
+                immersedParticles,
+                velocity_scalarNames, velocity_vectorNames,
+                global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", 0, -1 );
             writeVTK(lattice, parameters, i);
             // === Checkpoint ===
             //    parallelIO::save(immersedParticles, "immersedParticles.dat", true);

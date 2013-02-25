@@ -110,7 +110,7 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
         plint iVertex = particles[iParticle]->getTag();
         posVect[iVertex] = particles[iParticle]->getPosition();
         posVect[iVertex] *= boundary.getDx();
-        posVect[iVertex] += boundary.getPhysicalLocation();
+        //posVect[iVertex] += boundary.getPhysicalLocation();
         for (pluint iScalar=0; iScalar<scalars.size(); ++iScalar) {
             T scalar;
             particles[iParticle]->getScalar(iScalar, scalar);
