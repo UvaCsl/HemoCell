@@ -149,7 +149,7 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
         Array<T,3> velocity; velocity.resetToZero();
-        interpolationCoefficientsPhi4(fluid, position, cellPos, weights);
+        interpolationCoefficientsPhi2(fluid, position, cellPos, weights);
 
         // Use copy constructor in order to initialize dynamics object.
         for (pluint iCell=0; iCell < weights.size(); ++iCell) {
@@ -214,7 +214,7 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
-        interpolationCoefficientsPhi4(fluid, position, cellPos, weights);
+        interpolationCoefficientsPhi2(fluid, position, cellPos, weights);
 
         Array<T,3> elasticForce = particle->get_force();
         // pcout << "elastic force: (" << elasticForce[0] << ", "<< elasticForce[1] << ", "<< elasticForce[2] << ")\n";
@@ -460,29 +460,31 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         plint vertexId = particle->getTag();
         particleVelocity[vertexId] = particle->get_v();
     }
-
+    T eqArea = cellModel->getEquilibriumTriangleArea();
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
         Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         plint vertexId = particle->getTag();
+        T iSurface = T(); // one third of the sum of the areas of all triangles that share the given vertex.
         plint cellId = particle->get_cellId();
         if (!isRigid(triangleBoundary.getVertexProperty(vertexId))) {
             Array<T,3> elasticForce = cellModel->computeElasticForce (
                     triangleBoundary, vertexId );
             Array<T,3> cellForce = cellModel->computeCellForce (
-                    triangleBoundary, cellsVolume[cellId], cellsSurface[cellId], particleVelocity, vertexId );
+                    triangleBoundary, cellsVolume[cellId], cellsSurface[cellId], iSurface, particleVelocity, vertexId );
 //            T neF=norm(elasticForce), ncF=norm(cellForce);
 //            pcout << "forces: "<< neF << " " << ncF << " " << neF/ncF  << ", " << norm(elasticForce-cellForce) <<
 //                    " (" << (elasticForce/neF)[0] << ", "  << (cellForce/ncF)[0] << "), " <<
 //                    " (" << (elasticForce/neF)[1] << ", "  << (cellForce/ncF)[1] << "), " <<
 //                    " (" << (elasticForce/neF)[2] << ", "  << (cellForce/ncF)[2] << "), " <<
 //                    std::endl;
-            Array<T,3> force = elasticForce + cellForce;
+            Array<T,3> force; force.resetToZero();
+            force = elasticForce + cellForce;
+            force *= iSurface*1.0/eqArea; // same as triangleBoundary.getMesh().computeVertexArea(vertexId);
             T mass = cellModel->getDensity();
-//            T mass = cellModel->getDensity() * triangleBoundary.getMesh().computeVertexArea(vertexId);
-            particle->get_a() += force/mass;
-            particle->get_force() += force;
+            particle->get_a() = force*1.0/mass;
+            particle->get_force() = force;
         }
     }
 }

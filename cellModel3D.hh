@@ -102,7 +102,7 @@ CellModel3D<T>::CellModel3D (
 template<typename T>
 Array<T,3> CellModel3D<T>::computeCellForce (
         TriangleBoundary3D<T> const& boundary,
-        T cellVolume, T cellSurface,
+        T cellVolume, T cellSurface, T & iSurface,
         std::map< plint, Array<T,3> > particleVelocity,
         plint iVertex )
  /* Force calculation according to KrugerThesis, Appendix C */
@@ -120,7 +120,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     Array<T,3> shearForce; shearForce.resetToZero();
     Array<T,3> volumeForce; volumeForce.resetToZero();
     Array<T,3> dissipativeForce; dissipativeForce.resetToZero();
-
+    iSurface = 0.0;
 
     Array<T,3> dAdx, dVdx;
     Array<T,3> dL, eij; dL.resetToZero(); eij.resetToZero();
@@ -145,8 +145,8 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         x1ref = boundary.getMesh().getVertex(iVertex);
         boundary.popSelect();
         Array<T,3> dx = x1-x1ref;
-        dissipativeForce += -gamma_T*iVelocity -gamma_C*dot(iVelocity,dx)*dx;
-        return (-k_rest*dx) + dissipativeForce;
+//        dissipativeForce += -gamma_T*iVelocity -gamma_C*dot(iVelocity,dx)*dx;
+        return (-k_rest*dx) + (-eta_m*dot(iVelocity,dx)/eqLength * dx); // Dissipative term from Dupin2007
     }
     /* Run through all the neighboring faces of iVertex and calculate:
      *
@@ -165,6 +165,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         iX2 = (iX1 + 1)%3;
         iX3 = (iX1 + 2)%3;
         trianglesArea[iTriangle] = dynMesh.computeTriangleArea(iTriangle);
+        iSurface += trianglesArea[iTriangle]/3.0;
         trianglesNormal[iTriangle] = triangleNormal = dynMesh.computeTriangleNormal(iTriangle);
         /* Surface conservation force */
         crossProduct(triangleNormal,
@@ -208,18 +209,18 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         jTriangle = triangles[1];
         plint kVertex, lVertex;
         for (pluint id = 0; id < 3; ++id) {
-        	kVertex = dynMesh.getVertexId(iTriangle,id);
-        	if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
-            	x2 = dynMesh.getVertex(kVertex);
-        		break;
-        	}
+            kVertex = dynMesh.getVertexId(iTriangle,id);
+            if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
+                x2 = dynMesh.getVertex(kVertex);
+                break;
+            }
         }
         for (pluint id = 0; id < 3; ++id) {
-        	lVertex = dynMesh.getVertexId(jTriangle,id);
-        	if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
-            	x4 = dynMesh.getVertex(lVertex);
-        		break;
-        	}
+            lVertex = dynMesh.getVertexId(jTriangle,id);
+            if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
+                x4 = dynMesh.getVertex(lVertex);
+                break;
+            }
         }
         // Bending Force
         bendingForce += computeBendingForce (x1, x2, x3, x4,

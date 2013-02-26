@@ -40,7 +40,7 @@ public:
                 T maxLength_, T persistenceLength_);
     virtual Array<T,3> computeCellForce (
             TriangleBoundary3D<T> const& boundary,
-            T cellVolume, T cellSurface,
+            T cellVolume, T cellSurface, T & iSurface,
             std::map< plint, Array<T,3> > particleVelocity,
             plint iVertex );
     virtual Array<T,3> computeElasticForce (
@@ -67,6 +67,8 @@ public:
     T& getEquilibriumVolume() { return eqVolume; }
     T const& getEquilibriumSurface() const { return eqSurface; }
     T& getEquilibriumSurface() { return eqSurface; }
+    T const& getEquilibriumTriangleArea() const { return eqArea; }
+    T& getEquilibriumTriangleArea() { return eqArea; }
     T const& getMaximumLength() const { return maxLength; }
     T& getMaximumLength() { return maxLength; }
     T const& getPersistenceLength() const { return persistenceLength; }

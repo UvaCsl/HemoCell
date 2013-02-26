@@ -68,8 +68,12 @@ void writeImmersedSurfaceVTK( TriangleBoundary3D<T> const& boundary,
         std::vector<Particle3D<T,Descriptor>*> found;
         SmartBulk3D oneBlockBulk(serialMultiBlockManagement, 0);
         atomicSerialParticles.findParticles(oneBlockBulk.toLocal(particles.getBoundingBox()), found);
-
-        vtkForImmersedVertices(found, boundary, scalars, vectors, fName, dynamicMesh, tag, scalarFactor, vectorFactor);
+        if (found.size() > 0) {
+            vtkForImmersedVertices(found, boundary, scalars, vectors, fName, dynamicMesh, tag, scalarFactor, vectorFactor);
+        }
+        else {
+            pcout << "No particles found inside the domain" << std::endl;
+        }
     }
 }
 

@@ -304,17 +304,16 @@ int main(int argc, char* argv[])
             velocity_vectorNames.push_back("vHalfTime");
             velocity_vectorNames.push_back("force");
 
-            writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
-//            Cells.getMesh().writeAsciiSTL(global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
+//            writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
             // serialize the particle information to write them.
             // a correspondance between the mesh and the particles is made. (Needs rescale)
-//            bool dynamicMesh = true;
-//            plint tag = -1; // Take all triangles.
+            bool dynamicMesh = true;
+            plint tag = -1; // Take all triangles.
             writeImmersedSurfaceVTK (
                 Cells,
                 immersedParticles,
                 velocity_scalarNames, velocity_vectorNames,
-                global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", 0, -1 );
+                global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag);
             writeVTK(lattice, parameters, i);
             // === Checkpoint ===
             //    parallelIO::save(immersedParticles, "immersedParticles.dat", true);

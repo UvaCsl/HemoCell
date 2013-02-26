@@ -81,7 +81,7 @@ void interpolationCoefficientsPhi2 (
         for (int dy = x0; dy < x1; ++dy) {
             for (int dz = x0; dz < x1; ++dz) {
                 Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
-                Dot3D cellPositionInDomain = cellPosition - block.getLocation();
+                Dot3D cellPositionInDomain = cellPosition - block.getLocation(); // Convert cell position to local coordinates.
                 if (contained(cellPositionInDomain,boundingBox)) {
                     T phi[3];
                     phi[0] = (position[0] - (T)cellPosition.x);
@@ -97,10 +97,6 @@ void interpolationCoefficientsPhi2 (
             }
         }
     }
-    // Convert cell position to local coordinates.
-//    for (pluint iPos=0; iPos<cellPos.size(); ++iPos) {
-//        cellPos[iPos] -= block.getLocation();
-//    }
 }
 
 
@@ -114,25 +110,23 @@ void interpolationCoefficientsPhi3 (
     plint i = 0;
     plint x0=-2, x1=3;
     Box3D boundingBox(block.getBoundingBox());
-    pcout << "location( " << block.getLocation().x <<
-            block.getLocation().y <<
-            block.getLocation().z <<
-            "), bB =(" << boundingBox.x0 <<
-            ", " << boundingBox.x1 <<
-            "), (" << boundingBox.y0 <<
-            ", " << boundingBox.y1 <<
-            "), " << boundingBox.z0 <<
-            "," << boundingBox.z1 <<
-             "), p.x = (" << position[0] <<
-             ", " << position[1] <<
-             ", " << position[2] << ")" << std::endl;
-
-
+//    pcout << "location( " << block.getLocation().x <<
+//            block.getLocation().y <<
+//            block.getLocation().z <<
+//            "), bB =(" << boundingBox.x0 <<
+//            ", " << boundingBox.x1 <<
+//            "), (" << boundingBox.y0 <<
+//            ", " << boundingBox.y1 <<
+//            "), " << boundingBox.z0 <<
+//            "," << boundingBox.z1 <<
+//             "), p.x = (" << position[0] <<
+//             ", " << position[1] <<
+//             ", " << position[2] << ")" << std::endl;
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
             for (int dz = x0; dz < x1; ++dz) {
                 Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
-                Dot3D cellPositionInDomain = cellPosition - block.getLocation();
+                Dot3D cellPositionInDomain = cellPosition - block.getLocation(); // Convert cell position to local coordinates.
                 if (contained(cellPositionInDomain,boundingBox)) {
                     T phi[3];
                     phi[0] = (position[0] - (T)cellPosition.x);
@@ -148,10 +142,6 @@ void interpolationCoefficientsPhi3 (
             }
         }
     }
-    // Convert cell position to local coordinates.
-//    for (pluint iPos=0; iPos<cellPos.size(); ++iPos) {
-//        cellPos[iPos] -= block.getLocation();
-//    }
 }
 
 
@@ -177,13 +167,11 @@ void interpolationCoefficientsPhi4 (
 //             "), p.x = (" << position[0] <<
 //             ", " << position[1] <<
 //             ", " << position[2] << ")" << std::endl;
-
-
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
             for (int dz = x0; dz < x1; ++dz) {
                 Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
-                Dot3D cellPositionInDomain = cellPosition - block.getLocation();
+                Dot3D cellPositionInDomain = cellPosition - block.getLocation(); // Convert cell position to local coordinates.
                 if (contained(cellPositionInDomain,boundingBox)) {
                     T phi[3];
                     phi[0] = (position[0] - (T)cellPosition.x);
@@ -199,10 +187,6 @@ void interpolationCoefficientsPhi4 (
             }
         }
     }
-    // Convert cell position to local coordinates.
-//    for (pluint iPos=0; iPos<cellPos.size(); ++iPos) {
-//        cellPos[iPos] -= block.getLocation();
-//    }
 }
 
 
