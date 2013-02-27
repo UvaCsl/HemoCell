@@ -82,10 +82,11 @@ void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<Par
                            std::vector<plint> & cellIds,
                            std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
                            std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
+                           std::vector< Array<T,3> > & cellsCenter,
                            std::vector<T> & cellsMeanTileSpan)
     {
     cellsVolume.clear(); cellsSurface.clear(); cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();
-    cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsMeanTileSpan.clear();
+    cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsCenter.clear(); cellsMeanTileSpan.clear();
     countCellVolume(Cells, particles, particles.getBoundingBox(), cellIds, cellsVolume);
     countCellSurface(Cells, particles, particles.getBoundingBox(), cellIds, cellsSurface);
     countCellMeanTriangleArea(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanTriangleArea);
@@ -93,6 +94,8 @@ void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<Par
     countCellMeanEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanEdgeDistance);
     countCellMeanTileSpan(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanTileSpan);
     countCellMaxEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, cellsMaxEdgeDistance);
+    countCellMaxEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, cellsMaxEdgeDistance);
+    countCellCenters(Cells, particles, particles.getBoundingBox(), cellIds, cellsCenter);
 }
 
 
@@ -100,6 +103,7 @@ template<typename T>
 void printCellMeasures(plint i, TriangleBoundary3D<T> Cells,
                        std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
                        std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
+                       std::vector< Array<T,3> > & cellsCenter,
                        T eqVolume, T eqSurface, T eqArea, T eqLength) {
     pcout << "=== " << i << " === " << std::endl;
     pcout << "Volume: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsVolume[iA]*100.0/eqVolume - 100 <<"%, ";
@@ -109,8 +113,8 @@ void printCellMeasures(plint i, TriangleBoundary3D<T> Cells,
     pcout << std::endl <<"Mean Angle [^o]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanAngle[iA]*180.0/pi << ", ";
     pcout << std::endl <<"Mean Edge Distance [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA] << ", ";
     pcout << std::endl <<"Max Edge Distance [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMaxEdgeDistance[iA] << ", ";
-    pcout << std::endl <<"Coordinates: (" << Cells.getMesh().getVertex(0)[0] << ", " << Cells.getMesh().getVertex(0)[1] <<
-             ", " << Cells.getMesh().getVertex(0)[2] << ")" << std::endl;
+    for (pluint iA = 0; iA < cellsCenter.size(); ++iA)
+        pcout << std::endl <<"Coordinates: (" << cellsCenter[iA][0] << ", " << cellsCenter[iA][1] << ", " << cellsCenter[iA][2] << ")" << std::endl;
 }
 
 
@@ -118,8 +122,23 @@ template<typename T>
 void writeCellLog(plint i, plb_ofstream & logFile,
                   std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea, std::vector<T> & cellsMeanEdgeDistance,
                   std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
+                  std::vector< Array<T,3> > & cellsCenter,
                   T eqVolume, T eqSurface, T eqArea, T eqLength) {
-    std::string delim(" , ");
+    std::string delim(", ");
+    if (i==0) {
+        logFile << "# Iteration " << delim
+                << " Volume" << delim
+                << " Surface" << delim
+                << " Mean Triangle Surface" << delim
+                << " Mean Edge Distance" << delim
+                << " Mean Angle [^o]" << delim
+                << " Mean Edge Distance [LU]" << delim
+                << " Max Edge Distance [LU]" << delim
+                << " x [LU]" << delim
+                << " y [LU]" << delim
+                << " z [LU]" << delim
+                << "00" << std::endl;
+    }
     logFile << i*1.0 << delim
             << cellsVolume[0]*100.0/eqVolume - 100 <<  delim
             << cellsSurface[0]*100.0/eqSurface - 100 << delim
@@ -127,8 +146,12 @@ void writeCellLog(plint i, plb_ofstream & logFile,
             << cellsMeanEdgeDistance[0]*100.0/eqLength - 100 << delim
             << cellsMeanAngle[0]*180.0/pi << delim
             << cellsMeanEdgeDistance[0] << delim
-            << cellsMaxEdgeDistance[0]
-            << std::endl;
+            << cellsMaxEdgeDistance[0] << delim
+            << cellsCenter[0][0] << delim
+            << cellsCenter[0][1] << delim
+            << cellsCenter[0][2] << delim
+            << "00" << std::endl;
+
 }
 
 #endif  // CELLS_INIT_HH

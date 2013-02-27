@@ -349,7 +349,7 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
     }
 //    pcout << "fangle: " << angle << " " << eqAngle << std::endl;
     T dAngle = (angle - eqAngle);
-    return -k* (dAngle*(1 - dAngle*dAngle/6.0)) * dAngledx * eqLength / eqTileSpan;
+    return -k* (dAngle*(1 - dAngle*dAngle/6.0)) * dAngledx ; //* eqLength / eqTileSpan;
 }
 
 

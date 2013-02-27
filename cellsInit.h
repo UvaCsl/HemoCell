@@ -35,12 +35,14 @@ void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<Par
                            std::vector<plint> & cellIds,
                            std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
                            std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
+                           std::vector< Array<T,3> > & cellsCenter,
                            std::vector<T> & cellsMeanTileSpan);
 
 template<typename T>
 void printCellMeasures(plint i, TriangleBoundary3D<T> Cells,
                        std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
                        std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
+                       std::vector< Array<T,3> > & cellsCenter,
                        T eqVolume, T eqSurface, T eqArea, T eqLength) ;
 
 
@@ -48,6 +50,7 @@ template<typename T>
 void writeCellLog(plint i, plb_ofstream & logFile,
                   std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea, std::vector<T> & cellsMeanEdgeDistance,
                   std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
+                  std::vector< Array<T,3> > & cellsCenter,
                   T eqVolume, T eqSurface, T eqArea, T eqLength) ;
 
 #endif  // CELLS_INIT_H

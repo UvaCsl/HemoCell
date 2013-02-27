@@ -102,7 +102,6 @@ int main(int argc, char* argv[])
 
     std::string logFileName = global::directories().getLogOutDir() + "plbCells.log";
     plb_ofstream logFile(logFileName.c_str());
-    logFile << "# Iteration; Volume, Surface, Mean Triangle Surface, Mean Edge Distance, Mean Angle [^o], Mean Edge Distance [LU], Max Edge Distance [LU]" << std::endl;
 
     plint forceToFluid, shape, minNumOfTriangles;
     plint tmax, tmeas, npar;
@@ -199,14 +198,15 @@ int main(int argc, char* argv[])
 
     std::vector<T> cellsVolume, cellsSurface;
     std::vector<T> cellsMeanEdgeDistance, cellsMaxEdgeDistance, cellsMeanAngle, cellsMeanTriangleArea, cellsMeanTileSpan;
+    std::vector< Array<T,3> > cellsCenter;
     T eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan;
     calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                        cellsMaxEdgeDistance, cellsMeanAngle, cellsMeanTileSpan);
+                        cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsMeanTileSpan);
     eqArea = cellsMeanTriangleArea[0];     eqLength = cellsMeanEdgeDistance[0];
     eqAngle = cellsMeanAngle[0];     eqVolume = cellsVolume[0];
     eqSurface = cellsSurface[0];	eqTileSpan = cellsMeanTileSpan[0];
     printCellMeasures(0, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                           cellsMaxEdgeDistance, cellsMeanAngle, eqVolume, eqSurface, eqArea, eqLength) ;
+                           cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, eqVolume, eqSurface, eqArea, eqLength) ;
 
     std::vector<MultiBlock3D*> particleArg;
     std::vector<MultiBlock3D*> particleLatticeArg;
@@ -244,7 +244,10 @@ int main(int argc, char* argv[])
         new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
         immersedParticles.getBoundingBox(), particleLatticeArg);
 
-
+    writeCellLog(0, logFile,
+                 cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+                 cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter,
+                 eqVolume, eqSurface, eqArea, eqLength) ;
     for (plint i=1; i<tmax+1; ++i) {
         if (i<=ifinal) {
             eqVolume = eqVolumeInitial + (i*1.0)/ifinal * (eqVolumeFinal - eqVolumeInitial) ;
@@ -283,12 +286,12 @@ int main(int argc, char* argv[])
             pcout << i << " totParticles = " << totParticles << std::endl;
             // PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain
             calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                                cellsMaxEdgeDistance, cellsMeanAngle, cellsMeanTileSpan);
+                                cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsMeanTileSpan);
             printCellMeasures(i, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                                   cellsMaxEdgeDistance, cellsMeanAngle, eqVolume, eqSurface, eqArea, eqLength) ;
+                                   cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, eqVolume, eqSurface, eqArea, eqLength) ;
             writeCellLog(i, logFile,
                          cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                         cellsMaxEdgeDistance, cellsMeanAngle,
+                         cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter,
                          eqVolume, eqSurface, eqArea, eqLength) ;
 
             std::vector<std::string> force_scalarNames;
