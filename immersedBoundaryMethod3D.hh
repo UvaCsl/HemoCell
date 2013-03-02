@@ -25,12 +25,17 @@
 #ifndef IMMERSEDBOUNDARYMETHOD_3D_HH
 #define IMMERSEDBOUNDARYMETHOD_3D_HH
 
+#ifndef PI__
+#define PI__
+const double pi = 4.*atan(1.);
+#endif  // PI__
+
+
 #include "core/globalDefs.h"
 #include "core/util.h"
 #include "immersedBoundaryMethod3D.h"
 #include <vector>
 
-/* ******** Function linearInterpolationCoefficients27PointStensil ********************* */
 namespace plb {
 
 template<typename T>
@@ -47,9 +52,9 @@ template<typename T>
 T phi3 (T x) {
     x = fabs(x);
     if (x <= 0.5) {
-        return (1 + sqrt(1 + 3*x*x))/3.0;
+        return 1.0/3.0 * (1 + sqrt(1 - 3*x*x));
     } else if (x<= 1.5) {
-        return (5 - 3*x - sqrt(-2 + 6*x - 3*x*x) );
+        return 1.0/6.0 * (5 - 3*x - sqrt(-2 + 6*x - 3*x*x) );
     } else {
         return 0;
     }
@@ -59,12 +64,21 @@ template<typename T>
 T phi4 (T x) {
     x = fabs(x);
     if (x <= 1.0) {
-        return 1.0/8.0 * (3 - 2*x + sqrt(1 + 4*x - 4*x*x));
+        return 0.125 * (3 - 2*x + sqrt(1 + 4*x - 4*x*x));
     } else if (x<= 2.0) {
-        return 1.0/8.0 * (5 - 2*x + sqrt(-7 + 12*x - 4*x*x));
+        return 0.125 * (5 - 2*x - sqrt(-7 + 12*x - 4*x*x));
     } else {
         return 0;
     }
+}
+
+template<typename T>
+T phi4c (T x) {
+    x = fabs(x);
+    if (x<=2)
+        return 0.25*(1 + cos(pi*x*0.5));
+    else
+        return 0.0;
 }
 
 template<typename T>
@@ -110,18 +124,6 @@ void interpolationCoefficientsPhi3 (
     plint i = 0;
     plint x0=-2, x1=3;
     Box3D boundingBox(block.getBoundingBox());
-//    pcout << "location( " << block.getLocation().x <<
-//            block.getLocation().y <<
-//            block.getLocation().z <<
-//            "), bB =(" << boundingBox.x0 <<
-//            ", " << boundingBox.x1 <<
-//            "), (" << boundingBox.y0 <<
-//            ", " << boundingBox.y1 <<
-//            "), " << boundingBox.z0 <<
-//            "," << boundingBox.z1 <<
-//             "), p.x = (" << position[0] <<
-//             ", " << position[1] <<
-//             ", " << position[2] << ")" << std::endl;
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
             for (int dz = x0; dz < x1; ++dz) {
@@ -155,18 +157,6 @@ void interpolationCoefficientsPhi4 (
     plint i = 0;
     plint x0=-2, x1=3;
     Box3D boundingBox(block.getBoundingBox());
-//    pcout << "location( " << block.getLocation().x <<
-//            block.getLocation().y <<
-//            block.getLocation().z <<
-//            "), bB =(" << boundingBox.x0 <<
-//            ", " << boundingBox.x1 <<
-//            "), (" << boundingBox.y0 <<
-//            ", " << boundingBox.y1 <<
-//            "), " << boundingBox.z0 <<
-//            "," << boundingBox.z1 <<
-//             "), p.x = (" << position[0] <<
-//             ", " << position[1] <<
-//             ", " << position[2] << ")" << std::endl;
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
             for (int dz = x0; dz < x1; ++dz) {
@@ -189,6 +179,52 @@ void interpolationCoefficientsPhi4 (
     }
 }
 
+template<typename T>
+void interpolationCoefficientsPhi4c (
+        AtomicBlock3D const& block, Array<T,3> const& position,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights )
+{
+    cellPos.clear();
+    weights.clear();
+    plint i = 0;
+    plint x0=-2, x1=3;
+    Box3D boundingBox(block.getBoundingBox());
+    for (int dx = x0; dx < x1; ++dx) {
+        for (int dy = x0; dy < x1; ++dy) {
+            for (int dz = x0; dz < x1; ++dz) {
+                Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
+                Dot3D cellPositionInDomain = cellPosition - block.getLocation(); // Convert cell position to local coordinates.
+                if (contained(cellPositionInDomain,boundingBox)) {
+                    T phi[3];
+                    phi[0] = (position[0] - (T)cellPosition.x);
+                    phi[1] = (position[1] - (T)cellPosition.y);
+                    phi[2] = (position[2] - (T)cellPosition.z);
+                    T weight = phi4c(phi[0]) * phi4c(phi[1]) * phi4c(phi[2]);
+                    if (weight>0) {
+                        weights.push_back(weight);
+                        cellPos.push_back(cellPositionInDomain);
+                        i+=1;
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 }
 #endif  // IMMERSEDBOUNDARYMETHOD_3D_HH
+
+
+//    pcout << "location( " << block.getLocation().x <<
+//            block.getLocation().y <<
+//            block.getLocation().z <<
+//            "), bB =(" << boundingBox.x0 <<
+//            ", " << boundingBox.x1 <<
+//            "), (" << boundingBox.y0 <<
+//            ", " << boundingBox.y1 <<
+//            "), " << boundingBox.z0 <<
+//            "," << boundingBox.z1 <<
+//             "), p.x = (" << position[0] <<
+//             ", " << position[1] <<
+//             ", " << position[2] << ")" << std::endl;
