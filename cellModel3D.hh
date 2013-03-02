@@ -199,7 +199,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         eij = dL/L;
         /* In Plane Force (WLC) */
         inPlaneForce += eij * (k_WLC*r*(-6 + (9 - 4*r)*r))/(maxLength*pow(-1 + r,2)); // inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
-        stretchForce += - eij * k_stretch * (r - 1.0);
+        stretchForce += - eij * k_stretch * (L/eqLength - 1.0);
         /* Elastic Force */
         elasticForce +=  eij * k_elastic/(L);
         /*  Dissipative Forces Calculations */
