@@ -119,6 +119,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     Array<T,3> surfaceForce; surfaceForce.resetToZero();
     Array<T,3> shearForce; shearForce.resetToZero();
     Array<T,3> volumeForce; volumeForce.resetToZero();
+    Array<T,3> stretchForce; stretchForce.resetToZero();
     Array<T,3> dissipativeForce; dissipativeForce.resetToZero();
     iSurface = 0.0;
 
@@ -139,8 +140,8 @@ Array<T,3> CellModel3D<T>::computeCellForce (
      *          (FengMichaelides2004, J.Comp.Phys. 195(2))
      *
      * */
-    Array<T,3> x1ref;
     if (k_rest != 0.0) {
+        Array<T,3> x1ref;
         boundary.pushSelect(0,1);
         x1ref = boundary.getMesh().getVertex(iVertex);
         boundary.popSelect();
@@ -198,6 +199,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         eij = dL/L;
         /* In Plane Force (WLC) */
         inPlaneForce += eij * (k_WLC*r*(-6 + (9 - 4*r)*r))/(maxLength*pow(-1 + r,2)); // inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
+        stretchForce += - eij * k_stretch * (r - 1.0);
         /* Elastic Force */
         elasticForce +=  eij * k_elastic/(L);
         /*  Dissipative Forces Calculations */
@@ -228,7 +230,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
                             trianglesArea[iTriangle], trianglesArea[jTriangle],
                             eqTileSpan, eqLength, eqAngle, k_bend);
     }
-    return volumeForce + surfaceForce + shearForce + inPlaneForce + elasticForce + bendingForce + dissipativeForce;
+    return (inPlaneForce + elasticForce) + bendingForce + (volumeForce + surfaceForce) + shearForce + dissipativeForce + stretchForce;
 }
 
 
