@@ -267,7 +267,8 @@ void writeVTK(BlockLatticeT& lattice,
 
     VtkImageOutput3D<T> vtkOut(createFileName("vtk", iter, 6), dx);
     vtkOut.writeData<T>(*computeVelocityNorm(lattice), "velocityNorm", dx/dt);
-    vtkOut.writeData<3,T>(force, "force",  (T) dx/dt/dt);
+    vtkOut.writeData<3,T>(*computeVelocity(lattice), "velocity", dx/dt);
+    vtkOut.writeData<3,T>(force, "force",  (T) 1.0);
 //    vtkOut.writeData<T>(*computeNorm(force, force.getBoundingBox()), "forceNorm",  dx/dt/dt);
     vtkOut.writeData<T>(*computeNorm(force, force.getBoundingBox()), "forceNorm LU",  1.0);
 

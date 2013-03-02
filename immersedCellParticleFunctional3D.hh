@@ -163,16 +163,16 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
             }
         }
         cellOnVertex.computeVelocity(particle->get_v());
-        /* Velocity Correction due to Guo Scheme */
-        for (pluint iPos = 0; iPos < weights.size(); ++iPos) {
-            T *locForce = cells[iPos]->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
-            T rho = cells[iPos]->computeDensity();
-            for (pluint iA = 0; iA < 3; ++iA) {
-                velocity[iA] += 0.5*weights[iPos]*locForce[iA]/rho;
-            }
-        }
-        /* ===================================== */
-        particle->get_v() += velocity;
+//        /* Velocity Correction due to Guo Scheme */
+//        for (pluint iPos = 0; iPos < weights.size(); ++iPos) {
+//            T *locForce = cells[iPos]->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
+//            T rho = cells[iPos]->computeDensity();
+//            for (pluint iA = 0; iA < 3; ++iA) {
+//                velocity[iA] += 0.5*weights[iPos]*locForce[iA]/rho;
+//            }
+//        }
+//        /* ===================================== */
+//        particle->get_v() += velocity;
     }
 }
 
@@ -481,7 +481,7 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
 //                    std::endl;
             Array<T,3> force; force.resetToZero();
             force = elasticForce + cellForce;
-            force *= iSurface*1.0/eqArea; // same as triangleBoundary.getMesh().computeVertexArea(vertexId);
+            // force *= iSurface*1.0/eqArea; // same as triangleBoundary.getMesh().computeVertexArea(vertexId);
             T mass = cellModel->getDensity();
             particle->get_a() = force*1.0/mass;
             particle->get_force() = force;
