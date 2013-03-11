@@ -26,29 +26,16 @@
 #include "cellModel3D.h"
 
 
-#ifndef KBT__
-#define KBT__
-const double kB_p = 1.3806503e-23; // In SI, m2 kg s-2 K-1 (or J/K)
-const double kBT_p = 4.100531391e-21; // In SI, m2 kg s-2 (or J) for T=300
-double kB=0, kBT=0;
-double dNewton=0;
-#endif  // KBT__
-
-#ifndef PI__
-#define PI__
-const double pi = 4.*atan(1.);
-#endif  // PI__
-
 
 namespace plb {
 
 template<typename T>
 CellModel3D<T>::CellModel3D (
-        T density_, T k_rest_, T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
+        T density_, T k_rest_, T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_rep_, T k_elastic_,
         T k_volume_, T k_surface_, T eta_m_,
         T eqArea_, T eqLength_, T eqAngle_,
         T eqVolume_, T eqSurface_, T eqTileSpan_,
-        T maxLength_, T persistenceLength_)
+        T maxLength_, T persistenceLengthFine, pluint Nv)
     : ShellModel3D<T>(density_),
       k_rest(k_rest_),
       k_shear(k_shear_),
@@ -64,37 +51,54 @@ CellModel3D<T>::CellModel3D (
       eqVolume(eqVolume_),
       eqSurface(eqSurface_),
       eqTileSpan(eqTileSpan_),
-      maxLength(maxLength_),
-      persistenceLength(persistenceLength_)
+      maxLength(maxLength_)
 {
     T x0 = eqLength*1.0/maxLength;
+    persistenceLengthCoarse = persistenceLengthFine * sqrt( (Nv-2.0) / (23867-2.0)) ;
+    /* Use dimensionless coefficients */
+    k_volume *= kBT/pow(eqLength,3);
+    k_surface *= kBT/pow(eqLength,2);
+    k_shear *= kBT/pow(eqLength,2);
 
-//    pcout << "K_surf " << k_surface* kBT *1.0/ (eqLength*eqLength) << std::endl;
-//    k_surface = k_surface* kBT / (eqLength*eqLength);
-//    k_volume = k_volume* kBT / (eqLength*eqLength*eqLength);
+    /* Dissipative term coefficients from FedosovCaswellKarniadakis2010 */
+    gamma_T = (eta_m * 4 * sqrt(3.0) / 13.0);
+    gamma_C = (gamma_T/3.0);
+    /* Multiplying with eqLength because the units on the paper are wrong */
+    gamma_T *= eqLength;
+    gamma_C *= eqLength;
 
-    gamma_T = eta_m * 4 * sqrt(3.0) / 13.0;
-    gamma_C = gamma_T/3.0;
+    k_WLC = k_WLC_ * kBT * maxLength/(4.0*persistenceLengthCoarse);
+    /* Solving f_WLC + f_rep =0 for x=eqLength, f_rep = k_rep/L^m, m=2. */
+    k_rep = k_rep_*(k_WLC*maxLength*pow(x0,3)*(6 - 9*x0 + 4*pow(x0,2)))/pow(-1 + x0,2);
 
-    k_WLC = k_WLC_ * kBT * maxLength/(4.0*persistenceLength);
-//    C_elastic = k_elastic * 3.0 * sqrt(3.0)*
-//        (maxLength*maxLength*maxLength)*
-//        (x0*x0*x0*x0)/(64.0*persistenceLength)*
-//        (4*x0*x0 - 9*x0 + 6) /
-//        (1-x0)*(1-x0);
+
+    T forceSum =
+            (k_WLC*x0*(-6 + (9 - 4*x0)*x0))/(maxLength*pow(-1 + x0,2)) // WLC part
+           + k_rep/(eqLength*eqLength); // repulsive part
+    C_elastic = k_elastic * 3.0 * sqrt(3.0)* kBT
+             * (maxLength*maxLength*maxLength) * (x0*x0*x0*x0)
+             / (64.0*persistenceLengthCoarse)
+             * (4*x0*x0 - 9*x0 + 6)
+             / (1-x0)*(1-x0);
     pcout << std::endl;
     pcout << " ============================================= " << std::endl;
-    pcout << "k_WLC: " << k_WLC << ", eqLength: " << eqLength << std::endl;
-    pcout << "k_bend: " << k_bend << ", eqAngle: " << eqAngle << std::endl;
-    pcout << "k_elastic: " << k_elastic << ", eqLength: " << eqLength << std::endl;
-    pcout << "k_surface: " << k_surface << ", eqSurface: " << eqSurface << std::endl;
-    pcout << "k_volume: " << k_volume << ", eqVolume: " << eqVolume << std::endl;
-    pcout << "eta_m: " << eta_m << ", x0: " << x0 << std::endl;
-    pcout << "gamma_T: " << gamma_T << ", persistenceLength: " << persistenceLength << std::endl;
-    pcout << "gamma_C: " << gamma_C << ", maxLength: " << maxLength << std::endl;
-    pcout << "k_rest: " << k_rest << ", 0 : " << 0 << std::endl;
-    pcout << "k_shear: " << k_shear << ", eqArea: " << eqArea << std::endl;
-    pcout << "k_stretch: " << k_stretch << ", eqTileSpan: " << eqTileSpan << std::endl;
+    pcout << "k_WLC: " << k_WLC << ",\t eqLength: " << eqLength << std::endl;
+    pcout << "k_rep: " << k_rep << ",\t forceSum: " << forceSum << std::endl;
+    pcout << "k_bend: " << k_bend << ",\t eqAngle (degrees): " << eqAngle*180.0/pi << std::endl;
+    pcout << "k_volume: " << k_volume << ",\t eqVolume: " << eqVolume << std::endl;
+    pcout << "k_surface: " << k_surface << ",\t eqSurface: " << eqSurface << std::endl;
+    pcout << "k_shear: " << k_shear << ",\t eqArea: " << eqArea << std::endl;
+    pcout << "eta_m: " << eta_m << ",\t x0: " << x0 << std::endl;
+    pcout << "gamma_T: " << gamma_T << ",\t persistenceLengthCoarse: " << persistenceLengthCoarse << std::endl;
+    pcout << "gamma_C: " << gamma_C << ",\t maxLength: " << maxLength << std::endl;
+    pcout << "k_rest: " << k_rest << ",\t 0 : " << 0 << std::endl;
+    pcout << "k_stretch: " << k_stretch << ",\t eqTileSpan: " << eqTileSpan << std::endl;
+    pcout << "k_elastic: " << k_elastic << ",\t eqLength: " << eqLength << std::endl;
+    pcout << "* k_bend: " << k_bend/kBT << std::endl;
+    pcout << "* k_volume: " <<  k_volume/(kBT/pow(eqLength,3)) <<  std::endl;
+    pcout << "* k_surface: " << k_surface/(kBT/pow(eqLength,2)) <<  std::endl;
+    pcout << "* k_shear: " << k_shear/(kBT/pow(eqLength,2)) <<  std::endl;
+    pcout << "* eqLength from eqArea: " << sqrt(4*eqArea/sqrt(3.0)) << ",\t eqLength: " << eqLength << std::endl;
     pcout << " ============================================= " << std::endl;
 }
 
@@ -105,36 +109,14 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         T cellVolume, T cellSurface, T & iSurface,
         std::map< plint, Array<T,3> > particleVelocity,
         plint iVertex )
- /* Force calculation according to KrugerThesis, Appendix C */
+ /* Some force calculations are according to KrugerThesis, Appendix C */
 {
+    /* Initializations from input */
     TriangularSurfaceMesh<T> const& dynMesh = boundary.getMesh();
     Array<T,3> x1 = dynMesh.getVertex(iVertex), x2, x3, x4;
     Array<T,3> iVelocity = particleVelocity[iVertex];
-    T volumeCoefficient = k_volume * (cellVolume - eqVolume)*1.0/eqVolume;
-    T surfaceCoefficient= k_surface * (cellSurface - eqSurface)*1.0/eqSurface;
-    /* Force initializations */
-    Array<T,3> inPlaneForce; inPlaneForce.resetToZero();
-    Array<T,3> elasticForce; elasticForce.resetToZero();
-    Array<T,3> bendingForce; bendingForce.resetToZero();
-    Array<T,3> surfaceForce; surfaceForce.resetToZero();
-    Array<T,3> shearForce; shearForce.resetToZero();
-    Array<T,3> volumeForce; volumeForce.resetToZero();
-    Array<T,3> stretchForce; stretchForce.resetToZero();
-    Array<T,3> dissipativeForce; dissipativeForce.resetToZero();
-    iSurface = 0.0;
-
-    Array<T,3> dAdx, dVdx;
-    Array<T,3> dL, eij; dL.resetToZero(); eij.resetToZero();
-    T L;
-    Array<T,3> triangleNormal;
-    std::map<plint, T> trianglesArea;
-    std::map<plint, Array<T,3> > trianglesNormal;
-
-    plint iTriangle, iX1, iX2, iX3;
-    T r;
-    Array<T,3> xi[3], tmp;
-    plint jTriangle;
-    /*
+    /* ===================== In case of quasi-rigid object =====================
+     *
      * If this is a boundary element (k_rest != 0), get the reference locations
      * of iVertex and calculate and return the force for quasi-rigid objects.
      *          (FengMichaelides2004, J.Comp.Phys. 195(2))
@@ -146,16 +128,40 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         x1ref = boundary.getMesh().getVertex(iVertex);
         boundary.popSelect();
         Array<T,3> dx = x1-x1ref;
-//        dissipativeForce += -gamma_T*iVelocity -gamma_C*dot(iVelocity,dx)*dx;
-        return (-k_rest*dx) + (-eta_m*dot(iVelocity,dx)/eqLength * dx); // Dissipative term from Dupin2007
+        return (-k_rest*dx) + (-gamma_C*dot(iVelocity,dx)/eqLength * dx); // Dissipative term from Dupin2007
     }
-    /* Run through all the neighboring faces of iVertex and calculate:
-     *
-     x Volume conservation force
-     x Surface conservation force
-     x Elastic  WLC force
-     *
+    /* Force initializations */
+    Array<T,3> inPlaneForce; inPlaneForce.resetToZero();
+    Array<T,3> elasticForce; elasticForce.resetToZero();
+    Array<T,3> repulsiveForce; repulsiveForce.resetToZero();
+    Array<T,3> bendingForce; bendingForce.resetToZero();
+    Array<T,3> surfaceForce; surfaceForce.resetToZero();
+    Array<T,3> shearForce; shearForce.resetToZero();
+    Array<T,3> volumeForce; volumeForce.resetToZero();
+    Array<T,3> stretchForce; stretchForce.resetToZero();
+    Array<T,3> dissipativeForce; dissipativeForce.resetToZero();
+    /* Calculate cell coefficients */
+    T volumeCoefficient = k_volume * (cellVolume - eqVolume)*1.0/eqVolume;
+    T surfaceCoefficient = k_surface * (cellSurface - eqSurface)*1.0/eqSurface;
+    T areaCoefficient = k_shear/eqArea ;
+    iSurface = 0.0;
+
+    /* Run through all the neighbouring faces of iVertex and calculate:
+         x Volume conservation force
+         x Surface conservation force
+         x Elastic  WLC force
+         x Shear force
      */
+    Array<T,3> dAdx, dVdx;
+    std::map<plint, T> trianglesArea;
+    T triangleArea;
+    std::map<plint, Array<T,3> > trianglesNormal;
+    Array<T,3> triangleNormal;
+
+    plint iTriangle, jTriangle;
+    plint iX1, iX2, iX3;
+    Array<T,3> xi[3], tmp;
+
     std::vector<plint> neighborTriangles = dynMesh.getNeighborTriangleIds(iVertex);
     for (pluint iB = 0; iB < neighborTriangles.size(); ++iB) {
         iTriangle = neighborTriangles[iB];
@@ -165,8 +171,8 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         else { iX1 = 2;}
         iX2 = (iX1 + 1)%3;
         iX3 = (iX1 + 2)%3;
-        trianglesArea[iTriangle] = dynMesh.computeTriangleArea(iTriangle);
-        iSurface += trianglesArea[iTriangle]/3.0;
+        triangleArea = trianglesArea[iTriangle] = dynMesh.computeTriangleArea(iTriangle);
+        iSurface += triangleArea/3.0;
         trianglesNormal[iTriangle] = triangleNormal = dynMesh.computeTriangleNormal(iTriangle);
         /* Surface conservation force */
         crossProduct(triangleNormal,
@@ -174,21 +180,26 @@ Array<T,3> CellModel3D<T>::computeCellForce (
                     tmp);
         dAdx = 0.5 *tmp;
         surfaceForce += -surfaceCoefficient * dAdx;
-        shearForce += - k_shear * (trianglesArea[iTriangle] - eqArea)*1.0/eqArea * dAdx;
-        // /* Elastice Force */
-        // elasticForce += - (C_elastic*1.0)/(trianglesArea[iTriangle]*trianglesArea[iTriangle]) * dAdx;
+        /* Shear force */
+        shearForce += - areaCoefficient * (triangleArea - eqArea)*1.0 * dAdx;
         /* Volume conservation force */
         crossProduct(xi[iX3], xi[iX2], tmp);
         dVdx = - 1.0/6.0 * tmp;
         volumeForce  += -volumeCoefficient  * dVdx;
+        /* Elastice Force */
+        elasticForce += (C_elastic*1.0)/(triangleArea*triangleArea) * dAdx;
     }
 
-    /* Run through all the neighboring vertices of iVertex and calculate:
-     *
-     x In plane force
-     x Bending force
-     *
+    /* Run through all the neighbouring vertices of iVertex and calculate:
+         x In plane force
+         x Repulsive force
+         o Stretch force
+         x Dissipative force
+         x Bending force
      */
+    T L, r;
+    Array<T,3> dL, eij; dL.resetToZero(); eij.resetToZero();
+
     std::vector<plint> neighborVertexIds = dynMesh.getNeighborVertexIds(iVertex);
     for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
         plint jVertex = neighborVertexIds[jV];
@@ -199,11 +210,12 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         eij = dL/L;
         /* In Plane Force (WLC) */
         inPlaneForce += eij * (k_WLC*r*(-6 + (9 - 4*r)*r))/(maxLength*pow(-1 + r,2)); // inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
-        stretchForce += - eij * k_stretch * (L/eqLength - 1.0);
-        /* Elastic Force */
-        elasticForce +=  eij * k_elastic/(L);
+        /* Repulsive Force */
+        repulsiveForce +=  eij * k_rep/(L*L);
+        /* Stretch force */
+//        stretchForce += - eij * k_stretch * (L/eqLength - 1.0);
         /*  Dissipative Forces Calculations */
-        Array<T,3> vij = particleVelocity[jVertex] - iVelocity;
+        Array<T,3> vij = iVelocity - particleVelocity[jVertex];
         dissipativeForce += -gamma_T*vij -gamma_C*dot(vij,eij)*eij;
         /*  Bending Forces Calculations */
         std::vector<plint> triangles = dynMesh.getAdjacentTriangleIds(iVertex, jVertex);
@@ -230,7 +242,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
                             trianglesArea[iTriangle], trianglesArea[jTriangle],
                             eqTileSpan, eqLength, eqAngle, k_bend);
     }
-    return (inPlaneForce + elasticForce) + bendingForce + (volumeForce + surfaceForce) + shearForce + dissipativeForce + stretchForce;
+    return (inPlaneForce + elasticForce + repulsiveForce) + bendingForce + (volumeForce + surfaceForce + shearForce) + dissipativeForce;// + stretchForce;
 }
 
 
@@ -349,9 +361,10 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
         dAngledx[var] -= cosAngle*(dot(D1,v1)/nv1/nv1 + dot(D2,v2)/nv2/nv2);
         dAngledx[var] *= -overSinAngle;
     }
+    return -k * sin(angle - eqAngle) * dAngledx ; //* eqLength / eqTileSpan;
 //    pcout << "fangle: " << angle << " " << eqAngle << std::endl;
-    T dAngle = (angle - eqAngle);
-    return -k* (dAngle*(1 - dAngle*dAngle/6.0)) * dAngledx ; //* eqLength / eqTileSpan;
+//    T dAngle = (angle - eqAngle);
+//    return -k* (dAngle*(1 - dAngle*dAngle/6.0)) * dAngledx ; //* eqLength / eqTileSpan;
 }
 
 

@@ -460,7 +460,7 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         plint vertexId = particle->getTag();
         particleVelocity[vertexId] = particle->get_v();
     }
-    T eqArea = cellModel->getEquilibriumTriangleArea();
+    // T eqArea = cellModel->getEquilibriumTriangleArea();
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
         Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
         ImmersedCellParticle3D<T,Descriptor>* particle =

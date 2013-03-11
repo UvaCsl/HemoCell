@@ -45,7 +45,7 @@ const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor acc
 const plint particleEnvelopeWidth = 2;
 
 void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest,
-        T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
+        T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & shearRate, T & Re, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & shape, T & radius, plint & minNumOfTriangles,
         plint & tmax, plint & tmeas, plint & npar)
@@ -56,6 +56,7 @@ void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest,
 
     document["cell"]["shellDensity"].read(shellDensity);
     document["cell"]["k_WLC"].read(k_WLC);
+    document["cell"]["k_rep"].read(k_rep);
     document["cell"]["k_elastic"].read(k_elastic);
     document["cell"]["k_bend"].read(k_bend);
     document["cell"]["k_volume"].read(k_volume);
@@ -106,7 +107,7 @@ int main(int argc, char* argv[])
     plint forceToFluid, shape, minNumOfTriangles;
     plint tmax, tmeas, npar;
     T dtIteration = 0;
-    T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic,  k_volume, k_surface, eta_m;
+    T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic,  k_volume, k_surface, eta_m;
     T u, Re, Re_p, N, lx, ly, lz;
     T rho_p;
     T radius;
@@ -117,7 +118,7 @@ int main(int argc, char* argv[])
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
-    readFicsionXML(document, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+    readFicsionXML(document, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, shearRate_p, Re, Re_p, N, lx, ly, lz,  forceToFluid, shape, radius, minNumOfTriangles, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
             u, // u
@@ -214,24 +215,25 @@ int main(int argc, char* argv[])
     particleLatticeArg.push_back(&immersedParticles);
     particleLatticeArg.push_back(&lattice);
 
-    T persistenceLength = 7.5e-9 * sqrt(23865.0/(numParts[0]-2)) / dx;
+    T persistenceLengthFine = 7.5e-9  / dx;
     T maxLength = 2.2*eqLength;
+    /* The Maximum length of two vertices should be less than 1.0 LU */
     PLB_PRECONDITION( maxLength < 1.0 );
-//    eqVolume = pow(eqSurface,1.5)/(6*pi);
-    k_WLC /= 1.0;
-    k_elastic /= dNewton/dx;
-    k_bend /= 1.0/kBT;
-    k_volume /= dNewton/(dx*dx);
-    k_surface /= dNewton/dx;
-    eta_m /= dNewton*dt/dx/dx;
+    k_WLC *= 1.0;
+    k_rep *= 1.0;
+    k_elastic *= 1.0;
+    k_bend *= kBT;
+    k_volume *= 1.0;
+    k_surface *= 1.0;
+    k_shear *= 1.0;
+    eta_m /= dNewton*dt/(dx*dx);
     /* == */
-    k_shear /= dNewton/dx;
     k_stretch /= dNewton;
     k_rest /= dNewton/dx;
     pcout << k_rest<< std::endl;
-    CellModel3D<T> cellModel(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
+    CellModel3D<T> cellModel(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m, \
                                                 eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan,
-                                                maxLength, persistenceLength);
+                                                maxLength, persistenceLengthFine, numParts[0]);
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
@@ -239,7 +241,7 @@ int main(int argc, char* argv[])
     T eqVolumeInitial, eqVolumeFinal, ifinal=10000.;
     eqVolumeInitial = eqVolume;
     eqVolumeFinal = eqVolume; // 0.65 * eqVolumeInitial ;
-//    eqVolumeFinal = 0.65 * eqVolumeInitial ;
+    //    eqVolumeFinal = 0.65 * eqVolumeInitial ;
     applyProcessingFunctional ( // copy fluid velocity on particles
         new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
         immersedParticles.getBoundingBox(), particleLatticeArg);
