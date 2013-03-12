@@ -66,7 +66,13 @@ template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellCenters(TriangleBoundary3D<T> Cells,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
-                std::vector< Array<T,3> > & cellsCenter); //Perhaps add TAGS
+                std::vector< Array<T,3> > & cellsCenter, std::vector<T> & cellNumVertices); //Perhaps add TAGS
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void countCellVelocity(TriangleBoundary3D<T> Cells,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                std::vector< Array<T,3> > & cellsVelocity, std::vector<T> & cellNumVertices); //Perhaps add TAGS
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
@@ -97,6 +103,27 @@ public:
     virtual CenterCellReduceFunctional3D<T,Descriptor>* clone() const { return new CenterCellReduceFunctional3D<T,Descriptor>(*this); };
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual void getCellQuantityArray(std::vector< Array<T,3> > & cellsCenter, std::vector<plint> cellIds) const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const { modified[0] = modif::nothing; };
+    virtual void calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh,
+            std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_);
+protected:
+    plint numberOfCells;
+    std::vector<plint> quantityIds;
+    TriangleBoundary3D<T> const& triangleBoundary;
+    bool findMax;
+};
+
+
+/* ******** CenterCellReduceFunctional3D *********************************** */
+template<typename T, template<typename U> class Descriptor>
+class VelocityCellReduceFunctional3D : public PlainReductiveBoxProcessingFunctional3D
+{
+public:
+    VelocityCellReduceFunctional3D(TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_);
+    /// Argument: Particle-field.
+    virtual VelocityCellReduceFunctional3D<T,Descriptor>* clone() const { return new VelocityCellReduceFunctional3D<T,Descriptor>(*this); };
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual void getCellQuantityArray(std::vector< Array<T,3> > & cellsVelocity, std::vector<plint> cellIds) const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const { modified[0] = modif::nothing; };
     virtual void calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh,
             std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_);

@@ -164,7 +164,7 @@ template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellCenters(TriangleBoundary3D<T> Cells,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
-                std::vector< Array<T,3> > & cellsCenter) //Perhaps add TAGS
+                std::vector< Array<T,3> > & cellsCenter, std::vector<T> & cellNumVertices) //Perhaps add TAGS
 {
     // We assume homogeneous Cells
     std::vector<MultiBlock3D*> particleArg;
@@ -172,12 +172,25 @@ void countCellCenters(TriangleBoundary3D<T> Cells,
     CenterCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
     applyProcessingFunctional(functional, domain, particleArg);
     functional.getCellQuantityArray(cellsCenter, cellIds);
-    NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds);
-    applyProcessingFunctional(nfunctional, domain, particleArg);
-    std::vector<T> cellNumVertices;
-    nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
         cellsCenter[iA] /= cellNumVertices[iA];
+    }
+}
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void countCellVelocity(TriangleBoundary3D<T> Cells,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                std::vector< Array<T,3> > & cellsVelocity, std::vector<T> & cellNumVertices) //Perhaps add TAGS
+{
+    // We assume homogeneous Cells
+    std::vector<MultiBlock3D*> particleArg;
+    particleArg.push_back(&particles);
+    VelocityCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    applyProcessingFunctional(functional, domain, particleArg);
+    functional.getCellQuantityArray(cellsVelocity, cellIds);
+    for (pluint iA = 0; iA < cellIds.size(); ++iA) {
+        cellsVelocity[iA] /= cellNumVertices[iA];
     }
 }
 
@@ -362,6 +375,61 @@ void CenterCellReduceFunctional3D<T,Descriptor>::calculateQuantity(TriangularSur
 
 template<typename T, template<typename U> class Descriptor>
 void CenterCellReduceFunctional3D<T,Descriptor>::getCellQuantityArray(std::vector< Array<T,3> > & cellQuantity, std::vector<plint> cellIds) const {
+    for (pluint i = 0; i < (pluint) cellIds.size(); ++i) {
+        T x,y,z;
+        plint iT = 3 * this->quantityIds[i];
+        x = this->getStatistics().getSum(iT);
+        y = this->getStatistics().getSum(iT+1);
+        z = this->getStatistics().getSum(iT+2);
+        cellQuantity.push_back(Array<T,3>(x,y,z));
+    }
+}
+
+
+/* ******** CenterCellReduceFunctional3D *********************************** */
+template<typename T, template<typename U> class Descriptor>
+void VelocityCellReduceFunctional3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    PLB_PRECONDITION( blocks.size()==1 );
+    ParticleField3D<T,Descriptor>& particleField
+        = *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    std::vector<Particle3D<T,Descriptor>*> particles;
+    particleField.findParticles(domain, particles);
+    TriangularSurfaceMesh<T> triangleMesh = triangleBoundary.getMesh();
+    calculateQuantity(triangleMesh, particles, quantityIds);
+}
+
+template<typename T, template<typename U> class Descriptor>
+VelocityCellReduceFunctional3D<T,Descriptor>::VelocityCellReduceFunctional3D(
+        TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_)
+    : triangleBoundary(triangleBoundary_)
+{
+    numberOfCells = 0;
+    for (pluint var = 0; var < cellIds_.size(); ++var)
+        if (cellIds_[var] > numberOfCells)
+            numberOfCells = cellIds_[var];
+    for (pluint i=0; i< (pluint) 3*(numberOfCells + 1); ++i)
+        quantityIds.push_back(this->getStatistics().subscribeSum());
+}
+
+template<typename T, template<typename U> class Descriptor>
+void VelocityCellReduceFunctional3D<T,Descriptor>::calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh, std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_)
+{
+    for (pluint iA = 0; iA < particles.size(); ++iA) {
+        Particle3D<T,Descriptor>* nonTypedParticle = particles[iA];
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+                dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
+        Array<T,3> iVelocity = particle->get_v();
+        plint iT = 3 * quantityIds_[particle->get_cellId()];
+        this->getStatistics().gatherSum(iT  , iVelocity[0]);
+        this->getStatistics().gatherSum(iT+1, iVelocity[1]);
+        this->getStatistics().gatherSum(iT+2, iVelocity[2]);
+    }
+}
+
+template<typename T, template<typename U> class Descriptor>
+void VelocityCellReduceFunctional3D<T,Descriptor>::getCellQuantityArray(std::vector< Array<T,3> > & cellQuantity, std::vector<plint> cellIds) const {
     for (pluint i = 0; i < (pluint) cellIds.size(); ++i) {
         T x,y,z;
         plint iT = 3 * this->quantityIds[i];

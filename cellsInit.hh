@@ -82,11 +82,20 @@ void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<Par
                            std::vector<plint> & cellIds,
                            std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
                            std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
-                           std::vector< Array<T,3> > & cellsCenter,
+                           std::vector< Array<T,3> > & cellsCenter, std::vector< Array<T,3> > & cellsVelocity,
                            std::vector<T> & cellsMeanTileSpan)
     {
     cellsVolume.clear(); cellsSurface.clear(); cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();
-    cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsCenter.clear(); cellsMeanTileSpan.clear();
+    cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsCenter.clear(); cellsVelocity.clear();
+    cellsMeanTileSpan.clear();
+
+    std::vector<MultiBlock3D*> particleArg;
+    particleArg.push_back(&particles);
+    std::vector<T> cellNumVertices;
+    NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds);
+    applyProcessingFunctional(nfunctional, particles.getBoundingBox(), particleArg);
+    nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
+
     countCellVolume(Cells, particles, particles.getBoundingBox(), cellIds, cellsVolume);
     countCellSurface(Cells, particles, particles.getBoundingBox(), cellIds, cellsSurface);
     countCellMeanTriangleArea(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanTriangleArea);
@@ -95,7 +104,8 @@ void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<Par
     countCellMeanTileSpan(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanTileSpan);
     countCellMaxEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, cellsMaxEdgeDistance);
     countCellMaxEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, cellsMaxEdgeDistance);
-    countCellCenters(Cells, particles, particles.getBoundingBox(), cellIds, cellsCenter);
+    countCellCenters(Cells, particles, particles.getBoundingBox(), cellIds, cellsCenter, cellNumVertices);
+    countCellVelocity(Cells, particles, particles.getBoundingBox(), cellIds, cellsVelocity, cellNumVertices);
 }
 
 
@@ -103,7 +113,7 @@ template<typename T>
 void printCellMeasures(plint i, TriangleBoundary3D<T> Cells,
                        std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
                        std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
-                       std::vector< Array<T,3> > & cellsCenter,
+                       std::vector< Array<T,3> > & cellsCenter, std::vector< Array<T,3> > & cellsVelocity,
                        T eqVolume, T eqSurface, T eqArea, T eqLength) {
     pcout << "=== " << i << " === " << std::endl;
     pcout << "Volume: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsVolume[iA]*100.0/eqVolume - 100 <<"%, ";
@@ -116,6 +126,8 @@ void printCellMeasures(plint i, TriangleBoundary3D<T> Cells,
     pcout << std::endl;
     for (pluint iA = 0; iA < cellsCenter.size(); ++iA)
         pcout <<"Coordinates: (" << cellsCenter[iA][0] << ", " << cellsCenter[iA][1] << ", " << cellsCenter[iA][2] << ")" << std::endl;
+    for (pluint iA = 0; iA < cellsCenter.size(); ++iA)
+        pcout <<"Velocity: (" << cellsVelocity[iA][0] << ", " << cellsVelocity[iA][1] << ", " << cellsVelocity[iA][2] << ")" << std::endl;
 }
 
 
@@ -123,7 +135,7 @@ template<typename T>
 void writeCellLog(plint i, plb_ofstream & logFile,
                   std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea, std::vector<T> & cellsMeanEdgeDistance,
                   std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
-                  std::vector< Array<T,3> > & cellsCenter,
+                  std::vector< Array<T,3> > & cellsCenter, std::vector< Array<T,3> > & cellsVelocity,
                   T eqVolume, T eqSurface, T eqArea, T eqLength) {
     std::string delim(", ");
     if (i==0) {
@@ -138,6 +150,9 @@ void writeCellLog(plint i, plb_ofstream & logFile,
                 << " x [LU]" << delim
                 << " y [LU]" << delim
                 << " z [LU]" << delim
+                << " vx [LU]" << delim
+                << " vy [LU]" << delim
+                << " vz [LU]" << delim
                 << "00" << std::endl;
     }
     logFile << i*1.0 << delim
@@ -151,6 +166,9 @@ void writeCellLog(plint i, plb_ofstream & logFile,
             << cellsCenter[0][0] << delim
             << cellsCenter[0][1] << delim
             << cellsCenter[0][2] << delim
+            << cellsVelocity[0][0] << delim
+            << cellsVelocity[0][1] << delim
+            << cellsVelocity[0][2] << delim
             << "00" << std::endl;
 
 }
