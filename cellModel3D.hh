@@ -54,7 +54,7 @@ CellModel3D<T>::CellModel3D (
       maxLength(maxLength_)
 {
     T x0 = eqLength*1.0/maxLength;
-    persistenceLengthCoarse = persistenceLengthFine * sqrt( (Nv-2.0) / (23867-2.0)) ;
+    persistenceLengthCoarse = persistenceLengthFine ;//* sqrt( (Nv-2.0) / (23867-2.0)) ;
     /* Use dimensionless coefficients */
     k_volume *= kBT/pow(eqLength,3);
     k_surface *= kBT/pow(eqLength,2);
