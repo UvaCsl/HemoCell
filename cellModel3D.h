@@ -57,7 +57,9 @@ public:
             TriangleBoundary3D<T> const& boundary,
             T cellVolume, T cellSurface, T & iSurface,
             std::map< plint, Array<T,3> > particleVelocity,
-            plint iVertex );
+            plint iVertex,
+            Array<T,3> & f_wlc, Array<T,3> & f_bending, Array<T,3> & f_volume,
+            Array<T,3> & f_surface, Array<T,3> & f_shear, Array<T,3> & f_viscosity);
     virtual Array<T,3> computeElasticForce (
             TriangleBoundary3D<T> const& boundary,
             plint iVertex );

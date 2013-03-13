@@ -454,19 +454,33 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         if (!isRigid(triangleBoundary.getVertexProperty(vertexId))) {
             Array<T,3> elasticForce = cellModel->computeElasticForce (
                     triangleBoundary, vertexId );
+            Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity;
+            f_wlc.resetToZero(); f_bending.resetToZero(); f_volume.resetToZero();
+            f_surface.resetToZero(); f_shear.resetToZero(); f_viscosity.resetToZero();
             Array<T,3> cellForce = cellModel->computeCellForce (
-                    triangleBoundary, cellsVolume[cellId], cellsSurface[cellId], iSurface, particleVelocity, vertexId );
+                    triangleBoundary, cellsVolume[cellId], cellsSurface[cellId], iSurface, particleVelocity, vertexId,
+                    f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity);
+            particle->get_f_wlc() = f_wlc;
+            particle->get_f_bending() = f_bending;
+            particle->get_f_volume() = f_volume;
+            particle->get_f_surface() = f_surface;
+            particle->get_f_shear() = f_shear;
+            particle->get_f_viscosity() = f_viscosity;
+//            pcout << "f_wlc (" <<
+//                    particle->get_f_wlc()[0] << ", " <<
+//                    particle->get_f_wlc()[1] << ", " <<
+//                    particle->get_f_wlc()[2] << ") " << std::endl;
 //            T neF=norm(elasticForce), ncF=norm(cellForce);
 //            pcout << "forces: "<< neF << " " << ncF << " " << neF/ncF  << ", " << norm(elasticForce-cellForce) <<
 //                    " (" << (elasticForce/neF)[0] << ", "  << (cellForce/ncF)[0] << "), " <<
 //                    " (" << (elasticForce/neF)[1] << ", "  << (cellForce/ncF)[1] << "), " <<
 //                    " (" << (elasticForce/neF)[2] << ", "  << (cellForce/ncF)[2] << "), " <<
 //                    std::endl;
-            Array<T,3> force; force.resetToZero();
+            Array<T,3> force, acc; force.resetToZero(); acc.resetToZero();
             force = elasticForce + cellForce;
             // force *= iSurface*1.0/eqArea; // same as triangleBoundary.getMesh().computeVertexArea(vertexId);
-            T mass = cellModel->getDensity();
-            particle->get_a() = force*1.0/mass;
+            acc = force*1.0 / cellModel->getDensity();
+            particle->get_a() = acc;
             particle->get_force() = force;
         }
     }

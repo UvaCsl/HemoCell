@@ -68,8 +68,23 @@ public:
     plint& get_cellId() { return cellId; }
 private:
     Array<T,3> v, vHalfTime, a, force, vPrevious;
+    Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity;
+
     plint cellId;
     static int id;
+public:
+    Array<T,3> const& get_f_wlc() const { return f_wlc; }
+    Array<T,3> const& get_f_bending() const { return f_bending; }
+    Array<T,3> const& get_f_volume() const { return f_volume; }
+    Array<T,3> const& get_f_surface() const { return f_surface; }
+    Array<T,3> const& get_f_shear() const { return f_shear; }
+
+    Array<T,3>& get_f_wlc() { return f_wlc; }
+    Array<T,3>& get_f_bending() { return f_bending; }
+    Array<T,3>& get_f_volume() { return f_volume; }
+    Array<T,3>& get_f_surface() { return f_surface; }
+    Array<T,3>& get_f_shear() { return f_shear; }
+    Array<T,3>& get_f_viscosity() { return f_viscosity; }
 };
 
 namespace meta {

@@ -241,7 +241,7 @@ int main(int argc, char* argv[])
     T eqVolumeInitial, eqVolumeFinal, ifinal=10000.;
     eqVolumeInitial = eqVolume;
     eqVolumeFinal = eqVolume; // 0.65 * eqVolumeInitial ;
-    eqVolumeFinal = 0.85 * eqVolumeInitial ;
+    eqVolumeFinal = 0.65 * eqVolumeInitial ;
     applyProcessingFunctional ( // copy fluid velocity on particles
         new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
         immersedParticles.getBoundingBox(), particleLatticeArg);

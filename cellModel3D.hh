@@ -108,7 +108,9 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         TriangleBoundary3D<T> const& boundary,
         T cellVolume, T cellSurface, T & iSurface,
         std::map< plint, Array<T,3> > particleVelocity,
-        plint iVertex )
+        plint iVertex,
+        Array<T,3> & f_wlc, Array<T,3> & f_bending, Array<T,3> & f_volume,
+        Array<T,3> & f_surface, Array<T,3> & f_shear, Array<T,3> & f_viscosity)
  /* Some force calculations are according to KrugerThesis, Appendix C */
 {
     /* Initializations from input */
@@ -242,6 +244,12 @@ Array<T,3> CellModel3D<T>::computeCellForce (
                             trianglesArea[iTriangle], trianglesArea[jTriangle],
                             eqTileSpan, eqLength, eqAngle, k_bend);
     }
+    f_wlc = inPlaneForce + repulsiveForce;
+    f_bending = bendingForce;
+    f_volume = volumeForce;
+    f_surface = surfaceForce;
+    f_shear = shearForce;
+    f_viscosity = dissipativeForce;
     return (inPlaneForce + elasticForce + repulsiveForce) + bendingForce + (volumeForce + surfaceForce + shearForce) + dissipativeForce;// + stretchForce;
 }
 
