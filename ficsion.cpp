@@ -241,7 +241,7 @@ int main(int argc, char* argv[])
     T eqVolumeInitial, eqVolumeFinal, ifinal=10000.;
     eqVolumeInitial = eqVolume;
     eqVolumeFinal = eqVolume; // 0.65 * eqVolumeInitial ;
-    eqVolumeFinal = 0.85 * eqVolumeInitial ;
+    //eqVolumeFinal = 0.85 * eqVolumeInitial ;
     applyProcessingFunctional ( // copy fluid velocity on particles
         new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
         immersedParticles.getBoundingBox(), particleLatticeArg);
@@ -249,7 +249,7 @@ int main(int argc, char* argv[])
     writeCellLog(0, logFile,
                  cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                  cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity,
-                 eqVolume, eqSurface, eqArea, eqLength) ;
+                 eqVolumeFinal, eqSurface, eqArea, eqLength) ;
     for (plint i=1; i<tmax+1; ++i) {
         if (i<=ifinal) {
             eqVolume = eqVolumeInitial + (i*1.0)/ifinal * (eqVolumeFinal - eqVolumeInitial) ;
@@ -290,11 +290,11 @@ int main(int argc, char* argv[])
             calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                                 cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
             printCellMeasures(i, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                                   cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolume, eqSurface, eqArea, eqLength) ;
+                                   cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolumeFinal, eqSurface, eqArea, eqLength) ;
             writeCellLog(i, logFile,
                          cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                          cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity,
-                         eqVolume, eqSurface, eqArea, eqLength) ;
+                         eqVolumeFinal, eqSurface, eqArea, eqLength) ;
 
             std::vector<std::string> force_scalarNames;
             force_scalarNames.push_back("pressure");
