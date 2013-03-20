@@ -444,6 +444,10 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         particleVelocity[vertexId] = particle->get_v();
     }
     // T eqArea = cellModel->getEquilibriumTriangleArea();
+    Array<T,3> sforce; sforce.resetToZero();
+    Array<T,3> sf_wlc, sf_bending, sf_volume, sf_surface, sf_shear, sf_viscosity;
+    sf_wlc.resetToZero(); sf_bending.resetToZero(); sf_volume.resetToZero(); sf_surface.resetToZero();
+    sf_shear.resetToZero(); sf_viscosity.resetToZero();
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
         Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
         ImmersedCellParticle3D<T,Descriptor>* particle =
@@ -466,6 +470,7 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
             particle->get_f_surface() = f_surface;
             particle->get_f_shear() = f_shear;
             particle->get_f_viscosity() = f_viscosity;
+
 //            pcout << "f_wlc (" <<
 //                    particle->get_f_wlc()[0] << ", " <<
 //                    particle->get_f_wlc()[1] << ", " <<
@@ -482,7 +487,26 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
             acc = force*1.0 / cellModel->getDensity();
             particle->get_a() = acc;
             particle->get_force() = force;
+
+
+
+            sforce += force;
+            sf_wlc += f_wlc;
+            sf_bending += f_bending;
+            sf_volume += f_volume;
+            sf_surface += f_surface;
+            sf_shear += f_shear;
+            sf_viscosity += f_viscosity;
         }
+    }
+    if (fabs(sforce[0]) + fabs(sforce[1]) + fabs(sforce[2]) > 1e-5) {
+        pcout << "sforce (" << sforce[0] << ", " << sforce[1] << ", " << sforce[2] << ") " << std::endl;
+        pcout << "sf_wlc (" << sf_wlc[0] << ", " << sf_wlc[1] << ", " << sf_wlc[2] << ") " << std::endl;
+        pcout << "sf_bending (" << sf_bending[0] << ", " << sf_bending[1] << ", " << sf_bending[2] << ") " << std::endl;
+        pcout << "sf_volume (" << sf_volume[0] << ", " << sf_volume[1] << ", " << sf_volume[2] << ") " << std::endl;
+        pcout << "sf_surface (" << sf_surface[0] << ", " << sf_surface[1] << ", " << sf_surface[2] << ") " << std::endl;
+        pcout << "sf_shear (" << sf_shear[0] << ", " << sf_shear[1] << ", " << sf_shear[2] << ") " << std::endl;
+        pcout << "sf_viscosity (" << sf_viscosity[0] << ", " << sf_viscosity[1] << ", " << sf_viscosity[2] << ") " << std::endl;
     }
 }
 
