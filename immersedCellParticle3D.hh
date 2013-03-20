@@ -95,7 +95,7 @@ void ImmersedCellParticle3D<T,Descriptor>::advance() {
 //    this->getPosition() += 1.5*v - 0.5*vPrevious;
 //    vPrevious = v;
 // Euler update scheme
-//    this->getPosition() += v;
+    this->getPosition() += v;
 }
 
 template<typename T, template<typename U> class Descriptor>
