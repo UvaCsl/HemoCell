@@ -68,11 +68,18 @@ public:
     plint& get_cellId() { return cellId; }
 private:
     Array<T,3> v, vHalfTime, a, force, vPrevious;
-    Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity;
-
     plint cellId;
     static int id;
+private:
+    Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity;
 public:
+    ImmersedCellParticle3D (
+            plint tag_, Array<T,3> const& position,
+            Array<T,3> const& v_, Array<T,3> const& vHalfTime_,
+            Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_,
+            Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_, Array<T,3> const& f_surface_, Array<T,3> const& f_shear_, Array<T,3> const& f_viscosity_,
+            plint cellId_ );
+
     Array<T,3> const& get_f_wlc() const { return f_wlc; }
     Array<T,3> const& get_f_bending() const { return f_bending; }
     Array<T,3> const& get_f_volume() const { return f_volume; }
@@ -112,9 +119,18 @@ class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         unserializer.readValues<T,3>(a);
         unserializer.readValues<T,3>(force);
         unserializer.readValues<T,3>(vPrevious);
+        Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity;
+        unserializer.readValues<T,3>(f_wlc);
+        unserializer.readValues<T,3>(f_bending);
+        unserializer.readValues<T,3>(f_volume);
+        unserializer.readValues<T,3>(f_surface);
+        unserializer.readValues<T,3>(f_shear);
+        unserializer.readValues<T,3>(f_viscosity);
         plint cellId;
         unserializer.readValue(cellId);
-        return new ImmersedCellParticle(tag, position, v, vHalfTime, vHalfTime, a, force, cellId);
+        return new ImmersedCellParticle(tag, position, v, vHalfTime, a, force, vPrevious,
+                f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity,
+                cellId);
     }
 };
 

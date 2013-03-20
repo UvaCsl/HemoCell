@@ -204,7 +204,6 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
 
         plint iVertex = iparticle->getTag();
-        pcout << "iVertex " << iVertex << std::endl;
         for (pluint iVector=0; iVector<vectorsForces.size(); ++iVector) {
             Array<T,3> vector;
 
