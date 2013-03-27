@@ -56,7 +56,8 @@ public:
     virtual Array<T,3> computeCellForce (
             TriangleBoundary3D<T> const& boundary,
             T cellVolume, T cellSurface, T & iSurface,
-            std::map< plint, Array<T,3> > particleVelocity,
+            std::map< plint, Array<T,3> > & particleVelocity,
+            std::map< plint, Array<T,3> > & particleForces,
             plint iVertex,
             Array<T,3> & f_wlc, Array<T,3> & f_bending, Array<T,3> & f_volume,
             Array<T,3> & f_surface, Array<T,3> & f_shear, Array<T,3> & f_viscosity);

@@ -107,7 +107,8 @@ template<typename T>
 Array<T,3> CellModel3D<T>::computeCellForce (
         TriangleBoundary3D<T> const& boundary,
         T cellVolume, T cellSurface, T & iSurface,
-        std::map< plint, Array<T,3> > particleVelocity,
+        std::map< plint, Array<T,3> > & particleVelocity,
+        std::map< plint, Array<T,3> > & particleForces,
         plint iVertex,
         Array<T,3> & f_wlc, Array<T,3> & f_bending, Array<T,3> & f_volume,
         Array<T,3> & f_surface, Array<T,3> & f_shear, Array<T,3> & f_viscosity)
@@ -151,7 +152,6 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     /* Run through all the neighbouring faces of iVertex and calculate:
          x Volume conservation force
          x Surface conservation force
-         x Elastic  WLC force
          x Shear force
      */
     Array<T,3> dAdx, dVdx;
@@ -193,7 +193,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     }
 
     /* Run through all the neighbouring vertices of iVertex and calculate:
-         x In plane force
+         x In plane (WLC) force
          x Repulsive force
          o Stretch force
          x Dissipative force
@@ -239,10 +239,13 @@ Array<T,3> CellModel3D<T>::computeCellForce (
             }
         }
         // Bending Force
-        bendingForce += computeBendingForce (x1, x2, x3, x4,
+        Array<T,3> iVertexBendingForce = computeBendingForce (x1, x2, x3, x4,
                             trianglesNormal[iTriangle], trianglesNormal[jTriangle],
                             trianglesArea[iTriangle], trianglesArea[jTriangle],
                             eqTileSpan, eqLength, eqAngle, k_bend);
+        bendingForce += iVertexBendingForce;
+        particleForces[kVertex] += -iVertexBendingForce/2.0;
+        particleForces[lVertex] += -iVertexBendingForce/2.0;
     }
     f_wlc = inPlaneForce + repulsiveForce;
     f_bending = bendingForce;
