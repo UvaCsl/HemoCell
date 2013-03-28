@@ -244,8 +244,10 @@ Array<T,3> CellModel3D<T>::computeCellForce (
                             trianglesArea[iTriangle], trianglesArea[jTriangle],
                             eqTileSpan, eqLength, eqAngle, k_bend);
         bendingForce += iVertexBendingForce;
-        particleForces[kVertex] += -iVertexBendingForce/2.0;
-        particleForces[lVertex] += -iVertexBendingForce/2.0;
+        T iTriangleBendingCoefficient = trianglesArea[iTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
+        T jTriangleBendingCoefficient = trianglesArea[jTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
+        particleForces[kVertex] += -iTriangleBendingCoefficient * iVertexBendingForce/2.0;
+        particleForces[lVertex] += -jTriangleBendingCoefficient * iVertexBendingForce/2.0;
     }
     f_wlc = inPlaneForce + repulsiveForce;
     f_bending = bendingForce;
