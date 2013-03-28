@@ -5,7 +5,7 @@
     <shellDensity> 1.0 </shellDensity>
 
     <k_WLC> -1.0 </k_WLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
-    <k_bend> 4000e0 </k_bend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <k_bend> 2000e0 </k_bend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
     <k_volume> 6000.0 </k_volume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
     <k_surface> 5900.0 </k_surface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
 <!-- 0.5e0 -->

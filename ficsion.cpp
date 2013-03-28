@@ -238,7 +238,7 @@ int main(int argc, char* argv[])
     global::timer("sim").start();
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
     /* ********************* Main Loop ***************************************** * */
-    T eqVolumeInitial, eqVolumeFinal, ifinal=10000.;
+    T eqVolumeInitial, eqVolumeFinal, ifinal=50000.;
     eqVolumeInitial = eqVolume;
     eqVolumeFinal = eqVolume; // 0.65 * eqVolumeInitial ;
     eqVolumeFinal = 0.65 * eqVolumeInitial ;
@@ -319,7 +319,7 @@ int main(int argc, char* argv[])
                 Cells,
                 immersedParticles,
                 velocity_scalarNames, velocity_vectorNames,
-                global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag);
+                global::directories().getOutputDir()+createFileName("RBC",i,8)+".vtk", dynamicMesh, tag);
             writeVTK(lattice, parameters, i);
             // === Checkpoint ===
             //    parallelIO::save(immersedParticles, "immersedParticles.dat", true);
