@@ -54,7 +54,7 @@ CellModel3D<T>::CellModel3D (
       maxLength(maxLength_)
 {
     T x0 = eqLength*1.0/maxLength;
-    persistenceLengthCoarse = persistenceLengthFine ;//* sqrt( (Nv-2.0) / (23867-2.0)) ;
+    persistenceLengthCoarse = persistenceLengthFine * sqrt( (Nv-2.0) / (23867-2.0)) ;
     /* Use dimensionless coefficients */
     k_volume *= kBT/pow(eqLength,3);
     k_surface *= kBT/pow(eqLength,2);
@@ -211,7 +211,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         r = L/maxLength;
         eij = dL/L;
         /* In Plane Force (WLC) */
-        inPlaneForce += eij * (k_WLC*r*(-6 + (9 - 4*r)*r))/(maxLength*pow(-1 + r,2)); // inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
+        inPlaneForce +=  - eij * (k_WLC*r*(-6 + (9 - 4*r)*r))/(maxLength*pow(-1 + r,2)); // inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
         /* Repulsive Force */
         repulsiveForce +=  eij * k_rep/(L*L);
         /* Stretch force */
