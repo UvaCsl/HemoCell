@@ -312,7 +312,7 @@ int main(int argc, char* argv[])
             velocity_vectorNames.push_back("vHalfTime");
             velocity_vectorNames.push_back("force");
 
-//            writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
+            writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,8)+".stl");
             // serialize the particle information to write them.
             // a correspondance between the mesh and the particles is made. (Needs rescale)
             bool dynamicMesh = true;
@@ -332,5 +332,6 @@ int main(int argc, char* argv[])
             global::timer("sim").restart();
         }
     }
+    pcout << "Simulation finished." << std::endl;
 //    MPI_Finalize();
 }
