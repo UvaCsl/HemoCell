@@ -206,12 +206,12 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
         plint jVertex = neighborVertexIds[jV];
         x3 = dynMesh.getVertex(jVertex);
-        dL = (x3 - x1)*1.0;
+        dL = (x1 - x3)*1.0;
         L = norm(dL);
         r = L/maxLength;
         eij = dL/L;
         /* In Plane Force (WLC) */
-        inPlaneForce +=  - eij * (k_WLC*r*(-6 + (9 - 4*r)*r))/(maxLength*pow(-1 + r,2)); // inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
+        inPlaneForce +=  eij * (k_WLC*r*(-6 + (9 - 4*r)*r))/(maxLength*pow(-1 + r,2)); // inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
         /* Repulsive Force */
         repulsiveForce +=  eij * k_rep/(L*L);
         /* Stretch force */
