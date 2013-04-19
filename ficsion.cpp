@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
     k_WLC *= 1.0;
     k_rep *= 1.0;
     k_elastic *= 1.0;
-    k_bend *= kBT;
+    k_bend *= 1.0;
     k_volume *= 1.0;
     k_surface *= 1.0;
     k_shear *= 1.0;

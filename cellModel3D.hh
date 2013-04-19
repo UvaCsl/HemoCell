@@ -59,13 +59,13 @@ CellModel3D<T>::CellModel3D (
     k_volume *= kBT/pow(eqLength,3);
     k_surface *= kBT/pow(eqLength,2);
     k_shear *= kBT/pow(eqLength,2);
-
+    k_bend *= kBT;
     /* Dissipative term coefficients from FedosovCaswellKarniadakis2010 */
-    gamma_T = (eta_m * 4 * sqrt(3.0) / 13.0);
+    gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
     gamma_C = (gamma_T/3.0);
-    /* Multiplying with eqLength because the units on the paper are wrong */
-    gamma_T *= eqLength;
-    gamma_C *= eqLength;
+    /* The units on the paper are wrong, should have been fixed on config.xml */
+    // gamma_T *= eqLength;
+    // gamma_C *= eqLength;
 
     k_WLC = k_WLC_ * kBT * maxLength/(4.0*persistenceLengthCoarse);
     /* Solving f_WLC + f_rep =0 for x=eqLength, f_rep = k_rep/L^m, m=2. */
