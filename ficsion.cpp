@@ -228,7 +228,7 @@ int main(int argc, char* argv[])
     k_volume *= 1.0;
     k_surface *= 1.0;
     k_shear *= 1.0;
-    eta_m /= dNewton*dt/(dx*dx);
+    eta_m /= dNewton*dt/dx;
     /* == */
     k_stretch /= dNewton;
     k_rest /= dNewton/dx;
