@@ -68,10 +68,11 @@ public:
     plint& get_cellId() { return cellId; }
 private:
     Array<T,3> v, vHalfTime, a, force, vPrevious;
-    plint cellId;
     static int id;
 private:
     Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity;
+private:
+    plint cellId;
 public:
     ImmersedCellParticle3D (
             plint tag_, Array<T,3> const& position,

@@ -436,14 +436,19 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
     particleField.findParticles(domain, found);
 
     std::map< plint, Array<T,3> > particleVelocity;
-    std::map< plint, Array<T,3> > particleForces;
+//    std::map< plint, Array<T,3> > particleForces;
+    std::map< plint, Array<T,3>* > particleForces;
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
         Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         plint vertexId = particle->getTag();
         particleVelocity[vertexId] = particle->get_v();
-        particleForces[vertexId] = Array<T,3>(0., 0., 0.);
+//        particleForces[vertexId] = Array<T,3>(0., 0., 0.);
+        particleForces[vertexId] = new Array<T,3> [6]; // [f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity]
+        for (pluint var = 0; var < 6; ++var) {
+            particleForces[vertexId][var].resetToZero();
+        }
     }
     // T eqArea = cellModel->getEquilibriumTriangleArea();
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
@@ -495,8 +500,17 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         plint vertexId = particle->getTag();
-        particle->get_f_bending() += particleForces[vertexId];
-        particle->get_force() += particleForces[vertexId];
+
+        particle->get_f_wlc() += particleForces[vertexId][0];
+        particle->get_f_bending() += particleForces[vertexId][1];
+        particle->get_f_volume() += particleForces[vertexId][2];
+        particle->get_f_surface() += particleForces[vertexId][3];
+        particle->get_f_shear() += particleForces[vertexId][4];
+        particle->get_f_viscosity() += particleForces[vertexId][5];
+        for (pluint var = 0; var < 6; ++var) {
+            particle->get_force() += particleForces[vertexId][var];
+        }
+        delete [] particleForces[vertexId];
 
         sforce += particle->get_force();
         sf_wlc += particle->get_f_wlc();
@@ -507,7 +521,7 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         sf_viscosity += particle->get_f_viscosity();
     }
 
-    if (fabs(sforce[0]) + fabs(sforce[1]) + fabs(sforce[2]) > 1e-5) {
+    if (fabs(sforce[0]) + fabs(sforce[1]) + fabs(sforce[2]) > 1e-10) {
         pcout << "sforce (" << sforce[0] << ", " << sforce[1] << ", " << sforce[2] << ") " << std::endl;
         pcout << "sf_wlc (" << sf_wlc[0] << ", " << sf_wlc[1] << ", " << sf_wlc[2] << ") " << std::endl;
         pcout << "sf_bending (" << sf_bending[0] << ", " << sf_bending[1] << ", " << sf_bending[2] << ") " << std::endl;
