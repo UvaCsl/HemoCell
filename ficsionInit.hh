@@ -265,7 +265,7 @@ void writeVTK(BlockLatticeT& lattice,
     applyProcessingFunctional(new GetTensorFieldFromExternalVectorFunctional3D<T,DESCRIPTOR,3>(
         DESCRIPTOR<T>::ExternalField::forceBeginsAt), lattice.getBoundingBox(), lattice, force);
 
-    VtkImageOutput3D<T> vtkOut(createFileName("vtk", iter, 6), dx);
+    VtkImageOutput3D<T> vtkOut(createFileName("vtk", iter, 8), dx);
     vtkOut.writeData<T>(*computeVelocityNorm(lattice), "velocityNorm", dx/dt);
     vtkOut.writeData<3,T>(*computeVelocity(lattice), "velocity", dx/dt);
     vtkOut.writeData<3,T>(force, "force",  (T) 1.0);
@@ -274,7 +274,7 @@ void writeVTK(BlockLatticeT& lattice,
 
 //    ImageWriter<T> imageWriter("leeloo");
 //    add(force, forceScalar, force.getBoundingBox());
-//    imageWriter.writeScaledPpm(scalarField, createFileName("PPM", iter, 6));
+//    imageWriter.writeScaledPpm(scalarField, createFileName("PPM", iter, 8));
 
 //     vtkOut.writeData<3,float>(*computeVelocity(lattice), "velocity", dx/dt);
 //     vtkOut.writeData<3,float>(*computeVorticity(*computeVelocity(lattice)), "vorticity", 1./dt);

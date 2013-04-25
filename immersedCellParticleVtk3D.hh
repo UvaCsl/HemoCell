@@ -27,6 +27,8 @@
 
 #include "core/globalDefs.h"
 #include "immersedCellParticleVtk3D.h"
+#include "immersedCellParticle3D.h"
+#include "immersedCellParticle3D.hh"
 #include "particles/particleNonLocalTransfer3D.h"
 
 namespace plb {
@@ -117,7 +119,9 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
         //posVect[iVertex] += boundary.getPhysicalLocation();
         for (pluint iScalar=0; iScalar<scalars.size(); ++iScalar) {
             T scalar;
-            particles[iParticle]->getScalar(iScalar, scalar);
+            ImmersedCellParticle3D<T,Descriptor>* iparticle =
+                dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+            iparticle->getScalar(iScalar, scalar);
             if (!scalarFactor.empty()) {
                 scalar *= scalarFactor[iScalar];
             }
@@ -125,7 +129,9 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
         }
         for (pluint iVector=0; iVector<vectors.size(); ++iVector) {
             Array<T,3> vector;
-            particles[iParticle]->getVector(iVector, vector);
+            ImmersedCellParticle3D<T,Descriptor>* iparticle =
+                dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+            iparticle->getVector(iVector, vector);
             if (!vectorFactor.empty()) {
                 vector *= vectorFactor[iVector];
             }
@@ -180,6 +186,49 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
         }
         ofile << "\n";
     }
+//====================================================================================
+    std::vector<std::string> vectorsForces;
+    vectorsForces.push_back("f_wlc");
+    vectorsForces.push_back("f_bending");
+    vectorsForces.push_back("f_volume");
+    vectorsForces.push_back("f_surface");
+    vectorsForces.push_back("f_shear");
+    vectorsForces.push_back("f_viscosity");
+    std::vector<std::vector<Array<T,3> > > vectorDataForces(6);
+
+    for (pluint iVector=0; iVector<vectorsForces.size(); ++iVector) {
+        vectorDataForces[iVector].resize(particles.size());
+    }
+    for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
+        ImmersedCellParticle3D<T,Descriptor>* iparticle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+
+        plint iVertex = iparticle->getTag();
+        for (pluint iVector=0; iVector<vectorsForces.size(); ++iVector) {
+            Array<T,3> vector;
+
+
+            if (iVector==0) { vector = iparticle->get_f_wlc(); }
+            else if (iVector==1) { vector = iparticle->get_f_bending(); }
+            else if (iVector==2) { vector = iparticle->get_f_volume(); }
+            else if (iVector==3) { vector = iparticle->get_f_surface(); }
+            else if (iVector==4) { vector = iparticle->get_f_shear(); }
+            else if (iVector==5) { vector = iparticle->get_f_viscosity(); }
+            vectorDataForces[iVector][iVertex] = vector;
+        }
+    }
+    for (pluint iVector=0; iVector<vectorsForces.size(); ++iVector) {
+        ofile << "VECTORS " << vectorsForces[iVector]
+              << (sizeof(T)==sizeof(double) ? " double" : " float")
+              << "\n";
+        for (plint iVertex=0; iVertex<(plint)particles.size(); ++iVertex) {
+            ofile << vectorDataForces[iVector][iVertex][0] << " "
+                  << vectorDataForces[iVector][iVertex][1] << " "
+                  << vectorDataForces[iVector][iVertex][2] << "\n";
+        }
+        ofile << "\n";
+    }
+//====================================================================================
 
     for (pluint iScalar=0; iScalar<scalars.size(); ++iScalar) {
         ofile << "SCALARS " << scalars[iScalar]

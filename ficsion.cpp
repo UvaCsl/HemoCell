@@ -47,7 +47,7 @@ const plint particleEnvelopeWidth = 2;
 void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & shearRate, T & Re, T & Re_p, T & N, T & lx, T & ly, T & lz,
-        plint & forceToFluid, plint & shape, T & radius, plint & minNumOfTriangles,
+        plint & forceToFluid, plint & shape, T & radius, T & deflationRatio, plint & minNumOfTriangles,
         plint & tmax, plint & tmeas, plint & npar)
     {
     T nu_p, tau, dx;
@@ -78,6 +78,7 @@ void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest,
     document["ibm"]["forceToFluid"].read(forceToFluid);
     document["ibm"]["shape"].read(shape);
     document["ibm"]["radius"].read(radius);
+    document["ibm"]["deflationRatio"].read(deflationRatio);
     document["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
@@ -111,6 +112,7 @@ int main(int argc, char* argv[])
     T u, Re, Re_p, N, lx, ly, lz;
     T rho_p;
     T radius;
+    T deflationRatio;
     plint flowType;
     T shearRate, shearRate_p;
 
@@ -119,7 +121,7 @@ int main(int argc, char* argv[])
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
     readFicsionXML(document, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m,
-            rho_p, u, flowType, shearRate_p, Re, Re_p, N, lx, ly, lz,  forceToFluid, shape, radius, minNumOfTriangles, tmax, tmeas, npar);
+            rho_p, u, flowType, shearRate_p, Re, Re_p, N, lx, ly, lz,  forceToFluid, shape, radius, deflationRatio, minNumOfTriangles, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -222,11 +224,11 @@ int main(int argc, char* argv[])
     k_WLC *= 1.0;
     k_rep *= 1.0;
     k_elastic *= 1.0;
-    k_bend *= kBT;
+    k_bend *= 1.0;
     k_volume *= 1.0;
     k_surface *= 1.0;
     k_shear *= 1.0;
-    eta_m /= dNewton*dt/(dx*dx);
+    eta_m /= dNewton*dt/dx;
     /* == */
     k_stretch /= dNewton;
     k_rest /= dNewton/dx;
@@ -238,9 +240,10 @@ int main(int argc, char* argv[])
     global::timer("sim").start();
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
     /* ********************* Main Loop ***************************************** * */
-    T eqVolumeInitial, eqVolumeFinal, ifinal=10000.;
+    T eqVolumeInitial, eqVolumeFinal, ifinal=50000.;
     eqVolumeInitial = eqVolume;
     eqVolumeFinal = eqVolume; // 0.65 * eqVolumeInitial ;
+    eqVolumeFinal = deflationRatio * eqVolumeInitial ;
     //eqVolumeFinal = 0.85 * eqVolumeInitial ;
     applyProcessingFunctional ( // copy fluid velocity on particles
         new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
@@ -309,7 +312,7 @@ int main(int argc, char* argv[])
             velocity_vectorNames.push_back("vHalfTime");
             velocity_vectorNames.push_back("force");
 
-//            writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,6)+".stl");
+            writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,8)+".stl");
             // serialize the particle information to write them.
             // a correspondance between the mesh and the particles is made. (Needs rescale)
             bool dynamicMesh = true;
@@ -318,7 +321,7 @@ int main(int argc, char* argv[])
                 Cells,
                 immersedParticles,
                 velocity_scalarNames, velocity_vectorNames,
-                global::directories().getOutputDir()+createFileName("RBC",i,6)+".vtk", dynamicMesh, tag);
+                global::directories().getOutputDir()+createFileName("RBC",i,8)+".vtk", dynamicMesh, tag);
             writeVTK(lattice, parameters, i);
             // === Checkpoint ===
             //    parallelIO::save(immersedParticles, "immersedParticles.dat", true);
@@ -329,5 +332,6 @@ int main(int argc, char* argv[])
             global::timer("sim").restart();
         }
     }
+    pcout << "Simulation finished." << std::endl;
 //    MPI_Finalize();
 }

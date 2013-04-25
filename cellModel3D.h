@@ -56,8 +56,11 @@ public:
     virtual Array<T,3> computeCellForce (
             TriangleBoundary3D<T> const& boundary,
             T cellVolume, T cellSurface, T & iSurface,
-            std::map< plint, Array<T,3> > particleVelocity,
-            plint iVertex );
+            std::map< plint, Array<T,3> > & particleVelocity,
+            std::map< plint, Array<T,3>* > & particleForces,
+            plint iVertex,
+            Array<T,3> & f_wlc, Array<T,3> & f_bending, Array<T,3> & f_volume,
+            Array<T,3> & f_surface, Array<T,3> & f_shear, Array<T,3> & f_viscosity);
     virtual Array<T,3> computeElasticForce (
             TriangleBoundary3D<T> const& boundary,
             plint iVertex );
@@ -144,6 +147,14 @@ public:
     void setNumberOfVertices(pluint value) { Nv = value; }
     pluint const& getNumberOfVertices() const { return Nv; }
 };
+
+template<typename T>
+Array<T,3> computeBendingForce_Krueger (Array<T,3> const& x1, Array<T,3> const& x2,
+                                Array<T,3> const& x3, Array<T,3> const& x4,
+                                Array<T,3> const& ni, Array<T,3> const& nj,
+                                T Ai, T Aj,
+                                T eqTileSpan, T eqLength, T eqAngle, T k,
+                                Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4);
 
 
 template<typename T>
