@@ -21,10 +21,12 @@
 #ifndef IMMERSED_CELLS_3D_HH
 #define IMMERSED_CELLS_3D_HH
 
-#include "core/globalDefs.h"
 #include "immersedCells3D.h"
 #include "immersedCellsFunctional3D.h"
 #include "immersedCellsFunctional3D.hh"
+#include <algorithm>
+#include <string>
+
 
 using namespace plb;
 using namespace std;
@@ -181,21 +183,40 @@ void createCells(TriangleBoundary3D<T> &Cells,
         createImmersedCellParticles(immersedParticles, Cells, cellIds[iA], numPartsPerCell);
     }
 }
+//
+//template<typename T>
+//TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles) {
+//    TriangleSet<T> RBC("./lib/RBC.stl");
+//    RBC.scale(radius/3.93);
+//    RBC.rotate(pi/2.0, pi/2.0, 0.);
+//    RBC.translate(center);
+//    return RBC;
+//}
+
 
 template<typename T>
 TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles) {
-	TriangleSet<T> RBC("./lib/RBC.stl");
-	RBC.scale(radius/3.93);
-	RBC.rotate(pi/2.0, pi/2.0, 0.);
-	RBC.translate(center);
-	return RBC;
+    return constructCell(center, radius, "./lib/RBC.stl");
+}
+
+template<typename T>
+TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename) {
+//    Cuboid<T> boundingCuboid;
+    TriangleSet<T> Cell(cellFilename);
+    Cuboid<T> cb = Cell.getBoundingCuboid();
+    Array<T,3> dr = (cb.upperRightCorner - cb.lowerLeftCorner);
+    T scaleFactor = std::max(dr[0],std::max(dr[1],dr[2]));
+    Cell.scale(radius*2.0/scaleFactor);
+    Cell.rotate(pi/2.0, pi/2.0, 0.);
+    Cell.translate(center);
+    return Cell;
 }
 
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
     const std::vector<Array<T,3> > &centers, const std::vector<T> &radii,
     std::vector<plint> &cellIds, plint &numPartsPerCell, IncomprFlowParam<T> const& parameters,
-    plint shape, plint minNumOfTriangles=100)
+    plint shape, std::string cellPath, plint minNumOfTriangles=100)
 {
 //	shape 0:Sphere, 1:RBC
     PLB_ASSERT(centers.size() == radii.size());
@@ -211,6 +232,9 @@ TriangleBoundary3D<T> createCompleteMesh(
         }
         else if (shape == 1) {
         	allTriangles.push_back(constructRBC<T>(center, radius, minNumOfTriangles));
+        }
+        else if (shape == 2) {
+            allTriangles.push_back(constructCell<T>(center, radius, cellPath));
         }
         cellIds.push_back(iA);
     }

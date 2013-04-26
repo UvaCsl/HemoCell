@@ -97,7 +97,7 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
     ImmersedCellParticle3D<T,Descriptor>* p0 =
         dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[0]);
     std::vector<std::string> vectorNames;
-    for (pluint iVector = 0; iVector < p0->getVectorsNumber(); ++iVector) {
+    for (plint iVector = 0; iVector < p0->getVectorsNumber(); ++iVector) {
         vectorNames.push_back(p0->getVectorName(iVector));
     }
 

@@ -74,9 +74,15 @@ void createCells(TriangleBoundary3D<T> &Cells,
                     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > &immersedParticles);
 
 template<typename T>
+TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles) ;
+
+template<typename T>
+TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename);
+
+template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
     const std::vector<Array<T,3> > &centers, const std::vector<T> &radii,
-    std::vector<plint> &cellIds, plint &numPartsPerCell, plint shape) ;
+    std::vector<plint> &cellIds, plint &numPartsPerCell, plint shape, std::string cellPath) ;
 
 template<typename T>
 TriangleBoundary3D<T> createCompleteMeshRBCs	(

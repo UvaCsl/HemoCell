@@ -37,9 +37,10 @@
 
 <ibm>
     <forceToFluid> 1 </forceToFluid>
-    <shape> 0 </shape> <!-- shape: Sphere:[0], RBC:[1] -->
+    <shape> 1 </shape> <!-- shape: Sphere:[0], RBC:[1], Cell(defined):[2] -->
+    <cellPath>lib/RBC_v202f400.stl</cellPath>
     <radius> 1.5 </radius> <!-- Radius of the particle in Lattice Units (dx) -->
-    <deflationRatio> 0.65 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
+    <deflationRatio> 1.0 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
     <minNumOfTriangles> 400 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
 </ibm>
 
