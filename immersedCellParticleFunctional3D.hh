@@ -485,10 +485,10 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
 //                    std::endl;
             Array<T,3> force, acc; force.resetToZero(); acc.resetToZero();
             force = elasticForce + cellForce;
-            // force *= iSurface*1.0/eqArea; // same as triangleBoundary.getMesh().computeVertexArea(vertexId);
             acc = force*1.0 / cellModel->getDensity();
             particle->get_a() = acc;
             particle->get_force() = force;
+            particle->get_stress() = force*1.0/iSurface;
         }
     }
     Array<T,3> sforce; sforce.resetToZero();

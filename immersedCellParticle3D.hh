@@ -38,6 +38,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
       vHalfTime(T(),T(),T()),
       a(T(),T(),T()), force(T(),T(),T()), vPrevious(T(),T(),T()),
       f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()), f_surface(T(),T(),T()), f_shear(T(),T(),T()), f_viscosity(T(),T(),T()),
+      stress(T(),T(),T()),
       cellId(-1)
 { }
 
@@ -51,6 +52,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       force(T(),T(),T()),
       vPrevious(T(),T(),T()),
       f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()), f_surface(T(),T(),T()), f_shear(T(),T(),T()), f_viscosity(T(),T(),T()),
+      stress(T(),T(),T()),
       cellId(cellId_)
 { }
 
@@ -66,6 +68,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       force(force_),
       vPrevious(vPrevious_),
       f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()), f_surface(T(),T(),T()), f_shear(T(),T(),T()), f_viscosity(T(),T(),T()),
+      stress(T(),T(),T()),
       cellId(cellId_)
 { }
 
@@ -75,6 +78,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
         Array<T,3> const& v_, Array<T,3> const& vHalfTime_,
         Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_,
         Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_, Array<T,3> const& f_surface_, Array<T,3> const& f_shear_, Array<T,3> const& f_viscosity_,
+        Array<T,3> const& stress_,
         plint cellId_ )
     : Particle3D<T,Descriptor>(tag_, position),
       v(v_),
@@ -83,6 +87,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       force(force_),
       vPrevious(vPrevious_),
       f_wlc(f_wlc_), f_bending(f_bending_), f_volume(f_volume_), f_surface(f_surface_), f_shear(f_shear_), f_viscosity(f_viscosity_),
+      stress(stress_),
       cellId(cellId_)
 { }
 
@@ -119,6 +124,7 @@ void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_)
     f_surface.resetToZero();
     f_shear.resetToZero();
     f_viscosity.resetToZero();
+    stress.resetToZero();
 
 }
 
@@ -138,6 +144,7 @@ void ImmersedCellParticle3D<T,Descriptor>::serialize(HierarchicSerializer& seria
     serializer.addValues<T,3>(f_surface);
     serializer.addValues<T,3>(f_shear);
     serializer.addValues<T,3>(f_viscosity);
+    serializer.addValues<T,3>(stress);
 
     serializer.addValue<plint>(cellId);
 }
@@ -158,9 +165,11 @@ void ImmersedCellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& u
     unserializer.readValues<T,3>(f_surface);
     unserializer.readValues<T,3>(f_shear);
     unserializer.readValues<T,3>(f_viscosity);
+    unserializer.readValues<T,3>(stress);
 
     unserializer.readValue<plint>(cellId);
 }
+
 
 template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>* ImmersedCellParticle3D<T,Descriptor>::clone() const {
@@ -193,8 +202,54 @@ bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,
     } else if (whichVector==4) {
         vector = get_vPrevious();
         return true;
+    } else if (whichVector==5) {
+        vector = get_f_wlc();
+        return true;
+    } else if (whichVector==6) {
+        vector = get_f_volume();
+        return true;
+    } else if (whichVector==7) {
+        vector = get_f_surface();
+        return true;
+    } else if (whichVector==8) {
+        vector = get_f_shear();
+        return true;
+    } else if (whichVector==9) {
+        vector = get_f_viscosity();
+        return true;
+    } else if (whichVector==10) {
+        vector = get_stress();
+        return true;
     }
     return Particle3D<T,Descriptor>::getVector(whichVector, vector);
+}
+
+template<typename T, template<typename U> class Descriptor>
+std::string ImmersedCellParticle3D<T,Descriptor>::getVectorName(plint whichVector) const {
+    if (whichVector==0) {
+        return "velocity";
+    } else if (whichVector==1) {
+        return "vHalfTime";
+    } else if (whichVector==2) {
+        return "acceleration";
+    } else if (whichVector==3) {
+        return "force";
+    } else if (whichVector==4) {
+        return "vPrevious";
+    } else if (whichVector==5) {
+        return "f_wlc";
+    } else if (whichVector==6) {
+        return "f_volume";
+    } else if (whichVector==7) {
+        return "f_surface";
+    } else if (whichVector==8) {
+        return "f_shear";
+    } else if (whichVector==9) {
+        return "f_viscosity";
+    } else if (whichVector==10) {
+        return "stress";
+    }
+    return "empty";
 }
 
 }  // namespace plb
