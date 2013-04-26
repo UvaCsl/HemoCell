@@ -303,9 +303,6 @@ int main(int argc, char* argv[])
             force_scalarNames.push_back("pressure");
             force_scalarNames.push_back("wss");
             std::vector<std::string> velocity_scalarNames;
-            std::vector<std::string> force_vectorNames;
-            force_vectorNames.push_back("velocity_scalar");
-            force_vectorNames.push_back("force");
             std::vector<std::string> velocity_vectorNames;
             velocity_vectorNames.push_back("velocity");
             velocity_vectorNames.push_back("acceleration");

@@ -118,16 +118,18 @@ class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
     {
         // tag, position, scalars, vectors.
         plint tag;
-        unserializer.readValue(tag);
         Array<T,3> position;
+        Array<T,3> v, vHalfTime, a, force, vPrevious;
+        Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress;
+        plint cellId;
+
+        unserializer.readValue(tag);
         unserializer.readValues<T,3>(position);
-        Array<T,3> v, vHalfTime, vPrevious, a, force;
         unserializer.readValues<T,3>(v);
         unserializer.readValues<T,3>(vHalfTime);
         unserializer.readValues<T,3>(a);
         unserializer.readValues<T,3>(force);
         unserializer.readValues<T,3>(vPrevious);
-        Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress;
         unserializer.readValues<T,3>(f_wlc);
         unserializer.readValues<T,3>(f_bending);
         unserializer.readValues<T,3>(f_volume);
@@ -135,8 +137,8 @@ class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         unserializer.readValues<T,3>(f_shear);
         unserializer.readValues<T,3>(f_viscosity);
         unserializer.readValues<T,3>(stress);
-        plint cellId;
         unserializer.readValue(cellId);
+
         return new ImmersedCellParticle(tag, position, v, vHalfTime, a, force, vPrevious,
                 f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress,
                 cellId);

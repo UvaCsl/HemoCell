@@ -10,7 +10,7 @@
     <k_surface> 5900.0 </k_surface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
 <!-- 0.5e0 -->
     <k_shear> 100.0e0 </k_shear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
-    <eta_m> 0.0e-4 </eta_m> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6] {FedosovFedosovCaswell2010}-->
+    <eta_m> 0.022e-7 </eta_m> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6] {FedosovFedosovCaswell2010}-->
 <!-- +++++ -->
 <!-- Testing phase-->
 <!-- +++++ -->

@@ -93,6 +93,14 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
     // If this assertion fails, a likely explanation is that the margin of your sparse block
     // structure is too small, and one of the particles was outside the allocated domain.
 //     PLB_PRECONDITION((plint)particles.size() == mesh.getNumVertices());
+
+    ImmersedCellParticle3D<T,Descriptor>* p0 =
+        dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[0]);
+    std::vector<std::string> vectorNames;
+    for (pluint iVector = 0; iVector < p0->getVectorsNumber(); ++iVector) {
+        vectorNames.push_back(p0->getVectorName(iVector));
+    }
+
     std::ofstream ofile(fName.c_str());
     ofile << "# vtk DataFile Version 3.0\n";
     ofile << "Surface mesh created with Palabos\n";
@@ -107,8 +115,8 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
     for (pluint iScalar=0; iScalar<scalars.size(); ++iScalar) {
         scalarData[iScalar].resize(particles.size());
     }
-    std::vector<std::vector<Array<T,3> > > vectorData(vectors.size());
-    for (pluint iVector=0; iVector<vectors.size(); ++iVector) {
+    std::vector<std::vector<Array<T,3> > > vectorData(vectorNames.size());
+    for (pluint iVector=0; iVector<vectorNames.size(); ++iVector) {
         vectorData[iVector].resize(particles.size());
     }
     std::vector<Array<T,3> > posVect(particles.size());
@@ -127,7 +135,7 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
             }
             scalarData[iScalar][iVertex] = scalar;
         }
-        for (pluint iVector=0; iVector<vectors.size(); ++iVector) {
+        for (pluint iVector=0; iVector<vectorNames.size(); ++iVector) {
             Array<T,3> vector;
             ImmersedCellParticle3D<T,Descriptor>* iparticle =
                 dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
@@ -175,8 +183,8 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
     ofile << "\n";
 
     ofile << "POINT_DATA " << particles.size() << "\n";
-    for (pluint iVector=0; iVector<vectors.size(); ++iVector) {
-        ofile << "VECTORS " << vectors[iVector]
+    for (pluint iVector=0; iVector<vectorNames.size(); ++iVector) {
+        ofile << "VECTORS " << vectorNames[iVector]
               << (sizeof(T)==sizeof(double) ? " double" : " float")
               << "\n";
         for (plint iVertex=0; iVertex<(plint)particles.size(); ++iVertex) {
@@ -186,49 +194,6 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
         }
         ofile << "\n";
     }
-//====================================================================================
-    std::vector<std::string> vectorsForces;
-    vectorsForces.push_back("f_wlc");
-    vectorsForces.push_back("f_bending");
-    vectorsForces.push_back("f_volume");
-    vectorsForces.push_back("f_surface");
-    vectorsForces.push_back("f_shear");
-    vectorsForces.push_back("f_viscosity");
-    std::vector<std::vector<Array<T,3> > > vectorDataForces(6);
-
-    for (pluint iVector=0; iVector<vectorsForces.size(); ++iVector) {
-        vectorDataForces[iVector].resize(particles.size());
-    }
-    for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        ImmersedCellParticle3D<T,Descriptor>* iparticle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
-
-        plint iVertex = iparticle->getTag();
-        for (pluint iVector=0; iVector<vectorsForces.size(); ++iVector) {
-            Array<T,3> vector;
-
-
-            if (iVector==0) { vector = iparticle->get_f_wlc(); }
-            else if (iVector==1) { vector = iparticle->get_f_bending(); }
-            else if (iVector==2) { vector = iparticle->get_f_volume(); }
-            else if (iVector==3) { vector = iparticle->get_f_surface(); }
-            else if (iVector==4) { vector = iparticle->get_f_shear(); }
-            else if (iVector==5) { vector = iparticle->get_f_viscosity(); }
-            vectorDataForces[iVector][iVertex] = vector;
-        }
-    }
-    for (pluint iVector=0; iVector<vectorsForces.size(); ++iVector) {
-        ofile << "VECTORS " << vectorsForces[iVector]
-              << (sizeof(T)==sizeof(double) ? " double" : " float")
-              << "\n";
-        for (plint iVertex=0; iVertex<(plint)particles.size(); ++iVertex) {
-            ofile << vectorDataForces[iVector][iVertex][0] << " "
-                  << vectorDataForces[iVector][iVertex][1] << " "
-                  << vectorDataForces[iVector][iVertex][2] << "\n";
-        }
-        ofile << "\n";
-    }
-//====================================================================================
 
     for (pluint iScalar=0; iScalar<scalars.size(); ++iScalar) {
         ofile << "SCALARS " << scalars[iScalar]
