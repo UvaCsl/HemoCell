@@ -30,6 +30,10 @@
 #include "immersedCellsReductions.hh"
 #include <string>
 
+#include "shapeMemoryModel3D.hh"
+#include "shapeMemoryModelFunctional3D.hh"
+
+
 using namespace plb;
 using namespace std;
 
@@ -236,8 +240,8 @@ int main(int argc, char* argv[])
     /* == */
     k_stretch /= dNewton;
     k_rest /= dNewton/dx;
-    pcout << k_rest<< std::endl;
-    CellModel3D<T> cellModel(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m, \
+    pcout << k_rest<< std::endl; // ShapeMemoryModel3D
+    ShapeMemoryModel3D<T> cellModel(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m, \
                                                 eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan,
                                                 maxLength, persistenceLengthFine, numParts[0]);
     pcout << std::endl << "Starting simulation" << std::endl;
@@ -262,8 +266,8 @@ int main(int argc, char* argv[])
             eqVolume = eqVolumeInitial + (i*1.0)/ifinal * (eqVolumeFinal - eqVolumeInitial) ;
             cellModel.setEquilibriumVolume(eqVolume);
         }
-         applyProcessingFunctional ( // compute force applied on the particles by springs
-             new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
+         applyProcessingFunctional ( // compute force applied on the particles by springs // ComputeShapeMemoryModelForce3D, ComputeImmersedElasticForce3D
+             new ComputeShapeMemoryModelForce3D<T,DESCRIPTOR> (
                  Cells, cellModel.clone(), cellsVolume, cellsSurface),
              immersedParticles.getBoundingBox(), particleArg );
         if (forceToFluid != 0) { // Force from the Cell dynamics to the Fluid
