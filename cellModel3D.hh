@@ -23,6 +23,7 @@
 
 #include <cmath>
 #include <map>
+#include "computeCellForces3D.hh"
 #include "cellModel3D.h"
 
 
@@ -168,69 +169,26 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     std::vector<plint> neighborTriangles = dynMesh.getNeighborTriangleIds(iVertex);
     for (pluint iB = 0; iB < neighborTriangles.size(); ++iB) {
         iTriangle = neighborTriangles[iB];
-        for (pluint id = 0; id < 3; ++id) { vertexIds[id] = dynMesh.getVertexId(iTriangle,id); }
+        for (pluint id = 0; id < 3; ++id) {
+            vertexIds[id] = dynMesh.getVertexId(iTriangle,id);
+        }
         plint localVertexId = (iVertex == vertexIds[1])*1 + (iVertex == vertexIds[2])*2;
         jVertex = vertexIds[(localVertexId + 1)%3];
         kVertex = vertexIds[(localVertexId + 2)%3];
-        if ( (iVertex < jVertex) && (iVertex < kVertex)) {
-            x2 = dynMesh.getVertex(jVertex);
-            x3 = dynMesh.getVertex(kVertex);
-            triangleNormal = trianglesNormal[iTriangle] = dynMesh.computeTriangleNormal(iTriangle);
-            triangleArea = trianglesArea[iTriangle] = dynMesh.computeTriangleArea(iTriangle);
-            iSurface += triangleArea/3.0;
-
-        // iVertex
-            /* Surface conservation force */
-            crossProduct(triangleNormal,
-                        x3 - x2,
-                        tmp);
-            dAdx = 0.5 *tmp; tmp.resetToZero();
-            surfaceForce += -surfaceCoefficient * dAdx;
-            /* Shear force */
-            shearForce += - areaCoefficient * (triangleArea - eqArea)*1.0 * dAdx;
-            /* Elastice Force */
-            elasticForce += (C_elastic*1.0)/(triangleArea*triangleArea) * dAdx;
-            /* Volume conservation force */
-            crossProduct(x3, x2, tmp);
-            dVdx = - 1.0/6.0 * tmp; tmp.resetToZero();
-            volumeForce  += -volumeCoefficient  * dVdx;
-
-        // jVertex
-            /* Surface conservation force */
-            crossProduct(triangleNormal,
-                        x1 - x3,
-                        tmp);
-            dAdx = 0.5 *tmp; tmp.resetToZero();
-            particleForces[jVertex][3] += -surfaceCoefficient * dAdx;
-            /* Shear force */
-            particleForces[jVertex][4] += - areaCoefficient * (triangleArea - eqArea)*1.0 * dAdx;
-            /* Elastice Force */
-            particleForces[jVertex][0] += (C_elastic*1.0)/(triangleArea*triangleArea) * dAdx;
-            /* Volume conservation force */
-            crossProduct(x1, x3, tmp);
-            dVdx = - 1.0/6.0 * tmp; tmp.resetToZero();
-            particleForces[jVertex][2] += -volumeCoefficient  * dVdx;
-
-
-        // kVertex
-            /* Surface conservation force */
-            crossProduct(triangleNormal,
-                        x2 - x1,
-                        tmp);
-            dAdx = 0.5 *tmp; tmp.resetToZero();
-            particleForces[kVertex][3] += -surfaceCoefficient * dAdx;
-            /* Shear force */
-            particleForces[kVertex][4] += - areaCoefficient * (triangleArea - eqArea)*1.0 * dAdx;
-            /* Elastice Force */
-            particleForces[kVertex][0] += (C_elastic*1.0)/(triangleArea*triangleArea) * dAdx;
-            /* Volume conservation force */
-            crossProduct(x2, x1, tmp);
-            dVdx = - 1.0/6.0 * tmp; tmp.resetToZero();
-            particleForces[kVertex][2] += -volumeCoefficient  * dVdx;
-
-
+        x2 = dynMesh.getVertex(jVertex);
+        x3 = dynMesh.getVertex(kVertex);
+        triangleNormal = trianglesNormal[iTriangle] = dynMesh.computeTriangleNormal(iTriangle);
+        triangleArea = trianglesArea[iTriangle] = dynMesh.computeTriangleArea(iTriangle);
+        iSurface += triangleArea/3.0;
+        /* Surface conservation force */
+        surfaceForce += computeSurfaceConservationForce(x1, x2, x3, triangleNormal, surfaceCoefficient, dAdx);
+        /* Shear force */
+        shearForce += computeLocalAreaConservationForce(dAdx, triangleArea, eqArea, areaCoefficient);
+        /* Elastice Force */
+        elasticForce += computeElasticRepulsiveForce(dAdx, triangleArea, C_elastic);
+        /* Volume conservation force */
+        volumeForce  += computeVolumeConservationForce(x1, x2, x3, volumeCoefficient);
         }
-    }
 
     /* Run through all the neighbouring vertices of iVertex and calculate:
          x In plane (WLC) force
@@ -239,71 +197,40 @@ Array<T,3> CellModel3D<T>::computeCellForce (
          x Dissipative force
          x Bending force
      */
-    T L, r;
-    Array<T,3> dL, eij; dL.resetToZero(); eij.resetToZero();
-
     std::vector<plint> neighborVertexIds = dynMesh.getNeighborVertexIds(iVertex);
     for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
         jVertex = neighborVertexIds[jV];
-        if (iVertex < jVertex) {
-            x3 = dynMesh.getVertex(jVertex);
-            dL = (x1 - x3)*1.0;
-            L = norm(dL);
-            r = L/maxLength;
-            eij = dL/L;
-            /* In Plane Force (WLC) */
-            tmpForce = eij * (k_WLC*r*(-6 + (9 - 4*r)*r))/(maxLength*pow(-1 + r,2)); // inPlaneForce += k_WLC / maxLength * eij * (-1.0 +  4.0*r + 1.0/((1.0-r)*(1.0-r)) );
-            inPlaneForce +=  tmpForce;
-            particleForces[jVertex][0] += -tmpForce;
-            /* Repulsive Force */
-            tmpForce = eij * k_rep/(L*L);
-            repulsiveForce += tmpForce;
-            particleForces[jVertex][0] += -tmpForce;
-            /* Stretch force */
-//            stretchForce += - eij * k_stretch * (L/eqLength - 1.0);
-            /*  Dissipative Forces Calculations */
-            Array<T,3> vij = iVelocity - particleVelocity[jVertex];
-            tmpForce = -gamma_T*vij -gamma_C*dot(vij,eij)*eij;
-            dissipativeForce += tmpForce;
-            particleForces[jVertex][5] += -tmpForce;
-            /*  Bending Forces Calculations */
-            std::vector<plint> triangles = dynMesh.getAdjacentTriangleIds(iVertex, jVertex);
-            iTriangle = triangles[0];
-            jTriangle = triangles[1];
-            for (pluint id = 0; id < 3; ++id) {
-                kVertex = dynMesh.getVertexId(iTriangle,id);
-                if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
-                    x2 = dynMesh.getVertex(kVertex);
-                    break;
-                }
+        x3 = dynMesh.getVertex(jVertex);
+        /* In Plane (WLC) and repulsive forces*/
+        inPlaneForce += computeInPlaneForce(x1, x3, maxLength, k_WLC, k_rep);
+        /*  Dissipative Forces Calculations */
+        dissipativeForce += computeDissipativeForce(x1, x3, iVelocity, particleVelocity[jVertex], gamma_T, gamma_C);
+        /*  Bending Forces Calculations */
+        std::vector<plint> triangles = dynMesh.getAdjacentTriangleIds(iVertex, jVertex);
+        iTriangle = triangles[0]; jTriangle = triangles[1];
+        for (pluint id = 0; id < 3; ++id) {
+            kVertex = dynMesh.getVertexId(iTriangle,id);
+            if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
+                x2 = dynMesh.getVertex(kVertex);
+                break;
             }
-            for (pluint id = 0; id < 3; ++id) {
-                lVertex = dynMesh.getVertexId(jTriangle,id);
-                if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
-                    x4 = dynMesh.getVertex(lVertex);
-                    break;
-                }
+        }
+        for (pluint id = 0; id < 3; ++id) {
+            lVertex = dynMesh.getVertexId(jTriangle,id);
+            if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
+                x4 = dynMesh.getVertex(lVertex);
+                break;
             }
-            // Bending Force
-            if (trianglesArea.count(iTriangle) == 0) {
-                trianglesNormal[iTriangle] = dynMesh.computeTriangleNormal(iTriangle);
-                trianglesArea[iTriangle] = dynMesh.computeTriangleArea(iTriangle);
-            }
-            if (trianglesArea.count(jTriangle) == 0) {
-                trianglesNormal[jTriangle] = dynMesh.computeTriangleNormal(jTriangle);
-                trianglesArea[jTriangle] = dynMesh.computeTriangleArea(jTriangle);
-            }
-
-            tmpForce = computeBendingForce (x1, x2, x3, x4,
-                                trianglesNormal[iTriangle], trianglesNormal[jTriangle],
-                                trianglesArea[iTriangle], trianglesArea[jTriangle],
-                                eqTileSpan, eqLength, eqAngle, k_bend);
-            T iTriangleBendingCoefficient = trianglesArea[iTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
-            T jTriangleBendingCoefficient = trianglesArea[jTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
-            bendingForce += tmpForce;
-            particleForces[jVertex][1] += tmpForce;
-            particleForces[kVertex][1] += -2*iTriangleBendingCoefficient * tmpForce;
-            particleForces[lVertex][1] += -2*jTriangleBendingCoefficient * tmpForce;
+        }
+        tmpForce = computeBendingForce (x1, x2, x3, x4,
+                            trianglesNormal[iTriangle], trianglesNormal[jTriangle],
+                            trianglesArea[iTriangle], trianglesArea[jTriangle],
+                            eqTileSpan, eqLength, eqAngle, k_bend);
+        T iTriangleBendingCoefficient = trianglesArea[iTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
+        T jTriangleBendingCoefficient = trianglesArea[jTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
+        bendingForce += tmpForce;
+        particleForces[kVertex][1] += -iTriangleBendingCoefficient * tmpForce;
+        particleForces[lVertex][1] += -jTriangleBendingCoefficient * tmpForce;
 //            Array<T,3> tmp2(0,0,0), tmp3(0,0,0), tmp4(0,0,0);
 //            tmpForce = computeBendingForce_Krueger (x1, x2, x3, x4,
 //                                trianglesNormal[iTriangle], trianglesNormal[jTriangle],
@@ -313,7 +240,6 @@ Array<T,3> CellModel3D<T>::computeCellForce (
 //            particleForces[jVertex][1] += tmp3;
 //            particleForces[kVertex][1] += tmp2;
 //            particleForces[lVertex][1] += tmp4;
-        }
     }
     f_wlc = inPlaneForce + repulsiveForce;
     f_bending = bendingForce;
@@ -363,116 +289,6 @@ CellModel3D<T>* CellModel3D<T>::clone() const {
     return new CellModel3D<T>(*this);
 }
 
-
-
-
-template<typename T>
-Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
-                                Array<T,3> const& x3, Array<T,3> const& x4,
-                                Array<T,3> const& ni, Array<T,3> const& nj,
-                                T Ai, T Aj,
-                                T eqTileSpan, T eqLength, T eqAngle, T k)
-{
-    // (i, j, k) and (l, k, j). These triangles share
-    // (x2, x1, x3) and (x4, x3, x1). These triangles share
-    // the common edge j-k.
-    // crossProduct(jPosition - iPosition, kPosition - jPosition, nijk);
-    // crossProduct(kPosition - lPosition, jPosition - kPosition, nlkj);
-
-    // crossProduct(x1 - x2, x3 - x1, nijk);
-    // crossProduct(x3 - x4, x1 - x3, nlkj);
-
-    Array<T,3> v1, v2, D1, D2, dAngledx,tmp;
-    Array<T,3> x32=x2-x3, x43=x3-x4;
-//    =============================================================
-//     Probably the following computations are the correct ones,
-//     but they do not agree with the potential calculation.
-//    =============================================================
-//    v1 = 2 * Ai * ni;
-//    v2 = 2 * Aj * nj;
-//    pcout << "aN1 = (" << v1[0] << ", " << v1[1] << ", " << v1[2] << ") " << std::endl;
-//    pcout << "aN2 = (" << v2[0] << ", " << v2[1] << ", " << v2[2] << ") " << std::endl;
-//    =============================================================
-//     Probably the following computations are incorrect,
-//     but they do agree with the potential calculation.
-//    =============================================================
-    crossProduct(x1 - x2, x32, v1);
-    crossProduct(x1 - x3, x43, v2);
-//    pcout << "cP1 = (" << v1[0] << ", " << v1[1] << ", " << v1[2] << ") " << std::endl;
-//    pcout << "cP2 = (" << v2[0] << ", " << v2[1] << ", " << v2[2] << ") " << std::endl;
-    T angle = angleBetweenVectors(v1, v2);
-    T cosAngle=cos(angle),overSinAngle=1.0/sin(angle);
-    T nv1 = 2 * Ai, nv2 = 2 * Aj;
-    dAngledx.resetToZero();
-    for (int var = 0; var < 3; ++var) {
-        D1.resetToZero(); D2.resetToZero(); tmp.resetToZero();
-        tmp[var] = 1.0;
-        crossProduct(tmp, x32, D1);
-        crossProduct(tmp, x43, D2);
-        dAngledx[var] = (dot(D1,v2) + dot(D2,v1))/nv1/nv2;
-        dAngledx[var] -= cosAngle*(dot(D1,v1)/nv1/nv1 + dot(D2,v2)/nv2/nv2);
-        dAngledx[var] *= -overSinAngle;
-    }
-    return -k * sin(angle - eqAngle) * dAngledx ; //* eqLength / eqTileSpan;
-//    pcout << "fangle: " << angle << " " << eqAngle << std::endl;
-//    T dAngle = (angle - eqAngle);
-//    return -k* (dAngle*(1 - dAngle*dAngle/6.0)) * dAngledx ; //* eqLength / eqTileSpan;
-}
-
-template<typename T>
-Array<T,3> computeBendingForce_Krueger (Array<T,3> const& x1, Array<T,3> const& x2,
-                                Array<T,3> const& x3, Array<T,3> const& x4,
-                                Array<T,3> const& ni, Array<T,3> const& nj,
-                                T Ai, T Aj,
-                                T eqTileSpan, T eqLength, T eqAngle, T k,
-                                Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4)
-{
-    // (i, j, k) and (l, k, j). These triangles share
-    // (x2, x1, x3) and (x4, x3, x1). These triangles share
-    // the common edge j-k.
-    // crossProduct(jPosition - iPosition, kPosition - jPosition, nijk);
-    // crossProduct(kPosition - lPosition, jPosition - kPosition, nlkj);
-
-    // crossProduct(x1 - x2, x3 - x1, nijk);
-    // crossProduct(x3 - x4, x1 - x3, nlkj);
-
-
-    T angle = angleBetweenVectors(ni, nj);
-    T ninj = dot(ni,nj);
-
-    T factor = -k * sin(angle - eqAngle) ; //* eqLength / eqTileSpan;
-    factor *= - 1.0/sqrt(1.0 - ninj);
-    Array<T,3> dfx1(0,0,0), dfx2(0,0,0), dfx3(0,0,0), dfx4(0,0,0), tmp(0,0,0);
-
-
-    crossProduct(x2-x3, nj -ninj*ni, tmp);
-    dfx1 = 1.0/(2*Ai)*tmp; tmp.resetToZero();
-    crossProduct(x3-x4, ni -ninj*nj, tmp);
-    dfx1 += 1.0/(2*Aj)*tmp; tmp.resetToZero();
-
-    crossProduct(x3-x1, nj -ninj*ni, tmp);
-    dfx2 = 1.0/(2*Ai)*tmp; tmp.resetToZero();
-
-    crossProduct(x1-x2, nj -ninj*ni, tmp);
-    dfx3 = 1.0/(2*Ai)*tmp; tmp.resetToZero();
-    crossProduct(x4-x1, ni -ninj*nj, tmp);
-    dfx3 += 1.0/(2*Aj)*tmp; tmp.resetToZero();
-
-    crossProduct(x1-x3, ni -ninj*nj, tmp);
-    dfx4 = 1.0/(2*Aj)*tmp; tmp.resetToZero();
-
-    fx2 = factor * dfx2;
-    fx3 = factor * dfx3;
-    fx4 = factor * dfx4;
-    Array<T,3>  asdasd = (dfx1+dfx2+dfx3+dfx4)*factor;
-    if( fabs(asdasd[0]+asdasd[1]+asdasd[2]) > 1e-15) {
-        pcout << "sfv " << asdasd[0] << ", " << asdasd[1] << ", "  << asdasd[2] << std::endl;
-        pcout << "ni " << ni[0] << ", " << ni[1] << ", "  << ni[2] << std::endl;
-        pcout << "nj " << nj[0] << ", " << nj[1] << ", "  << nj[2] << std::endl;
-    }
-    return factor * dfx1 - asdasd;
-
-}
 
 
 namespace shellModelHelper3D {

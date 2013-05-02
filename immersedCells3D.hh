@@ -183,16 +183,6 @@ void createCells(TriangleBoundary3D<T> &Cells,
         createImmersedCellParticles(immersedParticles, Cells, cellIds[iA], numPartsPerCell);
     }
 }
-//
-//template<typename T>
-//TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles) {
-//    TriangleSet<T> RBC("./lib/RBC.stl");
-//    RBC.scale(radius/3.93);
-//    RBC.rotate(pi/2.0, pi/2.0, 0.);
-//    RBC.translate(center);
-//    return RBC;
-//}
-
 
 template<typename T>
 TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles) {
