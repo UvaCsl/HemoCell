@@ -206,18 +206,21 @@ bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,
         vector = get_f_wlc();
         return true;
     } else if (whichVector==6) {
-        vector = get_f_volume();
+        vector = get_f_bending();
         return true;
     } else if (whichVector==7) {
-        vector = get_f_surface();
+        vector = get_f_volume();
         return true;
     } else if (whichVector==8) {
-        vector = get_f_shear();
+        vector = get_f_surface();
         return true;
     } else if (whichVector==9) {
-        vector = get_f_viscosity();
+        vector = get_f_shear();
         return true;
     } else if (whichVector==10) {
+        vector = get_f_viscosity();
+        return true;
+    } else if (whichVector==11) {
         vector = get_stress();
         return true;
     }
@@ -241,12 +244,14 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getVectorName(plint whichVecto
     } else if (whichVector==6) {
         return "f_volume";
     } else if (whichVector==7) {
-        return "f_surface";
+        return "f_bending";
     } else if (whichVector==8) {
-        return "f_shear";
+        return "f_surface";
     } else if (whichVector==9) {
-        return "f_viscosity";
+        return "f_shear";
     } else if (whichVector==10) {
+        return "f_viscosity";
+    } else if (whichVector==11) {
         return "stress";
     }
     return "empty";

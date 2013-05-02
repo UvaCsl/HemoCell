@@ -55,7 +55,7 @@ public:
     /// Return the velocity, acceleration or vHalfTime through a generic interface (vector id=0,1,2).
     virtual bool getVector(plint whichVector, Array<T,3>& vector) const;
     std::string getVectorName(plint whichVector) const;
-    plint getVectorsNumber() const { return 11; };
+    plint getVectorsNumber() const { return 12; };
     Array<T,3> const& get_v() const { return v; }
     Array<T,3> const& get_vHalfTime() const { return vHalfTime; }
     Array<T,3> const& get_vPrevious() const { return vPrevious; }
