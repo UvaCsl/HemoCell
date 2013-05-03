@@ -22,22 +22,23 @@
 
 
 <parameters>
-    <flowType> 1 </flowType>   <!--flowType: Poisseuille:0 Couette:1-->
+    <flowType> 3 </flowType>   <!--flowType: Poisseuille:[0], Couette:[1], Cell Stretching [3]-->
     <Re> 1 </Re>   <!--Reynolds number-->
-    <shearRate> 100 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
+    <shearRate> 0 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
+    <stretchForce> 100e-12 </stretchForce>   <!--Stretch Force using the X direction (in N). [100e-12]-->
     <rho_p> 1025 </rho_p>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nu_p> 1.7e-6 </nu_p>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 3e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <nx> 40 </nx> <!--Size of domain in Lattice Units -->
-    <ny> 20 </ny>
-    <nz> 20 </nz>
+    <nx> 30 </nx> <!--Size of domain in Lattice Units -->
+    <ny> 15 </ny>
+    <nz> 15 </nz>
 </parameters>
 
 
 <ibm>
     <forceToFluid> 1 </forceToFluid>
-    <shape> 1 </shape> <!-- shape: Sphere:[0], RBC:[1], Cell(defined):[2] -->
+    <shape> 2 </shape> <!-- shape: Sphere:[0], RBC:[1], Cell(defined):[2] -->
     <cellPath>lib/RBC_v202f400.stl</cellPath>
     <radius> 1.5 </radius> <!-- Radius of the particle in Lattice Units (dx) -->
     <deflationRatio> 1.0 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->

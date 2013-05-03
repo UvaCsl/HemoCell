@@ -57,6 +57,48 @@ private:
     std::vector<T> const& cellsSurface;
 };
 
+template<typename T, template<typename U> class Descriptor>
+class ApplyStretchingForce3D : public BoxProcessingFunctional3D
+{
+public:
+    ApplyStretchingForce3D (std::vector<plint> const& outerLeftTags_, std::vector<plint> const& outerRightTags_,
+                            Array<T,3> const& stretchingForce_, T cellDensity_);
+    ~ApplyStretchingForce3D() {} ;
+    ApplyStretchingForce3D(ApplyStretchingForce3D<T,Descriptor> const& rhs);
+    /// Arguments: [0] Particle-field
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual ApplyStretchingForce3D<T,Descriptor>* clone() const;
+    virtual void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+private:
+    std::vector<plint> const& outerLeftTags;
+    std::vector<plint> const& outerRightTags;
+    Array<T,3> const& stretchingForce;
+    T const& cellDensity;
+};
+
+
+template<typename T, template<typename U> class Descriptor>
+class GetParticlesToStretch3D : public BoxProcessingFunctional3D
+{
+public:
+    GetParticlesToStretch3D (plint numParticlesPerSide_, std::vector<plint> * outerLeftTags_, std::vector<plint> * outerRightTags_);
+    ~GetParticlesToStretch3D() {} ;
+    GetParticlesToStretch3D(GetParticlesToStretch3D<T,Descriptor> const& rhs);
+    /// Arguments: [0] Particle-field
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual GetParticlesToStretch3D<T,Descriptor>* clone() const;
+    virtual void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+private:
+    plint const& numParticlesPerSide;
+    std::vector<plint> * outerLeftTags;
+    std::vector<plint> * outerRightTags;
+};
+
+
 }  // namespace plb
 
 #endif  // SHAPE_MEMORY_MODEL_FUNCTIONAL_3D_H

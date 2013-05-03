@@ -32,11 +32,14 @@
 #include "immersedCellParticle3D.h"
 #include "immersedBoundaryMethod3D.h"
 #include <map>
+#include <algorithm>    // std::sort
+#include <vector>       // std::vector
 
 #include "shapeMemoryModelFunctional3D.h"
 #include "immersedCellsReductions.hh"
 
 namespace plb {
+
 
 /* ******** ComputeShapeMemoryModelForce3D *********************************** */
 
@@ -117,16 +120,6 @@ void ComputeShapeMemoryModelForce3D<T,Descriptor>::processGenericBlocks (
             particle->get_f_surface() = f_surface;
             particle->get_f_shear() = f_shear;
             particle->get_f_viscosity() = f_viscosity;
-//            pcout << "f_wlc (" <<
-//                    particle->get_f_wlc()[0] << ", " <<
-//                    particle->get_f_wlc()[1] << ", " <<
-//                    particle->get_f_wlc()[2] << ") " << std::endl;
-//            T neF=norm(elasticForce), ncF=norm(cellForce);
-//            pcout << "forces: "<< neF << " " << ncF << " " << neF/ncF  << ", " << norm(elasticForce-cellForce) <<
-//                    " (" << (elasticForce/neF)[0] << ", "  << (cellForce/ncF)[0] << "), " <<
-//                    " (" << (elasticForce/neF)[1] << ", "  << (cellForce/ncF)[1] << "), " <<
-//                    " (" << (elasticForce/neF)[2] << ", "  << (cellForce/ncF)[2] << "), " <<
-//                    std::endl;
             Array<T,3> force, acc; force.resetToZero(); acc.resetToZero();
             force = elasticForce + cellForce;
             acc = force*1.0 / cellModel->getDensity();
@@ -200,6 +193,163 @@ void ComputeShapeMemoryModelForce3D<T,Descriptor>::getTypeOfModification (
     modified[0] = modif::dynamicVariables; // Particle field.
 }
 
+
+
+/* ******** ApplyStretchingForce3D *********************************** */
+
+template<typename T, template<typename U> class Descriptor>
+ApplyStretchingForce3D<T,Descriptor>::ApplyStretchingForce3D (
+        std::vector<plint> const& outerLeftTags_, std::vector<plint> const& outerRightTags_,
+        Array<T,3> const& stretchingForce_, T cellDensity_)
+    : outerLeftTags(outerLeftTags_),
+      outerRightTags(outerRightTags_),
+      stretchingForce(stretchingForce_),
+      cellDensity(cellDensity_)
+{ }
+
+
+template<typename T, template<typename U> class Descriptor>
+ApplyStretchingForce3D<T,Descriptor>::ApplyStretchingForce3D (
+        ApplyStretchingForce3D<T,Descriptor> const& rhs)
+    : outerLeftTags(rhs.outerLeftTags),
+      outerRightTags(rhs.outerRightTags),
+      stretchingForce(rhs.stretchingForce),
+      cellDensity(rhs.cellDensity)
+{ }
+
+
+template<typename T, template<typename U> class Descriptor>
+void ApplyStretchingForce3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    PLB_PRECONDITION( blocks.size()==1 );
+    ParticleField3D<T,Descriptor>& particleField =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    std::vector<Particle3D<T,Descriptor>*> found;
+    particleField.findParticles(domain, found);
+    map<plint, ImmersedCellParticle3D<T,Descriptor>*> tagToParticle;
+    for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
+        tagToParticle[particle->getTag()] = particle;
+    }
+    plint numOuterLeftTags = outerLeftTags.size();
+    plint numOuterRightTags = outerRightTags.size();
+    for(plint it = 0; it < numOuterLeftTags; it++) {
+        plint tag = outerLeftTags[it];
+        if (tagToParticle.find(tag) != tagToParticle.end()) {
+            ImmersedCellParticle3D<T,Descriptor>* particle = (tagToParticle[tag]);
+            //particle->get_a() += -(stretchingForce * 1.0/numOuterLeftTags) * 1.0/cellDensity;
+            particle->get_force() = particle->get_force() -stretchingForce * (1.0/numOuterLeftTags);
+        } else pcout << "ImmerseCellParticle3D not found! Something is wrong here!" << std::endl;
+    }
+    for(plint it = 0; it < numOuterRightTags; it++) {
+        plint tag = outerRightTags[it];
+        if (tagToParticle.find(tag) != tagToParticle.end()) {
+            ImmersedCellParticle3D<T,Descriptor>* particle = (tagToParticle[tag]);
+            //particle->get_a() += (stretchingForce * 1.0/numOuterRightTags) * 1.0/cellDensity;
+            particle->get_force() = particle->get_force() + stretchingForce * (1.0/numOuterRightTags);
+        } else pcout << "ImmerseCellParticle3D not found! Something is wrong here!" << std::endl;
+    }
+//    pcout << (stretchingForce * (1.0/numOuterRightTags))[0] <<", " << (stretchingForce * (1.0/numOuterRightTags))[1]
+   //<<", " << (stretchingForce * (1.0/numOuterRightTags))[2] << std::endl;
+
+}
+
+template<typename T, template<typename U> class Descriptor>
+ApplyStretchingForce3D<T,Descriptor>*
+    ApplyStretchingForce3D<T,Descriptor>::clone() const
+{
+    return new ApplyStretchingForce3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void ApplyStretchingForce3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Particle field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT ApplyStretchingForce3D<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulk;
+}
+
+template<typename T, template<typename U> class Descriptor>
+void ApplyStretchingForce3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::allVariables; // Particle field.
+}
+
+
+/* ******** GetParticlesToStretch3D *********************************** */
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInX (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) {
+    T iX = iParticle->getPosition()[0];
+    T jX = jParticle->getPosition()[0];
+    return (iX<jX);
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+GetParticlesToStretch3D<T,Descriptor>::GetParticlesToStretch3D
+       (plint numParticlesPerSide_, std::vector<plint> * outerLeftTags_,
+               std::vector<plint> * outerRightTags_)
+    : numParticlesPerSide(numParticlesPerSide_),
+      outerLeftTags(outerLeftTags_),
+      outerRightTags(outerRightTags_)
+{ }
+
+
+template<typename T, template<typename U> class Descriptor>
+GetParticlesToStretch3D<T,Descriptor>::GetParticlesToStretch3D (
+        GetParticlesToStretch3D<T,Descriptor> const& rhs)
+    : numParticlesPerSide(rhs.numParticlesPerSide),
+      outerLeftTags(rhs.outerLeftTags),
+      outerRightTags(rhs.outerRightTags)
+{ }
+
+
+template<typename T, template<typename U> class Descriptor>
+void GetParticlesToStretch3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+            PLB_PRECONDITION( blocks.size()==1 );
+            ParticleField3D<T,Descriptor>& particleField =
+                *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+
+            std::vector<Particle3D<T,Descriptor>*> found;
+            particleField.findParticles(domain, found);
+            std::sort(found.begin(), found.end(), compareParticlesInX<T,Descriptor>);
+            plint numParticles = found.size();
+            for (plint iP = 0; iP < numParticlesPerSide; ++iP) {
+                outerLeftTags->push_back(found[iP]->getTag());
+                outerRightTags->push_back(found[numParticles - iP - 1]->getTag());
+            }
+}
+
+template<typename T, template<typename U> class Descriptor>
+GetParticlesToStretch3D<T,Descriptor>*
+GetParticlesToStretch3D<T,Descriptor>::clone() const
+{
+    return new GetParticlesToStretch3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void GetParticlesToStretch3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Particle field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT GetParticlesToStretch3D<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulk;
+}
+
+template<typename T, template<typename U> class Descriptor>
+void GetParticlesToStretch3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::dynamicVariables; // Particle field.
+}
 
 }  // namespace plb
 

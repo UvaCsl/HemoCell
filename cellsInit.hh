@@ -65,7 +65,7 @@ void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> cons
     }
 
     T addToX = 0.0;
-    if (flowType == 1) {
+    if (flowType != 2) {
         addToX = (NdX - slices) * dX * 0.5;
     }
 
