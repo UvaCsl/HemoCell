@@ -48,11 +48,11 @@ class ShapeMemoryModel3D : public ShellModel3D<T>
 public:
     /* All input should be in dimensionless units */
     ShapeMemoryModel3D(T density_, T k_rest_,
-                T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_rep_, T k_elastic_,
+                T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
                 T k_volume_, T k_surface_, T eta_m_,
-                T eqArea_, T eqLength_, T eqAngle_,
+                vector<T> eqArea_, map<plint,T> eqLength_, map<plint,T> eqAngle_,
                 T eqVolume_, T eqSurface_, T eqTileSpan_,
-                T maxLength_, T persistenceLengthFine, pluint Nv);
+                T persistenceLengthFine, T eqLengthRatio_, pluint cellNumTriangles_, pluint cellNumVertices_);
     virtual Array<T,3> computeCellForce (
             TriangleBoundary3D<T> const& boundary,
             T cellVolume, T cellSurface, T & iSurface,
@@ -66,13 +66,17 @@ public:
             plint iVertex );
     virtual ShapeMemoryModel3D<T>* clone() const;
 private:
-    T k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_surface, k_volume;
+    plint getTriangleId(plint iTriangle);
+    plint getEdgeId(plint iVertex, plint jVertex);
+private:
+    T k_rest, k_shear, k_bend, k_stretch, k_inPlane, k_elastic, k_surface, k_volume;
     T C_elastic;
     T eta_m, gamma_T, gamma_C;
-    T eqLength, eqArea, eqAngle;
+    vector<T> eqAreaPerTriangle;
+    map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
     T eqVolume, eqSurface, eqTileSpan;
-    T maxLength, persistenceLengthCoarse;
-    pluint Nv;
+    T persistenceLengthCoarse, eqLengthRatio;
+    pluint cellNumTriangles, cellNumVertices;
 public:
     /* Coefficients */
     T& getRestingStiffness() { return k_rest; }
@@ -87,8 +91,6 @@ public:
 
     /* TODO: Fix change of coefficients */
     /*
-    T getWormLikeChainCoefficient() { return k_WLC/(kBT * maxLength/(4.0*persistenceLength)); }
-    void setWormLikeChainCoefficient(T value) { k_WLC = value*(kBT * maxLength/(4.0*persistenceLength)); }
     T getElasticStiffness() { return k_elastic; }
     void setElasticStiffness(T value) {
         k_elastic = value;
@@ -121,15 +123,15 @@ public:
     void setDissipativeParameterC(T value) const { gamma_C = value; }
     T const& getDissipativeParameterC() const { return gamma_C; }
     /* Equilibrium parameters */
-    T& getEquilibriumLinkLength() { return eqLength; }
-    void setEquilibriumLinkLength(T value) { eqLength = value; }
-    T const& getEquilibriumLinkLength() const { return eqLength; }
-    T& getEquilibriumTriangleArea() { return eqArea; }
-    void setEquilibriumTriangleArea(T value) { eqArea = value; }
-    T const& getEquilibriumTriangleArea() const { return eqArea; }
-    T& getEquilibriumAngle() { return eqAngle; }
-    void setEquilibriumAngle(T value) { eqAngle = value; }
-    T const& getEquilibriumAngle() const { return eqAngle; }
+//    vector<T>& getEquilibriumLinkLength() { return eqLength; }
+//    void setEquilibriumLinkLength(vector<T> value) { eqLength = value; }
+//    vector<T> const& getEquilibriumLinkLength() const { return eqLength; }
+//    vector<T>& getEquilibriumTriangleArea() { return eqArea; }
+//    void setEquilibriumTriangleArea(vector<T> value) { eqArea = value; }
+//    vector<T> const& getEquilibriumTriangleArea() const { return eqArea; }
+//    vector<T>& getEquilibriumAngle() { return eqAngle; }
+//    void setEquilibriumAngle(vector<T> value) { eqAngle = value; }
+//    vector<T> const& getEquilibriumAngle() const { return eqAngle; }
     T& getEquilibriumVolume() { return eqVolume; }
     void setEquilibriumVolume(T value) { eqVolume = value; }
     T const& getEquilibriumVolume() const { return eqVolume; }
@@ -140,12 +142,9 @@ public:
     void setEquilibriumTileSpan(T value) { eqTileSpan = value; }
     T const& getEquilibriumTileSpan() const { return eqTileSpan; }
     /* State parameters */
-    T& getMaximumLinkLength() { return maxLength; }
-    void setMaximumLinkLength(T value) { maxLength = value; }
-    T const& getMaximumLinkLength() const { return maxLength; }
-    pluint& getNumberOfVertices() { return Nv; }
-    void setNumberOfVertices(pluint value) { Nv = value; }
-    pluint const& getNumberOfVertices() const { return Nv; }
+    pluint& getNumberOfVertices() { return cellNumVertices; }
+    void setNumberOfVertices(pluint value) { cellNumVertices = value; }
+    pluint const& getNumberOfVertices() const { return cellNumVertices; }
 };
 
 }  // namespace plb

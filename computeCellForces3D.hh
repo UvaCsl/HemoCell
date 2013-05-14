@@ -55,6 +55,29 @@ Array<T,3> computeInPlaneForce(Array<T,3> const& x1, Array<T,3> const& x2, T max
 
 
 template<typename T>
+Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLengthRatio, T eqLength, T k_inPlane) {
+/*
+ *  Computes In-Plane forces based on Worm-like chain forces and a repulsive potential.
+ *  Has the same function as computeInPlaneForce but with different arguments.
+ *
+ *    eqLengthRatio = eqLength/maxLength ; // Used to be x0
+ *    k_inPlane = kBT /(4.0*persistenceLengthCoarse);
+ *
+ *  Related publications: [FedosovCaswellKarniadakis2010, FedosovCaswell2010b, Pivkin2008]
+
+*/
+    Array<T,3> dL = (x1 - x2)*1.0;
+    T L = norm(dL);
+    Array<T,3> eij = dL/L;
+    /* In Plane Force (WLC) and Repulsive Force */
+    Array<T,3> tmpForce =  eij * k_inPlane *
+                    (1 - (4*L*eqLengthRatio)/eqLength +
+                            pow(eqLength,2)*((-1 + pow(-1 + eqLengthRatio,-2) + 4*eqLengthRatio)/pow(L,2) - pow(eqLength - L*eqLengthRatio,-2)));
+    return tmpForce;
+}
+
+
+template<typename T>
 Array<T,3> computeDissipativeForce(Array<T,3> const& x1, Array<T,3> const& x2,
                                    Array<T,3> const& v1, Array<T,3> const& v2,
                                    T gamma_T, T gamma_C) {

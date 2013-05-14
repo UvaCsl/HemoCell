@@ -351,6 +351,31 @@ void GetParticlesToStretch3D<T,Descriptor>::getTypeOfModification (
     modified[0] = modif::dynamicVariables; // Particle field.
 }
 
+
+
+template<typename T>
+void getCellShapeQuantitiesFromMesh(TriangleBoundary3D<T>& boundary,
+                            vector<T> & eqAreaPerTriangle, map<plint,T> & eqLengthPerEdge, map<plint,T> & eqAnglePerEdge,
+                            plint cellNumTriangles, plint cellNumPartsPerCell) {
+    TriangularSurfaceMesh<T> const& dynMesh = boundary.getMesh();
+    for (plint iVertex = 0; iVertex < cellNumPartsPerCell; ++iVertex) {
+        std::vector<plint> neighborVertexIds = dynMesh.getNeighborVertexIds(iVertex);
+        for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
+            plint jVertex = neighborVertexIds[jV];
+            if (iVertex > jVertex){
+                plint edgeId = (iVertex*(iVertex - 1))/2 + jVertex;
+                eqLengthPerEdge[edgeId] = dynMesh.computeEdgeLength(jVertex, iVertex);
+                eqAnglePerEdge[edgeId] = dynMesh.computeDihedralAngle(iVertex, jVertex);
+            }
+        }
+    }
+    for (plint iTriangle = 0; iTriangle < cellNumTriangles; ++iTriangle) {
+        eqAreaPerTriangle[iTriangle] = dynMesh.computeTriangleArea(iTriangle);
+    }
+}
+
+
+
 }  // namespace plb
 
 #endif  // SHAPE_MEMORY_MODEL_FUNCTIONAL_3D_HH

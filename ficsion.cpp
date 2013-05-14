@@ -29,6 +29,7 @@
 #include "immersedCellsFunctional3D.hh"
 #include "immersedCellsReductions.hh"
 #include <string>
+#include <map>
 
 #include "shapeMemoryModel3D.hh"
 #include "shapeMemoryModelFunctional3D.hh"
@@ -113,7 +114,7 @@ int main(int argc, char* argv[])
     std::string logFileName = global::directories().getLogOutDir() + "plbCells.log";
     plb_ofstream logFile(logFileName.c_str());
 
-    plint forceToFluid, shape, minNumOfTriangles;
+    plint forceToFluid, shape, cellNumTriangles;
     std::string cellPath;
     plint tmax, tmeas, npar;
     T dtIteration = 0;
@@ -132,7 +133,7 @@ int main(int argc, char* argv[])
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
     readFicsionXML(document, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m,
-            rho_p, u, flowType, Re, shearRate_p, stretchForce_p, Re_p, N, lx, ly, lz,  forceToFluid, shape, cellPath, radius, deflationRatio, minNumOfTriangles, tmax, tmeas, npar);
+            rho_p, u, flowType, Re, shearRate_p, stretchForce_p, Re_p, N, lx, ly, lz,  forceToFluid, shape, cellPath, radius, deflationRatio, cellNumTriangles, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -194,10 +195,10 @@ int main(int argc, char* argv[])
 //  === Create Mesh, particles and CellModel ===
     plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
     std::vector<plint> cellIds;
-    plint numPartsPerCell = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, numPartsPerCell, parameters, shape, cellPath, minNumOfTriangles);
+    plint cellNumVertices = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
+    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
     pcout << "Mesh Created" << std::endl;
-    generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, numPartsPerCell, numOfCellsPerInlet, slice);
+    generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, cellNumVertices, numOfCellsPerInlet, slice);
 
     std::vector<plint> numParts(cellIds.size()); // Count number of particles per Cell
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
@@ -241,6 +242,7 @@ int main(int argc, char* argv[])
 
     T persistenceLengthFine = 7.5e-9  / dx;
     T maxLength = 2.2*eqLength;
+    T eqLengthRatio = 2.2;
     /* The Maximum length of two vertices should be less than 1.0 LU */
     PLB_PRECONDITION( maxLength < 1.0 );
     k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
@@ -249,9 +251,13 @@ int main(int argc, char* argv[])
     eta_m /= dNewton*dt/dx;
     k_stretch /= dNewton;
     k_rest /= dNewton/dx;
-    ShapeMemoryModel3D<T> cellModel(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m, \
-                                                eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan,
-                                                maxLength, persistenceLengthFine, numParts[0]);
+    plint cellNumEdges = (cellNumVertices-1) * cellNumVertices / 2;
+    vector<T> eqAreaPerTriangle(cellNumTriangles);
+    map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
+    getCellShapeQuantitiesFromMesh(Cells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
+    ShapeMemoryModel3D<T> cellModel(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
+                    eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, eqVolume, eqSurface, eqTileSpan,
+                    persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;

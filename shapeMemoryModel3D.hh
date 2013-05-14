@@ -32,11 +32,11 @@ namespace plb {
 
 template<typename T>
 ShapeMemoryModel3D<T>::ShapeMemoryModel3D (
-        T density_, T k_rest_, T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_rep_, T k_elastic_,
+        T density_, T k_rest_, T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
         T k_volume_, T k_surface_, T eta_m_,
-        T eqArea_, T eqLength_, T eqAngle_,
+        vector<T> eqArea_, map<plint,T> eqLength_, map<plint,T> eqAngle_,
         T eqVolume_, T eqSurface_, T eqTileSpan_,
-        T maxLength_, T persistenceLengthFine, pluint Nv)
+        T persistenceLengthFine, T eqLengthRatio_, pluint cellNumTriangles_, pluint cellNumVertices_)
     : ShellModel3D<T>(density_),
       k_rest(k_rest_),
       k_shear(k_shear_),
@@ -46,52 +46,55 @@ ShapeMemoryModel3D<T>::ShapeMemoryModel3D (
       k_surface(k_surface_),
       k_volume(k_volume_),
       eta_m(eta_m_),
-      eqLength(eqLength_),
-      eqArea(eqArea_),
-      eqAngle(eqAngle_),
+      eqLengthPerEdge(eqLength_),
+      eqAreaPerTriangle(eqArea_),
+      eqAnglePerEdge(eqAngle_),
       eqVolume(eqVolume_),
       eqSurface(eqSurface_),
       eqTileSpan(eqTileSpan_),
-      maxLength(maxLength_)
+      eqLengthRatio(eqLengthRatio_),
+      cellNumTriangles(cellNumTriangles_),
+      cellNumVertices(cellNumVertices_)
 {
-    T x0 = eqLength*1.0/maxLength;
-    persistenceLengthCoarse = persistenceLengthFine * sqrt( (Nv-2.0) / (23867-2.0)) ;
+    persistenceLengthCoarse = persistenceLengthFine * sqrt( (cellNumVertices-2.0) / (23867-2.0)) ;
+
+    T eqMeanArea = eqSurface/cellNumTriangles;
+    T eqLength = sqrt(4*eqMeanArea/sqrt(3.0));
+    T eqAngle=0.0;
+
+    typename map<plint,T>::reverse_iterator iter = eqAnglePerEdge.rbegin();
+    for (iter = eqAnglePerEdge.rbegin(); iter != eqAnglePerEdge.rend(); ++iter) {
+       eqAngle = iter->second;
+    }
+    eqAngle /= eqAnglePerEdge.size();
+
     /* Use dimensionless coefficients */
+
+    /* Use Mean eqLength for stiffness coefficients of:
+     *  Volume, Surface and Shear.
+     *  Shear also uses mean eqArea in the calculation.
+     *  */
     k_volume *= kBT/pow(eqLength,3);
     k_surface *= kBT/pow(eqLength,2);
     k_shear *= kBT/pow(eqLength,2);
     k_bend *= kBT;
+    /* In plane coefficient initialization */
+    k_inPlane = k_WLC_ * kBT /(4.0*persistenceLengthCoarse);
+    C_elastic =  kBT*k_elastic * (3.0*sqrt(3.0)*pow(eqLength,3) * eqLengthRatio *
+                    (6 - 9*eqLengthRatio + 4*pow(eqLengthRatio,2))) / (64.*persistenceLengthCoarse);
     /* Dissipative term coefficients from FedosovCaswellKarniadakis2010 */
     gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
     gamma_C = (gamma_T/3.0);
-    /* The units on the paper are wrong, should have been fixed on config.xml */
-    // gamma_T *= eqLength;
-    // gamma_C *= eqLength;
 
-    k_WLC = k_WLC_ * kBT * maxLength/(4.0*persistenceLengthCoarse);
-    /* Solving f_WLC + f_rep =0 for x=eqLength, f_rep = k_rep/L^m, m=2. */
-    k_rep = k_rep_*(k_WLC*maxLength*pow(x0,3)*(6 - 9*x0 + 4*pow(x0,2)))/pow(-1 + x0,2);
-
-
-    T forceSum =
-            (k_WLC*x0*(-6 + (9 - 4*x0)*x0))/(maxLength*pow(-1 + x0,2)) // WLC part
-           + k_rep/(eqLength*eqLength); // repulsive part
-    C_elastic = k_elastic * 3.0 * sqrt(3.0)* kBT
-             * (maxLength*maxLength*maxLength) * (x0*x0*x0*x0)
-             / (64.0*persistenceLengthCoarse)
-             * (4*x0*x0 - 9*x0 + 6)
-             / (1-x0)*(1-x0);
     pcout << std::endl;
     pcout << " ============================================= " << std::endl;
-    pcout << "k_WLC: " << k_WLC << ",\t eqLength: " << eqLength << std::endl;
-    pcout << "k_rep: " << k_rep << ",\t forceSum: " << forceSum << std::endl;
     pcout << "k_bend: " << k_bend << ",\t eqAngle (degrees): " << eqAngle*180.0/pi << std::endl;
     pcout << "k_volume: " << k_volume << ",\t eqVolume: " << eqVolume << std::endl;
     pcout << "k_surface: " << k_surface << ",\t eqSurface: " << eqSurface << std::endl;
-    pcout << "k_shear: " << k_shear << ",\t eqArea: " << eqArea << std::endl;
-    pcout << "eta_m: " << eta_m << ",\t x0: " << x0 << std::endl;
+    pcout << "k_shear: " << k_shear << ",\t eqMeanArea: " << eqMeanArea << std::endl;
+    pcout << "eta_m: " << eta_m << ",\t eqLengthRatio: " << eqLengthRatio << std::endl;
     pcout << "gamma_T: " << gamma_T << ",\t persistenceLengthCoarse: " << persistenceLengthCoarse << std::endl;
-    pcout << "gamma_C: " << gamma_C << ",\t maxLength: " << maxLength << std::endl;
+    pcout << "gamma_C: " << gamma_C << ",\t 0: " << 0 << std::endl;
     pcout << "k_rest: " << k_rest << ",\t 0 : " << 0 << std::endl;
     pcout << "k_stretch: " << k_stretch << ",\t eqTileSpan: " << eqTileSpan << std::endl;
     pcout << "k_elastic: " << k_elastic << ",\t eqLength: " << eqLength << std::endl;
@@ -99,9 +102,29 @@ ShapeMemoryModel3D<T>::ShapeMemoryModel3D (
     pcout << "* k_volume: " <<  k_volume/(kBT/pow(eqLength,3)) <<  std::endl;
     pcout << "* k_surface: " << k_surface/(kBT/pow(eqLength,2)) <<  std::endl;
     pcout << "* k_shear: " << k_shear/(kBT/pow(eqLength,2)) <<  std::endl;
-    pcout << "* eqLength from eqArea: " << sqrt(4*eqArea/sqrt(3.0)) << ",\t eqLength: " << eqLength << std::endl;
+    pcout << "* eqLength from eqArea: " << sqrt(4*eqMeanArea/sqrt(3.0)) << ",\t eqLength: " << eqLength << std::endl;
     pcout << " ============================================= " << std::endl;
 }
+
+
+template<typename T>
+plint ShapeMemoryModel3D<T>::getTriangleId(plint iTriangle)
+{
+    return iTriangle % cellNumTriangles;
+};
+
+
+template<typename T>
+plint ShapeMemoryModel3D<T>::getEdgeId(plint iVertex, plint jVertex) {
+    iVertex = iVertex % cellNumVertices;
+    jVertex = jVertex % cellNumVertices;
+    if (iVertex > jVertex){
+        return (iVertex*(iVertex - 1))/2 + jVertex;
+    } else if (iVertex < jVertex) {
+        return (jVertex*(jVertex - 1))/2 + iVertex;
+    }
+    return -1;
+};
 
 
 template<typename T>
@@ -132,7 +155,7 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
         x1ref = boundary.getMesh().getVertex(iVertex);
         boundary.popSelect();
         Array<T,3> dx = x1-x1ref;
-        return (-k_rest*dx) + (-gamma_C*dot(iVelocity,dx)/eqLength * dx); // Dissipative term from Dupin2007
+        return (-k_rest*dx) + (-gamma_T*iVelocity); // Dissipative term from Dupin2007
     }
     /* Force initializations */
     Array<T,3> inPlaneForce; inPlaneForce.resetToZero();
@@ -148,7 +171,8 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
     /* Calculate cell coefficients */
     T volumeCoefficient = k_volume * (cellVolume - eqVolume)*1.0/eqVolume;
     T surfaceCoefficient = k_surface * (cellSurface - eqSurface)*1.0/eqSurface;
-    T areaCoefficient = k_shear/eqArea ;
+    T eqMeanArea = eqSurface/cellNumTriangles;
+    T areaCoefficient = k_shear/eqMeanArea ;
     iSurface = 0.0;
 
     /* Run through all the neighbouring faces of iVertex and calculate:
@@ -183,6 +207,7 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
         /* Surface conservation force */
         surfaceForce += computeSurfaceConservationForce(x1, x2, x3, triangleNormal, surfaceCoefficient, dAdx);
         /* Shear force */
+        T eqArea = eqAreaPerTriangle[getTriangleId(iTriangle)];
         shearForce += computeLocalAreaConservationForce(dAdx, triangleArea, eqArea, areaCoefficient);
         /* Elastice Force */
         elasticForce += computeElasticRepulsiveForce(dAdx, triangleArea, C_elastic);
@@ -201,8 +226,11 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
     for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
         jVertex = neighborVertexIds[jV];
         x3 = dynMesh.getVertex(jVertex);
+        T eqLength = eqLengthPerEdge[getEdgeId(iVertex, jVertex)];
+        T eqAngle = eqAnglePerEdge[getEdgeId(iVertex, jVertex)];
         /* In Plane (WLC) and repulsive forces*/
-        inPlaneForce += computeInPlaneForce(x1, x3, maxLength, k_WLC, k_rep);
+        inPlaneForce += computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane);
+
         /*  Dissipative Forces Calculations */
         dissipativeForce += computeDissipativeForce(x1, x3, iVelocity, particleVelocity[jVertex], gamma_T, gamma_C);
         /*  Bending Forces Calculations */
@@ -257,31 +285,6 @@ Array<T,3> ShapeMemoryModel3D<T>::computeElasticForce (
         plint iVertex )
 {
     return Array<T,3>(0,0,0);
-
-    TriangularSurfaceMesh<T> const& mesh = boundary.getMesh();
-    Array<T,3> force; force.resetToZero();
-    static T eps = (sizeof(T) == sizeof(float) ?
-            100.0 * std::numeric_limits<T>::epsilon() :
-            std::numeric_limits<float>::epsilon());
-
-    Array<T,3> vertex = mesh.getVertex(iVertex);
-
-    for (int i = 0; i < 3; i++) {
-        Array<T,3> iPosition = vertex;
-        iPosition[i] += eps;
-        T up = shellModelHelper3D::cellModelHelper3D::computePotential (
-                iVertex, iPosition, mesh,
-                eqLength, maxLength, eqArea, eqAngle, eqTileSpan,
-                k_WLC, k_elastic, k_shear, k_bend);
-        iPosition = vertex;
-        iPosition[i] -= eps;
-        T um = shellModelHelper3D::cellModelHelper3D::computePotential (
-                iVertex, iPosition, mesh,
-                eqLength, maxLength, eqArea, eqAngle, eqTileSpan,
-                k_WLC, k_elastic, k_shear, k_bend);
-        force[i] = -(up-um) / (2.0*eps);
-    }
-    return force;
 }
 
 template<typename T>

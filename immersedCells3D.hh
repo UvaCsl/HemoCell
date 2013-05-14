@@ -205,8 +205,8 @@ TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cel
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
     const std::vector<Array<T,3> > &centers, const std::vector<T> &radii,
-    std::vector<plint> &cellIds, plint &numPartsPerCell, IncomprFlowParam<T> const& parameters,
-    plint shape, std::string cellPath, plint minNumOfTriangles=100)
+    std::vector<plint> &cellIds, IncomprFlowParam<T> const& parameters,
+    plint shape, std::string cellPath, plint &cellNumTriangles, plint &numPartsPerCell)
 {
 //	shape 0:Sphere, 1:RBC
     PLB_ASSERT(centers.size() == radii.size());
@@ -218,10 +218,10 @@ TriangleBoundary3D<T> createCompleteMesh(
         Array<T,3> center(centers[iA]);
         T radius = radii[iA];
         if (shape == 0) {
-        	allTriangles.push_back(constructSphere<T>(center, radius, minNumOfTriangles));
+        	allTriangles.push_back(constructSphere<T>(center, radius, cellNumTriangles));
         }
         else if (shape == 1) {
-        	allTriangles.push_back(constructRBC<T>(center, radius, minNumOfTriangles));
+        	allTriangles.push_back(constructRBC<T>(center, radius, cellNumTriangles));
         }
         else if (shape == 2) {
             allTriangles.push_back(constructCell<T>(center, radius, cellPath));
@@ -248,7 +248,7 @@ TriangleBoundary3D<T> createCompleteMesh(
     pcout << "num Triangles = " << Cells.getMesh().getNumTriangles() << ", centers = " << centers.size() << std::endl;
     pcout << "num Vertices per Cell= " << numPartsPerCell << ", modulo = " << modulo << std::endl;
     pcout << "num Triangles per Cell= " << Cells.getMesh().getNumTriangles()/centers.size() << ", modulo = " << modulo << std::endl;
-
+    cellNumTriangles = Cells.getMesh().getNumTriangles()/centers.size();
     PLB_ASSERT(modulo == 0);
 
     Cells.cloneVertexSet(0);

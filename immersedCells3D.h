@@ -55,6 +55,7 @@ void translateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& p
                    std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
                    std::vector<Array<T,3> > &centers, std::vector<T> &radii, Array<T,3> const& translation );
 
+
 template<typename T, template<typename U> class Descriptor>
 void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
                    const Box3D &outlet, std::vector<plint> &numParts,
@@ -67,27 +68,28 @@ bool generateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& pa
                       const Box3D &inlet, std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
                       plint numPartsPerCell, plint numOfCellsPerInlet, plint &slice );
 
+
 template<typename T, template<typename U> class Descriptor>
 void createCells(TriangleBoundary3D<T> &Cells,
                     const std::vector<plint> &cellIds,
                     plint numPartsPerCell,
                     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > &immersedParticles);
 
+
 template<typename T>
 TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles) ;
+
 
 template<typename T>
 TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename);
 
+
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
     const std::vector<Array<T,3> > &centers, const std::vector<T> &radii,
-    std::vector<plint> &cellIds, plint &numPartsPerCell, plint shape, std::string cellPath) ;
+    std::vector<plint> &cellIds, IncomprFlowParam<T> const& parameters,
+    plint shape, std::string cellPath, plint &cellNumTriangles, plint &numPartsPerCell);
 
-template<typename T>
-TriangleBoundary3D<T> createCompleteMeshRBCs	(
-    const std::vector<Array<T,3> > &centers, const std::vector<T> &radii,
-    std::vector<plint> &cellIds, plint &numPartsPerCell) ;
 
 #endif  // IMMERSED_CELLS_3D_H
 
