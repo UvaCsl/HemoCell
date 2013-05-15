@@ -25,9 +25,9 @@ void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> cons
         std::vector<Array<T,3> > & centers, std::vector<T> & radii, plint flowType) {
 
     std::vector<T> posX, posY, posZ;
-    const plint nx = parameters.getNx() ;
-    const plint ny = parameters.getNy()  ;
-    const plint nz = parameters.getNz()  ;
+    const plint nx = parameters.getNx() - 1 ;
+    const plint ny = parameters.getNy()  - 1;
+    const plint nz = parameters.getNz()  - 1;
     const T dX = 2.1 * radius ;
     const T dY = 2.1 * radius * ( (shape==1) ? 0.265106361 : 1 );
     const T dZ = 2.1 * radius;
@@ -65,7 +65,7 @@ void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> cons
     }
 
     T addToX = 0.0;
-    if (flowType != 2) {
+    if (flowType != 0) {
         addToX = (NdX - slices) * dX * 0.5;
     }
 

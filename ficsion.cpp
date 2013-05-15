@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
-    if (flowType == 2) {
+    if (flowType == 0) {
         iniLatticeSquarePoiseuille(lattice, parameters, *boundaryCondition, Re);
     } else {
         iniLatticeSquareCouette(lattice, parameters, *boundaryCondition, shearRate);
@@ -251,7 +251,6 @@ int main(int argc, char* argv[])
     eta_m /= dNewton*dt/dx;
     k_stretch /= dNewton;
     k_rest /= dNewton/dx;
-    plint cellNumEdges = (cellNumVertices-1) * cellNumVertices / 2;
     vector<T> eqAreaPerTriangle(cellNumTriangles);
     map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
     getCellShapeQuantitiesFromMesh(Cells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);

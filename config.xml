@@ -23,14 +23,14 @@
 
 <parameters>
     <flowType> 1 </flowType>   <!--flowType: Poisseuille:[0], Couette:[1], Cell Stretching [3]-->
-    <Re> 1 </Re>   <!--Reynolds number-->
-    <shearRate> 100 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
-    <stretchForce> 100e-12 </stretchForce>   <!--Stretch Force using the X direction (in N). [100e-12]-->
+    <Re> 0.1 </Re>   <!--Reynolds number-->
+    <shearRate> 10 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
+    <stretchForce> 50e-12 </stretchForce>   <!--Stretch Force using the X direction (in N). [100e-12]-->
     <rho_p> 1025 </rho_p>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nu_p> 1.7e-6 </nu_p>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
-    <dx> 3e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <nx> 30 </nx> <!--Size of domain in Lattice Units -->
+    <dx> 5e-6 </dx> <!--Physical length of 1 Lattice Unit -->
+    <nx> 10 </nx> <!--Size of domain in Lattice Units -->
     <ny> 10 </ny>
     <nz> 10 </nz>
 </parameters>
@@ -46,7 +46,7 @@
 </ibm>
 
 <sim>
-    <tmax> 1000000 </tmax> <!-- total number of iterations -->
+    <tmax> 50000000 </tmax> <!-- total number of iterations -->
     <tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
     <npar> 1 </npar> <!-- Number of particles > -->
 </sim>
