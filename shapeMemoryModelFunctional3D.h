@@ -34,6 +34,7 @@
 
 namespace plb {
 
+
 template<typename T, template<typename U> class Descriptor>
 class ComputeShapeMemoryModelForce3D : public BoxProcessingFunctional3D
 {
@@ -57,64 +58,12 @@ private:
     std::vector<T> const& cellsSurface;
 };
 
-template<typename T, template<typename U> class Descriptor>
-class ApplyStretchingForce3D : public BoxProcessingFunctional3D
-{
-public:
-    ApplyStretchingForce3D (std::vector<plint> const& outerLeftTags_, std::vector<plint> const& outerRightTags_,
-                            Array<T,3> const& stretchingForce_, T cellDensity_);
-    ~ApplyStretchingForce3D() {} ;
-    ApplyStretchingForce3D(ApplyStretchingForce3D<T,Descriptor> const& rhs);
-    /// Arguments: [0] Particle-field
-    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
-    virtual ApplyStretchingForce3D<T,Descriptor>* clone() const;
-    virtual void getModificationPattern(std::vector<bool>& isWritten) const;
-    virtual BlockDomain::DomainT appliesTo() const;
-    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
-private:
-    std::vector<plint> const& outerLeftTags;
-    std::vector<plint> const& outerRightTags;
-    Array<T,3> const& stretchingForce;
-    T const& cellDensity;
-};
-
-
-template<typename T, template<typename U> class Descriptor>
-bool compareParticlesInX (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
-
-
-template<typename T, template<typename U> class Descriptor>
-bool compareParticlesInY (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
-
-
-template<typename T, template<typename U> class Descriptor>
-bool compareParticlesInZ (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
-
-template<typename T, template<typename U> class Descriptor>
-class FindTagsOfLateralCellParticles3D : public BoxProcessingFunctional3D
-{
-public:
-    FindTagsOfLateralCellParticles3D (plint numParticlesPerSide_, std::vector<plint> * outerLeftTags_, std::vector<plint> * outerRightTags_, pluint direction_);
-    ~FindTagsOfLateralCellParticles3D() {} ;
-    FindTagsOfLateralCellParticles3D(FindTagsOfLateralCellParticles3D<T,Descriptor> const& rhs);
-    /// Arguments: [0] Particle-field
-    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
-    virtual FindTagsOfLateralCellParticles3D<T,Descriptor>* clone() const;
-    virtual void getModificationPattern(std::vector<bool>& isWritten) const;
-    virtual BlockDomain::DomainT appliesTo() const;
-    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
-private:
-    plint const& numParticlesPerSide;
-    std::vector<plint> * outerLeftTags;
-    std::vector<plint> * outerRightTags;
-    pluint direction;
-};
-
 
 template<typename T>
 void getCellShapeQuantitiesFromMesh(TriangleBoundary3D<T>& boundary,
                             vector<T> & eqAreaPerTriangle, map<plint,T> & eqLengthPerEdge, map<plint,T> & eqAnglePerEdge,
                             plint cellNumTriangles, plint cellNumPartsPerCell);
+
 
 }  // namespace plb
 

@@ -33,6 +33,7 @@
 
 #include "shapeMemoryModel3D.hh"
 #include "shapeMemoryModelFunctional3D.hh"
+#include "cellStretchingForces3D.hh"
 
 
 using namespace plb;
