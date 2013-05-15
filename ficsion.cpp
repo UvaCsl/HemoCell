@@ -231,7 +231,7 @@ int main(int argc, char* argv[])
     if (flowType == 3) {
         PLB_PRECONDITION( npar == 1 && flowType == 3 && MPI::COMM_WORLD.Get_size() == 1 );
         applyProcessingFunctional ( // compute force applied on the particles by springs // ComputeShapeMemoryModelForce3D, ComputeImmersedElasticForce3D
-            new GetParticlesToStretch3D<T,DESCRIPTOR>(numParticlesPerSide, &outerLeftTags, &outerRightTags),
+            new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerLeftTags, &outerRightTags),
             immersedParticles.getBoundingBox(), particleArg );
     }
     for (plint ipa = 0; ipa < outerLeftTags.size(); ++ipa) {

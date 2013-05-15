@@ -247,7 +247,7 @@ void ApplyStretchingForce3D<T,Descriptor>::processGenericBlocks (
         plint tag = outerRightTags[it];
         if (tagToParticle.find(tag) != tagToParticle.end()) {
             ImmersedCellParticle3D<T,Descriptor>* particle = (tagToParticle[tag]);
-            //particle->get_a() += (stretchingForce * 1.0/numOuterRightTags) * 1.0/cellDensity;
+            particle->get_a() = particle->get_a() + stretchingForce * (1.0/numOuterRightTags)/cellDensity;
             particle->get_force() = particle->get_force() + stretchingForce * (1.0/numOuterRightTags);
         } else pcout << "ImmerseCellParticle3D not found! Something is wrong here!" << std::endl;
     }
@@ -281,7 +281,7 @@ void ApplyStretchingForce3D<T,Descriptor>::getTypeOfModification (
 }
 
 
-/* ******** GetParticlesToStretch3D *********************************** */
+/* ******** FindTagsOfLateralCellParticles3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
 bool compareParticlesInX (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) {
     T iX = iParticle->getPosition()[0];
@@ -291,26 +291,44 @@ bool compareParticlesInX (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Desc
 
 
 template<typename T, template<typename U> class Descriptor>
-GetParticlesToStretch3D<T,Descriptor>::GetParticlesToStretch3D
+bool compareParticlesInY (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) {
+    T iY = iParticle->getPosition()[1];
+    T jY = jParticle->getPosition()[1];
+    return (iY<jY);
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInZ (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) {
+    T iZ = iParticle->getPosition()[2];
+    T jZ = jParticle->getPosition()[2];
+    return (iZ<jZ);
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+FindTagsOfLateralCellParticles3D<T,Descriptor>::FindTagsOfLateralCellParticles3D
        (plint numParticlesPerSide_, std::vector<plint> * outerLeftTags_,
-               std::vector<plint> * outerRightTags_)
+               std::vector<plint> * outerRightTags_, pluint direction_=0)
     : numParticlesPerSide(numParticlesPerSide_),
       outerLeftTags(outerLeftTags_),
-      outerRightTags(outerRightTags_)
+      outerRightTags(outerRightTags_),
+      direction(direction_)
 { }
 
 
 template<typename T, template<typename U> class Descriptor>
-GetParticlesToStretch3D<T,Descriptor>::GetParticlesToStretch3D (
-        GetParticlesToStretch3D<T,Descriptor> const& rhs)
+FindTagsOfLateralCellParticles3D<T,Descriptor>::FindTagsOfLateralCellParticles3D (
+        FindTagsOfLateralCellParticles3D<T,Descriptor> const& rhs)
     : numParticlesPerSide(rhs.numParticlesPerSide),
       outerLeftTags(rhs.outerLeftTags),
-      outerRightTags(rhs.outerRightTags)
+      outerRightTags(rhs.outerRightTags),
+      direction(rhs.direction)
 { }
 
 
 template<typename T, template<typename U> class Descriptor>
-void GetParticlesToStretch3D<T,Descriptor>::processGenericBlocks (
+void FindTagsOfLateralCellParticles3D<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
             PLB_PRECONDITION( blocks.size()==1 );
@@ -319,7 +337,13 @@ void GetParticlesToStretch3D<T,Descriptor>::processGenericBlocks (
 
             std::vector<Particle3D<T,Descriptor>*> found;
             particleField.findParticles(domain, found);
-            std::sort(found.begin(), found.end(), compareParticlesInX<T,Descriptor>);
+            if (direction == 0) {
+                std::sort(found.begin(), found.end(), compareParticlesInX<T,Descriptor>);
+            } else if (direction == 1) {
+                std::sort(found.begin(), found.end(), compareParticlesInY<T,Descriptor>);
+            } else if (direction == 2) {
+                std::sort(found.begin(), found.end(), compareParticlesInZ<T,Descriptor>);
+            }
             plint numParticles = found.size();
             for (plint iP = 0; iP < numParticlesPerSide; ++iP) {
                 outerLeftTags->push_back(found[iP]->getTag());
@@ -328,24 +352,24 @@ void GetParticlesToStretch3D<T,Descriptor>::processGenericBlocks (
 }
 
 template<typename T, template<typename U> class Descriptor>
-GetParticlesToStretch3D<T,Descriptor>*
-GetParticlesToStretch3D<T,Descriptor>::clone() const
+FindTagsOfLateralCellParticles3D<T,Descriptor>*
+FindTagsOfLateralCellParticles3D<T,Descriptor>::clone() const
 {
-    return new GetParticlesToStretch3D<T,Descriptor>(*this);
+    return new FindTagsOfLateralCellParticles3D<T,Descriptor>(*this);
 }
 
 template<typename T, template<typename U> class Descriptor>
-void GetParticlesToStretch3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+void FindTagsOfLateralCellParticles3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
     isWritten[0] = true;  // Particle field.
 }
 
 template<typename T, template<typename U> class Descriptor>
-BlockDomain::DomainT GetParticlesToStretch3D<T,Descriptor>::appliesTo() const {
+BlockDomain::DomainT FindTagsOfLateralCellParticles3D<T,Descriptor>::appliesTo() const {
     return BlockDomain::bulk;
 }
 
 template<typename T, template<typename U> class Descriptor>
-void GetParticlesToStretch3D<T,Descriptor>::getTypeOfModification (
+void FindTagsOfLateralCellParticles3D<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::dynamicVariables; // Particle field.

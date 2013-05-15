@@ -80,15 +80,26 @@ private:
 
 
 template<typename T, template<typename U> class Descriptor>
-class GetParticlesToStretch3D : public BoxProcessingFunctional3D
+bool compareParticlesInX (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
+
+
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInY (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
+
+
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInZ (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
+
+template<typename T, template<typename U> class Descriptor>
+class FindTagsOfLateralCellParticles3D : public BoxProcessingFunctional3D
 {
 public:
-    GetParticlesToStretch3D (plint numParticlesPerSide_, std::vector<plint> * outerLeftTags_, std::vector<plint> * outerRightTags_);
-    ~GetParticlesToStretch3D() {} ;
-    GetParticlesToStretch3D(GetParticlesToStretch3D<T,Descriptor> const& rhs);
+    FindTagsOfLateralCellParticles3D (plint numParticlesPerSide_, std::vector<plint> * outerLeftTags_, std::vector<plint> * outerRightTags_, pluint direction_);
+    ~FindTagsOfLateralCellParticles3D() {} ;
+    FindTagsOfLateralCellParticles3D(FindTagsOfLateralCellParticles3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
-    virtual GetParticlesToStretch3D<T,Descriptor>* clone() const;
+    virtual FindTagsOfLateralCellParticles3D<T,Descriptor>* clone() const;
     virtual void getModificationPattern(std::vector<bool>& isWritten) const;
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
@@ -96,8 +107,14 @@ private:
     plint const& numParticlesPerSide;
     std::vector<plint> * outerLeftTags;
     std::vector<plint> * outerRightTags;
+    pluint direction;
 };
 
+
+template<typename T>
+void getCellShapeQuantitiesFromMesh(TriangleBoundary3D<T>& boundary,
+                            vector<T> & eqAreaPerTriangle, map<plint,T> & eqLengthPerEdge, map<plint,T> & eqAnglePerEdge,
+                            plint cellNumTriangles, plint cellNumPartsPerCell);
 
 }  // namespace plb
 
