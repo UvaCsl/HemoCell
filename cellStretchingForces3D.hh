@@ -97,9 +97,6 @@ void ApplyStretchingForce3D<T,Descriptor>::processGenericBlocks (
             particle->get_force() = particle->get_force() + stretchingForce * (1.0/numOuterRightTags);
         } else pcout << "ImmerseCellParticle3D not found! Something is wrong here!" << std::endl;
     }
-//    pcout << (stretchingForce * (1.0/numOuterRightTags))[0] <<", " << (stretchingForce * (1.0/numOuterRightTags))[1]
-   //<<", " << (stretchingForce * (1.0/numOuterRightTags))[2] << std::endl;
-
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -121,6 +118,80 @@ BlockDomain::DomainT ApplyStretchingForce3D<T,Descriptor>::appliesTo() const {
 
 template<typename T, template<typename U> class Descriptor>
 void ApplyStretchingForce3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::allVariables; // Particle field.
+}
+
+
+/* ******** MeasureCellStretchDeformation3D *********************************** */
+
+template<typename T, template<typename U> class Descriptor>
+MeasureCellStretchDeformation3D<T,Descriptor>::MeasureCellStretchDeformation3D (
+        std::vector<std::vector<plint>*> const& tags_, std::vector<T> * meanDeformation_)
+    : tags(tags_),
+      meanDeformation(meanDeformation_)
+{ }
+
+
+template<typename T, template<typename U> class Descriptor>
+MeasureCellStretchDeformation3D<T,Descriptor>::MeasureCellStretchDeformation3D (
+        MeasureCellStretchDeformation3D<T,Descriptor> const& rhs)
+    : tags(rhs.tags), meanDeformation(rhs.meanDeformation)
+{ }
+
+
+template<typename T, template<typename U> class Descriptor>
+void MeasureCellStretchDeformation3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    PLB_PRECONDITION( blocks.size()==1 );
+    ParticleField3D<T,Descriptor>& particleField =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    std::vector<Particle3D<T,Descriptor>*> found;
+    particleField.findParticles(domain, found);
+    map<plint, ImmersedCellParticle3D<T,Descriptor>*> tagToParticle;
+    for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
+        tagToParticle[particle->getTag()] = particle;
+    }
+
+    std::vector< Array<T,3> > meanPositions;
+    for (pluint i = 0; i < tags.size(); ++i) {
+        std::vector<plint>* vec=tags[i];
+        meanPositions.push_back(Array<T,3>(0,0,0));
+        for (pluint j = 0; j < vec->size(); ++j) {
+            meanPositions[i] += tagToParticle[(*vec)[j]]->getPosition();
+        }
+        meanPositions[i] /= 1.0 * vec->size();
+    }
+
+    meanDeformation->clear();
+    for (pluint i = 0; i < tags.size()/2; ++i) {
+        meanDeformation->push_back(norm(meanPositions[2*i + 1] - meanPositions[2*i]));
+    }
+}
+
+template<typename T, template<typename U> class Descriptor>
+MeasureCellStretchDeformation3D<T,Descriptor>*
+    MeasureCellStretchDeformation3D<T,Descriptor>::clone() const
+{
+    return new MeasureCellStretchDeformation3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void MeasureCellStretchDeformation3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Particle field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT MeasureCellStretchDeformation3D<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulk;
+}
+
+template<typename T, template<typename U> class Descriptor>
+void MeasureCellStretchDeformation3D<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::allVariables; // Particle field.

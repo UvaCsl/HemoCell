@@ -58,6 +58,25 @@ private:
 
 
 template<typename T, template<typename U> class Descriptor>
+class MeasureCellStretchDeformation3D : public BoxProcessingFunctional3D
+{
+public:
+    MeasureCellStretchDeformation3D (std::vector<std::vector<plint>*> const& tags_, std::vector<T> * meanDeformation_);
+    ~MeasureCellStretchDeformation3D() {} ;
+    MeasureCellStretchDeformation3D(MeasureCellStretchDeformation3D<T,Descriptor> const& rhs);
+    /// Arguments: [0] Particle-field
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual MeasureCellStretchDeformation3D<T,Descriptor>* clone() const;
+    virtual void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+private:
+    std::vector<std::vector<plint>*> tags;
+    std::vector<T> * meanDeformation;
+};
+
+
+template<typename T, template<typename U> class Descriptor>
 bool compareParticlesInX (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
 
 
