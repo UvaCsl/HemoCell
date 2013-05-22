@@ -114,7 +114,7 @@ void printCellMeasures(plint i, TriangleBoundary3D<T> Cells,
                        std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
                        std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
                        std::vector< Array<T,3> > & cellsCenter, std::vector< Array<T,3> > & cellsVelocity,
-                       T eqVolume, T eqSurface, T eqArea, T eqLength) {
+                       T eqVolume, T eqSurface, T eqArea, T eqLength, T dx, T dt) {
     pcout << "=== " << i << " === " << std::endl;
     pcout << "Volume: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsVolume[iA]*100.0/eqVolume - 100 <<"%, ";
     pcout << std::endl <<"Surface: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsSurface[iA]*100.0/eqSurface - 100 << "%, ";
@@ -122,7 +122,9 @@ void printCellMeasures(plint i, TriangleBoundary3D<T> Cells,
     pcout << std::endl <<"Mean Edge Distance: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA]*100.0/eqLength - 100<< "%, ";
     pcout << std::endl <<"Mean Angle [^o]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanAngle[iA]*180.0/pi << ", ";
     pcout << std::endl <<"Mean Edge Distance [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA] << ", ";
-    pcout << std::endl <<"Max Edge Distance [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMaxEdgeDistance[iA] << ", ";
+    pcout << std::endl <<"Max Edge Distance  [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMaxEdgeDistance[iA] << ", ";
+    pcout << std::endl <<"Volume  [mu{m}^3]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsVolume[iA]*dx*dx*dx*1e18 <<", ";
+    pcout << std::endl <<"Surface [mu{m}^2]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsSurface[iA]*dx*dx*1e12 << ", ";
     pcout << std::endl;
     for (pluint iA = 0; iA < cellsCenter.size(); ++iA)
         pcout <<"Coordinates: (" << cellsCenter[iA][0] << ", " << cellsCenter[iA][1] << ", " << cellsCenter[iA][2] << ")" << std::endl;

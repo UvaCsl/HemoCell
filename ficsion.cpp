@@ -53,7 +53,7 @@ const plint particleEnvelopeWidth = 2;
 void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, T & Re_p, T & N, T & lx, T & ly, T & lz,
-        plint & forceToFluid, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, plint & minNumOfTriangles,
+        plint & forceToFluid, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, plint & relaxationTime, plint & minNumOfTriangles,
         plint & tmax, plint & tmeas, plint & npar)
     {
     T nu_p, tau, dx;
@@ -75,21 +75,22 @@ void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest,
     document["parameters"]["Re"].read(Re);
     document["parameters"]["shearRate"].read(shearRate);
     document["parameters"]["stretchForce"].read(stretchForce);
-    document["parameters"]["rho_p"].read(rho_p);
-    document["parameters"]["nu_p"].read(nu_p);
-    document["parameters"]["tau"].read(tau);
-    document["parameters"]["dx"].read(dx);
-    document["parameters"]["nx"].read(nx);
-    document["parameters"]["ny"].read(ny);
-    document["parameters"]["nz"].read(nz);
+    document["parameters"]["deflationRatio"].read(deflationRatio);
+    document["parameters"]["relaxationTime"].read(relaxationTime);
     document["ibm"]["forceToFluid"].read(forceToFluid);
     document["ibm"]["shape"].read(shape);
     if (2 == shape) {
         document["ibm"]["cellPath"].read(cellPath);
     }
     document["ibm"]["radius"].read(radius);
-    document["ibm"]["deflationRatio"].read(deflationRatio);
     document["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
+    document["domain"]["rho_p"].read(rho_p);
+    document["domain"]["nu_p"].read(nu_p);
+    document["domain"]["tau"].read(tau);
+    document["domain"]["dx"].read(dx);
+    document["domain"]["nx"].read(nx);
+    document["domain"]["ny"].read(ny);
+    document["domain"]["nz"].read(nz);
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
     document["sim"]["npar"].read(npar);
@@ -127,6 +128,7 @@ int main(int argc, char* argv[])
     T rho_p;
     T radius;
     T deflationRatio;
+    plint relaxationTime;
     plint flowType;
     T shearRate, shearRate_p;
     Array<T,3> stretchForce(0,0,0);
@@ -137,7 +139,8 @@ int main(int argc, char* argv[])
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
     readFicsionXML(document, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m,
-            rho_p, u, flowType, Re, shearRate_p, stretchForce_p, Re_p, N, lx, ly, lz,  forceToFluid, shape, cellPath, radius, deflationRatio, cellNumTriangles, tmax, tmeas, npar);
+            rho_p, u, flowType, Re, shearRate_p, stretchForce_p, Re_p, N, lx, ly, lz,  forceToFluid, shape, cellPath, radius, deflationRatio, relaxationTime,
+            cellNumTriangles, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -222,7 +225,8 @@ int main(int argc, char* argv[])
     eqAngle = cellsMeanAngle[0];     eqVolume = cellsVolume[0];
     eqSurface = cellsSurface[0];	eqTileSpan = cellsMeanTileSpan[0];
     printCellMeasures(0, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                           cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolume, eqSurface, eqArea, eqLength) ;
+                           cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolume, eqSurface, eqArea, eqLength,
+                           dx, dt) ;
 
     std::vector<MultiBlock3D*> particleArg;
     std::vector<MultiBlock3D*> particleLatticeArg;
@@ -247,7 +251,7 @@ int main(int argc, char* argv[])
         applyProcessingFunctional ( // compute force applied on the particles by springs // ComputeShapeMemoryModelForce3D, ComputeImmersedElasticForce3D
             new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerFrontTags, &outerBackTags, 2),
             immersedParticles.getBoundingBox(), particleArg );
-        stretchLogFile << setprecision(20) << "# Force [N] = " << stretchForce_p << std::endl << "t [sec]; D_A [m]; D_T [m]; " << std::endl;
+        stretchLogFile << setprecision(20) << "# Force [N] = " << stretchForce_p << std::endl << "t [sec]; D_A [m]; D_T [m]; Mean Edge Distance [LU]; Max Edge Distance [LU]; " << std::endl;
     }
     for (plint ipa = 0; ipa < outerLeftTags.size(); ++ipa) {
         pcout << ipa << " : " <<outerLeftTags[ipa] ;
@@ -256,8 +260,8 @@ int main(int argc, char* argv[])
 
 
     T persistenceLengthFine = 7.5e-9  / dx;
-    T maxLength = 2.2*eqLength;
-    T eqLengthRatio = 2.2;
+    T eqLengthRatio = 2.6;
+    T maxLength = eqLengthRatio*eqLength;
     /* The Maximum length of two vertices should be less than 1.0 LU */
     PLB_PRECONDITION( maxLength < 1.0 );
     k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
@@ -277,7 +281,7 @@ int main(int argc, char* argv[])
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
 
     /* Deflate if I say so */
-    T eqVolumeInitial, eqVolumeFinal, ifinal=50000.;
+    T eqVolumeInitial, eqVolumeFinal;
     eqVolumeInitial = eqVolume;
     eqVolumeFinal = deflationRatio * eqVolumeInitial ;
 
@@ -306,7 +310,8 @@ int main(int argc, char* argv[])
             calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                                 cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
             printCellMeasures(i, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                                   cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolumeFinal, eqSurface, eqArea, eqLength) ;
+                                   cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolumeFinal, eqSurface, eqArea, eqLength,
+                                   dx, dt) ;
             writeCellLog(i, logFile,
                          cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                          cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity,
@@ -321,7 +326,10 @@ int main(int argc, char* argv[])
                    } pcout << "]" << std::endl;
                    stretchLogFile << setprecision(20) << i*dt
                                   << "; " << stretchingDeformations[0]*dx
-                                  << "; " << stretchingDeformations[1]*dx << ";  " << std::endl;
+                                  << "; " << stretchingDeformations[1]*dx << ";  "
+                                  << "; " << cellsMeanEdgeDistance[0] << ";  "
+                                  << "; " << cellsMaxEdgeDistance[0] << ";  "
+                                                                    << std::endl;
             }
             std::vector<std::string> force_scalarNames;
             std::vector<std::string> velocity_scalarNames;
@@ -347,11 +355,11 @@ int main(int argc, char* argv[])
         }
         /* =============================== MAIN LOOP ===================================*/
         // #0# Equilibration
-        if (i<=ifinal) {
-            eqVolume = eqVolumeInitial + (i*1.0)/ifinal * (eqVolumeFinal - eqVolumeInitial) ;
+        if (i<=relaxationTime) {
+            eqVolume = eqVolumeInitial + (i*1.0)/relaxationTime * (eqVolumeFinal - eqVolumeInitial) ;
             cellModel.setEquilibriumVolume(eqVolume);
             if (flowType == 3) {
-                    stretchForce = (i*1.0)/ifinal * Array<T,3>(stretchForceScalar,0,0);
+                    stretchForce = (i*1.0)/relaxationTime * Array<T,3>(stretchForceScalar,0,0);
             }
         }
         // #2# IBM Spreading
