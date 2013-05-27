@@ -93,8 +93,11 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
 
 template<typename T, template<typename U> class Descriptor>
 void ImmersedCellParticle3D<T,Descriptor>::advance() {
+// No fluid interaction
+//    v += force;
+//    this->getPosition() += v + 0.5*force;
 // Velocity Verlet
-//    vHalfTime = v + (T)0.5*a;
+//    vHalfTime = v + (T)0.5*force;
 //    this->getPosition() += vHalfTime;
 // Adams-Bashforth update scheme
 //    this->getPosition() += 1.5*v - 0.5*vPrevious;
@@ -242,9 +245,9 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getVectorName(plint whichVecto
     } else if (whichVector==5) {
         return "f_wlc";
     } else if (whichVector==6) {
-        return "f_volume";
-    } else if (whichVector==7) {
         return "f_bending";
+    } else if (whichVector==7) {
+        return "f_volume";
     } else if (whichVector==8) {
         return "f_surface";
     } else if (whichVector==9) {
