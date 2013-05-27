@@ -95,6 +95,7 @@ void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest,
     document["sim"]["tmeas"].read(tmeas);
     document["sim"]["npar"].read(npar);
 
+    radius = radius*1.0/dx; // Transform from [m] to [LU]
     nu_lb = (tau-0.5)/3.0;
     dt = (nu_lb/nu_p)*dx*dx;
     u = dt*1.0/dx;
@@ -260,10 +261,10 @@ int main(int argc, char* argv[])
 
 
     T persistenceLengthFine = 7.5e-9  / dx;
-    T eqLengthRatio = 2.6;
+    T eqLengthRatio = 1.0/eqLength;
     T maxLength = eqLengthRatio*eqLength;
     /* The Maximum length of two vertices should be less than 1.0 LU */
-    PLB_PRECONDITION( maxLength < 1.0 );
+    PLB_PRECONDITION( maxLength <= 1.0 );
     k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
     k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
     /* == */
