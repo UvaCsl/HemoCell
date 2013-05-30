@@ -236,10 +236,12 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
         /*  Bending Forces Calculations */
         std::vector<plint> triangles = dynMesh.getAdjacentTriangleIds(iVertex, jVertex);
         iTriangle = triangles[0]; jTriangle = triangles[1];
+        plint foundVertices = 0;
         for (pluint id = 0; id < 3; ++id) {
             kVertex = dynMesh.getVertexId(iTriangle,id);
             if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
                 x2 = dynMesh.getVertex(kVertex);
+                foundVertices += 1;
                 break;
             }
         }
@@ -247,27 +249,31 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
             lVertex = dynMesh.getVertexId(jTriangle,id);
             if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
                 x4 = dynMesh.getVertex(lVertex);
+                foundVertices += 1;
                 break;
             }
         }
-        tmpForce = computeBendingForce (x1, x2, x3, x4,
+        PLB_ASSERT(foundVertices == 2); //Assert if some particles are outside of the domain
+
+//        tmpForce = computeBendingForce (x1, x2, x3, x4,
+//                            trianglesNormal[iTriangle], trianglesNormal[jTriangle],
+//                            trianglesArea[iTriangle], trianglesArea[jTriangle],
+//                            eqTileSpan, eqLength, eqAngle, k_bend);
+//        T iTriangleBendingCoefficient = trianglesArea[iTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
+//        T jTriangleBendingCoefficient = trianglesArea[jTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
+//        bendingForce += tmpForce;
+//        particleForces[kVertex][1] += -iTriangleBendingCoefficient * tmpForce;
+//        particleForces[lVertex][1] += -jTriangleBendingCoefficient * tmpForce;
+        Array<T,3> tmp2, tmp3, tmp4;
+        tmpForce = computeBendingForce_Krueger (x1, x2, x3, x4,
                             trianglesNormal[iTriangle], trianglesNormal[jTriangle],
                             trianglesArea[iTriangle], trianglesArea[jTriangle],
-                            eqTileSpan, eqLength, eqAngle, k_bend);
-        T iTriangleBendingCoefficient = trianglesArea[iTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
-        T jTriangleBendingCoefficient = trianglesArea[jTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
-        bendingForce += tmpForce;
-        particleForces[kVertex][1] += -iTriangleBendingCoefficient * tmpForce;
-        particleForces[lVertex][1] += -jTriangleBendingCoefficient * tmpForce;
-//            Array<T,3> tmp2(0,0,0), tmp3(0,0,0), tmp4(0,0,0);
-//            tmpForce = computeBendingForce_Krueger (x1, x2, x3, x4,
-//                                trianglesNormal[iTriangle], trianglesNormal[jTriangle],
-//                                trianglesArea[iTriangle], trianglesArea[jTriangle],
-//                                eqTileSpan, eqLength, eqAngle, k_bend,
-//                                tmp2, tmp3, tmp4);
-//            particleForces[jVertex][1] += tmp3;
-//            particleForces[kVertex][1] += tmp2;
-//            particleForces[lVertex][1] += tmp4;
+                            eqTileSpan, eqLength, eqAngle, k_bend,
+                            tmp2, tmp3, tmp4);
+        bendingForce += tmpForce * 0.5; // Multiplied by 0.5, because this force is calculated twice (x2 also calculates this force)
+        particleForces[kVertex][1] += tmp2 * 0.5;
+        particleForces[jVertex][1] += tmp3 * 0.5;
+        particleForces[lVertex][1] += tmp4 * 0.5;
     }
     f_wlc = inPlaneForce + repulsiveForce;
     f_bending = bendingForce;

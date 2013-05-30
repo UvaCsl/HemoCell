@@ -277,47 +277,35 @@ Array<T,3> computeBendingForce_Krueger (Array<T,3> const& x1, Array<T,3> const& 
     // (i, j, k) and (l, k, j). These triangles share
     // (x2, x1, x3) and (x4, x3, x1). These triangles share
     // the common edge j-k.
-    // crossProduct(jPosition - iPosition, kPosition - jPosition, nijk);
-    // crossProduct(kPosition - lPosition, jPosition - kPosition, nlkj);
 
-    // crossProduct(x1 - x2, x3 - x1, nijk);
-    // crossProduct(x3 - x4, x1 - x3, nlkj);
+    fx2.resetToZero(); fx3.resetToZero(); fx4.resetToZero();
 
-
-    T angle = angleBetweenVectors(ni, nj);
     T ninj = dot(ni,nj);
+    T edgeAngle = angleBetweenVectors(ni, nj);
+    T factor = k * (edgeAngle - eqAngle) * (-1.0/(1.0 - sqrt(ninj*ninj)) );
+    Array<T,3> fx1(0,0,0), dninjdx(0,0,0);
+    Array<T,3> dx23(0,0,0), dx34(0,0,0);
+    Array<T,3> dx31(0,0,0), dx13(0,0,0);
 
-    T factor = -k * sin(angle - eqAngle) ; //* eqLength / eqTileSpan;
-    factor *= - 1.0/sqrt(1.0 - ninj);
-    Array<T,3> dfx1(0,0,0), dfx2(0,0,0), dfx3(0,0,0), dfx4(0,0,0), tmp(0,0,0);
+    // Calculation of force for x1
+    crossProduct(x2-x3, nj - ninj*ni, dx23);
+    crossProduct(x3-x4, ni - ninj*nj, dx34);
+    dninjdx = 0.5/Ai*dx23 + 0.5/Aj*dx34;
+    fx1 = -factor*dninjdx;
 
+    // Calculation of force for x2
+    crossProduct(x3-x1, nj - ninj*ni, dx31);
+    dninjdx = 0.5/Ai*dx31;
+    fx2 = -factor*dninjdx;
 
-    crossProduct(x2-x3, nj -ninj*ni, tmp);
-    dfx1 = 1.0/(2*Ai)*tmp; tmp.resetToZero();
-    crossProduct(x3-x4, ni -ninj*nj, tmp);
-    dfx1 += 1.0/(2*Aj)*tmp; tmp.resetToZero();
+    // Calculation of force for x4
+    crossProduct(x1-x3, ni - ninj*nj, dx13);
+    dninjdx = 0.5/Aj*dx13;
+    fx4 = -factor*dninjdx;
 
-    crossProduct(x3-x1, nj -ninj*ni, tmp);
-    dfx2 = 1.0/(2*Ai)*tmp; tmp.resetToZero();
-
-    crossProduct(x1-x2, nj -ninj*ni, tmp);
-    dfx3 = 1.0/(2*Ai)*tmp; tmp.resetToZero();
-    crossProduct(x4-x1, ni -ninj*nj, tmp);
-    dfx3 += 1.0/(2*Aj)*tmp; tmp.resetToZero();
-
-    crossProduct(x1-x3, ni -ninj*nj, tmp);
-    dfx4 = 1.0/(2*Aj)*tmp; tmp.resetToZero();
-
-    fx2 = factor * dfx2;
-    fx3 = factor * dfx3;
-    fx4 = factor * dfx4;
-    Array<T,3>  asdasd = (dfx1+dfx2+dfx3+dfx4)*factor;
-    if( fabs(asdasd[0]+asdasd[1]+asdasd[2]) > 1e-15) {
-        pcout << "sfv " << asdasd[0] << ", " << asdasd[1] << ", "  << asdasd[2] << std::endl;
-        pcout << "ni " << ni[0] << ", " << ni[1] << ", "  << ni[2] << std::endl;
-        pcout << "nj " << nj[0] << ", " << nj[1] << ", "  << nj[2] << std::endl;
-    }
-    return factor * dfx1 - asdasd;
+    // Calculation of force for x3
+    fx3 = - fx1 - fx2 - fx4;
+    return fx1;
 }
 
 

@@ -42,7 +42,7 @@
     <rho_p> 1025 </rho_p>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nu_p> 1.7e-6 </nu_p>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
-    <dx> 4e-6 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dx> 2e-6 </dx> <!--Physical length of 1 Lattice Unit -->
     <nx> 20 </nx> <!--Size of domain in Lattice Units -->
     <ny> 10 </ny>
     <nz> 20 </nz>

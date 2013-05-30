@@ -159,13 +159,17 @@ int main(int argc, char* argv[])
     T dt = parameters.getDeltaT();
     T dm = rho_p * (dx*dx*dx);
     dNewton = (dm*dx/(dt*dt)) ;
-    kBT = kBT_p / ( dNewton * dx );
+//    kBT = kBT_p / ( dNewton * dx );
+    kBT = kBT_p / ( dm * dx*dx/(dt*dt) );
     shearRate = shearRate_p * dt;
     stretchForceScalar = stretchForce_p / dNewton;
 
     writeFicsionLogFile(parameters, "log", Re, shearRate, flowType);
-    pcout << "kT = " << kBT << std::endl;
-    pcout << "dm = " << dm << std::endl;
+    pcout << "dx = " << dx << ", " <<
+             "dt = " << dt << ", " <<
+             "dm = " << dt << ", " <<
+             "kT = " << kBT <<
+             std::endl;
 
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz,
