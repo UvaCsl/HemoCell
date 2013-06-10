@@ -195,7 +195,9 @@ void writeFicsionLogFile(IncomprFlowParam<T> const& parameters,
     ofile << "Mach number [x100%]:         Ma=" << uMax*sqrt(3.0)*100 << "\n";
     if (flowType != 1) {
         ofile << "Reynolds number:             Re=" << Re << "\n";
+        ofile << "Wall Shear rate [1/s]:       ydot=" << 4*uMax/a/dt << "\n";
     } else {
+        ofile << "Reynolds number (shear):     Re=" << shearRate*pow(min(a,b),2)/nu << "\n";
         ofile << "Shear rate [1/s]:            ydot=" << shearRate*1.0/dt << "\n";
     }
     ofile << "Lattice resolution:          N=" << parameters.getResolution() << "\n";

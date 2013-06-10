@@ -92,8 +92,8 @@ void ComputeShapeMemoryModelForce3D<T,Descriptor>::processGenericBlocks (
         plint vertexId = particle->getTag();
         particleVelocity[vertexId] = particle->get_v();
 //        particleForces[vertexId] = Array<T,3>(0., 0., 0.);
-        particleForces[vertexId] = new Array<T,3> [6]; // [f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity]
-        for (pluint var = 0; var < 6; ++var) {
+        particleForces[vertexId] = new Array<T,3> [7]; // [f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, E_bending]
+        for (pluint var = 0; var < 7; ++var) {
             particleForces[vertexId][var].resetToZero();
         }
     }
@@ -147,6 +147,7 @@ void ComputeShapeMemoryModelForce3D<T,Descriptor>::processGenericBlocks (
         for (pluint var = 0; var < 6; ++var) {
             particle->get_force() += particleForces[vertexId][var];
         }
+        particle->get_E_bending() += particleForces[vertexId][6];
         delete [] particleForces[vertexId];
 
         sforce += particle->get_force();

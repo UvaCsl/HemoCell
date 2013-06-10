@@ -309,6 +309,106 @@ Array<T,3> computeBendingForce_Krueger (Array<T,3> const& x1, Array<T,3> const& 
 }
 
 
+template<typename T>
+T computeBendingPotential (Array<T,3> const& x1, Array<T,3> const& x2,
+                                Array<T,3> const& x3, Array<T,3> const& x4,
+                                T eqTileSpan, T eqLength, T eqAngle, T k)
+{
+    Array<T,3> ni(0.,0.,0.),  nj(0.,0.,0.);
+    crossProduct(x3-x1,  x4-x1, nj);
+    crossProduct(x2-x1,  x3-x1, ni);
+    T edgeAngle = angleBetweenVectors(ni, nj);
+    return k * (1-cos(edgeAngle - eqAngle));
+}
+
+
+template<typename T>
+Array<T,3> computeBendingForceFromPotential (
+        Array<T,3> const& x1, Array<T,3> const& x2,
+        Array<T,3> const& x3, Array<T,3> const& x4,
+        T eqTileSpan, T eqLength, T eqAngle, T k,
+        Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4)
+{
+    Array<T,3> fx1, vertex;
+    static T eps = (sizeof(T) == sizeof(float) ?
+            10*std::numeric_limits<T>::epsilon() :
+            10*std::numeric_limits<float>::epsilon());
+
+    vertex = x1;
+    fx1.resetToZero();
+    for (int i = 0; i < 3; i++) {
+        Array<T,3> iPosition = vertex;
+        iPosition[i] += eps;
+        T up = computeBendingPotential (
+                iPosition, x2, x3, x4,
+                eqTileSpan, eqLength, eqAngle, k
+                );
+        iPosition = vertex;
+        iPosition[i] -= eps;
+        T um = computeBendingPotential (
+                iPosition, x2, x3, x4,
+                eqTileSpan, eqLength, eqAngle, k);
+        fx1[i] = -(up-um) / (2.0*eps);
+    }
+
+    vertex = x2;
+    fx2.resetToZero();
+    for (int i = 0; i < 3; i++) {
+        Array<T,3> iPosition = vertex;
+        iPosition[i] += eps;
+        T up = computeBendingPotential (
+                x1, iPosition, x3, x4,
+                eqTileSpan, eqLength, eqAngle, k
+                );
+        iPosition = vertex;
+        iPosition[i] -= eps;
+        T um = computeBendingPotential (
+                x1, iPosition, x3, x4,
+                eqTileSpan, eqLength, eqAngle, k);
+        fx2[i] = -(up-um) / (2.0*eps);
+    }
+
+    vertex = x3;
+    fx3.resetToZero();
+    for (int i = 0; i < 3; i++) {
+        Array<T,3> iPosition = vertex;
+        iPosition[i] += eps;
+        T up = computeBendingPotential (
+                x1, x2, iPosition, x4,
+                eqTileSpan, eqLength, eqAngle, k
+                );
+        iPosition = vertex;
+        iPosition[i] -= eps;
+        T um = computeBendingPotential (
+                x1, x2, iPosition, x4,
+                eqTileSpan, eqLength, eqAngle, k);
+        fx3[i] = -(up-um) / (2.0*eps);
+    }
+
+    vertex = x4;
+    fx4.resetToZero();
+    for (int i = 0; i < 3; i++) {
+        Array<T,3> iPosition = vertex;
+        iPosition[i] += eps;
+        T up = computeBendingPotential (
+                x1, x2, x3, iPosition,
+                eqTileSpan, eqLength, eqAngle, k
+                );
+        iPosition = vertex;
+        iPosition[i] -= eps;
+        T um = computeBendingPotential (
+                x1, x2, x3, iPosition,
+                eqTileSpan, eqLength, eqAngle, k);
+        fx4[i] = -(up-um) / (2.0*eps);
+    }
+    Array<T,3> df = fx1 + fx2 + fx3 + fx4;
+    fx1 = fx1 - df/2.;
+    fx3 = fx3 - df/2.;
+    return fx1;
+}
+
+
+
 }  // namespace plb
 
 #endif  // COMPUTE_CELL_FORCES3D_HH

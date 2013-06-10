@@ -4,12 +4,12 @@
     <rbc_model> 1 </rbc_model> <!--Krueger: [0], WLC: [1], FENE: [2], LD-RBC: [3] -->
     <shellDensity> 1.0 </shellDensity>
 
-    <k_bend> 150e0 </k_bend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
-    <k_volume> 60000.0 </k_volume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
-    <k_surface> 59000.0 </k_surface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <k_bend> 75e0 </k_bend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <k_volume> 6000.0 </k_volume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <k_surface> 5900.0 </k_surface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
 <!-- 0.5e0 -->
     <k_shear> 100.0e0 </k_shear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
-    <eta_m> 0.022e-7 </eta_m> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
+    <eta_m> 0.022e-6 </eta_m> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
 <!-- +++++ -->
 <!-- Testing phase-->
 <!-- +++++ -->
@@ -23,18 +23,18 @@
 <parameters>
     <flowType> 1 </flowType>   <!--flowType: Poisseuille:[0], Couette:[1], Cell Stretching [3]-->
     <Re> 0.1 </Re>   <!--Reynolds number-->
-    <shearRate> 10 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
+    <shearRate> 50 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 0.0e-12 </stretchForce>   <!--Stretch Force using the X direction (in N). [100e-12]-->
-    <deflationRatio> 1.0 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
-    <relaxationTime> 5000 </relaxationTime> <!-- Ratio of Final to Initial ratio [0.65] -->
+    <deflationRatio> 1.00 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
+    <relaxationTime> 1000 </relaxationTime> <!-- Relaxation time for deflation and stretching force [5000] -->
 </parameters>
 
 
 <ibm>
     <forceToFluid> 1 </forceToFluid>
-    <shape> 0 </shape> <!-- shape: Sphere:[0], RBC:[1], Cell(defined):[2] -->
+    <shape> 1 </shape> <!-- shape: Sphere:[0], RBC:[1], Cell(defined):[2] -->
     <cellPath>lib/RBC_v202f400.stl</cellPath>
-    <radius> 3.3e-6 </radius> <!-- Radius of the particle in [m] (dx) [4.284 for RBC, 3.3 for sphere] -->
+    <radius> 4.3e-6 </radius> <!-- Radius of the particle in [m] (dx) [4.284 for RBC, 3.3 for sphere] -->
     <minNumOfTriangles> 200 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
 </ibm>
 

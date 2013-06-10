@@ -162,6 +162,20 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
                                 T Ai, T Aj,
                                 T eqTileSpan, T eqLength, T eqAngle, T k);
 
+
+template<typename T>
+T computeBendingPotential (Array<T,3> const& x1, Array<T,3> const& x2,
+                                Array<T,3> const& x3, Array<T,3> const& x4,
+                                T eqTileSpan, T eqLength, T eqAngle, T k);
+
+
+template<typename T>
+Array<T,3> computeBendingForceFromPotential (
+        Array<T,3> const& x1, Array<T,3> const& x2,
+        Array<T,3> const& x3, Array<T,3> const& x4,
+        T eqTileSpan, T eqLength, T eqAngle, T k,
+        Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4);
+
 }  // namespace plb
 
 #endif  // COMPUTE_CELL_FORCES3D_H

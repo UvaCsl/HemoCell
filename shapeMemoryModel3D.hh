@@ -265,15 +265,20 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
 //        particleForces[kVertex][1] += -iTriangleBendingCoefficient * tmpForce;
 //        particleForces[lVertex][1] += -jTriangleBendingCoefficient * tmpForce;
         Array<T,3> tmp2, tmp3, tmp4;
-        tmpForce = computeBendingForce_Krueger (x1, x2, x3, x4,
-                            trianglesNormal[iTriangle], trianglesNormal[jTriangle],
-                            trianglesArea[iTriangle], trianglesArea[jTriangle],
+        tmpForce = computeBendingForceFromPotential (x1, x2, x3, x4,
                             eqTileSpan, eqLength, eqAngle, k_bend,
                             tmp2, tmp3, tmp4);
         bendingForce += tmpForce * 0.5; // Multiplied by 0.5, because this force is calculated twice (x2 also calculates this force)
         particleForces[kVertex][1] += tmp2 * 0.5;
         particleForces[jVertex][1] += tmp3 * 0.5;
         particleForces[lVertex][1] += tmp4 * 0.5;
+
+        T t1 = computeBendingPotential (x1, x2, x3, x4,
+                            eqTileSpan, eqLength, eqAngle, k_bend);
+        particleForces[iVertex][6][0] += t1;
+        particleForces[kVertex][6][0] += t1;
+        particleForces[jVertex][6][0] += t1;
+        particleForces[lVertex][6][0] += t1;
     }
     f_wlc = inPlaneForce + repulsiveForce;
     f_bending = bendingForce;

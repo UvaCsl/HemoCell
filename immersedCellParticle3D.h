@@ -55,7 +55,7 @@ public:
     /// Return the velocity, acceleration or vHalfTime through a generic interface (vector id=0,1,2).
     virtual bool getVector(plint whichVector, Array<T,3>& vector) const;
     std::string getVectorName(plint whichVector) const;
-    plint getVectorsNumber() const { return 12; };
+    plint getVectorsNumber() const ;
     Array<T,3> const& get_v() const { return v; }
     Array<T,3> const& get_vHalfTime() const { return vHalfTime; }
     Array<T,3> const& get_vPrevious() const { return vPrevious; }
@@ -74,6 +74,7 @@ private:
 private:
     Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity;
     Array<T,3> stress;
+    Array<T,3> E_bending;
 private:
     plint cellId;
 public:
@@ -82,7 +83,7 @@ public:
             Array<T,3> const& v_, Array<T,3> const& vHalfTime_,
             Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_,
             Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_, Array<T,3> const& f_surface_, Array<T,3> const& f_shear_, Array<T,3> const& f_viscosity_,
-            Array<T,3> const& stress_,
+            Array<T,3> const& stress_, Array<T,3> const& E_bending_,
             plint cellId_ );
 
     Array<T,3> const& get_f_wlc() const { return f_wlc; }
@@ -92,6 +93,7 @@ public:
     Array<T,3> const& get_f_shear() const { return f_shear; }
     Array<T,3> const& get_f_viscosity() const { return f_viscosity; }
     Array<T,3> const& get_stress() const { return stress; }
+    Array<T,3> const& get_E_bending() const { return E_bending; }
 
     Array<T,3>& get_f_wlc() { return f_wlc; }
     Array<T,3>& get_f_bending() { return f_bending; }
@@ -100,6 +102,7 @@ public:
     Array<T,3>& get_f_shear() { return f_shear; }
     Array<T,3>& get_f_viscosity() { return f_viscosity; }
     Array<T,3>& get_stress() { return stress; }
+    Array<T,3>& get_E_bending() { return E_bending; }
 };
 
 namespace meta {
@@ -120,7 +123,7 @@ class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         plint tag;
         Array<T,3> position;
         Array<T,3> v, vHalfTime, a, force, vPrevious;
-        Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress;
+        Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress, E_bending;
         plint cellId;
 
         unserializer.readValue(tag);
@@ -137,10 +140,11 @@ class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         unserializer.readValues<T,3>(f_shear);
         unserializer.readValues<T,3>(f_viscosity);
         unserializer.readValues<T,3>(stress);
+        unserializer.readValues<T,3>(E_bending);
         unserializer.readValue(cellId);
 
         return new ImmersedCellParticle(tag, position, v, vHalfTime, a, force, vPrevious,
-                f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress,
+                f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress, E_bending,
                 cellId);
     }
 };
