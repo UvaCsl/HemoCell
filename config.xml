@@ -1,12 +1,12 @@
 <?xml version="1.0" ?>
-
+<ficsion>
 <cell>
     <rbc_model> 1 </rbc_model> <!--Krueger: [0], WLC: [1], FENE: [2], LD-RBC: [3] -->
     <shellDensity> 1.0 </shellDensity>
 
-    <k_bend> 75e0 </k_bend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
-    <k_volume> 6000.0 </k_volume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
-    <k_surface> 5900.0 </k_surface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <k_bend> 150e0 </k_bend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <k_volume> 60000.0 </k_volume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <k_surface> 59000.0 </k_surface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
 <!-- 0.5e0 -->
     <k_shear> 100.0e0 </k_shear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
     <eta_m> 0.022e-6 </eta_m> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
@@ -50,28 +50,7 @@
 
 <sim>
     <tmax> 1000000 </tmax> <!-- total number of iterations -->
-    <tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
-    <npar> 4 </npar> <!-- Number of particles > -->
+    <tmeas> 1000 </tmeas> <!-- interval after which data is written -->> 
+    <npar> 1 </npar> <!-- Number of particles > -->
 </sim>
-
-
-<!--<parameters>-->
-<!--	<rho_p> 1025 </rho_p>   <!--Density, Physical units [kg/m^3]-->-->
-<!--	<nu_p> 0.1666666 </nu_p>   <!-- Dynamic viscosity, physical units [m^2/s]-->-->
-<!--	<tau> 1.0 </tau>-->
-<!--	<dx> 1 </dx>-->
-<!--	<lx> 50 </lx>-->
-<!--	<ly> 10 </ly>-->
-<!--	<lz> 10 </lz>-->
-<!--</parameters>-->
-
-
-<!--<parameters>-->
-<!--	<u> 0.1 </u>-->
-<!--	<Re> 600000 </Re>-->
-<!--	<N> 1000000 </N>-->
-<!--	<lx> 0.00005 </lx>-->
-<!--	<ly> 0.00001 </ly>-->
-<!--	<lz> 0.00001 </lz>-->
-<!--</parameters>-->
-
+</ficsion>

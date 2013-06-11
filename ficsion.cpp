@@ -50,7 +50,7 @@ plint extraLayer      = 0;  // Make the bounding box larger; for visualization p
 const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
 const plint particleEnvelopeWidth = 2;
 
-void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest,
+void readFicsionXML(XMLreader documentXML,T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, plint & relaxationTime, plint & minNumOfTriangles,
@@ -59,7 +59,7 @@ void readFicsionXML(XMLreader document,T & shellDensity, T & k_rest,
     T nu_p, tau, dx;
     T dt, nu_lb;
     T nx, ny, nz;
-
+    XMLreaderProxy document = documentXML["ficsion"];
     document["cell"]["shellDensity"].read(shellDensity);
     document["cell"]["k_WLC"].read(k_WLC);
     document["cell"]["k_rep"].read(k_rep);
