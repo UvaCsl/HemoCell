@@ -1,5 +1,6 @@
 <?xml version="1.0" ?>
 <ficsion>
+<caseId> caseId </caseId>
 <cell>
     <rbc_model> 1 </rbc_model> <!--Krueger: [0], WLC: [1], FENE: [2], LD-RBC: [3] -->
     <shellDensity> 1.0 </shellDensity>

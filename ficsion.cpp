@@ -50,7 +50,7 @@ plint extraLayer      = 0;  // Make the bounding box larger; for visualization p
 const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
 const plint particleEnvelopeWidth = 2;
 
-void readFicsionXML(XMLreader documentXML,T & shellDensity, T & k_rest,
+void readFicsionXML(XMLreader documentXML,std::string & caseId, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, plint & relaxationTime, plint & minNumOfTriangles,
@@ -60,6 +60,7 @@ void readFicsionXML(XMLreader documentXML,T & shellDensity, T & k_rest,
     T dt, nu_lb;
     T nx, ny, nz;
     XMLreaderProxy document = documentXML["ficsion"];
+    document["caseId"].read(caseId);
     document["cell"]["shellDensity"].read(shellDensity);
     document["cell"]["k_WLC"].read(k_WLC);
     document["cell"]["k_rep"].read(k_rep);
@@ -121,6 +122,7 @@ int main(int argc, char* argv[])
     plb_ofstream stretchLogFile(stretchFileName.c_str());
 
     plint forceToFluid, shape, cellNumTriangles;
+    std::string caseId;
     std::string cellPath;
     plint tmax, tmeas, npar;
     T dtIteration = 0;
@@ -139,7 +141,7 @@ int main(int argc, char* argv[])
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
-    readFicsionXML(document, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m,
+    readFicsionXML(document, caseId, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, Re, shearRate_p, stretchForce_p, Re_p, N, lx, ly, lz,  forceToFluid, shape, cellPath, radius, deflationRatio, relaxationTime,
             cellNumTriangles, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
