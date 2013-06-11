@@ -291,9 +291,9 @@ int main(int argc, char* argv[])
     eqVolumeInitial = eqVolume;
     eqVolumeFinal = deflationRatio * eqVolumeInitial ;
 
-    applyProcessingFunctional ( // copy fluid velocity on particles
-        new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
-        immersedParticles.getBoundingBox(), particleLatticeArg);
+//    applyProcessingFunctional ( // copy fluid velocity on particles
+//        new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
+//        immersedParticles.getBoundingBox(), particleLatticeArg);
     applyProcessingFunctional ( // compute force applied on the particles by springs // ComputeShapeMemoryModelForce3D, ComputeImmersedElasticForce3D
         new ComputeShapeMemoryModelForce3D<T,DESCRIPTOR> (
             Cells, cellModel.clone(), cellsVolume, cellsSurface),

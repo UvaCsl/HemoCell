@@ -51,7 +51,7 @@
 <sim>
     <tmax> 1000000 </tmax> <!-- total number of iterations -->
     <tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
-    <npar> 1 </npar> <!-- Number of particles > -->
+    <npar> 4 </npar> <!-- Number of particles > -->
 </sim>
 
 

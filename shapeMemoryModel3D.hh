@@ -226,8 +226,9 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
     for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
         jVertex = neighborVertexIds[jV];
         x3 = dynMesh.getVertex(jVertex);
-        T eqLength = eqLengthPerEdge[getEdgeId(iVertex, jVertex)];
-        T eqAngle = eqAnglePerEdge[getEdgeId(iVertex, jVertex)];
+        plint edgeId = getEdgeId(iVertex, jVertex);
+        T eqLength = eqLengthPerEdge[edgeId];
+        T eqAngle = eqAnglePerEdge[edgeId];
         /* In Plane (WLC) and repulsive forces*/
         inPlaneForce += computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane);
 

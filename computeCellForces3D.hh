@@ -331,8 +331,8 @@ Array<T,3> computeBendingForceFromPotential (
 {
     Array<T,3> fx1, vertex;
     static T eps = (sizeof(T) == sizeof(float) ?
-            10*std::numeric_limits<T>::epsilon() :
-            10*std::numeric_limits<float>::epsilon());
+            100.0 * std::numeric_limits<T>::epsilon() :
+            std::numeric_limits<float>::epsilon());
 
     vertex = x1;
     fx1.resetToZero();
