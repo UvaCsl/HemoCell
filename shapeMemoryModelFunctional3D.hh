@@ -120,6 +120,8 @@ void ComputeShapeMemoryModelForce3D<T,Descriptor>::processGenericBlocks (
             particle->get_f_surface() = f_surface;
             particle->get_f_shear() = f_shear;
             particle->get_f_viscosity() = f_viscosity;
+            particle->get_E_bending().resetToZero();
+
             Array<T,3> force, acc; force.resetToZero(); acc.resetToZero();
             force = elasticForce + cellForce;
             acc = force*1.0 / cellModel->getDensity();
