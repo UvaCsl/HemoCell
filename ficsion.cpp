@@ -34,6 +34,7 @@
 #include "shapeMemoryModel3D.hh"
 #include "shapeMemoryModelFunctional3D.hh"
 #include "cellStretchingForces3D.hh"
+#include "cellModel3D.hh"
 
 
 using namespace plb;
@@ -50,10 +51,10 @@ plint extraLayer      = 0;  // Make the bounding box larger; for visualization p
 const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
 const plint particleEnvelopeWidth = 2;
 
-void readFicsionXML(XMLreader documentXML,std::string & caseId, T & shellDensity, T & k_rest,
+void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, T & Re_p, T & N, T & lx, T & ly, T & lz,
-        plint & forceToFluid, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, plint & relaxationTime, plint & minNumOfTriangles,
+        plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, plint & relaxationTime, plint & minNumOfTriangles,
         plint & tmax, plint & tmeas, plint & npar)
     {
     T nu_p, tau, dx;
@@ -61,6 +62,7 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, T & shellDensity
     T nx, ny, nz;
     XMLreaderProxy document = documentXML["ficsion"];
     document["caseId"].read(caseId);
+    document["cell"]["rbcModel"].read(rbcModel);
     document["cell"]["shellDensity"].read(shellDensity);
     document["cell"]["k_WLC"].read(k_WLC);
     document["cell"]["k_rep"].read(k_rep);
@@ -79,6 +81,7 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, T & shellDensity
     document["parameters"]["deflationRatio"].read(deflationRatio);
     document["parameters"]["relaxationTime"].read(relaxationTime);
     document["ibm"]["forceToFluid"].read(forceToFluid);
+    document["ibm"]["ibmKernel"].read(ibmKernel);
     document["ibm"]["shape"].read(shape);
     if (2 == shape) {
         document["ibm"]["cellPath"].read(cellPath);
@@ -121,7 +124,8 @@ int main(int argc, char* argv[])
     std::string stretchFileName = global::directories().getLogOutDir() + "stretchDeformation.log";
     plb_ofstream stretchLogFile(stretchFileName.c_str());
 
-    plint forceToFluid, shape, cellNumTriangles;
+    plint forceToFluid, shape, cellNumTriangles, ibmKernel;
+    plint rbcModel;
     std::string caseId;
     std::string cellPath;
     plint tmax, tmeas, npar;
@@ -141,8 +145,8 @@ int main(int argc, char* argv[])
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
-    readFicsionXML(document, caseId, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m,
-            rho_p, u, flowType, Re, shearRate_p, stretchForce_p, Re_p, N, lx, ly, lz,  forceToFluid, shape, cellPath, radius, deflationRatio, relaxationTime,
+    readFicsionXML(document, caseId, rbcModel, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m,
+            rho_p, u, flowType, Re, shearRate_p, stretchForce_p, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, shape, cellPath, radius, deflationRatio, relaxationTime,
             cellNumTriangles, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
             u, // u
@@ -252,10 +256,10 @@ int main(int argc, char* argv[])
     plint numParticlesPerSide = plint(0.05*numParts[0]);
     if (flowType == 3) {
         PLB_PRECONDITION( npar == 1 && flowType == 3 && MPI::COMM_WORLD.Get_size() == 1 );
-        applyProcessingFunctional ( // compute force applied on the particles by springs // ComputeShapeMemoryModelForce3D, ComputeImmersedElasticForce3D
+        applyProcessingFunctional (
             new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerLeftTags, &outerRightTags, 0),
             immersedParticles.getBoundingBox(), particleArg );
-        applyProcessingFunctional ( // compute force applied on the particles by springs // ComputeShapeMemoryModelForce3D, ComputeImmersedElasticForce3D
+        applyProcessingFunctional ( 
             new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerFrontTags, &outerBackTags, 2),
             immersedParticles.getBoundingBox(), particleArg );
         stretchLogFile << setprecision(20) << "# Force [N] = " << stretchForce_p << std::endl << "t [sec]; D_A [m]; D_T [m]; Mean Edge Distance [LU]; Max Edge Distance [LU]; " << std::endl;
@@ -280,10 +284,19 @@ int main(int argc, char* argv[])
     k_rest /= dNewton/dx;
     vector<T> eqAreaPerTriangle(cellNumTriangles);
     map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
-    getCellShapeQuantitiesFromMesh(Cells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
-    ShapeMemoryModel3D<T> cellModel(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
-                    eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, eqVolume, eqSurface, eqTileSpan,
-                    persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
+    ShellModel3D<T> *cellModel;
+   if (rbcModel == 0) {
+       getCellShapeQuantitiesFromMesh(Cells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
+       cellModel = new ShapeMemoryModel3D<T>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
+                       eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, eqVolume, eqSurface, eqTileSpan,
+                       persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
+   } else if (rbcModel == 1) {
+       cellModel = new CellModel3D<T>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
+                       eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan,
+                       persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
+   }
+
+
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
@@ -292,14 +305,17 @@ int main(int argc, char* argv[])
     T eqVolumeInitial, eqVolumeFinal;
     eqVolumeInitial = eqVolume;
     eqVolumeFinal = deflationRatio * eqVolumeInitial ;
-
-//    applyProcessingFunctional ( // copy fluid velocity on particles
-//        new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
-//        immersedParticles.getBoundingBox(), particleLatticeArg);
-    applyProcessingFunctional ( // compute force applied on the particles by springs // ComputeShapeMemoryModelForce3D, ComputeImmersedElasticForce3D
-        new ComputeShapeMemoryModelForce3D<T,DESCRIPTOR> (
-            Cells, cellModel.clone(), cellsVolume, cellsSurface),
-        immersedParticles.getBoundingBox(), particleArg );
+   if (rbcModel == 0) {
+       applyProcessingFunctional (
+           new ComputeShapeMemoryModelForce3D<T,DESCRIPTOR> (
+               Cells, dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel)->clone(), cellsVolume, cellsSurface),
+           immersedParticles.getBoundingBox(), particleArg );
+   } else if (rbcModel == 1) {
+       applyProcessingFunctional (
+           new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
+               Cells, dynamic_cast<CellModel3D<T>*>(cellModel)->clone(), cellsVolume, cellsSurface),
+           immersedParticles.getBoundingBox(), particleArg );
+   }
 
 
     writeCellLog(0, logFile,
@@ -365,7 +381,12 @@ int main(int argc, char* argv[])
         // #0# Equilibration
         if (i<=relaxationTime) {
             eqVolume = eqVolumeInitial + (i*1.0)/relaxationTime * (eqVolumeFinal - eqVolumeInitial) ;
-            cellModel.setEquilibriumVolume(eqVolume);
+            if (rbcModel == 0) {
+                (dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel))->setEquilibriumVolume(eqVolume);
+            } else if (rbcModel == 1) {
+                (dynamic_cast<CellModel3D<T>*>(cellModel))->setEquilibriumVolume(eqVolume);
+            }
+
             if (flowType == 3) {
                     stretchForce = (i*1.0)/relaxationTime * Array<T,3>(stretchForceScalar,0,0);
             }
@@ -375,14 +396,14 @@ int main(int argc, char* argv[])
             setExternalVector( lattice, lattice.getBoundingBox(),
                            DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
             applyProcessingFunctional ( // compute force applied on the fluid by the particles
-                    new ForceToFluid3D<T,DESCRIPTOR> (),
+                    new ForceToFluid3D<T,DESCRIPTOR> (ibmKernel),
                     immersedParticles.getBoundingBox(), particleLatticeArg );
         }
         // #3# LBM
         lattice.collideAndStream();
         // #4# IBM Interpolation
         applyProcessingFunctional ( // copy fluid velocity on particles
-            new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(),
+            new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(ibmKernel),
             immersedParticles.getBoundingBox(), particleLatticeArg);
         // #5# Position Update
         applyProcessingFunctional ( // advance particles in time according to velocity
@@ -392,13 +413,21 @@ int main(int argc, char* argv[])
             new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
             immersedParticles.getBoundingBox(), particleArg);
         // #1# Membrane Model
-        applyProcessingFunctional ( // compute force applied on the particles by springs // ComputeShapeMemoryModelForce3D, ComputeImmersedElasticForce3D
-            new ComputeShapeMemoryModelForce3D<T,DESCRIPTOR> (
-                Cells, cellModel.clone(), cellsVolume, cellsSurface),
-            immersedParticles.getBoundingBox(), particleArg );
+        if (rbcModel == 0) {
+            applyProcessingFunctional (
+                new ComputeShapeMemoryModelForce3D<T,DESCRIPTOR> (
+                    Cells, dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel)->clone(), cellsVolume, cellsSurface),
+                immersedParticles.getBoundingBox(), particleArg );
+        } else if (rbcModel == 1) {
+            applyProcessingFunctional (
+                new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
+                    Cells, dynamic_cast<CellModel3D<T>*>(cellModel)->clone(), cellsVolume, cellsSurface),
+                immersedParticles.getBoundingBox(), particleArg );
+        }
+
         if (flowType == 3) {
             applyProcessingFunctional ( // compute force applied on the some particles by the stretching force
-                    new ApplyStretchingForce3D<T,DESCRIPTOR>(outerLeftTags, outerRightTags, stretchForce, cellModel.getDensity()),
+                    new ApplyStretchingForce3D<T,DESCRIPTOR>(outerLeftTags, outerRightTags, stretchForce, cellModel->getDensity()),
                     immersedParticles.getBoundingBox(), particleArg );
         }
     }
