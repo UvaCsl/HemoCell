@@ -48,11 +48,11 @@ class CellModel3D : public ShellModel3D<T>
 public:
     /* All input should be in dimensionless units */
     CellModel3D(T density_, T k_rest_,
-                T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_rep_, T k_elastic_,
-                T k_volume_, T k_surface_, T eta_m_,
-                T eqArea_, T eqLength_, T eqAngle_,
-                T eqVolume_, T eqSurface_, T eqTileSpan_,
-                T maxLength_, T persistenceLengthFine, pluint Nv);
+            T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
+            T k_volume_, T k_surface_, T eta_m_,
+            T eqArea_, T eqLength_, T eqAngle_,
+            T eqVolume_, T eqSurface_, T eqTileSpan_,
+            T persistenceLengthFine, T eqLengthRatio_, pluint cellNumTriangles_, pluint cellNumVertices_);
     virtual Array<T,3> computeCellForce (
             TriangleBoundary3D<T> const& boundary,
             T cellVolume, T cellSurface, T & iSurface,
@@ -66,13 +66,13 @@ public:
             plint iVertex );
     virtual CellModel3D<T>* clone() const;
 private:
-    T k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_surface, k_volume;
+    T k_rest, k_shear, k_bend, k_stretch, k_inPlane, k_elastic, k_surface, k_volume;
     T C_elastic;
     T eta_m, gamma_T, gamma_C;
     T eqLength, eqArea, eqAngle;
     T eqVolume, eqSurface, eqTileSpan;
-    T maxLength, persistenceLengthCoarse;
-    pluint Nv;
+    T persistenceLengthCoarse, eqLengthRatio;
+    pluint cellNumTriangles, cellNumVertices;
 public:
     /* Coefficients */
     T& getRestingStiffness() { return k_rest; }
@@ -140,12 +140,12 @@ public:
     void setEquilibriumTileSpan(T value) { eqTileSpan = value; }
     T const& getEquilibriumTileSpan() const { return eqTileSpan; }
     /* State parameters */
-    T& getMaximumLinkLength() { return maxLength; }
-    void setMaximumLinkLength(T value) { maxLength = value; }
-    T const& getMaximumLinkLength() const { return maxLength; }
-    pluint& getNumberOfVertices() { return Nv; }
-    void setNumberOfVertices(pluint value) { Nv = value; }
-    pluint const& getNumberOfVertices() const { return Nv; }
+//    T& getMaximumLinkLength() { return maxLength; }
+//    void setMaximumLinkLength(T value) { maxLength = value; }
+//    T const& getMaximumLinkLength() const { return maxLength; }
+//    pluint& getNumberOfVertices() { return Nv; }
+//    void setNumberOfVertices(pluint value) { Nv = value; }
+//    pluint const& getNumberOfVertices() const { return Nv; }
 };
 
 

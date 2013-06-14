@@ -27,16 +27,22 @@
 #include "cellModel3D.h"
 
 
+//ShapeMemoryModel3D<T>::ShapeMemoryModel3D (
+//        T density_, T k_rest_, T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
+//        T k_volume_, T k_surface_, T eta_m_,
+//        vector<T> eqArea_, map<plint,T> eqLength_, map<plint,T> eqAngle_,
+//        T eqVolume_, T eqSurface_, T eqTileSpan_,
+//        T persistenceLengthFine, T eqLengthRatio_, pluint cellNumTriangles_, pluint cellNumVertices_)
 
 namespace plb {
 
 template<typename T>
 CellModel3D<T>::CellModel3D (
-        T density_, T k_rest_, T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_rep_, T k_elastic_,
+        T density_, T k_rest_, T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
         T k_volume_, T k_surface_, T eta_m_,
         T eqArea_, T eqLength_, T eqAngle_,
         T eqVolume_, T eqSurface_, T eqTileSpan_,
-        T maxLength_, T persistenceLengthFine, pluint Nv)
+        T persistenceLengthFine, T eqLengthRatio_, pluint cellNumTriangles_, pluint cellNumVertices_)
     : ShellModel3D<T>(density_),
       k_rest(k_rest_),
       k_shear(k_shear_),
@@ -52,15 +58,21 @@ CellModel3D<T>::CellModel3D (
       eqVolume(eqVolume_),
       eqSurface(eqSurface_),
       eqTileSpan(eqTileSpan_),
-      maxLength(maxLength_)
+//      maxLength(maxLength_),
+      eqLengthRatio(eqLengthRatio_),
+      cellNumTriangles(cellNumTriangles_),
+      cellNumVertices(cellNumVertices_)
 {
-    T x0 = eqLength*1.0/maxLength;
-    persistenceLengthCoarse = persistenceLengthFine * sqrt( (Nv-2.0) / (23867-2.0)) ;
+    T x0 = eqLengthRatio;
+    T maxLength = eqLength*eqLengthRatio;
+    persistenceLengthCoarse = persistenceLengthFine * sqrt( (cellNumVertices-2.0) / (23867-2.0)) ;
     /* Use dimensionless coefficients */
     k_volume *= kBT/pow(eqLength,3);
     k_surface *= kBT/pow(eqLength,2);
     k_shear *= kBT/pow(eqLength,2);
     k_bend *= kBT;
+    k_inPlane = k_WLC_ * kBT /(4.0*persistenceLengthCoarse);
+
     /* Dissipative term coefficients from FedosovCaswellKarniadakis2010 */
     gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
     gamma_C = (gamma_T/3.0);
@@ -68,9 +80,9 @@ CellModel3D<T>::CellModel3D (
     // gamma_T *= eqLength;
     // gamma_C *= eqLength;
 
-    k_WLC = k_WLC_ * kBT * maxLength/(4.0*persistenceLengthCoarse);
+    T k_WLC = k_WLC_ * kBT * maxLength/(4.0*persistenceLengthCoarse);
     /* Solving f_WLC + f_rep =0 for x=eqLength, f_rep = k_rep/L^m, m=2. */
-    k_rep = k_rep_*(k_WLC*maxLength*pow(x0,3)*(6 - 9*x0 + 4*pow(x0,2)))/pow(-1 + x0,2);
+    T k_rep = (k_WLC*maxLength*pow(x0,3)*(6 - 9*x0 + 4*pow(x0,2)))/pow(-1 + x0,2);
 
 
     T forceSum =
@@ -132,7 +144,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         x1ref = boundary.getMesh().getVertex(iVertex);
         boundary.popSelect();
         Array<T,3> dx = x1-x1ref;
-        return (-k_rest*dx) + (-gamma_C*dot(iVelocity,dx)/eqLength * dx); // Dissipative term from Dupin2007
+        return (-k_rest*dx) + (-gamma_T*iVelocity); // Dissipative term from Dupin2007
     }
     /* Force initializations */
     Array<T,3> inPlaneForce; inPlaneForce.resetToZero();
@@ -148,7 +160,8 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     /* Calculate cell coefficients */
     T volumeCoefficient = k_volume * (cellVolume - eqVolume)*1.0/eqVolume;
     T surfaceCoefficient = k_surface * (cellSurface - eqSurface)*1.0/eqSurface;
-    T areaCoefficient = k_shear/eqArea ;
+    T eqMeanArea = eqSurface/cellNumTriangles;
+    T areaCoefficient = k_shear/eqMeanArea ;
     iSurface = 0.0;
 
     /* Run through all the neighbouring faces of iVertex and calculate:
@@ -202,16 +215,19 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         jVertex = neighborVertexIds[jV];
         x3 = dynMesh.getVertex(jVertex);
         /* In Plane (WLC) and repulsive forces*/
-        inPlaneForce += computeInPlaneForce(x1, x3, maxLength, k_WLC, k_rep);
+        inPlaneForce += computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane);
+
         /*  Dissipative Forces Calculations */
         dissipativeForce += computeDissipativeForce(x1, x3, iVelocity, particleVelocity[jVertex], gamma_T, gamma_C);
         /*  Bending Forces Calculations */
         std::vector<plint> triangles = dynMesh.getAdjacentTriangleIds(iVertex, jVertex);
         iTriangle = triangles[0]; jTriangle = triangles[1];
+        plint foundVertices = 0;
         for (pluint id = 0; id < 3; ++id) {
             kVertex = dynMesh.getVertexId(iTriangle,id);
             if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
                 x2 = dynMesh.getVertex(kVertex);
+                foundVertices += 1;
                 break;
             }
         }
@@ -219,27 +235,36 @@ Array<T,3> CellModel3D<T>::computeCellForce (
             lVertex = dynMesh.getVertexId(jTriangle,id);
             if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
                 x4 = dynMesh.getVertex(lVertex);
+                foundVertices += 1;
                 break;
             }
         }
-        tmpForce = computeBendingForce (x1, x2, x3, x4,
-                            trianglesNormal[iTriangle], trianglesNormal[jTriangle],
-                            trianglesArea[iTriangle], trianglesArea[jTriangle],
+        PLB_ASSERT(foundVertices == 2); //Assert if some particles are outside of the domain
+
+//        tmpForce = computeBendingForce (x1, x2, x3, x4,
+//                            trianglesNormal[iTriangle], trianglesNormal[jTriangle],
+//                            trianglesArea[iTriangle], trianglesArea[jTriangle],
+//                            eqTileSpan, eqLength, eqAngle, k_bend);
+//        T iTriangleBendingCoefficient = trianglesArea[iTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
+//        T jTriangleBendingCoefficient = trianglesArea[jTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
+//        bendingForce += tmpForce;
+//        particleForces[kVertex][1] += -iTriangleBendingCoefficient * tmpForce;
+//        particleForces[lVertex][1] += -jTriangleBendingCoefficient * tmpForce;
+        Array<T,3> tmp2, tmp3, tmp4;
+        tmpForce = computeBendingForceFromPotential (x1, x2, x3, x4,
+                            eqTileSpan, eqLength, eqAngle, k_bend,
+                            tmp2, tmp3, tmp4);
+        bendingForce += tmpForce * 0.5; // Multiplied by 0.5, because this force is calculated twice (x2 also calculates this force)
+        particleForces[kVertex][1] += tmp2 * 0.5;
+        particleForces[jVertex][1] += tmp3 * 0.5;
+        particleForces[lVertex][1] += tmp4 * 0.5;
+
+        T t1 = computeBendingPotential (x1, x2, x3, x4,
                             eqTileSpan, eqLength, eqAngle, k_bend);
-        T iTriangleBendingCoefficient = trianglesArea[iTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
-        T jTriangleBendingCoefficient = trianglesArea[jTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
-        bendingForce += tmpForce;
-        particleForces[kVertex][1] += -iTriangleBendingCoefficient * tmpForce;
-        particleForces[lVertex][1] += -jTriangleBendingCoefficient * tmpForce;
-//            Array<T,3> tmp2(0,0,0), tmp3(0,0,0), tmp4(0,0,0);
-//            tmpForce = computeBendingForce_Krueger (x1, x2, x3, x4,
-//                                trianglesNormal[iTriangle], trianglesNormal[jTriangle],
-//                                trianglesArea[iTriangle], trianglesArea[jTriangle],
-//                                eqTileSpan, eqLength, eqAngle, k_bend,
-//                                tmp2, tmp3, tmp4);
-//            particleForces[jVertex][1] += tmp3;
-//            particleForces[kVertex][1] += tmp2;
-//            particleForces[lVertex][1] += tmp4;
+        particleForces[iVertex][6][0] += t1;
+        particleForces[kVertex][6][0] += t1;
+        particleForces[jVertex][6][0] += t1;
+        particleForces[lVertex][6][0] += t1;
     }
     f_wlc = inPlaneForce + repulsiveForce;
     f_bending = bendingForce;
@@ -257,31 +282,6 @@ Array<T,3> CellModel3D<T>::computeElasticForce (
         plint iVertex )
 {
     return Array<T,3>(0,0,0);
-
-    TriangularSurfaceMesh<T> const& mesh = boundary.getMesh();
-    Array<T,3> force; force.resetToZero();
-    static T eps = (sizeof(T) == sizeof(float) ?
-            100.0 * std::numeric_limits<T>::epsilon() :
-            std::numeric_limits<float>::epsilon());
-
-    Array<T,3> vertex = mesh.getVertex(iVertex);
-
-    for (int i = 0; i < 3; i++) {
-        Array<T,3> iPosition = vertex;
-        iPosition[i] += eps;
-        T up = shellModelHelper3D::cellModelHelper3D::computePotential (
-                iVertex, iPosition, mesh,
-                eqLength, maxLength, eqArea, eqAngle, eqTileSpan,
-                k_WLC, k_elastic, k_shear, k_bend);
-        iPosition = vertex;
-        iPosition[i] -= eps;
-        T um = shellModelHelper3D::cellModelHelper3D::computePotential (
-                iVertex, iPosition, mesh,
-                eqLength, maxLength, eqArea, eqAngle, eqTileSpan,
-                k_WLC, k_elastic, k_shear, k_bend);
-        force[i] = -(up-um) / (2.0*eps);
-    }
-    return force;
 }
 
 template<typename T>
