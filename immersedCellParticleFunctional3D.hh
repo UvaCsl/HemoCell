@@ -126,6 +126,9 @@ void CreateTaggedImmersedCellParticle3D<T,Descriptor>::getTypeOfModification (
 
 /* ******** FluidVelocityToImmersedCell3D *********************************** */
 
+template<typename T, template<typename U> class Descriptor>
+FluidVelocityToImmersedCell3D<T,Descriptor>::FluidVelocityToImmersedCell3D (
+        plint ibmKernel_) : ibmKernel(ibmKernel_) {};
 
 template<typename T, template<typename U> class Descriptor>
 void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
@@ -149,7 +152,7 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
         Array<T,3> velocity; velocity.resetToZero();
-        interpolationCoefficientsPhi4(fluid, position, cellPos, weights);
+        interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
         particle->get_v().resetToZero();
         for (pluint iCell=0; iCell < weights.size(); ++iCell) {
             velocity.resetToZero();
@@ -174,7 +177,9 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::getTypeOfModification (
 
 
 /* ******** ForceToFluid3D *********************************** */
-
+template<typename T, template<typename U> class Descriptor>
+ForceToFluid3D<T,Descriptor>::ForceToFluid3D (
+        plint ibmKernel_) : ibmKernel(ibmKernel_) {};
 
 template<typename T, template<typename U> class Descriptor>
 void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
@@ -197,8 +202,7 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
-        interpolationCoefficientsPhi4(fluid, position, cellPos, weights);
-
+        interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
         Array<T,3> elasticForce = particle->get_force();
         // pcout << "elastic force: (" << elasticForce[0] << ", "<< elasticForce[1] << ", "<< elasticForce[2] << ")\n";
         for (pluint iCell = 0; iCell < weights.size(); ++iCell) {
@@ -445,8 +449,8 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         plint vertexId = particle->getTag();
         particleVelocity[vertexId] = particle->get_v();
 //        particleForces[vertexId] = Array<T,3>(0., 0., 0.);
-        particleForces[vertexId] = new Array<T,3> [6]; // [f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity]
-        for (pluint var = 0; var < 6; ++var) {
+        particleForces[vertexId] = new Array<T,3> [7]; // [f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, E_bending]
+        for (pluint var = 0; var < 7; ++var) {
             particleForces[vertexId][var].resetToZero();
         }
     }
@@ -473,6 +477,8 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
             particle->get_f_surface() = f_surface;
             particle->get_f_shear() = f_shear;
             particle->get_f_viscosity() = f_viscosity;
+            particle->get_E_bending().resetToZero();
+
 //            pcout << "f_wlc (" <<
 //                    particle->get_f_wlc()[0] << ", " <<
 //                    particle->get_f_wlc()[1] << ", " <<
@@ -510,6 +516,8 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         for (pluint var = 0; var < 6; ++var) {
             particle->get_force() += particleForces[vertexId][var];
         }
+        particle->get_E_bending() += particleForces[vertexId][6];
+
         delete [] particleForces[vertexId];
 
         sforce += particle->get_force();

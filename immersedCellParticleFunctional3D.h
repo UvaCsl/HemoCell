@@ -66,20 +66,26 @@ template<typename T, template<typename U> class Descriptor>
 class FluidVelocityToImmersedCell3D : public BoxProcessingFunctional3D
 {
 public:
+    FluidVelocityToImmersedCell3D (plint ibmKernel_=4 );
     /// Arguments: [0] Particle-field. [1] Lattice.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual FluidVelocityToImmersedCell3D<T,Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+private:
+    plint ibmKernel;
 };
 
 template<typename T, template<typename U> class Descriptor>
 class ForceToFluid3D : public BoxProcessingFunctional3D
 {
 public:
+    ForceToFluid3D (plint ibmKernel_=4 );
     /// Arguments: [0] Particle-field. [1] Lattice.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual ForceToFluid3D<T,Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+private:
+    plint ibmKernel;
 };
 
 /// Count the number of particles, no matter which cellId, found inside the domain.

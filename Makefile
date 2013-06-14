@@ -28,7 +28,7 @@ precompiled  = false
 # Set optimization flags on/off
 optimize     = true
 # Set debug mode and debug flags on/off
-debug        = false
+debug        = true
 # Set profiling flags on/off
 profile      = false
 #profile      = true

@@ -82,6 +82,31 @@ T phi4c (T x) {
 }
 
 template<typename T>
+void interpolationCoefficients (
+        AtomicBlock3D const& block, Array<T,3> const& position,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights,
+        plint ibmKernel=2) {
+    /*
+     * ibmKernel == 2, Phi2
+     * ibmKernel == 3, Phi3
+     * ibmKernel == 4, Phi4
+     * ibmKernel == 5, Phi4c
+     */
+    if (ibmKernel == 2) {
+        interpolationCoefficientsPhi2(block, position, cellPos, weights);
+    } else if (ibmKernel == 3) {
+        interpolationCoefficientsPhi3(block, position, cellPos, weights);
+    } else if (ibmKernel == 4) {
+        interpolationCoefficientsPhi4(block, position, cellPos, weights);
+    } else if (ibmKernel == 5) {
+        interpolationCoefficientsPhi4c(block, position, cellPos, weights);
+    } else {
+        interpolationCoefficientsPhi4(block, position, cellPos, weights);
+    }
+}
+
+
+template<typename T>
 void interpolationCoefficientsPhi2 (
         AtomicBlock3D const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights )
