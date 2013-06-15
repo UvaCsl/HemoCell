@@ -36,7 +36,8 @@ def calculate_dt(config):
 
 tree = ET.parse('config_test.xml')
 config = {}
-for i in tree.iter(): 
+# for i in tree.iter(): 
+for i in tree.findall('.//*'):
     config[i.tag] = i
 
 arguments = parseArguments(config)
@@ -53,11 +54,11 @@ for ic, comb in enumerate( product(*param_val) ):
     caseId = []
     for iv, value in enumerate(comb):
         key = params[iv]
-        print key, value,
+#        print key, value,
         config[key].text = str(value)
         caseId += [key +'-'+ str(value)]
-    print
-    config['caseId'].text = ".".join(caseId)
+#    print
+    config['caseId'].text = "_".join(caseId)
     tree.write(config['caseId'].text+'-output.xml')
 
 
