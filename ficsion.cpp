@@ -77,7 +77,8 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     document["parameters"]["flowType"].read(flowType);
     document["parameters"]["Re"].read(Re);
     document["parameters"]["shearRate"].read(shearRate);
-    document["parameters"]["stretchForce"].read(stretchForce);
+    document["parameters"]["stretchForce"].read(stretchForce); // In picoNewton
+    stretchForce *= 1e-12;
     document["parameters"]["deflationRatio"].read(deflationRatio);
     document["parameters"]["relaxationTime"].read(relaxationTime);
     document["ibm"]["forceToFluid"].read(forceToFluid);
