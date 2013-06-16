@@ -35,7 +35,7 @@
     <forceToFluid> 1 </forceToFluid>
     <ibmKernel> 4 </ibmKernel> <!-- ibmKernel: Phi2 [2], Phi3 [3], Phi4 [4],  Phi4c [5] -->
     <shape> 2 </shape> <!-- shape: Sphere:[0], RBC:[1], Cell(defined):[2] -->
-    <cellPath>lib/RBC_v202f400.stl</cellPath>
+    <cellPath>lib/RBC.stl</cellPath>
     <radius> 4.3e-6 </radius> <!-- Radius of the particle in [m] (dx) [4.284 for RBC, 3.3 for sphere] -->
     <minNumOfTriangles> 200 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
 </ibm>

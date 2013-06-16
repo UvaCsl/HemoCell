@@ -1,8 +1,7 @@
 #PBS -S /bin/bash
-#PBS -lwalltime=50:00:00 -lnodes=1:cores8:ppn=8
-
 #PBS -lwalltime=00:05:00 -lnodes=1:cores8:ppn=8
 
+#PBS -lwalltime=50:00:00 -lnodes=1:cores8:ppn=8
 #PBS -lwalltime=72:00:00 -lnodes=1:cores8:ppn=8
 #PBS -lwalltime=120:00:00 -lnodes=1:cores8:ppn=8
 
@@ -25,16 +24,17 @@
 
 # === Variables that might need change ====
 export PATH=$PATH:/home/lmountra/bin/
-export RANDID=${JOBID-${RANDOM}} # Identification of the job, randomized
-export SUBJECT="RBC benchmark $RANDID" # Subject of the email sent to USER
-export JobName=RBCBenchmark$RANDID # Used for directory making purposed and identifying the job
-export ParentDir=~/RBCBenchmark/ # PATH where initial conditions (cases), results and snapshots are to be found and copied
+export RANDID=${KBEND-${RANDOM}} # Identification of the job, randomized
+export SUBJECT="RBC benchmark $KBEND" # Subject of the email sent to USER
+export JobName=RBCTesting # Used for directory making purposed and identifying the job
+export ParentDir=/home/lmountra/RBCTesting/ # PATH where initial conditions (cases), results and snapshots are to be found and copied
 
 export EXE=/home/lmountra/ficsion/ficsion # Path to the ficsion executable
 export CREATECONFIG=/home/lmountra/ficsion/scripts/conficsion.py # Usually unnecessary, but check the rest of the script
 export INITIALCONFIG=${ParentDir}/config.xml
 export LNS=/home/lmountra/ficsion/lib/
 
+echo $ParentDir
 # ===== 
 ulimit -v unlimited
 ulimit -s unlimited
@@ -79,6 +79,16 @@ wait_until_nproc_drops_below () {
     done
 }
 
+rsync_sleep () {
+    NPROC=$1
+    cd ${ScratchDir}
+    echo "STARTED WITH " `jobs | wc -l`
+    while [ `jobs | wc -l` -ge $NPROC ]; do
+        rsync -zvr ${ScratchDir}/ ${ResultDir}/
+        sleep ${SLEEPTIME}
+    done
+}
+
 gzip_rsync_sleep () {
     NPROC=$1
     cd ${ScratchDir}
@@ -95,7 +105,7 @@ gzip_rsync_sleep () {
 stretchForces="--stretchForce 0 15 19 30 38 47 67 88 108 130 150 172 192"
 # ======== Create Config Files ==========
 (
-mkdir ${ScratchDir}/configurations;
+mkdir -p ${ScratchDir}/configurations;
 cd ${ScratchDir}/configurations;
 cp ${INITIALCONFIG} config_test.xml
 ${CREATECONFIG} ${stretchForces} --flowType 3 --shearRate 0 --k_WLC 0.1 0.25 0.5 1.0 --rbcModel 0 1 --k_bend ${KBEND}
@@ -111,13 +121,14 @@ for configFile in ${ScratchDir}/configurations/*xml; do
         config=$(basename ${configFile} .xml);
         jobid=${config}
         export jobdir=${ScratchDir}/${jobid}/
-        mkdir -p ${jobdir}/tmp/
+        mkdir -p ${jobdir}/{tmp,lib}/
         cd ${jobdir};
-        ln -s ${LNS}
+        cp -r ${LNS}/*  ${jobdir}/lib/
         cp ${configFile} ${config}.xml
+        echo ${EXE} ${config}.xml
         ${EXE} ${config}.xml &> ${jobid}.log
     ) &
-    gzip_rsync_sleep $PROCS  &> ${ScratchDir}/gzipped.log 
+    rsync_sleep $PROCS  &> ${ScratchDir}/gzipped.log 
 done
 
 # Leave unchanged if you want to keep the sync
