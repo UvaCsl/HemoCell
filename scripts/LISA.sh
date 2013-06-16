@@ -1,7 +1,8 @@
 #PBS -S /bin/bash
+#PBS -lwalltime=50:00:00 -lnodes=1:cores8:ppn=8
+
 #PBS -lwalltime=00:05:00 -lnodes=1:cores8:ppn=8
 
-#PBS -lwalltime=50:00:00 -lnodes=1:cores8:ppn=8
 #PBS -lwalltime=72:00:00 -lnodes=1:cores8:ppn=8
 #PBS -lwalltime=120:00:00 -lnodes=1:cores8:ppn=8
 
@@ -44,7 +45,7 @@ SLEEPTIME=3600 # Wallclock time interval between each RSYNC (1h)
 
 
 export ResultDir=${ParentDir}/results/${JobName}
-export ScratchDir=${TMPDIR}/${JobName}
+export ScratchDir=${TMPDIR-/scratch/}/${JobName}
 
 mkdir -p ${ResultDir} ${ScratchDir}
 cd ${ScratchDir}
@@ -108,7 +109,7 @@ stretchForces="--stretchForce 0 15 19 30 38 47 67 88 108 130 150 172 192"
 mkdir -p ${ScratchDir}/configurations;
 cd ${ScratchDir}/configurations;
 cp ${INITIALCONFIG} config_test.xml
-${CREATECONFIG} ${stretchForces} --flowType 3 --shearRate 0 --k_WLC 0.1 0.25 0.5 1.0 --rbcModel 0 1 --k_bend ${KBEND}
+${CREATECONFIG} ${stretchForces} --flowType 3 --shearRate 0 --kWLC 0.1 0.25 0.5 1.0 --rbcModel 0 1 --kBend ${KBEND}
 rm config_test.xml
 );
 
