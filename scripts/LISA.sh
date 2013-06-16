@@ -40,7 +40,7 @@ ulimit -v unlimited
 ulimit -s unlimited
 export OMP_NUM_THREADS=1
 export PROCS=8
-SLEEPTIME=60 # Wallclock time interval between each RSYNC (1h)
+SLEEPTIME=3600 # Wallclock time interval between each RSYNC (1h)
 
 
 export ResultDir=${ParentDir}/results/${JobName}

@@ -64,16 +64,16 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     document["caseId"].read(caseId);
     document["cell"]["rbcModel"].read(rbcModel);
     document["cell"]["shellDensity"].read(shellDensity);
-    document["cell"]["k_WLC"].read(k_WLC);
-    document["cell"]["k_rep"].read(k_rep);
-    document["cell"]["k_elastic"].read(k_elastic);
-    document["cell"]["k_bend"].read(k_bend);
-    document["cell"]["k_volume"].read(k_volume);
-    document["cell"]["k_surface"].read(k_surface);
-    document["cell"]["eta_m"].read(eta_m);
-    document["cell"]["k_rest"].read(k_rest);
-    document["cell"]["k_shear"].read(k_shear);
-    document["cell"]["k_stretch"].read(k_stretch);
+    document["cell"]["kWLC"].read(k_WLC);
+    document["cell"]["kRep"].read(k_rep);
+    document["cell"]["kElastic"].read(k_elastic);
+    document["cell"]["kBend"].read(k_bend);
+    document["cell"]["kVolume"].read(k_volume);
+    document["cell"]["kSurface"].read(k_surface);
+    document["cell"]["etaM"].read(eta_m);
+    document["cell"]["kRest"].read(k_rest);
+    document["cell"]["kShear"].read(k_shear);
+    document["cell"]["kStretch"].read(k_stretch);
     document["parameters"]["flowType"].read(flowType);
     document["parameters"]["Re"].read(Re);
     document["parameters"]["shearRate"].read(shearRate);
@@ -89,8 +89,8 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     }
     document["ibm"]["radius"].read(radius);
     document["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
-    document["domain"]["rho_p"].read(rho_p);
-    document["domain"]["nu_p"].read(nu_p);
+    document["domain"]["rhoP"].read(rho_p);
+    document["domain"]["nuP"].read(nu_p);
     document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
     document["domain"]["nx"].read(nx);

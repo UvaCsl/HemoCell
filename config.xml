@@ -5,20 +5,20 @@
     <rbcModel> 1 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1] -->
     <shellDensity> 1.0 </shellDensity>
 
-    <k_bend> 150e0 </k_bend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
-    <k_volume> 60000.0 </k_volume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
-    <k_surface> 59000.0 </k_surface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <kBend> 150e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <kVolume> 60000.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <kSurface> 59000.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
 <!-- 0.5e0 -->
-    <k_shear> 100.0e0 </k_shear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
-    <eta_m> 0.022e-6 </eta_m> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
+    <kShear> 100.0e0 </kShear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
+    <etaM> 0.022e-6 </etaM> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
 <!-- +++++ -->
 <!-- Testing phase-->
 <!-- +++++ -->
-    <k_WLC> 0.25 </k_WLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
-    <k_rep> 1.0e0 </k_rep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
-    <k_elastic> 0.0e0 </k_elastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->
-    <k_rest> 0.0e-4 </k_rest> <!--Resting modulus (in N/m) [0.0, 1.0e-4]-->
-    <k_stretch> 0.0e-10</k_stretch> <!--spring modulus (in N) [0.0]-->
+    <kWLC> 0.25 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
+    <kRep> 1.0e0 </kRep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
+    <kElastic> 0.0e0 </kElastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->
+    <kRest> 0.0e-4 </kRest> <!--Resting modulus (in N/m) [0.0, 1.0e-4]-->
+    <kStretch> 0.0e-10</kStretch> <!--spring modulus (in N) [0.0]-->
 </cell>
 
 <parameters>
@@ -41,8 +41,8 @@
 </ibm>
 
 <domain>
-    <rho_p> 1025 </rho_p>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
-    <nu_p> 1.7e-6 </nu_p>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
+    <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
+    <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 2e-6 </dx> <!--Physical length of 1 Lattice Unit -->
     <nx> 20 </nx> <!--Size of domain in Lattice Units -->
