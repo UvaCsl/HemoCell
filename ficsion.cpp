@@ -272,7 +272,7 @@ int main(int argc, char* argv[])
 
 
     T persistenceLengthFine = 7.5e-9  / dx;
-    T eqLengthRatio = 1.5/eqLength;
+    T eqLengthRatio = 3.17; // According to Pivkin2008
     T maxLength = eqLengthRatio*eqLength;
     pcout << "eqLengthRatio:" << eqLengthRatio  << ", maxLength [LU]:" << maxLength << std::endl;
     /* The Maximum length of two vertices should be less than 1.0 LU */
