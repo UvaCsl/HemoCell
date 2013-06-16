@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
     std::string caseId;
     std::string cellPath;
     plint tmax, tmeas, npar;
-    T dtIteration = 0;
+    // T dtIteration = 0;
     T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic,  k_volume, k_surface, eta_m;
     T u, Re, Re_p, N, lx, ly, lz;
     T rho_p;
@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
             numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), cellIds[iA]);
             pcout << "Cell: " << iA << ", Particles: " << numParts[iA] << std::endl;
     }
-    plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox()); //Total number of particles
+    // plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox()); //Total number of particles
 
     /* Measure Cell Variables */
     std::vector<T> cellsVolume, cellsSurface;
@@ -265,7 +265,7 @@ int main(int argc, char* argv[])
             immersedParticles.getBoundingBox(), particleArg );
         stretchLogFile << setprecision(20) << "# Force [N] = " << stretchForce_p << std::endl << "t [sec]; D_A [m]; D_T [m]; Mean Edge Distance [LU]; Max Edge Distance [LU]; " << std::endl;
     }
-    for (plint ipa = 0; ipa < outerLeftTags.size(); ++ipa) {
+    for (pluint ipa = 0; ipa < outerLeftTags.size(); ++ipa) {
         pcout << ipa << " : " <<outerLeftTags[ipa] ;
         pcout << ", " <<outerRightTags[ipa] << std::endl;
     }
@@ -291,7 +291,7 @@ int main(int argc, char* argv[])
        cellModel = new ShapeMemoryModel3D<T>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
                        eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, eqVolume, eqSurface, eqTileSpan,
                        persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
-   } else if (rbcModel == 1) {
+   } else  { // if (rbcModel == 1) {
        cellModel = new CellModel3D<T>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
                        eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan,
                        persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
@@ -327,10 +327,10 @@ int main(int argc, char* argv[])
     for (plint i=0; i<tmax+1; ++i) {
         /* =============================== OUTPUT ===================================*/
         if (i%tmeas==0) {
-            dtIteration = global::timer("sim").stop();
-            plint totParticlesNow = 0;
-            totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());
-            pcout << i << " totParticles = " << totParticles << std::endl;
+            // dtIteration = global::timer("sim").stop();
+            // plint totParticlesNow = 0;
+            // totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());
+            // pcout << i << " totParticles = " << totParticles << std::endl;
             // PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain
             calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                                 cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
@@ -346,7 +346,7 @@ int main(int argc, char* argv[])
                         new MeasureCellStretchDeformation3D<T,DESCRIPTOR>(lateralCellParticleTags, &stretchingDeformations),
                         immersedParticles.getBoundingBox(), particleArg );
                     pcout << "StrDeform [m] [";
-                    for (int iDirection = 0; iDirection < stretchingDeformations.size(); ++iDirection) {
+                    for (pluint iDirection = 0; iDirection < stretchingDeformations.size(); ++iDirection) {
                         pcout << "(" << iDirection << ", " << stretchingDeformations[iDirection]*dx << "), " ;
                    } pcout << "]" << std::endl;
                    stretchLogFile << setprecision(20) << i*dt
