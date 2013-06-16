@@ -1,4 +1,6 @@
 #PBS -S /bin/bash
+#PBS -lwalltime=50:00:00 -lnodes=1:cores8:ppn=8
+
 #PBS -lwalltime=00:05:00 -lnodes=1:cores8:ppn=8
 
 #PBS -lwalltime=72:00:00 -lnodes=1:cores8:ppn=8
@@ -17,7 +19,7 @@
 
 
 # //// For multiple cases with different initial conditions submit with:
-#####  for i in {01..15}; do qsub -v JOBID=$i LISA.sh ; done ######
+#####  for i in 75 150 200 1000; do qsub -v KBEND=$i LISA.sh ; done ######
 #                 ////
 
 
@@ -30,7 +32,7 @@ export ParentDir=~/RBCBenchmark/ # PATH where initial conditions (cases), result
 
 export EXE=/home/lmountra/ficsion/ficsion # Path to the ficsion executable
 export CREATECONFIG=/home/lmountra/ficsion/scripts/conficsion.py # Usually unnecessary, but check the rest of the script
-export INITIALCONFIG=/home/lmountra/ficsion/config.xml
+export INITIALCONFIG=${ParentDir}/config.xml
 export LNS=/home/lmountra/ficsion/lib/
 
 # ===== 
@@ -96,7 +98,7 @@ stretchForces="--stretchForce 0 15 19 30 38 47 67 88 108 130 150 172 192"
 mkdir ${ScratchDir}/configurations;
 cd ${ScratchDir}/configurations;
 cp ${INITIALCONFIG} config_test.xml
-${CREATECONFIG} ${stretchForces} --flowType 3 --shearRate 0
+${CREATECONFIG} ${stretchForces} --flowType 3 --shearRate 0 --k_WLC 0.1 0.25 0.5 1.0 --rbcModel 0 1 --k_bend ${KBEND}
 rm config_test.xml
 );
 
