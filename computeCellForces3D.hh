@@ -68,11 +68,15 @@ Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x
 */
     Array<T,3> dL = (x1 - x2)*1.0;
     T L = norm(dL);
+    T r = L/(eqLength*eqLengthRatio), r0=1.0/eqLengthRatio; // T Lmax = eqLength*eqLengthRatio;
     Array<T,3> eij = dL/L;
     /* In Plane Force (WLC) and Repulsive Force */
-    Array<T,3> tmpForce =  eij * k_inPlane *
-                    (1 - (4*L*eqLengthRatio)/eqLength +
-                            pow(eqLength,2)*((-1 + pow(-1 + eqLengthRatio,-2) + 4*eqLengthRatio)/pow(L,2) - pow(eqLength - L*eqLengthRatio,-2)));
+    Array<T,3> tmpForce =  eij * k_inPlane * r * (-6 + (9 - 4*r)*r)/( (r-1)*(r-1) );
+    T k_rep = -(eqLength*eqLength)* k_inPlane * r0 * (-6 + (9 - 4*r0)*r0)/( (r0-1)*(r0-1) );
+    tmpForce +=  eij * k_rep / (L*L) ;
+//    Array<T,3> tmpForce =  eij * k_inPlane *
+//                    (1 - (4*L*eqLengthRatio)/eqLength +
+//                            pow(eqLength,2)*((-1 + pow(-1 + eqLengthRatio,-2) + 4*eqLengthRatio)/pow(L,2) - pow(eqLength - L*eqLengthRatio,-2)));
     return tmpForce;
 }
 

@@ -122,8 +122,10 @@ int main(int argc, char* argv[])
     std::string logFileName = global::directories().getLogOutDir() + "plbCells.log";
     plb_ofstream logFile(logFileName.c_str());
 
-    std::string stretchFileName = global::directories().getLogOutDir() + "stretchDeformation.log";
-    plb_ofstream stretchLogFile(stretchFileName.c_str());
+    std::string stretchLogFileName = global::directories().getLogOutDir() + "stretchDeformation.log";
+    std::string stretchResultFileName = global::directories().getLogOutDir() + "stretchResults.log";
+    plb_ofstream stretchLogFile(stretchLogFileName.c_str());
+    plb_ofstream stretchResultFile(stretchResultFileName.c_str());
 
     plint forceToFluid, shape, cellNumTriangles, ibmKernel;
     plint rbcModel;
@@ -255,8 +257,8 @@ int main(int argc, char* argv[])
     lateralCellParticleTags.push_back(&outerFrontTags);
     lateralCellParticleTags.push_back(&outerBackTags);
     plint numParticlesPerSide = plint(0.05*numParts[0]);
-    if (flowType == 3) {
-        PLB_PRECONDITION( npar == 1 && flowType == 3 && MPI::COMM_WORLD.Get_size() == 1 );
+    if ((flowType == 3) || (flowType == 4)) {
+        PLB_PRECONDITION( npar == 1 && MPI::COMM_WORLD.Get_size() == 1 );
         applyProcessingFunctional (
             new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerLeftTags, &outerRightTags, 0),
             immersedParticles.getBoundingBox(), particleArg );
@@ -275,8 +277,8 @@ int main(int argc, char* argv[])
     T eqLengthRatio = 3.17; // According to Pivkin2008
     T maxLength = eqLengthRatio*eqLength;
     pcout << "eqLengthRatio:" << eqLengthRatio  << ", maxLength [LU]:" << maxLength << std::endl;
-    /* The Maximum length of two vertices should be less than 1.0 LU */
-    PLB_PRECONDITION( maxLength < 2.0 );
+    /* The Maximum length of two vertices should be less than 2.0 LU */
+//    PLB_PRECONDITION( maxLength < 2.0 );
     k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
     k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
     /* == */
@@ -323,6 +325,16 @@ int main(int argc, char* argv[])
                  cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                  cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity,
                  eqVolumeFinal, eqSurface, eqArea, eqLength) ; // Write Log file for the cell Particles
+
+    // ======== Used for exploring cell stretching behaviour ========== //
+    util::ValueTracer<T> convergeX((T)1,(T)100,1.0e-5), convergeY((T)1,(T)100,1.0e-5);
+    T dStretchingForce = 5.0e-12/dNewton;
+    plint statIter = 10;
+    if ((flowType == 4)) {
+        stretchForce.resetToZero();
+        stretchForceScalar = 0.0;
+    }
+
     /* ********************* Main Loop ***************************************** * */
     for (plint i=0; i<tmax+1; ++i) {
         /* =============================== OUTPUT ===================================*/
@@ -341,7 +353,7 @@ int main(int argc, char* argv[])
                          cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                          cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity,
                          eqVolumeFinal, eqSurface, eqArea, eqLength) ;
-            if (flowType == 3) {
+            if ((flowType == 3) || (flowType == 4)) {
                     applyProcessingFunctional (
                         new MeasureCellStretchDeformation3D<T,DESCRIPTOR>(lateralCellParticleTags, &stretchingDeformations),
                         immersedParticles.getBoundingBox(), particleArg );
@@ -350,6 +362,7 @@ int main(int argc, char* argv[])
                         pcout << "(" << iDirection << ", " << stretchingDeformations[iDirection]*dx << "), " ;
                    } pcout << "]" << std::endl;
                    stretchLogFile << setprecision(20) << i*dt
+                                  << "; " << stretchForceScalar*dNewton
                                   << "; " << stretchingDeformations[0]*dx
                                   << "; " << stretchingDeformations[1]*dx << ";  "
                                   << "; " << cellsMeanEdgeDistance[0] << ";  "
@@ -378,7 +391,34 @@ int main(int argc, char* argv[])
             // ==================
             global::timer("sim").restart();
         }
-        /* =============================== MAIN LOOP ===================================*/
+        /* ====================== Update for Cell Stretching behaviour ===================================*/
+        if ((flowType == 4) && (i % statIter == 0)) {
+            applyProcessingFunctional (
+                new MeasureCellStretchDeformation3D<T,DESCRIPTOR>(lateralCellParticleTags, &stretchingDeformations),
+                immersedParticles.getBoundingBox(), particleArg );
+            convergeX.takeValue(stretchingDeformations[0],false);
+            convergeY.takeValue(stretchingDeformations[1],false);
+            if (convergeX.hasConverged() && convergeY.hasConverged() ) {
+                convergeX.resetValues();
+                convergeY.resetValues();
+                stretchResultFile << setprecision(20) << i*dt
+                        << "; " << stretchForceScalar*dNewton
+                        << "; " << stretchingDeformations[0]*dx
+                        << "; " << stretchingDeformations[0]*dx
+                        << "; " << stretchingDeformations[1]*dx << ";  "
+                        << "; " << cellsMeanEdgeDistance[0] << ";  "
+                        << "; " << cellsMaxEdgeDistance[0] << ";  "
+                                                                << std::endl;
+                pcout << "# StretchForce: " << stretchForceScalar*dNewton*1.0e12 << "pN converged in iteration " << i << "." << std::endl;
+                stretchForceScalar += dStretchingForce;
+                stretchForce = Array<T,3>(stretchForceScalar,0,0);
+                if (stretchForceScalar > 40*dStretchingForce ) {
+                    pcout << "Simulation is over.\n";
+                    break;
+                }
+            }
+        }
+        /* =============================== MAIN ACTIONS ===================================*/
         // #0# Equilibration
         if (i<=relaxationTime) {
             eqVolume = eqVolumeInitial + (i*1.0)/relaxationTime * (eqVolumeFinal - eqVolumeInitial) ;
@@ -387,7 +427,6 @@ int main(int argc, char* argv[])
             } else if (rbcModel == 1) {
                 (dynamic_cast<CellModel3D<T>*>(cellModel))->setEquilibriumVolume(eqVolume);
             }
-
             if (flowType == 3) {
                     stretchForce = (i*1.0)/relaxationTime * Array<T,3>(stretchForceScalar,0,0);
             }
@@ -426,7 +465,7 @@ int main(int argc, char* argv[])
                 immersedParticles.getBoundingBox(), particleArg );
         }
 
-        if (flowType == 3) {
+        if ((flowType == 3) || (flowType == 4)) {
             applyProcessingFunctional ( // compute force applied on the some particles by the stretching force
                     new ApplyStretchingForce3D<T,DESCRIPTOR>(outerLeftTags, outerRightTags, stretchForce, cellModel->getDensity()),
                     immersedParticles.getBoundingBox(), particleArg );

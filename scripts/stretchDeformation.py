@@ -21,8 +21,8 @@ text = sfile.read().replace(';',' ')
 c = StringIO(text)
 data = np.loadtxt(c)
 t = data[:,0]
-D_A = data[:,1]*1e6
-D_T = data[:,2]*1e6
+D_A = data[:,2]*1e6
+D_T = data[:,3]*1e6
 sfile.close()
 
 
