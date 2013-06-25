@@ -64,7 +64,7 @@ ShapeMemoryModel3D<T>::ShapeMemoryModel3D (
 
     typename map<plint,T>::reverse_iterator iter = eqAnglePerEdge.rbegin();
     for (iter = eqAnglePerEdge.rbegin(); iter != eqAnglePerEdge.rend(); ++iter) {
-       eqAngle = iter->second;
+       eqAngle += iter->second;
     }
     eqAngle /= eqAnglePerEdge.size();
 
