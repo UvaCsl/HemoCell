@@ -1,7 +1,8 @@
 #PBS -S /bin/bash
+#PBS -lwalltime=72:00:00 -lnodes=1:cores8:ppn=8
+
 #PBS -lwalltime=00:05:00 -lnodes=1:cores8:ppn=8
 
-#PBS -lwalltime=72:00:00 -lnodes=1:cores8:ppn=8
 
 
 #PBS -lwalltime=72:00:00 -lnodes=1:cores8:ppn=8
@@ -92,6 +93,7 @@ rsync_sleep () {
     fi
     while [ `jobs | wc -l` -ge $NPROC ]; do
         if [ ${SYNCINTERVAL} -ge ${SLEEPTIME} ]; then
+            killall -9 rsync;
             rsync -zvr ${ScratchDir}/ ${ResultDir}/;
             SYNCINTERVAL=0;
         fi
