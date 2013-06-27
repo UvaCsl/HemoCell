@@ -52,7 +52,7 @@ const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor acc
 const plint particleEnvelopeWidth = 2;
 
 void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
-        T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
+        T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, plint & relaxationTime, plint & minNumOfTriangles,
         plint & tmax, plint & tmeas, plint & npar)
@@ -65,6 +65,7 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     document["cell"]["rbcModel"].read(rbcModel);
     document["cell"]["shellDensity"].read(shellDensity);
     document["cell"]["kWLC"].read(k_WLC);
+    document["cell"]["eqLengthRatio"].read(eqLengthRatio);
     document["cell"]["kRep"].read(k_rep);
     document["cell"]["kElastic"].read(k_elastic);
     document["cell"]["kBend"].read(k_bend);
@@ -134,6 +135,7 @@ int main(int argc, char* argv[])
     plint tmax, tmeas, npar;
     // T dtIteration = 0;
     T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic,  k_volume, k_surface, eta_m;
+    T eqLengthRatio;
     T u, Re, Re_p, N, lx, ly, lz;
     T rho_p;
     T radius;
@@ -148,7 +150,7 @@ int main(int argc, char* argv[])
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
-    readFicsionXML(document, caseId, rbcModel, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic, k_volume, k_surface, eta_m,
+    readFicsionXML(document, caseId, rbcModel, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, Re, shearRate_p, stretchForce_p, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, shape, cellPath, radius, deflationRatio, relaxationTime,
             cellNumTriangles, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
@@ -274,11 +276,11 @@ int main(int argc, char* argv[])
 
 
     T persistenceLengthFine = 7.5e-9  / dx;
-    T eqLengthRatio = 3.17; // According to Pivkin2008
+    // T eqLengthRatio = 3.17; // According to Pivkin2008
     T maxLength = eqLengthRatio*eqLength;
     pcout << "eqLengthRatio:" << eqLengthRatio  << ", maxLength [LU]:" << maxLength << std::endl;
-    /* The Maximum length of two vertices should be less than 2.0 LU */
-//    PLB_PRECONDITION( maxLength < 2.0 );
+    /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
+    // PLB_PRECONDITION( maxLength < 2.0 );
     k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
     k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
     /* == */
