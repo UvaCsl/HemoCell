@@ -85,9 +85,9 @@ template<typename T>
 void interpolationCoefficients (
         AtomicBlock3D const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights,
-        plint ibmKernel=2) {
+        plint ibmKernel) {
     /*
-     * ibmKernel == 2, Phi2
+     * ibmKernel == 2, Phi2 ! Default
      * ibmKernel == 3, Phi3
      * ibmKernel == 4, Phi4
      * ibmKernel == 5, Phi4c

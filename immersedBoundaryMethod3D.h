@@ -46,6 +46,11 @@ T phi4 (T x) ;
 template<typename T>
 T phi4c (T x) ;
 
+template<typename T>
+void interpolationCoefficients (
+        AtomicBlock3D const& block, Array<T,3> const& position,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights,
+        plint ibmKernel=2);
 
 template<typename T>
 void interpolationCoefficientsPhi2 (
