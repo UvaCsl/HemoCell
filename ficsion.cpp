@@ -406,7 +406,6 @@ int main(int argc, char* argv[])
                 stretchResultFile << setprecision(20) << i*dt
                         << "; " << stretchForceScalar*dNewton
                         << "; " << stretchingDeformations[0]*dx
-                        << "; " << stretchingDeformations[0]*dx
                         << "; " << stretchingDeformations[1]*dx << ";  "
                         << "; " << cellsMeanEdgeDistance[0] << ";  "
                         << "; " << cellsMaxEdgeDistance[0] << ";  "

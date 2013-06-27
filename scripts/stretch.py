@@ -17,7 +17,7 @@ from glob import glob
 
 
 def readStretchingData(fname):
-    d = np.loadtxt(fname, delimiter=";",usecols = (0,1,3,4))
+    d = np.loadtxt(fname, delimiter=";",usecols = (0,1,2,3))
     t, f, DAX, DTX = [d[:,i] for i in range(4)]
     f *= 1e12
     DAX *= 1e6
