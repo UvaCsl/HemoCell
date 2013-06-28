@@ -21,8 +21,9 @@
 #ifndef CELL_MODEL_3D_H
 #define CELL_MODEL_3D_H
 
-#include "core/globalDefs.h"
-#include "offLattice/triangleBoundary3D.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
 #include "shellModel3D.h"
 
 

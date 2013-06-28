@@ -3,13 +3,8 @@
 
 #include "immersedCellsFunctional3D.h"
 
-#include "particles/particleField3D.h"
-#include "dataProcessors/metaStuffFunctional3D.h"
-#include "core/plbDebug.h"
-#include "core/blockStatistics.h"
-#include "atomicBlock/atomicBlock3D.h"
-#include "atomicBlock/blockLattice3D.h"
-#include "latticeBoltzmann/geometricOperationTemplates.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
 
 
 /* ******** TranslateTaggedParticlesFunctional3D *********************************** */

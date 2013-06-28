@@ -21,13 +21,9 @@
 #ifndef IMMERSED_WALL_PARTICLE_FUNCTIONAL_3D_HH
 #define IMMERSED_WALL_PARTICLE_FUNCTIONAL_3D_HH
 
-#include "particles/particleField3D.h"
-#include "dataProcessors/metaStuffFunctional3D.h"
-#include "core/plbDebug.h"
-#include "core/blockStatistics.h"
-#include "atomicBlock/atomicBlock3D.h"
-#include "atomicBlock/blockLattice3D.h"
-#include "latticeBoltzmann/geometricOperationTemplates.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
 #include "immersedCellParticleFunctional3D.h"
 #include "immersedCellParticle3D.h"
 #include "immersedBoundaryMethod3D.h"

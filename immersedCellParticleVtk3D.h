@@ -25,9 +25,8 @@
 #ifndef IMMERSED_PARTICLE_VTK_3D_H
 #define IMMERSED_PARTICLE_VTK_3D_H
 
-#include "core/globalDefs.h"
-#include "particles/multiParticleField3D.h"
-#include "offLattice/triangleBoundary3D.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
 #include <vector>
 #include <string>
 

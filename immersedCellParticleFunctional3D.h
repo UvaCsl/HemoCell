@@ -21,12 +21,10 @@
 #ifndef IMMERSED_WALL_PARTICLE_FUNCTIONAL_3D_H
 #define IMMERSED_WALL_PARTICLE_FUNCTIONAL_3D_H
 
-#include "core/globalDefs.h"
-#include "atomicBlock/dataProcessingFunctional3D.h"
-#include "atomicBlock/atomicContainerBlock3D.h"
-#include "offLattice/triangularSurfaceMesh.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
 #include "immersedCellParticle3D.h"
-#include "offLattice/triangleBoundary3D.h"
 #include "cellModel3D.h"
 #include "immersedBoundaryMethod3D.h"
 #include <map>

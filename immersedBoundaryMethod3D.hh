@@ -31,8 +31,9 @@ const double pi = 4.*atan(1.);
 #endif  // PI__
 
 
-#include "core/globalDefs.h"
-#include "core/util.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
 #include "immersedBoundaryMethod3D.h"
 #include <vector>
 

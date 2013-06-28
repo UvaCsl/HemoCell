@@ -21,7 +21,8 @@
 #ifndef IMMERSED_WALL_PARTICLE_3D_HH
 #define IMMERSED_WALL_PARTICLE_3D_HH
 
-#include "core/globalDefs.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
 #include "immersedCellParticle3D.h"
 
 namespace plb {

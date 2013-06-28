@@ -21,9 +21,6 @@
 #ifndef IMMERSED_CELLS_3D_H
 #define IMMERSED_CELLS_3D_H
 
-#include "core/globalDefs.h"
-#include "core/array.h"
-
 #include "palabos3D.h"
 #include "palabos3D.hh"
 

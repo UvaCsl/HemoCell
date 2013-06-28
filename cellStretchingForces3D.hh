@@ -21,22 +21,18 @@
 #ifndef CELL_STRETCHING_FORCES_3D_HH
 #define CELL_STRETCHING_FORCES_3D_HH
 
-#include "particles/particleField3D.h"
-#include "dataProcessors/metaStuffFunctional3D.h"
-#include "core/plbDebug.h"
-#include "core/blockStatistics.h"
-#include "atomicBlock/atomicBlock3D.h"
-#include "atomicBlock/blockLattice3D.h"
-#include "latticeBoltzmann/geometricOperationTemplates.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+#include "immersedCellsReductions.h"
 #include "immersedCellParticleFunctional3D.h"
 #include "immersedCellParticle3D.h"
-#include "immersedBoundaryMethod3D.h"
-#include <map>
+#include "cellStretchingForces3D.h"
+
+#include <map>    // std::map
 #include <algorithm>    // std::sort
 #include <vector>       // std::vector
 
-#include "cellStretchingForces3D.h"
-#include "immersedCellsReductions.hh"
 
 namespace plb {
 

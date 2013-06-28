@@ -1,12 +1,10 @@
 #ifndef IMMERSED_CELLS_REDUCTIONS_H
 #define IMMERSED_CELLS_REDUCTIONS_H
 
-#include "core/globalDefs.h"
-#include "atomicBlock/dataProcessingFunctional3D.h"
-#include "atomicBlock/atomicContainerBlock3D.h"
-#include "offLattice/triangularSurfaceMesh.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
 #include "immersedCellParticle3D.h"
-#include "offLattice/triangleBoundary3D.h"
 #include "shellModel3D.h"
 #include <map>
 
@@ -114,7 +112,7 @@ protected:
 };
 
 
-/* ******** CenterCellReduceFunctional3D *********************************** */
+/* ******** VelocityCellReduceFunctional3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
 class VelocityCellReduceFunctional3D : public PlainReductiveBoxProcessingFunctional3D
 {
@@ -250,5 +248,6 @@ private:
 };
 
 
+#include "immersedCellsReductions.hh"
 
 #endif  // IMMERSED_CELLS_REDUCTIONS_H

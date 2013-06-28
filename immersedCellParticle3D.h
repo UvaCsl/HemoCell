@@ -21,11 +21,8 @@
 #ifndef IMMERSED_WALL_PARTICLE_3D_H
 #define IMMERSED_WALL_PARTICLE_3D_H
 
-#include "core/globalDefs.h"
-#include "core/array.h"
-#include "particles/particle3D.h"
-#include "particles/particleIdentifiers3D.h"
-#include "atomicBlock/blockLattice3D.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
 #include <vector>
 
 namespace plb {

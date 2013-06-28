@@ -25,10 +25,9 @@
 #ifndef IMMERSEDBOUNDARYMETHOD_3D_H
 #define IMMERSEDBOUNDARYMETHOD_3D_H
 
-#include "core/globalDefs.h"
-#include "core/geometry3D.h"
-#include "atomicBlock/atomicBlock3D.h"
-#include "atomicBlock/dataField3D.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
 #include "immersedBoundaryMethod3D.hh"
 #include <vector>
 
