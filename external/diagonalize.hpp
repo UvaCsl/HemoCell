@@ -19,12 +19,12 @@
 
 using namespace std;
 
-// header of 3-vector
+// header of 3-vectorD
 
-class vector_exception : public exception
+class vectorD_exception : public exception
 { public:
-    vector_exception( const string & );
-    ~vector_exception() throw();
+    vectorD_exception( const string & );
+    ~vectorD_exception() throw();
   const char * what() const throw();
   protected:
     string error_description;
@@ -32,23 +32,23 @@ class vector_exception : public exception
 
 class matrix;
 
-class vector
+class vectorD
 { double the_data[ 3 ];
  public:
   friend class matrix;
-  vector();
-  vector( const vector & );
-  ~vector();
+  vectorD();
+  vectorD( const vectorD & );
+  ~vectorD();
   double & operator[]( unsigned int );
   const double & operator[]( unsigned int ) const;
-  vector & set_zero();
-  vector & operator=( const vector & );
-  vector & operator+=( const vector & );
-  vector & operator-=( const vector & );
+  vectorD & set_zero();
+  vectorD & operator=( const vectorD & );
+  vectorD & operator+=( const vectorD & );
+  vectorD & operator-=( const vectorD & );
 };
 
-istream & operator>>( istream &, vector & );
-ostream & operator<<( ostream &, const vector & );
+istream & operator>>( istream &, vectorD & );
+ostream & operator<<( ostream &, const vectorD & );
 
 // header of 3x3 matrix
 
@@ -64,7 +64,7 @@ class matrix_exception : public exception
 class matrix
 { double the_data[ 9 ];
  public:
-  friend class vector;
+  friend class vectorD;
   matrix();
   matrix( const matrix & );
   ~matrix();
@@ -85,8 +85,8 @@ class matrix
   matrix & set_zero();
   matrix & transpose();
   matrix & set_rotation( unsigned int, double );
-  matrix & set_diagonal( const vector & );
-  matrix & sym_eigen( vector &, vector & );
+  matrix & set_diagonal( const vectorD & );
+  matrix & sym_eigen( vectorD &, vectorD & );
   matrix & operator=( const matrix & );
   matrix & operator+=( const matrix & );
   matrix & operator-=( const matrix & );

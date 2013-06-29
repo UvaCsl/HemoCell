@@ -16,10 +16,12 @@
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
+#include <vector>
+
 #include "diagonalize.hpp"
 /*
     This C++ program tests the formulas for computing the eigenvalues
-    and eigenvectors from a real symmetric matrix in 3 dimensions.
+    and eigenvectorDs from a real symmetric matrix in 3 dimensions.
     The formulas are taken from the paper on arxiv:
     A Method for Fast Diagonalization of a 2x2 or 3x3 Real Symmetric Matrix
     Author: M.J. Kronenburg.
@@ -39,80 +41,84 @@
 
 using namespace std;
 
-const double pi = 3.14159265358979323846;
+#ifndef PI__
+#define PI__
+const double pi = 4.*atan(1.);
+#endif  // PI__
+
 const int outprecision = 17;
 const int outwidth = 26;
 
-// implementation of 3-vector
+// implementation of 3-vectorD
 
-vector_exception::vector_exception( const string & arg )
-{ error_description += "Vector error:\n";
+vectorD_exception::vectorD_exception( const string & arg )
+{ error_description += "vectorD error:\n";
   error_description += arg;
 }
 
-vector_exception::~vector_exception() throw()
+vectorD_exception::~vectorD_exception() throw()
 {}
 
-const char * vector_exception::what() const throw()
+const char * vectorD_exception::what() const throw()
 { return error_description.c_str();
 }
 
-vector::vector()
+vectorD::vectorD()
 { for( unsigned int i=0; i<3; i++ )
     the_data[ i ] = 0.0;
 }
 
-vector::vector( const vector & arg )
+vectorD::vectorD( const vectorD & arg )
 { for( unsigned int i=0; i<3; i++ )
     the_data[ i ] = arg.the_data[ i ];
 }
 
-vector::~vector()
+vectorD::~vectorD()
 {}
 
-double & vector::operator[]( unsigned int pos )
+double & vectorD::operator[]( unsigned int pos )
 { if( pos == 0 || pos > 3 )
-    throw vector_exception( "operator[]: index out of bounds." );
+    throw vectorD_exception( "operator[]: index out of bounds." );
   return the_data[ pos-1 ];
 }
 
-const double & vector::operator[]( unsigned int pos ) const
+const double & vectorD::operator[]( unsigned int pos ) const
 { if( pos == 0 || pos > 3 )
-    throw vector_exception( "operator[]: index out of bounds." );
+    throw vectorD_exception( "operator[]: index out of bounds." );
   return the_data[ pos-1 ];
 }
 
-vector & vector::set_zero()
+vectorD & vectorD::set_zero()
 { for( unsigned int i=0; i<3; i++ )
     the_data[ i ] = 0.0;
   return *this;
 }
 
-vector & vector::operator=( const vector & arg )
+vectorD & vectorD::operator=( const vectorD & arg )
 { for( unsigned int i=0; i<3; i++ )
     the_data[ i ] = arg.the_data[ i ];
   return *this;
 }
 
-vector & vector::operator+=( const vector & arg )
+vectorD & vectorD::operator+=( const vectorD & arg )
 { for( unsigned int i=0; i<3; i++ )
     the_data[ i ] += arg.the_data[ i ];
   return *this;
 }
 
-vector & vector::operator-=( const vector & arg )
+vectorD & vectorD::operator-=( const vectorD & arg )
 { for( unsigned int i=0; i<3; i++ )
     the_data[ i ] -= arg.the_data[ i ];
   return *this;
 }
 
-istream & operator>>( istream & stream, vector & arg )
+istream & operator>>( istream & stream, vectorD & arg )
 { for( unsigned int i=1; i<=3; i++ )
     stream >> arg[i];
   return stream;
 }
 
-ostream & operator<<( ostream & stream, const vector & arg )
+ostream & operator<<( ostream & stream, const vectorD & arg )
 { for( unsigned int i=1; i<=3; i++ )
     stream << scientific << setw( outwidth ) << setprecision( outprecision )
       << arg[i];
@@ -229,7 +235,7 @@ matrix & matrix::set_rotation( unsigned int axis, double phi )
   return *this;
 }
 
-matrix & matrix::set_diagonal( const vector & arg )
+matrix & matrix::set_diagonal( const vectorD & arg )
 { set_zero();
   the_data[0] = arg.the_data[0];
   the_data[4] = arg.the_data[1];
@@ -342,8 +348,8 @@ double difference_matrix( const matrix & arga, const matrix & argb )
 
 // Generate the symmetric matrix A from lambdas and angles:
 
-void compute_matrix( matrix & res, const vector & lambdas,
-                     const vector & angles )
+void compute_matrix( matrix & res, const vectorD & lambdas,
+                     const vectorD & angles )
 { matrix rot, trans, diag;
   res.set_rotation( 1, angles[1] );
   rot.set_rotation( 2, angles[2] );
@@ -513,7 +519,7 @@ void solve_angles_2( double res[3], double mat[9], double lambdas[3] )
   };
 }
 
-matrix & matrix::sym_eigen( vector & lambdas, vector & angles )
+matrix & matrix::sym_eigen( vectorD & lambdas, vectorD & angles )
 { solve_lambdas( lambdas.the_data, the_data );
   switch( solve_type( lambdas.the_data ) )
   { case 0:
@@ -540,7 +546,7 @@ double compute_maxdif(
   double minangle2, double maxangle2, unsigned int nangle2,
   double minangle3, double maxangle3, unsigned int nangle3,
   unsigned int & count )
-{ vector lambdas, angles;
+{ vectorD lambdas, angles;
   matrix input_matrix, solved_matrix;
   double temp, res = 0.0;
   for( unsigned int i1=0; i1<nlambda1; i1++ )
@@ -571,7 +577,7 @@ int main(int argc, char * argv[])
    double minlambda, maxlambda;
    int nlambda, nangle;
    matrix input_matrix, solved_matrix;
-   vector lambdas, angles;
+   vectorD lambdas, angles;
    unsigned int ncount = 0;
 
    cout << "Give test type:" << endl;
