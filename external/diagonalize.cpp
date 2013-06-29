@@ -21,15 +21,15 @@
 #include "diagonalize.hpp"
 /*
     This C++ program tests the formulas for computing the eigenvalues
-    and eigenvectorDs from a real symmetric matrix in 3 dimensions.
+    and eigenvectorDiags from a real symmetric matrixDiag in 3 dimensions.
     The formulas are taken from the paper on arxiv:
-    A Method for Fast Diagonalization of a 2x2 or 3x3 Real Symmetric Matrix
+    A Method for Fast Diagonalization of a 2x2 or 3x3 Real Symmetric matrixDiag
     Author: M.J. Kronenburg.
     The program works as follows:
     1. Generate a large set of 3 lambdas and 3 angles
-    2. Generate the corresponding matrix
-    3. Use the formulas to compute the lambdas and angles from the matrix
-    4. Generate from these the new matrix
+    2. Generate the corresponding matrixDiag
+    3. Use the formulas to compute the lambdas and angles from the matrixDiag
+    4. Generate from these the new matrixDiag
     5. Compute and output the max. relative difference between the two matrices.
     When the formulas are correct, this max. relative difference should be
     very small, because of rounding errors not larger than about 10^-7.
@@ -49,76 +49,76 @@ const double pi = 4.*atan(1.);
 const int outprecision = 17;
 const int outwidth = 26;
 
-// implementation of 3-vectorD
+// implementation of 3-vectorDiag
 
-vectorD_exception::vectorD_exception( const string & arg )
-{ error_description += "vectorD error:\n";
+vectorDiag_exception::vectorDiag_exception( const string & arg )
+{ error_description += "vectorDiag error:\n";
   error_description += arg;
 }
 
-vectorD_exception::~vectorD_exception() throw()
+vectorDiag_exception::~vectorDiag_exception() throw()
 {}
 
-const char * vectorD_exception::what() const throw()
+const char * vectorDiag_exception::what() const throw()
 { return error_description.c_str();
 }
 
-vectorD::vectorD()
+vectorDiag::vectorDiag()
 { for( unsigned int i=0; i<3; i++ )
     the_data[ i ] = 0.0;
 }
 
-vectorD::vectorD( const vectorD & arg )
+vectorDiag::vectorDiag( const vectorDiag & arg )
 { for( unsigned int i=0; i<3; i++ )
     the_data[ i ] = arg.the_data[ i ];
 }
 
-vectorD::~vectorD()
+vectorDiag::~vectorDiag()
 {}
 
-double & vectorD::operator[]( unsigned int pos )
+double & vectorDiag::operator[]( unsigned int pos )
 { if( pos == 0 || pos > 3 )
-    throw vectorD_exception( "operator[]: index out of bounds." );
+    throw vectorDiag_exception( "operator[]: index out of bounds." );
   return the_data[ pos-1 ];
 }
 
-const double & vectorD::operator[]( unsigned int pos ) const
+const double & vectorDiag::operator[]( unsigned int pos ) const
 { if( pos == 0 || pos > 3 )
-    throw vectorD_exception( "operator[]: index out of bounds." );
+    throw vectorDiag_exception( "operator[]: index out of bounds." );
   return the_data[ pos-1 ];
 }
 
-vectorD & vectorD::set_zero()
+vectorDiag & vectorDiag::set_zero()
 { for( unsigned int i=0; i<3; i++ )
     the_data[ i ] = 0.0;
   return *this;
 }
 
-vectorD & vectorD::operator=( const vectorD & arg )
+vectorDiag & vectorDiag::operator=( const vectorDiag & arg )
 { for( unsigned int i=0; i<3; i++ )
     the_data[ i ] = arg.the_data[ i ];
   return *this;
 }
 
-vectorD & vectorD::operator+=( const vectorD & arg )
+vectorDiag & vectorDiag::operator+=( const vectorDiag & arg )
 { for( unsigned int i=0; i<3; i++ )
     the_data[ i ] += arg.the_data[ i ];
   return *this;
 }
 
-vectorD & vectorD::operator-=( const vectorD & arg )
+vectorDiag & vectorDiag::operator-=( const vectorDiag & arg )
 { for( unsigned int i=0; i<3; i++ )
     the_data[ i ] -= arg.the_data[ i ];
   return *this;
 }
 
-istream & operator>>( istream & stream, vectorD & arg )
+istream & operator>>( istream & stream, vectorDiag & arg )
 { for( unsigned int i=1; i<=3; i++ )
     stream >> arg[i];
   return stream;
 }
 
-ostream & operator<<( ostream & stream, const vectorD & arg )
+ostream & operator<<( ostream & stream, const vectorDiag & arg )
 { for( unsigned int i=1; i<=3; i++ )
     stream << scientific << setw( outwidth ) << setprecision( outprecision )
       << arg[i];
@@ -126,78 +126,78 @@ ostream & operator<<( ostream & stream, const vectorD & arg )
   return stream;
 }
 
-// implementation of 3x3 matrix
+// implementation of 3x3 matrixDiag
 
-matrix_exception::matrix_exception( const string & arg )
-{ error_description += "Matrix error:\n";
+matrixDiag_exception::matrixDiag_exception( const string & arg )
+{ error_description += "matrixDiag error:\n";
   error_description += arg;
 }
 
-matrix_exception::~matrix_exception() throw()
+matrixDiag_exception::~matrixDiag_exception() throw()
 {}
 
-const char * matrix_exception::what() const throw()
+const char * matrixDiag_exception::what() const throw()
 { return error_description.c_str();
 }
 
-matrix::matrix()
+matrixDiag::matrixDiag()
 { for( unsigned int i=0; i<9; i++ )
     the_data[ i ] = 0.0;
 }
 
-matrix::matrix( const matrix & arg )
+matrixDiag::matrixDiag( const matrixDiag & arg )
 { for( unsigned int i=0; i<9; i++ )
     the_data[ i ] = arg.the_data[ i ];
 }
 
-matrix::~matrix()
+matrixDiag::~matrixDiag()
 {}
 
-matrix::array_ref::array_ref( matrix * ref, unsigned int pos )
+matrixDiag::array_ref::array_ref( matrixDiag * ref, unsigned int pos )
  : the_ref( ref ), the_pos( pos )
 {}
 
-matrix::array_ref::~array_ref()
+matrixDiag::array_ref::~array_ref()
 {}
 
-double & matrix::array_ref::operator[]( unsigned int pos )
+double & matrixDiag::array_ref::operator[]( unsigned int pos )
 { if( pos == 0 || pos > 3 )
-    throw matrix_exception( "operator[]: row index out of bounds." );
+    throw matrixDiag_exception( "operator[]: row index out of bounds." );
   return the_ref->the_data[ 3 * the_pos + pos - 1 ];
 }
 
-const double & matrix::array_ref::operator[]( unsigned int pos ) const
+const double & matrixDiag::array_ref::operator[]( unsigned int pos ) const
 { if( pos == 0 || pos > 3 )
-    throw matrix_exception( "operator[]: row index out of bounds." );
+    throw matrixDiag_exception( "operator[]: row index out of bounds." );
   return the_ref->the_data[ 3 * the_pos + pos - 1 ];
 }
 
-matrix::array_ref matrix::operator[]( unsigned int pos )
+matrixDiag::array_ref matrixDiag::operator[]( unsigned int pos )
 { if( pos == 0 || pos > 3 )
-    throw matrix_exception( "operator[]: column index out of bounds." );
+    throw matrixDiag_exception( "operator[]: column index out of bounds." );
   return array_ref( this, pos - 1 );
 }
 
-const matrix::array_ref matrix::operator[]( unsigned int pos ) const
+const matrixDiag::array_ref matrixDiag::operator[]( unsigned int pos ) const
 { if( pos == 0 || pos > 3 )
-    throw matrix_exception( "operator[]: column index out of bounds." );
-  return array_ref( (matrix *)this, pos - 1 );
+    throw matrixDiag_exception( "operator[]: column index out of bounds." );
+  return array_ref( (matrixDiag *)this, pos - 1 );
 }
 
-double matrix::norm() const
+double matrixDiag::norm() const
 { double sum = 0.0;
   for( int i=0; i<9; i++ )
     sum += sqr( the_data[i] );
   return sqrt( sum );
 }
 
-matrix & matrix::set_zero()
+matrixDiag & matrixDiag::set_zero()
 { for( unsigned int i=0; i<9; i++ )
       the_data[ i ] = 0.0;
   return *this;
 }
 
-matrix & matrix::transpose()
+matrixDiag & matrixDiag::transpose()
 { double temp;
   for( unsigned int i=1; i<3; ++i )
       for( unsigned int j=0; j<i; ++j )
@@ -208,9 +208,9 @@ matrix & matrix::transpose()
   return *this;
 }
 
-matrix & matrix::set_rotation( unsigned int axis, double phi )
+matrixDiag & matrixDiag::set_rotation( unsigned int axis, double phi )
 { if( axis == 0 || axis > 3 )
-    throw matrix_exception( "set_rotation: axis number out of bounds." );
+    throw matrixDiag_exception( "set_rotation: axis number out of bounds." );
   set_zero();
   switch( axis )
   { case 1:
@@ -235,7 +235,7 @@ matrix & matrix::set_rotation( unsigned int axis, double phi )
   return *this;
 }
 
-matrix & matrix::set_diagonal( const vectorD & arg )
+matrixDiag & matrixDiag::set_diagonal( const vectorDiag & arg )
 { set_zero();
   the_data[0] = arg.the_data[0];
   the_data[4] = arg.the_data[1];
@@ -243,25 +243,25 @@ matrix & matrix::set_diagonal( const vectorD & arg )
   return *this;
 }
 
-matrix & matrix::operator=( const matrix & arg )
+matrixDiag & matrixDiag::operator=( const matrixDiag & arg )
 { for( unsigned int i=0; i<9; i++ )
     the_data[i] = arg.the_data[i];
   return *this;
 }
 
-matrix & matrix::operator+=( const matrix & arg )
+matrixDiag & matrixDiag::operator+=( const matrixDiag & arg )
 { for( unsigned int i=0; i<9; i++ )
     the_data[i] += arg.the_data[i];
   return *this;
 }
 
-matrix & matrix::operator-=( const matrix & arg )
+matrixDiag & matrixDiag::operator-=( const matrixDiag & arg )
 { for( unsigned int i=0; i<9; i++ )
     the_data[i] -= arg.the_data[i];
   return *this;
 }
 
-matrix & matrix::operator*=( const matrix & arg )
+matrixDiag & matrixDiag::operator*=( const matrixDiag & arg )
 { double temp[ 3 ];
   double result;
   double * that_row;
@@ -279,14 +279,14 @@ matrix & matrix::operator*=( const matrix & arg )
   return *this;
 }
 
-istream & operator>>( istream & stream, matrix & arg )
+istream & operator>>( istream & stream, matrixDiag & arg )
 { for( unsigned int i=1; i<=3; i++ )
     for( unsigned int j=1; j<=3; j++ )
       stream >> arg[i][j];
   return stream;
 }
 
-ostream & operator<<( ostream & stream, matrix & arg )
+ostream & operator<<( ostream & stream, matrixDiag & arg )
 { for( unsigned int i=1; i<=3; i++ )
   { for( unsigned int j=1; j<=3; j++ )
       stream << scientific << setw( outwidth ) << setprecision( outprecision )
@@ -334,8 +334,8 @@ double angle( double x, double y )
 
 // Compute the relative difference between two matrices:
 
-double difference_matrix( const matrix & arga, const matrix & argb )
-{ matrix dif( arga );
+double difference_matrixDiag( const matrixDiag & arga, const matrixDiag & argb )
+{ matrixDiag dif( arga );
   double norma, normb;
   dif -= argb;
   norma = arga.norm();
@@ -346,11 +346,11 @@ double difference_matrix( const matrix & arga, const matrix & argb )
   return dif.norm() / norma;
 }
 
-// Generate the symmetric matrix A from lambdas and angles:
+// Generate the symmetric matrixDiag A from lambdas and angles:
 
-void compute_matrix( matrix & res, const vectorD & lambdas,
-                     const vectorD & angles )
-{ matrix rot, trans, diag;
+void compute_matrixDiag( matrixDiag & res, const vectorDiag & lambdas,
+                     const vectorDiag & angles )
+{ matrixDiag rot, trans, diag;
   res.set_rotation( 1, angles[1] );
   rot.set_rotation( 2, angles[2] );
   res *= rot;
@@ -364,12 +364,12 @@ void compute_matrix( matrix & res, const vectorD & lambdas,
 }
 
 // C-interface:
-// 3x3 matrix is represented as an array with indices:
+// 3x3 matrixDiag is represented as an array with indices:
 // 0 1 2
 // 3 4 5
 // 6 7 8
 
-// Solve the lambdas from the matrix:
+// Solve the lambdas from the matrixDiag:
 
 void solve_lambdas( double res[3], double mat[9] )
 { double p, q, b, t, delta;
@@ -391,7 +391,7 @@ void solve_lambdas( double res[3], double mat[9] )
   else
   { delta = trunc_acos( 0.5 * q / sqrt( p * sqr( p ) ) );
     p = 2.0 * sqrt( p );
-// Changing the order in result yields different angles but identical matrix
+// Changing the order in result yields different angles but identical matrixDiag
     res[0] = ( b + p * cos( delta / 3.0 ) ) / 3.0;
     res[1] = ( b + p * cos( ( delta + 2.0 * pi ) / 3.0 ) ) / 3.0;
     res[2] = ( b + p * cos( ( delta - 2.0 * pi ) / 3.0 ) ) / 3.0;
@@ -404,7 +404,7 @@ void solve_lambdas( double res[3], double mat[9] )
 //  2: all lambdas different
 
 int solve_type( double lambdas[3] )
-{ int i1, i2, isum = 0;
+{ int i1=0, i2=0, isum = 0;
   double t, lambdasum = 0.0;
   for( int i=0; i<3; i++ )
     lambdasum += sqr( lambdas[i] );
@@ -430,7 +430,7 @@ int solve_type( double lambdas[3] )
   return 1;
 }
 
-// Solve the angles from the matrix and the solved lambdas:
+// Solve the angles from the matrixDiag and the solved lambdas:
 //  solve_angles_0: all lambdas equal
 //  solve_angles_1: two lambdas equal
 //  solve_angles_2: all lambdas different
@@ -519,7 +519,7 @@ void solve_angles_2( double res[3], double mat[9], double lambdas[3] )
   };
 }
 
-matrix & matrix::sym_eigen( vectorD & lambdas, vectorD & angles )
+matrixDiag & matrixDiag::sym_eigen( vectorDiag & lambdas, vectorDiag & angles )
 { solve_lambdas( lambdas.the_data, the_data );
   switch( solve_type( lambdas.the_data ) )
   { case 0:
@@ -546,8 +546,8 @@ double compute_maxdif(
   double minangle2, double maxangle2, unsigned int nangle2,
   double minangle3, double maxangle3, unsigned int nangle3,
   unsigned int & count )
-{ vectorD lambdas, angles;
-  matrix input_matrix, solved_matrix;
+{ vectorDiag lambdas, angles;
+  matrixDiag input_matrixDiag, solved_matrixDiag;
   double temp, res = 0.0;
   for( unsigned int i1=0; i1<nlambda1; i1++ )
   for( unsigned int i2=0; i2<nlambda2; i2++ )
@@ -561,107 +561,155 @@ double compute_maxdif(
     angles[1] = minangle1 + ( maxangle1 - minangle1 ) * j1 / nangle1;
     angles[2] = minangle2 + ( maxangle2 - minangle2 ) * j2 / nangle2;
     angles[3] = minangle3 + ( maxangle3 - minangle3 ) * j3 / nangle3;
-    compute_matrix( input_matrix, lambdas, angles );
-    input_matrix.sym_eigen( lambdas, angles );
-    compute_matrix( solved_matrix, lambdas, angles );
+    compute_matrixDiag( input_matrixDiag, lambdas, angles );
+    input_matrixDiag.sym_eigen( lambdas, angles );
+    compute_matrixDiag( solved_matrixDiag, lambdas, angles );
     ++count;
-    temp = difference_matrix( input_matrix, solved_matrix );
+    temp = difference_matrixDiag( input_matrixDiag, solved_matrixDiag );
     if( temp > res )
       res = temp;
   };
   return res;
 }
 
-int main(int argc, char * argv[])
-{  int testtype;
-   double minlambda, maxlambda;
-   int nlambda, nangle;
-   matrix input_matrix, solved_matrix;
-   vectorD lambdas, angles;
-   unsigned int ncount = 0;
+template<typename T>
+void getLambdasAndAngles(vector<T> inputTensor, vector<T> & returnLambdas, vector<T> & returnAnglesRad)
+{
+    matrixDiag input_matrixDiag, solved_matrixDiag;
+    vectorDiag lambdas, angles;
 
-   cout << "Give test type:" << endl;
-   cout << "1: one specific real symmetric matrix" << endl;
-   cout << "2: one specific set of lambdas and angles" << endl;
-   cout << "3: range of lambdas and angles" << endl;
-   cin >> testtype;
-   try
-   { switch( testtype )
-     { case 1:
-         cout << "Give any real symmetric 3x3 matrix:" << endl;
-         cin >> input_matrix;
-         input_matrix.sym_eigen( lambdas, angles );
-         compute_matrix( solved_matrix, lambdas, angles );
-         cout << "Solved matrix:" << endl;
-         cout << solved_matrix;
-         cout << "Lambdas:" << endl;
-         cout << lambdas;
-         for( int i=1; i<=3; i++ )
-           angles[i] *= 180.0 / pi;
-         cout << "Anti-Clockwise Euler Angles (degrees):" << endl;
-         cout << angles;
-         cout << "Matrix relative difference: "
-           << scientific << setw( outwidth ) << setprecision( outprecision )
-           << difference_matrix( input_matrix, solved_matrix ) << endl;
-         break;
-       case 2:
-         cout << "Give the three lambdas:" << endl;
-         cin >> lambdas;
-         cout << "Give the three angles in degrees:" << endl;
-         cin >> angles;
-         for( int i=1; i<=3; i++ )
-          angles[i] *= pi / 180.0;
-         compute_matrix( input_matrix, lambdas, angles );
-         cout << "Input matrix:" << endl;
-         cout << input_matrix;
-         input_matrix.sym_eigen( lambdas, angles );
-         compute_matrix( solved_matrix, lambdas, angles );
-         cout << "Solved matrix:" << endl;
-         cout << solved_matrix;
-         cout << "Lambdas: " << endl;
-         cout << lambdas;
-         for( int i=1; i<=3; i++ )
-           angles[i] *= 180.0 / pi;
-         cout << "Anti-Clockwise Euler Angles (degrees): " << endl;
-         cout << angles;
-         cout << "Matrix relative difference: "
-           << scientific << setw( outwidth ) << setprecision( outprecision )
-           << difference_matrix( input_matrix, solved_matrix );
-         break;
-       case 3:
-         cout << "Give minimum and maximum lambda:" << endl;
-         cin >> minlambda >> maxlambda;
-         cout << "Give #lambdas:" << endl;
-         cin >> nlambda;
-         cout << "Give #angles:" << endl;
-         cin >> nangle;
-         time_t time1, time2;
-         time1 = time( NULL );
-         double minangle = 0.0, maxangle = 2.0 * pi;
-         double res = compute_maxdif(
-                       minlambda, maxlambda, nlambda,
-                       minlambda, maxlambda, nlambda,
-                       minlambda, maxlambda, nlambda,
-                       minangle, maxangle, nangle,
-                       minangle, maxangle, nangle,
-                       minangle, maxangle, nangle,
-                       ncount );
-	 time2 = time( NULL );
-         cout << "Result: "
-           << scientific << setw( outwidth ) << setprecision( outprecision )
-           << res << endl;
-	 cout << "Time: " << difftime( time2, time1 ) << " secs." << endl;
-         cout << "Statistics:" << endl;
-         cout << "# all lambdas equal    : " << n_all_lambdas_equal << endl;
-         cout << "# two lambdas equal    : " << n_two_lambdas_equal << endl;
-         cout << "# all lambdas different: " << n_all_lambdas_different << endl;
-	 cout << "# total                : " << ncount << endl;
-         break;
-      };
-   } catch( exception & e )
-   { cout << "Error: " << endl;
-     cout << e.what() << endl;
-   };
-	return 0;
+    returnLambdas.clear();
+    returnAnglesRad.clear();
+
+    int k=0;
+    for( int i=1; i<=3; i++ ) {
+        for( int j=1; j<=3; j++ ) {
+            input_matrixDiag[i][j] = inputTensor[k++];
+        }
+    }
+
+    input_matrixDiag.sym_eigen( lambdas, angles );
+    compute_matrixDiag( solved_matrixDiag, lambdas, angles );
+    for( int i=1; i<=3; i++ ) {
+        returnAnglesRad.push_back(angles[i]);
+        returnLambdas.push_back(lambdas[i]);
+    }
 }
+
+
+//int main(int argc, char * argv[])
+//{  int testtype=0;
+//   double minlambda, maxlambda;
+//   int nlambda, nangle;
+//   matrixDiag input_matrixDiag, solved_matrixDiag;
+//   vectorDiag lambdas, angles;
+//   unsigned int ncount = 0;
+//
+//   vector<double> inputTensor(9), lambda, angle;
+//   inputTensor[0] = 0.75406;
+//   inputTensor[1] = -0.134899;
+//   inputTensor[2] = 2.52013e-09;
+//   inputTensor[3] = -0.134899;
+//   inputTensor[4] = 0.598293;
+//   inputTensor[5] = 1.03239e-08;
+//   inputTensor[6] = 2.52013e-09;
+//   inputTensor[7] = 1.03239e-08;
+//   inputTensor[8] = 0.52041;
+//
+//   getLambdasAndAngles(inputTensor, lambda, angle);
+//   cout << "\n==========\n " ;
+//
+//   for( int i=0; i<3; i++ )
+//       cout << lambda[i] << " " ;
+//   cout << endl;
+//   for( int i=0; i<3; i++ )
+//       cout << angle[i]*180/pi << " ";
+//   cout << endl;
+//
+//
+//
+//   cout << "Give test type:" << endl;
+//   cout << "1: one specific real symmetric matrixDiag" << endl;
+//   cout << "2: one specific set of lambdas and angles" << endl;
+//   cout << "3: range of lambdas and angles" << endl;
+//   // cin >> testtype;
+//   try
+//   { switch( testtype )
+//     { case 1:
+//         cout << "Give any real symmetric 3x3 matrixDiag:" << endl;
+//         cin >> input_matrixDiag;
+//         input_matrixDiag.sym_eigen( lambdas, angles );
+//         compute_matrixDiag( solved_matrixDiag, lambdas, angles );
+//         cout << "Solved matrixDiag:" << endl;
+//         cout << solved_matrixDiag;
+//         cout << "Lambdas:" << endl;
+//         cout << lambdas;
+//         for( int i=1; i<=3; i++ )
+//           angles[i] *= 180.0 / pi;
+//         cout << "Anti-Clockwise Euler Angles (degrees):" << endl;
+//         cout << angles;
+//         cout << "matrixDiag relative difference: "
+//           << scientific << setw( outwidth ) << setprecision( outprecision )
+//           << difference_matrixDiag( input_matrixDiag, solved_matrixDiag ) << endl;
+//         break;
+//       case 2:
+//         cout << "Give the three lambdas:" << endl;
+//         cin >> lambdas;
+//         cout << "Give the three angles in degrees:" << endl;
+//         cin >> angles;
+//         for( int i=1; i<=3; i++ )
+//          angles[i] *= pi / 180.0;
+//         compute_matrixDiag( input_matrixDiag, lambdas, angles );
+//         cout << "Input matrixDiag:" << endl;
+//         cout << input_matrixDiag;
+//         input_matrixDiag.sym_eigen( lambdas, angles );
+//         compute_matrixDiag( solved_matrixDiag, lambdas, angles );
+//         cout << "Solved matrixDiag:" << endl;
+//         cout << solved_matrixDiag;
+//         cout << "Lambdas: " << endl;
+//         cout << lambdas;
+//         for( int i=1; i<=3; i++ )
+//           angles[i] *= 180.0 / pi;
+//         cout << "Anti-Clockwise Euler Angles (degrees): " << endl;
+//         cout << angles;
+//         cout << "matrixDiag relative difference: "
+//           << scientific << setw( outwidth ) << setprecision( outprecision )
+//           << difference_matrixDiag( input_matrixDiag, solved_matrixDiag );
+//         break;
+//       case 3:
+//         cout << "Give minimum and maximum lambda:" << endl;
+//         cin >> minlambda >> maxlambda;
+//         cout << "Give #lambdas:" << endl;
+//         cin >> nlambda;
+//         cout << "Give #angles:" << endl;
+//         cin >> nangle;
+//         time_t time1, time2;
+//         time1 = time( NULL );
+//         double minangle = 0.0, maxangle = 2.0 * pi;
+//         double res = compute_maxdif(
+//                       minlambda, maxlambda, nlambda,
+//                       minlambda, maxlambda, nlambda,
+//                       minlambda, maxlambda, nlambda,
+//                       minangle, maxangle, nangle,
+//                       minangle, maxangle, nangle,
+//                       minangle, maxangle, nangle,
+//                       ncount );
+//	 time2 = time( NULL );
+//         cout << "Result: "
+//           << scientific << setw( outwidth ) << setprecision( outprecision )
+//           << res << endl;
+//	 cout << "Time: " << difftime( time2, time1 ) << " secs." << endl;
+//         cout << "Statistics:" << endl;
+//         cout << "# all lambdas equal    : " << n_all_lambdas_equal << endl;
+//         cout << "# two lambdas equal    : " << n_two_lambdas_equal << endl;
+//         cout << "# all lambdas different: " << n_all_lambdas_different << endl;
+//	 cout << "# total                : " << ncount << endl;
+//         break;
+//      };
+//   } catch( exception & e )
+//   { cout << "Error: " << endl;
+//     cout << e.what() << endl;
+//   };
+//	return 0;
+//}
 

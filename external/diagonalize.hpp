@@ -19,60 +19,60 @@
 
 using namespace std;
 
-// header of 3-vectorD
+// header of 3-vectorDiag
 
-class vectorD_exception : public exception
+class vectorDiag_exception : public exception
 { public:
-    vectorD_exception( const string & );
-    ~vectorD_exception() throw();
+    vectorDiag_exception( const string & );
+    ~vectorDiag_exception() throw();
   const char * what() const throw();
   protected:
     string error_description;
 };
 
-class matrix;
+class matrixDiag;
 
-class vectorD
+class vectorDiag
 { double the_data[ 3 ];
  public:
-  friend class matrix;
-  vectorD();
-  vectorD( const vectorD & );
-  ~vectorD();
+  friend class matrixDiag;
+  vectorDiag();
+  vectorDiag( const vectorDiag & );
+  ~vectorDiag();
   double & operator[]( unsigned int );
   const double & operator[]( unsigned int ) const;
-  vectorD & set_zero();
-  vectorD & operator=( const vectorD & );
-  vectorD & operator+=( const vectorD & );
-  vectorD & operator-=( const vectorD & );
+  vectorDiag & set_zero();
+  vectorDiag & operator=( const vectorDiag & );
+  vectorDiag & operator+=( const vectorDiag & );
+  vectorDiag & operator-=( const vectorDiag & );
 };
 
-istream & operator>>( istream &, vectorD & );
-ostream & operator<<( ostream &, const vectorD & );
+istream & operator>>( istream &, vectorDiag & );
+ostream & operator<<( ostream &, const vectorDiag & );
 
-// header of 3x3 matrix
+// header of 3x3 matrixDiag
 
-class matrix_exception : public exception
+class matrixDiag_exception : public exception
 { public:
-    matrix_exception( const string & );
-    ~matrix_exception() throw();
+    matrixDiag_exception( const string & );
+    ~matrixDiag_exception() throw();
   const char * what() const throw();
   protected:
     string error_description;
 };
 
-class matrix
+class matrixDiag
 { double the_data[ 9 ];
  public:
-  friend class vectorD;
-  matrix();
-  matrix( const matrix & );
-  ~matrix();
+  friend class vectorDiag;
+  matrixDiag();
+  matrixDiag( const matrixDiag & );
+  ~matrixDiag();
   class array_ref
-  { friend class matrix;
-    matrix * the_ref;
+  { friend class matrixDiag;
+    matrixDiag * the_ref;
     unsigned int the_pos;
-    array_ref( matrix *, unsigned int );
+    array_ref( matrixDiag *, unsigned int );
    public:
     ~array_ref();
     double & operator[]( unsigned int );
@@ -82,18 +82,18 @@ class matrix
   array_ref operator[]( unsigned int );
   const array_ref operator[]( unsigned int ) const;
   double norm() const;
-  matrix & set_zero();
-  matrix & transpose();
-  matrix & set_rotation( unsigned int, double );
-  matrix & set_diagonal( const vectorD & );
-  matrix & sym_eigen( vectorD &, vectorD & );
-  matrix & operator=( const matrix & );
-  matrix & operator+=( const matrix & );
-  matrix & operator-=( const matrix & );
-  matrix & operator*=( const matrix & );
+  matrixDiag & set_zero();
+  matrixDiag & transpose();
+  matrixDiag & set_rotation( unsigned int, double );
+  matrixDiag & set_diagonal( const vectorDiag & );
+  matrixDiag & sym_eigen( vectorDiag &, vectorDiag & );
+  matrixDiag & operator=( const matrixDiag & );
+  matrixDiag & operator+=( const matrixDiag & );
+  matrixDiag & operator-=( const matrixDiag & );
+  matrixDiag & operator*=( const matrixDiag & );
 };
 
-istream & operator>>( istream &, matrix & );
-ostream & operator<<( ostream &, const matrix & );
+istream & operator>>( istream &, matrixDiag & );
+ostream & operator<<( ostream &, const matrixDiag & );
 
 #endif
