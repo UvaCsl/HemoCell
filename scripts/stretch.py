@@ -73,18 +73,16 @@ if 0:
 if __name__ == '__main__':
     try:
         fname = sys.argv[1]
-        plotValidationData(dataDir="./validation/")
-        t, f, DAX, DTX = readStretchingData(fname)
-        pl.plot(f, DAX, label="DA sim")
-        pl.plot(f, DTX, label="DT sim")
-        pl.axis([0, 200, 0, 25])
-        pl.legend(loc="best")
-        pl.savefig(fname + '.png')
-        print "Saving plot as ", fname + '.png'
     except:
         print "Error: No or wrong filename as input."
-
-
+    plotValidationData(dataDir="./validation/")
+    t, f, DAX, DTX = readStretchingData(fname)
+    pl.plot(f, DAX, label="DA sim")
+    pl.plot(f, DTX, label="DT sim")
+    pl.axis([0, 200, 0, 25])
+    pl.legend(loc="best")
+    pl.savefig(fname + '.png')
+    print "Saving plot as ", fname + '.png'
 
 
 
