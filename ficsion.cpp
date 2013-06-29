@@ -36,6 +36,8 @@
 #include "cellStretchingForces3D.hh"
 #include "cellModel3D.hh"
 
+#include "cellInShearFlow3D.h"
+
 
 using namespace plb;
 using namespace std;
@@ -336,6 +338,21 @@ int main(int argc, char* argv[])
         stretchForce.resetToZero();
         stretchForceScalar = 0.0;
     }
+
+    std::vector< std::vector<T> > cellInertia;
+    computeCellInertia (Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsCenter, cellInertia);
+    T inertiaAnalytical =  2./5.*(eqVolume)*pow(radius,2);
+    pcout << "INERTIA TENSOR (theoretical = " << inertiaAnalytical << ") " << inertiaAnalytical/cellInertia[0][0] << std::endl;
+    for (plint i = 0; i < 3; ++i) {
+            pcout <<  cellInertia[0][3*i] << "\t" <<  cellInertia[0][3*i +1] << "\t" <<  cellInertia[0][3*i + 2] << std::endl;
+    }
+    pcout << "a^2 + b^2  " << std::endl;
+    std::vector< std::vector<T> > cellsEllipsoidFitSemiAxes, cellsEllipsoidFitAngles;
+    computeEllipsoidFit (Cells, immersedParticles,cellIds, cellsCenter, cellsVolume,
+                        cellsEllipsoidFitAngles, cellsEllipsoidFitSemiAxes);
+    pcout <<  cellsEllipsoidFitSemiAxes[0][0] << "\t" <<  cellsEllipsoidFitSemiAxes[0][1] << "\t" <<  cellsEllipsoidFitSemiAxes[0][2] << std::endl;
+    pcout <<  cellsEllipsoidFitAngles[0][0]*180/pi << "\t" <<  cellsEllipsoidFitAngles[0][1]*180/pi << "\t" <<  cellsEllipsoidFitAngles[0][2]*180/pi << std::endl;
+
 
     /* ********************* Main Loop ***************************************** * */
     for (plint i=0; i<tmax+1; ++i) {

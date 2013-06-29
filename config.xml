@@ -35,9 +35,9 @@
 <ibm>
     <forceToFluid> 1 </forceToFluid>
     <ibmKernel> 4 </ibmKernel> <!-- ibmKernel: Phi2 [2], Phi3 [3], Phi4 [4],  Phi4c [5] -->
-    <shape> 1 </shape> <!-- shape: Sphere:[0], RBC:[1], Cell(defined):[2] -->
-    <cellPath>lib/RBC.stl</cellPath>
-    <radius> 4.3e-6 </radius> <!-- Radius of the particle in [m] (dx) [4.284 for RBC, 3.3 for sphere] -->
+    <shape> 2 </shape> <!-- shape: Sphere:[0], RBC:[1], Cell(defined):[2] -->
+    <radius> 1.0e-6 </radius> <!-- Radius of the particle in [m] (dx) [4.284 for RBC, 3.3 for sphere] -->
+    <cellPath> test.stl</cellPath>
     <minNumOfTriangles> 200 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
 </ibm>
 
@@ -45,7 +45,7 @@
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
-    <dx> 2e-6 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dx> 1e-6 </dx> <!--Physical length of 1 Lattice Unit -->
     <nx> 20 </nx> <!--Size of domain in Lattice Units -->
     <ny> 10 </ny>
     <nz> 20 </nz>
