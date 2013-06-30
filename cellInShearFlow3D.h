@@ -13,6 +13,46 @@
 
 namespace plb {
 
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+class SingleCellInShearFlow
+{
+public:
+    SingleCellInShearFlow(bool store_=false);
+    SingleCellInShearFlow(plint iteration, TriangleBoundary3D<T> Cells,
+            MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
+            std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume, bool store_=false);
+    SingleCellInShearFlow(TriangleBoundary3D<T> Cells,
+            MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
+            std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume, bool store_=false);
+
+    void addData(plint iteration, TriangleBoundary3D<T> Cells,
+            MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
+            std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume);
+    void write(plb_ofstream & shearResultFile);
+    void writeHeader(plb_ofstream & shearResultFile);
+    void write() { this->write(*shearResultFile); } ;
+    std::vector<T> const& getTaylorDeformationIndex();
+    std::vector<T> const& getDeformationIndex() { return deformationIndex; } ;
+    std::vector<T> const& getIterations() { return iterations; } ;
+    std::vector< Array<T,3> > const& getAngles() { return angles; } ;
+    std::vector< vector<T> > const& getInertiaTensor() { return inertiaTensor; } ;
+    std::vector<T> const& getSymmetryDeviation() { return symmetryDeviation; } ;
+    void setShearResultFile(plb_ofstream & shearResultFile_) { shearResultFile = &shearResultFile_; } ;
+private:
+    std::vector<T> deformationIndex;
+    std::vector<T> iterations;
+    std::vector< Array<T,3> > angles;
+    std::vector< Array<T,3> > diameters;
+    std::vector< vector<T> > inertiaTensor;
+    std::vector<T> symmetryDeviation;
+    bool store;
+    T maxDiameter;
+    plb_ofstream * shearResultFile;
+};
+
+
 /* ******** InertiaTensorCellReduceFunctional3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
 class InertiaTensorCellReduceFunctional3D : public PlainReductiveBoxProcessingFunctional3D
@@ -49,6 +89,19 @@ template< typename T, template<typename U> class Descriptor,
 void computeCellInertia (TriangleBoundary3D<T> Cells,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
                 std::vector< Array<T,9> >& cellInertia);
+
+
+/* ******** computeCellInertia *********************************** */
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void computeEllipsoidFit (TriangleBoundary3D<T> Cells,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
+                std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume,
+                std::vector< std::vector<T> > & cellsEllipsoidFitAngles,
+                std::vector< std::vector<T> > & cellsEllipsoidFitSemiAxes,
+                std::vector< std::vector<T> > & cellInertia,
+                std::vector<T> & difference);
+
 }
 
 #include "cellInShearFlow3D.hh"

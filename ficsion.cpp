@@ -56,8 +56,8 @@ const plint particleEnvelopeWidth = 2;
 void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, T & Re_p, T & N, T & lx, T & ly, T & lz,
-        plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, plint & relaxationTime, plint & minNumOfTriangles,
-        plint & tmax, plint & tmeas, plint & npar)
+        plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, plint & relaxationTime,
+        plint & minNumOfTriangles, plint & tmax, plint & tmeas, plint & npar)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
@@ -112,6 +112,14 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     lx = nx * dx;
     ly = ny * dx;
     lz = nz * dx;
+    if (flowType == 4) { // Cell Stretching Analysis
+        shearRate = 0;
+    } else if (flowType == 5) { // Tumbling Tank Treading Measurements
+        if (shearRate > 0) {
+            tmax  = 40.0/(shearRate*dt); // Measurements for 40 Strain rates
+            tmeas = 0.01/(shearRate*dt); // 100 Measurements per Strain rates
+        }
+    }
 }
 
 int main(int argc, char* argv[])
@@ -127,8 +135,10 @@ int main(int argc, char* argv[])
 
     std::string stretchLogFileName = global::directories().getLogOutDir() + "stretchDeformation.log";
     std::string stretchResultFileName = global::directories().getLogOutDir() + "stretchResults.log";
+    std::string shearResultFileName = global::directories().getLogOutDir() + "shearResults.log";
     plb_ofstream stretchLogFile(stretchLogFileName.c_str());
     plb_ofstream stretchResultFile(stretchResultFileName.c_str());
+    plb_ofstream shearResultFile(shearResultFileName.c_str());
 
     plint forceToFluid, shape, cellNumTriangles, ibmKernel;
     plint rbcModel;
@@ -340,22 +350,26 @@ int main(int argc, char* argv[])
     }
 
     std::vector< std::vector<T> > cellInertia;
-    computeCellInertia (Cells, immersedParticles, immersedParticles.getBoundingBox(), cellIds, cellsCenter, cellInertia);
+    std::vector< std::vector<T> > cellsEllipsoidFitSemiAxes, cellsEllipsoidFitAngles;
+    std::vector<T> difference;
+    computeEllipsoidFit (Cells, immersedParticles, cellIds, cellsCenter, cellsVolume,
+                        cellsEllipsoidFitAngles, cellsEllipsoidFitSemiAxes, cellInertia, difference);
+
     T inertiaAnalytical =  2./5.*(eqVolume)*pow(radius,2);
     pcout << "INERTIA TENSOR (theoretical = " << inertiaAnalytical << ") " << inertiaAnalytical/cellInertia[0][0] << std::endl;
     for (plint i = 0; i < 3; ++i) {
             pcout <<  cellInertia[0][3*i] << "\t" <<  cellInertia[0][3*i +1] << "\t" <<  cellInertia[0][3*i + 2] << std::endl;
     }
     pcout << "a^2 + b^2  " << std::endl;
-    std::vector< std::vector<T> > cellsEllipsoidFitSemiAxes, cellsEllipsoidFitAngles;
-    computeEllipsoidFit (Cells, immersedParticles,cellIds, cellsCenter, cellsVolume,
-                        cellsEllipsoidFitAngles, cellsEllipsoidFitSemiAxes);
     pcout <<  cellsEllipsoidFitSemiAxes[0][0] << "\t" <<  cellsEllipsoidFitSemiAxes[0][1] << "\t" <<  cellsEllipsoidFitSemiAxes[0][2] << std::endl;
     pcout <<  cellsEllipsoidFitAngles[0][0]*180/pi << "\t" <<  cellsEllipsoidFitAngles[0][1]*180/pi << "\t" <<  cellsEllipsoidFitAngles[0][2]*180/pi << std::endl;
 
-
+    SingleCellInShearFlow<T,DESCRIPTOR,DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds, cellsCenter, cellsVolume);
+    if (flowType==5) {
+        shearFlow.writeHeader(shearResultFile);
+    }
     /* ********************* Main Loop ***************************************** * */
-    for (plint i=0; i<tmax+1; ++i) {
+    for (plint i=1; i<tmax+1; ++i) {
         /* =============================== OUTPUT ===================================*/
         if (i%tmeas==0) {
             // dtIteration = global::timer("sim").stop();
@@ -409,6 +423,12 @@ int main(int argc, char* argv[])
             //    parallelIO::load("Cells.dat", Cells, true);
             // ==================
             global::timer("sim").restart();
+
+            if (flowType==5) {
+                shearFlow.addData(i, Cells, immersedParticles, cellIds, cellsCenter, cellsVolume);
+                shearFlow.write(shearResultFile);
+            }
+
         }
         /* ====================== Update for Cell Stretching behaviour ===================================*/
         if ((flowType == 4) && (i % statIter == 0)) {

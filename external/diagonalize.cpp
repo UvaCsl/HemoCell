@@ -572,8 +572,16 @@ double compute_maxdif(
   return res;
 }
 
+/* === Matrix diagonalization. ===
+ * inputTensor [3x3 matrix, vector(9)]
+ * returnLambdas [vector(3) with the diagonal of the diagonalized matrix]
+ * returnAnglesRad [vector(3) with the Euler angles of the rotation matrix]
+ * difference [double with the difference between the input and the solved matrix]
+*/
 template<typename T>
-void getLambdasAndAngles(vector<T> inputTensor, vector<T> & returnLambdas, vector<T> & returnAnglesRad)
+void getLambdasAndAngles(vector<T> inputTensor,
+                         vector<T> & returnLambdas, vector<T> & returnAnglesRad,
+                         double & difference)
 {
     matrixDiag input_matrixDiag, solved_matrixDiag;
     vectorDiag lambdas, angles;
@@ -594,6 +602,7 @@ void getLambdasAndAngles(vector<T> inputTensor, vector<T> & returnLambdas, vecto
         returnAnglesRad.push_back(angles[i]);
         returnLambdas.push_back(lambdas[i]);
     }
+    difference = difference_matrixDiag( input_matrixDiag, solved_matrixDiag );
 }
 
 

@@ -2,7 +2,7 @@
 <ficsion>
 <caseId> caseId </caseId>
 <cell>
-    <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1] -->
+    <rbcModel> 1 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1] -->
     <shellDensity> 1.0 </shellDensity>
 
     <kBend> 150e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
@@ -14,8 +14,8 @@
 <!-- +++++ -->
 <!-- Testing phase-->
 <!-- +++++ -->
-    <kWLC> 1.0 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
-    <eqLengthRatio> 2.2 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
+    <kWLC> 0.5 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
+    <eqLengthRatio> 3.17 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
     <kRep> 1.0e0 </kRep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
     <kElastic> 0.0e0 </kElastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->
     <kRest> 0.0e-4 </kRest> <!--Resting modulus (in N/m) [0.0, 1.0e-4]-->
@@ -23,9 +23,11 @@
 </cell>
 
 <parameters>
-    <flowType> 4 </flowType>   <!--flowType: Poisseuille:[0], Couette:[1], Cell Stretching [3]-->
+    <!--flowType: Poisseuille:[0], Couette:[1], Cell Stretching [3], 
+Cell Stretching Analysis [4], Tumbling-TankTreading Measurements [5] -->
+    <flowType> 5 </flowType>   
     <Re> 0.1 </Re>   <!--Reynolds number-->
-    <shearRate> 0 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
+    <shearRate> 1000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 100.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->
     <deflationRatio> 1.0 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
     <relaxationTime> 1000 </relaxationTime> <!-- Relaxation time for deflation and stretching force [5000] -->
@@ -35,8 +37,8 @@
 <ibm>
     <forceToFluid> 1 </forceToFluid>
     <ibmKernel> 4 </ibmKernel> <!-- ibmKernel: Phi2 [2], Phi3 [3], Phi4 [4],  Phi4c [5] -->
-    <shape> 2 </shape> <!-- shape: Sphere:[0], RBC:[1], Cell(defined):[2] -->
-    <radius> 1.0e-6 </radius> <!-- Radius of the particle in [m] (dx) [4.284 for RBC, 3.3 for sphere] -->
+    <shape> 0 </shape> <!-- shape: Sphere:[0], RBC:[1], Cell(defined):[2] -->
+    <radius> 3.3e-6 </radius> <!-- Radius of the particle in [m] (dx) [4.284 for RBC, 3.3 for sphere] -->
     <cellPath> test.stl</cellPath>
     <minNumOfTriangles> 200 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
 </ibm>
@@ -45,10 +47,10 @@
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
-    <dx> 1e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <nx> 20 </nx> <!--Size of domain in Lattice Units -->
-    <ny> 10 </ny>
-    <nz> 20 </nz>
+    <dx> 2e-6 </dx> <!--Physical length of 1 Lattice Unit -->
+    <nx> 15 </nx> <!--Size of domain in Lattice Units -->
+    <ny> 20 </ny>
+    <nz> 15 </nz>
 </domain>
 
 <sim>

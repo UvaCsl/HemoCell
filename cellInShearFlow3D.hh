@@ -5,6 +5,99 @@
 
 namespace plb {
 
+/* ******** SingleCellInShearFlow *********************************** */
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(bool store_)
+        : store(store_) {
+    maxDiameter = -1;
+}
+
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(plint iteration, TriangleBoundary3D<T> Cells,
+        MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
+        std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume, bool store_)
+        : store(store_) {
+    addData(iteration, Cells,particles, cellIds, cellCenters, cellsVolume);
+    maxDiameter = max(diameters[0][0], diameters[0][1]);
+    maxDiameter = max(maxDiameter,  diameters[0][2]);
+}
+
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(TriangleBoundary3D<T> Cells,
+        MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
+        std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume, bool store_)
+        : store(store_) {
+        SingleCellInShearFlow(0, Cells, particles, cellIds, cellCenters, cellsVolume, store_);
+}
+
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::addData(plint iteration, TriangleBoundary3D<T> Cells,
+        MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
+        std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume) {
+
+    std::vector< std::vector<T> > eFitAngles;
+    std::vector< std::vector<T> > eFitSemiAxes;
+    std::vector<T> difference;
+    std::vector< std::vector<T> > inertia;
+    computeEllipsoidFit (Cells, particles, cellIds, cellCenters, cellsVolume,
+            eFitAngles, eFitSemiAxes, inertia, difference);
+    T currMaxDiameter;
+    currMaxDiameter = max(eFitSemiAxes[0][0], eFitSemiAxes[0][1]);
+    currMaxDiameter = max(currMaxDiameter,  eFitSemiAxes[0][2]);
+    if (maxDiameter <= 0) {
+        maxDiameter = currMaxDiameter;
+    }
+    iterations.push_back(iteration);
+    deformationIndex.push_back((currMaxDiameter - maxDiameter)*1.0/(currMaxDiameter + maxDiameter));
+    diameters.push_back(Array<T,3>(eFitSemiAxes[0][0], eFitSemiAxes[0][1], eFitSemiAxes[0][2]));
+    angles.push_back(Array<T,3>(eFitAngles[0][0], eFitAngles[0][1], eFitAngles[0][2]));
+    symmetryDeviation.push_back(difference[0]);
+    inertiaTensor.push_back(inertia[0]);
+}
+
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::writeHeader(plb_ofstream & shearResultFile) {
+        shearResultFile <<
+                "iterations; " <<
+                "deformationIndex; " <<
+                "diameter x; " <<
+                "diameter y; " <<
+                "diameter z; " <<
+                "angles x; " <<
+                "angles y; " <<
+                "angles z; " <<
+                "symmetryDeviation " <<
+                std:: endl;
+}
+
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::write(plb_ofstream & shearResultFile) {
+        plint N = iterations.size() - 1;
+        shearResultFile <<
+                iterations[N] << "; " <<
+                deformationIndex[N] << "; " <<
+                diameters[N][0] << "; " <<
+                diameters[N][1] << "; " <<
+                diameters[N][2] << "; " <<
+                angles[N][0] << "; " <<
+                angles[N][1] << "; " <<
+                angles[N][2] << "; " <<
+                symmetryDeviation[N] <<
+                std:: endl;
+}
+
+
 /* ******** InertiaTensorCellReduceFunctional3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
 InertiaTensorCellReduceFunctional3D<T,Descriptor>::InertiaTensorCellReduceFunctional3D(
@@ -155,19 +248,21 @@ void computeEllipsoidFit (TriangleBoundary3D<T> Cells,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
                 std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume,
                 std::vector< std::vector<T> > & cellsEllipsoidFitAngles,
-                std::vector< std::vector<T> > & cellsEllipsoidFitSemiAxes) //Perhaps add TAGS
+                std::vector< std::vector<T> > & cellsEllipsoidFitSemiAxes,
+                std::vector< std::vector<T> > & cellInertia,
+                std::vector<T> & difference) //Perhaps add TAGS
 {
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
 
-    std::vector< std::vector<T> > cellInertia;
     InertiaTensorCellReduceFunctional3D<T,Descriptor> inertiaTensorFunctional(Cells, cellIds, cellCenters);
     applyProcessingFunctional(inertiaTensorFunctional, particles.getBoundingBox(), particleArg);
     inertiaTensorFunctional.getCellQuantityArray(cellInertia, cellIds);
 
     for (pluint i = 0; i < cellIds.size(); ++i) {
         vector<T> semiAxes, ellipsoidAngles;
-        getLambdasAndAngles(cellInertia[i], semiAxes, ellipsoidAngles);
+        T dif;
+        getLambdasAndAngles(cellInertia[i], semiAxes, ellipsoidAngles, dif);
 
         T f1 = semiAxes[0] * 5 / cellsVolume[i];
         T f2 = semiAxes[1] * 5 / cellsVolume[i];
@@ -178,6 +273,7 @@ void computeEllipsoidFit (TriangleBoundary3D<T> Cells,
         std::sort(semiAxes.begin(), semiAxes.end());
         cellsEllipsoidFitSemiAxes.push_back(semiAxes);
         cellsEllipsoidFitAngles.push_back(ellipsoidAngles);
+        difference.push_back(dif);
     }
 }
 
