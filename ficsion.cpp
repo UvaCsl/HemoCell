@@ -365,11 +365,12 @@ int main(int argc, char* argv[])
     pcout <<  cellsEllipsoidFitAngles[0][0]*180/pi << "\t" <<  cellsEllipsoidFitAngles[0][1]*180/pi << "\t" <<  cellsEllipsoidFitAngles[0][2]*180/pi << std::endl;
 
     SingleCellInShearFlow<T,DESCRIPTOR,DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds, cellsCenter, cellsVolume);
+    shearFlow.set_dxdtdm(dx,dt,dm);
     if (flowType==5) {
         shearFlow.writeHeader(shearResultFile);
     }
     /* ********************* Main Loop ***************************************** * */
-    for (plint i=1; i<tmax+1; ++i) {
+    for (plint i=0; i<tmax+1; ++i) {
         /* =============================== OUTPUT ===================================*/
         if (i%tmeas==0) {
             // dtIteration = global::timer("sim").stop();

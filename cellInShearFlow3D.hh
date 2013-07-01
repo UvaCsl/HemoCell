@@ -54,12 +54,21 @@ void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::addData(plint iteration
     if (maxDiameter <= 0) {
         maxDiameter = currMaxDiameter;
     }
-    iterations.push_back(iteration);
-    deformationIndex.push_back((currMaxDiameter - maxDiameter)*1.0/(currMaxDiameter + maxDiameter));
-    diameters.push_back(Array<T,3>(eFitSemiAxes[0][0], eFitSemiAxes[0][1], eFitSemiAxes[0][2]));
-    angles.push_back(Array<T,3>(eFitAngles[0][0], eFitAngles[0][1], eFitAngles[0][2]));
-    symmetryDeviation.push_back(difference[0]);
-    inertiaTensor.push_back(inertia[0]);
+    if ( store or (not store and (iterations.size() < 1) ) ) {
+        iterations.push_back(iteration);
+        deformationIndex.push_back((currMaxDiameter - maxDiameter)*1.0/(currMaxDiameter + maxDiameter));
+        diameters.push_back(Array<T,3>(eFitSemiAxes[0][0], eFitSemiAxes[0][1], eFitSemiAxes[0][2]));
+        angles.push_back(Array<T,3>(eFitAngles[0][0], eFitAngles[0][1], eFitAngles[0][2]));
+        symmetryDeviation.push_back(difference[0]);
+        inertiaTensor.push_back(inertia[0]);
+    } else {
+        iterations[0] = iteration;
+        deformationIndex[0] = (currMaxDiameter - maxDiameter)*1.0/(currMaxDiameter + maxDiameter);
+        diameters[0] = Array<T,3>(eFitSemiAxes[0][0], eFitSemiAxes[0][1], eFitSemiAxes[0][2]);
+        angles[0] = Array<T,3>(eFitAngles[0][0], eFitAngles[0][1], eFitAngles[0][2]);
+        symmetryDeviation[0] = difference[0];
+        inertiaTensor[0] =  inertia[0];
+    }
 }
 
 
@@ -67,15 +76,23 @@ template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::writeHeader(plb_ofstream & shearResultFile) {
         shearResultFile <<
-                "iterations; " <<
+                "# time (sec) ; " <<
                 "deformationIndex; " <<
                 "diameter x; " <<
                 "diameter y; " <<
                 "diameter z; " <<
-                "angles x; " <<
-                "angles y; " <<
-                "angles z; " <<
-                "symmetryDeviation " <<
+                "angles x (rad); " <<
+                "angles y (rad); " <<
+                "angles z (rad); " <<
+                "inertia tensor Ixx (kg/m2); " <<
+                "inertia tensor Ixy (kg/m2); " <<
+                "inertia tensor Ixz (kg/m2); " <<
+                "inertia tensor Iyx (kg/m2); " <<
+                "inertia tensor Iyy (kg/m2); " <<
+                "inertia tensor Iyz (kg/m2); " <<
+                "inertia tensor Izx (kg/m2); " <<
+                "inertia tensor Izy (kg/m2); " <<
+                "inertia tensor Izz (kg/m2) " <<
                 std:: endl;
 }
 
@@ -85,16 +102,19 @@ template< typename T, template<typename U> class Descriptor,
 void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::write(plb_ofstream & shearResultFile) {
         plint N = iterations.size() - 1;
         shearResultFile <<
-                iterations[N] << "; " <<
-                deformationIndex[N] << "; " <<
-                diameters[N][0] << "; " <<
-                diameters[N][1] << "; " <<
-                diameters[N][2] << "; " <<
-                angles[N][0] << "; " <<
-                angles[N][1] << "; " <<
-                angles[N][2] << "; " <<
-                symmetryDeviation[N] <<
-                std:: endl;
+            iterations[N] * dt<< "; " <<
+            deformationIndex[N] << "; " <<
+            diameters[N][0] * dx<< "; " <<
+            diameters[N][1] * dx<< "; " <<
+            diameters[N][2] * dx<< "; " <<
+            angles[N][0] << "; " <<
+            angles[N][1] << "; " <<
+            angles[N][2] << "; " <<
+            symmetryDeviation[N] ;
+        for (int i = 0; i < 9; ++i) {
+            shearResultFile << "; " << inertiaTensor[N][i] * dm / (dx*dx);
+        }
+        shearResultFile << std:: endl;
 }
 
 

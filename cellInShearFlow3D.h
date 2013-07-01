@@ -40,6 +40,10 @@ public:
     std::vector< vector<T> > const& getInertiaTensor() { return inertiaTensor; } ;
     std::vector<T> const& getSymmetryDeviation() { return symmetryDeviation; } ;
     void setShearResultFile(plb_ofstream & shearResultFile_) { shearResultFile = &shearResultFile_; } ;
+    void set_dx(T dx_) { dx = dx_; } ;
+    void set_dt(T dt_) { dt = dt_; } ;
+    void set_dm(T dm_) { dm = dm_; } ;
+    void set_dxdtdm(T dx_, T dt_, T dm_) { dx = dx_; dt = dt_; dm = dm_;} ;
 private:
     std::vector<T> deformationIndex;
     std::vector<T> iterations;
@@ -50,6 +54,7 @@ private:
     bool store;
     T maxDiameter;
     plb_ofstream * shearResultFile;
+    T dx, dt, dm;
 };
 
 
