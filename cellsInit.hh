@@ -139,7 +139,7 @@ void writeCellLog(plint i, plb_ofstream & logFile,
                   std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
                   std::vector< Array<T,3> > & cellsCenter, std::vector< Array<T,3> > & cellsVelocity,
                   T eqVolume, T eqSurface, T eqArea, T eqLength) {
-    std::string delim(", ");
+    std::string delim("; ");
     if (i==0) {
         logFile << "# Iteration " << delim
                 << " Volume" << delim

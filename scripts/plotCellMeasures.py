@@ -27,7 +27,7 @@ while True:
         f = open(fname)
         c = StringIO(f.read())
         f.close()
-        z = np.loadtxt(c, delimiter=',')
+        z = np.loadtxt(c, delimiter=';')
         t = z[:,0]
         V = z[:,1]
         S = z[:,2]
