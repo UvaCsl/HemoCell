@@ -322,7 +322,8 @@ T computeBendingPotential (Array<T,3> const& x1, Array<T,3> const& x2,
     crossProduct(x3-x1,  x4-x1, nj);
     crossProduct(x2-x1,  x3-x1, ni);
     T edgeAngle = angleBetweenVectors(ni, nj);
-    return k * (1-cos(edgeAngle - eqAngle));
+    return k * (0.5*(edgeAngle - eqAngle)*(edgeAngle - eqAngle));
+//    return k * (1-cos(edgeAngle - eqAngle));
 }
 
 
@@ -406,8 +407,13 @@ Array<T,3> computeBendingForceFromPotential (
         fx4[i] = -(up-um) / (2.0*eps);
     }
     Array<T,3> df = fx1 + fx2 + fx3 + fx4;
-    fx1 = fx1 - df/2.;
-    fx3 = fx3 - df/2.;
+    if (norm(df) > 1e-10) {
+        pcout << "!!! Something's wrong with the angles !!!" << norm(df) << std::endl;
+        fx1 = fx1 - df/4.;
+        fx2 = fx2 - df/4.;
+        fx3 = fx3 - df/4.;
+        fx4 = fx4 - df/4.;
+    }
     return fx1;
 }
 
