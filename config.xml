@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <ficsion>
 <caseId> caseId </caseId>
-<cell>
+<cellModel>
     <rbcModel> 1 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1] -->
     <shellDensity> 1.0 </shellDensity>
 
@@ -20,7 +20,7 @@
     <kElastic> 0.0e0 </kElastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->
     <kRest> 0.0e-4 </kRest> <!--Resting modulus (in N/m) [0.0, 1.0e-4]-->
     <kStretch> 0.0e-10</kStretch> <!--spring modulus (in N) [0.0]-->
-</cell>
+</cellModel>
 
 <parameters>
     <!--flowType: 
