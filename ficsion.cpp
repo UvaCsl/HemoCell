@@ -292,7 +292,7 @@ int main(int argc, char* argv[])
     lateralCellParticleTags.push_back(&outerRightTags);
     lateralCellParticleTags.push_back(&outerFrontTags);
     lateralCellParticleTags.push_back(&outerBackTags);
-    plint numParticlesPerSide = plint(0.05*numParts[0]);
+    plint numParticlesPerSide = plint(0.02*numParts[0]);
     if ((flowType == 3) || (flowType == 4) || (flowType == 5) ) {
         PLB_PRECONDITION( npar == 1 && MPI::COMM_WORLD.Get_size() == 1 );
         applyProcessingFunctional (
