@@ -409,11 +409,11 @@ Array<T,3> computeBendingForceFromPotential (
     Array<T,3> df = fx1 + fx2 + fx3 + fx4;
     if (norm(df) > 1e-10) {
         pcout << "!!! Something's wrong with the angles !!!" << norm(df) << std::endl;
-        fx1 = fx1 - df/4.;
-        fx2 = fx2 - df/4.;
-        fx3 = fx3 - df/4.;
-        fx4 = fx4 - df/4.;
     }
+    fx1 = fx1 - df/4.;
+    fx2 = fx2 - df/4.;
+    fx3 = fx3 - df/4.;
+    fx4 = fx4 - df/4.;
     return fx1;
 }
 
