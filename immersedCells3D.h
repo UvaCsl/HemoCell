@@ -74,7 +74,15 @@ void createCells(TriangleBoundary3D<T> &Cells,
 
 
 template<typename T>
+Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R=1.0);
+
+
+template<typename T>
 TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles) ;
+
+
+template<typename T>
+TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint minNumOfTriangles);
 
 
 template<typename T>
