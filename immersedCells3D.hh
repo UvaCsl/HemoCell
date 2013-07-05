@@ -189,7 +189,7 @@ template<typename T>
 Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R) {
     Array<T,3> rbcPoint(point);
     T r2 = rbcPoint[0]*rbcPoint[0] + rbcPoint[1]*rbcPoint[1];
-    T C0 = 0.207, C2 = 2.003, C4 = -1.123;
+    T C0 = 0.207, C2 = 2.002, C4 = -1.122;
     T val = rbcPoint[2];
     plint sign = (T(0) < val) - (val < T(0));
     rbcPoint[0] *= R;

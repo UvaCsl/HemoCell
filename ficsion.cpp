@@ -112,9 +112,9 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     lx = nx * dx;
     ly = ny * dx;
     lz = nz * dx;
-    if (flowType == 4) { // Cell Stretching Analysis
+    if ( (flowType == 4) or (flowType == 5) ) { // Cell Stretching Analysis
         shearRate = 0;
-    } else if (flowType == 5) { // Tumbling Tank Treading Measurements
+    } else if (flowType == 6) { // Tumbling Tank Treading Measurements
         if (shearRate > 0) {
             tmax  = 40.0/(shearRate*dt); // Measurements for 40 Strain rates
             tmeas = 0.01/(shearRate*dt); // 100 Measurements per Strain rates
@@ -273,7 +273,7 @@ int main(int argc, char* argv[])
     lateralCellParticleTags.push_back(&outerFrontTags);
     lateralCellParticleTags.push_back(&outerBackTags);
     plint numParticlesPerSide = plint(0.05*numParts[0]);
-    if ((flowType == 3) || (flowType == 4)) {
+    if ((flowType == 3) || (flowType == 4) || (flowType == 5) ) {
         PLB_PRECONDITION( npar == 1 && MPI::COMM_WORLD.Get_size() == 1 );
         applyProcessingFunctional (
             new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerLeftTags, &outerRightTags, 0),
@@ -303,6 +303,11 @@ int main(int argc, char* argv[])
     k_rest /= dNewton/dx;
     vector<T> eqAreaPerTriangle(cellNumTriangles);
     map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
+    T eta_mPrevious = 0.;
+    if (flowType == 5)  {
+        eta_mPrevious = eta_m;
+        eta_m = 0.0;
+    }
     ShellModel3D<T> *cellModel;
     if (rbcModel == 0) {
        getCellShapeQuantitiesFromMesh(Cells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
@@ -347,7 +352,7 @@ int main(int argc, char* argv[])
     T dStretchingForce = 5.0e-12/dNewton;
     plint statIter = 10;
     plint stretchReleased = 0;
-    if ((flowType == 4)) {
+    if ( (flowType == 4) or (flowType == 5) ) {
         stretchForce.resetToZero();
         stretchForceScalar = 0.0;
     }
@@ -369,7 +374,7 @@ int main(int argc, char* argv[])
 
     SingleCellInShearFlow<T,DESCRIPTOR,DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds, cellsCenter, cellsVolume);
     shearFlow.set_dxdtdm(dx,dt,dm);
-    if (flowType==5) {
+    if (flowType==6) {
         shearFlow.writeHeader(shearResultFile);
     }
     /* ********************* Main Loop ***************************************** * */
@@ -390,7 +395,7 @@ int main(int argc, char* argv[])
                          cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                          cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity,
                          eqVolumeFinal, eqSurface, eqArea, eqLength) ;
-            if ((flowType == 3) || (flowType == 4)) {
+            if ((flowType == 3) || (flowType == 4) || (flowType == 5) ) {
                     applyProcessingFunctional (
                         new MeasureCellStretchDeformation3D<T,DESCRIPTOR>(lateralCellParticleTags, &stretchingDeformations),
                         immersedParticles.getBoundingBox(), particleArg );
@@ -438,14 +443,14 @@ int main(int argc, char* argv[])
             global::timer("sim").restart();
 
             /* ====================== Update for single cell in shear flow ===================================*/
-            if (flowType==5) {
+            if (flowType==6) {
                 shearFlow.addData(i, Cells, immersedParticles, cellIds, cellsCenter, cellsVolume);
                 shearFlow.write(shearResultFile);
             }
 
         }
         /* ====================== Update for Cell Stretching behaviour ===================================*/
-        if ((flowType == 4) && (i % statIter == 0)) {
+        if (( (flowType == 4) or (flowType == 5) ) && (i % statIter == 0)) {
             applyProcessingFunctional (
                 new MeasureCellStretchDeformation3D<T,DESCRIPTOR>(lateralCellParticleTags, &stretchingDeformations),
                 immersedParticles.getBoundingBox(), particleArg );
@@ -485,6 +490,13 @@ int main(int argc, char* argv[])
                                 << "; " << cellsMeanEdgeDistance[0] << ";  "
                                 << "; " << cellsMaxEdgeDistance[0] << ";  "
                                 << std::endl;
+                        if (flowType == 5) {
+                            if (rbcModel == 0) {
+                                (dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel))->setMembraneShearViscosity(eta_mPrevious);
+                            } else if (rbcModel == 1) {
+                                (dynamic_cast<CellModel3D<T>*>(cellModel))->setMembraneShearViscosity(eta_mPrevious);
+                            }
+                        }
                     }
                     else {
                         stretchResealedFile << setprecision(20) << i*dt
@@ -547,7 +559,7 @@ int main(int argc, char* argv[])
                 immersedParticles.getBoundingBox(), particleArg );
         }
 
-        if ((flowType == 3) || (flowType == 4)) {
+        if ((flowType == 3) || (flowType == 4) || (flowType == 5)) {
             applyProcessingFunctional ( // compute force applied on the some particles by the stretching force
                     new ApplyStretchingForce3D<T,DESCRIPTOR>(outerLeftTags, outerRightTags, stretchForce, cellModel->getDensity()),
                     immersedParticles.getBoundingBox(), particleArg );

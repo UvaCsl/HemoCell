@@ -114,15 +114,24 @@ public:
     T const& getPersistenceLength() const { return persistenceLength; }
 
                                                                              */
-    T& getMembraneShearViscosity() { return eta_m; }
-    void setMembraneShearViscosity(T value) { eta_m = value; }
     T const& getMembraneShearViscosity() const { return eta_m; }
+    T& getMembraneShearViscosity() { return eta_m; }
+    void setMembraneShearViscosity(T value) {
+        eta_m = value;
+        gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
+        gamma_C = (gamma_T/3.0);
+    }
+
     T& getDissipativeParameterT() { return gamma_T; }
-    void setDissipativeParameterT(T value) const { gamma_T = value; }
     T const& getDissipativeParameterT() const { return gamma_C; }
+    void setDissipativeParameterT(T value) const {
+        gamma_T = value;
+    }
     T& getDissipativeParameterC() { return gamma_C; }
-    void setDissipativeParameterC(T value) const { gamma_C = value; }
     T const& getDissipativeParameterC() const { return gamma_C; }
+    void setDissipativeParameterC(T value) const {
+        gamma_C = value;
+    }
     /* Equilibrium parameters */
 //    vector<T>& getEquilibriumLinkLength() { return eqLength; }
 //    void setEquilibriumLinkLength(vector<T> value) { eqLength = value; }

@@ -23,8 +23,11 @@
 </cell>
 
 <parameters>
-    <!--flowType: Poisseuille:[0], Couette:[1], Cell Stretching [3], 
-Cell Stretching Analysis [4], Tumbling-TankTreading Measurements [5] -->
+    <!--flowType: 
+Poisseuille:[0], Couette:[1], 
+Cell Stretching [3], Cell Stretching Analysis and release [4], Fast Cell Stretching Analysis and release [5],
+Tumbling-TankTreading Measurements [6],
+ -->
     <flowType> 4 </flowType>   
     <Re> 0.1 </Re>   <!--Reynolds number-->
     <shearRate> 0 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
