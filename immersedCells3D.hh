@@ -200,13 +200,14 @@ Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R) {
 
 
 template<typename T>
-TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles) {
-    return constructCell(center, radius, "./lib/RBC.stl");
+TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles, std::vector<T> const& eulerAngles) {
+    return constructCell(center, radius, "./lib/RBC.stl", eulerAngles);
 }
 
 
 template<typename T>
-TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint minNumOfTriangles)
+TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint minNumOfTriangles,
+        std::vector<T> const& eulerAngles)
 {
     TriangleSet<T> sphere = constructSphere<T>(Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
     std::vector<typename TriangleSet<T>::Triangle> rbcTriangles = sphere.getTriangles();
@@ -220,27 +221,33 @@ TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint 
     Array<T,3> dr = (cb.upperRightCorner - cb.lowerLeftCorner);
     T scaleFactor = std::max(dr[0],std::max(dr[1],dr[2]));
     rbc.scale(radius*2.0/scaleFactor);
-    rbc.rotate(pi/2.0, pi/2.0, 0.);
+    rbc.rotate(
+            pi/2.0 + eulerAngles[0],
+            pi/2.0 + eulerAngles[1],
+            0. + eulerAngles[2]);
     rbc.translate(center);
     return rbc;
 }
 
 template<typename T>
-TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename) {
+TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename, std::vector<T> const& eulerAngles) {
 //    Cuboid<T> boundingCuboid;
     TriangleSet<T> Cell(cellFilename);
     Cuboid<T> cb = Cell.getBoundingCuboid();
     Array<T,3> dr = (cb.upperRightCorner - cb.lowerLeftCorner);
     T scaleFactor = std::max(dr[0],std::max(dr[1],dr[2]));
     Cell.scale(radius*2.0/scaleFactor);
-    Cell.rotate(pi/2.0, pi/2.0, 0.);
+    Cell.rotate(
+            pi/2.0 + eulerAngles[0],
+            pi/2.0 + eulerAngles[1],
+            0. + eulerAngles[2]);
     Cell.translate(center);
     return Cell;
 }
 
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
-    const std::vector<Array<T,3> > &centers, const std::vector<T> &radii,
+    const std::vector<Array<T,3> > &centers, const std::vector<T> &radii, std::vector<T> const& eulerAngles,
     std::vector<plint> &cellIds, IncomprFlowParam<T> const& parameters,
     plint shape, std::string cellPath, plint &cellNumTriangles, plint &numPartsPerCell)
 {
@@ -257,13 +264,13 @@ TriangleBoundary3D<T> createCompleteMesh(
         	allTriangles.push_back(constructSphere<T>(center, radius, cellNumTriangles));
         }
         else if (shape == 1) {
-        	allTriangles.push_back(constructRBCFromSphere<T>(center, radius, cellNumTriangles));
+        	allTriangles.push_back(constructRBCFromSphere<T>(center, radius, cellNumTriangles, eulerAngles));
         }
         else if (shape == 2) {
-            allTriangles.push_back(constructCell<T>(center, radius, cellPath));
+            allTriangles.push_back(constructCell<T>(center, radius, cellPath, eulerAngles));
         }
         else if (shape == 3) {
-            allTriangles.push_back(constructRBC<T>(center, radius, cellNumTriangles));
+            allTriangles.push_back(constructRBC<T>(center, radius, cellNumTriangles, eulerAngles));
         }
         cellIds.push_back(iA);
     }

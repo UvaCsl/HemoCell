@@ -55,7 +55,7 @@ const plint particleEnvelopeWidth = 2;
 
 void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
-        T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, T & Re_p, T & N, T & lx, T & ly, T & lz,
+        T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, std::vector<T> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, plint & relaxationTime,
         plint & minNumOfTriangles, plint & tmax, plint & tmeas, plint & npar)
     {
@@ -77,10 +77,18 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     document["cellModel"]["kRest"].read(k_rest);
     document["cellModel"]["kShear"].read(k_shear);
     document["cellModel"]["kStretch"].read(k_stretch);
+    document["parameters"]["flowType"].read(flowType);
     document["parameters"]["Re"].read(Re);
     document["parameters"]["shearRate"].read(shearRate);
     document["parameters"]["stretchForce"].read(stretchForce); // In picoNewton
     stretchForce *= 1e-12;
+    document["parameters"]["eulerAngles"].read(eulerAngles);
+    if (eulerAngles.size() != 3) {
+        eulerAngles.resize(3, 0.0);
+    }
+    eulerAngles[0] *= pi/180.;
+    eulerAngles[1] *= pi/180.;
+    eulerAngles[2] *= pi/180.;
     document["parameters"]["deflationRatio"].read(deflationRatio);
     document["parameters"]["relaxationTime"].read(relaxationTime);
     document["ibm"]["forceToFluid"].read(forceToFluid);
@@ -158,13 +166,15 @@ int main(int argc, char* argv[])
     T shearRate, shearRate_p;
     Array<T,3> stretchForce(0,0,0);
     T stretchForceScalar, stretchForce_p;
+    std::vector<T> eulerAngles;
 
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
     pcout << "reading.." <<std::endl;
-    readFicsionXML(document, caseId, rbcModel, shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
-            rho_p, u, flowType, Re, shearRate_p, stretchForce_p, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, shape, cellPath, radius, deflationRatio, relaxationTime,
+    readFicsionXML(document, caseId, rbcModel, shellDensity,
+            k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
+            rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, shape, cellPath, radius, deflationRatio, relaxationTime,
             cellNumTriangles, tmax, tmeas, npar);
     IncomprFlowParam<T> parameters(
             u, // u
@@ -232,7 +242,7 @@ int main(int argc, char* argv[])
     plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
     std::vector<plint> cellIds;
     plint cellNumVertices = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
+    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, eulerAngles, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
     pcout << "Mesh Created" << std::endl;
     generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, cellNumVertices, numOfCellsPerInlet, slice);
 

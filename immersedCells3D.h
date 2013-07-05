@@ -78,20 +78,21 @@ Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R=1.0);
 
 
 template<typename T>
-TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles) ;
+TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles, std::vector<T> const& eulerAngles);
 
 
 template<typename T>
-TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint minNumOfTriangles);
+TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint minNumOfTriangles,
+        std::vector<T> const& eulerAngles);
 
 
 template<typename T>
-TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename);
+TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename, std::vector<T> const& eulerAngles);
 
 
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
-    const std::vector<Array<T,3> > &centers, const std::vector<T> &radii,
+    const std::vector<Array<T,3> > &centers, const std::vector<T> &radii, std::vector<T> const& eulerAngles,
     std::vector<plint> &cellIds, IncomprFlowParam<T> const& parameters,
     plint shape, std::string cellPath, plint &cellNumTriangles, plint &numPartsPerCell);
 
