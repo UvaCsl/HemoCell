@@ -322,8 +322,8 @@ T computeBendingPotential (Array<T,3> const& x1, Array<T,3> const& x2,
     crossProduct(x3-x1,  x4-x1, nj);
     crossProduct(x2-x1,  x3-x1, ni);
     T edgeAngle = angleBetweenVectors(ni, nj);
-    return k * (0.5*(edgeAngle - eqAngle)*(edgeAngle - eqAngle));
-//    return k * (1-cos(edgeAngle - eqAngle));
+//    return k * (0.5*(edgeAngle - eqAngle)*(edgeAngle - eqAngle));
+    return k * (1-cos(edgeAngle - eqAngle));
 }
 
 

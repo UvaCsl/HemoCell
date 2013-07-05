@@ -496,12 +496,20 @@ int main(int argc, char* argv[])
                 std::vector<std::string> force_scalarNames;
                 std::vector<std::string> velocity_scalarNames;
                 std::vector<std::string> velocity_vectorNames;
-                writeImmersedSurfaceVTK (
-                    Cells,
-                    immersedParticles,
-                    velocity_scalarNames, velocity_vectorNames,
-                    global::directories().getOutputDir()+createFileName("stretch.", plint(stretchForceScalar*dNewton*1.0e12), 3)+".pN.vtk", true, -1);
-
+                if (not stretchReleased) {
+                    writeImmersedSurfaceVTK (
+                        Cells,
+                        immersedParticles,
+                        velocity_scalarNames, velocity_vectorNames,
+                        global::directories().getOutputDir()+createFileName("stretch.", plint(stretchForceScalar*dNewton*1.0e12), 3)+".pN.vtk", true, -1);
+                }
+                else{
+                    writeImmersedSurfaceVTK (
+                        Cells,
+                        immersedParticles,
+                        velocity_scalarNames, velocity_vectorNames,
+                        global::directories().getOutputDir()+createFileName("stretchR.", plint(stretchForceScalar*dNewton*1.0e12), 3)+".pN.vtk", true, -1);
+                }
                 stretchResultFile << setprecision(20) << i*dt
                         << "; " << stretchForceScalar*dNewton
                         << "; " << stretchingDeformations[0]*dx
