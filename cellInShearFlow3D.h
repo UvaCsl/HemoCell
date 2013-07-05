@@ -26,7 +26,7 @@ public:
     SingleCellInShearFlow(TriangleBoundary3D<T> Cells,
             MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
             std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume, bool store_=false);
-
+    ~SingleCellInShearFlow() {};
     void addData(plint iteration, TriangleBoundary3D<T> Cells,
             MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
             std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume);
