@@ -171,6 +171,25 @@ void iniLatticeSquareCouette( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
     lattice.initialize();
 }
 
+/* ************* changeCouetteShearRate ******************* */
+void changeCouetteShearRate( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+        IncomprFlowParam<T> const& parameters,
+        OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T shearRate)
+{
+    const plint nx = parameters.getNx();
+    const plint ny = parameters.getNy();
+    const plint nz = parameters.getNz();
+    Box3D left   = Box3D(0, nx-1, 0,    0,    1, nz-2);
+    Box3D right  = Box3D(0, nx-1, ny-1, ny-1, 1, nz-2);
+//    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, left );
+//    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, right );
+    T vHalf = (nz-1)*shearRate*0.5;
+    setBoundaryVelocity(lattice, left, Array<T,3>(vHalf,0.0,0.0));
+    setBoundaryVelocity(lattice, right, Array<T,3>(-vHalf,0.0,0.0));
+//    lattice.initialize();
+}
+
+
 /* ************* writeFicsionLogFile ******************* */
 template<typename T>
 void writeFicsionLogFile(IncomprFlowParam<T> const& parameters,

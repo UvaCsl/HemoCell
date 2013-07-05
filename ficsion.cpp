@@ -57,7 +57,7 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, std::vector<T> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, plint & relaxationTime,
-        plint & minNumOfTriangles, plint & tmax, plint & tmeas, plint & npar)
+        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, plint & npar, plint & goAndStop)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
@@ -119,13 +119,21 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     lx = nx * dx;
     ly = ny * dx;
     lz = nz * dx;
+    goAndStop = 0;
+    if (flowType == 7) { // Fischer2004 setup, Go-and-stop
+        goAndStop = 1;
+        flowType = 6;
+    }
     if ( (flowType == 4) or (flowType == 5) ) { // Cell Stretching Analysis
         shearRate = 0;
     } else if (flowType == 6) { // Tumbling Tank Treading Measurements
         if (shearRate > 0) {
-            tmax  = 40.0/(shearRate*dt); // Measurements for 40 Strain rates
-            tmeas = 0.01/(shearRate*dt); // 100 Measurements per Strain rates
+            tmax  = 100.0/(shearRate*dt); // Measurements for 100 Strain rates
+            tmeas = 0.02/(shearRate*dt); // 50 Measurements per Strain rates
         }
+    }
+    if (goAndStop == 1) {
+        tmax += 20.0/dt; // Add 20 seconds to the total time.
     }
 }
 
@@ -153,7 +161,8 @@ int main(int argc, char* argv[])
     plint rbcModel;
     std::string caseId;
     std::string cellPath;
-    plint tmax, tmeas, npar;
+    pluint tmax;
+    plint tmeas, npar;
     // T dtIteration = 0;
     T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic,  k_volume, k_surface, eta_m;
     T eqLengthRatio;
@@ -167,6 +176,8 @@ int main(int argc, char* argv[])
     Array<T,3> stretchForce(0,0,0);
     T stretchForceScalar, stretchForce_p;
     std::vector<T> eulerAngles;
+    plint goAndStop;
+    std::vector<plint> goAndStopVertices;
 
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
@@ -175,7 +186,7 @@ int main(int argc, char* argv[])
     readFicsionXML(document, caseId, rbcModel, shellDensity,
             k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, shape, cellPath, radius, deflationRatio, relaxationTime,
-            cellNumTriangles, tmax, tmeas, npar);
+            cellNumTriangles, tmax, tmeas, npar, goAndStop);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -328,7 +339,11 @@ int main(int argc, char* argv[])
                        eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan,
                        persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
     }
-
+    if (goAndStop != 0) {
+        goAndStopVertices.push_back(pluint(0));
+        goAndStopVertices.push_back(pluint(cellNumVertices/2));
+        goAndStopVertices.push_back(pluint(cellNumVertices-1));
+    }
 
     pcout << std::endl << "Starting simulation" << std::endl;
     global::timer("sim").start();
@@ -387,9 +402,18 @@ int main(int argc, char* argv[])
         shearFlow.writeHeader(shearResultFile);
     }
     /* ********************* Main Loop ***************************************** * */
-    for (plint i=0; i<tmax+1; ++i) {
+    for (pluint i=0; i<tmax+1; ++i) {
+        if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
+            shearRate = 0;
+            changeCouetteShearRate(lattice, parameters, *boundaryCondition, shearRate);
+            tmeas = 0.1/dt;
+        }
         /* =============================== OUTPUT ===================================*/
         if (i%tmeas==0) {
+            if (goAndStop != 0) {
+                writeImmersedPointsVTK(Cells, goAndStopVertices, dx,
+                    global::directories().getOutputDir()+createFileName("GoAndStop.",i,10)+".vtk");
+            }
             // dtIteration = global::timer("sim").stop();
             // plint totParticlesNow = 0;
             // totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());

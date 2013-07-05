@@ -208,6 +208,36 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
     }
 }
 
+
+template<typename T>
+void writeImmersedPointsVTK(TriangleBoundary3D<T> const& boundary, std::vector<plint> const& vertices, T const& dx,
+                    std::string fName)
+{
+    TriangularSurfaceMesh<T> const& mesh = boundary.getMesh();
+    std::ofstream ofile(fName.c_str());
+    ofile << "# vtk DataFile Version 3.0\n";
+    ofile << "Surface point created with Palabos and ficsion\n";
+    ofile << "ASCII\n";
+    ofile << "DATASET POLYDATA\n";
+
+    ofile << "POINTS " << vertices.size()
+          << (sizeof(T)==sizeof(double) ? " double" : " float")
+          << "\n";
+    for (pluint i = 0; i < vertices.size(); ++i) {
+        Array<T,3> vertex = mesh.getVertex(vertices[i]);
+        vertex *= dx;
+        ofile << vertex[0] << " " <<vertex[1] << " " <<vertex[2] << "\n";
+    }
+    ofile << "POINT_DATA " << vertices.size() << "\n";
+    ofile << "SCALARS ID float 1 \n";
+    ofile << "LOOKUP_TABLE default \n";
+    for (pluint i = 0; i < vertices.size(); ++i) {
+        ofile << i*1.0 << "\n";
+    }
+    ofile.close();
+}
+
+
 }  // namespace plb
 
 #endif  // IMMERSED_PARTICLE_VTK_3D_HH

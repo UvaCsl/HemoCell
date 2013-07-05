@@ -2,7 +2,7 @@
 <ficsion>
 <caseId> caseId </caseId>
 <cellModel>
-    <rbcModel> 1 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1] -->
+    <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1] -->
     <shellDensity> 1.0 </shellDensity>
 
     <kBend> 150e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
@@ -28,9 +28,9 @@ Poisseuille:[0], Couette:[1],
 Cell Stretching [3], Cell Stretching Analysis and release [4], Fast Cell Stretching Analysis and release [5],
 Tumbling-TankTreading Measurements [6], Fischer2004 [7],
  -->
-    <flowType> 6 </flowType>   
+    <flowType> 7 </flowType>   
     <Re> 0.1 </Re>   <!--Reynolds number-->
-    <shearRate> 0 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
+    <shearRate> 100 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 100.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->
     <eulerAngles> 45 25 45 </eulerAngles> <!-- In degrees -->
     <deflationRatio> 1.00 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->

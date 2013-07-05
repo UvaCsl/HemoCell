@@ -71,6 +71,11 @@ void iniLatticeSquareCouette( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                  IncomprFlowParam<T> const& parameters,
                  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T shearRate);
 
+/* ******************* changeCouetteShearRate ***************************************** */
+void changeCouetteShearRate( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+        IncomprFlowParam<T> const& parameters,
+        OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T shearRate);
+
 /* ******************* writeFicsionLogFile ***************************************** */
 template<typename T>
 void writeFicsionLogFile(IncomprFlowParam<T> const& parameters,

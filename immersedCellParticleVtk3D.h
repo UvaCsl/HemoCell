@@ -63,6 +63,10 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
                     std::string fName, bool dynamicMesh, plint tag,
                     std::vector<T> const& scalarFactor, std::vector<T> const& vectorFactor );
 
+template<typename T>
+void writeImmersedPointsVTK(TriangleBoundary3D<T> const& boundary, std::vector<plint> const& vertices, T const& dx,
+                    std::string fName);
+
 }  // namespace plb
 
 #endif  // IMMERSED_PARTICLE_VTK_3D_H
