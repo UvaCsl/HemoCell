@@ -135,9 +135,11 @@ int main(int argc, char* argv[])
 
     std::string stretchLogFileName = global::directories().getLogOutDir() + "stretchDeformation.log";
     std::string stretchResultFileName = global::directories().getLogOutDir() + "stretchResults.log";
+    std::string stretchResealedFileName = global::directories().getLogOutDir() + "stretchRelease.log";
     std::string shearResultFileName = global::directories().getLogOutDir() + "shearResults.log";
     plb_ofstream stretchLogFile(stretchLogFileName.c_str());
     plb_ofstream stretchResultFile(stretchResultFileName.c_str());
+    plb_ofstream stretchResealedFile(stretchResealedFileName.c_str());
     plb_ofstream shearResultFile(shearResultFileName.c_str());
 
     plint forceToFluid, shape, cellNumTriangles, ibmKernel;
@@ -302,16 +304,16 @@ int main(int argc, char* argv[])
     vector<T> eqAreaPerTriangle(cellNumTriangles);
     map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
     ShellModel3D<T> *cellModel;
-   if (rbcModel == 0) {
+    if (rbcModel == 0) {
        getCellShapeQuantitiesFromMesh(Cells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
        cellModel = new ShapeMemoryModel3D<T>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
                        eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, eqVolume, eqSurface, eqTileSpan,
                        persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
-   } else  { // if (rbcModel == 1) {
+    } else  { // if (rbcModel == 1) {
        cellModel = new CellModel3D<T>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
                        eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan,
                        persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
-   }
+    }
 
 
     pcout << std::endl << "Starting simulation" << std::endl;
@@ -344,6 +346,7 @@ int main(int argc, char* argv[])
     util::ValueTracer<T> convergeX((T)1,(T)100,1.0e-5), convergeY((T)1,(T)100,1.0e-5);
     T dStretchingForce = 5.0e-12/dNewton;
     plint statIter = 10;
+    plint stretchReleased = 0;
     if ((flowType == 4)) {
         stretchForce.resetToZero();
         stretchForceScalar = 0.0;
@@ -402,6 +405,15 @@ int main(int argc, char* argv[])
                                   << "; " << cellsMeanEdgeDistance[0] << ";  "
                                   << "; " << cellsMaxEdgeDistance[0] << ";  "
                                                                     << std::endl;
+                   if (stretchReleased) {
+                       stretchResealedFile << setprecision(20) << i*dt
+                               << "; " << stretchForceScalar*dNewton
+                               << "; " << stretchingDeformations[0]*dx
+                               << "; " << stretchingDeformations[1]*dx << ";  "
+                               << "; " << cellsMeanEdgeDistance[0] << ";  "
+                               << "; " << cellsMaxEdgeDistance[0] << ";  "
+                                                                       << std::endl;
+                   }
             }
             std::vector<std::string> force_scalarNames;
             std::vector<std::string> velocity_scalarNames;
@@ -425,6 +437,7 @@ int main(int argc, char* argv[])
             // ==================
             global::timer("sim").restart();
 
+            /* ====================== Update for single cell in shear flow ===================================*/
             if (flowType==5) {
                 shearFlow.addData(i, Cells, immersedParticles, cellIds, cellsCenter, cellsVolume);
                 shearFlow.write(shearResultFile);
@@ -441,6 +454,16 @@ int main(int argc, char* argv[])
             if (convergeX.hasConverged() && convergeY.hasConverged() ) {
                 convergeX.resetValues();
                 convergeY.resetValues();
+
+                std::vector<std::string> force_scalarNames;
+                std::vector<std::string> velocity_scalarNames;
+                std::vector<std::string> velocity_vectorNames;
+                writeImmersedSurfaceVTK (
+                    Cells,
+                    immersedParticles,
+                    velocity_scalarNames, velocity_vectorNames,
+                    global::directories().getOutputDir()+createFileName("stretch.", plint(stretchForceScalar*dNewton*1.0e12), 3)+".pN.vtk", true, -1);
+
                 stretchResultFile << setprecision(20) << i*dt
                         << "; " << stretchForceScalar*dNewton
                         << "; " << stretchingDeformations[0]*dx
@@ -452,8 +475,28 @@ int main(int argc, char* argv[])
                 stretchForceScalar += dStretchingForce;
                 stretchForce = Array<T,3>(stretchForceScalar,0,0);
                 if (stretchForceScalar > 40*dStretchingForce ) {
-                    pcout << "Simulation is over.\n";
-                    break;
+                    if (not stretchReleased) {
+                        stretchForce = Array<T,3>(0,0,0);
+                        stretchReleased = 1;
+                        stretchResealedFile << setprecision(20) << i*dt
+                                << "; " << stretchForceScalar*dNewton
+                                << "; " << stretchingDeformations[0]*dx
+                                << "; " << stretchingDeformations[1]*dx << ";  "
+                                << "; " << cellsMeanEdgeDistance[0] << ";  "
+                                << "; " << cellsMaxEdgeDistance[0] << ";  "
+                                << std::endl;
+                    }
+                    else {
+                        stretchResealedFile << setprecision(20) << i*dt
+                                << "; " << stretchForceScalar*dNewton
+                                << "; " << stretchingDeformations[0]*dx
+                                << "; " << stretchingDeformations[1]*dx << ";  "
+                                << "; " << cellsMeanEdgeDistance[0] << ";  "
+                                << "; " << cellsMaxEdgeDistance[0] << ";  "
+                                << std::endl;
+                        pcout << "Simulation is over.\n";
+                        break;
+                    }
                 }
             }
         }
