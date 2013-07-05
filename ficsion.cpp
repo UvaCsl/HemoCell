@@ -456,7 +456,7 @@ int main(int argc, char* argv[])
             std::vector<std::string> force_scalarNames;
             std::vector<std::string> velocity_scalarNames;
             std::vector<std::string> velocity_vectorNames;
-            writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,8)+".stl");
+            // writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,8)+".stl");
             // serialize the particle information to write them.
             // a correspondance between the mesh and the particles is made. (Needs rescale)
             bool dynamicMesh = true;
