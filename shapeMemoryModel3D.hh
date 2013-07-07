@@ -59,14 +59,19 @@ ShapeMemoryModel3D<T>::ShapeMemoryModel3D (
     persistenceLengthCoarse = persistenceLengthFine * sqrt( (cellNumVertices-2.0) / (23867-2.0)) ;
 
     T eqMeanArea = eqSurface/cellNumTriangles;
-    T eqLength = sqrt(4*eqMeanArea/sqrt(3.0));
-    T eqAngle=0.0;
+    eqAngle=0.0;
 
     typename map<plint,T>::reverse_iterator iter = eqAnglePerEdge.rbegin();
     for (iter = eqAnglePerEdge.rbegin(); iter != eqAnglePerEdge.rend(); ++iter) {
        eqAngle += iter->second;
     }
     eqAngle /= eqAnglePerEdge.size();
+
+    iter = eqLengthPerEdge.rbegin();
+    for (iter = eqLengthPerEdge.rbegin(); iter != eqLengthPerEdge.rend(); ++iter) {
+       eqLength += iter->second;
+    }
+    eqLength /= eqLengthPerEdge.size();
 
     /* Use dimensionless coefficients */
 

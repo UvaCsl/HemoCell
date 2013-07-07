@@ -87,31 +87,34 @@ public:
     T const& getStretchingStiffness() const { return k_stretch; }
 
     /* TODO: Fix change of coefficients */
-    /*
-    T getWormLikeChainCoefficient() { return k_WLC/(kBT * maxLength/(4.0*persistenceLength)); }
-    void setWormLikeChainCoefficient(T value) { k_WLC = value*(kBT * maxLength/(4.0*persistenceLength)); }
-    T getElasticStiffness() { return k_elastic; }
-    void setElasticStiffness(T value) {
-        k_elastic = value;
-        T x0 = eqLength*1.0/maxLength;
-        C_elastic = k_elastic * 3.0 * sqrt(3.0)* kBT
-            * (maxLength*maxLength*maxLength) * (x0*x0*x0*x0)
-            / (64.0*persistenceLength)
-            * (4*x0*x0 - 9*x0 + 6)
-            / (1-x0)*(1-x0);
+    // Units are N/m
+    // Units are N/m
+    T getMembraneShearModulus() {
+        T Lmax = eqLength*eqLengthRatio;
+        T x0 = 1.0/eqLengthRatio;
+        T kP =  kBT /(4.0*persistenceLengthCoarse);
+        return sqrt(3) * kP / (Lmax*x0)*( 3.0/( 4*(1-x0)*(1-x0) ) - 3.0/4.0 +4*x0 + x0/(2.0 * (1-x0)*(1-x0)*(1-x0)));
     }
-    T const& getElasticStiffness() const { return k_elastic; }
-    T getVolumeStiffness() { return k_volume/(kBT/pow(eqLength,3)); }
-    void setVolumeStiffness(T value) { k_volume = value*(kBT/pow(eqLength,3)); }
-    T getShearingStiffness() { return k_shear/(kBT/pow(eqLength,2)); }
-    void setShearingStiffness(T value) { k_shear = value*(kBT/pow(eqLength,2)); }
-    T getSurfaceStiffness() { return k_surface/(kBT/pow(eqLength,2)); }
-    void setSurfaceStiffness(T value) { k_surface = value*kBT/pow(eqLength,2); }
-    T& getPersistenceLength() { return persistenceLength; }
-    void setPersistenceLength(T value) { persistenceLength = value; }
-    T const& getPersistenceLength() const { return persistenceLength; }
-
-                                                                             */
+    // Units are N/m
+    T getMembraneElasticAreaCompressionModulus() {
+        T Lmax = eqLength*eqLengthRatio;
+        T x0 = 1.0/eqLengthRatio;
+        T kP =  kBT /(4.0*persistenceLengthCoarse);
+        return sqrt(3) * kP / (Lmax*(1-x0)*(1-x0))*(1.5*(6-9*x0+4*x0*x0) + (1+2*(1-x0)*(1-x0)*(1-x0))/(1-x0)  );
+    }
+    // Units are N/m
+    T getYoungsModulus() {
+        T mu0 = getMembraneShearModulus();
+        T K = getMembraneElasticAreaCompressionModulus();
+        return (4*K*mu0)/(K+mu0);
+    }
+    // Dimensionless number
+    T getPoissonRatio() {
+        T mu0 = getMembraneShearModulus();
+        T K = getMembraneElasticAreaCompressionModulus();
+        return (K-mu0)/(K+mu0);
+    }
+    // Units are N s/m
     T const& getMembraneShearViscosity() const { return eta_m; }
     T& getMembraneShearViscosity() { return eta_m; }
     void setMembraneShearViscosity(T value) {
