@@ -137,7 +137,6 @@ Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R) {
     rbcPoint[0] *= R;
     rbcPoint[1] *= R;
     if (1-r2 <0) {
-        pcout << "1-r2" << 1-r2 << std::endl;
         r2 =1 ;
     }
     rbcPoint[2] = sign * 0.5 * R * sqrt(1-r2) * (C0 + C2*r2 + C4*r2*r2);

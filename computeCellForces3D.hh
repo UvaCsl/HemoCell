@@ -287,9 +287,11 @@ Array<T,3> computeBendingForce_Krueger (Array<T,3> const& x1, Array<T,3> const& 
     T ninj = dot(ni,nj);
     T edgeAngle = angleBetweenVectors(ni, nj);
     T factor = k * (edgeAngle - eqAngle) * (-1.0/(1.0 - sqrt(ninj*ninj)) );
+    // T factor = k * sin(edgeAngle - eqAngle) * (-1.0/(1.0 - sqrt(ninj*ninj)) );
     Array<T,3> fx1(0,0,0), dninjdx(0,0,0);
     Array<T,3> dx23(0,0,0), dx34(0,0,0);
     Array<T,3> dx31(0,0,0), dx13(0,0,0);
+    Array<T,3> dx12(0,0,0), dx41(0,0,0);
 
     // Calculation of force for x1
     crossProduct(x2-x3, nj - ninj*ni, dx23);
@@ -308,7 +310,12 @@ Array<T,3> computeBendingForce_Krueger (Array<T,3> const& x1, Array<T,3> const& 
     fx4 = -factor*dninjdx;
 
     // Calculation of force for x3
-    fx3 = - fx1 - fx2 - fx4;
+//    fx3 = - fx1 - fx2 - fx4;
+    crossProduct(x1-x2, nj - ninj*ni, dx12);
+    crossProduct(x4-x1, ni - ninj*nj, dx41);
+    dninjdx = 0.5/Ai*dx23 + 0.5/Aj*dx34;
+    fx3 = -factor*dninjdx;
+
     return fx1;
 }
 
@@ -319,11 +326,11 @@ T computeBendingPotential (Array<T,3> const& x1, Array<T,3> const& x2,
                                 T eqTileSpan, T eqLength, T eqAngle, T k)
 {
     Array<T,3> ni(0.,0.,0.),  nj(0.,0.,0.);
-    crossProduct(x3-x1,  x4-x1, nj);
-    crossProduct(x2-x1,  x3-x1, ni);
+    crossProduct(x2-x1,  x3-x2, nj);
+    crossProduct(x3-x1,  x4-x3, ni);
     T edgeAngle = angleBetweenVectors(ni, nj);
-//    return k * (0.5*(edgeAngle - eqAngle)*(edgeAngle - eqAngle));
-    return k * (1-cos(edgeAngle - eqAngle));
+    return k * (0.5*(edgeAngle - eqAngle)*(edgeAngle - eqAngle));
+//    return k * (1-cos(edgeAngle - eqAngle));
 }
 
 
@@ -410,10 +417,10 @@ Array<T,3> computeBendingForceFromPotential (
     if (norm(df) > 1e-10) {
         pcout << "!!! Something's wrong with the angles !!!" << norm(df) << std::endl;
     }
-    fx1 = fx1 - df/4.;
-    fx2 = fx2 - df/4.;
-    fx3 = fx3 - df/4.;
-    fx4 = fx4 - df/4.;
+//    fx1 = fx1 - df/4.;
+//    fx2 = fx2 - df/4.;
+//    fx3 = fx3 - df/4.;
+//    fx4 = fx4 - df/4.;
     return fx1;
 }
 
