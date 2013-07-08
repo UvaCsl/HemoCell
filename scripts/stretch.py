@@ -10,6 +10,8 @@
 #
 #====================================================================
 
+import matplotlib
+matplotlib.use('Agg')
 import pylab as pl
 import numpy as np
 import sys
@@ -25,7 +27,7 @@ def readStretchingData(fname):
     return t, f, DAX, DTX
 
 
-def readValidationData(dataDir="./validation/"):
+def readValidationData(dataDir="/home/lmount/devel/ficsion/validation/"):
     DA    = np.loadtxt(dataDir + "Stretching-FedosovCaswell2010b.DA.dat")
     DT    = np.loadtxt(dataDir + "Stretching-FedosovCaswell2010b.DT.dat")
     DAstd = np.loadtxt(dataDir + "Stretching-FedosovCaswell2010b.DA-STD.dat")
@@ -34,7 +36,7 @@ def readValidationData(dataDir="./validation/"):
     DTstd = DTstd[:,1] - DT[:,1]
     return DA, DT, DAstd, DTstd
 
-def plotValidationData(dataDir="./validation/"):
+def plotValidationData(dataDir="/home/lmount/devel/ficsion/validation/"):
     DA, DT, DAstd, DTstd = readValidationData(dataDir)
     pl.errorbar(DA[:,0], DA[:,1], yerr=DAstd, fmt='ro', label="DA")
     pl.errorbar(DT[:,0], DT[:,1], yerr=DTstd, fmt='bo', label="DT")
@@ -44,7 +46,8 @@ def plotValidationData(dataDir="./validation/"):
 
 
 def plotMultipleStretchingData(filenames, var='kBend', val='1000', var2='kWLC'):
-    fchars = map(lambda z: dict(map(lambda x:x.split('-'), z.split('_'))[:-1]), filenames)
+    finames = map(lambda f: "-".join(f.split('-')[:-1]), filenames)
+    fchars = map(lambda z: dict(map(lambda x:x.split('-'), z.split('_'))[:-1]), finames)
     clrs = 'rgbcmyk'
     for ifn, fn in enumerate(filenames):
         t, f, DAX, DTX = readStretchingData(fn)
@@ -62,11 +65,13 @@ def plotMultipleStretchingData(filenames, var='kBend', val='1000', var2='kWLC'):
 if 0:
     kWLC = {'0.1':0,'0.25':1,'0.5':2,'1.0':3}
     kBend = {'75':0,'150':1,'200':2,'1000':3}
-    var='kBend'; val='1000'; var2='kWLC'
-    filenames = glob('stretch00/results/rbcModel-1*' + var + '-' + val + '_*dat')
-    plotValidationData(dataDir="./validation/")
+    var='kWLC'; val='0.5'; var2='eqLengthRatio'
+    filenames = glob('./*' + var + '-' + val + '_*log')
+    print filenames
+    plotValidationData()
     plotMultipleStretchingData(filenames, var, val, var2)
     pass
+    sys.exit()
 
 
 # pl.show()
@@ -75,7 +80,7 @@ if __name__ == '__main__':
         fname = sys.argv[1]
     except:
         print "Error: No or wrong filename as input."
-    plotValidationData(dataDir="./validation/")
+    plotValidationData()
     t, f, DAX, DTX = readStretchingData(fname)
     pl.plot(f, DAX, label="DA sim")
     pl.plot(f, DTX, label="DT sim")
