@@ -552,7 +552,7 @@ int main(int argc, char* argv[])
                 stretchForce = Array<T,3>(stretchForceScalar,0,0);
                 if (stretchForceScalar > timesToStretch*dStretchingForce ) {
                     if (not stretchReleased) {
-                        stretchForceScalar = 0;
+                        // stretchForceScalar = 0;
                         stretchForce = Array<T,3>(0,0,0);
                         stretchReleased = 1;
                         stretchResealedFile << setprecision(20) << i*dt
