@@ -216,7 +216,7 @@ TriangleBoundary3D<T> createCompleteMesh(
         cellIds.push_back(iA);
     }
     wholeTriangleSet.merge(allTriangles);
-    wholeTriangleSet.writeAsciiSTL("/tmp/test.stl");
+//    wholeTriangleSet.writeAsciiSTL("/tmp/test.stl");
 //    Dot3D location(centers[0][0]-radii[0],centers[0][1]-radii[0],centers[0][2]-radii[0]);
 //    DEFscaledMesh<T> defMesh (
 //            wholeTriangleSet, parameters.getResolution(), xDirection, margin, location );
