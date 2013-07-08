@@ -37,6 +37,7 @@
 #include "cellModel3D.hh"
 
 #include "cellInShearFlow3D.h"
+#include "meshMetrics.h"
 
 
 using namespace plb;
@@ -154,13 +155,15 @@ int main(int argc, char* argv[])
     plb_ofstream logFile(logFileName.c_str());
 
     std::string stretchLogFileName = global::directories().getLogOutDir() + "stretchDeformation.log";
-    std::string stretchResultFileName = global::directories().getLogOutDir() + "stretchResults.log";
-    std::string stretchResealedFileName = global::directories().getLogOutDir() + "stretchRelease.log";
-    std::string shearResultFileName = global::directories().getLogOutDir() + "shearResults.log";
     plb_ofstream stretchLogFile(stretchLogFileName.c_str());
+    std::string stretchResultFileName = global::directories().getLogOutDir() + "stretchResults.log";
     plb_ofstream stretchResultFile(stretchResultFileName.c_str());
+    std::string stretchResealedFileName = global::directories().getLogOutDir() + "stretchRelease.log";
     plb_ofstream stretchResealedFile(stretchResealedFileName.c_str());
+    std::string shearResultFileName = global::directories().getLogOutDir() + "shearResults.log";
     plb_ofstream shearResultFile(shearResultFileName.c_str());
+    std::string meshQualityFileName = global::directories().getLogOutDir() + "plbMeshQuality.log";
+    plb_ofstream meshQualityFile(meshQualityFileName.c_str());
 
     plint forceToFluid, shape, cellNumTriangles, ibmKernel;
     plint rbcModel;
@@ -260,6 +263,9 @@ int main(int argc, char* argv[])
     TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, eulerAngles, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
     pcout << "Mesh Created" << std::endl;
     generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, cellNumVertices, numOfCellsPerInlet, slice);
+    MeshMetrics<T> meshmetric(Cells);
+    meshmetric.setResultFile(meshQualityFile);
+    meshmetric.write(meshQualityFile);
 
     std::vector<plint> numParts(cellIds.size()); // Count number of particles per Cell
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
