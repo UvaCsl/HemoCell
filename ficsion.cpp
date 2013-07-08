@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
         applyProcessingFunctional ( 
             new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerFrontTags, &outerBackTags, 2),
             immersedParticles.getBoundingBox(), particleArg );
-        stretchLogFile << setprecision(20) << "# Force [N] = " << stretchForce_p << std::endl << "# t [sec]; D_A [m]; D_T [m]; Mean Edge Distance [LU]; Max Edge Distance [LU]; " << std::endl;
+        stretchLogFile << setprecision(20) << "# Force [N] = " << stretchForce_p << std::endl << "# t [sec]; Force[N]; D_A [m]; D_T [m]; Mean Edge Distance [LU]; Max Edge Distance [LU]; " << std::endl;
     }
     for (pluint ipa = 0; ipa < outerLeftTags.size(); ++ipa) {
         pcout << ipa << " : " <<outerLeftTags[ipa] ;
@@ -469,17 +469,17 @@ int main(int argc, char* argv[])
                    stretchLogFile << setprecision(20) << i*dt
                                   << "; " << stretchForceScalar*dNewton
                                   << "; " << stretchingDeformations[0]*dx
-                                  << "; " << stretchingDeformations[1]*dx << ";  "
-                                  << "; " << cellsMeanEdgeDistance[0] << ";  "
-                                  << "; " << cellsMaxEdgeDistance[0] << ";  "
+                                  << "; " << stretchingDeformations[1]*dx
+                                  << "; " << cellsMeanEdgeDistance[0]
+                                  << "; " << cellsMaxEdgeDistance[0]
                                                                     << std::endl;
                    if (stretchReleased) {
                        stretchResealedFile << setprecision(20) << i*dt
                                << "; " << stretchForceScalar*dNewton
                                << "; " << stretchingDeformations[0]*dx
-                               << "; " << stretchingDeformations[1]*dx << ";  "
-                               << "; " << cellsMeanEdgeDistance[0] << ";  "
-                               << "; " << cellsMaxEdgeDistance[0] << ";  "
+                               << "; " << stretchingDeformations[1]*dx
+                               << "; " << cellsMeanEdgeDistance[0]
+                               << "; " << cellsMaxEdgeDistance[0]
                                                                        << std::endl;
                    }
             }
