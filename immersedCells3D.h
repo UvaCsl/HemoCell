@@ -24,6 +24,7 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
+#include "meshGeneratingFunctions.h"
 #include "immersedCellParticle3D.h"
 #include "immersedCellParticle3D.hh"
 #include "immersedCellParticleFunctional3D.h"
@@ -71,23 +72,6 @@ void createCells(TriangleBoundary3D<T> &Cells,
                     const std::vector<plint> &cellIds,
                     plint numPartsPerCell,
                     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > &immersedParticles);
-
-
-template<typename T>
-Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R=1.0);
-
-
-template<typename T>
-TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles, std::vector<T> const& eulerAngles);
-
-
-template<typename T>
-TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint minNumOfTriangles,
-        std::vector<T> const& eulerAngles);
-
-
-template<typename T>
-TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename, std::vector<T> const& eulerAngles);
 
 
 template<typename T>

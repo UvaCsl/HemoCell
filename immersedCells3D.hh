@@ -21,6 +21,7 @@
 #ifndef IMMERSED_CELLS_3D_HH
 #define IMMERSED_CELLS_3D_HH
 
+#include "meshGeneratingFunctions.h"
 #include "immersedCells3D.h"
 #include "immersedCellsFunctional3D.h"
 #include "immersedCellsFunctional3D.hh"
@@ -186,63 +187,6 @@ void createCells(TriangleBoundary3D<T> &Cells,
 
 
 template<typename T>
-Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R) {
-    Array<T,3> rbcPoint(point);
-    T r2 = rbcPoint[0]*rbcPoint[0] + rbcPoint[1]*rbcPoint[1];
-    T C0 = 0.204, C2 = 2.002, C4 = -1.123;
-    T val = rbcPoint[2];
-    plint sign = (T(0) < val) - (val < T(0));
-    rbcPoint[0] *= R;
-    rbcPoint[1] *= R;
-    rbcPoint[2] = sign * 0.5 * R * sqrt(1-r2) * (C0 + C2*r2 + C4*r2*r2);
-    return rbcPoint;
-}
-
-
-template<typename T>
-TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles, std::vector<T> const& eulerAngles) {
-    return constructCell(center, radius, "./lib/RBC.stl", eulerAngles);
-}
-
-
-template<typename T>
-TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint minNumOfTriangles,
-        std::vector<T> const& eulerAngles)
-{
-    TriangleSet<T> sphere = constructSphere<T>(Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
-    std::vector<typename TriangleSet<T>::Triangle> rbcTriangles = sphere.getTriangles();
-    for (pluint var = 0; var < rbcTriangles.size(); ++var) {
-        rbcTriangles[var][0] = spherePointToRBCPoint(rbcTriangles[var][0]);
-        rbcTriangles[var][1] = spherePointToRBCPoint(rbcTriangles[var][1]);
-        rbcTriangles[var][2] = spherePointToRBCPoint(rbcTriangles[var][2]);
-    }
-    TriangleSet<T> rbc(rbcTriangles);
-    rbc.scale(radius);
-    rbc.rotate(
-            pi/2.0 + eulerAngles[0],
-            pi/2.0 + eulerAngles[1],
-            0. + eulerAngles[2]);
-    rbc.translate(center);
-    return rbc;
-}
-
-template<typename T>
-TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename, std::vector<T> const& eulerAngles) {
-//    Cuboid<T> boundingCuboid;
-    TriangleSet<T> Cell(cellFilename);
-    Cuboid<T> cb = Cell.getBoundingCuboid();
-    Array<T,3> dr = (cb.upperRightCorner - cb.lowerLeftCorner);
-    T scaleFactor = std::max(dr[0],std::max(dr[1],dr[2]));
-    Cell.scale(radius*2.0/scaleFactor);
-    Cell.rotate(
-            pi/2.0 + eulerAngles[0],
-            pi/2.0 + eulerAngles[1],
-            0. + eulerAngles[2]);
-    Cell.translate(center);
-    return Cell;
-}
-
-template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
     const std::vector<Array<T,3> > &centers, const std::vector<T> &radii, std::vector<T> const& eulerAngles,
     std::vector<plint> &cellIds, IncomprFlowParam<T> const& parameters,
@@ -258,7 +202,7 @@ TriangleBoundary3D<T> createCompleteMesh(
         Array<T,3> center(centers[iA]);
         T radius = radii[iA];
         if (shape == 0) {
-        	allTriangles.push_back(constructSphere<T>(center, radius, cellNumTriangles));
+        	allTriangles.push_back(constructSphereIcosahedron<T>(center, radius, cellNumTriangles));
         }
         else if (shape == 1) {
         	allTriangles.push_back(constructRBCFromSphere<T>(center, radius, cellNumTriangles, eulerAngles));
@@ -272,7 +216,7 @@ TriangleBoundary3D<T> createCompleteMesh(
         cellIds.push_back(iA);
     }
     wholeTriangleSet.merge(allTriangles);
-
+    wholeTriangleSet.writeAsciiSTL("/tmp/test.stl");
 //    Dot3D location(centers[0][0]-radii[0],centers[0][1]-radii[0],centers[0][2]-radii[0]);
 //    DEFscaledMesh<T> defMesh (
 //            wholeTriangleSet, parameters.getResolution(), xDirection, margin, location );
