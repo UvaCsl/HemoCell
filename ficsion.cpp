@@ -57,7 +57,7 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, std::vector<T> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, plint & relaxationTime,
-        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, plint & npar, plint & goAndStop)
+        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, plint & npar, plint & goAndStop, plint & fastStretchRelease)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
@@ -120,6 +120,11 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     ly = ny * dx;
     lz = nz * dx;
     goAndStop = 0;
+    fastStretchRelease = 0;
+    if (flowType == 8) { // Fischer2004 setup, Go-and-stop
+        fastStretchRelease = 1;
+        flowType = 5;
+    }
     if (flowType == 7) { // Fischer2004 setup, Go-and-stop
         goAndStop = 1;
         flowType = 6;
@@ -176,9 +181,8 @@ int main(int argc, char* argv[])
     Array<T,3> stretchForce(0,0,0);
     T stretchForceScalar, stretchForce_p;
     std::vector<T> eulerAngles;
-    plint goAndStop;
+    plint goAndStop, fastStretchRelease;
     std::vector<plint> goAndStopVertices;
-
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
@@ -186,7 +190,7 @@ int main(int argc, char* argv[])
     readFicsionXML(document, caseId, rbcModel, shellDensity,
             k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, shape, cellPath, radius, deflationRatio, relaxationTime,
-            cellNumTriangles, tmax, tmeas, npar, goAndStop);
+            cellNumTriangles, tmax, tmeas, npar, goAndStop, fastStretchRelease);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -301,7 +305,7 @@ int main(int argc, char* argv[])
         applyProcessingFunctional ( 
             new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerFrontTags, &outerBackTags, 2),
             immersedParticles.getBoundingBox(), particleArg );
-        stretchLogFile << setprecision(20) << "# Force [N] = " << stretchForce_p << std::endl << "t [sec]; D_A [m]; D_T [m]; Mean Edge Distance [LU]; Max Edge Distance [LU]; " << std::endl;
+        stretchLogFile << setprecision(20) << "# Force [N] = " << stretchForce_p << std::endl << "# t [sec]; D_A [m]; D_T [m]; Mean Edge Distance [LU]; Max Edge Distance [LU]; " << std::endl;
     }
     for (pluint ipa = 0; ipa < outerLeftTags.size(); ++ipa) {
         pcout << ipa << " : " <<outerLeftTags[ipa] ;
@@ -339,6 +343,19 @@ int main(int argc, char* argv[])
                        eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan,
                        persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
     }
+    if (rbcModel == 0) {
+        pcout << "mu_0 = " << dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel)->getMembraneShearModulus()*dNewton/dx << std::endl;
+        pcout << "K = " << dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel)->getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
+        pcout << "YoungsModulus = " << dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel)->getYoungsModulus()*dNewton/dx << std::endl;
+        pcout << "Poisson ratio = " << dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel)->getPoissonRatio() << std::endl;
+    } else if (rbcModel == 1) {
+        pcout << "mu_0 = " << dynamic_cast<CellModel3D<T>*>(cellModel)->getMembraneShearModulus()*dNewton/dx << std::endl;
+        pcout << "K = " << dynamic_cast<CellModel3D<T>*>(cellModel)->getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
+        pcout << "YoungsModulus = " << dynamic_cast<CellModel3D<T>*>(cellModel)->getYoungsModulus()*dNewton/dx << std::endl;
+        pcout << "Poisson ratio = " << dynamic_cast<CellModel3D<T>*>(cellModel)->getPoissonRatio() << std::endl;
+    }
+
+
     if (goAndStop != 0) {
         goAndStopVertices.push_back(pluint(0));
         goAndStopVertices.push_back(pluint(cellNumVertices/2));
@@ -374,6 +391,11 @@ int main(int argc, char* argv[])
     // ======== Used for exploring cell stretching behaviour ========== //
     util::ValueTracer<T> convergeX((T)1,(T)100,1.0e-5), convergeY((T)1,(T)100,1.0e-5);
     T dStretchingForce = 5.0e-12/dNewton;
+    plint timesToStretch = 40;
+    if (fastStretchRelease) {
+        dStretchingForce = 5.0e-12/dNewton;
+        timesToStretch = 1;
+    }
     plint statIter = 10;
     plint stretchReleased = 0;
     if ( (flowType == 4) or (flowType == 5) ) {
@@ -404,7 +426,7 @@ int main(int argc, char* argv[])
     /* ********************* Main Loop ***************************************** * */
     for (pluint i=0; i<tmax+1; ++i) {
         if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
-            shearRate = 0;
+            shearRate = 0.05;
             changeCouetteShearRate(lattice, parameters, *boundaryCondition, shearRate);
             tmeas = 0.1/dt;
         }
@@ -520,7 +542,7 @@ int main(int argc, char* argv[])
                 pcout << "# StretchForce: " << stretchForceScalar*dNewton*1.0e12 << "pN converged in iteration " << i << "." << std::endl;
                 stretchForceScalar += dStretchingForce;
                 stretchForce = Array<T,3>(stretchForceScalar,0,0);
-                if (stretchForceScalar > 40*dStretchingForce ) {
+                if (stretchForceScalar > timesToStretch*dStretchingForce ) {
                     if (not stretchReleased) {
                         stretchForce = Array<T,3>(0,0,0);
                         stretchReleased = 1;
