@@ -393,8 +393,10 @@ int main(int argc, char* argv[])
     T dStretchingForce = 5.0e-12/dNewton;
     plint timesToStretch = 40;
     if (fastStretchRelease) {
-        dStretchingForce = 5.0e-12/dNewton;
+        dStretchingForce = stretchForceScalar; // Usually 7pN in LU
         timesToStretch = 1;
+        convergeX.setEpsilon(1e-6);
+        convergeY.setEpsilon(1e-6);
     }
     plint statIter = 10;
     plint stretchReleased = 0;
@@ -544,6 +546,7 @@ int main(int argc, char* argv[])
                 stretchForce = Array<T,3>(stretchForceScalar,0,0);
                 if (stretchForceScalar > timesToStretch*dStretchingForce ) {
                     if (not stretchReleased) {
+                        stretchForceScalar = 0;
                         stretchForce = Array<T,3>(0,0,0);
                         stretchReleased = 1;
                         stretchResealedFile << setprecision(20) << i*dt
