@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
         applyProcessingFunctional ( 
             new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerFrontTags, &outerBackTags, 2),
             immersedParticles.getBoundingBox(), particleArg );
-        stretchLogFile << setprecision(20) << "# Force [N] = " << stretchForce_p << std::endl << "# t [sec]; Force[N]; D_A [m]; D_T [m]; Mean Edge Distance [LU]; Max Edge Distance [LU]; " << std::endl;
+        stretchLogFile << setprecision(20) << "# t [sec]; Force[N]; D_A [m]; D_T [m]; Mean Edge Distance [LU]; Max Edge Distance [LU]; " << std::endl;
     }
     for (pluint ipa = 0; ipa < outerLeftTags.size(); ++ipa) {
         pcout << ipa << " : " <<outerLeftTags[ipa] ;
