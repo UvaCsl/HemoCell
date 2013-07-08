@@ -40,7 +40,7 @@ MeshMetrics<T>::MeshMetrics(TriangleBoundary3D<T> const& Cells) {
             maxLength = maxLength<tmp?tmp:maxLength;
             length += tmp;
 
-            tmp = mesh.computeDihedralAngle(iV, jV);
+            tmp = mesh.computeDihedralAngle(iV, jV) * 180/3.14159;
             minAngle = minAngle>tmp?tmp:minAngle;
             maxAngle = maxAngle<tmp?tmp:maxAngle;
             angle += tmp;
@@ -70,7 +70,7 @@ MeshMetrics<T>::MeshMetrics(TriangleBoundary3D<T> const& Cells) {
             int jV = nvid[ijV];
             tmp=(mesh.computeEdgeLength(iV, jV)-length);
             sigmaLength += tmp*tmp;
-            tmp = (mesh.computeDihedralAngle(iV, jV)-angle);
+            tmp = (mesh.computeDihedralAngle(iV, jV)*180/3.14159 - angle);
             sigmaAngle += tmp*tmp;
         }
     }
