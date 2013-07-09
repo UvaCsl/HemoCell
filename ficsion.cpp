@@ -418,11 +418,11 @@ int main(int argc, char* argv[])
                         cellsEllipsoidFitAngles, cellsEllipsoidFitSemiAxes, cellInertia, difference);
 
     T inertiaAnalytical =  2./5.*(eqVolume)*pow(radius,2);
-    pcout << "INERTIA TENSOR (theoretical = " << inertiaAnalytical << ") " << inertiaAnalytical/cellInertia[0][0] << std::endl;
+    pcout << "== Inertia Tensor == "<< std::endl;
     for (plint i = 0; i < 3; ++i) {
             pcout <<  cellInertia[0][3*i] << "\t" <<  cellInertia[0][3*i +1] << "\t" <<  cellInertia[0][3*i + 2] << std::endl;
     }
-    pcout << "a^2 + b^2  " << std::endl;
+    pcout << "== a^2 + b^2 ==" << std::endl;
     pcout <<  cellsEllipsoidFitSemiAxes[0][0] << "\t" <<  cellsEllipsoidFitSemiAxes[0][1] << "\t" <<  cellsEllipsoidFitSemiAxes[0][2] << std::endl;
     pcout <<  cellsEllipsoidFitAngles[0][0]*180/pi << "\t" <<  cellsEllipsoidFitAngles[0][1]*180/pi << "\t" <<  cellsEllipsoidFitAngles[0][2]*180/pi << std::endl;
 
@@ -434,7 +434,8 @@ int main(int argc, char* argv[])
     /* ********************* Main Loop ***************************************** * */
     for (pluint i=0; i<tmax+1; ++i) {
         if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
-            shearRate = 0.05;
+            pcout << "[FICSION]: Switching off shear rate (Fischer2004)" << std::endl;
+            shearRate = 0.0;
             changeCouetteShearRate(lattice, parameters, *boundaryCondition, shearRate);
             tmeas = 0.1/dt;
         }
@@ -553,6 +554,7 @@ int main(int argc, char* argv[])
                 if (stretchForceScalar > timesToStretch*dStretchingForce ) {
                     if (not stretchReleased) {
                         // stretchForceScalar = 0;
+                        pcout << "[FICSION]: Releasing RBC and setting appropriate viscosity." << std::endl;
                         stretchForce = Array<T,3>(0,0,0);
                         stretchReleased = 1;
                         stretchResealedFile << setprecision(20) << i*dt
@@ -578,7 +580,7 @@ int main(int argc, char* argv[])
                                 << "; " << cellsMeanEdgeDistance[0] << ";  "
                                 << "; " << cellsMaxEdgeDistance[0] << ";  "
                                 << std::endl;
-                        pcout << "Simulation is over.\n";
+                        pcout << "[FICSION]: Simulation is over.\n";
                         break;
                     }
                 }
