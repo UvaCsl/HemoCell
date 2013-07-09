@@ -17,9 +17,10 @@ template<typename T>
 TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles, std::vector<T> const& eulerAngles);
 
 
+// initialSphereShape: [0] Octahedron (PLB Sphere ) [1] Icosahedron
 template<typename T>
 TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint minNumOfTriangles,
-        std::vector<T> const& eulerAngles);
+        std::vector<T> const& eulerAngles, pluint initialSphereShape=0);
 
 
 template<typename T>

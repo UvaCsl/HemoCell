@@ -152,9 +152,14 @@ TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTr
 
 template<typename T>
 TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint minNumOfTriangles,
-        std::vector<T> const& eulerAngles)
+        std::vector<T> const& eulerAngles, pluint initialSphereShape)
 {
-    TriangleSet<T> sphere = constructSphereIcosahedron<T>(Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
+    TriangleSet<T> sphere;
+    if (initialSphereShape == 1) {
+        sphere = constructSphereIcosahedron<T>(Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
+    } else if (initialSphereShape == 0) {
+        sphere = constructSphere<T>(Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
+    }
     std::vector<typename TriangleSet<T>::Triangle> rbcTriangles = sphere.getTriangles();
     for (pluint var = 0; var < rbcTriangles.size(); ++var) {
         rbcTriangles[var][0] = spherePointToRBCPoint(rbcTriangles[var][0]);
@@ -170,6 +175,7 @@ TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint 
     rbc.translate(center);
     return rbc;
 }
+
 
 template<typename T>
 TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename, std::vector<T> const& eulerAngles) {

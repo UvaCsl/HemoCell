@@ -202,16 +202,15 @@ TriangleBoundary3D<T> createCompleteMesh(
         Array<T,3> center(centers[iA]);
         T radius = radii[iA];
         if (shape == 0) {
-        	allTriangles.push_back(constructSphereIcosahedron<T>(center, radius, cellNumTriangles));
-        }
-        else if (shape == 1) {
-        	allTriangles.push_back(constructRBCFromSphere<T>(center, radius, cellNumTriangles, eulerAngles));
-        }
-        else if (shape == 2) {
+            allTriangles.push_back(constructSphereIcosahedron<T>(center, radius, cellNumTriangles));
+        } else if (shape == 1) {
+            allTriangles.push_back(constructRBCFromSphere<T>(center, radius, cellNumTriangles, eulerAngles, 0));
+        } else if (shape == 2) {
             allTriangles.push_back(constructCell<T>(center, radius, cellPath, eulerAngles));
-        }
-        else if (shape == 3) {
+        } else if (shape == 3) {
             allTriangles.push_back(constructRBC<T>(center, radius, cellNumTriangles, eulerAngles));
+        } else if (shape == 4) {
+            allTriangles.push_back(constructRBCFromSphere<T>(center, radius, cellNumTriangles, eulerAngles, 1));
         }
         cellIds.push_back(iA);
     }
