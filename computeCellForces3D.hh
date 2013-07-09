@@ -416,6 +416,17 @@ Array<T,3> computeBendingForceFromPotential (
     Array<T,3> df = fx1 + fx2 + fx3 + fx4;
     if (norm(df) > 1e-10) {
         pcout << "!!! Something's wrong with the angles !!!" << norm(df) << std::endl;
+        pcout << "!!! X-Axis (" << x1[0] << "," << x2[0] << "," << x3[0] << "," << x4[0] << ")" << std::endl;
+        pcout << "!!! Y-Axis (" << x1[1] << "," << x2[1] << "," << x3[1] << "," << x4[1] << ")" << std::endl;
+        pcout << "!!! Z-Axis (" << x1[2] << "," << x2[2] << "," << x3[2] << "," << x4[2] << ")" << std::endl;
+        pcout << "!!! Fx-Axis (" << fx1[0] << "," << fx2[0] << "," << fx3[0] << "," << fx4[0] << ")" << std::endl;
+        pcout << "!!! Fy-Axis (" << fx1[1] << "," << fx2[1] << "," << fx3[1] << "," << fx4[1] << ")" << std::endl;
+        pcout << "!!! Fz-Axis (" << fx1[2] << "," << fx2[2] << "," << fx3[2] << "," << fx4[2] << ")" << std::endl;
+        Array<T,3> ni(0.,0.,0.),  nj(0.,0.,0.);
+        crossProduct(x2-x1,  x3-x2, nj);
+        crossProduct(x3-x1,  x4-x3, ni);
+        T edgeAngle = angleBetweenVectors(ni, nj);
+        pcout << "!!! Angle " << edgeAngle << ", eqAngle " << eqAngle <<std::endl;
     }
 //    fx1 = fx1 - df/4.;
 //    fx2 = fx2 - df/4.;

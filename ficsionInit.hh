@@ -206,7 +206,7 @@ void writeFicsionLogFile(IncomprFlowParam<T> const& parameters,
     }
     const T dx = parameters.getDeltaX();
     const T dt = parameters.getDeltaT();
-    std::string fullName = global::directories().getLogOutDir() + "plbLog.dat";
+    std::string fullName = global::directories().getLogOutDir() + "plbLog.log";
     plb_ofstream ofile(fullName.c_str());
     ofile << title << "\n\n";
     ofile << "Velocity [m/s]:              u=" << parameters.getLatticeU()*dx*1.0/dt << "\n";

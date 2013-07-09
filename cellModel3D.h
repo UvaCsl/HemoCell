@@ -92,14 +92,16 @@ public:
     T getMembraneShearModulus() {
         T Lmax = eqLength*eqLengthRatio;
         T x0 = 1.0/eqLengthRatio;
-        T kP =  kBT /(4.0*persistenceLengthCoarse);
+        // T kP =  kBT /(4.0*persistenceLengthCoarse);
+        T kP =  k_inPlane;
         return sqrt(3) * kP / (Lmax*x0)*( 3.0/( 4*(1-x0)*(1-x0) ) - 3.0/4.0 +4*x0 + x0/(2.0 * (1-x0)*(1-x0)*(1-x0)));
     }
     // Units are N/m
     T getMembraneElasticAreaCompressionModulus() {
         T Lmax = eqLength*eqLengthRatio;
         T x0 = 1.0/eqLengthRatio;
-        T kP =  kBT /(4.0*persistenceLengthCoarse);
+        // T kP =  kBT /(4.0*persistenceLengthCoarse);
+        T kP =  k_inPlane;
         return sqrt(3) * kP / (Lmax*(1-x0)*(1-x0))*(1.5*(6-9*x0+4*x0*x0) + (1+2*(1-x0)*(1-x0)*(1-x0))/(1-x0)  );
     }
     // Units are N/m

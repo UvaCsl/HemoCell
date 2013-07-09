@@ -72,7 +72,8 @@ CellModel3D<T>::CellModel3D (
     k_shear *= kBT/pow(eqLength,2);
     k_bend *= kBT;
     k_inPlane = k_WLC_ * kBT /(4.0*persistenceLengthCoarse);
-
+    // Calculating eqAngle according to FedosovCaswellKarniadakis2010
+    eqAngle = acos( (sqrt(3.)*(cellNumVertices-2.0) - 5*pi)/(sqrt(3.)*(cellNumVertices-2.0) - 3*pi) );
     /* Dissipative term coefficients from FedosovCaswellKarniadakis2010 */
     gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
     gamma_C = (gamma_T/3.0);
@@ -84,10 +85,9 @@ CellModel3D<T>::CellModel3D (
     /* Solving f_WLC + f_rep =0 for x=eqLength, f_rep = k_rep/L^m, m=2. */
     T k_rep = (k_WLC*maxLength*pow(x0,3)*(6 - 9*x0 + 4*pow(x0,2)))/pow(-1 + x0,2);
 
-
-    T forceSum =
-            (k_WLC*x0*(-6 + (9 - 4*x0)*x0))/(maxLength*pow(-1 + x0,2)) // WLC part
-           + k_rep/(eqLength*eqLength); // repulsive part
+    Array<T,3> x1(0.,0.,0.), x3(0.,0.,0.);
+    x3[0] = eqLength;
+    T forceSum = norm(computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane));
     C_elastic = k_elastic * 3.0 * sqrt(3.0)* kBT
              * (maxLength*maxLength*maxLength) * (x0*x0*x0*x0)
              / (64.0*persistenceLengthCoarse)
