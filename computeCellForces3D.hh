@@ -326,8 +326,8 @@ T computeBendingPotential (Array<T,3> const& x1, Array<T,3> const& x2,
                                 T eqTileSpan, T eqLength, T eqAngle, T k)
 {
     Array<T,3> ni(0.,0.,0.),  nj(0.,0.,0.);
-    crossProduct(x2-x1,  x3-x2, nj);
-    crossProduct(x3-x1,  x4-x3, ni);
+    crossProduct(x1-x3,  x2-x3, ni);
+    crossProduct(x3-x1,  x4-x1, nj);
     T edgeAngle = angleBetweenVectors(ni, nj);
     return k * (0.5*(edgeAngle - eqAngle)*(edgeAngle - eqAngle));
 //    return k * (1-cos(edgeAngle - eqAngle));
@@ -344,7 +344,7 @@ Array<T,3> computeBendingForceFromPotential (
     Array<T,3> fx1, vertex;
     static T eps = (sizeof(T) == sizeof(float) ?
             100.0 * std::numeric_limits<T>::epsilon() :
-            std::numeric_limits<float>::epsilon());
+            1000*std::numeric_limits<float>::epsilon());
 
     vertex = x1;
     fx1.resetToZero();
@@ -416,17 +416,17 @@ Array<T,3> computeBendingForceFromPotential (
     Array<T,3> df = fx1 + fx2 + fx3 + fx4;
     if (norm(df) > 1e-10) {
         pcout << "!!! Something's wrong with the angles !!!" << norm(df) << std::endl;
-        pcout << "!!! X-Axis (" << x1[0] << "," << x2[0] << "," << x3[0] << "," << x4[0] << ")" << std::endl;
-        pcout << "!!! Y-Axis (" << x1[1] << "," << x2[1] << "," << x3[1] << "," << x4[1] << ")" << std::endl;
-        pcout << "!!! Z-Axis (" << x1[2] << "," << x2[2] << "," << x3[2] << "," << x4[2] << ")" << std::endl;
-        pcout << "!!! Fx-Axis (" << fx1[0] << "," << fx2[0] << "," << fx3[0] << "," << fx4[0] << ")" << std::endl;
-        pcout << "!!! Fy-Axis (" << fx1[1] << "," << fx2[1] << "," << fx3[1] << "," << fx4[1] << ")" << std::endl;
-        pcout << "!!! Fz-Axis (" << fx1[2] << "," << fx2[2] << "," << fx3[2] << "," << fx4[2] << ")" << std::endl;
+        pcout << "!!! X-Axis (" << x1[0] << ",\t" << x2[0] << ",\t" << x3[0] << ",\t" << x4[0] << ")" << std::endl;
+        pcout << "!!! Y-Axis (" << x1[1] << ",\t" << x2[1] << ",\t" << x3[1] << ",\t" << x4[1] << ")" << std::endl;
+        pcout << "!!! Z-Axis (" << x1[2] << ",\t" << x2[2] << ",\t" << x3[2] << ",\t" << x4[2] << ")" << std::endl;
+        pcout << "!!! Fx-Axis (" << fx1[0] << ",\t" << fx2[0] << ",\t" << fx3[0] << ",\t" << fx4[0] << ")" << std::endl;
+        pcout << "!!! Fy-Axis (" << fx1[1] << ",\t" << fx2[1] << ",\t" << fx3[1] << ",\t" << fx4[1] << ")" << std::endl;
+        pcout << "!!! Fz-Axis (" << fx1[2] << ",\t" << fx2[2] << ",\t" << fx3[2] << ",\t" << fx4[2] << ")" << std::endl;
         Array<T,3> ni(0.,0.,0.),  nj(0.,0.,0.);
-        crossProduct(x2-x1,  x3-x2, nj);
-        crossProduct(x3-x1,  x4-x3, ni);
+        crossProduct(x1-x3,  x2-x3, ni);
+        crossProduct(x3-x1,  x4-x1, nj);
         T edgeAngle = angleBetweenVectors(ni, nj);
-        pcout << "!!! Angle " << edgeAngle << ", eqAngle " << eqAngle <<std::endl;
+        pcout << "!!! Angle " << edgeAngle*180/pi << ", eqAngle " << eqAngle*180/pi <<std::endl;
     }
 //    fx1 = fx1 - df/4.;
 //    fx2 = fx2 - df/4.;
