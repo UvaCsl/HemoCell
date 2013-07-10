@@ -420,7 +420,6 @@ int main(int argc, char* argv[])
     computeEllipsoidFit (Cells, immersedParticles, cellIds, cellsCenter, cellsVolume,
                         cellsEllipsoidFitAngles, cellsEllipsoidFitSemiAxes, cellInertia, difference);
 
-    T inertiaAnalytical =  2./5.*(eqVolume)*pow(radius,2);
     pcout << "== Inertia Tensor == "<< std::endl;
     for (plint i = 0; i < 3; ++i) {
             pcout <<  cellInertia[0][3*i] << "\t" <<  cellInertia[0][3*i +1] << "\t" <<  cellInertia[0][3*i + 2] << std::endl;

@@ -6,6 +6,7 @@
 
 #include "immersedCellParticle3D.h"
 #include "shellModel3D.h"
+#include "computeCellForces3D.hh" // calculateSignedAngle
 #include <map>
 
 /* ******** CellReduceFunctional3D *********************************** */

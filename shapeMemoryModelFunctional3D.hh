@@ -205,7 +205,7 @@ void getCellShapeQuantitiesFromMesh(TriangleBoundary3D<T>& boundary,
             if (iVertex > jVertex){
                 plint edgeId = (iVertex*(iVertex - 1))/2 + jVertex;
                 eqLengthPerEdge[edgeId] = dynMesh.computeEdgeLength(iVertex, jVertex);
-                eqAnglePerEdge[edgeId] = dynMesh.computeDihedralAngle(iVertex, jVertex);
+                eqAnglePerEdge[edgeId] = calculateSignedAngle(dynMesh, iVertex, jVertex);
             }
         }
     }

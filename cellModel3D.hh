@@ -175,7 +175,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
     T triangleArea;
     Array<T,3> triangleNormal;
 
-    plint iTriangle, jTriangle;
+    plint iTriangle;
     plint jVertex, kVertex, lVertex;
     plint vertexIds[3];
 
@@ -216,51 +216,25 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         x3 = dynMesh.getVertex(jVertex);
         /* In Plane (WLC) and repulsive forces*/
         inPlaneForce += computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane);
-
         /*  Dissipative Forces Calculations */
         dissipativeForce += computeDissipativeForce(x1, x3, iVelocity, particleVelocity[jVertex], gamma_T, gamma_C);
         /*  Bending Forces Calculations */
-        std::vector<plint> triangles = dynMesh.getAdjacentTriangleIds(iVertex, jVertex);
-        iTriangle = triangles[0]; jTriangle = triangles[1];
-        plint foundVertices = 0;
-        for (pluint id = 0; id < 3; ++id) {
-            kVertex = dynMesh.getVertexId(iTriangle,id);
-            if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
-                x2 = dynMesh.getVertex(kVertex);
-                foundVertices += 1;
-                break;
-            }
-        }
-        for (pluint id = 0; id < 3; ++id) {
-            lVertex = dynMesh.getVertexId(jTriangle,id);
-            if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
-                x4 = dynMesh.getVertex(lVertex);
-                foundVertices += 1;
-                break;
-            }
-        }
-        PLB_ASSERT(foundVertices == 2); //Assert if some particles are outside of the domain
-
-//        tmpForce = computeBendingForce (x1, x2, x3, x4,
-//                            trianglesNormal[iTriangle], trianglesNormal[jTriangle],
-//                            trianglesArea[iTriangle], trianglesArea[jTriangle],
-//                            eqTileSpan, eqLength, eqAngle, k_bend);
-//        T iTriangleBendingCoefficient = trianglesArea[iTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
-//        T jTriangleBendingCoefficient = trianglesArea[jTriangle] / (trianglesArea[iTriangle] + trianglesArea[jTriangle]);
-//        bendingForce += tmpForce;
-//        particleForces[kVertex][1] += -iTriangleBendingCoefficient * tmpForce;
-//        particleForces[lVertex][1] += -jTriangleBendingCoefficient * tmpForce;
-        Array<T,3> tmp2, tmp3, tmp4;
-        tmpForce = computeBendingForceFromPotential (x1, x2, x3, x4,
-                            eqTileSpan, eqLength, eqAngle, k_bend,
-                            tmp2, tmp3, tmp4);
+        T edgeAngle = calculateSignedAngle(dynMesh, iVertex, jVertex, kVertex, lVertex); //edge is iVertex, jVertex
+        Array<T,3> ftmp2, ftmp3, ftmp4;
+        Array<T,3> iNormal = dynMesh.computeTriangleNormal(iVertex, jVertex, kVertex);
+        Array<T,3> jNormal = dynMesh.computeTriangleNormal(iVertex, jVertex, lVertex);
+		tmpForce = computeBendingForce (edgeAngle, eqAngle, k_bend,
+				iNormal, jNormal,
+                ftmp2, ftmp3, ftmp4);
+//        tmpForce = computeBendingForceFromPotential (x1, x2, x3, x4,
+//                            eqTileSpan, eqLength, eqAngle, k_bend,
+//                            tmp2, tmp3, tmp4);
         bendingForce += tmpForce * 0.5; // Multiplied by 0.5, because this force is calculated twice (x2 also calculates this force)
-        particleForces[kVertex][1] += tmp2 * 0.5;
-        particleForces[jVertex][1] += tmp3 * 0.5;
-        particleForces[lVertex][1] += tmp4 * 0.5;
+        particleForces[kVertex][1] += ftmp2 * 0.5;
+        particleForces[jVertex][1] += ftmp3 * 0.5;
+        particleForces[lVertex][1] += ftmp4 * 0.5;
 
-        T t1 = computeBendingPotential (x1, x2, x3, x4,
-                            eqTileSpan, eqLength, eqAngle, k_bend);
+        T t1 = computeBendingPotential (edgeAngle, eqAngle, k_bend);
         particleForces[iVertex][6][0] += t1;
         particleForces[kVertex][6][0] += t1;
         particleForces[jVertex][6][0] += t1;

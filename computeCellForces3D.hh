@@ -21,6 +21,7 @@
 #ifndef COMPUTE_CELL_FORCES3D_HH
 #define COMPUTE_CELL_FORCES3D_HH
 
+#include "computeCellForces3D.h"
 #include <cmath>
 #include <map>
 #include "cellModel3D.h"
@@ -210,18 +211,18 @@ Array<T,3> computeElasticRepulsiveForce(Array<T,3> const& dAdx, T triangleArea, 
 }
 
 
+/* The most messy force! */
+/* Calculates the bending force for the triangles formed by the vertices:
+ * (x1, x2, x3) and (x1,x3,x4) with the common edge (x1,x3).
+ * eqAngle is expected to be between [-pi,pi].  */
 template<typename T>
 Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
                                 Array<T,3> const& x3, Array<T,3> const& x4,
                                 Array<T,3> const& ni, Array<T,3> const& nj,
                                 T Ai, T Aj,
                                 T eqTileSpan, T eqLength, T eqAngle, T k,
-								Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4)
-		{
-/*
- * The most messy force!
- *
- *
+								Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4) {
+/* The most messy force!
  * Triangles are:
  *      (i, j, k) and (l, k, j). These triangles share
  *      (x2, x1, x3) and (x4, x3, x1). These triangles share
@@ -239,183 +240,101 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
 	if (sign <= 0) {
 		edgeAngle = 2*pi-edgeAngle;
 	}
-	edgeAngle = edgeAngle > pi?edgeAngle-2*pi:edgeAngle;
-
+	edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle;
+	eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
+	eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
 	dAngle = (edgeAngle-eqAngle);
 	fx2 = -k*dAngle*ni;
     fx4 = -k*dAngle*nj;
-	pcout << edgeAngle << " " << dAngle << " ";
     fx1 = -(fx2+fx4)*0.5;
     fx3 = fx1;
     return fx1;
 }
 
 
+
+/* Calculates the bending forces.
+ * Angles are expected to be between [-pi,pi]. */
+/* The most messy force! */
 template<typename T>
-Array<T,3> computeBendingForce_Krueger (Array<T,3> const& x1, Array<T,3> const& x2,
-                                Array<T,3> const& x3, Array<T,3> const& x4,
-                                Array<T,3> const& ni, Array<T,3> const& nj,
-                                T Ai, T Aj,
-                                T eqTileSpan, T eqLength, T eqAngle, T k,
-                                Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4)
-{
-    // (i, j, k) and (l, k, j). These triangles share
-    // (x2, x1, x3) and (x4, x3, x1). These triangles share
-    // the common edge j-k.
-
-    fx2.resetToZero(); fx3.resetToZero(); fx4.resetToZero();
-
-    T ninj = dot(ni,nj);
-    T edgeAngle = angleBetweenVectors(ni, nj);
-    T factor = k * (edgeAngle - eqAngle) * (-1.0/(1.0 - sqrt(ninj*ninj)) );
-    // T factor = k * sin(edgeAngle - eqAngle) * (-1.0/(1.0 - sqrt(ninj*ninj)) );
-    Array<T,3> fx1(0,0,0), dninjdx(0,0,0);
-    Array<T,3> dx23(0,0,0), dx34(0,0,0);
-    Array<T,3> dx31(0,0,0), dx13(0,0,0);
-    Array<T,3> dx12(0,0,0), dx41(0,0,0);
-
-    // Calculation of force for x1
-    crossProduct(x2-x3, nj - ninj*ni, dx23);
-    crossProduct(x3-x4, ni - ninj*nj, dx34);
-    dninjdx = 0.5/Ai*dx23 + 0.5/Aj*dx34;
-    fx1 = -factor*dninjdx;
-
-    // Calculation of force for x2
-    crossProduct(x3-x1, nj - ninj*ni, dx31);
-    dninjdx = 0.5/Ai*dx31;
-    fx2 = -factor*dninjdx;
-
-    // Calculation of force for x4
-    crossProduct(x1-x3, ni - ninj*nj, dx13);
-    dninjdx = 0.5/Aj*dx13;
-    fx4 = -factor*dninjdx;
-
-    // Calculation of force for x3
-//    fx3 = - fx1 - fx2 - fx4;
-    crossProduct(x1-x2, nj - ninj*ni, dx12);
-    crossProduct(x4-x1, ni - ninj*nj, dx41);
-    dninjdx = 0.5/Ai*dx23 + 0.5/Aj*dx34;
-    fx3 = -factor*dninjdx;
-
+Array<T,3> computeBendingForce (T edgeAngle, T eqAngle, T k,
+								Array<T,3> const& ni, Array<T,3> const& nj,
+								Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4) {
+	Array<T,3> fx1;
+	edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle;
+	eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
+	eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
+	T dAngle = (edgeAngle-eqAngle);
+	fx2 = -k*dAngle*ni;
+    fx4 = -k*dAngle*nj;
+    fx1 = -(fx2+fx4)*0.5;
+    fx3 = fx1;
     return fx1;
 }
 
-
+/*
+ * Calculates the bending potential.
+ * Angles are expected to be between [-pi,pi].
+ */
 template<typename T>
-T computeBendingPotential (Array<T,3> const& x1, Array<T,3> const& x2,
-                                Array<T,3> const& x3, Array<T,3> const& x4,
-                                T eqTileSpan, T eqLength, T eqAngle, T k)
-{
-    Array<T,3> ni(0.,0.,0.),  nj(0.,0.,0.);
-    crossProduct(x2-x1,  x3-x2, nj);
-    crossProduct(x3-x1,  x4-x3, ni);
-    T edgeAngle = angleBetweenVectors(ni, nj);
-    return k * (0.5*(edgeAngle - eqAngle)*(edgeAngle - eqAngle));
-//    return k * (1-cos(edgeAngle - eqAngle));
+T computeBendingPotential (T edgeAngle, T eqAngle, T k) {
+	edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle;
+	eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
+	eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
+	return k*(edgeAngle-eqAngle)*(edgeAngle-eqAngle);
 }
 
 
+/*
+ * Helper function, calculates the angle between -pi and pi.
+ * The edge is iVertex-jVertex.
+ */
 template<typename T>
-Array<T,3> computeBendingForceFromPotential (
-        Array<T,3> const& x1, Array<T,3> const& x2,
-        Array<T,3> const& x3, Array<T,3> const& x4,
-        T eqTileSpan, T eqLength, T eqAngle, T k,
-        Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4)
-{
-    Array<T,3> fx1, vertex;
-    static T eps = (sizeof(T) == sizeof(float) ?
-            100.0 * std::numeric_limits<T>::epsilon() :
-            std::numeric_limits<float>::epsilon());
+T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint & iVertex, plint & jVertex, plint & kVertex, plint & lVertex) {
+    Array<T,3> x1 = mesh.getVertex(iVertex), x2, x3, x4;
 
-    vertex = x1;
-    fx1.resetToZero();
-    for (int i = 0; i < 3; i++) {
-        Array<T,3> iPosition = vertex;
-        iPosition[i] += eps;
-        T up = computeBendingPotential (
-                iPosition, x2, x3, x4,
-                eqTileSpan, eqLength, eqAngle, k
-                );
-        iPosition = vertex;
-        iPosition[i] -= eps;
-        T um = computeBendingPotential (
-                iPosition, x2, x3, x4,
-                eqTileSpan, eqLength, eqAngle, k);
-        fx1[i] = -(up-um) / (2.0*eps);
+    std::vector<plint> adjacentTriangles = mesh.getAdjacentTriangleIds(iVertex, jVertex);
+	plint iTriangle=adjacentTriangles[0], jTriangle=adjacentTriangles[1];
+    x3 = mesh.getVertex(jVertex);
+    T foundVertices=0;
+    for (pluint id = 0; id < 3; ++id) {
+        kVertex = mesh.getVertexId(iTriangle,id);
+        if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
+            x2 = mesh.getVertex(kVertex);
+            foundVertices += 1;
+            break;
+        }
     }
+    for (pluint id = 0; id < 3; ++id) {
+        lVertex = mesh.getVertexId(jTriangle,id);
+        if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
+            x4 = mesh.getVertex(lVertex);
+            foundVertices += 1;
+            break;
+        }
+    }
+    PLB_ASSERT(foundVertices == 2); //Assert if some particles are outside of the domain
 
-    vertex = x2;
-    fx2.resetToZero();
-    for (int i = 0; i < 3; i++) {
-        Array<T,3> iPosition = vertex;
-        iPosition[i] += eps;
-        T up = computeBendingPotential (
-                x1, iPosition, x3, x4,
-                eqTileSpan, eqLength, eqAngle, k
-                );
-        iPosition = vertex;
-        iPosition[i] -= eps;
-        T um = computeBendingPotential (
-                x1, iPosition, x3, x4,
-                eqTileSpan, eqLength, eqAngle, k);
-        fx2[i] = -(up-um) / (2.0*eps);
-    }
-
-    vertex = x3;
-    fx3.resetToZero();
-    for (int i = 0; i < 3; i++) {
-        Array<T,3> iPosition = vertex;
-        iPosition[i] += eps;
-        T up = computeBendingPotential (
-                x1, x2, iPosition, x4,
-                eqTileSpan, eqLength, eqAngle, k
-                );
-        iPosition = vertex;
-        iPosition[i] -= eps;
-        T um = computeBendingPotential (
-                x1, x2, iPosition, x4,
-                eqTileSpan, eqLength, eqAngle, k);
-        fx3[i] = -(up-um) / (2.0*eps);
-    }
-
-    vertex = x4;
-    fx4.resetToZero();
-    for (int i = 0; i < 3; i++) {
-        Array<T,3> iPosition = vertex;
-        iPosition[i] += eps;
-        T up = computeBendingPotential (
-                x1, x2, x3, iPosition,
-                eqTileSpan, eqLength, eqAngle, k
-                );
-        iPosition = vertex;
-        iPosition[i] -= eps;
-        T um = computeBendingPotential (
-                x1, x2, x3, iPosition,
-                eqTileSpan, eqLength, eqAngle, k);
-        fx4[i] = -(up-um) / (2.0*eps);
-    }
-    Array<T,3> df = fx1 + fx2 + fx3 + fx4;
-    if (norm(df) > 1e-10) {
-        pcout << "!!! Something's wrong with the angles !!!" << norm(df) << std::endl;
-        pcout << "!!! X-Axis (" << x1[0] << ",\t" << x2[0] << ",\t" << x3[0] << ",\t" << x4[0] << ")" << std::endl;
-        pcout << "!!! Y-Axis (" << x1[1] << ",\t" << x2[1] << ",\t" << x3[1] << ",\t" << x4[1] << ")" << std::endl;
-        pcout << "!!! Z-Axis (" << x1[2] << ",\t" << x2[2] << ",\t" << x3[2] << ",\t" << x4[2] << ")" << std::endl;
-        pcout << "!!! Fx-Axis (" << fx1[0] << ",\t" << fx2[0] << ",\t" << fx3[0] << ",\t" << fx4[0] << ")" << std::endl;
-        pcout << "!!! Fy-Axis (" << fx1[1] << ",\t" << fx2[1] << ",\t" << fx3[1] << ",\t" << fx4[1] << ")" << std::endl;
-        pcout << "!!! Fz-Axis (" << fx1[2] << ",\t" << fx2[2] << ",\t" << fx3[2] << ",\t" << fx4[2] << ")" << std::endl;
-        Array<T,3> ni(0.,0.,0.),  nj(0.,0.,0.);
-        crossProduct(x1-x3,  x2-x3, ni);
-        crossProduct(x3-x1,  x4-x1, nj);
-        T edgeAngle = angleBetweenVectors(ni, nj);
-        pcout << "!!! Angle " << edgeAngle*180/pi << ", eqAngle " << eqAngle*180/pi <<std::endl;
-    }
-//    fx1 = fx1 - df/4.;
-//    fx2 = fx2 - df/4.;
-//    fx3 = fx3 - df/4.;
-//    fx4 = fx4 - df/4.;
-    return fx1;
+    Array<T,3> V1 = mesh.computeTriangleNormal(iTriangle);
+    Array<T,3> V2 = mesh.computeTriangleNormal(jTriangle);
+    T angle = angleBetweenVectors(V1, V2);
+	plint sign = dot(x2-x1, V2) > 0?1:-1;
+	if (sign <= 0) {
+		angle = 2*pi-angle;
+	}
+	angle = (angle > pi)?angle-2*pi:angle;
+	return angle;
 }
 
+
+/*
+ * Helper function, calculates the angle between -pi and pi
+ */
+template<typename T>
+T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plint jVertex) {
+	plint kVertex, lVertex;
+	return calculateSignedAngle(mesh, iVertex, jVertex, kVertex, lVertex);
+}
 
 
 }  // namespace plb

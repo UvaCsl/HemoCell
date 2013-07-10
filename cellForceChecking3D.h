@@ -3,7 +3,7 @@
 
 #include <cmath>
 #include <map>
-#include "computeCellForces3D.hh"
+#include "computeCellForces3D.h"
 
 using namespace plb;
 using namespace std;

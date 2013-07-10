@@ -466,10 +466,7 @@ void AngleCellReduceFunctional3D<T,Descriptor>::calculateQuantity(TriangularSurf
         pluint iEdgeAngle=0;
         std::vector<plint> neighbors = triangleMesh.getNeighborVertexIds(iVertex);
         for (pluint iB = 0; iB < neighbors.size(); ++iB) {
-            std::vector<plint>  adjacentTriangles = triangleMesh.getAdjacentTriangleIds(iVertex, neighbors[iB]) ;
-            Array<T,3> V1 = triangleMesh.computeTriangleNormal(adjacentTriangles[0]);
-            Array<T,3> V2 = triangleMesh.computeTriangleNormal(adjacentTriangles[1]);
-            edgeAngle += angleBetweenVectors(V1, V2);
+            edgeAngle += calculateSignedAngle(triangleMesh, iVertex, neighbors[iB]);
             iEdgeAngle++;
         }
         edgeAngle /= 1.0*iEdgeAngle;

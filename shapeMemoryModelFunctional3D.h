@@ -27,7 +27,7 @@
 #include "immersedCellParticle3D.h"
 #include "immersedBoundaryMethod3D.h"
 #include <map>
-
+#include "computeCellForces3D.h"
 #include "shapeMemoryModel3D.hh"
 
 namespace plb {

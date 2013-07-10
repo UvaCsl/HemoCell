@@ -49,8 +49,7 @@ void testBending() {
     Array<T,3> x3(-1.,0.,0.);
     Array<T,3> x4(0.,-1.,0.);
     Array<T,3> x2, f1,f2,f3,f4,f;
-    T dth = 1.e-2;
-    int eqAngle=45;
+    int eqAngle=-90;
 //    for (eqAngle=0; eqAngle<360; eqAngle+=1) {
         for (int th=0; th<360; th+=1) {
             x2 = Array<T,3>(0., cos(th*pi/180), sin(th*pi/180));
@@ -85,4 +84,4 @@ void testBending() {
 
 
 
-#endif  // COMPUTE_CELL_FORCES3D_HH
+#endif  // CELL_FORCE_CHECKING_3D_HH
