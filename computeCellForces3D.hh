@@ -215,8 +215,9 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
                                 Array<T,3> const& x3, Array<T,3> const& x4,
                                 Array<T,3> const& ni, Array<T,3> const& nj,
                                 T Ai, T Aj,
-                                T eqTileSpan, T eqLength, T eqAngle, T k)
-{
+                                T eqTileSpan, T eqLength, T eqAngle, T k,
+								Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4)
+		{
 /*
  * The most messy force!
  *
@@ -231,42 +232,22 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
  *      crossProduct(x1 - x2, x3 - x1, nijk);
  *      crossProduct(x3 - x4, x1 - x3, nlkj);
 */
+	Array<T,3> fx1, tmp;
+	T dAngle;
+	T edgeAngle = angleBetweenVectors(ni, nj);
+	plint sign = dot(x2-x1, nj) > 0?1:-1;
+	if (sign <= 0) {
+		edgeAngle = 2*pi-edgeAngle;
+	}
+	edgeAngle = edgeAngle > pi?edgeAngle-2*pi:edgeAngle;
 
-    Array<T,3> v1, v2, D1, D2, dAngledx,tmp;
-    Array<T,3> x32=x2-x3, x43=x3-x4;
-//    =============================================================
-//     Probably the following computations are the correct ones,
-//     but they do not agree with the potential calculation.
-//    =============================================================
-//    v1 = 2 * Ai * ni;
-//    v2 = 2 * Aj * nj;
-//    pcout << "aN1 = (" << v1[0] << ", " << v1[1] << ", " << v1[2] << ") " << std::endl;
-//    pcout << "aN2 = (" << v2[0] << ", " << v2[1] << ", " << v2[2] << ") " << std::endl;
-//    =============================================================
-//     Probably the following computations are incorrect,
-//     but they do agree with the potential calculation.
-//    =============================================================
-    crossProduct(x1 - x2, x32, v1);
-    crossProduct(x1 - x3, x43, v2);
-//    pcout << "cP1 = (" << v1[0] << ", " << v1[1] << ", " << v1[2] << ") " << std::endl;
-//    pcout << "cP2 = (" << v2[0] << ", " << v2[1] << ", " << v2[2] << ") " << std::endl;
-    T angle = angleBetweenVectors(v1, v2);
-    T cosAngle=cos(angle),overSinAngle=1.0/sin(angle);
-    T nv1 = 2 * Ai, nv2 = 2 * Aj;
-    dAngledx.resetToZero();
-    for (int var = 0; var < 3; ++var) {
-        D1.resetToZero(); D2.resetToZero(); tmp.resetToZero();
-        tmp[var] = 1.0;
-        crossProduct(tmp, x32, D1);
-        crossProduct(tmp, x43, D2);
-        dAngledx[var] = (dot(D1,v2) + dot(D2,v1))/nv1/nv2;
-        dAngledx[var] -= cosAngle*(dot(D1,v1)/nv1/nv1 + dot(D2,v2)/nv2/nv2);
-        dAngledx[var] *= -overSinAngle;
-    }
-    return -k * sin(angle - eqAngle) * dAngledx ; //* eqLength / eqTileSpan;
-//    pcout << "fangle: " << angle << " " << eqAngle << std::endl;
-//    T dAngle = (angle - eqAngle);
-//    return -k* (dAngle*(1 - dAngle*dAngle/6.0)) * dAngledx ; //* eqLength / eqTileSpan;
+	dAngle = (edgeAngle-eqAngle);
+	fx2 = -k*dAngle*ni;
+    fx4 = -k*dAngle*nj;
+	pcout << edgeAngle << " " << dAngle << " ";
+    fx1 = -(fx2+fx4)*0.5;
+    fx3 = fx1;
+    return fx1;
 }
 
 
@@ -326,8 +307,8 @@ T computeBendingPotential (Array<T,3> const& x1, Array<T,3> const& x2,
                                 T eqTileSpan, T eqLength, T eqAngle, T k)
 {
     Array<T,3> ni(0.,0.,0.),  nj(0.,0.,0.);
-    crossProduct(x1-x3,  x2-x3, ni);
-    crossProduct(x3-x1,  x4-x1, nj);
+    crossProduct(x2-x1,  x3-x2, nj);
+    crossProduct(x3-x1,  x4-x3, ni);
     T edgeAngle = angleBetweenVectors(ni, nj);
     return k * (0.5*(edgeAngle - eqAngle)*(edgeAngle - eqAngle));
 //    return k * (1-cos(edgeAngle - eqAngle));
@@ -344,7 +325,7 @@ Array<T,3> computeBendingForceFromPotential (
     Array<T,3> fx1, vertex;
     static T eps = (sizeof(T) == sizeof(float) ?
             100.0 * std::numeric_limits<T>::epsilon() :
-            1000*std::numeric_limits<float>::epsilon());
+            std::numeric_limits<float>::epsilon());
 
     vertex = x1;
     fx1.resetToZero();

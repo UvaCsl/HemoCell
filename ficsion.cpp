@@ -155,13 +155,11 @@ void writeDataVTK(
     ofile << "ASCII\n";
     ofile << "DATASET UNSTRUCTURED_GRID\n";
 
-    ofile << "POINTS " << 4
-          << (sizeof(T)==sizeof(double) ? " double" : " float")
-          << "\n";
-    ofile << x1[0]+0.0e-7 << " " <<x1[1]+0.0e-7 << " " <<x1[2]+0.0e-7 << "\n";
-    ofile << x2[0]+0.0e-7 << " " <<x2[1]+0.0e-7 << " " <<x2[2]+0.0e-7 << "\n";
-    ofile << x3[0]+0.0e-7 << " " <<x3[1]+0.0e-7 << " " <<x3[2]+0.0e-7 << "\n";
-    ofile << x4[0]+0.0e-7 << " " <<x4[1]+0.0e-7 << " " <<x4[2]+0.0e-7 << "\n";
+    ofile << "POINTS 4 double\n";
+    ofile << x1[0] << " " <<x1[1] << " " <<x1[2] << "\n";
+    ofile << x2[0] << " " <<x2[1] << " " <<x2[2] << "\n";
+    ofile << x3[0] << " " <<x3[1] << " " <<x3[2] << "\n";
+    ofile << x4[0] << " " <<x4[1] << " " <<x4[2] << "\n";
     ofile << "CELLS 2 8\n";
     ofile << "3 0 1 2\n";
     ofile << "3 2 3 0\n";
@@ -172,12 +170,12 @@ void writeDataVTK(
     ofile << "5\n";
 
 
-    ofile << "POINT_DATA 4\nVECTORS force double";
+    ofile << "POINT_DATA 4\nVECTORS force double\n";
 //    ofile << "LOOKUP_TABLE default \n";
-    ofile << fx1[0]+0.0e-7 << " " <<fx1[1]+0.0e-7 << " " <<fx1[2]+0.0e-7 << "\n";
-    ofile << fx2[0]+0.0e-7 << " " <<fx2[1]+0.0e-7 << " " <<fx2[2]+0.0e-7 << "\n";
-    ofile << fx3[0]+0.0e-7 << " " <<fx3[1]+0.0e-7 << " " <<fx3[2]+0.0e-7 << "\n";
-    ofile << fx4[0]+0.0e-7 << " " <<fx4[1]+0.0e-7 << " " <<fx4[2]+0.0e-7 << "\n";
+    ofile << fx1[0] << " " <<fx1[1] << " " <<fx1[2] << "\n";
+    ofile << fx2[0] << " " <<fx2[1] << " " <<fx2[2] << "\n";
+    ofile << fx3[0] << " " <<fx3[1] << " " <<fx3[2] << "\n";
+    ofile << fx4[0] << " " <<fx4[1] << " " <<fx4[2] << "\n";
 
     ofile.close();
 }
@@ -190,11 +188,20 @@ void testBending() {
     Array<T,3> x4(0.,-1.,0.);
     Array<T,3> x2, f1,f2,f3,f4,f;
     T dth = 1.e-2;
-    int eqAngle=90;
+    int eqAngle=-45;
 //    for (eqAngle=0; eqAngle<360; eqAngle+=1) {
         for (int th=0; th<360; th+=1) {
             x2 = Array<T,3>(0., cos(th*pi/180), sin(th*pi/180));
-            f1 = computeBendingForceFromPotential (x1, x2, x3, x4, 0., 0.,eqAngle*pi/180, 1.0, f2, f3, f4);
+
+        	Array<T,3> ni(0.,0.,0.),  nj(0.,0.,0.);
+        	T Ai, Aj;
+            crossProduct(x2-x1,  x3-x1, ni);
+            crossProduct(x4-x3,  x1-x3, nj);
+            Ai = norm(ni)/2; ni = ni*1.0/(2*Ai);
+            Aj = norm(nj)/2; nj = nj*1.0/(2*Aj);
+//            f1 = computeBendingForceFromPotential (x1, x2, x3, x4, 0., 0.,eqAngle*pi/180, 1.0, f2, f3, f4);
+            f1 = computeBendingForce(x1, x2, x3, x4, ni, nj, Ai, Aj, 0.0, 0.0, eqAngle*pi/180, 1.0, f2, f3, f4);
+
             f = f1+f2+f3+f4;
             if (norm(f) < 1.e-10) {
                 pcout << "BENDOK;"  ;
@@ -202,9 +209,9 @@ void testBending() {
                 pcout << "BENDNOTOK;" ;
             }
             writeDataVTK(x1,x2,x3,x4,f1,f2,f3,f4, createFileName("./BTEST/DANGLE_",th,10)+".vtk");
-            pcout << eqAngle * 180/pi
-                  << ";" << th* 180/pi
-                  << ";" << (th-eqAngle)* 180/pi
+            pcout << eqAngle * pi/180
+                  << ";" << th* pi/180
+                  << ";" << (th-eqAngle)* pi/180
                   << ";" << norm(f) << std::endl;
 //            pcout << "eqAngle:" << eqAngle * 180/pi
 //                  << "\tAngle:" << th* 180/pi
@@ -376,7 +383,7 @@ int main(int argc, char* argv[])
     lateralCellParticleTags.push_back(&outerBackTags);
     plint numParticlesPerSide = plint(0.02*numParts[0]);
     if ((flowType == 3) || (flowType == 4) || (flowType == 5) ) {
-        PLB_PRECONDITION( npar == 1 && MPI::COMM_WORLD.Get_size() == 1 );
+        //PLB_PRECONDITION( npar == 1 && MPI::COMM_WORLD.Get_size() == 1 );
         applyProcessingFunctional (
             new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerLeftTags, &outerRightTags, 0),
             immersedParticles.getBoundingBox(), particleArg );
