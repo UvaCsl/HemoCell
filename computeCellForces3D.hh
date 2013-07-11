@@ -281,7 +281,7 @@ T computeBendingPotential (T edgeAngle, T eqAngle, T k) {
 	edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle;
 	eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
 	eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
-	return k*(edgeAngle-eqAngle)*(edgeAngle-eqAngle);
+	return 0.5*k*(edgeAngle-eqAngle)*(edgeAngle-eqAngle);
 }
 
 

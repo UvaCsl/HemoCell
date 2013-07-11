@@ -4,6 +4,7 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "meshMetrics.h"
+#include "computeCellForces3D.h"
 
 #include <map>
 
@@ -39,8 +40,7 @@ MeshMetrics<T>::MeshMetrics(TriangleBoundary3D<T> const& Cells) {
             minLength = minLength>tmp?tmp:minLength;
             maxLength = maxLength<tmp?tmp:maxLength;
             length += tmp;
-
-            tmp = mesh.computeDihedralAngle(iV, jV) * 180/3.14159;
+            tmp = calculateSignedAngle(mesh, iV, jV) * 180/3.14159;
             minAngle = minAngle>tmp?tmp:minAngle;
             maxAngle = maxAngle<tmp?tmp:maxAngle;
             angle += tmp;
