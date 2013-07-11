@@ -74,7 +74,7 @@ CellModel3D<T>::CellModel3D (
     k_inPlane = k_WLC_ * kBT /(4.0*persistenceLengthCoarse);
     // Calculating eqAngle and eqLength according to FedosovCaswellKarniadakis2010
     eqAngle = acos( (sqrt(3.)*(cellNumVertices-2.0) - 5*pi)/(sqrt(3.)*(cellNumVertices-2.0) - 3*pi) );
-    eqLength = sqrt( 2.0*eqArea*1.0/sqrt(3) );
+//    eqLength = sqrt( 2.0*eqArea*1.0/sqrt(3) );
     /* Dissipative term coefficients from FedosovCaswellKarniadakis2010 */
     gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
     gamma_C = (gamma_T/3.0);
