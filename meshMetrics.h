@@ -28,7 +28,7 @@ public:
         meshFile << "Min Length of edge, minA =  " << minLength << std::endl;
         meshFile << std::endl;
         meshFile << "Mean Angle per vertex, theta =  " << angle << std::endl;
-        meshFile << "Deviation of Angle %, sTheta =  " << 100*sigmaAngle/angle << std::endl;
+        meshFile << "Deviation of Angle %, sTheta =  " << fabs(100*sigmaAngle/angle) << std::endl;
         meshFile << "Max Angle of edge, maxA =  " << maxAngle << std::endl;
         meshFile << "Min Angle of edge, minA =  " << minAngle << std::endl;
         meshFile << std::endl;

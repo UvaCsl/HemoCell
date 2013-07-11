@@ -70,7 +70,7 @@ MeshMetrics<T>::MeshMetrics(TriangleBoundary3D<T> const& Cells) {
             int jV = nvid[ijV];
             tmp=(mesh.computeEdgeLength(iV, jV)-length);
             sigmaLength += tmp*tmp;
-            tmp = (mesh.computeDihedralAngle(iV, jV)*180/3.14159 - angle);
+            tmp = (calculateSignedAngle(mesh, iV, jV) * 180/3.14159 - angle);
             sigmaAngle += tmp*tmp;
         }
     }
