@@ -264,9 +264,16 @@ int main(int argc, char* argv[])
     std::vector<plint> cellIds;
     plint cellNumVertices = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
     std::vector<T> eulerAnglesNONE(3);
-    eulerAnglesNONE[0] = 0.;
-    eulerAnglesNONE[1] = 0.;
-    eulerAnglesNONE[2] = 0.;
+    if (flowType == 9) {
+        eulerAnglesNONE[0] = 0.;
+        eulerAnglesNONE[1] = 0.;
+        eulerAnglesNONE[2] = 0.;
+        flowType = 1;
+    } else {
+        eulerAnglesNONE[0] = eulerAngles[0];
+        eulerAnglesNONE[1] = eulerAngles[1];
+        eulerAnglesNONE[2] = eulerAngles[2];
+    }
     TriangleBoundary3D<T> DeCells = createCompleteMesh(centers, radii, eulerAngles, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
     cellIds.clear();
     TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, eulerAnglesNONE, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
@@ -348,8 +355,16 @@ int main(int argc, char* argv[])
         eta_m = 0.0;
     }
     ShellModel3D<T> *cellModel;
+    getCellShapeQuantitiesFromMesh(DeCells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
+    if (rbcModel == 2) {
+        rbcModel = 0;
+        eqAngle = acos( (sqrt(3.)*(cellNumVertices-2.0) - 5*pi)/(sqrt(3.)*(cellNumVertices-2.0) - 3*pi) );
+        typename map<plint,T>::reverse_iterator iter = eqAnglePerEdge.rbegin();
+        for (iter = eqAnglePerEdge.rbegin(); iter != eqAnglePerEdge.rend(); ++iter) {
+            eqAnglePerEdge[iter->first] = eqAngle;
+        }
+    }
     if (rbcModel == 0) {
-       getCellShapeQuantitiesFromMesh(DeCells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
        cellModel = new ShapeMemoryModel3D<T>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
                        eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, eqVolume, eqSurface, eqTileSpan,
                        persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);

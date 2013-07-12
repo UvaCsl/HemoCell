@@ -2,7 +2,7 @@
 <ficsion>
 <caseId> caseId </caseId>
 <cellModel>
-    <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1] -->
+    <rbcModel> 2 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
     <shellDensity> 1.0 </shellDensity>
 
     <kBend> 1500e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
