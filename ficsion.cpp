@@ -463,6 +463,11 @@ int main(int argc, char* argv[])
             tmeas = 0.1/dt;
         }
         /* =============================== OUTPUT ===================================*/
+        if (i%100==0) {
+            calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+                            cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
+        }
+
         if (i%tmeas==0) {
             if (goAndStop != 0) {
                 writeImmersedPointsVTK(Cells, goAndStopVertices, dx,
@@ -473,8 +478,6 @@ int main(int argc, char* argv[])
             // totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());
             // pcout << i << " totParticles = " << totParticles << std::endl;
             // PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain
-            calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                                cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
             printCellMeasures(i, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                                    cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolumeFinal, eqSurface, eqArea, eqLength,
                                    dx, dt) ;
