@@ -425,8 +425,8 @@ int main(int argc, char* argv[])
     if (fastStretchRelease) {
         dStretchingForce = stretchForceScalar; // Usually 7pN in LU
         timesToStretch = 1;
-        convergeX.setEpsilon(1e-6);
-        convergeY.setEpsilon(1e-6);
+        convergeX.setEpsilon(1e-7);
+        convergeY.setEpsilon(1e-7);
     }
     plint statIter = 10;
     plint stretchReleased = 0;
@@ -463,10 +463,8 @@ int main(int argc, char* argv[])
             tmeas = 0.1/dt;
         }
         /* =============================== OUTPUT ===================================*/
-        if (i%100==0) {
-            calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+        calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                             cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
-        }
 
         if (i%tmeas==0) {
             if (goAndStop != 0) {
