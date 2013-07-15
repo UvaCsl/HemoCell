@@ -1,4 +1,10 @@
 #PBS -S /bin/bash
+#PBS -lwalltime=00:05:00 -lnodes=1:cores8:ppn=8
+
+#PBS -lwalltime=120:00:00 -lnodes=1:cores8:ppn=8
+
+
+
 #PBS -lwalltime=72:00:00 -lnodes=1:cores8:ppn=8
 
 #PBS -lwalltime=00:05:00 -lnodes=1:cores8:ppn=8
@@ -27,15 +33,13 @@
 
 # === Variables that might need change ====
 export PATH=$PATH:/home/lmountra/bin/
-export RANDID=${KBEND-${RANDOM}} # Identification of the job, randomized
-export SUBJECT="LISA RUN: RBC benchmark $KBEND" # Subject of the email sent to USER
-export JobName=RBC_Stretching # Used for directory making purposed and identifying the job
-export ParentDir=/home/lmountra/RBC_Stretching/ # PATH where initial conditions (cases), results and snapshots are to be found and copied
+export RANDID=${SHEARRATE-${RANDOM}} # Identification of the job, randomized
+export SUBJECT="LISA RUN: DSFD -- RBC Shear Flow $RANDID" # Subject of the email sent to USER
+export JobName=DSFD_SHEARFLOW # Used for directory making purposed and identifying the job
+export ParentDir=/home/lmountra/DSFD/ShearFlow/ # PATH where initial conditions (cases), results and snapshots are to be found and copied
 
 export EXE=/home/lmountra/ficsion/ficsion # Path to the ficsion executable
 export CREATECONFIG=/home/lmountra/ficsion/scripts/conficsion.py # Usually unnecessary, but check the rest of the script
-export INITIALCONFIG=${ParentDir}/config.xml
-export INITIALCONFIG=/home/lmountra/RBC_Stretching/config.xml
 export LNS=/home/lmountra/ficsion/lib/
 
 echo $ParentDir
@@ -47,7 +51,7 @@ export PROCS=8
 SLEEPTIME=3600 # Wallclock time interval between each RSYNC (1h)
 
 
-export ResultDir=${ParentDir}/results/${JobName}
+export ResultDir=${ParentDir}
 export ScratchDir=${TMPDIR-/scratch/}/${JobName}
 
 mkdir -p ${ResultDir} ${ScratchDir}
@@ -120,8 +124,11 @@ gzip_rsync_sleep () {
 (
 mkdir -p ${ScratchDir}/configurations;
 cd ${ScratchDir}/configurations;
-cp ${INITIALCONFIG} config_test.xml
-${CREATECONFIG} --flowType 4 --etaM 0.0 --shearRate 0 --kWLC 0.1 0.25 0.5 1.0 --rbcModel 0 1 --kBend ${KBEND}
+cp /home/lmountra/DSFD/TTT.xml config_test.xml
+${CREATECONFIG} --rbcModel 0 1 --shearRate ${SHEARRATE} --caseId TTT --etaM 0.0 0.001e-6 
+rm config_test.xml
+cp /home/lmountra/DSFD/Yao.xml config_test.xml
+${CREATECONFIG} --rbcModel 0 1 --shearRate ${SHEARRATE} --caseId Yao --etaM 0.0 0.001e-6 
 rm config_test.xml
 );
 
