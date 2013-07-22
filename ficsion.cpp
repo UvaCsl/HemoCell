@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
     global::directories().setLogOutDir("./tmp/");
     global::IOpolicy().setStlFilesHaveLowerBound(true);
     global::IOpolicy().setLowerBoundForStlFiles(-1.);
-//    testBending(); PLB_ASSERT(false);
+//    testInPlane(); PLB_ASSERT(false);
     std::string logFileName = global::directories().getLogOutDir() + "plbCells.log";
     plb_ofstream logFile(logFileName.c_str());
 
@@ -263,7 +263,20 @@ int main(int argc, char* argv[])
     plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
     std::vector<plint> cellIds;
     plint cellNumVertices = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, eulerAngles, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
+    std::vector<T> eulerAnglesNONE(3);
+    if (flowType == 9) {
+        eulerAnglesNONE[0] = 0.;
+        eulerAnglesNONE[1] = 0.;
+        eulerAnglesNONE[2] = 0.;
+        flowType = 1;
+    } else {
+        eulerAnglesNONE[0] = eulerAngles[0];
+        eulerAnglesNONE[1] = eulerAngles[1];
+        eulerAnglesNONE[2] = eulerAngles[2];
+    }
+    TriangleBoundary3D<T> DeCells = createCompleteMesh(centers, radii, eulerAngles, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
+    cellIds.clear();
+    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, eulerAnglesNONE, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
     pcout << "Mesh Created" << std::endl;
     generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, cellNumVertices, numOfCellsPerInlet, slice);
     MeshMetrics<T> meshmetric(Cells);
@@ -282,7 +295,7 @@ int main(int argc, char* argv[])
     std::vector<T> cellsMeanEdgeDistance, cellsMaxEdgeDistance, cellsMeanAngle, cellsMeanTriangleArea, cellsMeanTileSpan;
     std::vector< Array<T,3> > cellsCenter, cellsVelocity;
     T eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan;
-    calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+    calculateCellMeasures(DeCells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                         cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
     eqArea = cellsMeanTriangleArea[0];     eqLength = cellsMeanEdgeDistance[0];
     eqAngle = cellsMeanAngle[0];     eqVolume = cellsVolume[0];
@@ -342,8 +355,16 @@ int main(int argc, char* argv[])
         eta_m = 0.0;
     }
     ShellModel3D<T> *cellModel;
+    getCellShapeQuantitiesFromMesh(DeCells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
+    if (rbcModel == 2) {
+        rbcModel = 0;
+        eqAngle = acos( (sqrt(3.)*(cellNumVertices-2.0) - 5*pi)/(sqrt(3.)*(cellNumVertices-2.0) - 3*pi) );
+        typename map<plint,T>::reverse_iterator iter = eqAnglePerEdge.rbegin();
+        for (iter = eqAnglePerEdge.rbegin(); iter != eqAnglePerEdge.rend(); ++iter) {
+            eqAnglePerEdge[iter->first] = eqAngle;
+        }
+    }
     if (rbcModel == 0) {
-       getCellShapeQuantitiesFromMesh(Cells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
        cellModel = new ShapeMemoryModel3D<T>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
                        eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, eqVolume, eqSurface, eqTileSpan,
                        persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
@@ -404,8 +425,8 @@ int main(int argc, char* argv[])
     if (fastStretchRelease) {
         dStretchingForce = stretchForceScalar; // Usually 7pN in LU
         timesToStretch = 1;
-        convergeX.setEpsilon(1e-6);
-        convergeY.setEpsilon(1e-6);
+        convergeX.setEpsilon(1e-7);
+        convergeY.setEpsilon(1e-7);
     }
     plint statIter = 10;
     plint stretchReleased = 0;
@@ -442,6 +463,9 @@ int main(int argc, char* argv[])
             tmeas = 0.1/dt;
         }
         /* =============================== OUTPUT ===================================*/
+        calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+                            cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
+
         if (i%tmeas==0) {
             if (goAndStop != 0) {
                 writeImmersedPointsVTK(Cells, goAndStopVertices, dx,
@@ -452,8 +476,6 @@ int main(int argc, char* argv[])
             // totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());
             // pcout << i << " totParticles = " << totParticles << std::endl;
             // PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain
-            calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                                cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
             printCellMeasures(i, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                                    cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolumeFinal, eqSurface, eqArea, eqLength,
                                    dx, dt) ;

@@ -160,6 +160,10 @@ TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint 
     } else if (initialSphereShape == 0) {
         sphere = constructSphere<T>(Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
     }
+    sphere.rotate(
+            pi/2.0 + eulerAngles[0],
+            pi/2.0 + eulerAngles[1],
+            0. + eulerAngles[2]);
     std::vector<typename TriangleSet<T>::Triangle> rbcTriangles = sphere.getTriangles();
     for (pluint var = 0; var < rbcTriangles.size(); ++var) {
         rbcTriangles[var][0] = spherePointToRBCPoint(rbcTriangles[var][0]);

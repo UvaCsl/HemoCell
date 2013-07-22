@@ -2,12 +2,12 @@
 <ficsion>
 <caseId> caseId </caseId>
 <cellModel>
-    <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1] -->
+    <rbcModel> 2 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
     <shellDensity> 1.0 </shellDensity>
 
-    <kBend> 150e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
-    <kVolume> 60000.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
-    <kSurface> 59000.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <kBend> 1500e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <kVolume> 6000.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <kSurface> 5900.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
 <!-- 0.5e0 -->
     <kShear> 100.0e0 </kShear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
     <etaM> 0.0e-6 </etaM> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
@@ -29,22 +29,22 @@ Cell Stretching [3], Cell Stretching Analysis and release [4], Fast Cell Stretch
 Tumbling-TankTreading Measurements [6], Fischer2004 [7],
 Fast Cell Stretching release [8],
  -->
-    <flowType> 7 </flowType>   
+    <flowType> 1 </flowType>   
     <Re> 0.1 </Re>   <!--Reynolds number-->
-    <shearRate> 100 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
-    <stretchForce> 7.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->
-    <eulerAngles> 15 0 90 </eulerAngles> <!-- In degrees -->
+    <shearRate> 0 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
+    <stretchForce> 193.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->
+    <eulerAngles> 90 90 90 </eulerAngles> <!-- In degrees -->
     <deflationRatio> 1.00 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
-    <relaxationTime> 1000 </relaxationTime> <!-- Relaxation time for deflation and stretching force [5000] -->
+    <relaxationTime> 500 </relaxationTime> <!-- Relaxation time for deflation and stretching force [5000] -->
 </parameters>
 
 
 <ibm>
     <forceToFluid> 1 </forceToFluid>
     <ibmKernel> 2 </ibmKernel> <!-- ibmKernel: Phi2 [2], Phi3 [3], Phi4 [4],  Phi4c [5] -->
-    <shape> 4 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4]-->
+    <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4]-->
     <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
-    <minNumOfTriangles> 200 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
+    <minNumOfTriangles> 600 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
     <cellPath> ./lib/RBC.stl </cellPath>
 </ibm>
 
