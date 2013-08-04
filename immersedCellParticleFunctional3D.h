@@ -55,6 +55,7 @@ public:
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual CreateTaggedImmersedCellParticle3D<T,Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    virtual BlockDomain::DomainT appliesTo() const;
 private:
     TriangleBoundary3D<T> const& triangleBoundary;
     plint tag, numPartsPerTag;
@@ -69,6 +70,7 @@ public:
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual FluidVelocityToImmersedCell3D<T,Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    virtual BlockDomain::DomainT appliesTo() const;
 private:
     plint ibmKernel;
 };
@@ -82,6 +84,7 @@ public:
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual ForceToFluid3D<T,Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    virtual BlockDomain::DomainT appliesTo() const;
 private:
     plint ibmKernel;
 };

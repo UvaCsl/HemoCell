@@ -119,6 +119,11 @@ void CreateTaggedImmersedCellParticle3D<T,Descriptor>::getTypeOfModification (
     modified[0] = modif::dynamicVariables; // Particle field.
 }
 
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT CreateTaggedImmersedCellParticle3D<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulkAndEnvelope;
+}
+
 
 /* ******** FluidVelocityToImmersedCell3D *********************************** */
 
@@ -171,6 +176,10 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::getTypeOfModification (
     modified[1] = modif::nothing; // Fluid field.
 }
 
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT FluidVelocityToImmersedCell3D<T,Descriptor>::appliesTo () const {
+    return BlockDomain::bulk;
+}
 
 /* ******** ForceToFluid3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
@@ -224,7 +233,10 @@ void ForceToFluid3D<T,Descriptor>::getTypeOfModification (
     modified[1] = modif::staticVariables; // Fluid field.
 }
 
-
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT ForceToFluid3D<T,Descriptor>::appliesTo () const {
+    return BlockDomain::bulkAndEnvelope;
+}
 /* ******** CountTaggedParticlesFunctional3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
