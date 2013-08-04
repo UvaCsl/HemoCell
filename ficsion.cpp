@@ -359,7 +359,7 @@ int main(int argc, char* argv[])
     if (rbcModel == 2) {
         rbcModel = 0;
         eqAngle = acos( (sqrt(3.)*(cellNumVertices-2.0) - 5*pi)/(sqrt(3.)*(cellNumVertices-2.0) - 3*pi) );
-        typename map<plint,T>::reverse_iterator iter = eqAnglePerEdge.rbegin();
+        map<plint,T>::reverse_iterator iter = eqAnglePerEdge.rbegin();
         for (iter = eqAnglePerEdge.rbegin(); iter != eqAnglePerEdge.rend(); ++iter) {
             eqAnglePerEdge[iter->first] = eqAngle;
         }

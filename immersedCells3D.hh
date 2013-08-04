@@ -202,19 +202,19 @@ TriangleBoundary3D<T> createCompleteMesh(
         Array<T,3> center(centers[iA]);
         T radius = radii[iA];
         if (shape == 0) {
-            allTriangles.push_back(constructSphereIcosahedron<T>(center, radius, cellNumTriangles));
+        	wholeTriangleSet.append(constructSphereIcosahedron<T>(center, radius, cellNumTriangles));
         } else if (shape == 1) {
-            allTriangles.push_back(constructRBCFromSphere<T>(center, radius, cellNumTriangles, eulerAngles, 1));
+        	wholeTriangleSet.append(constructRBCFromSphere<T>(center, radius, cellNumTriangles, eulerAngles, 1));
         } else if (shape == 2) {
-            allTriangles.push_back(constructCell<T>(center, radius, cellPath, eulerAngles));
+        	wholeTriangleSet.append(constructCell<T>(center, radius, cellPath, eulerAngles));
         } else if (shape == 3) {
-            allTriangles.push_back(constructRBC<T>(center, radius, cellNumTriangles, eulerAngles));
+        	wholeTriangleSet.append(constructRBC<T>(center, radius, cellNumTriangles, eulerAngles));
         } else if (shape == 4) {
-            allTriangles.push_back(constructRBCFromSphere<T>(center, radius, cellNumTriangles, eulerAngles, 0));
+        	wholeTriangleSet.append(constructRBCFromSphere<T>(center, radius, cellNumTriangles, eulerAngles, 0));
         }
         cellIds.push_back(iA);
     }
-    wholeTriangleSet.merge(allTriangles);
+//    wholeTriangleSet.merge(allTriangles);
 //    wholeTriangleSet.writeAsciiSTL("/tmp/test.stl");
 //    Dot3D location(centers[0][0]-radii[0],centers[0][1]-radii[0],centers[0][2]-radii[0]);
 //    DEFscaledMesh<T> defMesh (
