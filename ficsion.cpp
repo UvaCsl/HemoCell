@@ -53,7 +53,7 @@ plint borderWidth     = 1;  // Because Guo acts in a one-cell layer.
 plint extraLayer      = 0;  // Make the bounding box larger; for visualization purposes
                             //   only. For the simulation, it is OK to have extraLayer=0.
 const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
-const plint particleEnvelopeWidth = 2;
+const plint particleEnvelopeWidth = 5;
 
 void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
@@ -250,7 +250,8 @@ int main(int argc, char* argv[])
     MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > immersedParticles (
             particleManagement,
             defaultMultiBlockPolicy3D().getCombinedStatistics() );
-
+    lattice.periodicity().toggleAll(true);
+    immersedParticles.periodicity().toggleAll(true);
     Box3D inlet(0, 3, 0, ny-1, 0, nz-1);
     Box3D outlet(nx-2, nx-1, 0, ny-1, 0, nz-1);
 
@@ -454,6 +455,7 @@ int main(int argc, char* argv[])
     if (flowType==6) {
         shearFlow.writeHeader(shearResultFile);
     }
+    std::cout << "Cells Num Triangles " << Cells.getMesh().getNumTriangles() << std::endl;
     /* ********************* Main Loop ***************************************** * */
     for (pluint i=0; i<tmax+1; ++i) {
         if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
@@ -639,7 +641,7 @@ int main(int argc, char* argv[])
             immersedParticles.getBoundingBox(), particleLatticeArg);
         // #5# Position Update
         applyProcessingFunctional ( // advance particles in time according to velocity
-            new AdvanceParticlesFunctional3D<T,DESCRIPTOR>,
+            new AdvanceParticlesEveryWhereFunctional3D<T,DESCRIPTOR>,
             immersedParticles.getBoundingBox(), particleArg );
         applyProcessingFunctional ( // update mesh position
             new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
