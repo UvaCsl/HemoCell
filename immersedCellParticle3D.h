@@ -39,8 +39,7 @@ public:
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
     virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
     virtual void fluidToParticle(BlockLattice3D<T,Descriptor>& fluid, T scaling=1.) { }
-    /// Implements "steps 1 and 2" of the Verlet algorithm: given
-    ///   x(t), v(t), and a(t), it computes v(t+1/2) and x(t+1).
+    /// Implements Euler integration with velocity alone.
     virtual void advance();
     virtual void serialize(HierarchicSerializer& serializer) const;
     virtual void unserialize(HierarchicUnserializer& unserializer);

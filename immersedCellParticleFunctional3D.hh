@@ -160,6 +160,7 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
             fluid.get(cellPos[iCell].x,cellPos[iCell].y,cellPos[iCell].z).computeVelocity(velocity);
             particle->get_v() += weights[iCell] * velocity;
         }
+        particle->get_vPrevious() = particle->get_v();
     }
 }
 
