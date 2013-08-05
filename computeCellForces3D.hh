@@ -257,7 +257,7 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
  * Angles are expected to be between [-pi,pi]. */
 /* The most messy force! */
 template<typename T>
-Array<T,3> computeBendingForce (T edgeAngle, T eqAngle, T k,
+Array<T,3> computeBendingForces (T edgeAngle, T eqAngle, T k,
 								Array<T,3> const& ni, Array<T,3> const& nj,
 								Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4) {
 	Array<T,3> fx1;
@@ -271,6 +271,30 @@ Array<T,3> computeBendingForce (T edgeAngle, T eqAngle, T k,
     fx3 = fx1;
     return fx1;
 }
+
+template<typename T>
+Array<T,3> computeBendingForceEdge (T edgeAngle, T eqAngle, T k,
+								Array<T,3> const& ni, Array<T,3> const& nj) {
+//	Array<T,3> fx1, fx2, fx3, fx4;
+	edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle;
+	eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
+	eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
+	T dAngle = (edgeAngle-eqAngle);
+	return k*dAngle*(ni+nj)*0.5;
+}
+
+
+template<typename T>
+Array<T,3> computeBendingForceLateral (T edgeAngle, T eqAngle, T k,
+								Array<T,3> const& ni) {
+	Array<T,3> fx1;
+	edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle;
+	eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
+	eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
+	T dAngle = (edgeAngle-eqAngle);
+	return -k*dAngle*ni;
+}
+
 
 /*
  * Calculates the bending potential.
@@ -290,7 +314,7 @@ T computeBendingPotential (T edgeAngle, T eqAngle, T k) {
  * The edge is iVertex-jVertex.
  */
 template<typename T>
-T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint & iVertex, plint & jVertex, plint & kVertex, plint & lVertex) {
+T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plint jVertex, plint & kVertex, plint & lVertex) {
     Array<T,3> x1 = mesh.getVertex(iVertex), x2, x3, x4;
 
     std::vector<plint> adjacentTriangles = mesh.getAdjacentTriangleIds(iVertex, jVertex);
@@ -318,7 +342,7 @@ T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint & iVertex, pl
     Array<T,3> V1 = mesh.computeTriangleNormal(iTriangle);
     Array<T,3> V2 = mesh.computeTriangleNormal(jTriangle);
     T angle = angleBetweenVectors(V1, V2);
-	plint sign = dot(x2-x1, V2) > 0?1:-1;
+	plint sign = dot(x2-x1, V2) >= 0?1:-1;
 	if (sign <= 0) {
 		angle = 2*pi-angle;
 	}

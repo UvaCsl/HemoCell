@@ -233,7 +233,6 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
         x3 = dynMesh.getVertex(jVertex);
         plint edgeId = getEdgeId(iVertex, jVertex);
         T eqLength = eqLengthPerEdge[edgeId];
-        T eqAngle = eqAnglePerEdge[edgeId];
         /* In Plane (WLC) and repulsive forces*/
         inPlaneForce += computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane);
 
@@ -241,26 +240,27 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
         dissipativeForce += computeDissipativeForce(x1, x3, iVelocity, particleVelocity[jVertex], gamma_T, gamma_C);
         /*  Bending Forces Calculations */
         /*  Bending Forces Calculations */
+        T eqAngle = eqAnglePerEdge[edgeId];
         T edgeAngle = calculateSignedAngle(dynMesh, iVertex, jVertex, kVertex, lVertex); //edge is iVertex, jVertex
-        Array<T,3> ftmp2, ftmp3, ftmp4;
         Array<T,3> iNormal = dynMesh.computeTriangleNormal(iVertex, jVertex, kVertex);
         Array<T,3> jNormal = dynMesh.computeTriangleNormal(iVertex, jVertex, lVertex);
-		tmpForce = computeBendingForce (edgeAngle, eqAngle, k_bend,
-				iNormal, jNormal,
-                ftmp2, ftmp3, ftmp4);
-//        tmpForce = computeBendingForceFromPotential (x1, x2, x3, x4,
-//                            eqTileSpan, eqLength, eqAngle, k_bend,
-//                            tmp2, tmp3, tmp4);
-        bendingForce += tmpForce * 0.5; // Multiplied by 0.5, because this force is calculated twice (x2 also calculates this force)
-        particleForces[kVertex][1] += ftmp2 * 0.5;
-        particleForces[jVertex][1] += ftmp3 * 0.5;
-        particleForces[lVertex][1] += ftmp4 * 0.5;
 
-        T t1 = computeBendingPotential (edgeAngle, eqAngle, k_bend);
-        particleForces[iVertex][6][0] += t1;
-        particleForces[kVertex][6][0] += t1;
-        particleForces[jVertex][6][0] += t1;
-        particleForces[lVertex][6][0] += t1;
+        // Compute bending force for the vertex as part of the main edge
+        bendingForce += computeBendingForceEdge (edgeAngle, eqAngle, k_bend,
+				iNormal, jNormal);
+        particleForces[iVertex][6][0] += computeBendingPotential (edgeAngle, eqAngle, k_bend);
+        // Compute bending force for the vertex as a lateral vertex
+        edgeId = getEdgeId(jVertex, kVertex);
+        eqAngle = eqAnglePerEdge[edgeId];
+        edgeAngle = calculateSignedAngle(dynMesh, jVertex, kVertex);
+        bendingForce += computeBendingForceLateral (edgeAngle, eqAngle, k_bend, iNormal)*0.5; // Is calculated twice, for the other triangle as well
+        particleForces[iVertex][6][0] += computeBendingPotential (edgeAngle, eqAngle, k_bend)*0.5; // Is calculated twice, for the other triangle as well
+        // Compute bending force for the vertex as a lateral vertex
+        edgeId = getEdgeId(jVertex, lVertex);
+        eqAngle = eqAnglePerEdge[edgeId];
+        edgeAngle = calculateSignedAngle(dynMesh, jVertex, lVertex);
+        bendingForce += computeBendingForceLateral (edgeAngle, eqAngle, k_bend, jNormal)*0.5; // Is calculated twice, for the other triangle as well
+        particleForces[iVertex][6][0] += computeBendingPotential (edgeAngle, eqAngle, k_bend)*0.5; // Is calculated twice, for the other triangle as well
     }
     f_wlc = inPlaneForce + repulsiveForce;
     f_bending = bendingForce;
