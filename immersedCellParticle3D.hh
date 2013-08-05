@@ -39,7 +39,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
       vHalfTime(T(),T(),T()),
       a(T(),T(),T()), force(T(),T(),T()), vPrevious(T(),T(),T()),
       f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()), f_surface(T(),T(),T()), f_shear(T(),T(),T()), f_viscosity(T(),T(),T()),
-      stress(T(),T(),T()), E_bending(T(),T(),T()),
+      stress(T(),T(),T()), E_bending(T(),T(),T()), processor(0),
       cellId(-1)
 { }
 
@@ -53,7 +53,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       force(T(),T(),T()),
       vPrevious(T(),T(),T()),
       f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()), f_surface(T(),T(),T()), f_shear(T(),T(),T()), f_viscosity(T(),T(),T()),
-      stress(T(),T(),T()), E_bending(T(),T(),T()),
+      stress(T(),T(),T()), E_bending(T(),T(),T()), processor(0),
       cellId(cellId_)
 { }
 
@@ -69,7 +69,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       force(force_),
       vPrevious(vPrevious_),
       f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()), f_surface(T(),T(),T()), f_shear(T(),T(),T()), f_viscosity(T(),T(),T()),
-      stress(T(),T(),T()), E_bending(T(),T(),T()),
+      stress(T(),T(),T()), E_bending(T(),T(),T()), processor(0),
       cellId(cellId_)
 { }
 
@@ -79,7 +79,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
         Array<T,3> const& v_, Array<T,3> const& vHalfTime_,
         Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_,
         Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_, Array<T,3> const& f_surface_, Array<T,3> const& f_shear_, Array<T,3> const& f_viscosity_,
-        Array<T,3> const& stress_, Array<T,3> const& E_bending_,
+        Array<T,3> const& stress_, Array<T,3> const& E_bending_, plint processor_,
         plint cellId_ )
     : Particle3D<T,Descriptor>(tag_, position),
       v(v_),
@@ -88,7 +88,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       force(force_),
       vPrevious(vPrevious_),
       f_wlc(f_wlc_), f_bending(f_bending_), f_volume(f_volume_), f_surface(f_surface_), f_shear(f_shear_), f_viscosity(f_viscosity_),
-      stress(stress_), E_bending(E_bending_),
+      stress(stress_), E_bending(E_bending_), processor(processor_),
       cellId(cellId_)
 { }
 
@@ -106,6 +106,7 @@ void ImmersedCellParticle3D<T,Descriptor>::advance() {
 // Euler update scheme
     this->getPosition() += vPrevious;
     vPrevious.resetToZero();
+    processor = this->getMpiProcessor();
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -131,7 +132,7 @@ void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_)
     f_viscosity.resetToZero();
     stress.resetToZero();
     E_bending.resetToZero();
-
+    processor = this->getMpiProcessor();
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -153,6 +154,7 @@ void ImmersedCellParticle3D<T,Descriptor>::serialize(HierarchicSerializer& seria
     serializer.addValues<T,3>(stress);
     serializer.addValues<T,3>(E_bending);
 
+    serializer.addValue<plint>(processor);
     serializer.addValue<plint>(cellId);
 }
 
@@ -175,6 +177,7 @@ void ImmersedCellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& u
     unserializer.readValues<T,3>(stress);
     unserializer.readValues<T,3>(E_bending);
 
+    unserializer.readValue<plint>(processor);
     unserializer.readValue<plint>(cellId);
 }
 
@@ -184,14 +187,6 @@ ImmersedCellParticle3D<T,Descriptor>* ImmersedCellParticle3D<T,Descriptor>::clon
     return new ImmersedCellParticle3D<T,Descriptor>(*this);
 }
 
-template<typename T, template<typename U> class Descriptor>
-bool ImmersedCellParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) const {
-    if (whichScalar==0) {
-        scalar = get_cellId();
-        return true;
-    }
-    return Particle3D<T,Descriptor>::getScalar(whichScalar, scalar);
-}
 
 template<typename T, template<typename U> class Descriptor>
 bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,3>& vector) const {
@@ -231,9 +226,6 @@ bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,
     } else if (whichVector==11) {
         vector = get_stress();
         return true;
-    } else if (whichVector==12) {
-        vector = get_E_bending();
-        return true;
     }
     return Particle3D<T,Descriptor>::getVector(whichVector, vector);
 }
@@ -264,15 +256,47 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getVectorName(plint whichVecto
         return "f_viscosity";
     } else if (whichVector==11) {
         return "stress";
-    } else if (whichVector==12) {
-        return "E_bending";
     }
     return "empty";
 }
 
 template<typename T, template<typename U> class Descriptor>
 plint ImmersedCellParticle3D<T,Descriptor>::getVectorsNumber() const {
-        return 13;
+        return 12;
+}
+
+/* Same for scalars */
+template<typename T, template<typename U> class Descriptor>
+bool ImmersedCellParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) const {
+    if (whichScalar==0) {
+    	scalar = T(get_cellId());
+        return true;
+    } else if (whichScalar==1) {
+        scalar = T(get_processor());
+        return true;
+    } else if (whichScalar==2) {
+        scalar = T(get_E_bending()[0]);
+        return true;
+    }
+    return Particle3D<T,Descriptor>::getScalar(whichScalar, scalar);
+}
+
+template<typename T, template<typename U> class Descriptor>
+std::string ImmersedCellParticle3D<T,Descriptor>::getScalarName(plint whichScalar) const {
+    if (whichScalar==0) {
+        return "cellId";
+    } else if (whichScalar==1) {
+    	return "processor";
+    } else if (whichScalar==2) {
+    	return "E_bending";
+    }
+    return "empty";
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+plint ImmersedCellParticle3D<T,Descriptor>::getScalarsNumber() const {
+        return 3;
 }
 
 }  // namespace plb

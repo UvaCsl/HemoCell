@@ -48,6 +48,8 @@ public:
     virtual ImmersedCellParticle3D<T,Descriptor>* clone() const;
     /// Return the cellId through a generic interface (vector id=0).
     virtual bool getScalar(plint whichScalar, T& scalar) const;
+    std::string getScalarName(plint whichScalar) const;
+    plint getScalarsNumber() const ;
     /// Return the velocity, acceleration or vHalfTime through a generic interface (vector id=0,1,2).
     virtual bool getVector(plint whichVector, Array<T,3>& vector) const;
     std::string getVectorName(plint whichVector) const;
@@ -57,13 +59,21 @@ public:
     Array<T,3> const& get_vPrevious() const { return vPrevious; }
     Array<T,3> const& get_a() const { return a; }
     Array<T,3> const& get_force() const { return force; }
-    plint const& get_cellId() const { return cellId; }
     Array<T,3>& get_v() { return v; }
     Array<T,3>& get_vHalfTime() { return vHalfTime; }
     Array<T,3>& get_vPrevious() { return vPrevious; }
     Array<T,3>& get_a() { return a; }
     Array<T,3>& get_force() { return force; }
+    plint const& get_cellId() const { return cellId; }
     plint& get_cellId() { return cellId; }
+    plint const& get_processor() const { return processor; }
+    plint& get_processor() { return processor; }
+    plint getMpiProcessor() {
+    	int myrank = 0;
+#ifdef PLB_MPI_PARALLEL
+	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+#endif
+    	return plint(myrank); }
 private:
     Array<T,3> v, vHalfTime, a, force, vPrevious;
     static int id;
@@ -72,6 +82,7 @@ private:
     Array<T,3> stress;
     Array<T,3> E_bending;
 private:
+    plint processor;
     plint cellId;
 public:
     ImmersedCellParticle3D (
@@ -79,7 +90,7 @@ public:
             Array<T,3> const& v_, Array<T,3> const& vHalfTime_,
             Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_,
             Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_, Array<T,3> const& f_surface_, Array<T,3> const& f_shear_, Array<T,3> const& f_viscosity_,
-            Array<T,3> const& stress_, Array<T,3> const& E_bending_,
+            Array<T,3> const& stress_, Array<T,3> const& E_bending_, plint processor_,
             plint cellId_ );
 
     Array<T,3> const& get_f_wlc() const { return f_wlc; }
@@ -120,7 +131,7 @@ class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         Array<T,3> position;
         Array<T,3> v, vHalfTime, a, force, vPrevious;
         Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress, E_bending;
-        plint cellId;
+        plint processor, cellId;
 
         unserializer.readValue(tag);
         unserializer.readValues<T,3>(position);
@@ -137,11 +148,12 @@ class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         unserializer.readValues<T,3>(f_viscosity);
         unserializer.readValues<T,3>(stress);
         unserializer.readValues<T,3>(E_bending);
+        unserializer.readValue(processor);
         unserializer.readValue(cellId);
 
         return new ImmersedCellParticle(tag, position, v, vHalfTime, a, force, vPrevious,
                 f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress, E_bending,
-                cellId);
+                processor, cellId);
     }
 };
 

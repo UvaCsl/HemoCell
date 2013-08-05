@@ -97,9 +97,12 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
 
     ImmersedCellParticle3D<T,Descriptor>* p0 =
         dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[0]);
-    std::vector<std::string> vectorNames;
+    std::vector<std::string> vectorNames, scalarNames;
     for (plint iVector = 0; iVector < p0->getVectorsNumber(); ++iVector) {
         vectorNames.push_back(p0->getVectorName(iVector));
+    }
+    for (plint iScalar = 0; iScalar < p0->getScalarsNumber(); ++iScalar) {
+    	scalarNames.push_back(p0->getScalarName(iScalar));
     }
 
     std::ofstream ofile(fName.c_str());
@@ -112,8 +115,8 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
           << (sizeof(T)==sizeof(double) ? " double" : " float")
           << "\n";
 
-    std::vector<std::vector<T> > scalarData(scalars.size());
-    for (pluint iScalar=0; iScalar<scalars.size(); ++iScalar) {
+    std::vector<std::vector<T> > scalarData(scalarNames.size());
+    for (pluint iScalar=0; iScalar<scalarNames.size(); ++iScalar) {
         scalarData[iScalar].resize(particles.size());
     }
     std::vector<std::vector<Array<T,3> > > vectorData(vectorNames.size());
@@ -126,7 +129,7 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
         posVect[iVertex] = particles[iParticle]->getPosition();
         posVect[iVertex] *= boundary.getDx();
         //posVect[iVertex] += boundary.getPhysicalLocation();
-        for (pluint iScalar=0; iScalar<scalars.size(); ++iScalar) {
+        for (pluint iScalar=0; iScalar<scalarNames.size(); ++iScalar) {
             T scalar;
             ImmersedCellParticle3D<T,Descriptor>* iparticle =
                 dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
@@ -196,8 +199,8 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
         ofile << "\n";
     }
 
-    for (pluint iScalar=0; iScalar<scalars.size(); ++iScalar) {
-        ofile << "SCALARS " << scalars[iScalar]
+    for (pluint iScalar=0; iScalar<scalarNames.size(); ++iScalar) {
+        ofile << "SCALARS " << scalarNames[iScalar]
               << (sizeof(T)==sizeof(double) ? " double" : " float")
               << " 1\n"
               << "LOOKUP_TABLE default\n";

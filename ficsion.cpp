@@ -53,7 +53,7 @@ plint borderWidth     = 1;  // Because Guo acts in a one-cell layer.
 plint extraLayer      = 0;  // Make the bounding box larger; for visualization purposes
                             //   only. For the simulation, it is OK to have extraLayer=0.
 const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
-const plint particleEnvelopeWidth = 5;
+const plint particleEnvelopeWidth = 3;
 
 void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
