@@ -237,7 +237,7 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
         inPlaneForce += computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane);
 
         /*  Dissipative Forces Calculations */
-        dissipativeForce += computeDissipativeForce(x1, x3, iVelocity, particleVelocity[jVertex], gamma_T, gamma_C);
+//        dissipativeForce += computeDissipativeForce(x1, x3, iVelocity, particleVelocity[jVertex], gamma_T, gamma_C);
         /*  Bending Forces Calculations */
         /*  Bending Forces Calculations */
         T eqAngle = eqAnglePerEdge[edgeId];

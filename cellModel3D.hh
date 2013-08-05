@@ -218,7 +218,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         /* In Plane (WLC) and repulsive forces*/
         inPlaneForce += computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane);
         /*  Dissipative Forces Calculations */
-        dissipativeForce += computeDissipativeForce(x1, x3, iVelocity, particleVelocity[jVertex], gamma_T, gamma_C);
+//        dissipativeForce += computeDissipativeForce(x1, x3, iVelocity, particleVelocity[jVertex], gamma_T, gamma_C);
         /*  Bending Forces Calculations */
         T edgeAngle = calculateSignedAngle(dynMesh, iVertex, jVertex, kVertex, lVertex); //edge is iVertex, jVertex
         Array<T,3> iNormal = dynMesh.computeTriangleNormal(iVertex, jVertex, kVertex);
