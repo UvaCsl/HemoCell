@@ -35,7 +35,7 @@ template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellVolume (TriangleBoundary3D<T> Cells,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
-                std::vector<T>& cellVolumes);
+                std::vector<T>& cellVolumes, std::map <plint, Particle3D<T,Descriptor>*> const & iVertexToParticle3D);
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
@@ -137,12 +137,14 @@ protected:
 template<typename T, template<typename U> class Descriptor>
 class VolumeCellReduceFunctional3D : public CellReduceFunctional3D<T, Descriptor> {
 public:
-    VolumeCellReduceFunctional3D(TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_)
-     : CellReduceFunctional3D<T, Descriptor>(triangleBoundary_, cellIds_) { };
+    VolumeCellReduceFunctional3D(TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_,
+    		std::map <plint, Particle3D<T,Descriptor>*> const & iVertexToParticle3D_)
+     : CellReduceFunctional3D<T, Descriptor>(triangleBoundary_, cellIds_), iVertexToParticle3D(iVertexToParticle3D_) { };
     virtual VolumeCellReduceFunctional3D<T,Descriptor>* clone() const { return new VolumeCellReduceFunctional3D<T,Descriptor>(*this); };
     virtual void calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh,
             std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_);
 private:
+    std::map <plint, Particle3D<T,Descriptor>*> const & iVertexToParticle3D;
 };
 
 

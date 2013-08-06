@@ -36,7 +36,7 @@ int ImmersedCellParticle3D<T,Descriptor>::id =
 template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
     : v(T(),T(),T()),
-      vHalfTime(T(),T(),T()),
+      pbcPosition(this->getPosition()),
       a(T(),T(),T()), force(T(),T(),T()), vPrevious(T(),T(),T()),
       f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()), f_surface(T(),T(),T()), f_shear(T(),T(),T()), f_viscosity(T(),T(),T()),
       stress(T(),T(),T()), E_bending(T(),T(),T()), processor(0),
@@ -48,7 +48,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
         plint tag_, Array<T,3> const& position, plint cellId_ )
     : Particle3D<T,Descriptor>(tag_, position), 
       v(T(),T(),T()),
-      vHalfTime(T(),T(),T()),
+      pbcPosition(position),
       a(T(),T(),T()),
       force(T(),T(),T()),
       vPrevious(T(),T(),T()),
@@ -60,11 +60,11 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
 template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
         plint tag_, Array<T,3> const& position,
-        Array<T,3> const& v_, Array<T,3> const& vHalfTime_,
+        Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
         Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_, plint cellId_ )
     : Particle3D<T,Descriptor>(tag_, position),
       v(v_),
-      vHalfTime(vHalfTime_),
+      pbcPosition(pbcPosition_),
       a(a_),
       force(force_),
       vPrevious(vPrevious_),
@@ -76,14 +76,14 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
 template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
         plint tag_, Array<T,3> const& position,
-        Array<T,3> const& v_, Array<T,3> const& vHalfTime_,
+        Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
         Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_,
         Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_, Array<T,3> const& f_surface_, Array<T,3> const& f_shear_, Array<T,3> const& f_viscosity_,
         Array<T,3> const& stress_, Array<T,3> const& E_bending_, plint processor_,
         plint cellId_ )
     : Particle3D<T,Descriptor>(tag_, position),
       v(v_),
-      vHalfTime(vHalfTime_),
+      pbcPosition(pbcPosition_),
       a(a_),
       force(force_),
       vPrevious(vPrevious_),
@@ -98,13 +98,14 @@ void ImmersedCellParticle3D<T,Descriptor>::advance() {
 //    v += force;
 //    this->getPosition() += v + 0.5*force;
 // Velocity Verlet
-//    vHalfTime = v + (T)0.5*force;
-//    this->getPosition() += vHalfTime;
+//    pbcPosition = v + (T)0.5*force;
+//    this->getPosition() += pbcPosition;
 // Adams-Bashforth update scheme
 //    this->getPosition() += 1.5*v - 0.5*vPrevious;
 //    vPrevious = v;
 // Euler update scheme
     this->getPosition() += vPrevious;
+    pbcPosition += vPrevious;
     vPrevious.resetToZero();
     processor = this->getMpiProcessor();
 }
@@ -119,7 +120,7 @@ void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_)
 {
     Particle3D<T,Descriptor>::reset(position_);
     v.resetToZero();
-    vHalfTime.resetToZero();
+    pbcPosition.resetToZero();
     a.resetToZero();
     force.resetToZero();
     vPrevious.resetToZero();
@@ -140,7 +141,7 @@ void ImmersedCellParticle3D<T,Descriptor>::serialize(HierarchicSerializer& seria
 {
     Particle3D<T,Descriptor>::serialize(serializer);
     serializer.addValues<T,3>(v);
-    serializer.addValues<T,3>(vHalfTime);
+    serializer.addValues<T,3>(pbcPosition);
     serializer.addValues<T,3>(a);
     serializer.addValues<T,3>(force);
     serializer.addValues<T,3>(vPrevious);
@@ -163,7 +164,7 @@ void ImmersedCellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& u
 {
     Particle3D<T,Descriptor>::unserialize(unserializer);
     unserializer.readValues<T,3>(v);
-    unserializer.readValues<T,3>(vHalfTime);
+    unserializer.readValues<T,3>(pbcPosition);
     unserializer.readValues<T,3>(a);
     unserializer.readValues<T,3>(force);
     unserializer.readValues<T,3>(vPrevious);
@@ -194,7 +195,7 @@ bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,
         vector = get_v();
         return true;
     } else if (whichVector==1) {
-        vector = get_vHalfTime();
+        vector = get_pbcPosition();
         return true;
     } else if (whichVector==2) {
         vector = get_a();
@@ -235,7 +236,7 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getVectorName(plint whichVecto
     if (whichVector==0) {
         return "velocity";
     } else if (whichVector==1) {
-        return "vHalfTime";
+        return "pbcPosition";
     } else if (whichVector==2) {
         return "acceleration";
     } else if (whichVector==3) {

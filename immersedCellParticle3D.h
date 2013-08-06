@@ -33,7 +33,7 @@ public:
     ImmersedCellParticle3D();
     ImmersedCellParticle3D( plint tag_, Array<T,3> const& position, plint cellId_ = -1 );
     ImmersedCellParticle3D( plint tag_, Array<T,3> const& position,
-                          Array<T,3> const& v_, Array<T,3> const& vHalfTime_,
+                          Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
                             Array<T,3> const& a_, Array<T,3> const& force_, Array<T,3> const& vPrevious_,
                             plint cellId_ = -1);
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
@@ -50,17 +50,17 @@ public:
     virtual bool getScalar(plint whichScalar, T& scalar) const;
     std::string getScalarName(plint whichScalar) const;
     plint getScalarsNumber() const ;
-    /// Return the velocity, acceleration or vHalfTime through a generic interface (vector id=0,1,2).
+    /// Return the velocity, acceleration or pbcPosition through a generic interface (vector id=0,1,2).
     virtual bool getVector(plint whichVector, Array<T,3>& vector) const;
     std::string getVectorName(plint whichVector) const;
     plint getVectorsNumber() const ;
     Array<T,3> const& get_v() const { return v; }
-    Array<T,3> const& get_vHalfTime() const { return vHalfTime; }
+    Array<T,3> const& get_pbcPosition() const { return pbcPosition; }
     Array<T,3> const& get_vPrevious() const { return vPrevious; }
     Array<T,3> const& get_a() const { return a; }
     Array<T,3> const& get_force() const { return force; }
     Array<T,3>& get_v() { return v; }
-    Array<T,3>& get_vHalfTime() { return vHalfTime; }
+    Array<T,3>& get_pbcPosition() { return pbcPosition; }
     Array<T,3>& get_vPrevious() { return vPrevious; }
     Array<T,3>& get_a() { return a; }
     Array<T,3>& get_force() { return force; }
@@ -75,7 +75,7 @@ public:
 #endif
     	return plint(myrank); }
 private:
-    Array<T,3> v, vHalfTime, a, force, vPrevious;
+    Array<T,3> v, pbcPosition, a, force, vPrevious;
     static int id;
 private:
     Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity;
@@ -87,7 +87,7 @@ private:
 public:
     ImmersedCellParticle3D (
             plint tag_, Array<T,3> const& position,
-            Array<T,3> const& v_, Array<T,3> const& vHalfTime_,
+            Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
             Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_,
             Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_, Array<T,3> const& f_surface_, Array<T,3> const& f_shear_, Array<T,3> const& f_viscosity_,
             Array<T,3> const& stress_, Array<T,3> const& E_bending_, plint processor_,
@@ -129,14 +129,14 @@ class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         // tag, position, scalars, vectors.
         plint tag;
         Array<T,3> position;
-        Array<T,3> v, vHalfTime, a, force, vPrevious;
+        Array<T,3> v, pbcPosition, a, force, vPrevious;
         Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress, E_bending;
         plint processor, cellId;
 
         unserializer.readValue(tag);
         unserializer.readValues<T,3>(position);
         unserializer.readValues<T,3>(v);
-        unserializer.readValues<T,3>(vHalfTime);
+        unserializer.readValues<T,3>(pbcPosition);
         unserializer.readValues<T,3>(a);
         unserializer.readValues<T,3>(force);
         unserializer.readValues<T,3>(vPrevious);
@@ -151,7 +151,7 @@ class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         unserializer.readValue(processor);
         unserializer.readValue(cellId);
 
-        return new ImmersedCellParticle(tag, position, v, vHalfTime, a, force, vPrevious,
+        return new ImmersedCellParticle(tag, position, v, pbcPosition, a, force, vPrevious,
                 f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress, E_bending,
                 processor, cellId);
     }

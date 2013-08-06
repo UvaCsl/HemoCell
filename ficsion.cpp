@@ -28,6 +28,7 @@
 #include "immersedCells3D.hh"
 #include "immersedCellsFunctional3D.hh"
 #include "immersedCellsReductions.hh"
+#include "meshToParticleField3D.h"
 #include <string>
 #include <map>
 
@@ -296,20 +297,25 @@ int main(int argc, char* argv[])
     std::vector<T> cellsMeanEdgeDistance, cellsMaxEdgeDistance, cellsMeanAngle, cellsMeanTriangleArea, cellsMeanTileSpan;
     std::vector< Array<T,3> > cellsCenter, cellsVelocity;
     T eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan;
+    std::vector<MultiBlock3D*> particleArg;
+    std::vector<MultiBlock3D*> particleLatticeArg;
+    particleArg.push_back(&immersedParticles);
+    particleLatticeArg.push_back(&immersedParticles);
+    particleLatticeArg.push_back(&lattice);
+
+    std::map<plint, Particle3D<T,DESCRIPTOR>*> iVertexToParticle3D;
+    applyProcessingFunctional (
+        new MapVertexToParticle3D<T,DESCRIPTOR> (
+            Cells, iVertexToParticle3D),
+        immersedParticles.getBoundingBox(), particleArg );
     calculateCellMeasures(DeCells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                        cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
+                        cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan, iVertexToParticle3D);
     eqArea = cellsMeanTriangleArea[0];     eqLength = cellsMeanEdgeDistance[0];
     eqAngle = cellsMeanAngle[0];     eqVolume = cellsVolume[0];
     eqSurface = cellsSurface[0];	eqTileSpan = cellsMeanTileSpan[0];
     printCellMeasures(0, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                            cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolume, eqSurface, eqArea, eqLength,
                            dx, dt) ;
-
-    std::vector<MultiBlock3D*> particleArg;
-    std::vector<MultiBlock3D*> particleLatticeArg;
-    particleArg.push_back(&immersedParticles);
-    particleLatticeArg.push_back(&immersedParticles);
-    particleLatticeArg.push_back(&lattice);
 
     std::vector<plint> outerLeftTags, outerRightTags;
     std::vector<plint> outerFrontTags, outerBackTags;
@@ -465,9 +471,6 @@ int main(int argc, char* argv[])
             tmeas = 0.1/dt;
         }
         /* =============================== OUTPUT ===================================*/
-        calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                            cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
-
         if (i%tmeas==0) {
             if (goAndStop != 0) {
                 writeImmersedPointsVTK(Cells, goAndStopVertices, dx,
@@ -646,6 +649,12 @@ int main(int argc, char* argv[])
         applyProcessingFunctional ( // update mesh position
             new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
             immersedParticles.getBoundingBox(), particleArg);
+        applyProcessingFunctional (
+            new MapVertexToParticle3D<T,DESCRIPTOR> (
+                Cells, iVertexToParticle3D),
+            immersedParticles.getBoundingBox(), particleArg );
+        calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+                            cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan, iVertexToParticle3D);
         // #1# Membrane Model
         if (rbcModel == 0) {
             applyProcessingFunctional (

@@ -68,11 +68,12 @@ template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellVolume (TriangleBoundary3D<T> Cells,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
-                std::vector<T>& cellVolumes) //Perhaps add TAGS
+                std::vector<T>& cellVolumes,
+                std::map <plint, Particle3D<T,Descriptor>*> const & iVertexToParticle3D) //Perhaps add TAGS
 {
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
-    VolumeCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    VolumeCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds, iVertexToParticle3D);
     applyProcessingFunctional(functional, domain, particleArg);
     functional.getCellQuantityArray(cellVolumes, cellIds);
 }
@@ -250,9 +251,19 @@ void VolumeCellReduceFunctional3D<T,Descriptor>::calculateQuantity(TriangularSur
         plint iVertex = particle->getTag();
         std::vector<plint> neighbors = triangleMesh.getNeighborTriangleIds(iVertex);
         for (pluint iB = 0; iB < neighbors.size(); ++iB) {
-            Array<T,3> v0 = triangleMesh.getVertex(neighbors[iB],0);
-            Array<T,3> v1 = triangleMesh.getVertex(neighbors[iB],1);
-            Array<T,3> v2 = triangleMesh.getVertex(neighbors[iB],2);
+        	plint vId;
+        	vId = triangleMesh.getVertexId(neighbors[iB],0);
+            ImmersedCellParticle3D<T,Descriptor>* neigboringParticle =
+                    dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D.find(vId)->second);
+        	Array<T,3> v0 = neigboringParticle->get_pbcPosition();
+        	vId = triangleMesh.getVertexId(neighbors[iB],1);
+            neigboringParticle =
+                    dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D.find(vId)->second);
+        	Array<T,3> v1 = neigboringParticle->get_pbcPosition();
+        	vId = triangleMesh.getVertexId(neighbors[iB],2);
+            neigboringParticle =
+                    dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D.find(vId)->second);
+        	Array<T,3> v2 = neigboringParticle->get_pbcPosition();
 //       /* ************* Other Calculation ********* */
 //          Array<T,3> areaTimesNormal = triangleMesh.computeTriangleNormal(neighbors[iB], true);
 //          T triangleVolumeT6 = VectorTemplate<T,Descriptor>::scalarProduct(areaTimesNormal, ((v0+v1+v2)/3.0)) ;
