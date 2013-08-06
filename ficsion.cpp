@@ -290,6 +290,7 @@ int main(int argc, char* argv[])
             numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), cellIds[iA]);
             pcout << "Cell: " << iA << ", Particles: " << numParts[iA] << std::endl;
     }
+    CellFieldQuantityHolder<T,DESCRIPTOR> cqh(npar, numParts[0]);
     // plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox()); //Total number of particles
 
     /* Measure Cell Variables */
@@ -649,6 +650,17 @@ int main(int argc, char* argv[])
         applyProcessingFunctional ( // update mesh position
             new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
             immersedParticles.getBoundingBox(), particleArg);
+
+//        applyProcessingFunctional (
+//            new MeshToParticleField3D<T,DESCRIPTOR> (cqh),
+//            immersedParticles.getBoundingBox(), particleArg );
+//        std::map<plint, plint> cid2mcid = cqh.getCellIdToMeshCellId();
+//        std::map<plint, plint>::iterator iter = cid2mcid.begin();
+//    	for (; iter != cid2mcid.end();) {
+//    		std::cout << "cid2mcid " << i << " " << cid2mcid.size() << " cid " << iter->first << ", mid " << iter->second << std::endl;
+//    		iter++;
+//    	}
+
         applyProcessingFunctional (
             new MapVertexToParticle3D<T,DESCRIPTOR> (
                 Cells, iVertexToParticle3D),

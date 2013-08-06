@@ -30,8 +30,8 @@ Tumbling-TankTreading Measurements [6], Fischer2004 [7],
 Fast Cell Stretching release [8],
  -->
     <flowType> 1 </flowType>   
-    <Re> 1.0 </Re>   <!--Reynolds number-->
-    <shearRate> 5000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
+    <Re> 5.0 </Re>   <!--Reynolds number-->
+    <shearRate> 1000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 193.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->
     <eulerAngles> 0 90 0 </eulerAngles> <!-- In degrees -->
     <deflationRatio> 1.00 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
@@ -61,6 +61,6 @@ Fast Cell Stretching release [8],
 <sim>
     <tmax> 50000000 </tmax> <!-- total number of iterations -->
     <tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
-    <npar> 1 </npar> <!-- Number of particles > -->
+    <npar> 2 </npar> <!-- Number of particles > -->
 </sim>
 </ficsion>
