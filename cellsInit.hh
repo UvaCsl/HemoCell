@@ -85,7 +85,8 @@ void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<Par
                            std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
                            std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
                            std::vector< Array<T,3> > & cellsCenter, std::vector< Array<T,3> > & cellsVelocity,
-                           std::vector<T> & cellsMeanTileSpan)
+                           std::vector<T> & cellsMeanTileSpan,
+                           std::map <plint, Particle3D<T,Descriptor>*> const & iVertexToParticle3D)
     {
     cellsVolume.clear(); cellsSurface.clear(); cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();
     cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsCenter.clear(); cellsVelocity.clear();
@@ -98,7 +99,7 @@ void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<Par
     applyProcessingFunctional(nfunctional, particles.getBoundingBox(), particleArg);
     nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
 
-    countCellVolume(Cells, particles, particles.getBoundingBox(), cellIds, cellsVolume);
+    countCellVolume(Cells, particles, particles.getBoundingBox(), cellIds, cellsVolume, iVertexToParticle3D);
     countCellSurface(Cells, particles, particles.getBoundingBox(), cellIds, cellsSurface);
     countCellMeanTriangleArea(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanTriangleArea);
     countCellMeanAngle(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanAngle);
