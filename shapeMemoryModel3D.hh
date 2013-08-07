@@ -21,11 +21,7 @@
 #ifndef SHAPE_MEMORY_MODEL_3D_HH
 #define SHAPE_MEMORY_MODEL_3D_HH
 
-#include <cmath>
-#include <map>
 #include "shapeMemoryModel3D.h"
-#include "computeCellForces3D.hh"
-
 
 
 namespace plb {
@@ -85,8 +81,8 @@ ShapeMemoryModel3D<T>::ShapeMemoryModel3D (
     k_bend *= kBT;
     /* In plane coefficient initialization */
     k_inPlane = k_WLC_ * kBT /(4.0*persistenceLengthCoarse);
-    C_elastic =  kBT*k_elastic * (3.0*sqrt(3.0)*pow(eqLength,3) * eqLengthRatio *
-                    (6 - 9*eqLengthRatio + 4*pow(eqLengthRatio,2))) / (64.*persistenceLengthCoarse);
+//    C_elastic =  kBT*k_elastic * (3.0*sqrt(3.0)*pow(eqLength,3) * eqLengthRatio *
+//                    (6 - 9*eqLengthRatio + 4*pow(eqLengthRatio,2))) / (64.*persistenceLengthCoarse);
     /* Dissipative term coefficients from FedosovCaswellKarniadakis2010 */
     gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
     gamma_C = (gamma_T/3.0);
@@ -215,7 +211,7 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
         T eqArea = eqAreaPerTriangle[getTriangleId(iTriangle)];
         shearForce += computeLocalAreaConservationForce(dAdx, triangleArea, eqArea, areaCoefficient);
         /* Elastice Force */
-        elasticForce += computeElasticRepulsiveForce(dAdx, triangleArea, C_elastic);
+//        elasticForce += computeElasticRepulsiveForce(dAdx, triangleArea, C_elastic);
         /* Volume conservation force */
         volumeForce  += computeVolumeConservationForce(x1, x2, x3, volumeCoefficient);
         }
