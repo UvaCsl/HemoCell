@@ -7,19 +7,24 @@
 /* ******** CellReduceFunctional3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
 CellReduceFunctional3D<T,Descriptor>::CellReduceFunctional3D(
-        TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_, bool findMax_)
-    : triangleBoundary(triangleBoundary_), findMax(findMax_)
+        TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_, plint numberOfCells_, bool findMax_)
+    : triangleBoundary(triangleBoundary_), quantityIds(numberOfCells_), numberOfCells(numberOfCells_), findMax(findMax_)
 {
-    numberOfCells = 0;
-    for (pluint var = 0; var < cellIds_.size(); ++var)
-        if (cellIds_[var] > numberOfCells)
-            numberOfCells = cellIds_[var];
-    if (findMax) {
-        for (pluint i=0; i< (pluint) numberOfCells+1; ++i)
-            quantityIds.push_back(this->getStatistics().subscribeMax());
-    } else {
-        for (pluint i=0; i< (pluint) numberOfCells+1; ++i)
-            quantityIds.push_back(this->getStatistics().subscribeSum());
+//    	// To be used in later versions.
+//	cellIds = cellIds_;
+//	std::sort (cellIds.begin(), cellIds.begin());
+//	plint iV=0;
+//	plint nextCell = cellIds[iV];
+	plint statId;
+    for (pluint i=0; i< (pluint) numberOfCells; ++i) {
+    	if (findMax) { statId = this->getStatistics().subscribeMax(); }
+		else { statId = this->getStatistics().subscribeSum(); }
+    	quantityIds[i] = statId;
+//    	// To be used in later versions.
+//    	if (nextCell == i) {
+//    		quantityIds[nextCell] = statId;
+//			nextCell = cellIds[++iV];
+//    	}
     }
 }
 
@@ -67,13 +72,13 @@ void CellReduceFunctional3D<T,Descriptor>::getTypeOfModification(std::vector<mod
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellVolume (TriangleBoundary3D<T> Cells,
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds, plint numberOfCells,
                 std::vector<T>& cellVolumes,
                 std::map <plint, Particle3D<T,Descriptor>*> const & iVertexToParticle3D) //Perhaps add TAGS
 {
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
-    VolumeCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds, iVertexToParticle3D);
+    VolumeCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds, numberOfCells, iVertexToParticle3D);
     applyProcessingFunctional(functional, domain, particleArg);
     functional.getCellQuantityArray(cellVolumes, cellIds);
 }
@@ -81,12 +86,12 @@ void countCellVolume (TriangleBoundary3D<T> Cells,
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellSurface (TriangleBoundary3D<T> Cells,
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds, plint numberOfCells,
                 std::vector<T>& cellSurfaces) //Perhaps add TAGS
 {
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
-    SurfaceCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    SurfaceCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(functional, domain, particleArg);
     functional.getCellQuantityArray(cellSurfaces, cellIds);
 }
@@ -94,17 +99,17 @@ void countCellSurface (TriangleBoundary3D<T> Cells,
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellMeanTriangleArea (TriangleBoundary3D<T> Cells,
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds, plint numberOfCells,
                 std::vector<T>& cellMeanTriangleArea) //Perhaps add TAGS
 {
     // We assume homogeneous Cells
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
-    SurfaceCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    SurfaceCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(functional, domain, particleArg);
     functional.getCellQuantityArray(cellMeanTriangleArea, cellIds);
     std::vector<T> cellNumTriangles;
-    NumTrianglesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds);
+    NumTrianglesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(nfunctional, domain, particleArg);
     nfunctional.getCellQuantityArray(cellNumTriangles, cellIds);
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
@@ -115,17 +120,17 @@ void countCellMeanTriangleArea (TriangleBoundary3D<T> Cells,
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellMeanEdgeDistance (TriangleBoundary3D<T> Cells,
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds, plint numberOfCells,
                 std::vector<T>& cellMeanEdgeDistance) //Perhaps add TAGS
 {
     // We assume homogeneous Cells
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
-    EdgeDistanceCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    EdgeDistanceCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(functional, domain, particleArg);
     functional.getCellQuantityArray(cellMeanEdgeDistance, cellIds);
     std::vector<T> cellNumVertices;
-    NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds);
+    NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(nfunctional, domain, particleArg);
     nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
@@ -136,17 +141,17 @@ void countCellMeanEdgeDistance (TriangleBoundary3D<T> Cells,
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellMeanTileSpan (TriangleBoundary3D<T> Cells,
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds, plint numberOfCells,
                 std::vector<T>& cellMeanTileSpan) //Perhaps add TAGS
 {
     // We assume homogeneous Cells
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
-    TileSpanCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    TileSpanCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(functional, domain, particleArg);
     functional.getCellQuantityArray(cellMeanTileSpan, cellIds);
     std::vector<T> cellNumVertices;
-    NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds);
+    NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(nfunctional, domain, particleArg);
     nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
@@ -157,13 +162,13 @@ void countCellMeanTileSpan (TriangleBoundary3D<T> Cells,
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellCenters(TriangleBoundary3D<T> Cells,
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds, plint numberOfCells,
                 std::vector< Array<T,3> > & cellsCenter, std::vector<T> & cellNumVertices) //Perhaps add TAGS
 {
     // We assume homogeneous Cells
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
-    CenterCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    CenterCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(functional, domain, particleArg);
     functional.getCellQuantityArray(cellsCenter, cellIds);
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
@@ -174,13 +179,13 @@ void countCellCenters(TriangleBoundary3D<T> Cells,
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellVelocity(TriangleBoundary3D<T> Cells,
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds, plint numberOfCells,
                 std::vector< Array<T,3> > & cellsVelocity, std::vector<T> & cellNumVertices) //Perhaps add TAGS
 {
     // We assume homogeneous Cells
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
-    VelocityCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    VelocityCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(functional, domain, particleArg);
     functional.getCellQuantityArray(cellsVelocity, cellIds);
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
@@ -192,13 +197,13 @@ void countCellVelocity(TriangleBoundary3D<T> Cells,
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellMaxEdgeDistance (TriangleBoundary3D<T> Cells,
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds, plint numberOfCells,
                 std::vector<T>& cellMaxEdgeDistance) //Perhaps add TAGS
 {
     // We assume homogeneous Cells
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
-    MaxEdgeDistanceCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    MaxEdgeDistanceCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(functional, domain, particleArg);
     functional.getCellQuantityArray(cellMaxEdgeDistance, cellIds);
 }
@@ -206,17 +211,17 @@ void countCellMaxEdgeDistance (TriangleBoundary3D<T> Cells,
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellMeanAngle (TriangleBoundary3D<T> Cells,
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds, plint numberOfCells,
                 std::vector<T>& cellMeanAngle) //Perhaps add TAGS
 {
     // We assume homogeneous Cells
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
-    AngleCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    AngleCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(functional, domain, particleArg);
     functional.getCellQuantityArray(cellMeanAngle, cellIds);
     std::vector<T> cellNumVertices;
-    NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds);
+    NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(nfunctional, domain, particleArg);
     nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
@@ -227,13 +232,13 @@ void countCellMeanAngle (TriangleBoundary3D<T> Cells,
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void countCellVertices (TriangleBoundary3D<T> Cells,
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds,
+                MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, Box3D const& domain, std::vector<plint> cellIds, plint numberOfCells,
                 std::vector<T>& cellVertices) //Perhaps add TAGS
 {
     // We assume homogeneous Cells
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
-    AngleCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds);
+    AngleCellReduceFunctional3D<T,Descriptor> functional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(functional, domain, particleArg);
     functional.getCellQuantityArray(cellVertices, cellIds);
 }
@@ -242,7 +247,8 @@ void countCellVertices (TriangleBoundary3D<T> Cells,
 
 /* ******** VolumeCellReduceFunctional3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
-void VolumeCellReduceFunctional3D<T,Descriptor>::calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh, std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_)
+void VolumeCellReduceFunctional3D<T,Descriptor>::calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh,
+		std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_)
 {
     for (pluint iA = 0; iA < particles.size(); ++iA) {
         Particle3D<T,Descriptor>* nonTypedParticle = particles[iA];
@@ -351,13 +357,9 @@ void CenterCellReduceFunctional3D<T,Descriptor>::processGenericBlocks (
 
 template<typename T, template<typename U> class Descriptor>
 CenterCellReduceFunctional3D<T,Descriptor>::CenterCellReduceFunctional3D(
-        TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_)
-    : triangleBoundary(triangleBoundary_)
+        TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_, plint numberOfCells_)
+    : triangleBoundary(triangleBoundary_), numberOfCells(numberOfCells_)
 {
-    numberOfCells = 0;
-    for (pluint var = 0; var < cellIds_.size(); ++var)
-        if (cellIds_[var] > numberOfCells)
-            numberOfCells = cellIds_[var];
     for (pluint i=0; i< (pluint) 3*(numberOfCells + 1); ++i)
         quantityIds.push_back(this->getStatistics().subscribeSum());
 }
@@ -406,13 +408,9 @@ void VelocityCellReduceFunctional3D<T,Descriptor>::processGenericBlocks (
 
 template<typename T, template<typename U> class Descriptor>
 VelocityCellReduceFunctional3D<T,Descriptor>::VelocityCellReduceFunctional3D(
-        TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_)
-    : triangleBoundary(triangleBoundary_)
+        TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_, plint numberOfCells_)
+    : triangleBoundary(triangleBoundary_), numberOfCells(numberOfCells_)
 {
-    numberOfCells = 0;
-    for (pluint var = 0; var < cellIds_.size(); ++var)
-        if (cellIds_[var] > numberOfCells)
-            numberOfCells = cellIds_[var];
     for (pluint i=0; i< (pluint) 3*(numberOfCells + 1); ++i)
         quantityIds.push_back(this->getStatistics().subscribeSum());
 }
