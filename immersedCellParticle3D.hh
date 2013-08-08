@@ -270,12 +270,15 @@ plint ImmersedCellParticle3D<T,Descriptor>::getVectorsNumber() const {
 template<typename T, template<typename U> class Descriptor>
 bool ImmersedCellParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) const {
     if (whichScalar==0) {
-    	scalar = T(get_cellId());
+    	scalar = T(this->getTag());
         return true;
     } else if (whichScalar==1) {
-        scalar = T(get_processor());
+        scalar = T(get_cellId());
         return true;
     } else if (whichScalar==2) {
+        scalar = T(get_processor());
+        return true;
+    } else if (whichScalar==3) {
         scalar = T(get_E_bending()[0]);
         return true;
     }
@@ -285,10 +288,12 @@ bool ImmersedCellParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scala
 template<typename T, template<typename U> class Descriptor>
 std::string ImmersedCellParticle3D<T,Descriptor>::getScalarName(plint whichScalar) const {
     if (whichScalar==0) {
-        return "cellId";
+        return "tag";
     } else if (whichScalar==1) {
-    	return "processor";
+        	return "processor";
     } else if (whichScalar==2) {
+        	return "processor";
+	} else if (whichScalar==3) {
     	return "E_bending";
     }
     return "empty";
@@ -297,7 +302,7 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getScalarName(plint whichScala
 
 template<typename T, template<typename U> class Descriptor>
 plint ImmersedCellParticle3D<T,Descriptor>::getScalarsNumber() const {
-        return 3;
+        return 4;
 }
 
 }  // namespace plb
