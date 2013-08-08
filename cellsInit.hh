@@ -22,66 +22,65 @@
 
 template<typename T>
 void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> const& parameters,
-        std::vector<Array<T,3> > & centers, std::vector<T> & radii, plint flowType) {
+		std::vector<Array<T,3> > & centers, std::vector<T> & radii, plint flowType) {
 
-    std::vector<T> posX, posY, posZ;
-    const plint nx = parameters.getNx() - 1 ;
-    const plint ny = parameters.getNy()  - 1;
-    const plint nz = parameters.getNz()  - 1;
-    const T dX = 2.1 * radius ;
-    const T dY = 2.1 * radius * ( (shape==1) ? 0.265106361 : 1 );
-    const T dZ = 2.1 * radius;
+	std::vector<T> posX, posY, posZ;
+	const plint nx = parameters.getNx() - 2;
+	const plint ny = parameters.getNy() - 2;
+	const plint nz = parameters.getNz() - 2;
+	const T dX = 2.1 * radius ;
+	const T dY = 2.1 * radius * ( (shape==0) ? 1 : 0.3);
+	const T dZ = 2.1 * radius;
 
-    plint NdX = (nx-1)*1.0/dX;
-    plint NdY = (ny-1)*1.0/dY;
-    plint NdZ = (nz-1)*1.0/dZ;
-    npar = npar<(NdX*NdY*NdZ)?npar:(NdX*NdY*NdZ);
-    plint slices = npar/(NdY*NdZ);
+	plint NdX = (nx-1)*1.0/dX;
+	plint NdY = (ny-1)*1.0/dY;
+	plint NdZ = (nz-1)*1.0/dZ;
+	npar = npar<(NdX*NdY*NdZ)?npar:(NdX*NdY*NdZ);
+	plint slices = npar/(NdY*NdZ);
 
-    for (plint i = 0; i < slices; ++i) {
-        for (plint iy = 0; iy < NdY; ++iy) {
-            for (plint iz = 0; iz < NdZ; ++iz) {
-                posX.push_back((i+0.5)*dX);
-                posY.push_back((iy+0.5)*dY);
-                posZ.push_back((iz+0.5)*dZ);
-            }
-        }
-    }
-    plint lastSlice = npar%(NdY*NdZ);
-    plint rows = lastSlice/NdZ;
-    for (plint iy = 1; iy <= rows; ++iy) {
-        for (plint iz = 0; iz < NdZ; ++iz) {
-            posX.push_back((slices+0.5)*dX);
-            posY.push_back(ny * iy*1.0/(rows+1 + 1.0));
-            posZ.push_back((iz+0.5)*dZ);
-        }
-    }
+	for (plint i = 0; i < slices; ++i) {
+		for (plint iy = 0; iy < NdY; ++iy) {
+			for (plint iz = 0; iz < NdZ; ++iz) {
+				posX.push_back((i+0.5)*dX);
+				posY.push_back((iy+0.5)*dY);
+				posZ.push_back((iz+0.5)*dZ);
+			}
+		}
+	}
+	plint lastSlice = npar%(NdY*NdZ);
+	plint rows = lastSlice/NdZ;
+	for (plint iy = 1; iy <= rows; ++iy) {
+		for (plint iz = 0; iz < NdZ; ++iz) {
+			posX.push_back((slices+0.5)*dX);
+			posY.push_back(ny * iy*1.0/(rows+1 + 1.0));
+			posZ.push_back((iz+0.5)*dZ);
+		}
+	}
 
-    plint mods = lastSlice%NdZ;
-    for (plint iz = 1; iz <= mods; ++iz) {
-        posX.push_back((slices+0.5)*dX);
-        posY.push_back(ny * (rows+1)*1.0/(rows+1 + 1.0));
-        posZ.push_back(nz * iz*1.0/(mods + 1.0));
-    }
+	plint mods = lastSlice%NdZ;
+	for (plint iz = 1; iz <= mods; ++iz) {
+		posX.push_back((slices+0.5)*dX);
+		posY.push_back(ny * (rows+1)*1.0/(rows+1 + 1.0));
+		posZ.push_back(nz * iz*1.0/(mods + 1.0));
+	}
 
-    T addToX = 0.0;
-    if (flowType != 0) {
-        addToX = (NdX - slices) * dX * 0.5;
-    } else {
-        addToX = (NdX - slices) * dX * 0.25;
-    }
+	T addToX = 0.0;
+	if (flowType != 0) {
+		addToX = (NdX - slices) * dX * 0.5;
+	}
 
 
-    for (pluint iA = 0; iA < posX.size(); ++iA) {
-        centers.push_back(Array<T,3>(posX[iA]+addToX,posY[iA],posZ[iA]));
-        radii.push_back(radius);
-    }
+	for (pluint iA = 0; iA < posX.size(); ++iA) {
+		centers.push_back(Array<T,3>(posX[iA]+addToX,posY[iA],posZ[iA]));
+		radii.push_back(radius);
+	}
 }
+
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles,
-                           std::vector<plint> & cellIds,
+                           std::vector<plint> & cellIds, plint numberOfCells,
                            std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
                            std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
                            std::vector< Array<T,3> > & cellsCenter, std::vector< Array<T,3> > & cellsVelocity,
@@ -95,20 +94,20 @@ void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<Par
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particles);
     std::vector<T> cellNumVertices;
-    NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds);
+    NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds, numberOfCells);
     applyProcessingFunctional(nfunctional, particles.getBoundingBox(), particleArg);
     nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
 
-    countCellVolume(Cells, particles, particles.getBoundingBox(), cellIds, cellsVolume, iVertexToParticle3D);
-    countCellSurface(Cells, particles, particles.getBoundingBox(), cellIds, cellsSurface);
-    countCellMeanTriangleArea(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanTriangleArea);
-    countCellMeanAngle(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanAngle);
-    countCellMeanEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanEdgeDistance);
-    countCellMeanTileSpan(Cells, particles, particles.getBoundingBox(), cellIds, cellsMeanTileSpan);
-    countCellMaxEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, cellsMaxEdgeDistance);
-    countCellMaxEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, cellsMaxEdgeDistance);
-    countCellCenters(Cells, particles, particles.getBoundingBox(), cellIds, cellsCenter, cellNumVertices);
-    countCellVelocity(Cells, particles, particles.getBoundingBox(), cellIds, cellsVelocity, cellNumVertices);
+    countCellVolume(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsVolume, iVertexToParticle3D);
+    countCellSurface(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsSurface);
+    countCellMeanTriangleArea(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsMeanTriangleArea);
+    countCellMeanAngle(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsMeanAngle);
+    countCellMeanEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsMeanEdgeDistance);
+    countCellMeanTileSpan(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsMeanTileSpan);
+    countCellMaxEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsMaxEdgeDistance);
+    countCellMaxEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsMaxEdgeDistance);
+    countCellCenters(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsCenter, cellNumVertices);
+    countCellVelocity(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsVelocity, cellNumVertices);
 }
 
 

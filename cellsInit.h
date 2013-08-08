@@ -32,7 +32,7 @@ void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> cons
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles,
-                           std::vector<plint> & cellIds,
+                           std::vector<plint> & cellIds, plint numberOfCells,
                            std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
                            std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
                            std::vector< Array<T,3> > & cellsCenter, std::vector< Array<T,3> > & cellsVelocity,
