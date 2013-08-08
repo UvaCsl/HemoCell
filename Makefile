@@ -62,7 +62,7 @@ ifeq ($(UNAME),Darwin)
 	compileFlags = -DPLB_MAC_OS_X -Wall
 else
 # Compiler to use with MPI parallelism
-	parallelCXX  = mpicxx
+	parallelCXX  = mpicxx.openmpi
 # General compiler flags (e.g. -Wall to turn on all warnings on g++)
 	compileFlags = -Wall 
 endif
