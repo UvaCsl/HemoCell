@@ -67,7 +67,7 @@ public:
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
     TriangleBoundary3D<T> const& triangleBoundary;
-    std::map<plint, Particle3D<T,Descriptor>*> * iVertexToParticle3D;
+    std::map<plint, Particle3D<T,Descriptor>*>& iVertexToParticle3D;
 };
 
 

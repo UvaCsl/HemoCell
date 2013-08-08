@@ -4,16 +4,14 @@
 #include "meshToParticleField3D.h"
 
 /* ******** MapVertexToParticle3D *********************************** */
-/* ******** MapVertexToParticle3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
 MapVertexToParticle3D<T,Descriptor>::MapVertexToParticle3D (
             TriangleBoundary3D<T> const& triangleBoundary_,
             std::map<plint, Particle3D<T,Descriptor>*> & iVertexToParticle3D_)
-    : triangleBoundary(triangleBoundary_)
+    : triangleBoundary(triangleBoundary_), iVertexToParticle3D(iVertexToParticle3D_)
 {
-        iVertexToParticle3D = &iVertexToParticle3D_;
-        iVertexToParticle3D[0].clear();
+	iVertexToParticle3D.clear();
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -45,7 +43,7 @@ void MapVertexToParticle3D<T,Descriptor>::processGenericBlocks (
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         plint vertexId = particle->getTag();
-        iVertexToParticle3D[0][vertexId] = nonTypedParticle;
+        iVertexToParticle3D[vertexId] = nonTypedParticle;
     }
 
 
@@ -168,8 +166,8 @@ void CopyParticleToMeshVertex3D<T,Descriptor>::processGenericBlocks (
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
-        Array<T,3> position(particle.getPosition());
-        plint vertexId = particle.getTag();
+        Array<T,3> position(particle->getPosition());
+        plint vertexId = particle->getTag();
         mesh.replaceVertex(vertexId, position);
     }
 }
@@ -183,7 +181,7 @@ template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT CopyParticleToMeshVertex3D<T,Descriptor>::appliesTo() const {
     // The data processor acts on envelope too, but extension to the envelope
     //   is done manually in processGenericBlocks.
-    return BlockDomain::bulk;
+    return BlockDomain::bulkAndEnvelope;
 }
 
 template<typename T, template<typename U> class Descriptor>
