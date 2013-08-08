@@ -4,15 +4,29 @@
 #include "meshToParticleField3D.h"
 
 /* ******** MapVertexToParticle3D *********************************** */
+/* ******** MapVertexToParticle3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
 MapVertexToParticle3D<T,Descriptor>::MapVertexToParticle3D (
             TriangleBoundary3D<T> const& triangleBoundary_,
             std::map<plint, Particle3D<T,Descriptor>*> & iVertexToParticle3D_)
-    : triangleBoundary(triangleBoundary_), iVertexToParticle3D(&iVertexToParticle3D_)
+    : triangleBoundary(triangleBoundary_)
 {
-    	iVertexToParticle3D[0].clear();
+        iVertexToParticle3D = &iVertexToParticle3D_;
+        iVertexToParticle3D[0].clear();
 }
+
+template<typename T, template<typename U> class Descriptor>
+MapVertexToParticle3D<T,Descriptor>::~MapVertexToParticle3D()
+{
+}
+
+template<typename T, template<typename U> class Descriptor>
+MapVertexToParticle3D<T,Descriptor>::MapVertexToParticle3D (
+            MapVertexToParticle3D<T,Descriptor> const& rhs)
+    : triangleBoundary(rhs.triangleBoundary),
+      iVertexToParticle3D(rhs.iVertexToParticle3D)
+{ }
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -36,6 +50,34 @@ void MapVertexToParticle3D<T,Descriptor>::processGenericBlocks (
 
 
 }
+
+template<typename T, template<typename U> class Descriptor>
+MapVertexToParticle3D<T,Descriptor>*
+    MapVertexToParticle3D<T,Descriptor>::clone() const
+{
+    return new MapVertexToParticle3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void MapVertexToParticle3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = false;  // Particle field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT MapVertexToParticle3D<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulkAndEnvelope;
+}
+
+template<typename T, template<typename U> class Descriptor>
+void MapVertexToParticle3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::nothing; // Particle field.
+}
+
+
+
+
 
 /* ******** MapVertexToParticle3D *********************************** */
 //std::map<plint, Particle3D<T,Descriptor>*> * iVertexToParticle3D;

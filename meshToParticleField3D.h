@@ -47,6 +47,9 @@ private:
 /*
  * Maps the vertices of the mesh (including envelopes) to an std::map<plint, Particle3D*>
  */
+/*
+ * Maps the vertices of the mesh (including envelopes) to an std::map<plint, Particle3D*>
+ */
 template<typename T, template<typename U> class Descriptor>
 class MapVertexToParticle3D : public BoxProcessingFunctional3D
 {
@@ -54,19 +57,19 @@ public:
     MapVertexToParticle3D (
             TriangleBoundary3D<T> const& triangleBoundary_,
             std::map<plint, Particle3D<T,Descriptor>*> & iVertexToParticle3D_);
-    ~MapVertexToParticle3D() { };
-    MapVertexToParticle3D(MapVertexToParticle3D<T,Descriptor> const& rhs) :
-    	triangleBoundary(rhs.triangleBoundary), iVertexToParticle3D(rhs.iVertexToParticle3D) { }
-    virtual MapVertexToParticle3D<T,Descriptor>* clone() const { return new MapVertexToParticle3D<T,Descriptor>(*this); }
-    virtual void getModificationPattern(std::vector<bool>& isWritten) const { isWritten[0] = false; }
-    virtual BlockDomain::DomainT appliesTo() const  { return BlockDomain::bulkAndEnvelope; }
-    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const  { modified[0] = modif::nothing; }
+    ~MapVertexToParticle3D();
+    MapVertexToParticle3D(MapVertexToParticle3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual MapVertexToParticle3D<T,Descriptor>* clone() const;
+    virtual void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
     TriangleBoundary3D<T> const& triangleBoundary;
     std::map<plint, Particle3D<T,Descriptor>*> * iVertexToParticle3D;
 };
+
 
 
 template<typename T, template<typename U> class Descriptor>
