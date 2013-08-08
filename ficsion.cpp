@@ -53,8 +53,8 @@ plint borderWidth     = 1;  // Because Guo acts in a one-cell layer.
 // Requirement: margin>=borderWidth.
 plint extraLayer      = 0;  // Make the bounding box larger; for visualization purposes
                             //   only. For the simulation, it is OK to have extraLayer=0.
-const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
-const plint particleEnvelopeWidth = 3;
+const plint extendedEnvelopeWidth = 4;  // Because Guo needs 2-cell neighbor access.
+const plint particleEnvelopeWidth = 4;
 
 void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
@@ -305,11 +305,17 @@ int main(int argc, char* argv[])
     particleLatticeArg.push_back(&lattice);
 
     std::map<plint, Particle3D<T,DESCRIPTOR>*> iVertexToParticle3D;
+    applyProcessingFunctional ( // advance particles in time according to velocity
+        new AdvanceParticlesEveryWhereFunctional3D<T,DESCRIPTOR>,
+        immersedParticles.getBoundingBox(), particleArg );
+    applyProcessingFunctional ( // update mesh position
+        new CopyParticleToMeshVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
+        immersedParticles.getBoundingBox(), particleArg);
     applyProcessingFunctional (
         new MapVertexToParticle3D<T,DESCRIPTOR> (
             Cells, iVertexToParticle3D),
         immersedParticles.getBoundingBox(), particleArg );
-    calculateCellMeasures(DeCells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+    calculateCellMeasures(DeCells, immersedParticles, cellIds, npar, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                         cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan, iVertexToParticle3D);
     eqArea = cellsMeanTriangleArea[0];     eqLength = cellsMeanEdgeDistance[0];
     eqAngle = cellsMeanAngle[0];     eqVolume = cellsVolume[0];
@@ -463,6 +469,7 @@ int main(int argc, char* argv[])
         shearFlow.writeHeader(shearResultFile);
     }
     std::cout << "Cells Num Triangles " << Cells.getMesh().getNumTriangles() << std::endl;
+
     /* ********************* Main Loop ***************************************** * */
     for (pluint i=0; i<tmax+1; ++i) {
         if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
@@ -517,7 +524,7 @@ int main(int argc, char* argv[])
             std::vector<std::string> force_scalarNames;
             std::vector<std::string> velocity_scalarNames;
             std::vector<std::string> velocity_vectorNames;
-            // writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,8)+".stl");
+            writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,8)+".stl");
             // serialize the particle information to write them.
             // a correspondance between the mesh and the particles is made. (Needs rescale)
             bool dynamicMesh = true;
@@ -648,7 +655,7 @@ int main(int argc, char* argv[])
             new AdvanceParticlesEveryWhereFunctional3D<T,DESCRIPTOR>,
             immersedParticles.getBoundingBox(), particleArg );
         applyProcessingFunctional ( // update mesh position
-            new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
+            new CopyParticleToMeshVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
             immersedParticles.getBoundingBox(), particleArg);
 
 //        applyProcessingFunctional (
@@ -665,7 +672,8 @@ int main(int argc, char* argv[])
             new MapVertexToParticle3D<T,DESCRIPTOR> (
                 Cells, iVertexToParticle3D),
             immersedParticles.getBoundingBox(), particleArg );
-        calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+//        pcout << "iVertexToParticle3D: " << iVertexToParticle3D.size() << std::endl;
+        calculateCellMeasures(Cells, immersedParticles, cellIds, npar, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                             cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan, iVertexToParticle3D);
         // #1# Membrane Model
         if (rbcModel == 0) {
