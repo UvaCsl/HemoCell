@@ -2,10 +2,10 @@
 <ficsion>
 <caseId> caseId </caseId>
 <cellModel>
-    <rbcModel> 1 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
+    <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
     <shellDensity> 1.0 </shellDensity>
 
-    <kBend> 1500e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <kBend> 75e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
     <kVolume> 60000.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
     <kSurface> 59000.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
 <!-- 0.5e0 -->
@@ -33,8 +33,8 @@ Fast Cell Stretching release [8],
     <Re> 5.0 </Re>   <!--Reynolds number-->
     <shearRate> 1000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 193.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->
-    <eulerAngles> 0 0 0 </eulerAngles> <!-- In degrees -->
-    <deflationRatio> 0.50 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
+    <eulerAngles> 0 0 90 </eulerAngles> <!-- In degrees -->
+    <deflationRatio> 1.0 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
     <relaxationTime> 500 </relaxationTime> <!-- Relaxation time for deflation and stretching force [5000] -->
 </parameters>
 
@@ -43,7 +43,7 @@ Fast Cell Stretching release [8],
     <forceToFluid> 1 </forceToFluid>
     <ibmKernel> 2 </ibmKernel> <!-- ibmKernel: Phi2 [2], Phi3 [3], Phi4 [4],  Phi4c [5] -->
     <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4]-->
-    <radius> 1.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
+    <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
     <minNumOfTriangles> 100 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
     <cellPath> ./lib/RBC.stl </cellPath>
 </ibm>
@@ -52,10 +52,10 @@ Fast Cell Stretching release [8],
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
-    <dx> 1e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <nx> 50 </nx> <!--Size of domain in Lattice Units -->
-    <ny> 30 </ny>
-    <nz> 30 </nz>
+    <dx> 2e-6 </dx> <!--Physical length of 1 Lattice Unit -->
+    <nx> 20 </nx> <!--Size of domain in Lattice Units -->
+    <ny> 22 </ny>
+    <nz> 22 </nz>
 </domain>
 
 <sim>
