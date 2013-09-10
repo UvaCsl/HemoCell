@@ -252,7 +252,7 @@ int main(int argc, char* argv[])
             particleManagement,
             defaultMultiBlockPolicy3D().getCombinedStatistics() );
     lattice.periodicity().toggleAll(true);
-    immersedParticles.periodicity().toggleAll(true);
+    immersedParticles.periodicity().toggle(0, true);
     Box3D inlet(0, 3, 0, ny-1, 0, nz-1);
     Box3D outlet(nx-2, nx-1, 0, ny-1, 0, nz-1);
 
