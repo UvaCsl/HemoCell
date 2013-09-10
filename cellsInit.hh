@@ -29,7 +29,8 @@ void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> cons
     const plint ny = parameters.getNy()  - 1;
     const plint nz = parameters.getNz()  - 1;
     const T dX = 2.1 * radius ;
-    const T dY = 2.1 * radius * ( (shape==1) ? 0.265106361 : 1 );
+//    const T dY = 2.1 * radius * ( (shape==1) ? 0.265106361 : 1 );
+    const T dY = 2.1 * radius * ( (shape==1) ? 0.5 : 1 );
     const T dZ = 2.1 * radius;
 
     plint NdX = (nx-1)*1.0/dX;
