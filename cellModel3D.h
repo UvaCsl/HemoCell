@@ -23,8 +23,10 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
-
 #include "shellModel3D.h"
+#include <cmath>
+#include <map>
+#include "computeCellForces3D.hh"
 
 
 #ifndef KBT__
@@ -74,6 +76,22 @@ private:
     T eqVolume, eqSurface, eqTileSpan;
     T persistenceLengthCoarse, eqLengthRatio;
     pluint cellNumTriangles, cellNumVertices;
+public:
+    /* Computes the equilibrium quantities to correspond to the an inflated cell with
+     * 		eqVolume=ratio*eqVolume.
+     * Can also be used for deflation. */
+    void inflate(T ratio, bool scaleCoefficients=true) {
+    	eqVolume *= ratio;
+    	eqArea *= pow(ratio,2.0/3.0);
+    	eqSurface *= pow(ratio,2.0/3.0);
+    	eqLength *= pow(ratio,1.0/3.0);
+    	eqTileSpan *= pow(ratio,1.0/3.0);
+    	if (scaleCoefficients) {
+    	    k_volume *= 1.0/ratio;
+    	    k_surface *= 1.0/pow(ratio,2.0/3.0);
+    	    k_shear *= 1.0/pow(ratio,2.0/3.0);
+    	}
+    }
 public:
     /* Coefficients */
     T& getRestingStiffness() { return k_rest; }
@@ -159,37 +177,8 @@ public:
 };
 
 
-namespace shellModelHelper3D {
-
-namespace cellModelHelper3D {
-
-template<typename T>
-T computePotential(plint iVertex, Array<T,3> const& iPosition,
-                   TriangularSurfaceMesh<T> const& mesh,
-                   T eqLength, T maxLength, T eqArea, T eqAngle, T eqTileSpan,
-                   T k_WLC, T k_elastic, T k_shear, T k_bend );
-
-template<typename T>
-T computeInPlanePotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
-                             T maxLength, T k);
-
-template<typename T>
-T computeShearPotential(Array<T,3> const& iPosition,
-                        Array<T,3> const& jPosition,
-                        Array<T,3> const& kPosition,
-                        T eqArea,
-                        T k);
-
-template<typename T>
-T computeBendPotential(Array<T,3> const& iPosition, Array<T,3> const& jPosition,
-                       Array<T,3> const& kPosition, Array<T,3> const& lPosition,
-                       T eqTileSpan, T eqLength, T eqAngle, T k);
-
-}  // namespace cellModelHelper3D
-
-
-}  // namespace shellModelHelper3D
 
 }  // namespace plb
 
+#include "cellModel3D.hh"
 #endif  // CELL_MODEL_3D_H

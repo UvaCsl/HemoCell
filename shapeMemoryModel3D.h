@@ -23,8 +23,10 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
-
 #include "shellModel3D.h"
+#include <cmath>
+#include <map>
+#include "computeCellForces3D.hh"
 
 
 #ifndef KBT__
@@ -79,6 +81,28 @@ private:
     T eqVolume, eqSurface, eqTileSpan;
     T persistenceLengthCoarse, eqLengthRatio;
     pluint cellNumTriangles, cellNumVertices;
+public:
+    /* Computes the equilibrium quantities to correspond to the an inflated cell with
+     * 		eqVolume=ratio*eqVolume.
+     * Can also be used for deflation. */
+    void inflate(T ratio, bool scaleCoefficients=true) {
+    	eqVolume *= ratio;
+    	eqSurface *= pow(ratio,2.0/3.0);
+    	eqTileSpan *= pow(ratio,1.0/3.0);
+    	for (plint i=0; i < eqAreaPerTriangle.size() ; i++) {
+    		eqAreaPerTriangle[i] *= pow(ratio,2.0/3.0);
+    	}
+    	typename std::map<plint,T>::iterator iter;
+        for (iter = eqLengthPerEdge.begin(); iter != eqLengthPerEdge.end(); ++iter) {
+        	eqLengthPerEdge[iter->first] *= pow(ratio,1.0/3.0);
+        }
+    	eqLength *= pow(ratio,1.0/3.0);
+    	if (scaleCoefficients) {
+    	    k_volume *= 1.0/ratio;
+    	    k_surface *= 1.0/pow(ratio,2.0/3.0);
+    	    k_shear *= 1.0/pow(ratio,2.0/3.0);
+    	}
+    }
 public:
     /* Coefficients */
     T& getRestingStiffness() { return k_rest; }
@@ -166,5 +190,7 @@ public:
 };
 
 }  // namespace plb
+
+#include "shapeMemoryModel3D.hh"
 
 #endif  // SHAPE_MEMORY_MODEL_3D_H

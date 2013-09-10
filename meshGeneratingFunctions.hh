@@ -143,6 +143,26 @@ Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R) {
     return rbcPoint;
 }
 
+template<typename T>
+Array<T,3> mapMeshAsRBC(const Array<T,3> point, const Array<T,3> center, T R) {
+    Array<T,3> rbcPoint(point - center);
+    rbcPoint[0] = rbcPoint[0] > R ? R : rbcPoint[0];
+    rbcPoint[1] = rbcPoint[1] > R ? R : rbcPoint[1];
+    T r2 = rbcPoint[0]*rbcPoint[0] + rbcPoint[1]*rbcPoint[1];
+    T C0 = 0.204, C2 = 2.002, C4 = -1.123;
+    T val = rbcPoint[2];
+    plint sign = (T(0) < val) - (val < T(0));
+//    rbcPoint[0] *= R;
+//    rbcPoint[1] *= R;
+    r2 = r2 / (R*R);
+    if (1-r2 <0) {
+        r2 =1 ;
+    }
+    rbcPoint[2] = sign * 0.5 * R * sqrt(1-r2) * (C0 + C2*r2 + C4*r2*r2);
+    rbcPoint = (rbcPoint + center);
+    return rbcPoint;
+}
+
 
 template<typename T>
 TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles, std::vector<T> const& eulerAngles) {

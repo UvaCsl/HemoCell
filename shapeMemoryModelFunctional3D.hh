@@ -156,8 +156,13 @@ void ComputeShapeMemoryModelForce3D<T,Descriptor>::processGenericBlocks (
         sf_shear += particle->get_f_shear();
         sf_viscosity += particle->get_f_viscosity();
     }
-
-    if (fabs(sforce[0]) + fabs(sforce[1]) + fabs(sforce[2]) > 1e-10) {
+    bool pcoutForceSum = true;
+	#ifdef PLB_MPI_PARALLEL
+    	int ntasks;
+		MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+		pcoutForceSum = (ntasks == 1);
+	#endif
+    if (pcoutForceSum and (fabs(sforce[0]) + fabs(sforce[1]) + fabs(sforce[2]) > 1e-10)) {
         pcout << "sforce (" << sforce[0] << ", " << sforce[1] << ", " << sforce[2] << ") " << std::endl;
         pcout << "sf_wlc (" << sf_wlc[0] << ", " << sf_wlc[1] << ", " << sf_wlc[2] << ") " << std::endl;
         pcout << "sf_bending (" << sf_bending[0] << ", " << sf_bending[1] << ", " << sf_bending[2] << ") " << std::endl;

@@ -28,6 +28,7 @@
 #include "immersedCells3D.hh"
 #include "immersedCellsFunctional3D.hh"
 #include "immersedCellsReductions.hh"
+#include "meshToParticleField3D.h"
 #include <string>
 #include <map>
 
@@ -52,8 +53,8 @@ plint borderWidth     = 1;  // Because Guo acts in a one-cell layer.
 // Requirement: margin>=borderWidth.
 plint extraLayer      = 0;  // Make the bounding box larger; for visualization purposes
                             //   only. For the simulation, it is OK to have extraLayer=0.
-const plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
-const plint particleEnvelopeWidth = 5;
+const plint extendedEnvelopeWidth = 4;  // Because Guo needs 2-cell neighbor access.
+const plint particleEnvelopeWidth = 4;
 
 void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
@@ -251,7 +252,7 @@ int main(int argc, char* argv[])
             particleManagement,
             defaultMultiBlockPolicy3D().getCombinedStatistics() );
     lattice.periodicity().toggleAll(true);
-    immersedParticles.periodicity().toggleAll(true);
+    immersedParticles.periodicity().toggle(0, true);
     Box3D inlet(0, 3, 0, ny-1, 0, nz-1);
     Box3D outlet(nx-2, nx-1, 0, ny-1, 0, nz-1);
 
@@ -289,6 +290,7 @@ int main(int argc, char* argv[])
             numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), cellIds[iA]);
             pcout << "Cell: " << iA << ", Particles: " << numParts[iA] << std::endl;
     }
+    CellFieldQuantityHolder<T,DESCRIPTOR> cqh(npar, numParts[0]);
     // plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox()); //Total number of particles
 
     /* Measure Cell Variables */
@@ -296,20 +298,31 @@ int main(int argc, char* argv[])
     std::vector<T> cellsMeanEdgeDistance, cellsMaxEdgeDistance, cellsMeanAngle, cellsMeanTriangleArea, cellsMeanTileSpan;
     std::vector< Array<T,3> > cellsCenter, cellsVelocity;
     T eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan;
-    calculateCellMeasures(DeCells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                        cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
+    std::vector<MultiBlock3D*> particleArg;
+    std::vector<MultiBlock3D*> particleLatticeArg;
+    particleArg.push_back(&immersedParticles);
+    particleLatticeArg.push_back(&immersedParticles);
+    particleLatticeArg.push_back(&lattice);
+
+    std::map<plint, Particle3D<T,DESCRIPTOR>*> iVertexToParticle3D;
+    applyProcessingFunctional ( // advance particles in time according to velocity
+        new AdvanceParticlesEveryWhereFunctional3D<T,DESCRIPTOR>,
+        immersedParticles.getBoundingBox(), particleArg );
+    applyProcessingFunctional ( // update mesh position
+        new CopyParticleToMeshVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
+        immersedParticles.getBoundingBox(), particleArg);
+    applyProcessingFunctional (
+        new MapVertexToParticle3D<T,DESCRIPTOR> (
+            Cells, iVertexToParticle3D),
+        immersedParticles.getBoundingBox(), particleArg );
+    calculateCellMeasures(DeCells, immersedParticles, cellIds, npar, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+                        cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan, iVertexToParticle3D);
     eqArea = cellsMeanTriangleArea[0];     eqLength = cellsMeanEdgeDistance[0];
     eqAngle = cellsMeanAngle[0];     eqVolume = cellsVolume[0];
     eqSurface = cellsSurface[0];	eqTileSpan = cellsMeanTileSpan[0];
     printCellMeasures(0, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                            cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolume, eqSurface, eqArea, eqLength,
                            dx, dt) ;
-
-    std::vector<MultiBlock3D*> particleArg;
-    std::vector<MultiBlock3D*> particleLatticeArg;
-    particleArg.push_back(&immersedParticles);
-    particleLatticeArg.push_back(&immersedParticles);
-    particleLatticeArg.push_back(&lattice);
 
     std::vector<plint> outerLeftTags, outerRightTags;
     std::vector<plint> outerFrontTags, outerBackTags;
@@ -456,6 +469,7 @@ int main(int argc, char* argv[])
         shearFlow.writeHeader(shearResultFile);
     }
     std::cout << "Cells Num Triangles " << Cells.getMesh().getNumTriangles() << std::endl;
+
     /* ********************* Main Loop ***************************************** * */
     for (pluint i=0; i<tmax+1; ++i) {
         if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
@@ -465,9 +479,6 @@ int main(int argc, char* argv[])
             tmeas = 0.1/dt;
         }
         /* =============================== OUTPUT ===================================*/
-        calculateCellMeasures(Cells, immersedParticles, cellIds, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                            cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan);
-
         if (i%tmeas==0) {
             if (goAndStop != 0) {
                 writeImmersedPointsVTK(Cells, goAndStopVertices, dx,
@@ -513,7 +524,7 @@ int main(int argc, char* argv[])
             std::vector<std::string> force_scalarNames;
             std::vector<std::string> velocity_scalarNames;
             std::vector<std::string> velocity_vectorNames;
-            // writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,8)+".stl");
+            writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,8)+".stl");
             // serialize the particle information to write them.
             // a correspondance between the mesh and the particles is made. (Needs rescale)
             bool dynamicMesh = true;
@@ -644,8 +655,26 @@ int main(int argc, char* argv[])
             new AdvanceParticlesEveryWhereFunctional3D<T,DESCRIPTOR>,
             immersedParticles.getBoundingBox(), particleArg );
         applyProcessingFunctional ( // update mesh position
-            new CopyParticleToVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
+            new CopyParticleToMeshVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
             immersedParticles.getBoundingBox(), particleArg);
+
+//        applyProcessingFunctional (
+//            new MeshToParticleField3D<T,DESCRIPTOR> (cqh),
+//            immersedParticles.getBoundingBox(), particleArg );
+//        std::map<plint, plint> cid2mcid = cqh.getCellIdToMeshCellId();
+//        std::map<plint, plint>::iterator iter = cid2mcid.begin();
+//    	for (; iter != cid2mcid.end();) {
+//    		std::cout << "cid2mcid " << i << " " << cid2mcid.size() << " cid " << iter->first << ", mid " << iter->second << std::endl;
+//    		iter++;
+//    	}
+
+        applyProcessingFunctional (
+            new MapVertexToParticle3D<T,DESCRIPTOR> (
+                Cells, iVertexToParticle3D),
+            immersedParticles.getBoundingBox(), particleArg );
+//        pcout << "iVertexToParticle3D: " << iVertexToParticle3D.size() << std::endl;
+        calculateCellMeasures(Cells, immersedParticles, cellIds, npar, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+                            cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan, iVertexToParticle3D);
         // #1# Membrane Model
         if (rbcModel == 0) {
             applyProcessingFunctional (

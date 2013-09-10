@@ -67,6 +67,10 @@ void iniLatticeSquarePoiseuille( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition,
                  T Re);
 
+void iniLatticePoiseuilleWithBodyForce(MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+                 IncomprFlowParam<T> const& parameters,
+                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T poiseuilleForce);
+
 void iniLatticeSquareCouette( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                  IncomprFlowParam<T> const& parameters,
                  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T shearRate);

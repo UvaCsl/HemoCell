@@ -27,6 +27,7 @@
 #include "immersedCellParticle3D.h"
 #include "cellModel3D.h"
 #include "immersedBoundaryMethod3D.h"
+#include "meshGeneratingFunctions.h"
 #include <map>
 
 namespace plb {
@@ -159,6 +160,24 @@ template<typename T, template<typename U> class Descriptor>
 std::auto_ptr<MultiParticleField3D<DenseParticleField3D<T,Descriptor> > >
     getParticlePosAndVelocity (
             MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& originalParticles, plint tag );
+
+// Map Vertices of Mesh to RBC surface
+template<typename T, template<typename U> class Descriptor>
+class MapParticleToRBCSurface : public BoxProcessingFunctional3D
+{
+public:
+    MapParticleToRBCSurface (std::vector< Array<T,3> > const& cellsCenter_, std::vector< Array<T,3> > const& cellsVelocity_, T const& radius_);
+    /// Arguments: [0] Particle-field
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual MapParticleToRBCSurface<T,Descriptor>* clone() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+private:
+    std::vector< Array<T,3> > const& cellsCenter;
+    std::vector< Array<T,3> > const& cellsVelocity;
+    T const& radius;
+};
+
 
 }  // namespace plb
 

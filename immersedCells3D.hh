@@ -51,18 +51,6 @@ plint margin          = 3;  // Extra margin of allocated cells around the obstac
 
 
 template<typename T, template<typename U> class Descriptor>
-void createImmersedCellParticles (
-        MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
-        TriangleBoundary3D<T>& boundary, plint tag, plint numPartsPerCell )
-{
-    std::vector<MultiBlock3D*> particleArg;
-    particleArg.push_back(&particleField);
-    applyProcessingFunctional (
-        new CreateTaggedImmersedCellParticle3D<T,Descriptor>(boundary,tag,numPartsPerCell),
-        particleField.getBoundingBox(), particleArg );
-}
-
-template<typename T, template<typename U> class Descriptor>
 void translateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
                    const Box3D &outlet, std::vector<plint> &numParts,
                    std::vector<plint> &cellIds,
@@ -148,43 +136,14 @@ bool generateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& pa
                       const Box3D &inlet, std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
                       plint numPartsPerCell, plint numOfCellsPerInlet, plint &slice )
 {
-    bool created = false;
-    plint numPartsPerTag = 0;
+    std::vector<MultiBlock3D*> particleArg;
+    particleArg.push_back(&particleField);
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
-        // count all particles of a certain tag in a buffer zone
-        numPartsPerTag += countParticles(particleField,inlet,cellIds[iA]);
-    }
-
-    std::vector<plint> newcellIds;
-    for (plint iA = slice*numOfCellsPerInlet; iA < (slice+1)*numOfCellsPerInlet; ++iA) {
-        newcellIds.push_back(cellIds[iA]);
-    }
-    
-    if (numPartsPerTag == 0) {
-        createCells(Cells, newcellIds, numPartsPerCell, particleField);
-        created = true;
-        ++slice;
-    }
-
-//    if (created) {
-//        pcout << "Particles created : Number of particles per tag." << std::endl;
-//        for (pluint iA = 0; iA < newcellIds.size(); ++iA) {
-//            pcout << newcellIds[iA] + 1<< " : " <<  countParticles(particleField, particleField.getBoundingBox(), newcellIds[iA]) << std::endl;
-//        }
-//    }
-    return created;
-}
-template<typename T, template<typename U> class Descriptor>
-void createCells(TriangleBoundary3D<T> &Cells,
-                    const std::vector<plint> &cellIds,
-                    plint numPartsPerCell,
-                    MultiParticleField3D<DenseParticleField3D<T,Descriptor> > &immersedParticles)
-{
-    for (pluint iA = 0; iA < cellIds.size(); ++iA) {
-        createImmersedCellParticles(immersedParticles, Cells, cellIds[iA], numPartsPerCell);
+        applyProcessingFunctional (
+            new CreateTaggedImmersedCellParticle3D<T,Descriptor>(Cells, cellIds[iA], numPartsPerCell),
+            particleField.getBoundingBox(), particleArg );
     }
 }
-
 
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
