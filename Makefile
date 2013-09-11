@@ -54,15 +54,19 @@ libraries    =
 
 # Compiler to use without MPI parallelism
 serialCXX    = g++
-# Compiler to use with MPI parallelism
-parallelCXX  = mpicxx
-# General compiler flags (e.g. -Wall to turn on all warnings on g++)
 UNAME := $(shell uname)
 ifeq ($(UNAME),Darwin)
+# Compiler to use with MPI parallelism
+	parallelCXX  = /usr/local/bin/mpicxx
+# General compiler flags (e.g. -Wall to turn on all warnings on g++)
 	compileFlags = -DPLB_MAC_OS_X -Wall
 else
+# Compiler to use with MPI parallelism
+	parallelCXX  = mpicxx.openmpi
+# General compiler flags (e.g. -Wall to turn on all warnings on g++)
 	compileFlags = -Wall 
 endif
+
 
 # compileFlags = -Wall 
 # General linker flags (don't put library includes into this flag)
@@ -80,7 +84,7 @@ profileFlags = -pg
 # to SConstruct. It is recommended not to modify anything there.
 ##########################################################################
 
-SCons     = $(palabosRoot)/scons/scons.py -j 8 -f $(palabosRoot)/SConstruct
+SCons     = $(palabosRoot)/scons/scons.py -j 4 -f $(palabosRoot)/SConstruct
 SConsArgs = palabosRoot=$(palabosRoot) \
             projectFiles="$(projectFiles)" \
             precompiled=$(precompiled) \

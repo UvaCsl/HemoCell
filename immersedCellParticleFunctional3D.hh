@@ -89,22 +89,8 @@ void CreateTaggedImmersedCellParticle3D<T,Descriptor>::processGenericBlocks (
         Array<T,3> vertex(mesh.getVertex(iVertex));
         ImmersedCellParticle3D<T,Descriptor>* particle
             = new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, tag);
-            
-        particleField.addParticle(domain, particle);
-
-//        pcout << iVertex << " (" << vertex[0] << " " << vertex[1] << " " << vertex[2] << ") " << tag << ", " << particle->get_cellId() << " " << particle->getTag() << std::endl;
+		particleField.addParticle(domain, particle);
     }
-//     pcout << std::endl;
-    
-//     std::vector<Particle3D<T,Descriptor>*> particles;
-//     particleField.findParticles(domain, particles);
-//     for (plint iVertex= tag * numPartsPerTag; iVertex < (tag+1) * numPartsPerTag; ++iVertex) {
-//         pcout << "particles[" << iVertex << "].cellId ="  <<
-//         (dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iVertex]))->get_cellId() << ", real iD = " <<
-//         (dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iVertex]))->getTag() << ", tag = " << tag << "; " ;
-//         pcout << std::endl;
-//     }
-//     pcout << std::endl;
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -117,6 +103,11 @@ void CreateTaggedImmersedCellParticle3D<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::dynamicVariables; // Particle field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT CreateTaggedImmersedCellParticle3D<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulkAndEnvelope;
 }
 
 
@@ -155,6 +146,7 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
             fluid.get(cellPos[iCell].x,cellPos[iCell].y,cellPos[iCell].z).computeVelocity(velocity);
             particle->get_v() += weights[iCell] * velocity;
         }
+        particle->get_vPrevious() = particle->get_v();
     }
 }
 
@@ -171,6 +163,10 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::getTypeOfModification (
     modified[1] = modif::nothing; // Fluid field.
 }
 
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT FluidVelocityToImmersedCell3D<T,Descriptor>::appliesTo () const {
+    return BlockDomain::bulk;
+}
 
 /* ******** ForceToFluid3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
@@ -224,7 +220,10 @@ void ForceToFluid3D<T,Descriptor>::getTypeOfModification (
     modified[1] = modif::staticVariables; // Fluid field.
 }
 
-
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT ForceToFluid3D<T,Descriptor>::appliesTo () const {
+    return BlockDomain::bulkAndEnvelope;
+}
 /* ******** CountTaggedParticlesFunctional3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
@@ -525,7 +524,13 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         sf_viscosity += particle->get_f_viscosity();
     }
 
-    if (fabs(sforce[0]) + fabs(sforce[1]) + fabs(sforce[2]) > 1e-10) {
+    bool pcoutForceSum = true;
+	#ifdef PLB_MPI_PARALLEL
+    	int ntasks;
+		MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+		pcoutForceSum = (ntasks == 1);
+	#endif
+    if (pcoutForceSum and (fabs(sforce[0]) + fabs(sforce[1]) + fabs(sforce[2]) > 1e-10)) {
         pcout << "sforce (" << sforce[0] << ", " << sforce[1] << ", " << sforce[2] << ") " << std::endl;
         pcout << "sf_wlc (" << sf_wlc[0] << ", " << sf_wlc[1] << ", " << sf_wlc[2] << ") " << std::endl;
         pcout << "sf_bending (" << sf_bending[0] << ", " << sf_bending[1] << ", " << sf_bending[2] << ") " << std::endl;
@@ -579,6 +584,54 @@ std::auto_ptr<MultiParticleField3D<DenseParticleField3D<T,Descriptor> > >
             new GetTaggedParticleVelocity3D<T,Descriptor>(tag), particles->getBoundingBox(), particleParticleArg );
 
     return particles;
+}
+
+/* ******** MapParticleToRBCSurface *********************************** */
+
+template<typename T, template<typename U> class Descriptor>
+MapParticleToRBCSurface<T,Descriptor>::MapParticleToRBCSurface(std::vector< Array<T,3> > const& cellsCenter_,
+                    std::vector< Array<T,3> > const& cellsVelocity_, T const& radius_)
+            : cellsCenter(cellsCenter_), cellsVelocity(cellsVelocity_), radius(radius_) {};
+
+template<typename T, template<typename U> class Descriptor>
+void MapParticleToRBCSurface<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    PLB_PRECONDITION( blocks.size()==2 );
+    ParticleField3D<T,Descriptor>& particleField =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    BlockLattice3D<T,Descriptor>& fluid =
+        *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
+
+    std::vector<Particle3D<T,Descriptor>*> particles;
+    particleField.findParticles(domain, particles);
+    for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+        PLB_ASSERT( particle );
+        Array<T,3> position(particle->getPosition());
+        Array<T,3> dp = mapMeshAsRBC(position, cellsCenter[0], radius) - position;
+        particle->get_v() += dp ;
+        particle->get_vPrevious() += dp ;
+    }
+}
+
+template<typename T, template<typename U> class Descriptor>
+MapParticleToRBCSurface<T,Descriptor>* MapParticleToRBCSurface<T,Descriptor>::clone() const {
+    return new MapParticleToRBCSurface<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void MapParticleToRBCSurface<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::dynamicVariables; // Particle field.
+    modified[1] = modif::nothing; // Fluid field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT MapParticleToRBCSurface<T,Descriptor>::appliesTo () const {
+    return BlockDomain::bulkAndEnvelope;
 }
 
 }  // namespace plb

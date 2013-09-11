@@ -162,9 +162,17 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
  */
 /* The most messy force! */
 template<typename T>
-Array<T,3> computeBendingForce (T edgeAngle, T eqAngle, T k,
+Array<T,3> computeBendingForces (T edgeAngle, T eqAngle, T k,
 								Array<T,3> const& ni, Array<T,3> const& nj,
 								Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4) ;
+
+template<typename T>
+Array<T,3> computeBendingForceEdge (T edgeAngle, T eqAngle, T k,
+								Array<T,3> const& ni, Array<T,3> const& nj) ;
+
+template<typename T>
+Array<T,3> computeBendingForceLateral (T edgeAngle, T eqAngle, T k,
+								Array<T,3> const& ni) ;
 
 /*
  * Calculates the bending potential.
@@ -177,7 +185,7 @@ T computeBendingPotential (T edgeAngle, T eqAngle, T k);
  * Helper function, calculates the angle between -pi and pi
  */
 template<typename T>
-T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint & iVertex, plint & jVertex, plint & kVertex, plint & lVertex) ;
+T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plint jVertex, plint & kVertex, plint & lVertex) ;
 
 /*
  * Helper function, calculates the angle between -pi and pi
