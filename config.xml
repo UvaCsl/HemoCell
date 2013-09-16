@@ -29,13 +29,13 @@ Cell Stretching [3], Cell Stretching Analysis and release [4], Fast Cell Stretch
 Tumbling-TankTreading Measurements [6], Fischer2004 [7],
 Fast Cell Stretching release [8],
  -->
-    <flowType> 6 </flowType>   
+    <flowType> 0 </flowType>   
     <Re> 1.0 </Re>   <!--Reynolds number-->
     <shearRate> 0 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 193.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->
-    <eulerAngles> 0 90 0 </eulerAngles> <!-- In degrees -->
+    <eulerAngles> 0 0 0 </eulerAngles> <!-- In degrees -->
     <deflationRatio> 1.0 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
-    <relaxationTime> 500 </relaxationTime> <!-- Relaxation time for deflation and stretching force [5000] -->
+    <relaxationTime>500 </relaxationTime> <!-- Relaxation time for deflation and stretching force [5000] -->
 </parameters>
 
 
@@ -44,7 +44,7 @@ Fast Cell Stretching release [8],
     <ibmKernel> 2 </ibmKernel> <!-- ibmKernel: Phi2 [2], Phi3 [3], Phi4 [4],  Phi4c [5] -->
     <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4]-->
     <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
-    <minNumOfTriangles> 100 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
+    <minNumOfTriangles> 200 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
     <cellPath> ./lib/RBC.stl </cellPath>
 </ibm>
 
@@ -53,14 +53,14 @@ Fast Cell Stretching release [8],
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <nx> 24 </nx> <!--Size of domain in Lattice Units -->
-    <ny> 24 </ny>
-    <nz> 24 </nz>
+    <nx> 53 </nx> <!--Size of domain in Lattice Units -->
+    <ny> 52 </ny>
+    <nz> 53 </nz>
 </domain>
 
 <sim>
     <tmax> 50000000 </tmax> <!-- total number of iterations -->
-    <tmeas> 100 </tmeas> <!-- interval after which data is written -->> 
-    <npar> 1 </npar> <!-- Number of particles > -->
+    <tmeas> 500 </tmeas> <!-- interval after which data is written -->> 
+    <npar>  438 </npar> <!-- Number of particles > -->
 </sim>
 </ficsion>

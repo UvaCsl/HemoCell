@@ -284,6 +284,7 @@ int main(int argc, char* argv[])
     MeshMetrics<T> meshmetric(Cells);
     meshmetric.setResultFile(meshQualityFile);
     meshmetric.write(meshQualityFile);
+    writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",0,8)+".stl");
 
     std::vector<plint> numParts(cellIds.size()); // Count number of particles per Cell
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
@@ -484,14 +485,15 @@ int main(int argc, char* argv[])
                 writeImmersedPointsVTK(Cells, goAndStopVertices, dx,
                     global::directories().getOutputDir()+createFileName("GoAndStop.",i,10)+".vtk");
             }
+            pcout << "Iteration " << i << std::endl;
             // dtIteration = global::timer("sim").stop();
             // plint totParticlesNow = 0;
             // totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());
             // pcout << i << " totParticles = " << totParticles << std::endl;
             // PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain
-            printCellMeasures(i, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
-                                   cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolumeFinal, eqSurface, eqArea, eqLength,
-                                   dx, dt) ;
+            // printCellMeasures(i, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+            //                       cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolumeFinal, eqSurface, eqArea, eqLength,
+            //                       dx, dt) ;
             writeCellLog(i, logFile,
                          cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                          cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity,
@@ -524,7 +526,7 @@ int main(int argc, char* argv[])
             std::vector<std::string> force_scalarNames;
             std::vector<std::string> velocity_scalarNames;
             std::vector<std::string> velocity_vectorNames;
-            writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,8)+".stl");
+            // writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,8)+".stl");
             // serialize the particle information to write them.
             // a correspondance between the mesh and the particles is made. (Needs rescale)
             bool dynamicMesh = true;
