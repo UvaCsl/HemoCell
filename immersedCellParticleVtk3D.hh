@@ -31,6 +31,7 @@
 #include "immersedCellParticleVtk3D.h"
 #include "immersedCellParticle3D.h"
 #include "immersedCellParticle3D.hh"
+#include <map>
 
 namespace plb {
 
@@ -123,16 +124,18 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
     for (pluint iVector=0; iVector<vectorNames.size(); ++iVector) {
         vectorData[iVector].resize(particles.size());
     }
+//    draftPostProcessPBCPositions(particles, nx, ny, nz);
     std::vector<Array<T,3> > posVect(particles.size());
+    draftPostProcessPBCPositions(particles, posVect, 25, 25, 25);
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        plint iVertex = particles[iParticle]->getTag();
-        posVect[iVertex] = particles[iParticle]->getPosition();
+        ImmersedCellParticle3D<T,Descriptor>* iparticle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+        plint iVertex = iparticle->getTag();
+//        posVect[iVertex] = iparticle->get_pbcPosition();
         posVect[iVertex] *= boundary.getDx();
         //posVect[iVertex] += boundary.getPhysicalLocation();
         for (pluint iScalar=0; iScalar<scalarNames.size(); ++iScalar) {
             T scalar;
-            ImmersedCellParticle3D<T,Descriptor>* iparticle =
-                dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
             iparticle->getScalar(iScalar, scalar);
             if (!scalarFactor.empty()) {
                 scalar *= scalarFactor[iScalar];
@@ -141,8 +144,6 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
         }
         for (pluint iVector=0; iVector<vectorNames.size(); ++iVector) {
             Array<T,3> vector;
-            ImmersedCellParticle3D<T,Descriptor>* iparticle =
-                dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
             iparticle->getVector(iVector, vector);
             if (!vectorFactor.empty()) {
                 vector *= vectorFactor[iVector];
@@ -239,6 +240,49 @@ void writeImmersedPointsVTK(TriangleBoundary3D<T> const& boundary, std::vector<p
     }
     ofile.close();
 }
+
+
+template<typename T, template<typename U> class Descriptor>
+void draftPostProcessPBCPositions(std::vector<Particle3D<T,Descriptor>*> const & particles, std::vector<Array<T,3> > & posVect, plint nx, plint ny, plint nz) {
+    T x, y, z;
+    plint cellId;
+    Array<T,3> pbcPosition;
+    std::map<plint, Array<T,3> > pMin, pMax;
+    for (int iParticle = 0; iParticle < particles.size(); ++iParticle) {
+        ImmersedCellParticle3D<T,Descriptor>* iparticle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+        pbcPosition = iparticle->get_pbcPosition();
+        cellId = iparticle->get_cellId();
+        plint iVertex = iparticle->getTag();
+        posVect[iVertex] = iparticle->get_pbcPosition();
+
+        if (pMin.count(cellId) == 0) {
+            pMin[cellId] = Array<T,3>(nx-1,ny-1,nz-1);
+            pMax[cellId] = Array<T,3>(0,0,0);
+        }
+        for (int dim=0; dim < 3; ++dim) {
+            if (pbcPosition[dim] < pMin[cellId][dim] ) pMin[cellId][dim] = pbcPosition[dim];
+            if (pbcPosition[dim] > pMax[cellId][dim] ) pMax[cellId][dim] = pbcPosition[dim];
+        }
+    }
+    for (int iParticle = 0; iParticle < particles.size(); ++iParticle) {
+            ImmersedCellParticle3D<T,Descriptor>* iparticle =
+                dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+            plint iVertex = iparticle->getTag();
+            cellId = iparticle->get_cellId();
+            if (pMin.count(cellId) == 0) {
+                pMin[cellId] = Array<T,3>(nx-1,ny-1,nz-1);
+                pMax[cellId] = Array<T,3>(0,0,0);
+            }
+            Array<T,3> dMaxCellPosition = pMax[cellId];
+            Array<T,3> dMinCellPosition = pMin[cellId] - Array<T,3>(nx-1,ny-1,nz-1) ;
+            for (int dim=0; dim < 3; ++dim) {
+                if (dMaxCellPosition[dim] < 0.0 ) posVect[iVertex][dim] = iparticle->getPosition()[dim];
+                if (dMinCellPosition[dim] > 0.0 ) posVect[iVertex][dim] = iparticle->getPosition()[dim];
+            }
+    }
+}
+
 
 
 }  // namespace plb
