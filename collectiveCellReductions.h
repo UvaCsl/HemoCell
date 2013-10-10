@@ -4,27 +4,50 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
-#define CCR_VOLUME               0 // 1d
-#define CCR_SURFACE              1 // 1d
-#define CCR_ANGLE_MEAN           2 // 1d
-#define CCR_ANGLE_MIN            3 // 1d
-#define CCR_ANGLE_MAX            4 // 1d
-#define CCR_TRIANGLE_AREA_MEAN   5 // 1d
-#define CCR_TRIANGLE_AREA_MIN    6 // 1d
-#define CCR_TRIANGLE_AREA_MAX    7 // 1d
-#define CCR_EDGE_DISTANCE_MEAN   8 // 1d
-#define CCR_EDGE_DISTANCE_MIN    9 // 1d
-#define CCR_EDGE_DISTANCE_MAX    10 // 1d
-#define CCR_TILE_SPAN_MEAN       11 // 1d
-#define CCR_TILE_SPAN_MIN        12 // 1d
-#define CCR_TILE_SPAN_MAX        13 // 1d
-#define CCR_POSITION_MEAN        14 // 3d
-#define CCR_POSITION_MIN         17 // 3d
-#define CCR_POSITION_MAX         20 // 3d
-#define CCR_VELOCITY_MEAN        23 // 3d
-#define CCR_VELOCITY_MIN         26 // 3d
-#define CCR_VELOCITY_MAX         29 // 3d
-#define CCR_INERTIA              32 // 9d
+
+/* IDs for the reduction types,
+ * they are created based on the following rules:
+ * ==============================
+ * Last digit, Dimension:
+ *      1D : 1
+ *      2D : 2
+ *      3D : 3
+ *      XD : 0
+ * Second to last digit, type of reduction:
+ *      Sum : 0
+ *      Mean: 1
+ *      Min : 2
+ *      Max : 3
+ *      STD : 4 // Still to be implemented
+ * Rest are IDs starting from 1. Can be grouped together such as:
+ *      Angle          : 2
+ *      Area           : 3
+ *      Edge Distance  : 4
+ *      Edge Tile Span : 5
+ *      Position       : 6
+ *      Velocity       : 7
+ */
+#define CCR_VOLUME                 101 // 1d
+#define CCR_ANGLE_MEAN             211 // 1d
+#define CCR_ANGLE_MIN              221 // 1d
+#define CCR_ANGLE_MAX              231 // 1d
+#define CCR_SURFACE                301 // 1d
+#define CCR_TRIANGLE_AREA_MEAN     311 // 1d, Better use 301 and divide by the number of triangles
+#define CCR_TRIANGLE_AREA_MIN      321 // 1d
+#define CCR_TRIANGLE_AREA_MAX      331 // 1d
+#define CCR_EDGE_DISTANCE_MEAN     411 // 1d
+#define CCR_EDGE_DISTANCE_MIN      421 // 1d
+#define CCR_EDGE_DISTANCE_MAX      431 // 1d
+#define CCR_TILE_SPAN_MEAN         511 // 1d
+#define CCR_TILE_SPAN_MIN          521 // 1d
+#define CCR_TILE_SPAN_MAX          531 // 1d
+#define CCR_POSITION_MEAN          613 // 3d
+#define CCR_POSITION_MIN           623 // 3d
+#define CCR_POSITION_MAX           633 // 3d
+#define CCR_VELOCITY_MEAN          713 // 3d
+#define CCR_VELOCITY_MIN           723 // 3d
+#define CCR_VELOCITY_MAX           733 // 3d
+#define CCR_INERTIA                800 // 9d, Not working
 // #define CCR_MAX               41 // 9d
 
 
@@ -37,7 +60,7 @@ class CellReductorWrapper
         CellReductorWrapper(std::vector<MultiBlock3D*> & particleArg_,
                             TriangleBoundary3D<T> const& triangleBoundary_,
                             plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_,
-                            std::vector<plint> & quantitiesToReduce_);
+                            std::vector<plint> quantitiesToReduce_);
         CellReductorWrapper(std::vector<MultiBlock3D*> & particleArg_,
                             TriangleBoundary3D<T> const& triangleBoundary_,
                             plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_,
@@ -45,48 +68,75 @@ class CellReductorWrapper
 
         void reduce(plint quantitiesToReduce_=-1);
         void reduce(std::vector<plint> & quantitiesToReduce);
+        void setCarryOnQuantities3D(std::map<plint, std::map<plint, Array<T,3> >  > const& carryOnQuantities3D); // carryOnQuantitiesXD[CCR_INERTIA][cellId]
+        void setCarryOnQuantitiesXD(std::map<plint, std::map<plint, std::vector<T> >  > const& carryOnQuantitiesXD);
+        void setCarryOnQuantities1D(std::map<plint, std::map<plint, T >  > const& carryOnQuantities1D);
     private:
+        CollectiveCellReductions<T,Descriptor> CCR;
         TriangleBoundary3D<T> const& triangleBoundary;
         plint maxNumberOfCells;
         plint numVerticesPerCell;
         plint numTrianglesPerCell;
-        std::vector<plint> * quantitiesToReduce;
+        std::vector<plint> quantitiesToReduce;
 
         std::vector<plint> cellIDs;
-        std::map<plint, std::map<plint, T >  > quantities1D; // quantities1D[cellId][CCR_EDGE_DISTANCE_MEAN]
-        std::map<plint, std::map<plint, Array<T,3> >  > quantities3D; // quantities3D[cellId][CCR_VELOCITY_MEAN]
-        std::map<plint, std::map<plint, std::vector<T> >  > quantitiesND; // quantitiesND[cellId][CCR_INERTIA]
+        std::map<plint, std::map<plint, T >  > quantities1D; // quantities1D[CCR_EDGE_DISTANCE_MEAN][cellId]
+        std::map<plint, std::map<plint, Array<T,3> >  > quantities3D; // quantities3D[CCR_VELOCITY_MEAN][cellId]
+        std::map<plint, std::map<plint, std::vector<T> >  > quantitiesXD; // quantitiesXD[CCR_INERTIA][cellId]
 };
 
 
 
 /* ******** CellReduceFunctional3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
-class CollectiveCellReductions : public PlainReductiveBoxProcessingFunctional3D
+class CollectiveCellReductionBox : public PlainReductiveBoxProcessingFunctional3D
 {
 public:
-    CollectiveCellReductions(TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_, plint numberOfCells_, bool findMax_=false);
+    CollectiveCellReductionBox(TriangleBoundary3D<T> const& triangleBoundary_,
+            plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_,
+            std::vector<plint> quantitiesToReduce_);
+    CollectiveCellReductionBox(TriangleBoundary3D<T> const& triangleBoundary_,
+            plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_,
+            plint quantitiesToReduce_);
+    CollectiveCellReductionBox(TriangleBoundary3D<T> const& triangleBoundary_,
+            plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_);
     /// Argument: Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual CellReduceFunctional3D<T,Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 
-    void calculateQuantity();
+    void reduceQuantity();
+    void reduceQuantity(plint quantityId);
+    void reduceQuantity(std::vector<plint> quantitiesToReduce);
     void getCellIDs(std::vector<plint> & cellIDs);
+    /* This method is overridden multiple times */
+    void getCellQuantity(std::map<plint, T > & quantity1D,
+                         std::map<plint, std::map<plint, Array<T,3> >  > & quantity3D,
+                         std::map<plint, std::map<plint, std::vector<T> >  > & quantitiesXD);
 private:
-    std::vector<plint> quantityIds;
+    std::map<plint, std::map<plint, plint >  > whatQuantity1D; // whatQuantity1D[CCR_EDGE_DISTANCE_MEAN][cellId]
+    std::map<plint, std::map<plint, Array<plint,3> >  > whatQuantity3D; // whatQuantity3D[CCR_VELOCITY_MEAN][cellId]
+    std::map<plint, std::map<plint, std::vector<plint> >  > whatQuantityXD; // whatQuantityXD[CCR_INERTIA][cellId]
+
     TriangleBoundary3D<T> const& triangleBoundary;
+    std::vector<plint> quantitiesToReduce;
+    std::set<plint> subscribedQuantities;
+    std::vector<plint> & cellIDsInsideTheDomain;
     plint maxNumberOfCells;
     plint numVerticesPerCell;
     plint numTrianglesPerCell;
-    std::vector<plint> * quantitiesToReduce;
-
+public:
+    void getCellQuantity(std::map<plint, T > & quantity1D);
+    void getCellQuantity(std::map<plint, std::map<plint, Array<T,3> >  > & quantity3D);
+    void getCellQuantity(std::map<plint, std::map<plint, std::vector<T> >  > & quantitiesXD);
+    void getCellQuantity(std::map<plint, T > & quantity1D,
+                         std::map<plint, std::map<plint, Array<T,3> >  > & quantity3D);
 };
 
 
 
 
 
-#include "collectiveCellReductions.hh"
+#include "CollectiveCellReductions.hh"
 
 #endif  // COLLECTIVE_CELL_REDUCTIONS_H
