@@ -12,14 +12,14 @@
  *      1D : 1
  *      2D : 2
  *      3D : 3
- *      XD : 0
+ *      XD : 4,5,6,7,8,9
  * Second to last digit, type of reduction:
  *      Sum : 0
  *      Mean: 1
  *      Min : 2
  *      Max : 3
  *      STD : 4 // Still to be implemented
- * Rest are IDs starting from 1. Can be grouped together such as:
+ * ID for the quantity of interest, starting from 1. Can be grouped together like:
  *      Angle          : 2
  *      Area           : 3
  *      Edge Distance  : 4
@@ -47,8 +47,9 @@
 #define CCR_VELOCITY_MEAN          713 // 3d
 #define CCR_VELOCITY_MIN           723 // 3d
 #define CCR_VELOCITY_MAX           733 // 3d
-#define CCR_INERTIA                800 // 9d, Not working
+#define CCR_INERTIA                809 // 9d, Not working
 // #define CCR_MAX               41 // 9d
+
 
 
 
@@ -68,9 +69,9 @@ class CellReductorWrapper
 
         void reduce(plint quantitiesToReduce_=-1);
         void reduce(std::vector<plint> & quantitiesToReduce);
-        void setCarryOnQuantities3D(std::map<plint, std::map<plint, Array<T,3> >  > const& carryOnQuantities3D); // carryOnQuantitiesXD[CCR_INERTIA][cellId]
-        void setCarryOnQuantitiesXD(std::map<plint, std::map<plint, std::vector<T> >  > const& carryOnQuantitiesXD);
         void setCarryOnQuantities1D(std::map<plint, std::map<plint, T >  > const& carryOnQuantities1D);
+        void setCarryOnQuantities3D(std::map<plint, std::map<plint, Array<T,3> >  > const& carryOnQuantities3D); // carryOnQuantitiesXD[CCR_INERTIA][cellId] = Positions
+        void setCarryOnQuantitiesXD(std::map<plint, std::map<plint, std::vector<T> >  > const& carryOnQuantitiesXD);
     private:
         CollectiveCellReductions<T,Descriptor> CCR;
         TriangleBoundary3D<T> const& triangleBoundary;
@@ -87,18 +88,19 @@ class CellReductorWrapper
 
 
 
+
 /* ******** CellReduceFunctional3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
-class CollectiveCellReductionBox : public PlainReductiveBoxProcessingFunctional3D
+class CollectiveCellReductionBox3D : public PlainReductiveBoxProcessingFunctional3D
 {
 public:
-    CollectiveCellReductionBox(TriangleBoundary3D<T> const& triangleBoundary_,
+    CollectiveCellReductionBox3D(TriangleBoundary3D<T> const& triangleBoundary_,
             plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_,
-            std::vector<plint> quantitiesToReduce_);
-    CollectiveCellReductionBox(TriangleBoundary3D<T> const& triangleBoundary_,
+            std::vector<plint> subscribedQuantities_);
+    CollectiveCellReductionBox3D(TriangleBoundary3D<T> const& triangleBoundary_,
             plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_,
-            plint quantitiesToReduce_);
-    CollectiveCellReductionBox(TriangleBoundary3D<T> const& triangleBoundary_,
+            plint subscribedQuantities_);
+    CollectiveCellReductionBox3D(TriangleBoundary3D<T> const& triangleBoundary_,
             plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_);
     /// Argument: Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
@@ -126,11 +128,26 @@ private:
     plint numVerticesPerCell;
     plint numTrianglesPerCell;
 public:
-    void getCellQuantity(std::map<plint, T > & quantity1D);
     void getCellQuantity(std::map<plint, std::map<plint, Array<T,3> >  > & quantity3D);
     void getCellQuantity(std::map<plint, std::map<plint, std::vector<T> >  > & quantitiesXD);
     void getCellQuantity(std::map<plint, T > & quantity1D,
                          std::map<plint, std::map<plint, Array<T,3> >  > & quantity3D);
+private:
+    /* ******** Helper functions  *********************************** */
+    plint subscribeReduction1D(plint reductionType);
+    Array<plint,3> subscribeReduction3D(plint reductionType);
+    std::vector<plint> subscribeReductionXD(plint reductionType, plint dimensions);
+
+    void gatherReduction1D(plint reductionType, plint whatQ, T value);
+    void gatherReduction3D(plint reductionType, Array<plint,3> whatQ, Array<T,3> value);
+    void gatherReductionXD(plint reductionType, std::vector<plint> whatQ, std::vector<T> value);
+
+    T getReduction1D(plint reductionType, plint whatQ);
+    Array<T,3> getReduction3D(plint reductionType, Array<plint,3> whatQ);
+    std::vector<T> getReductionXD(plint reductionType, std::vector<plint> whatQ);
+
+
+
 };
 
 
