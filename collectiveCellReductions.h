@@ -66,12 +66,14 @@ class CellReductorWrapper
                             TriangleBoundary3D<T> const& triangleBoundary_,
                             plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_,
                             plint quantitiesToReduce_=-1);
+        virtual ~CellReductorWrapper() { };
 
         void reduce(plint quantitiesToReduce_=-1);
         void reduce(std::vector<plint> & quantitiesToReduce);
-        void setCarryOnQuantities1D(std::map<plint, std::map<plint, T >  > const& carryOnQuantities1D);
-        void setCarryOnQuantities3D(std::map<plint, std::map<plint, Array<T,3> >  > const& carryOnQuantities3D); // carryOnQuantitiesXD[CCR_INERTIA][cellId] = Positions
-        void setCarryOnQuantitiesXD(std::map<plint, std::map<plint, std::vector<T> >  > const& carryOnQuantitiesXD);
+        void setCarryOnQuantities1D(std::map<plint, std::map<plint, T > * > const& carryOnQuantities1D);
+        void setCarryOnQuantities3D(std::map<plint, std::map<plint, Array<T,3> > *  > const& carryOnQuantities3D);
+        // carryOnQuantities3D[CCR_INERTIA][cellId] = Positions
+        void setCarryOnQuantitiesXD(std::map<plint, std::map<plint, std::vector<T> > * > const& carryOnQuantitiesXD);
     private:
         CollectiveCellReductions<T,Descriptor> CCR;
         TriangleBoundary3D<T> const& triangleBoundary;
@@ -81,12 +83,15 @@ class CellReductorWrapper
         std::vector<plint> quantitiesToReduce;
 
         std::vector<plint> cellIDs;
-        std::map<plint, std::map<plint, T >  > quantities1D; // quantities1D[CCR_EDGE_DISTANCE_MEAN][cellId]
-        std::map<plint, std::map<plint, Array<T,3> >  > quantities3D; // quantities3D[CCR_VELOCITY_MEAN][cellId]
-        std::map<plint, std::map<plint, std::vector<T> >  > quantitiesXD; // quantitiesXD[CCR_INERTIA][cellId]
+        std::map<plint, std::map<plint, T > * > quantities1D; // quantities1D[CCR_EDGE_DISTANCE_MEAN][cellId]
+        std::map<plint, std::map<plint, Array<T,3> > * > quantities3D; // quantities3D[CCR_VELOCITY_MEAN][cellId]
+        std::map<plint, std::map<plint, std::vector<T> > * > quantitiesXD; // quantitiesXD[CCR_INERTIA][cellId]
 };
 
-
+/*
+ *    CollectiveCellReductionBox3D is the Functional Reductive Box that does the actual job.
+ *
+ */
 
 
 /* ******** CellReduceFunctional3D *********************************** */
@@ -124,16 +129,13 @@ private:
     std::vector<plint> quantitiesToReduce;
     std::set<plint> subscribedQuantities;
     std::vector<plint> & cellIDsInsideTheDomain;
-    plint maxNumberOfCells;
-    plint numVerticesPerCell;
-    plint numTrianglesPerCell;
+    plint maxNumberOfCells, numVerticesPerCell, numTrianglesPerCell;
 public:
-    void getCellQuantity(std::map<plint, std::map<plint, Array<T,3> >  > & quantity3D);
-    void getCellQuantity(std::map<plint, std::map<plint, std::vector<T> >  > & quantitiesXD);
+    void getCellQuantity(std::map<plint, std::map<plint, Array<T,3> > * > & quantity3D);
+    void getCellQuantity(std::map<plint, std::map<plint, std::vector<T> > * > & quantitiesXD);
     void getCellQuantity(std::map<plint, T > & quantity1D,
-                         std::map<plint, std::map<plint, Array<T,3> >  > & quantity3D);
-private:
-    /* ******** Helper functions  *********************************** */
+                         std::map<plint, std::map<plint, Array<T,3> > * > & quantity3D);
+private: /* ReductiveBoxFunctions */
     plint subscribeReduction1D(plint reductionType);
     Array<plint,3> subscribeReduction3D(plint reductionType);
     std::vector<plint> subscribeReductionXD(plint reductionType, plint dimensions);

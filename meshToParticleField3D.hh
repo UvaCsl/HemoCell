@@ -106,28 +106,27 @@ void MeshToParticleField3D<T,Descriptor>::processGenericBlocks (
     /* If there are no particles of cellId in the domain and there is a connection with
      * the meshCellId, erase that connection. */
     std::map<plint, plint>::iterator iter = cellIdToMeshCellId[0].begin();
-	for (; iter != cellIdToMeshCellId[0].end();) {
-		plint cellId = iter->first;
-		plint meshCellId = iter->second;
-		if (numParticlesPerCellId.count(cellId)>0) {
-			freeMeshCellIds[0].push(meshCellId);
-			numParticlesPerCellId.erase(cellId);
-			cellIdToMeshCellId[0].erase(iter++);
-		} else {
-			iter++;
-		}
-	}
-
+    for (; iter != cellIdToMeshCellId[0].end();) {
+        plint cellId = iter->first;
+        plint meshCellId = iter->second;
+        if (numParticlesPerCellId.count(cellId)>0) {
+            freeMeshCellIds[0].push(meshCellId);
+            numParticlesPerCellId.erase(cellId);
+            cellIdToMeshCellId[0].erase(iter++);
+        } else {
+            iter++;
+        }
+    }
     /* If there are particles of cellId in the domain and there is no connection with
      * the meshCellId, create that connection. */
     for (iter=numParticlesPerCellId.begin(); iter != numParticlesPerCellId.end(); ++iter) {
-		plint cellId = iter->first;
-		plint numParticles = iter->second;
-		if (numParticles > 0) {
-			cellIdToMeshCellId[0][cellId] = freeMeshCellIds[0].top();
-			freeMeshCellIds[0].pop();
-		}
-	}
+        plint cellId = iter->first;
+        plint numParticles = iter->second;
+        if (numParticles > 0) {
+            cellIdToMeshCellId[0][cellId] = freeMeshCellIds[0].top();
+            freeMeshCellIds[0].pop();
+        }
+    }
 //    pcout << "ncl " << cellIdToMeshCellId[0].size() << std::endl;
 
     /* Commented because the rest are not yet implemented */
