@@ -150,7 +150,6 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
 int main(int argc, char* argv[])
 {
     plbInit(&argc, &argv);
-    global::timer("simulation").start();
 
     global::directories().setOutputDir("./tmp/");
     global::directories().setLogOutDir("./tmp/");
@@ -159,6 +158,11 @@ int main(int argc, char* argv[])
 //    testInPlane(); PLB_ASSERT(false);
     std::string logFileName = global::directories().getLogOutDir() + "plbCells.log";
     plb_ofstream logFile(logFileName.c_str());
+
+    global::timer("simulation").start();
+    std::string performanceLogFileName = global::directories().getLogOutDir() + "performance.log";
+    plb_ofstream performanceLogFile(performanceLogFileName.c_str());
+
 
     std::string stretchLogFileName = global::directories().getLogOutDir() + "stretchDeformation.log";
     plb_ofstream stretchLogFile(stretchLogFileName.c_str());
@@ -472,12 +476,15 @@ int main(int argc, char* argv[])
     }
     // std::cout << "Cells Num Triangles " << Cells.getMesh().getNumTriangles() << std::endl;
 
+
     /* ********************* Main Loop ***************************************** * */
     dtIteration = global::timer("simulation").stop();
     pcout << "Time to initialize: " << dtIteration <<std::endl;
+    performanceLogFile << "Init" << "; " << 0 << "; "<< dtIteration << std::endl;
     for (pluint i=0; i<tmax+1; ++i) {
         dtIteration = global::timer("mainLoop").stop();
         global::timer("mainLoop").restart();
+        if (i>0) { performanceLogFile << "Iteration" << "; " << i << "; "<< dtIteration << std::endl; }
         // pcout << "mainLoop: " << dtIteration <<std::endl;
         if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
             pcout << "[FICSION]: Switching off shear rate (Fischer2004)" << std::endl;
@@ -496,7 +503,7 @@ int main(int argc, char* argv[])
                 writeImmersedPointsVTK(Cells, goAndStopVertices, dx,
                     global::directories().getOutputDir()+createFileName("GoAndStop.",i,10)+".vtk");
             }
-            pcout << "Iteration: " << i << ", time/iteration (last i):" << dtIteration << std::endl;
+            pcout << "Iteration: " << i << ", dt of last iteration:" << dtIteration << std::endl;
             // printCellMeasures(i, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
             //                       cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolumeFinal, eqSurface, eqArea, eqLength,
             //                       dx, dt) ;
@@ -630,7 +637,8 @@ int main(int argc, char* argv[])
                 }
             }
         }
-        global::timer("output").stop();
+        dtIteration = global::timer("output").stop();
+        performanceLogFile << "Output" << "; " << i << "; "<< dtIteration << std::endl;
         global::timer("mainLoop").start();
 
         /* =============================== MAIN ACTIONS ===================================*/
