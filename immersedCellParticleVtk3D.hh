@@ -59,7 +59,10 @@ void writeImmersedSurfaceVTK( TriangleBoundary3D<T> const& boundary,
     plint envelopeWidth=1;
     MultiBlockManagement3D serialMultiBlockManagement (
             blockStructure, new OneToOneThreadAttribution, envelopeWidth );
-
+    plint nx, ny, nz;
+    nx = particles.getNx();
+    ny = particles.getNy();
+    nz = particles.getNz();
     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > multiSerialParticles (
             serialMultiBlockManagement,
             defaultMultiBlockPolicy3D().getCombinedStatistics() );
@@ -73,7 +76,8 @@ void writeImmersedSurfaceVTK( TriangleBoundary3D<T> const& boundary,
         SmartBulk3D oneBlockBulk(serialMultiBlockManagement, 0);
         atomicSerialParticles.findParticles(oneBlockBulk.toLocal(particles.getBoundingBox()), found);
         if (found.size() > 0) {
-            vtkForImmersedVertices(found, boundary, scalars, vectors, fName, dynamicMesh, tag, scalarFactor, vectorFactor);
+            vtkForImmersedVertices(found, boundary, scalars, vectors, fName, dynamicMesh, tag, scalarFactor, vectorFactor,
+                    nx, ny, nz);
         }
         else {
             pcout << "No particles found inside the domain" << std::endl;
@@ -87,7 +91,8 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
                     std::vector<std::string> const& scalars,
                     std::vector<std::string> const& vectors,
                     std::string fName, bool dynamicMesh, plint tag,
-                    std::vector<T> const& scalarFactor, std::vector<T> const& vectorFactor )
+                    std::vector<T> const& scalarFactor, std::vector<T> const& vectorFactor,
+                    plint nx, plint ny, plint nz)
 {
     PLB_ASSERT( scalarFactor.empty() || scalarFactor.size()==scalars.size() );
     PLB_ASSERT( vectorFactor.empty() || vectorFactor.size()==vectors.size() );
@@ -124,9 +129,9 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
     for (pluint iVector=0; iVector<vectorNames.size(); ++iVector) {
         vectorData[iVector].resize(particles.size());
     }
-//    draftPostProcessPBCPositions(particles, nx, ny, nz);
     std::vector<Array<T,3> > posVect(particles.size());
-    draftPostProcessPBCPositions(particles, posVect, 25, 25, 25);
+//    draftPostProcessPBCPositions(particles, posVect, 25, 25, 25);
+    draftPostProcessPBCPositions(particles, posVect, nx, ny, nz);
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
         ImmersedCellParticle3D<T,Descriptor>* iparticle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
@@ -244,42 +249,50 @@ void writeImmersedPointsVTK(TriangleBoundary3D<T> const& boundary, std::vector<p
 
 template<typename T, template<typename U> class Descriptor>
 void draftPostProcessPBCPositions(std::vector<Particle3D<T,Descriptor>*> const & particles, std::vector<Array<T,3> > & posVect, plint nx, plint ny, plint nz) {
-    T x, y, z;
     plint cellId;
     Array<T,3> pbcPosition;
     std::map<plint, Array<T,3> > pMin, pMax;
-    for (int iParticle = 0; iParticle < particles.size(); ++iParticle) {
+    Array<T,3> domainEdge = Array<T,3>(nx-1,ny-1,nz-1);
+
+    // Find minimum and maximum X,Y,Z
+    for (pluint iParticle = 0; iParticle < particles.size(); ++iParticle) {
         ImmersedCellParticle3D<T,Descriptor>* iparticle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
         pbcPosition = iparticle->get_pbcPosition();
-        cellId = iparticle->get_cellId();
         plint iVertex = iparticle->getTag();
-        posVect[iVertex] = iparticle->get_pbcPosition();
+        posVect[iVertex] = pbcPosition;
+        cellId = iparticle->get_cellId();
 
         if (pMin.count(cellId) == 0) {
-            pMin[cellId] = Array<T,3>(nx-1,ny-1,nz-1);
-            pMax[cellId] = Array<T,3>(0,0,0);
+            pMin[cellId] = pbcPosition;
+            pMax[cellId] = pbcPosition;
         }
         for (int dim=0; dim < 3; ++dim) {
-            if (pbcPosition[dim] < pMin[cellId][dim] ) pMin[cellId][dim] = pbcPosition[dim];
-            if (pbcPosition[dim] > pMax[cellId][dim] ) pMax[cellId][dim] = pbcPosition[dim];
+            if (pbcPosition[dim] < pMin[cellId][dim] ) {
+                pMin[cellId][dim] = pbcPosition[dim];
+            }
+            if (pbcPosition[dim] > pMax[cellId][dim] ) {
+                pMax[cellId][dim] = pbcPosition[dim];
+            }
         }
     }
-    for (int iParticle = 0; iParticle < particles.size(); ++iParticle) {
-            ImmersedCellParticle3D<T,Descriptor>* iparticle =
-                dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
-            plint iVertex = iparticle->getTag();
-            cellId = iparticle->get_cellId();
-            if (pMin.count(cellId) == 0) {
-                pMin[cellId] = Array<T,3>(nx-1,ny-1,nz-1);
-                pMax[cellId] = Array<T,3>(0,0,0);
+
+    // Check if whole cell is outside of the domain. If it is, transfer it to its normal position
+    for (pluint iParticle = 0; iParticle < particles.size(); ++iParticle) {
+        ImmersedCellParticle3D<T,Descriptor>* iparticle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+        plint iVertex = iparticle->getTag();
+        cellId = iparticle->get_cellId();
+        for (int dim=0; dim < 3; ++dim) {
+            if (fmod(pMin[cellId][dim], domainEdge[dim]) < fmod(pMax[cellId][dim], domainEdge[dim])) {
+                posVect[iVertex][dim] = fmod(posVect[iVertex][dim], domainEdge[dim]);
+            } else if (fmod(pMin[cellId][dim], 2*domainEdge[dim]) < fmod(pMax[cellId][dim], 2*domainEdge[dim])) {
+                posVect[iVertex][dim] = fmod(posVect[iVertex][dim], 2*domainEdge[dim]);
+            } else {
+                posVect[iVertex][dim] = fmod(posVect[iVertex][dim] + domainEdge[dim], 2*domainEdge[dim]);
             }
-            Array<T,3> dMaxCellPosition = pMax[cellId];
-            Array<T,3> dMinCellPosition = pMin[cellId] - Array<T,3>(nx-1,ny-1,nz-1) ;
-            for (int dim=0; dim < 3; ++dim) {
-                if (dMaxCellPosition[dim] < 0.0 ) posVect[iVertex][dim] = iparticle->getPosition()[dim];
-                if (dMinCellPosition[dim] > 0.0 ) posVect[iVertex][dim] = iparticle->getPosition()[dim];
-            }
+
+        }
     }
 }
 
