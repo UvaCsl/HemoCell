@@ -30,7 +30,7 @@ Tumbling-TankTreading Measurements [6], Fischer2004 [7],
 Fast Cell Stretching release [8],
  -->
     <flowType> 0 </flowType>   
-    <Re> 2.0 </Re>   <!--Reynolds number-->
+    <Re> 10.0 </Re>   <!--Reynolds number-->
     <shearRate> 0 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 193.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->
     <eulerAngles> 0 0 0 </eulerAngles> <!-- In degrees -->
@@ -54,13 +54,13 @@ Fast Cell Stretching release [8],
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1e-6 </dx> <!--Physical length of 1 Lattice Unit -->
     <nx> 20 </nx> <!--Size of domain in Lattice Units -->
-    <ny> 21 </ny>
-    <nz> 22 </nz>
+    <ny> 40 </ny>
+    <nz> 40 </nz>
 </domain>
 
 <sim>
-    <tmax> 50000000 </tmax> <!-- total number of iterations -->
-    <tmeas> 500 </tmeas> <!-- interval after which data is written -->> 
-    <npar>  1  </npar> <!-- Number of particles > -->
+    <tmax> 5000 </tmax> <!-- total number of iterations -->
+    <tmeas> 50 </tmeas> <!-- interval after which data is written -->> 
+    <npar>  700  </npar> <!-- Number of particles > -->
 </sim>
 </ficsion>

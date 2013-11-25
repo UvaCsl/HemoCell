@@ -195,7 +195,7 @@ Array<T,3> CellModel3D<T>::computeCellForce (
         surfaceForce += computeSurfaceConservationForce(x1, x2, x3, triangleNormal, surfaceCoefficient, dAdx);
         /* Shear force */
         shearForce += computeLocalAreaConservationForce(dAdx, triangleArea, eqArea, areaCoefficient);
-        /* Elastice Force */
+        /* Elastice Force, disabled */
 //        elasticForce += computeElasticRepulsiveForce(dAdx, triangleArea, C_elastic);
         /* Volume conservation force */
         volumeForce  += computeVolumeConservationForce(x1, x2, x3, volumeCoefficient);

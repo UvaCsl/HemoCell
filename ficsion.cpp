@@ -496,7 +496,7 @@ int main(int argc, char* argv[])
                 writeImmersedPointsVTK(Cells, goAndStopVertices, dx,
                     global::directories().getOutputDir()+createFileName("GoAndStop.",i,10)+".vtk");
             }
-            pcout << "Iteration " << i << std::endl;
+            pcout << "Iteration: " << i << ", time/iteration (last i):" << dtIteration << std::endl;
             // printCellMeasures(i, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
             //                       cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolumeFinal, eqSurface, eqArea, eqLength,
             //                       dx, dt) ;
