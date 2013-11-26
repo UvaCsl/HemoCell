@@ -484,7 +484,7 @@ int main(int argc, char* argv[])
     for (pluint i=0; i<tmax+1; ++i) {
         dtIteration = global::timer("mainLoop").stop();
         global::timer("mainLoop").restart();
-        if (i>0) { performanceLogFile << "Iteration" << "; " << i << "; "<< dtIteration << std::endl; }
+        if (i>0) { performanceLogFile << "Iteration" << "; " << i-1 << "; "<< dtIteration << std::endl; }
         // pcout << "mainLoop: " << dtIteration <<std::endl;
         if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
             pcout << "[FICSION]: Switching off shear rate (Fischer2004)" << std::endl;
@@ -655,6 +655,7 @@ int main(int argc, char* argv[])
             }
         }
         // #2# IBM Spreading
+        global::timer("IBM").restart();
         if (forceToFluid != 0) { // Force from the Cell dynamics to the Fluid
             setExternalVector( lattice, lattice.getBoundingBox(),
                            DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
@@ -662,9 +663,16 @@ int main(int argc, char* argv[])
                     new ForceToFluid3D<T,DESCRIPTOR> (ibmKernel),
                     immersedParticles.getBoundingBox(), particleLatticeArg );
         }
+        global::timer("IBM").stop();
         // #3# LBM
+
+        global::timer("LBM").restart();
         lattice.collideAndStream();
+        dtIteration = global::timer("LBM").stop();
+        if (i>0) { performanceLogFile << "LBM" << "; " << i << "; "<< dtIteration << std::endl; }
+
         // #4# IBM Interpolation
+        global::timer("IBM").start();
         applyProcessingFunctional ( // copy fluid velocity on particles
             new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(ibmKernel),
             immersedParticles.getBoundingBox(), particleLatticeArg);
@@ -675,6 +683,8 @@ int main(int argc, char* argv[])
         applyProcessingFunctional ( // update mesh position
             new CopyParticleToMeshVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
             immersedParticles.getBoundingBox(), particleArg);
+        dtIteration = global::timer("IBM").stop();
+        if (i>0) { performanceLogFile << "IBM" << "; " << i << "; "<< dtIteration << std::endl; }
 
 //        applyProcessingFunctional (
 //            new MeshToParticleField3D<T,DESCRIPTOR> (cqh),
@@ -685,7 +695,7 @@ int main(int argc, char* argv[])
 //    		std::cout << "cid2mcid " << i << " " << cid2mcid.size() << " cid " << iter->first << ", mid " << iter->second << std::endl;
 //    		iter++;
 //    	}
-
+        global::timer("Quantities").restart();
         applyProcessingFunctional (
             new MapVertexToParticle3D<T,DESCRIPTOR> (
                 Cells, iVertexToParticle3D),
@@ -693,7 +703,11 @@ int main(int argc, char* argv[])
 //        pcout << "iVertexToParticle3D: " << iVertexToParticle3D.size() << std::endl;
         calculateCellMeasures(Cells, immersedParticles, cellIds, npar, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                             cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan, iVertexToParticle3D);
+        dtIteration = global::timer("Quantities").stop();
+        if (i>0) { performanceLogFile << "Quantities" << "; " << i << "; "<< dtIteration << std::endl; }
+
         // #1# Membrane Model
+        global::timer("Model").restart();
         if (rbcModel == 0) {
             applyProcessingFunctional (
                 new ComputeShapeMemoryModelForce3D<T,DESCRIPTOR> (
@@ -705,6 +719,8 @@ int main(int argc, char* argv[])
                     Cells, dynamic_cast<CellModel3D<T>*>(cellModel)->clone(), cellsVolume, cellsSurface),
                 immersedParticles.getBoundingBox(), particleArg );
         }
+        dtIteration = global::timer("Model").stop();
+        if (i>0) { performanceLogFile << "Model" << "; " << i << "; "<< dtIteration << std::endl; }
 
         if ((flowType == 3) || (flowType == 4) || (flowType == 5)) {
             applyProcessingFunctional ( // compute force applied on the some particles by the stretching force

@@ -53,7 +53,7 @@ Fast Cell Stretching release [8],
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <nx> 20 </nx> <!--Size of domain in Lattice Units -->
+    <nx> 40 </nx> <!--Size of domain in Lattice Units -->
     <ny> 40 </ny>
     <nz> 40 </nz>
 </domain>
@@ -61,6 +61,6 @@ Fast Cell Stretching release [8],
 <sim>
     <tmax> 5000 </tmax> <!-- total number of iterations -->
     <tmeas> 50 </tmeas> <!-- interval after which data is written -->> 
-    <npar>  700  </npar> <!-- Number of particles > -->
+    <npar>  144  </npar> <!-- Number of particles > -->
 </sim>
 </ficsion>
