@@ -62,7 +62,11 @@ ifeq ($(UNAME),Darwin)
 	compileFlags = -DPLB_MAC_OS_X -Wall
 else
 # Compiler to use with MPI parallelism
-	parallelCXX  = mpicxx.openmpi
+    ifeq (${HOSTNAME}, kolmogorov) # WorkMachine needs special treatment!
+        parallelCXX  = mpicxx.openmpi
+    else
+        parallelCXX = mpicxx
+    endif
 # General compiler flags (e.g. -Wall to turn on all warnings on g++)
 	compileFlags = -Wall 
 endif
