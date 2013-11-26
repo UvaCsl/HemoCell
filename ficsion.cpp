@@ -225,7 +225,6 @@ int main(int argc, char* argv[])
     kBT = kBT_p / ( dm * dx*dx/(dt*dt) );
     shearRate = shearRate_p * dt;
     stretchForceScalar = stretchForce_p / dNewton;
-
     writeFicsionLogFile(parameters, "log", Re, shearRate, flowType);
     pcout << "dx = " << dx << ", " <<
              "dt = " << dt << ", " <<
@@ -291,6 +290,10 @@ int main(int argc, char* argv[])
     meshmetric.setResultFile(meshQualityFile);
     meshmetric.write(meshQualityFile);
     writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",0,8)+".stl");
+    performanceLogFile << "# Nx*Ny*Nz; " << nx * ny * nz << std::endl;
+    performanceLogFile << "# Nparticles; " << Cells.getMesh().getNumVertices() << std::endl;
+    performanceLogFile << "# Nx; Ny; Nz; " << nx << "; " << ny << "; "<< nz << std::endl;
+    performanceLogFile << "# Ncells; " << centers.size() << std::endl;
 
     std::vector<plint> numParts(cellIds.size()); // Count number of particles per Cell
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
