@@ -20,12 +20,14 @@
  *      Max : 3
  *      STD : 4 // Still to be implemented
  * ID for the quantity of interest, starting from 1. Can be grouped together like:
+ *      Volume         : 1
  *      Angle          : 2
  *      Area           : 3
  *      Edge Distance  : 4
  *      Edge Tile Span : 5
  *      Position       : 6
  *      Velocity       : 7
+ *      Inertia        : 8
  */
 #define CCR_VOLUME                 101 // 1d
 #define CCR_ANGLE_MEAN             211 // 1d
@@ -121,10 +123,18 @@ public:
                          std::map<plint, std::map<plint, Array<T,3> >  > & quantity3D,
                          std::map<plint, std::map<plint, std::vector<T> >  > & quantitiesXD);
 private:
-    std::map<plint, std::map<plint, plint >  > whatQuantity1D; // whatQuantity1D[CCR_EDGE_DISTANCE_MEAN][cellId]
-    std::map<plint, std::map<plint, Array<plint,3> >  > whatQuantity3D; // whatQuantity3D[CCR_VELOCITY_MEAN][cellId]
-    std::map<plint, std::map<plint, std::vector<plint> >  > whatQuantityXD; // whatQuantityXD[CCR_INERTIA][cellId]
+    std::map<plint, std::map<plint, plint >  > quantityBins1D; // quantityBins1D[CCR_EDGE_DISTANCE_MEAN][cellId]
+    std::map<plint, std::map<plint, Array<plint,3> >  > quantityBins3D; // quantityBins3D[CCR_VELOCITY_MEAN][cellId]
+    std::map<plint, std::map<plint, std::vector<plint> >  > quantityBinsXD; // quantityBinsXD[CCR_INERTIA][cellId]
 
+    std::map<plint, std::map<plint, T > * > const& carryOnQuantities1D;
+    std::map<plint, std::map<plint, Array<T,3> > *  > const& carryOnQuantities3D;    // carryOnQuantities3D[CCR_INERTIA][cellId] = Positions
+    std::map<plint, std::map<plint, std::vector<T> > * > const& carryOnQuantitiesXD;
+
+    std::vector<T> computeQuantity1D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
+    std::vector<T> computeQuantity3D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
+    std::vector<T> computeQuantityND (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
+private:
     TriangleBoundary3D<T> const& triangleBoundary;
     std::vector<plint> quantitiesToReduce;
     std::set<plint> subscribedQuantities;
