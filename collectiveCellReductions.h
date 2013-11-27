@@ -12,7 +12,7 @@
  *      1D : 1
  *      2D : 2
  *      3D : 3
- *      XD : 4,5,6,7,8,9
+ *      ND : 4,5,6,7,8,9 // Not above 10
  * Second to last digit, type of reduction:
  *      Sum : 0
  *      Mean: 1
@@ -53,50 +53,10 @@
 // #define CCR_MAX               41 // 9d
 
 
-
-
-/* ******** CellReduceFunctional3D *********************************** */
-template<typename T, template<typename U> class Descriptor>
-class CellReductorWrapper
-{
-    public:
-        CellReductorWrapper(std::vector<MultiBlock3D*> & particleArg_,
-                            TriangleBoundary3D<T> const& triangleBoundary_,
-                            plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_,
-                            std::vector<plint> quantitiesToReduce_);
-        CellReductorWrapper(std::vector<MultiBlock3D*> & particleArg_,
-                            TriangleBoundary3D<T> const& triangleBoundary_,
-                            plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_,
-                            plint quantitiesToReduce_=-1);
-        virtual ~CellReductorWrapper() { };
-
-        void reduce(plint quantitiesToReduce_=-1);
-        void reduce(std::vector<plint> & quantitiesToReduce);
-        void setCarryOnQuantities1D(std::map<plint, std::map<plint, T > * > const& carryOnQuantities1D);
-        void setCarryOnQuantities3D(std::map<plint, std::map<plint, Array<T,3> > *  > const& carryOnQuantities3D);
-        // carryOnQuantities3D[CCR_INERTIA][cellId] = Positions
-        void setCarryOnQuantitiesXD(std::map<plint, std::map<plint, std::vector<T> > * > const& carryOnQuantitiesXD);
-    private:
-        CollectiveCellReductions<T,Descriptor> CCR;
-        TriangleBoundary3D<T> const& triangleBoundary;
-        plint maxNumberOfCells;
-        plint numVerticesPerCell;
-        plint numTrianglesPerCell;
-        std::vector<plint> quantitiesToReduce;
-
-        std::vector<plint> cellIDs;
-        std::map<plint, std::map<plint, T > * > quantities1D; // quantities1D[CCR_EDGE_DISTANCE_MEAN][cellId]
-        std::map<plint, std::map<plint, Array<T,3> > * > quantities3D; // quantities3D[CCR_VELOCITY_MEAN][cellId]
-        std::map<plint, std::map<plint, std::vector<T> > * > quantitiesXD; // quantitiesXD[CCR_INERTIA][cellId]
-};
-
 /*
  *    CollectiveCellReductionBox3D is the Functional Reductive Box that does the actual job.
  *
  */
-
-
-/* ******** CellReduceFunctional3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
 class CollectiveCellReductionBox3D : public PlainReductiveBoxProcessingFunctional3D
 {
@@ -121,18 +81,19 @@ public:
     /* This method is overridden multiple times */
     void getCellQuantity(std::map<plint, T > & quantity1D,
                          std::map<plint, std::map<plint, Array<T,3> >  > & quantity3D,
-                         std::map<plint, std::map<plint, std::vector<T> >  > & quantitiesXD);
+                         std::map<plint, std::map<plint, std::vector<T> >  > & quantitiesND);
 private:
+    // quantityBins contain the "whichSum"/"whichAverage"/etc
     std::map<plint, std::map<plint, plint >  > quantityBins1D; // quantityBins1D[CCR_EDGE_DISTANCE_MEAN][cellId]
     std::map<plint, std::map<plint, Array<plint,3> >  > quantityBins3D; // quantityBins3D[CCR_VELOCITY_MEAN][cellId]
-    std::map<plint, std::map<plint, std::vector<plint> >  > quantityBinsXD; // quantityBinsXD[CCR_INERTIA][cellId]
+    std::map<plint, std::map<plint, std::vector<plint> >  > quantityBinsND; // quantityBinsND[CCR_INERTIA][cellId]
 
-    std::map<plint, std::map<plint, T > * > const& carryOnQuantities1D;
+    std::map<plint, std::map<plint, T > * > const& carryOnQuantities1D; // carryOnQuantities1D[CCR_EDGE_DISTANCE_STD][cellId] = MEAN_EDGE_DISTANCE
     std::map<plint, std::map<plint, Array<T,3> > *  > const& carryOnQuantities3D;    // carryOnQuantities3D[CCR_INERTIA][cellId] = Positions
-    std::map<plint, std::map<plint, std::vector<T> > * > const& carryOnQuantitiesXD;
+    std::map<plint, std::map<plint, std::vector<T> > * > const& carryOnQuantitiesND;
 
-    std::vector<T> computeQuantity1D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
-    std::vector<T> computeQuantity3D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
+    T computeQuantity1D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
+    Array<T,3> computeQuantity3D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
     std::vector<T> computeQuantityND (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
 private:
     TriangleBoundary3D<T> const& triangleBoundary;
@@ -142,21 +103,21 @@ private:
     plint maxNumberOfCells, numVerticesPerCell, numTrianglesPerCell;
 public:
     void getCellQuantity(std::map<plint, std::map<plint, Array<T,3> > * > & quantity3D);
-    void getCellQuantity(std::map<plint, std::map<plint, std::vector<T> > * > & quantitiesXD);
+    void getCellQuantity(std::map<plint, std::map<plint, std::vector<T> > * > & quantitiesND);
     void getCellQuantity(std::map<plint, T > & quantity1D,
                          std::map<plint, std::map<plint, Array<T,3> > * > & quantity3D);
 private: /* ReductiveBoxFunctions */
     plint subscribeReduction1D(plint reductionType);
     Array<plint,3> subscribeReduction3D(plint reductionType);
-    std::vector<plint> subscribeReductionXD(plint reductionType, plint dimensions);
+    std::vector<plint> subscribeReductionND(plint reductionType, plint dimensions);
 
     void gatherReduction1D(plint reductionType, plint whatQ, T value);
     void gatherReduction3D(plint reductionType, Array<plint,3> whatQ, Array<T,3> value);
-    void gatherReductionXD(plint reductionType, std::vector<plint> whatQ, std::vector<T> value);
+    void gatherReductionND(plint reductionType, std::vector<plint> whatQ, std::vector<T> value);
 
     T getReduction1D(plint reductionType, plint whatQ);
     Array<T,3> getReduction3D(plint reductionType, Array<plint,3> whatQ);
-    std::vector<T> getReductionXD(plint reductionType, std::vector<plint> whatQ);
+    std::vector<T> getReductionND(plint reductionType, std::vector<plint> whatQ);
 
 
 
