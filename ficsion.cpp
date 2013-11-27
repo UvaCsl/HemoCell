@@ -704,8 +704,13 @@ int main(int argc, char* argv[])
                 Cells, iVertexToParticle3D),
             immersedParticles.getBoundingBox(), particleArg );
 //        pcout << "iVertexToParticle3D: " << iVertexToParticle3D.size() << std::endl;
-        calculateCellMeasures(Cells, immersedParticles, cellIds, npar, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+        if (flowType==6) {
+            calculateCellMeasures(Cells, immersedParticles, cellIds, npar, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
                             cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan, iVertexToParticle3D);
+        } else {
+            calculateCellMeasuresMinimal(Cells, immersedParticles, cellIds, npar, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
+                                cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, cellsMeanTileSpan, iVertexToParticle3D);
+        }
         dtIteration = global::timer("Quantities").stop();
         if (i>0) { performanceLogFile << "Quantities" << "; " << i << "; "<< dtIteration << std::endl; }
 
