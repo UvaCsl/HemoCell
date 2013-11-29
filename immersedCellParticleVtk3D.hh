@@ -32,21 +32,7 @@ namespace plb {
 template<typename T, template<typename U> class Descriptor>
 void writeImmersedSurfaceVTK( TriangleBoundary3D<T> const& boundary,
                       MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particles,
-                      std::vector<std::string> const& scalars,
-                      std::vector<std::string> const& vectors,
-                      std::string const& fName, bool dynamicMesh, plint tag )
-{
-    writeImmersedSurfaceVTK( boundary, particles, scalars, vectors, fName, dynamicMesh, tag,
-                     std::vector<T>(), std::vector<T>() );
-}
-
-template<typename T, template<typename U> class Descriptor>
-void writeImmersedSurfaceVTK( TriangleBoundary3D<T> const& boundary,
-                      MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particles,
-                      std::vector<std::string> const& scalars,
-                      std::vector<std::string> const& vectors,
-                      std::string const& fName, bool dynamicMesh, plint tag,
-                      std::vector<T> const& scalarFactor, std::vector<T> const& vectorFactor )
+                      std::string const& fName)
 {
     SparseBlockStructure3D blockStructure(particles.getBoundingBox());
     blockStructure.addBlock(particles.getBoundingBox(), 0);
@@ -70,7 +56,7 @@ void writeImmersedSurfaceVTK( TriangleBoundary3D<T> const& boundary,
         SmartBulk3D oneBlockBulk(serialMultiBlockManagement, 0);
         atomicSerialParticles.findParticles(oneBlockBulk.toLocal(particles.getBoundingBox()), found);
         if (found.size() > 0) {
-            vtkForImmersedVertices(found, boundary, scalars, vectors, fName, dynamicMesh, tag, scalarFactor, vectorFactor,
+            vtkForImmersedVertices(found, boundary, fName,
                     nx, ny, nz);
         }
         else {
@@ -82,14 +68,9 @@ void writeImmersedSurfaceVTK( TriangleBoundary3D<T> const& boundary,
 template<typename T, template<typename U> class Descriptor>
 void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& particles,
                     TriangleBoundary3D<T> const& boundary,
-                    std::vector<std::string> const& scalars,
-                    std::vector<std::string> const& vectors,
-                    std::string fName, bool dynamicMesh, plint tag,
-                    std::vector<T> const& scalarFactor, std::vector<T> const& vectorFactor,
+                    std::string fName,
                     plint nx, plint ny, plint nz)
 {
-    PLB_ASSERT( scalarFactor.empty() || scalarFactor.size()==scalars.size() );
-    PLB_ASSERT( vectorFactor.empty() || vectorFactor.size()==vectors.size() );
     TriangularSurfaceMesh<T> const& mesh = boundary.getMesh();
     // If this assertion fails, a likely explanation is that the margin of your sparse block
     // structure is too small, and one of the particles was outside the allocated domain.
@@ -136,17 +117,11 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
         for (pluint iScalar=0; iScalar<scalarNames.size(); ++iScalar) {
             T scalar;
             iparticle->getScalar(iScalar, scalar);
-            if (!scalarFactor.empty()) {
-                scalar *= scalarFactor[iScalar];
-            }
             scalarData[iScalar][iVertex] = scalar;
         }
         for (pluint iVector=0; iVector<vectorNames.size(); ++iVector) {
             Array<T,3> vector;
             iparticle->getVector(iVector, vector);
-            if (!vectorFactor.empty()) {
-                vector *= vectorFactor[iVector];
-            }
             vectorData[iVector][iVertex] = vector;
         }
     }
@@ -158,13 +133,7 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
     }
     ofile << "\n";
 
-    plint numWallTriangles=0;
-    for (plint iTriangle=0; iTriangle<mesh.getNumTriangles(); ++iTriangle) {
-        if ( tag<0 || boundary.getTag(iTriangle)==tag )
-        {
-            ++numWallTriangles;
-        }
-    }
+    plint numWallTriangles=mesh.getNumTriangles();
 
     ofile << "CELLS " << numWallTriangles
           << " " << 4*numWallTriangles << "\n";
@@ -173,10 +142,7 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
         plint i0 = mesh.getVertexId(iTriangle, 0);
         plint i1 = mesh.getVertexId(iTriangle, 1);
         plint i2 = mesh.getVertexId(iTriangle, 2);
-        if ( tag<0 || boundary.getTag(iTriangle)==tag )
-        {
-            ofile << "3 " << i0 << " " << i1 << " " << i2 << "\n";
-        }
+        ofile << "3 " << i0 << " " << i1 << " " << i2 << "\n";
     }
     ofile << "\n";
 

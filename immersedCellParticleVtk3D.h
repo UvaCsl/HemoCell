@@ -34,36 +34,16 @@
 
 namespace plb {
 
-template< typename T,
-          template<typename U> class Descriptor,
-          class BoundaryType >
+template<typename T, template<typename U> class Descriptor>
 void writeImmersedSurfaceVTK( TriangleBoundary3D<T> const& boundary,
                       MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particles,
-                      std::vector<std::string> const& scalars,
-                      std::vector<std::string> const& vectors,
-                      std::string const& fName, bool dynamicMesh, plint tag );
+                      std::string const& fName);
 
-
-template< typename T,
-          template<typename U> class Descriptor,
-          class BoundaryType >
-void writeImmersedSurfaceVTK( TriangleBoundary3D<T> const& boundary,
-                      MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particles,
-                      std::vector<std::string> const& scalars,
-                      std::vector<std::string> const& vectors,
-                      std::string const& fName, bool dynamicMesh, plint tag,
-                      std::vector<T> const& scalarFactor, std::vector<T> const& vectorFactor );
-
-
-template< typename T,
-          template<typename U> class Descriptor,
-          class BoundaryType >
+template<typename T, template<typename U> class Descriptor>
 void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& particles,
                     TriangleBoundary3D<T> const& boundary,
-                    std::vector<std::string> const& scalars,
-                    std::vector<std::string> const& vectors,
-                    std::string fName, bool dynamicMesh, plint tag,
-                    std::vector<T> const& scalarFactor, std::vector<T> const& vectorFactor );
+                    std::string fName,
+                    plint nx, plint ny, plint nz);
 
 template<typename T>
 void writeImmersedPointsVTK(TriangleBoundary3D<T> const& boundary, std::vector<plint> const& vertices, T const& dx,

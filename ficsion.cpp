@@ -261,11 +261,10 @@ int main(int argc, char* argv[])
     Box3D outlet(nx-2, nx-1, 0, ny-1, 0, nz-1);
 
 
+//  === Create Mesh, particles and CellModel ===
     std::vector<Array<T,3> > centers;
     std::vector<T> radii;
     positionCells(shape, radius, npar, parameters, centers, radii, flowType);
-
-//  === Create Mesh, particles and CellModel ===
     plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
     std::vector<plint> cellIds;
     plint cellNumVertices = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
@@ -538,19 +537,11 @@ int main(int argc, char* argv[])
                                                                        << std::endl;
                    }
             }
-            std::vector<std::string> force_scalarNames;
-            std::vector<std::string> velocity_scalarNames;
-            std::vector<std::string> velocity_vectorNames;
-            // writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",i,8)+".stl");
             // serialize the particle information to write them.
             // a correspondance between the mesh and the particles is made. (Needs rescale)
-            bool dynamicMesh = true;
-            plint tag = -1; // Take all triangles.
             writeImmersedSurfaceVTK (
-                Cells,
-                immersedParticles,
-                velocity_scalarNames, velocity_vectorNames,
-                global::directories().getOutputDir()+createFileName("RBC",i,8)+".vtk", dynamicMesh, tag);
+                Cells, immersedParticles,
+                global::directories().getOutputDir()+createFileName("RBC",i,8)+".vtk");
             writeVTK(lattice, parameters, i);
             // === Checkpoint ===
             //    parallelIO::save(immersedParticles, "immersedParticles.dat", true);
@@ -576,24 +567,10 @@ int main(int argc, char* argv[])
             if (convergeX.hasConverged() && convergeY.hasConverged() ) {
                 convergeX.resetValues();
                 convergeY.resetValues();
-
-                std::vector<std::string> force_scalarNames;
-                std::vector<std::string> velocity_scalarNames;
-                std::vector<std::string> velocity_vectorNames;
-                if (not stretchReleased) {
-                    writeImmersedSurfaceVTK (
-                        Cells,
-                        immersedParticles,
-                        velocity_scalarNames, velocity_vectorNames,
-                        global::directories().getOutputDir()+createFileName("stretch.", plint(stretchForceScalar*dNewton*1.0e12), 3)+".pN.vtk", true, -1);
-                }
-                else{
-                    writeImmersedSurfaceVTK (
-                        Cells,
-                        immersedParticles,
-                        velocity_scalarNames, velocity_vectorNames,
-                        global::directories().getOutputDir()+createFileName("stretchR.", plint(stretchForceScalar*dNewton*1.0e12), 3)+".pN.vtk", true, -1);
-                }
+                std::string stretchNameId = stretchReleased?"stretchR.":"stretch.";
+                writeImmersedSurfaceVTK (
+                    Cells, immersedParticles,
+                    global::directories().getOutputDir()+createFileName(stretchNameId, plint(stretchForceScalar*dNewton*1.0e12), 3)+".pN.vtk");
                 stretchResultFile << setprecision(20) << i*dt
                         << "; " << stretchForceScalar*dNewton
                         << "; " << stretchingDeformations[0]*dx
