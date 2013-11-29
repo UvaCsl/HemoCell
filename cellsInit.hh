@@ -38,13 +38,14 @@ void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> cons
     plint NdX = (nx-2)*1.0/dX;
     plint NdY = (ny-2)*1.0/dY;
     plint NdZ = (nz-2)*1.0/dZ;
-    dX = (nx-2.0)*1.0/NdX; // Needs to be re-adjusted.
+    // dX = (nx-2.0)*1.0/NdX; // Needs to be re-adjusted.
     dY = (ny-2.0)*1.0/NdY;
     dZ = (nz-2.0)*1.0/NdZ;
 
     npar = npar<(NdX*NdY*NdZ)?npar:(NdX*NdY*NdZ);
     plint slices = npar/(NdY*NdZ);
-    dX = (nx-2.0)*1.0/slices;
+    if (slices > 0) { dX = (nx-2.0)*1.0/slices; }
+    else { dX = nx; }
 
     for (plint i = 0; i < slices; ++i) {
         for (plint iy = 0; iy < NdY; ++iy) {
