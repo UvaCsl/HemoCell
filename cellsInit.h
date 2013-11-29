@@ -20,7 +20,6 @@
 
 #include "ficsionInit.hh"
 #include "immersedCells3D.hh"
-#include "immersedCellsFunctional3D.hh"
 #include "immersedCellsReductions.hh"
 
 // Position Cells inside the domain

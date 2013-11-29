@@ -474,16 +474,6 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
             particle->get_f_viscosity() = f_viscosity;
             particle->get_E_bending().resetToZero();
 
-//            pcout << "f_wlc (" <<
-//                    particle->get_f_wlc()[0] << ", " <<
-//                    particle->get_f_wlc()[1] << ", " <<
-//                    particle->get_f_wlc()[2] << ") " << std::endl;
-//            T neF=norm(elasticForce), ncF=norm(cellForce);
-//            pcout << "forces: "<< neF << " " << ncF << " " << neF/ncF  << ", " << norm(elasticForce-cellForce) <<
-//                    " (" << (elasticForce/neF)[0] << ", "  << (cellForce/ncF)[0] << "), " <<
-//                    " (" << (elasticForce/neF)[1] << ", "  << (cellForce/ncF)[1] << "), " <<
-//                    " (" << (elasticForce/neF)[2] << ", "  << (cellForce/ncF)[2] << "), " <<
-//                    std::endl;
             Array<T,3> force, acc; force.resetToZero(); acc.resetToZero();
             force = elasticForce + cellForce;
             acc = force*1.0 / cellModel->getDensity();
@@ -512,7 +502,6 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
             particle->get_force() += particleForces[vertexId][var];
         }
         particle->get_E_bending() += particleForces[vertexId][6];
-
         delete [] particleForces[vertexId];
 
         sforce += particle->get_force();
@@ -523,7 +512,6 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         sf_shear += particle->get_f_shear();
         sf_viscosity += particle->get_f_viscosity();
     }
-
     bool pcoutForceSum = true;
 	#ifdef PLB_MPI_PARALLEL
     	int ntasks;

@@ -26,7 +26,6 @@
 #include "ficsionInit.hh"
 #include "cellsInit.hh"
 #include "immersedCells3D.hh"
-#include "immersedCellsFunctional3D.hh"
 #include "immersedCellsReductions.hh"
 #include "meshToParticleField3D.h"
 #include <string>
