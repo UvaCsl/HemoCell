@@ -30,12 +30,7 @@
 const double pi = 4.*atan(1.);
 #endif  // PI__
 
-
-#include "palabos3D.h"
-#include "palabos3D.hh"
-
 #include "immersedBoundaryMethod3D.h"
-#include <vector>
 
 namespace plb {
 

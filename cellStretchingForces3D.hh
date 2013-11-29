@@ -21,17 +21,7 @@
 #ifndef CELL_STRETCHING_FORCES_3D_HH
 #define CELL_STRETCHING_FORCES_3D_HH
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
-
-#include "immersedCellsReductions.h"
-#include "immersedCellParticleFunctional3D.h"
-#include "immersedCellParticle3D.h"
 #include "cellStretchingForces3D.h"
-
-#include <map>    // std::map
-#include <algorithm>    // std::sort
-#include <vector>       // std::vector
 
 
 namespace plb {

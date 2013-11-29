@@ -23,20 +23,18 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include <algorithm>
+#include <string>
+#include <vector>
 
 #include "meshGeneratingFunctions.h"
-#include "immersedCellParticle3D.h"
-#include "immersedCellParticle3D.hh"
-#include "immersedCellParticleFunctional3D.h"
-#include "immersedCellParticleFunctional3D.hh"
-#include "immersedCellParticleVtk3D.h"
-#include "immersedCellParticleVtk3D.hh"
-#include "shellModel3D.h"
-#include "shellModel3D.hh"
 #include "immersedCells3D.h"
-#include "immersedCells3D.hh"
-// #include "lib/immersedRBCs.hh"
-#include <vector>
+#include "immersedCellParticle3D.h"
+#include "immersedCellParticleFunctional3D.h"
+#include "immersedCellParticleVtk3D.h"
+#include "shellModel3D.h"
+
+
 using namespace plb;
 using namespace std;
 
@@ -74,6 +72,7 @@ TriangleBoundary3D<T> createCompleteMesh(
     plint shape, std::string cellPath, plint &cellNumTriangles, plint &numPartsPerCell);
 
 
+#include "immersedCells3D.hh"
 #endif  // IMMERSED_CELLS_3D_H
 
 

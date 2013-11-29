@@ -191,6 +191,6 @@ public:
 
 }  // namespace plb
 
-#include "shapeMemoryModel3D.hh"
 
+#include "shapeMemoryModel3D.hh"
 #endif  // SHAPE_MEMORY_MODEL_3D_H

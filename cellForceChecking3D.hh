@@ -1,12 +1,7 @@
 #ifndef CELL_FORCE_CHECKING_3D_HH
 #define CELL_FORCE_CHECKING_3D_HH
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
 #include "cellForceChecking3D.h"
-
-
-
 
 void writeInPlaneDataVTK(
         Array<T,3> const& x1, Array<T,3> const& x2,

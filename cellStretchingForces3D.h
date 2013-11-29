@@ -25,9 +25,15 @@
 #include "palabos3D.hh"
 
 #include "immersedCellParticle3D.h"
-#include <map>
+#include "immersedCellsReductions.h"
+#include "immersedCellParticleFunctional3D.h"
+#include "immersedCellParticle3D.h"
 
-#include "cellStretchingForces3D.hh"
+
+#include <map>    // std::map
+#include <algorithm>    // std::sort
+#include <vector>       // std::vector
+
 
 namespace plb {
 
@@ -107,5 +113,6 @@ private:
 
 }  // namespace plb
 
+#include "cellStretchingForces3D.hh"
 #endif  // CELL_STRETCHING_FORCES_3D_H
 

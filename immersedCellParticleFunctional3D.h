@@ -23,12 +23,12 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include <map>
 
 #include "immersedCellParticle3D.h"
 #include "cellModel3D.h"
 #include "immersedBoundaryMethod3D.h"
 #include "meshGeneratingFunctions.h"
-#include <map>
 
 namespace plb {
 
@@ -181,5 +181,6 @@ private:
 
 }  // namespace plb
 
+#include "immersedCellParticleFunctional3D.hh"
 #endif  // IMMERSED_WALL_PARTICLE_FUNCTIONAL_3D_H
 

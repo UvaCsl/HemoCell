@@ -22,9 +22,6 @@
 #define COMPUTE_CELL_FORCES3D_HH
 
 #include "computeCellForces3D.h"
-#include <cmath>
-#include <map>
-#include "cellModel3D.h"
 
 
 namespace plb {

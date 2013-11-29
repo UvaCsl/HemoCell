@@ -1,13 +1,8 @@
 #ifndef FICSIONINIT_HH
 #define FICSIONINIT_HH
 
-#include <limits>
-
 #include "ficsionInit.h"
-#include "palabos3D.hh"
 
-//using namespace plb;
-//using namespace std;
 
 /* ************* Functions poiseuillePressure and poiseuilleVelocity ******************* */
 static T poiseuillePressure(IncomprFlowParam<T> const &parameters, plint maxN, T Re)

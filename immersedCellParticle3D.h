@@ -170,5 +170,7 @@ int registerImmersedCellParticle3D(std::string name) {
 
 }  // namespace plb
 
+#include "immersedCellParticle3D.hh"
+
 #endif  // IMMERSED_WALL_PARTICLE_3D_H
 

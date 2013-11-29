@@ -23,22 +23,22 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
-#include "ficsionInit.hh"
-#include "cellsInit.hh"
-#include "immersedCells3D.hh"
-#include "immersedCellsReductions.hh"
+#include "ficsionInit.h"
+#include "cellsInit.h"
+#include "immersedCells3D.h"
+#include "immersedCellsReductions.h"
 #include "meshToParticleField3D.h"
 #include <string>
 #include <map>
 
-#include "shapeMemoryModel3D.hh"
-#include "shapeMemoryModelFunctional3D.hh"
-#include "cellStretchingForces3D.hh"
+#include "shapeMemoryModel3D.h"
+#include "shapeMemoryModelFunctional3D.h"
+#include "cellStretchingForces3D.h"
 #include "cellModel3D.hh"
 
 #include "cellInShearFlow3D.h"
 #include "meshMetrics.h"
-#include "cellForceChecking3D.hh"
+#include "cellForceChecking3D.h"
 
 
 using namespace plb;

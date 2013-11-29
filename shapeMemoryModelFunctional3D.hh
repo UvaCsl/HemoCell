@@ -21,18 +21,8 @@
 #ifndef SHAPE_MEMORY_MODEL_FUNCTIONAL_3D_HH
 #define SHAPE_MEMORY_MODEL_FUNCTIONAL_3D_HH
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
-
-#include "immersedCellParticleFunctional3D.h"
-#include "immersedCellParticle3D.h"
-#include "immersedBoundaryMethod3D.h"
-#include <map>
-#include <algorithm>    // std::sort
-#include <vector>       // std::vector
-
 #include "shapeMemoryModelFunctional3D.h"
-#include "immersedCellsReductions.hh"
+
 
 namespace plb {
 

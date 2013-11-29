@@ -18,9 +18,9 @@
 #define CELLS_INIT_H
 
 
-#include "ficsionInit.hh"
-#include "immersedCells3D.hh"
-#include "immersedCellsReductions.hh"
+#include "ficsionInit.h"
+#include "immersedCells3D.h"
+#include "immersedCellsReductions.h"
 
 // Position Cells inside the domain
 template<typename T>
@@ -52,6 +52,7 @@ void writeCellLog(plint i, plb_ofstream & logFile,
                   std::vector< Array<T,3> > & cellsCenter, std::vector< Array<T,3> > & cellsVelocity,
                   T eqVolume, T eqSurface, T eqArea, T eqLength) ;
 
+#include "cellsInit.hh"
 #endif  // CELLS_INIT_H
 
 

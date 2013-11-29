@@ -25,13 +25,7 @@
 #ifndef IMMERSED_PARTICLE_VTK_3D_HH
 #define IMMERSED_PARTICLE_VTK_3D_HH
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
-
 #include "immersedCellParticleVtk3D.h"
-#include "immersedCellParticle3D.h"
-#include "immersedCellParticle3D.hh"
-#include <map>
 
 namespace plb {
 

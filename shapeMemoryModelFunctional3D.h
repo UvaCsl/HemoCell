@@ -23,12 +23,17 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include <map>
+#include <algorithm>    // std::sort
+#include <vector>       // std::vector
 
+#include "computeCellForces3D.h"
 #include "immersedCellParticle3D.h"
 #include "immersedBoundaryMethod3D.h"
-#include <map>
-#include "computeCellForces3D.h"
-#include "shapeMemoryModel3D.hh"
+#include "immersedCellParticleFunctional3D.h"
+#include "immersedCellsReductions.h"
+#include "immersedBoundaryMethod3D.h"
+#include "shapeMemoryModel3D.h"
 
 namespace plb {
 
@@ -65,5 +70,6 @@ void getCellShapeQuantitiesFromMesh(TriangleBoundary3D<T>& boundary,
 
 }  // namespace plb
 
+#include "shapeMemoryModelFunctional3D.hh"
 #endif  // SHAPE_MEMORY_MODEL_FUNCTIONAL_3D_H
 

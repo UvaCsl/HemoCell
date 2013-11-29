@@ -21,13 +21,7 @@
 #ifndef IMMERSED_WALL_PARTICLE_FUNCTIONAL_3D_HH
 #define IMMERSED_WALL_PARTICLE_FUNCTIONAL_3D_HH
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
-
 #include "immersedCellParticleFunctional3D.h"
-#include "immersedCellParticle3D.h"
-#include "immersedBoundaryMethod3D.h"
-#include <map>
 
 namespace plb {
 

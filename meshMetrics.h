@@ -3,6 +3,8 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include <map>
+#include "computeCellForces3D.h"
 
 
 template<typename T>
@@ -59,5 +61,4 @@ private:
 
 
 #include "meshMetrics.hh"
-
 #endif  // MESH_METRICS_H

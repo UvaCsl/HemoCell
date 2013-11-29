@@ -27,8 +27,6 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
-
-#include "immersedBoundaryMethod3D.hh"
 #include <vector>
 
 namespace plb {
@@ -73,5 +71,7 @@ void interpolationCoefficientsPhi4c (
 
 
 }
+
+#include "immersedBoundaryMethod3D.hh"
 #endif  // IMMERSEDBOUNDARYMETHOD_3D_H
 

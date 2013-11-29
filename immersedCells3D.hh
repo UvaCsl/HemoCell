@@ -21,11 +21,7 @@
 #ifndef IMMERSED_CELLS_3D_HH
 #define IMMERSED_CELLS_3D_HH
 
-#include "meshGeneratingFunctions.h"
 #include "immersedCells3D.h"
-#include <algorithm>
-#include <string>
-
 
 using namespace plb;
 using namespace std;
@@ -103,6 +99,7 @@ bool generateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& pa
             new CreateTaggedImmersedCellParticle3D<T,Descriptor>(Cells, cellIds[iA], numPartsPerCell),
             particleField.getBoundingBox(), particleArg );
     }
+    return true;
 }
 
 template<typename T>

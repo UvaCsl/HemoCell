@@ -163,4 +163,5 @@ T computeRestPotential(Array<T,3> const& iPosition, Array<T,3> const& iEqPositio
 
 }  // namespace plb
 
+#include "shellModel3D.hh"
 #endif  // SHELL_MODEL_3D_H

@@ -7,15 +7,10 @@
 #include "palabos3D.hh"
 
 #include "immersedCellParticle3D.h"
-#include "immersedCellParticle3D.hh"
 #include "immersedCellParticleFunctional3D.h"
-#include "immersedCellParticleFunctional3D.hh"
 #include "immersedCellParticleVtk3D.h"
-#include "immersedCellParticleVtk3D.hh"
 #include "shellModel3D.h"
-#include "shellModel3D.hh"
 #include "cellModel3D.h"
-#include "cellModel3D.hh"
 
 using namespace plb;
 using namespace std;
@@ -99,5 +94,6 @@ void writeMeshAsciiSTL(TriangleBoundary3D<T> & Cells, std::string fname, T dx=0.
 template<typename T> // Copied from void TriangularSurfaceMesh<T>::writeBinarySTL(std::string fname).
 void writeMeshBinarySTL(TriangleBoundary3D<T> & Cells, std::string fname, T dx=0.0);
 
+#include "ficsionInit.hh"
 
 #endif  // FICSIONINIT_H

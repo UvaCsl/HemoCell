@@ -29,6 +29,8 @@
 #include "palabos3D.hh"
 #include <vector>
 #include <string>
+#include <map>
+#include "immersedCellParticle3D.h"
 
 namespace plb {
 
@@ -68,5 +70,7 @@ void writeImmersedPointsVTK(TriangleBoundary3D<T> const& boundary, std::vector<p
                     std::string fName);
 
 }  // namespace plb
+
+#include "immersedCellParticleVtk3D.hh"
 
 #endif  // IMMERSED_PARTICLE_VTK_3D_H

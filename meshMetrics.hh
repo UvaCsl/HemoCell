@@ -1,12 +1,7 @@
 #ifndef MESH_METRICS_HH
 #define MESH_METRICS_HH
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
 #include "meshMetrics.h"
-#include "computeCellForces3D.h"
-
-#include <map>
 
 
 template<typename T>
