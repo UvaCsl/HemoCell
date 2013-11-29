@@ -81,9 +81,6 @@ void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> cons
     }
 }
 
-
-
-
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles,
@@ -115,6 +112,24 @@ void calculateCellMeasures(TriangleBoundary3D<T> Cells, MultiParticleField3D<Par
     countCellMaxEdgeDistance(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsMaxEdgeDistance);
     countCellCenters(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsCenter, cellNumVertices);
     countCellVelocity(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsVelocity, cellNumVertices);
+}
+
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void calculateCellMeasuresMinimal(TriangleBoundary3D<T> Cells, MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles,
+                           std::vector<plint> & cellIds, plint numberOfCells,
+                           std::vector<T> & cellsVolume, std::vector<T> & cellsSurface, std::vector<T> & cellsMeanTriangleArea,
+                           std::vector<T> & cellsMeanEdgeDistance, std::vector<T> & cellsMaxEdgeDistance, std::vector<T> & cellsMeanAngle,
+                           std::vector< Array<T,3> > & cellsCenter, std::vector< Array<T,3> > & cellsVelocity,
+                           std::vector<T> & cellsMeanTileSpan,
+                           std::map <plint, Particle3D<T,Descriptor>*> const & iVertexToParticle3D)
+    {
+    cellsVolume.clear(); cellsSurface.clear();
+    std::vector<MultiBlock3D*> particleArg;
+    particleArg.push_back(&particles);
+    countCellVolume(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsVolume, iVertexToParticle3D);
+    countCellSurface(Cells, particles, particles.getBoundingBox(), cellIds, numberOfCells, cellsSurface);
 }
 
 
