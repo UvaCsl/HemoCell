@@ -23,21 +23,28 @@
 template<typename T>
 void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> const& parameters,
         std::vector<Array<T,3> > & centers, std::vector<T> & radii, plint flowType) {
+    /*
+     * Fills slices first and then the whole grid.
+     */
 
     std::vector<T> posX, posY, posZ;
     const plint nx = parameters.getNx() - 1 ;
     const plint ny = parameters.getNy()  - 1;
     const plint nz = parameters.getNz()  - 1;
-    const T dX = 2.1 * radius ;
-//    const T dY = 2.1 * radius * ( (shape==1) ? 0.265106361 : 1 );
-    const T dY = 2.1 * radius * ( (shape==1) ? 0.5 : 1 );
-    const T dZ = 2.1 * radius;
+    T dX = 2.1 * radius ;
+    T dY = 2.1 * radius * ( (shape==1) ? 0.5 : 1 );
+    T dZ = 2.1 * radius;
 
-    plint NdX = (nx-1)*1.0/dX;
-    plint NdY = (ny-1)*1.0/dY;
-    plint NdZ = (nz-1)*1.0/dZ;
+    plint NdX = (nx-2)*1.0/dX;
+    plint NdY = (ny-2)*1.0/dY;
+    plint NdZ = (nz-2)*1.0/dZ;
+    dX = (nx-2.0)*1.0/NdX; // Needs to be re-adjusted.
+    dY = (ny-2.0)*1.0/NdY;
+    dZ = (nz-2.0)*1.0/NdZ;
+
     npar = npar<(NdX*NdY*NdZ)?npar:(NdX*NdY*NdZ);
     plint slices = npar/(NdY*NdZ);
+    dX = (nx-2.0)*1.0/slices;
 
     for (plint i = 0; i < slices; ++i) {
         for (plint iy = 0; iy < NdY; ++iy) {
@@ -65,9 +72,8 @@ void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> cons
         posZ.push_back(nz * iz*1.0/(mods + 1.0));
     }
 
-    T addToX = 0.0;
-    addToX = (NdX - slices) * dX * 0.5;
-
+    T addToX = 0.5;
+//    addToX = (NdX - slices) * dX * 0.5 ;
 
     for (pluint iA = 0; iA < posX.size(); ++iA) {
         centers.push_back(Array<T,3>(posX[iA]+addToX,posY[iA],posZ[iA]));

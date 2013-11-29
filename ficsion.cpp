@@ -150,6 +150,7 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
 int main(int argc, char* argv[])
 {
     plbInit(&argc, &argv);
+
     global::directories().setOutputDir("./tmp/");
     global::directories().setLogOutDir("./tmp/");
     global::IOpolicy().setStlFilesHaveLowerBound(true);
@@ -157,6 +158,11 @@ int main(int argc, char* argv[])
 //    testInPlane(); PLB_ASSERT(false);
     std::string logFileName = global::directories().getLogOutDir() + "plbCells.log";
     plb_ofstream logFile(logFileName.c_str());
+
+    global::timer("simulation").start();
+    std::string performanceLogFileName = global::directories().getLogOutDir() + "performance.log";
+    plb_ofstream performanceLogFile(performanceLogFileName.c_str());
+
 
     std::string stretchLogFileName = global::directories().getLogOutDir() + "stretchDeformation.log";
     plb_ofstream stretchLogFile(stretchLogFileName.c_str());
@@ -175,7 +181,7 @@ int main(int argc, char* argv[])
     std::string cellPath;
     pluint tmax;
     plint tmeas, npar;
-    // T dtIteration = 0;
+    T dtIteration = 0;
     T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic,  k_volume, k_surface, eta_m;
     T eqLengthRatio;
     T u, Re, Re_p, N, lx, ly, lz;
@@ -408,7 +414,6 @@ int main(int argc, char* argv[])
     }
 
     pcout << std::endl << "Starting simulation" << std::endl;
-    global::timer("sim").start();
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
 
     /* Deflate if I say so */
@@ -469,28 +474,36 @@ int main(int argc, char* argv[])
     if (flowType==6) {
         shearFlow.writeHeader(shearResultFile);
     }
-    std::cout << "Cells Num Triangles " << Cells.getMesh().getNumTriangles() << std::endl;
+    // std::cout << "Cells Num Triangles " << Cells.getMesh().getNumTriangles() << std::endl;
+
 
     /* ********************* Main Loop ***************************************** * */
+    dtIteration = global::timer("simulation").stop();
+    pcout << "Time to initialize: " << dtIteration <<std::endl;
+    performanceLogFile << "Init" << "; " << 0 << "; "<< dtIteration << std::endl;
     for (pluint i=0; i<tmax+1; ++i) {
+        dtIteration = global::timer("mainLoop").stop();
+        global::timer("mainLoop").restart();
+        if (i>0) { performanceLogFile << "Iteration" << "; " << i << "; "<< dtIteration << std::endl; }
+        // pcout << "mainLoop: " << dtIteration <<std::endl;
         if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
             pcout << "[FICSION]: Switching off shear rate (Fischer2004)" << std::endl;
             shearRate = 0.0;
             changeCouetteShearRate(lattice, parameters, *boundaryCondition, shearRate);
             tmeas = 0.1/dt;
         }
+
         /* =============================== OUTPUT ===================================*/
+        // Stop mainLoop timers and start output timers
+        global::timer("mainLoop").stop();
+        global::timer("output").restart();
+
         if (i%tmeas==0) {
             if (goAndStop != 0) {
                 writeImmersedPointsVTK(Cells, goAndStopVertices, dx,
                     global::directories().getOutputDir()+createFileName("GoAndStop.",i,10)+".vtk");
             }
-            pcout << "Iteration " << i << std::endl;
-            // dtIteration = global::timer("sim").stop();
-            // plint totParticlesNow = 0;
-            // totParticlesNow = countParticles(immersedParticles, immersedParticles.getBoundingBox());
-            // pcout << i << " totParticles = " << totParticles << std::endl;
-            // PLB_ASSERT(totParticles == totParticlesNow); //Assert if some particles are outside of the domain
+            pcout << "Iteration: " << i << ", dt of last iteration:" << dtIteration << std::endl;
             // printCellMeasures(i, Cells, cellsVolume, cellsSurface, cellsMeanTriangleArea, cellsMeanEdgeDistance,
             //                       cellsMaxEdgeDistance, cellsMeanAngle, cellsCenter, cellsVelocity, eqVolumeFinal, eqSurface, eqArea, eqLength,
             //                       dx, dt) ;
@@ -543,7 +556,6 @@ int main(int argc, char* argv[])
             //    parallelIO::load("immersedParticles.dat", immersedParticles, true);
             //    parallelIO::load("Cells.dat", Cells, true);
             // ==================
-            global::timer("sim").restart();
 
             /* ====================== Update for single cell in shear flow ===================================*/
             if (flowType==6) {
@@ -625,6 +637,10 @@ int main(int argc, char* argv[])
                 }
             }
         }
+        dtIteration = global::timer("output").stop();
+        performanceLogFile << "Output" << "; " << i << "; "<< dtIteration << std::endl;
+        global::timer("mainLoop").start();
+
         /* =============================== MAIN ACTIONS ===================================*/
         // #0# Equilibration
         if (i<=relaxationTime) {
