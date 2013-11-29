@@ -40,7 +40,7 @@ CellModel3D<T>::CellModel3D (
         T eqArea_, T eqLength_, T eqAngle_,
         T eqVolume_, T eqSurface_, T eqTileSpan_,
         T persistenceLengthFine, T eqLengthRatio_, pluint cellNumTriangles_, pluint cellNumVertices_)
-    : ShellModel3D<T>(density_),
+    : RBCModel3D<T>(density_),
       k_rest(k_rest_),
       k_shear(k_shear_),
       k_bend(k_bend_),

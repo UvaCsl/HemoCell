@@ -376,7 +376,7 @@ int main(int argc, char* argv[])
         eta_mPrevious = eta_m;
         eta_m = 0.0;
     }
-    ShellModel3D<T> *cellModel;
+    RBCModel3D<T> *cellModel;
     getCellShapeQuantitiesFromMesh(DeCells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
     if (rbcModel == 2) {
         rbcModel = 0;
@@ -395,17 +395,10 @@ int main(int argc, char* argv[])
                        eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan,
                        persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
     }
-    if (rbcModel == 0) {
-        pcout << "mu_0 = " << dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel)->getMembraneShearModulus()*dNewton/dx << std::endl;
-        pcout << "K = " << dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel)->getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
-        pcout << "YoungsModulus = " << dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel)->getYoungsModulus()*dNewton/dx << std::endl;
-        pcout << "Poisson ratio = " << dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel)->getPoissonRatio() << std::endl;
-    } else if (rbcModel == 1) {
-        pcout << "mu_0 = " << dynamic_cast<CellModel3D<T>*>(cellModel)->getMembraneShearModulus()*dNewton/dx << std::endl;
-        pcout << "K = " << dynamic_cast<CellModel3D<T>*>(cellModel)->getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
-        pcout << "YoungsModulus = " << dynamic_cast<CellModel3D<T>*>(cellModel)->getYoungsModulus()*dNewton/dx << std::endl;
-        pcout << "Poisson ratio = " << dynamic_cast<CellModel3D<T>*>(cellModel)->getPoissonRatio() << std::endl;
-    }
+    pcout << "mu_0 = " << cellModel->getMembraneShearModulus()*dNewton/dx << std::endl;
+    pcout << "K = " << cellModel->getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
+    pcout << "YoungsModulus = " << cellModel->getYoungsModulus()*dNewton/dx << std::endl;
+    pcout << "Poisson ratio = " << cellModel->getPoissonRatio() << std::endl;
 
 
     if (goAndStop != 0) {
@@ -421,17 +414,9 @@ int main(int argc, char* argv[])
     T eqVolumeInitial, eqVolumeFinal;
     eqVolumeInitial = eqVolume;
     eqVolumeFinal = deflationRatio * eqVolumeInitial ;
-   if (rbcModel == 0) {
-       applyProcessingFunctional (
-           new ComputeShapeMemoryModelForce3D<T,DESCRIPTOR> (
-               Cells, dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel)->clone(), cellsVolume, cellsSurface),
-           immersedParticles.getBoundingBox(), particleArg );
-   } else if (rbcModel == 1) {
-       applyProcessingFunctional (
-           new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
-               Cells, dynamic_cast<CellModel3D<T>*>(cellModel)->clone(), cellsVolume, cellsSurface),
-           immersedParticles.getBoundingBox(), particleArg );
-   }
+    applyProcessingFunctional (
+       new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), cellsVolume, cellsSurface),
+       immersedParticles.getBoundingBox(), particleArg );
 
 
     writeCellLog(0, logFile,
@@ -595,11 +580,7 @@ int main(int argc, char* argv[])
                                 << "; " << cellsMaxEdgeDistance[0] << ";  "
                                 << std::endl;
                         if (flowType == 5) {
-                            if (rbcModel == 0) {
-                                (dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel))->setMembraneShearViscosity(eta_mPrevious);
-                            } else if (rbcModel == 1) {
-                                (dynamic_cast<CellModel3D<T>*>(cellModel))->setMembraneShearViscosity(eta_mPrevious);
-                            }
+                            cellModel->setMembraneShearViscosity(eta_mPrevious);
                         }
                     }
                     else {
@@ -624,11 +605,7 @@ int main(int argc, char* argv[])
         // #0# Equilibration
         if (i<=relaxationTime) {
             eqVolume = eqVolumeInitial + (i*1.0)/relaxationTime * (eqVolumeFinal - eqVolumeInitial) ;
-            if (rbcModel == 0) {
-                (dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel))->setEquilibriumVolume(eqVolume);
-            } else if (rbcModel == 1) {
-                (dynamic_cast<CellModel3D<T>*>(cellModel))->setEquilibriumVolume(eqVolume);
-            }
+            cellModel->setEquilibriumVolume(eqVolume);
             if (flowType == 3) {
                     stretchForce = (i*1.0)/relaxationTime * Array<T,3>(stretchForceScalar,0,0);
             }
@@ -692,17 +669,9 @@ int main(int argc, char* argv[])
 
         // #1# Membrane Model
         global::timer("Model").restart();
-        if (rbcModel == 0) {
-            applyProcessingFunctional (
-                new ComputeShapeMemoryModelForce3D<T,DESCRIPTOR> (
-                    Cells, dynamic_cast<ShapeMemoryModel3D<T>*>(cellModel)->clone(), cellsVolume, cellsSurface),
-                immersedParticles.getBoundingBox(), particleArg );
-        } else if (rbcModel == 1) {
-            applyProcessingFunctional (
-                new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (
-                    Cells, dynamic_cast<CellModel3D<T>*>(cellModel)->clone(), cellsVolume, cellsSurface),
-                immersedParticles.getBoundingBox(), particleArg );
-        }
+        applyProcessingFunctional (
+                        new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), cellsVolume, cellsSurface),
+                        immersedParticles.getBoundingBox(), particleArg );
         dtIteration = global::timer("Model").stop();
         if (i>0) { performanceLogFile << "Model" << "; " << i << "; "<< dtIteration << std::endl; }
 

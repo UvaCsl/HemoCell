@@ -29,9 +29,9 @@ Cell Stretching [3], Cell Stretching Analysis and release [4], Fast Cell Stretch
 Tumbling-TankTreading Measurements [6], Fischer2004 [7],
 Fast Cell Stretching release [8],
  -->
-    <flowType> 0 </flowType>   
-    <Re> 10.0 </Re>   <!--Reynolds number-->
-    <shearRate> 0 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
+    <flowType> 3 </flowType>   
+    <Re> 100.0 </Re>   <!--Reynolds number-->
+    <shearRate> 100 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 193.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->
     <eulerAngles> 0 0 0 </eulerAngles> <!-- In degrees -->
     <deflationRatio> 1.0 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
@@ -53,14 +53,14 @@ Fast Cell Stretching release [8],
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <nx> 160 </nx> <!--Size of domain in Lattice Units -->
-    <ny> 40 </ny>
-    <nz> 40 </nz>
+    <nx> 25 </nx> <!--Size of domain in Lattice Units -->
+    <ny> 25 </ny>
+    <nz> 25 </nz>
 </domain>
 
 <sim>
     <tmax> 5000 </tmax> <!-- total number of iterations -->
     <tmeas> 50 </tmeas> <!-- interval after which data is written -->> 
-    <npar>  576  </npar> <!-- Number of particles > -->
+    <npar>  1  </npar> <!-- Number of particles > -->
 </sim>
 </ficsion>

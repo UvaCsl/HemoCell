@@ -23,7 +23,7 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
-#include "shellModel3D.h"
+#include "cellModel3D.h"
 #include <cmath>
 #include <map>
 #include "computeCellForces3D.hh"
@@ -46,7 +46,7 @@ const double pi = 4.*atan(1.);
 namespace plb {
 
 template<typename T>
-class ShapeMemoryModel3D : public ShellModel3D<T>
+class ShapeMemoryModel3D : public RBCModel3D<T>
 {
 public:
     /* All input should be in dimensionless units */
@@ -75,7 +75,7 @@ private:
     T k_rest, k_shear, k_bend, k_stretch, k_inPlane, k_elastic, k_surface, k_volume;
     T C_elastic;
     T eta_m, gamma_T, gamma_C;
-    T eqLength, eqAngle;
+    T eqLength, eqArea, eqAngle;
     vector<T> eqAreaPerTriangle;
     map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
     T eqVolume, eqSurface, eqTileSpan;
@@ -85,7 +85,7 @@ public:
     /* Computes the equilibrium quantities to correspond to the an inflated cell with
      * 		eqVolume=ratio*eqVolume.
      * Can also be used for deflation. */
-    void inflate(T ratio, bool scaleCoefficients=true) {
+    virtual void inflate(T ratio, bool scaleCoefficients=true) {
     	eqVolume *= ratio;
     	eqSurface *= pow(ratio,2.0/3.0);
     	eqTileSpan *= pow(ratio,1.0/3.0);
@@ -105,20 +105,18 @@ public:
     }
 public:
     /* Coefficients */
-    T& getRestingStiffness() { return k_rest; }
-    void setRestingStiffness(T value) { k_rest = value; }
-    T const& getRestingStiffness() const { return k_rest; }
-    T& getBendingStiffness() { return k_bend; }
-    void setBendingStiffness(T value) { k_bend = value; }
-    T const& getBendingStiffness() const { return k_bend; }
-    T& getStretchingStiffness() { return k_stretch; }
-    void setStretchingStiffness(T value) { k_stretch = value; }
-    T const& getStretchingStiffness() const { return k_stretch; }
+    /* Coefficients */
+    virtual T& getRestingStiffness() { return k_rest; }
+    virtual T& getBendingStiffness() { return k_bend; }
+    virtual T& getStretchingStiffness() { return k_stretch; }
+    virtual void setRestingStiffness(T value) { k_rest = value; }
+    virtual void setBendingStiffness(T value) { k_bend = value; }
+    virtual void setStretchingStiffness(T value) { k_stretch = value; }
 
     /* TODO: Fix change of coefficients */
 
     // Units are N/m
-    T getMembraneShearModulus() {
+    virtual T getMembraneShearModulus() {
         T Lmax = eqLength*eqLengthRatio;
         T x0 = 1.0/eqLengthRatio;
         // T kP =  kBT /(4.0*persistenceLengthCoarse);
@@ -126,7 +124,7 @@ public:
         return sqrt(3) * kP / (Lmax*x0)*( 3.0/( 4*(1-x0)*(1-x0) ) - 3.0/4.0 +4*x0 + x0/(2.0 * (1-x0)*(1-x0)*(1-x0)));
     }
     // Units are N/m
-    T getMembraneElasticAreaCompressionModulus() {
+    virtual T getMembraneElasticAreaCompressionModulus() {
         T Lmax = eqLength*eqLengthRatio;
         T x0 = 1.0/eqLengthRatio;
         // T kP =  kBT /(4.0*persistenceLengthCoarse);
@@ -134,63 +132,58 @@ public:
         return sqrt(3) * kP / (Lmax*(1-x0)*(1-x0))*(1.5*(6-9*x0+4*x0*x0) + (1+2*(1-x0)*(1-x0)*(1-x0))/(1-x0)  );
     }
     // Units are N/m
-    T getYoungsModulus() {
+    virtual T getYoungsModulus() {
         T mu0 = getMembraneShearModulus();
         T K = getMembraneElasticAreaCompressionModulus();
         return (4*K*mu0)/(K+mu0);
     }
     // Dimensionless number
-    T getPoissonRatio() {
+    virtual T getPoissonRatio() {
         T mu0 = getMembraneShearModulus();
         T K = getMembraneElasticAreaCompressionModulus();
         return (K-mu0)/(K+mu0);
     }
     // Units are N s/m
-    T const& getMembraneShearViscosity() const { return eta_m; }
-    T& getMembraneShearViscosity() { return eta_m; }
-    void setMembraneShearViscosity(T value) {
+    virtual T& getMembraneShearViscosity() { return eta_m; }
+    virtual void setMembraneShearViscosity(T value) {
         eta_m = value;
         gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
         gamma_C = (gamma_T/3.0);
     }
 
-    T& getDissipativeParameterT() { return gamma_T; }
-    T const& getDissipativeParameterT() const { return gamma_C; }
-    void setDissipativeParameterT(T value) const {
+    virtual T& getDissipativeParameterT() { return gamma_T; }
+    virtual void setDissipativeParameterT(T value) {
         gamma_T = value;
     }
-    T& getDissipativeParameterC() { return gamma_C; }
-    T const& getDissipativeParameterC() const { return gamma_C; }
-    void setDissipativeParameterC(T value) const {
+    virtual T& getDissipativeParameterC() { return gamma_C; }
+    virtual void setDissipativeParameterC(T value) {
         gamma_C = value;
     }
     /* Equilibrium parameters */
-//    vector<T>& getEquilibriumLinkLength() { return eqLength; }
-//    void setEquilibriumLinkLength(vector<T> value) { eqLength = value; }
-//    vector<T> const& getEquilibriumLinkLength() const { return eqLength; }
-//    vector<T>& getEquilibriumTriangleArea() { return eqArea; }
-//    void setEquilibriumTriangleArea(vector<T> value) { eqArea = value; }
-//    vector<T> const& getEquilibriumTriangleArea() const { return eqArea; }
-//    vector<T>& getEquilibriumAngle() { return eqAngle; }
-//    void setEquilibriumAngle(vector<T> value) { eqAngle = value; }
-//    vector<T> const& getEquilibriumAngle() const { return eqAngle; }
-    T& getEquilibriumVolume() { return eqVolume; }
-    void setEquilibriumVolume(T value) { eqVolume = value; }
-    T const& getEquilibriumVolume() const { return eqVolume; }
-    T& getEquilibriumSurface() { return eqSurface; }
-    void setEquilibriumSurface(T value) { eqSurface = value; }
-    T const& getEquilibriumSurface() const { return eqSurface; }
-    T& getEquilibriumTileSpan() { return eqTileSpan; }
-    void setEquilibriumTileSpan(T value) { eqTileSpan = value; }
-    T const& getEquilibriumTileSpan() const { return eqTileSpan; }
+    virtual T& getEquilibriumLinkLength() { return eqLength; }
+    virtual T& getEquilibriumTriangleArea() { return eqArea; }
+    virtual T& getEquilibriumAngle() { return eqAngle; }
+    virtual T& getEquilibriumVolume() { return eqVolume; }
+    virtual T& getEquilibriumSurface() { return eqSurface; }
+    virtual T& getEquilibriumTileSpan() { return eqTileSpan; }
+    virtual void setEquilibriumLinkLength(T value) { pcout << "setEquilibriumLinkLength not available for ShapeMemoryModel3D."; }
+    virtual void setEquilibriumTriangleArea(T value) { pcout << "setEquilibriumTriangleArea not available for ShapeMemoryModel3D."; }
+    virtual void setEquilibriumAngle(T value) { pcout << "setEquilibriumAngle not available for ShapeMemoryModel3D."; }
+    virtual void setEquilibriumVolume(T value) { eqVolume = value; }
+    virtual void setEquilibriumSurface(T value) { eqSurface = value; }
+    virtual void setEquilibriumTileSpan(T value) { eqTileSpan = value; }
+
     /* State parameters */
-    pluint& getNumberOfVertices() { return cellNumVertices; }
-    void setNumberOfVertices(pluint value) { cellNumVertices = value; }
-    pluint const& getNumberOfVertices() const { return cellNumVertices; }
+    virtual pluint& getNumberOfVertices() { return cellNumVertices; }
 };
 
-}  // namespace plb
+template<typename T>
+void getCellShapeQuantitiesFromMesh(TriangleBoundary3D<T>& boundary,
+                            vector<T> & eqAreaPerTriangle, map<plint,T> & eqLengthPerEdge, map<plint,T> & eqAnglePerEdge,
+                            plint cellNumTriangles, plint cellNumPartsPerCell);
 
+
+}
 
 #include "shapeMemoryModel3D.hh"
 #endif  // SHAPE_MEMORY_MODEL_3D_H

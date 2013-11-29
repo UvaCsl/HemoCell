@@ -33,7 +33,7 @@ ShapeMemoryModel3D<T>::ShapeMemoryModel3D (
         vector<T> eqArea_, map<plint,T> eqLength_, map<plint,T> eqAngle_,
         T eqVolume_, T eqSurface_, T eqTileSpan_,
         T persistenceLengthFine, T eqLengthRatio_, pluint cellNumTriangles_, pluint cellNumVertices_)
-    : ShellModel3D<T>(density_),
+    : RBCModel3D<T>(density_),
       k_rest(k_rest_),
       k_shear(k_shear_),
       k_bend(k_bend_),
@@ -54,7 +54,7 @@ ShapeMemoryModel3D<T>::ShapeMemoryModel3D (
 {
     persistenceLengthCoarse = persistenceLengthFine * sqrt( (cellNumVertices-2.0) / (23867-2.0)) ;
 
-    T eqMeanArea = eqSurface/cellNumTriangles;
+    T eqMeanArea = eqArea = eqSurface/cellNumTriangles;
     eqAngle=0.0;
 
     typename map<plint,T>::reverse_iterator iter = eqAnglePerEdge.rbegin();
@@ -282,6 +282,26 @@ ShapeMemoryModel3D<T>* ShapeMemoryModel3D<T>::clone() const {
 }
 
 
+template<typename T>
+void getCellShapeQuantitiesFromMesh(TriangleBoundary3D<T>& boundary,
+                            vector<T> & eqAreaPerTriangle, map<plint,T> & eqLengthPerEdge, map<plint,T> & eqAnglePerEdge,
+                            plint cellNumTriangles, plint cellNumPartsPerCell) {
+    TriangularSurfaceMesh<T> const& dynMesh = boundary.getMesh();
+    for (plint iVertex = 0; iVertex < cellNumPartsPerCell; ++iVertex) {
+        std::vector<plint> neighborVertexIds = dynMesh.getNeighborVertexIds(iVertex);
+        for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
+            plint jVertex = neighborVertexIds[jV];
+            if (iVertex > jVertex){
+                plint edgeId = (iVertex*(iVertex - 1))/2 + jVertex;
+                eqLengthPerEdge[edgeId] = dynMesh.computeEdgeLength(iVertex, jVertex);
+                eqAnglePerEdge[edgeId] = calculateSignedAngle(dynMesh, iVertex, jVertex);
+            }
+        }
+    }
+    for (plint iTriangle = 0; iTriangle < cellNumTriangles; ++iTriangle) {
+        eqAreaPerTriangle[iTriangle] = dynMesh.computeTriangleArea(iTriangle);
+    }
+}
 
 }  // namespace plb
 

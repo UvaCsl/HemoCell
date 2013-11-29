@@ -138,7 +138,7 @@ class ComputeImmersedElasticForce3D : public BoxProcessingFunctional3D
 public:
     ComputeImmersedElasticForce3D (
             TriangleBoundary3D<T> const& triangleBoundary_,
-            CellModel3D<T>* cellModel_,
+            RBCModel3D<T>* cellModel_,
             std::vector<T> const& cellsVolume_, std::vector<T> const& cellsSurface_);
     ~ComputeImmersedElasticForce3D();
     ComputeImmersedElasticForce3D(ComputeImmersedElasticForce3D<T,Descriptor> const& rhs);
@@ -150,7 +150,7 @@ public:
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
     TriangleBoundary3D<T> const& triangleBoundary;
-    CellModel3D<T>* cellModel;
+    RBCModel3D<T>* cellModel;
     std::vector<T> const& cellsVolume;
     std::vector<T> const& cellsSurface;
 };
