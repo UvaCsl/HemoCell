@@ -23,8 +23,8 @@ public:
     virtual void calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh,
             std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_);
 protected:
-    std::vector<plint> quantityIds;
     TriangleBoundary3D<T> const& triangleBoundary;
+    std::vector<plint> quantityIds;
     plint numberOfCells;
     bool findMax;
 };

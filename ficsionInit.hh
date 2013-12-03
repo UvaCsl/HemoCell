@@ -3,6 +3,68 @@
 
 #include "ficsionInit.h"
 
+// Position Cells inside the domain
+template<typename T>
+void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> const& parameters,
+        std::vector<Array<T,3> > & centers, std::vector<T> & radii, plint flowType) {
+    /*
+     * Fills slices first and then the whole grid.
+     */
+
+    std::vector<T> posX, posY, posZ;
+    const plint nx = parameters.getNx() - 1 ;
+    const plint ny = parameters.getNy()  - 1;
+    const plint nz = parameters.getNz()  - 1;
+    T dX = 2.1 * radius ;
+    T dY = 2.1 * radius * ( (shape==1) ? 0.5 : 1 );
+    T dZ = 2.1 * radius;
+
+    plint NdX = (nx-2)*1.0/dX;
+    plint NdY = (ny-2)*1.0/dY;
+    plint NdZ = (nz-2)*1.0/dZ;
+    // dX = (nx-2.0)*1.0/NdX; // Needs to be re-adjusted.
+    dY = (ny-2.0)*1.0/NdY;
+    dZ = (nz-2.0)*1.0/NdZ;
+
+    npar = npar<(NdX*NdY*NdZ)?npar:(NdX*NdY*NdZ);
+    plint slices = npar/(NdY*NdZ);
+    if (slices > 0) { dX = (nx-2.0)*1.0/slices; }
+    else { dX = nx; }
+
+    for (plint i = 0; i < slices; ++i) {
+        for (plint iy = 0; iy < NdY; ++iy) {
+            for (plint iz = 0; iz < NdZ; ++iz) {
+                posX.push_back((i+0.5)*dX);
+                posY.push_back((iy+0.5)*dY);
+                posZ.push_back((iz+0.5)*dZ);
+            }
+        }
+    }
+    plint lastSlice = npar%(NdY*NdZ);
+    plint rows = lastSlice/NdZ;
+    for (plint iy = 1; iy <= rows; ++iy) {
+        for (plint iz = 0; iz < NdZ; ++iz) {
+            posX.push_back((slices+0.5)*dX);
+            posY.push_back(ny * iy*1.0/(rows+1 + 1.0));
+            posZ.push_back((iz+0.5)*dZ);
+        }
+    }
+
+    plint mods = lastSlice%NdZ;
+    for (plint iz = 1; iz <= mods; ++iz) {
+        posX.push_back((slices+0.5)*dX);
+        posY.push_back(ny * (rows+1)*1.0/(rows+1 + 1.0));
+        posZ.push_back(nz * iz*1.0/(mods + 1.0));
+    }
+
+    T addToX = 0.5;
+//    addToX = (NdX - slices) * dX * 0.5 ;
+
+    for (pluint iA = 0; iA < posX.size(); ++iA) {
+        centers.push_back(Array<T,3>(posX[iA]+addToX,posY[iA],posZ[iA]));
+        radii.push_back(radius);
+    }
+}
 
 /* ************* Functions poiseuillePressure and poiseuilleVelocity ******************* */
 static T poiseuillePressure(IncomprFlowParam<T> const &parameters, plint maxN, T Re)

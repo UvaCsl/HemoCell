@@ -312,7 +312,7 @@ T computeBendingPotential (T edgeAngle, T eqAngle, T k) {
  */
 template<typename T>
 T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plint jVertex, plint & kVertex, plint & lVertex) {
-    Array<T,3> x1 = mesh.getVertex(iVertex), x2, x3, x4;
+    Array<T,3> x1 = mesh.getVertex(iVertex), x2(0.,0.,0.), x3(0.,0.,0.), x4(0.,0.,0.);
 
     std::vector<plint> adjacentTriangles = mesh.getAdjacentTriangleIds(iVertex, jVertex);
 	plint iTriangle=adjacentTriangles[0], jTriangle=adjacentTriangles[1];

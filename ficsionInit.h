@@ -27,6 +27,11 @@ typedef Array<T,3> Velocity;
 const T pi = 4.*atan(1.);
 #endif  // PI__
 
+// Position Cells inside the domain
+template<typename T>
+void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> const& parameters,
+        std::vector<Array<T,3> > & centers, std::vector<T> & radii, plint flowType) ;
+
 /* ************* Functions poiseuillePressure and poiseuilleVelocity ******************* */
 
 static T poiseuillePressure(IncomprFlowParam<T> const &parameters, plint maxN, T Re);

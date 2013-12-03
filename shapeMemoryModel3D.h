@@ -89,7 +89,7 @@ public:
     	eqVolume *= ratio;
     	eqSurface *= pow(ratio,2.0/3.0);
     	eqTileSpan *= pow(ratio,1.0/3.0);
-    	for (plint i=0; i < eqAreaPerTriangle.size() ; i++) {
+    	for (pluint i=0; i < eqAreaPerTriangle.size() ; i++) {
     		eqAreaPerTriangle[i] *= pow(ratio,2.0/3.0);
     	}
     	typename std::map<plint,T>::iterator iter;
