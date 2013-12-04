@@ -31,7 +31,7 @@ Fast Cell Stretching release [8],
  -->
     <flowType> 6 </flowType>   
     <Re> 100.0 </Re>   <!--Reynolds number-->
-    <shearRate> 1000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
+    <shearRate> 100 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 193.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->
     <eulerAngles> 0 0 0 </eulerAngles> <!-- In degrees -->
     <deflationRatio> 1.0 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->

@@ -389,11 +389,8 @@ int main(int argc, char* argv[])
     dtIteration = global::timer("simulation").stop();
     pcout << "Time to initialize: " << dtIteration <<std::endl;
     performanceLogFile << "Init" << "; " << 0 << "; "<< dtIteration << std::endl;
+    global::timer("mainLoop").start();
     for (pluint i=0; i<tmax+1; ++i) {
-        dtIteration = global::timer("mainLoop").stop();
-        global::timer("mainLoop").restart();
-        if (i>0) { performanceLogFile << "Iteration" << "; " << i-1 << "; "<< dtIteration << std::endl; }
-        // pcout << "mainLoop: " << dtIteration <<std::endl;
         if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
             pcout << "[FICSION]: Switching off shear rate (Fischer2004)" << std::endl;
             shearRate = 0.0;
@@ -402,26 +399,21 @@ int main(int argc, char* argv[])
         }
 
         /* =============================== OUTPUT ===================================*/
-        // Stop mainLoop timers and start output timers
-        global::timer("mainLoop").stop();
-        global::timer("output").restart();
-
         if (i%tmeas==0) {
+            // Stop mainLoop timers and start output timers
+            global::timer("mainLoop").stop();
+            global::timer("output").restart();
             if (goAndStop != 0) {
                 writeImmersedPointsVTK(Cells, goAndStopVertices, dx,
                     global::directories().getOutputDir()+createFileName("GoAndStop.",i,10)+".vtk");
             }
-
-            pcout << "Iteration: " << i << ", dt of last iteration:" << dtIteration << std::endl;
             rbcQuantities.write(i, eqVolumeFinal, eqSurface, eqArea, eqLength) ;
             rbcStretch.write(i, rbcQuantities.getCellsMeanEdgeDistance()[0], rbcQuantities.getCellsMaxEdgeDistance()[0]); // SINGLE CELL STRETCHING
             if (flowType==6) { // SINGLE CELL IN SHEAR FLOW
                 shearFlow.updateQuantities(i, cellIds, rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume());
                 shearFlow.write();
-                pcout << "[SF] Diameters :" ;
-                pcout <<  shearFlow.getDiameters()[0][0] << "\t" <<  shearFlow.getDiameters()[0][1] << "\t" <<  shearFlow.getDiameters()[0][2] ;
-                pcout << ", Angles :" ;
-                pcout <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
+                pcout << "[SF] Diameters :" <<  shearFlow.getDiameters()[0][0] << "\t" <<  shearFlow.getDiameters()[0][1] << "\t" <<  shearFlow.getDiameters()[0][2] ;
+                pcout << ", Angles :" <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
             }
             // === Checkpoint ===
             //    parallelIO::save(immersedParticles, "immersedParticles.dat", true);
@@ -433,14 +425,25 @@ int main(int argc, char* argv[])
                 Cells, immersedParticles,
                 global::directories().getOutputDir()+createFileName("RBC",i,8)+".vtk");
             writeVTK(lattice, parameters, i);
-
+            // WRITE PERFORMANCE OUTPUT
+            dtIteration = global::timer("mainLoop").stop(); global::timer("mainLoop").reset();
+            if (i>0) { performanceLogFile << "Iteration" << "; " << i-tmeas << "; "<< dtIteration*1.0/tmeas << std::endl; }
+            pcout << "Iteration " << i << ", time "<< dtIteration*1.0/tmeas << std::endl;
+            dtIteration = global::timer("LBM").stop(); global::timer("LBM").reset();
+            if (i>0) { performanceLogFile << "LBM" << "; " << i << "; "<< dtIteration*1.0/tmeas  << std::endl; }
+            dtIteration = global::timer("IBM").stop(); global::timer("IBM").reset();
+            if (i>0) { performanceLogFile << "IBM" << "; " << i << "; "<< dtIteration*1.0/tmeas  << std::endl; }
+            dtIteration = global::timer("Quantities").stop(); global::timer("Quantities").reset();
+            if (i>0) { performanceLogFile << "Quantities" << "; " << i << "; "<< dtIteration*1.0/tmeas  << std::endl; }
+            dtIteration = global::timer("Model").stop(); global::timer("Model").reset();
+            if (i>0) { performanceLogFile << "Model" << "; " << i << "; "<< dtIteration*1.0/tmeas  << std::endl; }
+            dtIteration = global::timer("output").stop(); global::timer("output").reset();
+            performanceLogFile << "Output" << "; " << i << "; "<< dtIteration << std::endl;
+            global::timer("mainLoop").start();
         }
         /* ====================== Update for Cell Stretching behaviour ===================================*/
         rbcStretch.hasConverged(i);
 
-        dtIteration = global::timer("output").stop();
-        performanceLogFile << "Output" << "; " << i << "; "<< dtIteration << std::endl;
-        global::timer("mainLoop").start();
 
         /* =============================== MAIN ACTIONS ===================================*/
         // #0# Equilibration
@@ -454,7 +457,7 @@ int main(int argc, char* argv[])
 
 
         // #2# IBM Spreading
-        global::timer("IBM").restart();
+        global::timer("IBM").start();
         if (forceToFluid != 0) { // Force from the Cell dynamics to the Fluid
             setExternalVector( lattice, lattice.getBoundingBox(),
                            DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
@@ -466,10 +469,9 @@ int main(int argc, char* argv[])
 
 
         // #3# LBM
-        global::timer("LBM").restart();
+        global::timer("LBM").start();
         lattice.collideAndStream();
         dtIteration = global::timer("LBM").stop();
-        if (i>0) { performanceLogFile << "LBM" << "; " << i << "; "<< dtIteration << std::endl; }
 
         global::timer("IBM").start();
         // #4# IBM Interpolation
@@ -484,7 +486,6 @@ int main(int argc, char* argv[])
             new CopyParticleToMeshVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
             immersedParticles.getBoundingBox(), particleArg);
         dtIteration = global::timer("IBM").stop();
-        if (i>0) { performanceLogFile << "IBM" << "; " << i << "; "<< dtIteration << std::endl; }
 
 //        applyProcessingFunctional (
 //            new MeshToParticleField3D<T,DESCRIPTOR> (cqh),
@@ -495,27 +496,23 @@ int main(int argc, char* argv[])
 //    		std::cout << "cid2mcid " << i << " " << cid2mcid.size() << " cid " << iter->first << ", mid " << iter->second << std::endl;
 //    		iter++;
 //    	}
-        global::timer("Quantities").restart();
+        global::timer("Quantities").start();
         applyProcessingFunctional (
             new MapVertexToParticle3D<T,DESCRIPTOR> (
                 Cells, tagToParticle3D),
             immersedParticles.getBoundingBox(), particleArg );
 //        pcout << "tagToParticle3D: " << tagToParticle3D.size() << std::endl;
-        if (flowType==6) { rbcQuantities.calculateAll(); }
+        if (flowType==6) { rbcQuantities.calculateVolumeAndSurfaceAndCenters(); }
         else { rbcQuantities.calculateVolumeAndSurface();  }
-
         dtIteration = global::timer("Quantities").stop();
-        if (i>0) { performanceLogFile << "Quantities" << "; " << i << "; "<< dtIteration << std::endl; }
 
-        global::timer("Model").restart();
+        global::timer("Model").start();
         // #1# Membrane Model + Stretching
         applyProcessingFunctional (
                         new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), rbcQuantities.getCellsVolume(), rbcQuantities.getCellsSurface()),
                         immersedParticles.getBoundingBox(), particleArg );
         rbcStretch.applyForce(i, cellModel->getDensity());
-
         dtIteration = global::timer("Model").stop();
-        if (i>0) { performanceLogFile << "Model" << "; " << i << "; "<< dtIteration << std::endl; }
     }
     pcout << "Simulation finished." << std::endl;
 //    MPI_Finalize();

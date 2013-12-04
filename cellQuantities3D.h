@@ -33,6 +33,7 @@ public:
         virtual ~CellQuantities3D();
         void calculateAll() ;
         void calculateVolumeAndSurface() ;
+        void calculateVolumeAndSurfaceAndCenters() ;
         void print(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength);
         void write(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength);
 public:
@@ -49,6 +50,7 @@ private:
         std::vector<T> cellsVolume, cellsSurface;
         std::vector<T> cellsMeanEdgeDistance, cellsMaxEdgeDistance, cellsMeanAngle, cellsMeanTriangleArea, cellsMeanTileSpan;
         std::vector< Array<T,3> > cellsCenter, cellsVelocity;
+        std::vector<T> cellNumVertices;
 
         TriangleBoundary3D<T> const & Cells;
         MultiParticleField3D<ParticleFieldT<T,Descriptor> > * particles;

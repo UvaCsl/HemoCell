@@ -48,7 +48,6 @@ template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
 {
-        calculateVolumeAndSurface();
 
         cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();
         cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsCenter.clear(); cellsVelocity.clear();
@@ -56,11 +55,11 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
 
         std::vector<MultiBlock3D*> particleArg;
         particleArg.push_back(particles);
-        std::vector<T> cellNumVertices;
         NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds, numberOfCells);
         applyProcessingFunctional(nfunctional, particles->getBoundingBox(), particleArg);
         nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
 
+        calculateVolumeAndSurface();
         countCellMeanTriangleArea(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsMeanTriangleArea);
         countCellMeanAngle(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsMeanAngle);
         countCellMeanEdgeDistance(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsMeanEdgeDistance);
@@ -74,6 +73,18 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateVolumeAndSurfaceAndCenters()
+{
+        cellsVolume.clear(); cellsSurface.clear(); cellsCenter.clear();
+        std::vector<MultiBlock3D*> particleArg;
+        particleArg.push_back(particles);
+        countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
+        countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
+        countCellCenters(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsCenter, cellNumVertices);
+}
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateVolumeAndSurface()
 {
         cellsVolume.clear(); cellsSurface.clear();
@@ -82,7 +93,6 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateVolumeAndSurface()
         countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
         countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
 }
-
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
