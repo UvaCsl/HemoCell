@@ -23,10 +23,10 @@ SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(Triang
 {
     lateralCellParticleTags.push_back(&outerLeftTags);
     lateralCellParticleTags.push_back(&outerRightTags);
-    lateralCellParticleTags.push_back(&outerUpTags);
-    lateralCellParticleTags.push_back(&outerDownTags);
     lateralCellParticleTags.push_back(&outerFrontTags);
     lateralCellParticleTags.push_back(&outerBackTags);
+    lateralCellParticleTags.push_back(&outerUpTags);
+    lateralCellParticleTags.push_back(&outerDownTags);
 
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(particles);
