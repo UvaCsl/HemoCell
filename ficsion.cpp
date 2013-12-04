@@ -47,13 +47,6 @@ typedef double T;
 typedef Array<T,3> Velocity;
 #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor
 
-plint borderWidth     = 1;  // Because Guo acts in a one-cell layer.
-// Requirement: margin>=borderWidth.
-plint extraLayer      = 0;  // Make the bounding box larger; for visualization purposes
-                            //   only. For the simulation, it is OK to have extraLayer=0.
-const plint extendedEnvelopeWidth = 4;  // Because Guo needs 2-cell neighbor access.
-const plint particleEnvelopeWidth = 4;
-
 void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, std::vector<T> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
@@ -216,6 +209,13 @@ int main(int argc, char* argv[])
              std::endl;
 
     /* LATTICE INTIALIZATIONS */
+    plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
+    plint particleEnvelopeWidth = 2;
+    if ((flowType == 0) or (flowType == 1)) {
+        extendedEnvelopeWidth = 4;
+        particleEnvelopeWidth = 4;
+    }
+
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
         defaultMultiBlockPolicy3D().getBlockCommunicator(),
