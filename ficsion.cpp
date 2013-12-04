@@ -24,7 +24,7 @@
 #include "palabos3D.hh"
 
 #include "ficsionInit.h"
-#include "cellQuantities.h"
+#include "cellQuantities3D.h"
 #include "immersedCells3D.h"
 #include "immersedCellsReductions.h"
 #include "meshToParticleField3D.h"
@@ -32,7 +32,7 @@
 #include <map>
 
 #include "shapeMemoryModel3D.h"
-#include "cellStretchingForces3D.h"
+#include "cellStretching3D.h"
 #include "cellModel3D.hh"
 
 #include "cellInShearFlow3D.h"
@@ -58,7 +58,7 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, std::vector<T> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
-        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, plint & npar, plint & goAndStop, plint & fastStretchRelease)
+        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, plint & npar, plint & goAndStop)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
@@ -121,16 +121,11 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     ly = ny * dx;
     lz = nz * dx;
     goAndStop = 0;
-    fastStretchRelease = 0;
-    if (flowType == 8) { // Fischer2004 setup, Go-and-stop
-        fastStretchRelease = 1;
-        flowType = 5;
-    }
     if (flowType == 7) { // Fischer2004 setup, Go-and-stop
         goAndStop = 1;
         flowType = 6;
     }
-    if ( (flowType == 4) or (flowType == 5) ) { // Cell Stretching Analysis
+    if ( (flowType == 4) or (flowType == 5) or (flowType == 8) ) { // Cell Stretching Analysis
         shearRate = 0;
     } else if (flowType == 6) { // Tumbling Tank Treading Measurements
         if (shearRate > 0) {
@@ -158,14 +153,6 @@ int main(int argc, char* argv[])
     global::timer("simulation").start();
     std::string performanceLogFileName = global::directories().getLogOutDir() + "performance.log";
     plb_ofstream performanceLogFile(performanceLogFileName.c_str());
-
-
-    std::string stretchLogFileName = global::directories().getLogOutDir() + "stretchDeformation.log";
-    plb_ofstream stretchLogFile(stretchLogFileName.c_str());
-    std::string stretchResultFileName = global::directories().getLogOutDir() + "stretchResults.log";
-    plb_ofstream stretchResultFile(stretchResultFileName.c_str());
-    std::string stretchResealedFileName = global::directories().getLogOutDir() + "stretchRelease.log";
-    plb_ofstream stretchResealedFile(stretchResealedFileName.c_str());
     std::string shearResultFileName = global::directories().getLogOutDir() + "shearResults.log";
     plb_ofstream shearResultFile(shearResultFileName.c_str());
     std::string meshQualityFileName = global::directories().getLogOutDir() + "plbMeshQuality.log";
@@ -190,8 +177,10 @@ int main(int argc, char* argv[])
     Array<T,3> stretchForce(0,0,0);
     T stretchForceScalar, stretchForce_p;
     std::vector<T> eulerAngles;
-    plint goAndStop, fastStretchRelease;
+    plint goAndStop;
     std::vector<plint> goAndStopVertices;
+
+
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
@@ -199,7 +188,7 @@ int main(int argc, char* argv[])
     readFicsionXML(document, caseId, rbcModel, shellDensity,
             k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, shape, cellPath, radius, deflationRatio, relaxationTime,
-            cellNumTriangles, tmax, tmeas, npar, goAndStop, fastStretchRelease);
+            cellNumTriangles, tmax, tmeas, npar, goAndStop);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -228,9 +217,9 @@ int main(int argc, char* argv[])
              "kT = " << kBT <<
              std::endl;
 
+    /* LATTICE INTIALIZATIONS */
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
-        defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz,
-                                                            extendedEnvelopeWidth),
+        defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
         defaultMultiBlockPolicy3D().getBlockCommunicator(),
         defaultMultiBlockPolicy3D().getCombinedStatistics(),
         defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
@@ -238,11 +227,8 @@ int main(int argc, char* argv[])
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
-    if (flowType == 0) {
-        iniLatticeSquarePoiseuille(lattice, parameters, *boundaryCondition, Re);
-    } else {
-        iniLatticeSquareCouette(lattice, parameters, *boundaryCondition, shearRate);
-    }
+    if (flowType == 0) { iniLatticeSquarePoiseuille(lattice, parameters, *boundaryCondition, Re); }
+    else { iniLatticeSquareCouette(lattice, parameters, *boundaryCondition, shearRate); }
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
             latticeManagement.getSparseBlockStructure(),
@@ -320,37 +306,16 @@ int main(int argc, char* argv[])
 
     T eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan;
     std::string logFileName = global::directories().getLogOutDir() + "plbCells.log";
-    CellQuantities<T,DESCRIPTOR, DenseParticleField3D> RBCQuantities(Cells, immersedParticles, cellIds, npar, iVertexToParticle3D, logFileName);
-    RBCQuantities.calculateAll();
+    CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, iVertexToParticle3D, logFileName, dx, dt);
+    rbcQuantities.calculateAll();
 
-    eqArea = RBCQuantities.getCellsMeanTriangleArea()[0];     eqLength = RBCQuantities.getCellsMeanEdgeDistance()[0];
-    eqAngle = RBCQuantities.getCellsMeanAngle()[0];     eqVolume = RBCQuantities.getCellsVolume()[0];
-    eqSurface = RBCQuantities.getCellsSurface()[0]; eqTileSpan = RBCQuantities.getCellsMeanTileSpan()[0];
-    RBCQuantities.print(0, eqVolume, eqSurface, eqArea, eqLength, dx, dt);
+    eqArea = rbcQuantities.getCellsMeanTriangleArea()[0];     eqLength = rbcQuantities.getCellsMeanEdgeDistance()[0];
+    eqAngle = rbcQuantities.getCellsMeanAngle()[0];     eqVolume = rbcQuantities.getCellsVolume()[0];
+    eqSurface = rbcQuantities.getCellsSurface()[0]; eqTileSpan = rbcQuantities.getCellsMeanTileSpan()[0];
+    rbcQuantities.print(0, eqVolume, eqSurface, eqArea, eqLength);
 
-    std::vector<plint> outerLeftTags, outerRightTags;
-    std::vector<plint> outerFrontTags, outerBackTags;
-    std::vector<T> stretchingDeformations;
-    std::vector<std::vector<plint>*> lateralCellParticleTags;
-    lateralCellParticleTags.push_back(&outerLeftTags);
-    lateralCellParticleTags.push_back(&outerRightTags);
-    lateralCellParticleTags.push_back(&outerFrontTags);
-    lateralCellParticleTags.push_back(&outerBackTags);
-    plint numParticlesPerSide = plint(0.02*numParts[0]);
-    if ((flowType == 3) || (flowType == 4) || (flowType == 5) ) {
-        //PLB_PRECONDITION( npar == 1 && MPI::COMM_WORLD.Get_size() == 1 );
-        applyProcessingFunctional (
-            new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerLeftTags, &outerRightTags, 0),
-            immersedParticles.getBoundingBox(), particleArg );
-        applyProcessingFunctional ( 
-            new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerFrontTags, &outerBackTags, 2),
-            immersedParticles.getBoundingBox(), particleArg );
-        stretchLogFile << setprecision(20) << "# t [sec]; Force[N]; D_A [m]; D_T [m]; Mean Edge Distance [LU]; Max Edge Distance [LU]; " << std::endl;
-    }
-    for (pluint ipa = 0; ipa < outerLeftTags.size(); ++ipa) {
-        pcout << ipa << " : " <<outerLeftTags[ipa] ;
-        pcout << ", " <<outerRightTags[ipa] << std::endl;
-    }
+    plint timesToStretch = 40;
+    CellStretching3D<T,DESCRIPTOR, DenseParticleField3D>  rbcStretch(Cells, immersedParticles, 0.05*numParts[0], flowType, dx, dt, dNewton, stretchForceScalar, timesToStretch);
 
 
     T persistenceLengthFine = 7.5e-9  / dx;
@@ -367,11 +332,7 @@ int main(int argc, char* argv[])
     k_rest /= dNewton/dx;
     vector<T> eqAreaPerTriangle(cellNumTriangles);
     map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
-    T eta_mPrevious = 0.;
-    if (flowType == 5)  {
-        eta_mPrevious = eta_m;
-        eta_m = 0.0;
-    }
+
     RBCModel3D<T> *cellModel;
     getCellShapeQuantitiesFromMesh(DeCells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
     if (rbcModel == 2) {
@@ -411,33 +372,16 @@ int main(int argc, char* argv[])
     eqVolumeInitial = eqVolume;
     eqVolumeFinal = deflationRatio * eqVolumeInitial ;
     applyProcessingFunctional (
-       new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), RBCQuantities.getCellsVolume(), RBCQuantities.getCellsSurface()),
+       new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), rbcQuantities.getCellsVolume(), rbcQuantities.getCellsSurface()),
        immersedParticles.getBoundingBox(), particleArg );
 
 
-    RBCQuantities.write(0, eqVolumeFinal, eqSurface, eqArea, eqLength) ; // Write Log file for the cell Particles
-
-    // ======== Used for exploring cell stretching behaviour ========== //
-    util::ValueTracer<T> convergeX((T)1,(T)100,1.0e-5), convergeY((T)1,(T)100,1.0e-5);
-    T dStretchingForce = 5.0e-12/dNewton;
-    plint timesToStretch = 40;
-    if (fastStretchRelease) {
-        dStretchingForce = stretchForceScalar; // Usually 7pN in LU
-        timesToStretch = 1;
-        convergeX.setEpsilon(1e-7);
-        convergeY.setEpsilon(1e-7);
-    }
-    plint statIter = 10;
-    plint stretchReleased = 0;
-    if ( (flowType == 4) or (flowType == 5) ) {
-        stretchForce.resetToZero();
-        stretchForceScalar = 0.0;
-    }
+    rbcQuantities.write(0, eqVolumeFinal, eqSurface, eqArea, eqLength) ; // Write Log file for the cell Particles
 
     std::vector< std::vector<T> > cellInertia;
     std::vector< std::vector<T> > cellsEllipsoidFitSemiAxes, cellsEllipsoidFitAngles;
     std::vector<T> difference;
-    computeEllipsoidFit (Cells, immersedParticles, cellIds, RBCQuantities.getCellsCenter(), RBCQuantities.getCellsVolume(),
+    computeEllipsoidFit (Cells, immersedParticles, cellIds, rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume(),
                         cellsEllipsoidFitAngles, cellsEllipsoidFitSemiAxes, cellInertia, difference);
 
     pcout << "== Inertia Tensor == "<< std::endl;
@@ -448,13 +392,11 @@ int main(int argc, char* argv[])
     pcout <<  cellsEllipsoidFitSemiAxes[0][0] << "\t" <<  cellsEllipsoidFitSemiAxes[0][1] << "\t" <<  cellsEllipsoidFitSemiAxes[0][2] << std::endl;
     pcout <<  cellsEllipsoidFitAngles[0][0]*180/pi << "\t" <<  cellsEllipsoidFitAngles[0][1]*180/pi << "\t" <<  cellsEllipsoidFitAngles[0][2]*180/pi << std::endl;
 
-    SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds, RBCQuantities.getCellsCenter(), RBCQuantities.getCellsVolume());
+    SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds, rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume());
     shearFlow.set_dxdtdm(dx,dt,dm);
     if (flowType==6) {
         shearFlow.writeHeader(shearResultFile);
     }
-    // std::cout << "Cells Num Triangles " << Cells.getMesh().getNumTriangles() << std::endl;
-
 
     /* ********************* Main Loop ***************************************** * */
     dtIteration = global::timer("simulation").stop();
@@ -482,108 +424,29 @@ int main(int argc, char* argv[])
                 writeImmersedPointsVTK(Cells, goAndStopVertices, dx,
                     global::directories().getOutputDir()+createFileName("GoAndStop.",i,10)+".vtk");
             }
+
             pcout << "Iteration: " << i << ", dt of last iteration:" << dtIteration << std::endl;
-            RBCQuantities.write(i, eqVolumeFinal, eqSurface, eqArea, eqLength) ;
-            if ((flowType == 3) || (flowType == 4) || (flowType == 5) ) {
-                    applyProcessingFunctional (
-                        new MeasureCellStretchDeformation3D<T,DESCRIPTOR>(lateralCellParticleTags, &stretchingDeformations),
-                        immersedParticles.getBoundingBox(), particleArg );
-                    pcout << "StrDeform [m] [";
-                    for (pluint iDirection = 0; iDirection < stretchingDeformations.size(); ++iDirection) {
-                        pcout << "(" << iDirection << ", " << stretchingDeformations[iDirection]*dx << "), " ;
-                   } pcout << "]" << std::endl;
-                   stretchLogFile << setprecision(20) << i*dt
-                                  << "; " << stretchForceScalar*dNewton
-                                  << "; " << stretchingDeformations[0]*dx
-                                  << "; " << stretchingDeformations[1]*dx
-                                  << "; " << RBCQuantities.getCellsMeanEdgeDistance()[0]
-                                  << "; " << RBCQuantities.getCellsMaxEdgeDistance()[0]
-                                                                    << std::endl;
-                   if (stretchReleased) {
-                       stretchResealedFile << setprecision(20) << i*dt
-                               << "; " << stretchForceScalar*dNewton
-                               << "; " << stretchingDeformations[0]*dx
-                               << "; " << stretchingDeformations[1]*dx
-                               << "; " << RBCQuantities.getCellsMeanEdgeDistance()[0]
-                               << "; " << RBCQuantities.getCellsMaxEdgeDistance()[0]
-                                                                       << std::endl;
-                   }
+            rbcQuantities.write(i, eqVolumeFinal, eqSurface, eqArea, eqLength) ;
+            rbcStretch.write(i, rbcQuantities.getCellsMeanEdgeDistance()[0], rbcQuantities.getCellsMaxEdgeDistance()[0]); // SINGLE CELL STRETCHING
+            if (flowType==6) { // SINGLE CELL IN SHEAR FLOW
+                shearFlow.addData(i, Cells, immersedParticles, cellIds, rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume());
+                shearFlow.write(shearResultFile);
             }
-            // serialize the particle information to write them.
-            // a correspondance between the mesh and the particles is made. (Needs rescale)
-            writeImmersedSurfaceVTK (
-                Cells, immersedParticles,
-                global::directories().getOutputDir()+createFileName("RBC",i,8)+".vtk");
-            writeVTK(lattice, parameters, i);
             // === Checkpoint ===
             //    parallelIO::save(immersedParticles, "immersedParticles.dat", true);
             //    parallelIO::save(Cells, "Cells.dat", true);
             //    parallelIO::load("immersedParticles.dat", immersedParticles, true);
             //    parallelIO::load("Cells.dat", Cells, true);
             // ==================
-
-            /* ====================== Update for single cell in shear flow ===================================*/
-            if (flowType==6) {
-                shearFlow.addData(i, Cells, immersedParticles, cellIds, RBCQuantities.getCellsCenter(), RBCQuantities.getCellsVolume());
-                shearFlow.write(shearResultFile);
-            }
+            writeImmersedSurfaceVTK (
+                Cells, immersedParticles,
+                global::directories().getOutputDir()+createFileName("RBC",i,8)+".vtk");
+            writeVTK(lattice, parameters, i);
 
         }
         /* ====================== Update for Cell Stretching behaviour ===================================*/
-        if (( (flowType == 4) or (flowType == 5) ) && (i % statIter == 0)) {
-            applyProcessingFunctional (
-                new MeasureCellStretchDeformation3D<T,DESCRIPTOR>(lateralCellParticleTags, &stretchingDeformations),
-                immersedParticles.getBoundingBox(), particleArg );
-            convergeX.takeValue(stretchingDeformations[0],false);
-            convergeY.takeValue(stretchingDeformations[1],false);
-            if (convergeX.hasConverged() && convergeY.hasConverged() ) {
-                convergeX.resetValues();
-                convergeY.resetValues();
-                std::string stretchNameId = stretchReleased?"stretchR.":"stretch.";
-                writeImmersedSurfaceVTK (
-                    Cells, immersedParticles,
-                    global::directories().getOutputDir()+createFileName(stretchNameId, plint(stretchForceScalar*dNewton*1.0e12), 3)+".pN.vtk");
-                stretchResultFile << setprecision(20) << i*dt
-                        << "; " << stretchForceScalar*dNewton
-                        << "; " << stretchingDeformations[0]*dx
-                        << "; " << stretchingDeformations[1]*dx << ";  "
-                        << "; " << RBCQuantities.getCellsMeanEdgeDistance()[0] << ";  "
-                        << "; " << RBCQuantities.getCellsMaxEdgeDistance()[0] << ";  "
-                                                                << std::endl;
-                pcout << "# StretchForce: " << stretchForceScalar*dNewton*1.0e12 << "pN converged in iteration " << i << "." << std::endl;
-                stretchForceScalar += dStretchingForce;
-                stretchForce = Array<T,3>(stretchForceScalar,0,0);
-                if (stretchForceScalar > timesToStretch*dStretchingForce ) {
-                    if (not stretchReleased) {
-                        // stretchForceScalar = 0;
-                        pcout << "[FICSION]: Releasing RBC and setting appropriate viscosity." << std::endl;
-                        stretchForce = Array<T,3>(0,0,0);
-                        stretchReleased = 1;
-                        stretchResealedFile << setprecision(20) << i*dt
-                                << "; " << stretchForceScalar*dNewton
-                                << "; " << stretchingDeformations[0]*dx
-                                << "; " << stretchingDeformations[1]*dx << ";  "
-                                << "; " << RBCQuantities.getCellsMeanEdgeDistance()[0] << ";  "
-                                << "; " << RBCQuantities.getCellsMaxEdgeDistance()[0] << ";  "
-                                << std::endl;
-                        if (flowType == 5) {
-                            cellModel->setMembraneShearViscosity(eta_mPrevious);
-                        }
-                    }
-                    else {
-                        stretchResealedFile << setprecision(20) << i*dt
-                                << "; " << stretchForceScalar*dNewton
-                                << "; " << stretchingDeformations[0]*dx
-                                << "; " << stretchingDeformations[1]*dx << ";  "
-                                << "; " << RBCQuantities.getCellsMeanEdgeDistance()[0] << ";  "
-                                << "; " << RBCQuantities.getCellsMaxEdgeDistance()[0] << ";  "
-                                << std::endl;
-                        pcout << "[FICSION]: Simulation is over.\n";
-                        break;
-                    }
-                }
-            }
-        }
+        rbcStretch.hasConverged(i);
+
         dtIteration = global::timer("output").stop();
         performanceLogFile << "Output" << "; " << i << "; "<< dtIteration << std::endl;
         global::timer("mainLoop").start();
@@ -594,9 +457,11 @@ int main(int argc, char* argv[])
             eqVolume = eqVolumeInitial + (i*1.0)/relaxationTime * (eqVolumeFinal - eqVolumeInitial) ;
             cellModel->setEquilibriumVolume(eqVolume);
             if (flowType == 3) {
-                    stretchForce = (i*1.0)/relaxationTime * Array<T,3>(stretchForceScalar,0,0);
+                rbcStretch.setStretchScalarForce( (i*1.0)/relaxationTime * stretchForceScalar );
             }
         }
+
+
         // #2# IBM Spreading
         global::timer("IBM").restart();
         if (forceToFluid != 0) { // Force from the Cell dynamics to the Fluid
@@ -607,15 +472,16 @@ int main(int argc, char* argv[])
                     immersedParticles.getBoundingBox(), particleLatticeArg );
         }
         global::timer("IBM").stop();
-        // #3# LBM
 
+
+        // #3# LBM
         global::timer("LBM").restart();
         lattice.collideAndStream();
         dtIteration = global::timer("LBM").stop();
         if (i>0) { performanceLogFile << "LBM" << "; " << i << "; "<< dtIteration << std::endl; }
 
-        // #4# IBM Interpolation
         global::timer("IBM").start();
+        // #4# IBM Interpolation
         applyProcessingFunctional ( // copy fluid velocity on particles
             new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(ibmKernel),
             immersedParticles.getBoundingBox(), particleLatticeArg);
@@ -644,25 +510,21 @@ int main(int argc, char* argv[])
                 Cells, iVertexToParticle3D),
             immersedParticles.getBoundingBox(), particleArg );
 //        pcout << "iVertexToParticle3D: " << iVertexToParticle3D.size() << std::endl;
-        if (flowType==6) { RBCQuantities.calculateAll(); }
-        else { RBCQuantities.calculateVolumeAndSurface();  }
+        if (flowType==6) { rbcQuantities.calculateAll(); }
+        else { rbcQuantities.calculateVolumeAndSurface();  }
 
         dtIteration = global::timer("Quantities").stop();
         if (i>0) { performanceLogFile << "Quantities" << "; " << i << "; "<< dtIteration << std::endl; }
 
-        // #1# Membrane Model
         global::timer("Model").restart();
+        // #1# Membrane Model + Stretching
         applyProcessingFunctional (
-                        new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), RBCQuantities.getCellsVolume(), RBCQuantities.getCellsSurface()),
+                        new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), rbcQuantities.getCellsVolume(), rbcQuantities.getCellsSurface()),
                         immersedParticles.getBoundingBox(), particleArg );
+        rbcStretch.applyForce(i, cellModel->getDensity());
+
         dtIteration = global::timer("Model").stop();
         if (i>0) { performanceLogFile << "Model" << "; " << i << "; "<< dtIteration << std::endl; }
-
-        if ((flowType == 3) || (flowType == 4) || (flowType == 5)) {
-            applyProcessingFunctional ( // compute force applied on the some particles by the stretching force
-                    new ApplyStretchingForce3D<T,DESCRIPTOR>(outerLeftTags, outerRightTags, stretchForce, cellModel->getDensity()),
-                    immersedParticles.getBoundingBox(), particleArg );
-        }
     }
     pcout << "Simulation finished." << std::endl;
 //    MPI_Finalize();

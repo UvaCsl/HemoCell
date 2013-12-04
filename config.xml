@@ -29,7 +29,7 @@ Cell Stretching [3], Cell Stretching Analysis and release [4], Fast Cell Stretch
 Tumbling-TankTreading Measurements [6], Fischer2004 [7],
 Fast Cell Stretching release [8],
  -->
-    <flowType> 6 </flowType>   
+    <flowType> 5 </flowType>   
     <Re> 100.0 </Re>   <!--Reynolds number-->
     <shearRate> 1000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 193.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->
@@ -59,8 +59,8 @@ Fast Cell Stretching release [8],
 </domain>
 
 <sim>
-    <tmax> 5000 </tmax> <!-- total number of iterations -->
-    <tmeas> 50 </tmeas> <!-- interval after which data is written -->> 
+    <tmax> 500000 </tmax> <!-- total number of iterations -->
+    <tmeas> 500 </tmeas> <!-- interval after which data is written -->> 
     <npar>  1  </npar> <!-- Number of particles > -->
 </sim>
 </ficsion>

@@ -22,18 +22,18 @@
 // Class storing all the cell measures
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-class CellQuantities {
+class CellQuantities3D {
 public:
-        CellQuantities(
+        CellQuantities3D(
                 TriangleBoundary3D<T> const& Cells_,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> > &  particles_,
                 std::vector<plint> const&  cellIds_, plint numberOfCells_,
                 std::map <plint, Particle3D<T,Descriptor>*> const & iVertexToParticle3D_,
-                std::string cmhFileName);
-        virtual ~CellQuantities();
+                std::string cmhFileName, T dx_, T dt_);
+        virtual ~CellQuantities3D();
         void calculateAll() ;
         void calculateVolumeAndSurface() ;
-        void print(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength, T dx, T dt);
+        void print(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength);
         void write(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength);
 public:
         std::vector<T> & getCellsVolume();
@@ -56,12 +56,13 @@ private:
         plint numberOfCells;
         std::map <plint, Particle3D<T,Descriptor>*> const & iVertexToParticle3D;
         plb_ofstream logFile;
+        T dx, dt;
 };
 
 
 
 
-#include "cellQuantities.hh"
+#include "cellQuantities3D.hh"
 #endif  // CELLS_INIT_H
 
 
