@@ -8,10 +8,10 @@
 template<typename T, template<typename U> class Descriptor>
 MapVertexToParticle3D<T,Descriptor>::MapVertexToParticle3D (
             TriangleBoundary3D<T> const& triangleBoundary_,
-            std::map<plint, Particle3D<T,Descriptor>*> & iVertexToParticle3D_)
-    : triangleBoundary(triangleBoundary_), iVertexToParticle3D(iVertexToParticle3D_)
+            std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_)
+    : triangleBoundary(triangleBoundary_), tagToParticle3D(tagToParticle3D_)
 {
-	iVertexToParticle3D.clear();
+	tagToParticle3D.clear();
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -23,7 +23,7 @@ template<typename T, template<typename U> class Descriptor>
 MapVertexToParticle3D<T,Descriptor>::MapVertexToParticle3D (
             MapVertexToParticle3D<T,Descriptor> const& rhs)
     : triangleBoundary(rhs.triangleBoundary),
-      iVertexToParticle3D(rhs.iVertexToParticle3D)
+      tagToParticle3D(rhs.tagToParticle3D)
 { }
 
 
@@ -43,7 +43,7 @@ void MapVertexToParticle3D<T,Descriptor>::processGenericBlocks (
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         plint vertexId = particle->getTag();
-        iVertexToParticle3D[vertexId] = nonTypedParticle;
+        tagToParticle3D[vertexId] = nonTypedParticle;
     }
 
 
@@ -78,7 +78,7 @@ void MapVertexToParticle3D<T,Descriptor>::getTypeOfModification (
 
 
 /* ******** MapVertexToParticle3D *********************************** */
-//std::map<plint, Particle3D<T,Descriptor>*> * iVertexToParticle3D;
+//std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
 //std::map<plint, plint> numParticlesPerCellId;
 //std::map<plint, plint> * cellIdToMeshCellId;
 //std::stack<plint> * freeMeshCellIds;
@@ -135,7 +135,7 @@ void MeshToParticleField3D<T,Descriptor>::processGenericBlocks (
 //        ImmersedCellParticle3D<T,Descriptor>* particle =
 //            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
 //        plint vertexId = particle->getTag();
-//        iVertexToParticle3D[0][vertexId] = nonTypedParticle;
+//        tagToParticle3D[0][vertexId] = nonTypedParticle;
 //    }
 
 }

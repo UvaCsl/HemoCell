@@ -290,8 +290,8 @@ int main(int argc, char* argv[])
     particleLatticeArg.push_back(&immersedParticles);
     particleLatticeArg.push_back(&lattice);
 
-    /* Find particles in the domain (+envelopes) and store them in iVertexToParticle3D */
-    std::map<plint, Particle3D<T,DESCRIPTOR>*> iVertexToParticle3D;
+    /* Find particles in the domain (+envelopes) and store them in tagToParticle3D */
+    std::map<plint, Particle3D<T,DESCRIPTOR>*> tagToParticle3D;
     applyProcessingFunctional ( // advance particles in time according to velocity
         new AdvanceParticlesEveryWhereFunctional3D<T,DESCRIPTOR>,
         immersedParticles.getBoundingBox(), particleArg );
@@ -300,11 +300,11 @@ int main(int argc, char* argv[])
         immersedParticles.getBoundingBox(), particleArg);
     applyProcessingFunctional (
         new MapVertexToParticle3D<T,DESCRIPTOR> (
-            Cells, iVertexToParticle3D),
+            Cells, tagToParticle3D),
         immersedParticles.getBoundingBox(), particleArg );
 
     std::string logFileName = global::directories().getLogOutDir() + "plbCells.log";
-    CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, iVertexToParticle3D, logFileName, dx, dt);
+    CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, tagToParticle3D, logFileName, dx, dt);
     rbcQuantities.calculateAll();
 
 
@@ -369,8 +369,10 @@ int main(int argc, char* argv[])
 
 
     plint timesToStretch = 40;
-    CellStretching3D<T,DESCRIPTOR, DenseParticleField3D>  rbcStretch(Cells, immersedParticles, 0.05*numParts[0], flowType, dx, dt, dNewton, stretchForceScalar, timesToStretch);
-    SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds, rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume(), flowType, dx, dt, T(dNewton));
+    CellStretching3D<T,DESCRIPTOR, DenseParticleField3D>  rbcStretch(Cells, immersedParticles, 0.05*numParts[0], flowType, dx, dt, dNewton,
+                                                                                            &tagToParticle3D, stretchForceScalar, timesToStretch);
+    SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds,
+                                    rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume(), 0.05*numParts[0], flowType, dx, dt, T(dNewton), &tagToParticle3D);
     shearFlow.writeHeader( (flowType==6) );
     rbcQuantities.print(0, eqVolume, eqSurface, eqArea, eqLength);
     rbcQuantities.write(0, eqVolumeFinal, eqSurface, eqArea, eqLength) ; // Write Log file for the cell Particles
@@ -381,7 +383,7 @@ int main(int argc, char* argv[])
     pcout << "== Cell Diameters ==" << std::endl;
     pcout <<  shearFlow.getDiameters()[0][0] << "\t" <<  shearFlow.getDiameters()[0][1] << "\t" <<  shearFlow.getDiameters()[0][2] << std::endl;
     pcout << "== Cell Angles ==" << std::endl;
-    pcout <<  shearFlow.getAngles()[0][0]*180/pi << "\t" <<  shearFlow.getAngles()[0][1]*180/pi << "\t" <<  shearFlow.getAngles()[0][2]*180/pi << std::endl;
+    pcout <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
 
     /* ********************* Main Loop ***************************************** * */
     dtIteration = global::timer("simulation").stop();
@@ -419,7 +421,7 @@ int main(int argc, char* argv[])
                 pcout << "[SF] Diameters :" ;
                 pcout <<  shearFlow.getDiameters()[0][0] << "\t" <<  shearFlow.getDiameters()[0][1] << "\t" <<  shearFlow.getDiameters()[0][2] ;
                 pcout << ", Angles :" ;
-                pcout <<  shearFlow.getAngles()[0][0]*180/pi << "\t" <<  shearFlow.getAngles()[0][1]*180/pi << "\t" <<  shearFlow.getAngles()[0][2]*180/pi << std::endl;
+                pcout <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
             }
             // === Checkpoint ===
             //    parallelIO::save(immersedParticles, "immersedParticles.dat", true);
@@ -496,9 +498,9 @@ int main(int argc, char* argv[])
         global::timer("Quantities").restart();
         applyProcessingFunctional (
             new MapVertexToParticle3D<T,DESCRIPTOR> (
-                Cells, iVertexToParticle3D),
+                Cells, tagToParticle3D),
             immersedParticles.getBoundingBox(), particleArg );
-//        pcout << "iVertexToParticle3D: " << iVertexToParticle3D.size() << std::endl;
+//        pcout << "tagToParticle3D: " << tagToParticle3D.size() << std::endl;
         if (flowType==6) { rbcQuantities.calculateAll(); }
         else { rbcQuantities.calculateVolumeAndSurface();  }
 

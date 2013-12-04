@@ -27,13 +27,13 @@ CellQuantities3D<T,Descriptor,ParticleFieldT>::CellQuantities3D(
         TriangleBoundary3D<T> const& Cells_,
         MultiParticleField3D<ParticleFieldT<T,Descriptor> > &  particles_,
         std::vector<plint> const&  cellIds_, plint numberOfCells_,
-        std::map <plint, Particle3D<T,Descriptor>*> const & iVertexToParticle3D_,
+        std::map <plint, Particle3D<T,Descriptor>*> const & tagToParticle3D_,
         std::string cmhFileName, T dx_, T dt_) :
             Cells(Cells_),
             particles(&particles_),
             cellIds(cellIds_),
             numberOfCells(numberOfCells_),
-            iVertexToParticle3D(iVertexToParticle3D_),
+            tagToParticle3D(tagToParticle3D_),
             logFile(cmhFileName.c_str()),
             dx(dx_), dt(dt_)
 {
@@ -79,7 +79,7 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateVolumeAndSurface()
         cellsVolume.clear(); cellsSurface.clear();
         std::vector<MultiBlock3D*> particleArg;
         particleArg.push_back(particles);
-        countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, iVertexToParticle3D);
+        countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
         countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
 }
 
@@ -88,7 +88,7 @@ template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void CellQuantities3D<T,Descriptor,ParticleFieldT>::write(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength)
 {
-        std::string delim("; ");
+        std::string delim(" ; ");
         if (iter==0) {
             logFile << "# Iteration " << delim
                     << " Volume" << delim

@@ -7,6 +7,7 @@
 
 #include "immersedCellParticle3D.h"
 #include "immersedCellsReductions.h"
+#include "cellStretchingForces3D.h"
 #include <map>
 #include <algorithm>
 #include "external/diagonalize.cpp"
@@ -22,7 +23,8 @@ public:
     SingleCellInShearFlow(TriangleBoundary3D<T> const& Cells,
             MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
             std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume,
-            plint flowType_, T dx_, T dt_, T dNewton_,
+            plint numParticlesPerSide_, plint flowType_, T dx_, T dt_, T dNewton_,
+            std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D_,
             bool store_=false);
     ~SingleCellInShearFlow() {};
     void updateQuantities(plint iteration, std::vector<plint> cellIds,
@@ -30,7 +32,8 @@ public:
     void writeHeader(bool writeOutput=true);
     void write(bool writeOutput=true);
     std::vector<T> const& getIterations() { return iterations; } ;
-    std::vector< Array<T,3> > const& getAngles() { return angles; } ;
+    std::vector< Array<T,3> > const& getTumblingAngles() { return tumblingAngles; } ;
+    std::vector< Array<T,3> > const& getTankTreadingAngles() { return tankTreadingAngles; } ;
     std::vector< Array<T,3> > const& getDiameters() { return diameters; } ;
     std::vector< vector<T> > const& getInertiaTensor() { return inertiaTensor; } ;
     std::vector<T> const& getSymmetryDeviation() { return symmetryDeviation; } ;
@@ -44,16 +47,27 @@ private:
     TriangleBoundary3D<T> const& Cells;
     MultiParticleField3D<ParticleFieldT<T,Descriptor> > * particles;
     std::vector<T> iterations;
-    std::vector< Array<T,3> > angles;
+    std::vector< Array<T,3> > tumblingAngles;
     std::vector< Array<T,3> > diameters;
     std::vector< vector<T> > inertiaTensor;
     std::vector<T> symmetryDeviation;
     std::vector<T> deformationIndex;
     T maxDiameter;
     plb_ofstream shearResultFile;
+    plint numParticlesPerSide;
     plint flowType;
     T dx, dt, dNewton, dm;
+    std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D;
     bool store;
+
+    std::vector< Array<T,3> > tankTreadingAngles; // This quantity is temporary (is not stored)
+    std::vector<T> tankTreadingLengths; // This quantity is temporary (is not stored)
+
+    std::vector<plint> outerLeftTags, outerRightTags;
+    std::vector<plint> outerUpTags, outerDownTags;
+    std::vector<plint> outerFrontTags, outerBackTags;
+    std::vector<std::vector<plint>*> lateralCellParticleTags;
+
 };
 
 

@@ -41,7 +41,7 @@ private:
 	plint numMeshCells, numVerticesPerCell;
 	std::map<plint, plint> cellIdToMeshCellId;
 	std::stack<plint> freeMeshCellIds;
-//    std::map<plint, Particle3D<T,Descriptor>*> * iVertexToParticle3D;
+//    std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
 };
 
 /*
@@ -56,7 +56,7 @@ class MapVertexToParticle3D : public BoxProcessingFunctional3D
 public:
     MapVertexToParticle3D (
             TriangleBoundary3D<T> const& triangleBoundary_,
-            std::map<plint, Particle3D<T,Descriptor>*> & iVertexToParticle3D_);
+            std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_);
     ~MapVertexToParticle3D();
     MapVertexToParticle3D(MapVertexToParticle3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -67,7 +67,7 @@ public:
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
     TriangleBoundary3D<T> const& triangleBoundary;
-    std::map<plint, Particle3D<T,Descriptor>*>& iVertexToParticle3D;
+    std::map<plint, Particle3D<T,Descriptor>*>& tagToParticle3D;
 };
 
 
@@ -77,21 +77,21 @@ class MeshToParticleField3D : public BoxProcessingFunctional3D
 {
 public:
     MeshToParticleField3D(CellFieldQuantityHolder<T,Descriptor> & cellInfoHolder_,
-            std::map<plint, Particle3D<T,Descriptor>*> & iVertexToParticle3D_) :
-                iVertexToParticle3D(&iVertexToParticle3D_),
+            std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_) :
+                tagToParticle3D(&tagToParticle3D_),
                 verticesPerCell(cellInfoHolder_.getNumVerticesPerCell()),
                 numParticlesPerCellId(),
                 cellIdToMeshCellId(&cellInfoHolder_.getCellIdToMeshCellId()),
                 freeMeshCellIds(&cellInfoHolder_.getFreeMeshCellIds())	{	};
     MeshToParticleField3D(CellFieldQuantityHolder<T,Descriptor> & cellInfoHolder_) :
-                iVertexToParticle3D(),
+                tagToParticle3D(),
                 verticesPerCell(cellInfoHolder_.getNumVerticesPerCell()),
                 numParticlesPerCellId(),
                 cellIdToMeshCellId(&cellInfoHolder_.getCellIdToMeshCellId()),
                 freeMeshCellIds(&cellInfoHolder_.getFreeMeshCellIds())	{	};
     ~MeshToParticleField3D() { } ;
     MeshToParticleField3D(MeshToParticleField3D<T,Descriptor> const& rhs) :
-        iVertexToParticle3D(rhs.iVertexToParticle3D),
+        tagToParticle3D(rhs.tagToParticle3D),
         verticesPerCell(rhs.verticesPerCell),
         numParticlesPerCellId(rhs.numParticlesPerCellId),
         cellIdToMeshCellId(rhs.cellIdToMeshCellId),
@@ -103,7 +103,7 @@ public:
     /// Arguments: [0] Particle-field
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
 private:
-    std::map<plint, Particle3D<T,Descriptor>*> * iVertexToParticle3D;
+    std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
     plint verticesPerCell;
     std::map<plint, plint> numParticlesPerCellId;
     std::map<plint, plint> * cellIdToMeshCellId;

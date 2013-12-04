@@ -43,7 +43,8 @@ class ApplyStretchingForce3D : public BoxProcessingFunctional3D
 {
 public:
     ApplyStretchingForce3D (std::vector<plint> const& outerLeftTags_, std::vector<plint> const& outerRightTags_,
-                            Array<T,3> const& stretchingForce_, T cellDensity_);
+                            Array<T,3> const& stretchingForce_, T cellDensity_,
+                            std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_);
     ~ApplyStretchingForce3D() {} ;
     ApplyStretchingForce3D(ApplyStretchingForce3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -57,6 +58,7 @@ private:
     std::vector<plint> const& outerRightTags;
     Array<T,3> const& stretchingForce;
     T const& cellDensity;
+    std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
 };
 
 
@@ -64,7 +66,10 @@ template<typename T, template<typename U> class Descriptor>
 class MeasureCellStretchDeformation3D : public BoxProcessingFunctional3D
 {
 public:
-    MeasureCellStretchDeformation3D (std::vector<std::vector<plint>*> const& tags_, std::vector<T> * meanDeformation_);
+    MeasureCellStretchDeformation3D (std::vector<std::vector<plint>*> const& tags_,
+            std::vector<T> * deformation_,
+            std::vector<Array<T,3> > * angles_,
+            std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_);
     ~MeasureCellStretchDeformation3D() {} ;
     MeasureCellStretchDeformation3D(MeasureCellStretchDeformation3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -75,20 +80,11 @@ public:
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
     std::vector<std::vector<plint>*> tags;
-    std::vector<T> * meanDeformation;
+    std::vector<T> * deformation;
+    std::vector<Array<T,3> > * angles;
+    std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
 };
 
-
-template<typename T, template<typename U> class Descriptor>
-bool compareParticlesInX (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
-
-
-template<typename T, template<typename U> class Descriptor>
-bool compareParticlesInY (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
-
-
-template<typename T, template<typename U> class Descriptor>
-bool compareParticlesInZ (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
 
 template<typename T, template<typename U> class Descriptor>
 class FindTagsOfLateralCellParticles3D : public BoxProcessingFunctional3D
@@ -111,6 +107,16 @@ private:
 };
 
 
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInX (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
+
+
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInY (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
+
+
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInZ (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
 }  // namespace plb
 
 #include "cellStretchingForces3D.hh"
