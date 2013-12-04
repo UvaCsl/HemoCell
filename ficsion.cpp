@@ -153,8 +153,6 @@ int main(int argc, char* argv[])
     global::timer("simulation").start();
     std::string performanceLogFileName = global::directories().getLogOutDir() + "performance.log";
     plb_ofstream performanceLogFile(performanceLogFileName.c_str());
-    std::string shearResultFileName = global::directories().getLogOutDir() + "shearResults.log";
-    plb_ofstream shearResultFile(shearResultFileName.c_str());
     std::string meshQualityFileName = global::directories().getLogOutDir() + "plbMeshQuality.log";
     plb_ofstream meshQualityFile(meshQualityFileName.c_str());
 
@@ -271,6 +269,7 @@ int main(int argc, char* argv[])
     meshmetric.setResultFile(meshQualityFile);
     meshmetric.write(meshQualityFile);
     writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",0,8)+".stl");
+
     performanceLogFile << "# Nx*Ny*Nz; " << nx * ny * nz << std::endl;
     performanceLogFile << "# Nparticles; " << Cells.getMesh().getNumVertices() << std::endl;
     performanceLogFile << "# Nx; Ny; Nz; " << nx << "; " << ny << "; "<< nz << std::endl;
@@ -304,35 +303,28 @@ int main(int argc, char* argv[])
             Cells, iVertexToParticle3D),
         immersedParticles.getBoundingBox(), particleArg );
 
-    T eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan;
     std::string logFileName = global::directories().getLogOutDir() + "plbCells.log";
     CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, iVertexToParticle3D, logFileName, dx, dt);
     rbcQuantities.calculateAll();
 
+
+    /* INITIALIZE MODELS */
+    k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
+    k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
+    eta_m /= dNewton*dt/dx;     k_stretch /= dNewton;    k_rest /= dNewton/dx;
+    T eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan;
     eqArea = rbcQuantities.getCellsMeanTriangleArea()[0];     eqLength = rbcQuantities.getCellsMeanEdgeDistance()[0];
     eqAngle = rbcQuantities.getCellsMeanAngle()[0];     eqVolume = rbcQuantities.getCellsVolume()[0];
     eqSurface = rbcQuantities.getCellsSurface()[0]; eqTileSpan = rbcQuantities.getCellsMeanTileSpan()[0];
-    rbcQuantities.print(0, eqVolume, eqSurface, eqArea, eqLength);
-
-    plint timesToStretch = 40;
-    CellStretching3D<T,DESCRIPTOR, DenseParticleField3D>  rbcStretch(Cells, immersedParticles, 0.05*numParts[0], flowType, dx, dt, dNewton, stretchForceScalar, timesToStretch);
-
-
     T persistenceLengthFine = 7.5e-9  / dx;
     // T eqLengthRatio = 3.17; // According to Pivkin2008
     T maxLength = eqLengthRatio*eqLength;
     pcout << "eqLengthRatio:" << eqLengthRatio  << ", maxLength [LU]:" << maxLength << std::endl;
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
     // PLB_PRECONDITION( maxLength < 2.0 );
-    k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
-    k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
-    /* == */
-    eta_m /= dNewton*dt/dx;
-    k_stretch /= dNewton;
-    k_rest /= dNewton/dx;
+
     vector<T> eqAreaPerTriangle(cellNumTriangles);
     map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
-
     RBCModel3D<T> *cellModel;
     getCellShapeQuantitiesFromMesh(DeCells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
     if (rbcModel == 2) {
@@ -376,27 +368,20 @@ int main(int argc, char* argv[])
        immersedParticles.getBoundingBox(), particleArg );
 
 
+    plint timesToStretch = 40;
+    CellStretching3D<T,DESCRIPTOR, DenseParticleField3D>  rbcStretch(Cells, immersedParticles, 0.05*numParts[0], flowType, dx, dt, dNewton, stretchForceScalar, timesToStretch);
+    SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds, rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume(), flowType, dx, dt, T(dNewton));
+    shearFlow.writeHeader( (flowType==6) );
+    rbcQuantities.print(0, eqVolume, eqSurface, eqArea, eqLength);
     rbcQuantities.write(0, eqVolumeFinal, eqSurface, eqArea, eqLength) ; // Write Log file for the cell Particles
-
-    std::vector< std::vector<T> > cellInertia;
-    std::vector< std::vector<T> > cellsEllipsoidFitSemiAxes, cellsEllipsoidFitAngles;
-    std::vector<T> difference;
-    computeEllipsoidFit (Cells, immersedParticles, cellIds, rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume(),
-                        cellsEllipsoidFitAngles, cellsEllipsoidFitSemiAxes, cellInertia, difference);
-
     pcout << "== Inertia Tensor == "<< std::endl;
-    for (plint i = 0; i < 3; ++i) {
-            pcout <<  cellInertia[0][3*i] << "\t" <<  cellInertia[0][3*i +1] << "\t" <<  cellInertia[0][3*i + 2] << std::endl;
-    }
-    pcout << "== a^2 + b^2 ==" << std::endl;
-    pcout <<  cellsEllipsoidFitSemiAxes[0][0] << "\t" <<  cellsEllipsoidFitSemiAxes[0][1] << "\t" <<  cellsEllipsoidFitSemiAxes[0][2] << std::endl;
-    pcout <<  cellsEllipsoidFitAngles[0][0]*180/pi << "\t" <<  cellsEllipsoidFitAngles[0][1]*180/pi << "\t" <<  cellsEllipsoidFitAngles[0][2]*180/pi << std::endl;
-
-    SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds, rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume());
-    shearFlow.set_dxdtdm(dx,dt,dm);
-    if (flowType==6) {
-        shearFlow.writeHeader(shearResultFile);
-    }
+    pcout <<  shearFlow.getInertiaTensor()[0][0] << "\t" <<  shearFlow.getInertiaTensor()[0][1] << "\t" <<  shearFlow.getInertiaTensor()[0][2] << std::endl;
+    pcout <<  shearFlow.getInertiaTensor()[0][3] << "\t" <<  shearFlow.getInertiaTensor()[0][4] << "\t" <<  shearFlow.getInertiaTensor()[0][5] << std::endl;
+    pcout <<  shearFlow.getInertiaTensor()[0][6] << "\t" <<  shearFlow.getInertiaTensor()[0][7] << "\t" <<  shearFlow.getInertiaTensor()[0][8] << std::endl;
+    pcout << "== Cell Diameters ==" << std::endl;
+    pcout <<  shearFlow.getDiameters()[0][0] << "\t" <<  shearFlow.getDiameters()[0][1] << "\t" <<  shearFlow.getDiameters()[0][2] << std::endl;
+    pcout << "== Cell Angles ==" << std::endl;
+    pcout <<  shearFlow.getAngles()[0][0]*180/pi << "\t" <<  shearFlow.getAngles()[0][1]*180/pi << "\t" <<  shearFlow.getAngles()[0][2]*180/pi << std::endl;
 
     /* ********************* Main Loop ***************************************** * */
     dtIteration = global::timer("simulation").stop();
@@ -429,8 +414,12 @@ int main(int argc, char* argv[])
             rbcQuantities.write(i, eqVolumeFinal, eqSurface, eqArea, eqLength) ;
             rbcStretch.write(i, rbcQuantities.getCellsMeanEdgeDistance()[0], rbcQuantities.getCellsMaxEdgeDistance()[0]); // SINGLE CELL STRETCHING
             if (flowType==6) { // SINGLE CELL IN SHEAR FLOW
-                shearFlow.addData(i, Cells, immersedParticles, cellIds, rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume());
-                shearFlow.write(shearResultFile);
+                shearFlow.updateQuantities(i, cellIds, rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume());
+                shearFlow.write();
+                pcout << "[SF] Diameters :" ;
+                pcout <<  shearFlow.getDiameters()[0][0] << "\t" <<  shearFlow.getDiameters()[0][1] << "\t" <<  shearFlow.getDiameters()[0][2] ;
+                pcout << ", Angles :" ;
+                pcout <<  shearFlow.getAngles()[0][0]*180/pi << "\t" <<  shearFlow.getAngles()[0][1]*180/pi << "\t" <<  shearFlow.getAngles()[0][2]*180/pi << std::endl;
             }
             // === Checkpoint ===
             //    parallelIO::save(immersedParticles, "immersedParticles.dat", true);

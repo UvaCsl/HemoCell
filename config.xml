@@ -29,7 +29,7 @@ Cell Stretching [3], Cell Stretching Analysis and release [4], Fast Cell Stretch
 Tumbling-TankTreading Measurements [6], Fischer2004 [7],
 Fast Cell Stretching release [8],
  -->
-    <flowType> 5 </flowType>   
+    <flowType> 6 </flowType>   
     <Re> 100.0 </Re>   <!--Reynolds number-->
     <shearRate> 1000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 193.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->

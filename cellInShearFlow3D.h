@@ -19,42 +19,41 @@ template< typename T, template<typename U> class Descriptor,
 class SingleCellInShearFlow
 {
 public:
-    SingleCellInShearFlow(bool store_=false);
-    SingleCellInShearFlow(plint iteration, TriangleBoundary3D<T> Cells,
+    SingleCellInShearFlow(TriangleBoundary3D<T> const& Cells,
             MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
-            std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume, bool store_=false);
-    SingleCellInShearFlow(TriangleBoundary3D<T> Cells,
-            MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
-            std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume, bool store_=false);
+            std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume,
+            plint flowType_, T dx_, T dt_, T dNewton_,
+            bool store_=false);
     ~SingleCellInShearFlow() {};
-    void addData(plint iteration, TriangleBoundary3D<T> Cells,
-            MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
+    void updateQuantities(plint iteration, std::vector<plint> cellIds,
             std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume);
-    void write(plb_ofstream & shearResultFile);
-    void writeHeader(plb_ofstream & shearResultFile);
-    void write() { this->write(*shearResultFile); } ;
-    std::vector<T> const& getTaylorDeformationIndex();
-    std::vector<T> const& getDeformationIndex() { return deformationIndex; } ;
+    void writeHeader(bool writeOutput=true);
+    void write(bool writeOutput=true);
     std::vector<T> const& getIterations() { return iterations; } ;
     std::vector< Array<T,3> > const& getAngles() { return angles; } ;
+    std::vector< Array<T,3> > const& getDiameters() { return diameters; } ;
     std::vector< vector<T> > const& getInertiaTensor() { return inertiaTensor; } ;
     std::vector<T> const& getSymmetryDeviation() { return symmetryDeviation; } ;
-    void setShearResultFile(plb_ofstream & shearResultFile_) { shearResultFile = &shearResultFile_; } ;
+    std::vector<T> const& getDeformationIndex() { return deformationIndex; } ;
+    std::vector<T> const& getTaylorDeformationIndex();
     void set_dx(T dx_) { dx = dx_; } ;
     void set_dt(T dt_) { dt = dt_; } ;
     void set_dm(T dm_) { dm = dm_; } ;
     void set_dxdtdm(T dx_, T dt_, T dm_) { dx = dx_; dt = dt_; dm = dm_;} ;
 private:
-    std::vector<T> deformationIndex;
+    TriangleBoundary3D<T> const& Cells;
+    MultiParticleField3D<ParticleFieldT<T,Descriptor> > * particles;
     std::vector<T> iterations;
     std::vector< Array<T,3> > angles;
     std::vector< Array<T,3> > diameters;
     std::vector< vector<T> > inertiaTensor;
     std::vector<T> symmetryDeviation;
-    bool store;
+    std::vector<T> deformationIndex;
     T maxDiameter;
-    plb_ofstream * shearResultFile;
-    T dx, dt, dm;
+    plb_ofstream shearResultFile;
+    plint flowType;
+    T dx, dt, dNewton, dm;
+    bool store;
 };
 
 

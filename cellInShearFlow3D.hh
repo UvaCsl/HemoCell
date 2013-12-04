@@ -6,47 +6,34 @@
 namespace plb {
 
 /* ******** SingleCellInShearFlow *********************************** */
-template< typename T, template<typename U> class Descriptor,
-          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(bool store_)
-        : store(store_) {
-    maxDiameter = -1;
-}
-
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(plint iteration, TriangleBoundary3D<T> Cells,
-        MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
-        std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume, bool store_)
-        : store(store_) {
-    addData(iteration, Cells,particles, cellIds, cellCenters, cellsVolume);
+SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(TriangleBoundary3D<T> const& Cells_,
+        MultiParticleField3D<ParticleFieldT<T,Descriptor> > & particles_, std::vector<plint> cellIds,
+        std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume,
+        plint flowType_, T dx_, T dt_, T dNewton_, bool store_)
+        :
+    Cells(Cells_), particles(&particles_),
+    flowType(flowType_), dx(dx_), dt(dt_), dNewton(dNewton_), dm(dNewton_*dt_*dt_/dx_),
+    store(store_)
+{
+    shearResultFile.open((global::directories().getLogOutDir() + "shearResults.log").c_str());
+    updateQuantities(0, cellIds, cellCenters, cellsVolume);
     maxDiameter = max(diameters[0][0], diameters[0][1]);
     maxDiameter = max(maxDiameter,  diameters[0][2]);
 }
 
-
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(TriangleBoundary3D<T> Cells,
-        MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
-        std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume, bool store_)
-        : store(store_) {
-        SingleCellInShearFlow(0, Cells, particles, cellIds, cellCenters, cellsVolume, store_);
-}
-
-
-template< typename T, template<typename U> class Descriptor,
-          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::addData(plint iteration, TriangleBoundary3D<T> Cells,
-        MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
+void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::updateQuantities(plint iteration, std::vector<plint> cellIds,
         std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume) {
 
     std::vector< std::vector<T> > eFitAngles;
     std::vector< std::vector<T> > eFitSemiAxes;
     std::vector<T> difference;
     std::vector< std::vector<T> > inertia;
-    computeEllipsoidFit (Cells, particles, cellIds, cellCenters, cellsVolume,
+    computeEllipsoidFit (Cells, *particles, cellIds, cellCenters, cellsVolume,
             eFitAngles, eFitSemiAxes, inertia, difference);
     T currMaxDiameter;
     currMaxDiameter = max(eFitSemiAxes[0][0], eFitSemiAxes[0][1]);
@@ -74,51 +61,57 @@ void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::addData(plint iteration
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::writeHeader(plb_ofstream & shearResultFile) {
-        shearResultFile <<
-                "# time (sec) ; " <<
-                "deformationIndex; " <<
-                "diameter x; " <<
-                "diameter y; " <<
-                "diameter z; " <<
-                "angles x (rad); " <<
-                "angles y (rad); " <<
-                "angles z (rad); " <<
-                "inertia tensor Ixx (kg/m2); " <<
-                "inertia tensor Ixy (kg/m2); " <<
-                "inertia tensor Ixz (kg/m2); " <<
-                "inertia tensor Iyx (kg/m2); " <<
-                "inertia tensor Iyy (kg/m2); " <<
-                "inertia tensor Iyz (kg/m2); " <<
-                "inertia tensor Izx (kg/m2); " <<
-                "inertia tensor Izy (kg/m2); " <<
-                "inertia tensor Izz (kg/m2) " <<
-                std:: endl;
+void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::writeHeader(bool writeOutput) {
+        if (writeOutput) {
+            shearResultFile <<
+                    "# time (sec) ; " <<
+                    "deformationIndex; " <<
+                    "diameter x; " <<
+                    "diameter y; " <<
+                    "diameter z; " <<
+                    "angles x (rad); " <<
+                    "angles y (rad); " <<
+                    "angles z (rad); " <<
+                    "inertia tensor Ixx (kg/m2); " <<
+                    "inertia tensor Ixy (kg/m2); " <<
+                    "inertia tensor Ixz (kg/m2); " <<
+                    "inertia tensor Iyx (kg/m2); " <<
+                    "inertia tensor Iyy (kg/m2); " <<
+                    "inertia tensor Iyz (kg/m2); " <<
+                    "inertia tensor Izx (kg/m2); " <<
+                    "inertia tensor Izy (kg/m2); " <<
+                    "inertia tensor Izz (kg/m2) " <<
+                    std:: endl;
+    }
 }
-
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::write(plb_ofstream & shearResultFile) {
-        plint N = iterations.size() - 1;
-        shearResultFile <<
-            iterations[N] * dt<< "; " <<
-            deformationIndex[N] << "; " <<
-            diameters[N][0] * dx<< "; " <<
-            diameters[N][1] * dx<< "; " <<
-            diameters[N][2] * dx<< "; " <<
-            angles[N][0] << "; " <<
-            angles[N][1] << "; " <<
-            angles[N][2] << "; " <<
-            symmetryDeviation[N] ;
-        for (int i = 0; i < 9; ++i) {
-            shearResultFile << "; " << inertiaTensor[N][i] * dm / (dx*dx);
+void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::write(bool writeOutput) {
+        if (writeOutput) {
+            plint N = iterations.size() - 1;
+            shearResultFile <<
+                iterations[N] * dt<< "; " <<
+                deformationIndex[N] << "; " <<
+                diameters[N][0] * dx<< "; " <<
+                diameters[N][1] * dx<< "; " <<
+                diameters[N][2] * dx<< "; " <<
+                angles[N][0] << "; " <<
+                angles[N][1] << "; " <<
+                angles[N][2] << "; " <<
+                symmetryDeviation[N] ;
+            for (int i = 0; i < 9; ++i) {
+                shearResultFile << "; " << inertiaTensor[N][i] * dm / (dx*dx);
+            }
+            shearResultFile << std:: endl;
         }
-        shearResultFile << std:: endl;
 }
 
 
+
+/* ================================================================================ */
 /* ******** InertiaTensorCellReduceFunctional3D *********************************** */
+/* ================================================================================ */
 template<typename T, template<typename U> class Descriptor>
 InertiaTensorCellReduceFunctional3D<T,Descriptor>::InertiaTensorCellReduceFunctional3D(
         TriangleBoundary3D<T> const& triangleBoundary_, std::vector<plint> cellIds_,
@@ -232,7 +225,9 @@ void InertiaTensorCellReduceFunctional3D<T,Descriptor>::getCellQuantityArray(std
 }
 
 
+/* ================================================================================ */
 /* ******** computeCellInertia *********************************** */
+/* ================================================================================ */
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void computeCellInertia (TriangleBoundary3D<T> Cells,
@@ -261,7 +256,9 @@ void computeCellInertia (TriangleBoundary3D<T> Cells,
 }
 
 
-/* ******** computeCellInertia *********************************** */
+/* ================================================================================ */
+/* ******** computeEllipsoidFit *********************************** */
+/* ================================================================================ */
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void computeEllipsoidFit (TriangleBoundary3D<T> Cells,
