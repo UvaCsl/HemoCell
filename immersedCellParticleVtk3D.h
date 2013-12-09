@@ -49,6 +49,9 @@ template<typename T>
 void writeImmersedPointsVTK(TriangleBoundary3D<T> const& boundary, std::vector<plint> const& vertices, T const& dx,
                     std::string fName);
 
+template<typename T>
+void writeImmersedPointsVTK(std::vector<Array<T,3> > const& positions, std::vector<plint> const& tags, T const& dx,
+                    std::string fName);
 }  // namespace plb
 
 #include "immersedCellParticleVtk3D.hh"

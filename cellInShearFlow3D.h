@@ -7,6 +7,7 @@
 
 #include "immersedCellParticle3D.h"
 #include "immersedCellsReductions.h"
+#include "immersedCellParticleVtk3D.hh"
 #include "cellStretchingForces3D.h"
 #include <map>
 #include <algorithm>

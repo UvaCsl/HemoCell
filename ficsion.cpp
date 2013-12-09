@@ -19,6 +19,7 @@
 */
 
 #include <limits>
+#include <stdio.h>
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
@@ -137,8 +138,9 @@ int main(int argc, char* argv[])
 {
     plbInit(&argc, &argv);
 
-    global::directories().setOutputDir("./tmp/");
-    global::directories().setLogOutDir("./tmp/");
+    global::directories().setOutputDir("./tmp2/");
+    global::directories().setLogOutDir("./tmp2/");
+    global::directories().setInputDir("./tmp2/");
     global::IOpolicy().setStlFilesHaveLowerBound(true);
     global::IOpolicy().setLowerBoundForStlFiles(-1.);
 //    testInPlane(); PLB_ASSERT(false);
@@ -169,8 +171,6 @@ int main(int argc, char* argv[])
     T stretchForceScalar, stretchForce_p;
     std::vector<T> eulerAngles;
     plint goAndStop;
-    std::vector<plint> goAndStopVertices;
-
 
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
@@ -240,6 +240,13 @@ int main(int argc, char* argv[])
     immersedParticles.periodicity().toggle(0, true);
     Box3D inlet(0, 3, 0, ny-1, 0, nz-1);
     Box3D outlet(nx-2, nx-1, 0, ny-1, 0, nz-1);
+    /* Measure Cell Variables */
+    std::vector<MultiBlock3D*> particleArg;
+    std::vector<MultiBlock3D*> particleLatticeArg;
+    particleArg.push_back(&immersedParticles);
+    particleLatticeArg.push_back(&immersedParticles);
+    particleLatticeArg.push_back(&lattice);
+
 
 
 //  === Create Mesh, particles and CellModel ===
@@ -282,13 +289,6 @@ int main(int argc, char* argv[])
     }
     CellFieldQuantityHolder<T,DESCRIPTOR> cqh(npar, numParts[0]);
     // plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox()); //Total number of particles
-
-    /* Measure Cell Variables */
-    std::vector<MultiBlock3D*> particleArg;
-    std::vector<MultiBlock3D*> particleLatticeArg;
-    particleArg.push_back(&immersedParticles);
-    particleLatticeArg.push_back(&immersedParticles);
-    particleLatticeArg.push_back(&lattice);
 
     /* Find particles in the domain (+envelopes) and store them in tagToParticle3D */
     std::map<plint, Particle3D<T,DESCRIPTOR>*> tagToParticle3D;
@@ -350,12 +350,6 @@ int main(int argc, char* argv[])
     pcout << "Poisson ratio = " << cellModel->getPoissonRatio() << std::endl;
 
 
-    if (goAndStop != 0) {
-        goAndStopVertices.push_back(pluint(0));
-        goAndStopVertices.push_back(pluint(cellNumVertices/2));
-        goAndStopVertices.push_back(pluint(cellNumVertices-1));
-    }
-
     pcout << std::endl << "Starting simulation" << std::endl;
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
 
@@ -385,27 +379,68 @@ int main(int argc, char* argv[])
     pcout << "== Cell Angles ==" << std::endl;
     pcout <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
 
+    bool checkpointed=0;
+    /* ********************* Load CheckPoint ***************************************** * */
+    if (checkpointed) {
+        pcout << "Loading checkpoint... " ;
+        parallelIO::load("CHLattice", lattice, true);
+        parallelIO::load("CHImmersedParticles", immersedParticles, true);
+        rbcQuantities.calculateVolumeAndSurfaceAndCenters();
+        applyProcessingFunctional ( // copy fluid velocity on particles
+            new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(ibmKernel),
+            immersedParticles.getBoundingBox(), particleLatticeArg);
+        applyProcessingFunctional ( // Compute Cell Model forces
+           new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), rbcQuantities.getCellsVolume(), rbcQuantities.getCellsSurface()),
+           immersedParticles.getBoundingBox(), particleArg );
+        applyProcessingFunctional ( // update mesh position
+            new CopyParticleToMeshVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
+            immersedParticles.getBoundingBox(), particleArg);
+        applyProcessingFunctional (
+            new MapVertexToParticle3D<T,DESCRIPTOR> (
+                Cells, tagToParticle3D),
+            immersedParticles.getBoundingBox(), particleArg );
+        rbcStretch.applyForce(0, cellModel->getDensity());
+
+        pcout << "OK" << std::endl;
+    }
+
     /* ********************* Main Loop ***************************************** * */
     dtIteration = global::timer("simulation").stop();
     pcout << "Time to initialize: " << dtIteration <<std::endl;
     performanceLogFile << "Init" << "; " << 0 << "; "<< dtIteration << std::endl;
     global::timer("mainLoop").start();
+    /* =============================== Main Loop ===================================*/
     for (pluint i=0; i<tmax+1; ++i) {
         if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
             pcout << "[FICSION]: Switching off shear rate (Fischer2004)" << std::endl;
-            shearRate = 0.0;
+            shearRate = 0.0; tmeas = 0.1/dt;
             changeCouetteShearRate(lattice, parameters, *boundaryCondition, shearRate);
-            tmeas = 0.1/dt;
         }
-
         /* =============================== OUTPUT ===================================*/
         if (i%tmeas==0) {
             // Stop mainLoop timers and start output timers
             global::timer("mainLoop").stop();
             global::timer("output").restart();
-            if (goAndStop != 0) {
-                writeImmersedPointsVTK(Cells, goAndStopVertices, dx,
-                    global::directories().getOutputDir()+createFileName("GoAndStop.",i,10)+".vtk");
+            if (i%(10*tmeas)==0) {
+                pcout << "Saving checkpoint... " ;
+                // === Checkpoint ===
+                std::string fromFileName = global::directories().getOutputDir() + "CHLattice.dat";
+                std::string toFileName = global::directories().getOutputDir() + "CHLattice_old.dat";
+                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
+                fromFileName = global::directories().getOutputDir() + "CHLattice.plb";
+                toFileName = global::directories().getOutputDir() + "CHLattice_old.plb";
+                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
+                fromFileName = global::directories().getOutputDir() + "CHImmersedParticles.dat";
+                toFileName = global::directories().getOutputDir() + "CHImmersedParticles_old.dat";
+                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
+                fromFileName = global::directories().getOutputDir() + "CHImmersedParticles.plb";
+                toFileName = global::directories().getOutputDir() + "CHImmersedParticles_old.plb";
+                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
+                parallelIO::save(lattice, "CHLattice", true);
+                parallelIO::save(immersedParticles, "CHImmersedParticles", true);
+//                writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+"CH_Mesh.stl");
+                pcout << "OK" << std::endl;
+
             }
             rbcQuantities.write(i, eqVolumeFinal, eqSurface, eqArea, eqLength) ;
             rbcStretch.write(i, rbcQuantities.getCellsMeanEdgeDistance()[0], rbcQuantities.getCellsMaxEdgeDistance()[0]); // SINGLE CELL STRETCHING
@@ -415,12 +450,6 @@ int main(int argc, char* argv[])
                 pcout << "[SF] Diameters :" <<  shearFlow.getDiameters()[0][0] << "\t" <<  shearFlow.getDiameters()[0][1] << "\t" <<  shearFlow.getDiameters()[0][2] ;
                 pcout << ", Angles :" <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
             }
-            // === Checkpoint ===
-            //    parallelIO::save(immersedParticles, "immersedParticles.dat", true);
-            //    parallelIO::save(Cells, "Cells.dat", true);
-            //    parallelIO::load("immersedParticles.dat", immersedParticles, true);
-            //    parallelIO::load("Cells.dat", Cells, true);
-            // ==================
             writeImmersedSurfaceVTK (
                 Cells, immersedParticles,
                 global::directories().getOutputDir()+createFileName("RBC",i,8)+".vtk");

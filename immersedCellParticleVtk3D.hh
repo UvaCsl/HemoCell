@@ -207,6 +207,42 @@ void writeImmersedPointsVTK(TriangleBoundary3D<T> const& boundary, std::vector<p
 }
 
 
+template<typename T>
+void writeImmersedPointsVTK(std::vector<Array<T,3> > const& positions, std::vector<plint> const& tags, T const& dx,
+                    std::string fName)
+{
+    std::ofstream ofile(fName.c_str());
+    ofile << "# vtk DataFile Version 3.0\n";
+    ofile << "Surface point created with Palabos and ficsion\n";
+    ofile << "ASCII\n";
+    ofile << "DATASET POLYDATA\n";
+
+    ofile << "POINTS " << positions.size()
+          << (sizeof(T)==sizeof(double) ? " double" : " float")
+          << "\n";
+    for (pluint i = 0; i < positions.size(); ++i) {
+        Array<T,3> vertex = positions[i];
+        vertex *= dx;
+        ofile << vertex[0] << " " <<vertex[1] << " " <<vertex[2] << "\n";
+    }
+    ofile << "POINT_DATA " << positions.size() << "\n";
+    ofile << "SCALARS ID float 1 \n";
+    ofile << "LOOKUP_TABLE default \n";
+    for (pluint i = 0; i < positions.size(); ++i) {
+        ofile << i*1.0 << "\n";
+    }
+
+    ofile << "SCALARS tag float 1\n"
+          << "LOOKUP_TABLE default\n";
+    for (plint i=0; i<(plint)tags.size(); ++i) {
+            ofile << tags[i] << "\n";
+    }
+        ofile << "\n";
+
+    ofile.close();
+}
+
+
 template<typename T, template<typename U> class Descriptor>
 void draftPostProcessPBCPositions(std::vector<Particle3D<T,Descriptor>*> const & particles, std::vector<Array<T,3> > & posVect, plint nx, plint ny, plint nz) {
     plint cellId;

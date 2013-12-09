@@ -156,7 +156,20 @@ void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::write(bool writeOutput)
                 shearResultFile << delim << inertiaTensor[N][i] * dm / (dx*dx);
             }
             shearResultFile << std:: endl;
+            std::vector<Array<T,3> > positions;
+            std::vector<plint>  tags;
+            for (pluint iTag = 0; iTag < lateralCellParticleTags.size(); ++iTag) {
+                std::vector<plint>* const pTags = lateralCellParticleTags[iTag];
+                for (pluint iVertex = 0; iVertex < pTags->size(); ++iVertex) {
+                    Particle3D<T,DESCRIPTOR>* particle = (*tagToParticle3D)[ (*pTags)[iVertex] ];
+                    positions.push_back(particle->getPosition());
+                    tags.push_back(iTag);
+                }
+            }
+            writeImmersedPointsVTK(positions, tags, dx,
+                global::directories().getOutputDir()+createFileName("LateralParticles.",iterations[N],10)+".vtk");
         }
+
 }
 
 
