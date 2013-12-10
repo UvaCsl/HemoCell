@@ -148,8 +148,6 @@ int main(int argc, char* argv[])
     global::timer("simulation").start();
     std::string performanceLogFileName = global::directories().getLogOutDir() + "performance.log";
     plb_ofstream performanceLogFile(performanceLogFileName.c_str());
-    std::string meshQualityFileName = global::directories().getLogOutDir() + "plbMeshQuality.log";
-    plb_ofstream meshQualityFile(meshQualityFileName.c_str());
 
     plint forceToFluid, shape, cellNumTriangles, ibmKernel;
     plint rbcModel;
@@ -274,8 +272,7 @@ int main(int argc, char* argv[])
     pcout << "Mesh Created" << std::endl;
     generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, cellNumVertices, numOfCellsPerInlet, slice);
     MeshMetrics<T> meshmetric(Cells);
-    meshmetric.setResultFile(meshQualityFile);
-    meshmetric.write(meshQualityFile);
+    meshmetric.write();
     writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",0,8)+".stl");
 
     performanceLogFile << "# Nx*Ny*Nz; " << nx * ny * nz << std::endl;
