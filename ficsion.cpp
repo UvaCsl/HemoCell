@@ -57,7 +57,11 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     T nu_p, tau, dx;
     T dt, nu_lb;
     T nx, ny, nz;
-    XMLreaderProxy document = documentXML["ficsion"];
+    std::string firstField = (*(documentXML.getChildren( documentXML.getFirstId() )[0])).getName(); // VERY COMPLICATED! Hope I could find sth easier!
+    if (firstField=="ficsion") { checkpointed = 0; }
+    else { checkpointed = 1; }
+
+    XMLreaderProxy document = checkpointed?documentXML["Checkpoint"]["ficsion"]:documentXML["ficsion"];
     document["caseId"].read(caseId);
     document["cellModel"]["rbcModel"].read(rbcModel);
     document["cellModel"]["shellDensity"].read(shellDensity);
@@ -383,11 +387,10 @@ int main(int argc, char* argv[])
     if (checkpointed) {
         pcout << "Loading checkpoint... " ;
         T cStretchScalarForce;
-        XMLreader reader(global::directories().getOutputDir() + "cInfo.plb");
+        XMLreader reader(paramXmlFileName);
         reader["Checkpoint"]["General"]["caseId"].read(caseId);
         reader["Checkpoint"]["General"]["Iteration"].read(initIter);
         reader["Checkpoint"]["Simulation"]["StretchScalarForce"].read(cStretchScalarForce);
-        pcout << "StretchScalarForce" << std::endl;
         rbcStretch.setStretchScalarForce(cStretchScalarForce);
 
         parallelIO::load("cLattice", lattice, true);
@@ -429,31 +432,34 @@ int main(int argc, char* argv[])
             global::timer("mainLoop").stop();
             global::timer("output").restart();
             if (i%(10*tmeas)==0) {
-                pcout << "Saving checkpoint... " ;
                 // === Checkpoint ===
-                std::string od = global::directories().getOutputDir();
-                std::string fromFileName; std::string toFileName ;
-                fromFileName = od + "cLattice.dat";    toFileName = od + "coldLattice.dat";
-                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
-                fromFileName = od + "cLattice.plb";    toFileName = od + "coldLattice.plb";
-                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
-                fromFileName = od + "cImmersedParticles.dat"; toFileName = od + "coldImmersedParticles.dat";
-                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
-                fromFileName = od + "cImmersedParticles.plb"; toFileName = od + "coldImmersedParticles.plb";
-                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
-                fromFileName = od + "cInfo.plb"; toFileName = od + "coldInfo.plb";
-                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
-
-                parallelIO::save(lattice, "cLattice", true);
-                parallelIO::save(immersedParticles, "cImmersedParticles", true);
-                XMLwriter xml;
-                XMLwriter& xmlMultiBlock = xml["Checkpoint"];
+                pcout << "Saving checkpoint... " ;
+                // Copy input XML to checkpoint XML.
+                XMLreader xmlr(paramXmlFileName);
+                XMLwriter xmlw;
+                XMLwriter& xmlMultiBlock = xmlw["Checkpoint"];
                 xmlMultiBlock["General"]["configFile"].setString(paramXmlFileName);
                 xmlMultiBlock["General"]["caseId"].setString(caseId);
                 xmlMultiBlock["General"]["Iteration"].set(i);
-
                 xmlMultiBlock["Simulation"]["StretchScalarForce"].set(rbcStretch.getStretchScalarForce());
-                xml.print(od + "cInfo.plb");
+                if (!checkpointed) { copyXMLreader2XMLwriter(xmlr["ficsion"], xmlw["Checkpoint"]); }
+                else { copyXMLreader2XMLwriter(xmlr["Checkpoint"]["ficsion"], xmlw["Checkpoint"]); }
+
+                std::string od = global::directories().getOutputDir();
+                std::string fromFileName; std::string toFileName ;
+                fromFileName = od + "cLattice.dat";    toFileName = od + "coldLattice.dat";
+                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf Lattice.dat) "; }
+                fromFileName = od + "cLattice.plb";    toFileName = od + "coldLattice.plb";
+                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf Lattice.plb) "; }
+                fromFileName = od + "cImmersedParticles.dat"; toFileName = od + "coldImmersedParticles.dat";
+                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf cImmersedParticles.dat) "; }
+                fromFileName = od + "cImmersedParticles.plb"; toFileName = od + "coldImmersedParticles.plb";
+                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf cImmersedParticles.plb) "; }
+                fromFileName = od + "cInfo.xml"; toFileName = od + "coldInfo.xml";
+                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf cInfo.xml) "; }
+                parallelIO::save(lattice, "cLattice", true);
+                parallelIO::save(immersedParticles, "cImmersedParticles", true);
+                xmlw.print(od + "cInfo.xml");
 //                writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+"CH_Mesh.stl");
                 pcout << "OK" << std::endl;
 

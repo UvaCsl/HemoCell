@@ -494,4 +494,31 @@ void writeMeshBinarySTL(TriangleBoundary3D<T> & Cells, std::string fname, T dx=0
 }
 
 
+
+/* ******************* copyXMLreader2XMLwriter ***************************************** */
+void copyXMLreader2XMLwriter(XMLreader const& reader, XMLwriter & writer) {
+    std::string text = reader.getFirstText();
+    if (!text.empty()) {
+        writer[reader.getName()].setString(text);
+    }
+    std::vector<XMLreader*> const& children = reader.getChildren( reader.getFirstId() );
+    for (pluint iNode=0; iNode<children.size(); ++iNode) {
+        copyXMLreader2XMLwriter(*(children[iNode]), writer[reader.getName()]);
+    }
+}
+
+void copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwriter & writer) {
+    std::string text;
+    readerProxy.read(text);
+    if (!text.empty()) {
+        writer[readerProxy.getName()].setString(text);
+    }
+    std::vector<XMLreader*> const& children = readerProxy.getChildren();
+    for (pluint iNode=0; iNode<children.size(); ++iNode) {
+        copyXMLreader2XMLwriter(*(children[iNode]), writer[readerProxy.getName()]);
+    }
+}
+
+
+
 #endif  // FICSIONINIT_HH

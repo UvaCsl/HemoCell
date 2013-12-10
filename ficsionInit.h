@@ -99,6 +99,11 @@ void writeMeshAsciiSTL(TriangleBoundary3D<T> & Cells, std::string fname, T dx=0.
 template<typename T> // Copied from void TriangularSurfaceMesh<T>::writeBinarySTL(std::string fname).
 void writeMeshBinarySTL(TriangleBoundary3D<T> & Cells, std::string fname, T dx=0.0);
 
+/* ******************* copyXMLreader2XMLwriter ***************************************** */
+void copyXMLreader2XMLwriter(XMLreader const& reader, XMLwriter & writer);
+void copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwriter & writer);
+
+
 #include "ficsionInit.hh"
 
 #endif  // FICSIONINIT_H

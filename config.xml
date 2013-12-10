@@ -60,7 +60,8 @@ Fast Cell Stretching release [8],
 
 <sim>
     <tmax> 500000 </tmax> <!-- total number of iterations -->
-    <tmeas> 500 </tmeas> <!-- interval after which data is written -->> 
+    <tmeas> 500 </tmeas> <!-- interval after which data is written --> 
     <npar>  1  </npar> <!-- Number of particles > -->
 </sim>
+
 </ficsion>
