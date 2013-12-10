@@ -52,7 +52,7 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, std::vector<T> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
-        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, plint & npar, plint & goAndStop)
+        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, plint & npar, plint & goAndStop, bool & checkpointed)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
@@ -171,6 +171,7 @@ int main(int argc, char* argv[])
     T stretchForceScalar, stretchForce_p;
     std::vector<T> eulerAngles;
     plint goAndStop;
+    bool checkpointed=0;
 
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
@@ -179,7 +180,7 @@ int main(int argc, char* argv[])
     readFicsionXML(document, caseId, rbcModel, shellDensity,
             k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, shape, cellPath, radius, deflationRatio, relaxationTime,
-            cellNumTriangles, tmax, tmeas, npar, goAndStop);
+            cellNumTriangles, tmax, tmeas, npar, goAndStop, checkpointed);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -379,19 +380,24 @@ int main(int argc, char* argv[])
     pcout << "== Cell Angles ==" << std::endl;
     pcout <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
 
-    bool checkpointed=0;
+
+    pluint initIter=0;
     /* ********************* Load CheckPoint ***************************************** * */
     if (checkpointed) {
         pcout << "Loading checkpoint... " ;
-        parallelIO::load("CHLattice", lattice, true);
-        parallelIO::load("CHImmersedParticles", immersedParticles, true);
-        rbcQuantities.calculateVolumeAndSurfaceAndCenters();
+        T cStretchScalarForce;
+        XMLreader reader(global::directories().getOutputDir() + "cInfo.plb");
+        reader["Checkpoint"]["General"]["caseId"].read(caseId);
+        reader["Checkpoint"]["General"]["Iteration"].read(initIter);
+        reader["Checkpoint"]["Simulation"]["StretchScalarForce"].read(cStretchScalarForce);
+        pcout << "StretchScalarForce" << std::endl;
+        rbcStretch.setStretchScalarForce(cStretchScalarForce);
+
+        parallelIO::load("cLattice", lattice, true);
+        parallelIO::load("cImmersedParticles", immersedParticles, true);
         applyProcessingFunctional ( // copy fluid velocity on particles
             new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(ibmKernel),
             immersedParticles.getBoundingBox(), particleLatticeArg);
-        applyProcessingFunctional ( // Compute Cell Model forces
-           new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), rbcQuantities.getCellsVolume(), rbcQuantities.getCellsSurface()),
-           immersedParticles.getBoundingBox(), particleArg );
         applyProcessingFunctional ( // update mesh position
             new CopyParticleToMeshVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
             immersedParticles.getBoundingBox(), particleArg);
@@ -399,8 +405,12 @@ int main(int argc, char* argv[])
             new MapVertexToParticle3D<T,DESCRIPTOR> (
                 Cells, tagToParticle3D),
             immersedParticles.getBoundingBox(), particleArg );
+        rbcQuantities.calculateVolumeAndSurfaceAndCenters();
+        applyProcessingFunctional ( // Compute Cell Model forces
+           new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), rbcQuantities.getCellsVolume(), rbcQuantities.getCellsSurface()),
+           immersedParticles.getBoundingBox(), particleArg );
         rbcStretch.applyForce(0, cellModel->getDensity());
-
+        pcout << " (" << initIter << ") ";
         pcout << "OK" << std::endl;
     }
 
@@ -410,7 +420,7 @@ int main(int argc, char* argv[])
     performanceLogFile << "Init" << "; " << 0 << "; "<< dtIteration << std::endl;
     global::timer("mainLoop").start();
     /* =============================== Main Loop ===================================*/
-    for (pluint i=0; i<tmax+1; ++i) {
+    for (pluint i=initIter; i<tmax+1; ++i) {
         if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
             pcout << "[FICSION]: Switching off shear rate (Fischer2004)" << std::endl;
             shearRate = 0.0; tmeas = 0.1/dt;
@@ -424,20 +434,29 @@ int main(int argc, char* argv[])
             if (i%(10*tmeas)==0) {
                 pcout << "Saving checkpoint... " ;
                 // === Checkpoint ===
-                std::string fromFileName = global::directories().getOutputDir() + "CHLattice.dat";
-                std::string toFileName = global::directories().getOutputDir() + "CHLattice_old.dat";
+                std::string od = global::directories().getOutputDir();
+                std::string fromFileName; std::string toFileName ;
+                fromFileName = od + "cLattice.dat";    toFileName = od + "coldLattice.dat";
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
-                fromFileName = global::directories().getOutputDir() + "CHLattice.plb";
-                toFileName = global::directories().getOutputDir() + "CHLattice_old.plb";
+                fromFileName = od + "cLattice.plb";    toFileName = od + "coldLattice.plb";
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
-                fromFileName = global::directories().getOutputDir() + "CHImmersedParticles.dat";
-                toFileName = global::directories().getOutputDir() + "CHImmersedParticles_old.dat";
+                fromFileName = od + "cImmersedParticles.dat"; toFileName = od + "coldImmersedParticles.dat";
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
-                fromFileName = global::directories().getOutputDir() + "CHImmersedParticles.plb";
-                toFileName = global::directories().getOutputDir() + "CHImmersedParticles_old.plb";
+                fromFileName = od + "cImmersedParticles.plb"; toFileName = od + "coldImmersedParticles.plb";
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
-                parallelIO::save(lattice, "CHLattice", true);
-                parallelIO::save(immersedParticles, "CHImmersedParticles", true);
+                fromFileName = od + "cInfo.plb"; toFileName = od + "coldInfo.plb";
+                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (error renaming file) "; }
+
+                parallelIO::save(lattice, "cLattice", true);
+                parallelIO::save(immersedParticles, "cImmersedParticles", true);
+                XMLwriter xml;
+                XMLwriter& xmlMultiBlock = xml["Checkpoint"];
+                xmlMultiBlock["General"]["configFile"].setString(paramXmlFileName);
+                xmlMultiBlock["General"]["caseId"].setString(caseId);
+                xmlMultiBlock["General"]["Iteration"].set(i);
+
+                xmlMultiBlock["Simulation"]["StretchScalarForce"].set(rbcStretch.getStretchScalarForce());
+                xml.print(od + "cInfo.plb");
 //                writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+"CH_Mesh.stl");
                 pcout << "OK" << std::endl;
 
