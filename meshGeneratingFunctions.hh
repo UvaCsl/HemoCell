@@ -165,14 +165,14 @@ Array<T,3> mapMeshAsRBC(const Array<T,3> point, const Array<T,3> center, T R) {
 
 
 template<typename T>
-TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles, std::vector<T> const& eulerAngles) {
+TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles, Array<T,3> const& eulerAngles) {
     return constructCell(center, radius, "./lib/RBC.stl", eulerAngles);
 }
 
 
 template<typename T>
 TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint minNumOfTriangles,
-        std::vector<T> const& eulerAngles, pluint initialSphereShape)
+        Array<T,3> const& eulerAngles, pluint initialSphereShape)
 {
     TriangleSet<T> sphere;
     if (initialSphereShape == 1) {
@@ -202,7 +202,7 @@ TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint 
 
 
 template<typename T>
-TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename, std::vector<T> const& eulerAngles) {
+TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename, Array<T,3> const& eulerAngles) {
 //    Cuboid<T> boundingCuboid;
     TriangleSet<T> Cell(cellFilename);
     Cuboid<T> cb = Cell.getBoundingCuboid();

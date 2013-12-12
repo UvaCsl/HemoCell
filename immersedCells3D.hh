@@ -104,7 +104,7 @@ bool generateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& pa
 
 template<typename T>
 TriangleBoundary3D<T> createCompleteMesh(
-    const std::vector<Array<T,3> > &centers, const std::vector<T> &radii, std::vector<T> const& eulerAngles,
+    const std::vector<Array<T,3> > &centers, const std::vector<T> &radii, Array<T,3> const& eulerAngles,
     std::vector<plint> &cellIds, IncomprFlowParam<T> const& parameters,
     plint shape, std::string cellPath, plint &cellNumTriangles, plint &numPartsPerCell)
 {

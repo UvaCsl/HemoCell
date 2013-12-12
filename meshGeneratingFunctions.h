@@ -7,7 +7,7 @@
 namespace plb {
 
 template<typename T>
-TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename, std::vector<T> const& eulerAngles);
+TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename, Array<T,3> const& eulerAngles);
 
 
 template<typename T>
@@ -23,13 +23,13 @@ Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R=1.0);
 
 
 template<typename T>
-TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles, std::vector<T> const& eulerAngles);
+TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles, Array<T,3> const& eulerAngles);
 
 
 // initialSphereShape: [0] Octahedron (PLB Sphere ) [1] Icosahedron
 template<typename T>
 TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint minNumOfTriangles,
-        std::vector<T> const& eulerAngles, pluint initialSphereShape=0);
+        Array<T,3> const& eulerAngles, pluint initialSphereShape=0);
 
 
 

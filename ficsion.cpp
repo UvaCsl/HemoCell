@@ -50,9 +50,9 @@ typedef Array<T,3> Velocity;
 
 void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
-        T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, std::vector<T> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
+        T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
-        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, plint & npar, plint & goAndStop, bool & checkpointed)
+        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, plint & npar, plint & flowParam, bool & checkpointed)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
@@ -80,10 +80,12 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     document["parameters"]["shearRate"].read(shearRate);
     document["parameters"]["stretchForce"].read(stretchForce); // In picoNewton
     stretchForce *= 1e-12;
-    document["parameters"]["eulerAngles"].read(eulerAngles);
-    if (eulerAngles.size() != 3) {
-        eulerAngles.resize(3, 0.0);
+    std::vector<T> ea;
+    document["parameters"]["eulerAngles"].read(ea);
+    if (ea.size() != 3) {
+        ea.resize(3, 0.0);
     }
+    eulerAngles = Array<T,3>(ea[0], ea[1], ea[2]);
     eulerAngles[0] *= pi/180.;
     eulerAngles[1] *= pi/180.;
     eulerAngles[2] *= pi/180.;
@@ -125,12 +127,9 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     u = dt*1.0/dx;
     Re_p = 1.0/nu_p;
     N = int(1.0/dx);
-    goAndStop = 0;
-    if (flowType == 7) { // Fischer2004 setup, Go-and-stop
-        goAndStop = 1;
-        flowType = 6;
-    }
-    if ( (flowType == 4) or (flowType == 5) or (flowType == 8) ) { // Cell Stretching Analysis
+    flowParam = flowType/10;
+    flowType = flowType%10;
+    if ( (flowType == 3) or (flowType == 4) or (flowType == 5) or (flowType == 8) ) { // Cell Stretching Analysis
         shearRate = 0;
     } else if (flowType == 6) { // Tumbling Tank Treading Measurements
         if (shearRate > 0) {
@@ -138,8 +137,8 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
             tmeas = 0.02/(shearRate*dt); // 50 Measurements per Strain rates
         }
     }
-    if (goAndStop == 1) {
-        tmax += 20.0/dt; // Add 20 seconds to the total time.
+    if (flowParam == 7) {
+        tmax += 20.0/dt; // Add 20 seconds to the total time for Fischer2004.
     }
 }
 
@@ -178,8 +177,8 @@ int main(int argc, char* argv[])
     T shearRate, shearRate_p;
     Array<T,3> stretchForce(0,0,0);
     T stretchForceScalar, stretchForce_p;
-    std::vector<T> eulerAngles;
-    plint goAndStop;
+    Array<T,3> eulerAngles;
+    plint flowParam;
     bool checkpointed=0;
 
     string paramXmlFileName;
@@ -189,7 +188,7 @@ int main(int argc, char* argv[])
     readFicsionXML(document, caseId, rbcModel, shellDensity,
             k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, shape, cellPath, radius, deflationRatio, relaxationTime,
-            cellNumTriangles, tmax, tmeas, npar, goAndStop, checkpointed);
+            cellNumTriangles, tmax, tmeas, npar, flowParam, checkpointed);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -266,20 +265,14 @@ int main(int argc, char* argv[])
     plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
     std::vector<plint> cellIds;
     plint cellNumVertices = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    std::vector<T> eulerAnglesNONE(3);
-    if (flowType == 9) {
-        eulerAnglesNONE[0] = 0.;
-        eulerAnglesNONE[1] = 0.;
-        eulerAnglesNONE[2] = 0.;
-        flowType = 1;
-    } else {
-        eulerAnglesNONE[0] = eulerAngles[0];
-        eulerAnglesNONE[1] = eulerAngles[1];
-        eulerAnglesNONE[2] = eulerAngles[2];
+    Array<T,3> eqShapeRotationEulerAngles = eulerAngles;
+    if (flowParam == 9) {
+        eulerAngles= Array<T,3>(0.,0.,0.);
     }
-    TriangleBoundary3D<T> DeCells = createCompleteMesh(centers, radii, eulerAngles, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
+
+    TriangleBoundary3D<T> eqShapeCells = createCompleteMesh(centers, radii, eqShapeRotationEulerAngles, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
     cellIds.clear();
-    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, eulerAnglesNONE, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
+    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, eulerAngles, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
     pcout << "Mesh Created" << std::endl;
     generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, cellNumVertices, numOfCellsPerInlet, slice);
     MeshMetrics<T> meshmetric(Cells);
@@ -335,7 +328,7 @@ int main(int argc, char* argv[])
     vector<T> eqAreaPerTriangle(cellNumTriangles);
     map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
     RBCModel3D<T> *cellModel;
-    getCellShapeQuantitiesFromMesh(DeCells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
+    getCellShapeQuantitiesFromMesh(eqShapeCells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
     if (rbcModel == 2) {
         rbcModel = 0;
         eqAngle = acos( (sqrt(3.)*(cellNumVertices-2.0) - 5*pi)/(sqrt(3.)*(cellNumVertices-2.0) - 3*pi) );
@@ -428,7 +421,7 @@ int main(int argc, char* argv[])
     global::timer("mainLoop").start();
     /* =============================== Main Loop ===================================*/
     for (pluint i=initIter; i<tmax+1; ++i) {
-        if (goAndStop != 0 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
+        if (flowParam == 7 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
             pcout << "[FICSION]: Switching off shear rate (Fischer2004)" << std::endl;
             shearRate = 0.0; tmeas = 0.1/dt;
             changeCouetteShearRate(lattice, parameters, *boundaryCondition, shearRate);
