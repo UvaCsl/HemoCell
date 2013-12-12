@@ -56,7 +56,6 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
-    T nx, ny, nz;
     std::string firstField = (*(documentXML.getChildren( documentXML.getFirstId() )[0])).getName(); // VERY COMPLICATED! Hope I could find sth easier!
     if (firstField=="ficsion") { checkpointed = 0; }
     else { checkpointed = 1; }
@@ -102,9 +101,20 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     document["domain"]["nuP"].read(nu_p);
     document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
-    document["domain"]["nx"].read(nx);
-    document["domain"]["ny"].read(ny);
-    document["domain"]["nz"].read(nz);
+    // Read lx, ly, lz --or nx, ny, nz
+    try {
+        document["domain"]["lx"].read(lx);
+        document["domain"]["ly"].read(ly);
+        document["domain"]["lz"].read(lz);
+    } catch(const plb::PlbIOException & message) {
+        T nx, ny, nz;
+        document["domain"]["nx"].read(nx);
+        document["domain"]["ny"].read(ny);
+        document["domain"]["ny"].read(nz);
+        lx = nx * dx;
+        ly = ny * dx;
+        lz = nz * dx;
+    }
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
     document["sim"]["npar"].read(npar);
@@ -115,9 +125,6 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
     u = dt*1.0/dx;
     Re_p = 1.0/nu_p;
     N = int(1.0/dx);
-    lx = nx * dx;
-    ly = ny * dx;
-    lz = nz * dx;
     goAndStop = 0;
     if (flowType == 7) { // Fischer2004 setup, Go-and-stop
         goAndStop = 1;

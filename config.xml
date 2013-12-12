@@ -53,9 +53,9 @@ Fast Cell Stretching release [8],
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <nx> 20 </nx> <!--Size of domain in Lattice Units -->
-    <ny> 20 </ny>
-    <nz> 20 </nz>
+    <lx> 20.0e-6 </lx> <!--Size of domain in SI. For Lattice Units try: nx, ny, nz -->
+    <ly> 20.0e-6 </ly>
+    <lz> 20.0e-6 </lz>
 </domain>
 
 <sim>
