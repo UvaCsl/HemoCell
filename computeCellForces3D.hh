@@ -28,7 +28,7 @@ namespace plb {
 
 
 template<typename T>
-Array<T,3> computeInPlaneForce(Array<T,3> const& x1, Array<T,3> const& x2, T maxLength, T k_WLC, T k_rep) {
+Array<T,3> computeInPlaneForce(Array<T,3> const& x1, Array<T,3> const& x2, T maxLength, T k_WLC, T k_rep, T & potential) {
 /*
  *  Computes In-Plane forces based on Worm-like chain forces and a repulsive potential.
  *
@@ -48,12 +48,15 @@ Array<T,3> computeInPlaneForce(Array<T,3> const& x1, Array<T,3> const& x2, T max
     Array<T,3> tmpForce = eij * (k_WLC*r*(-6 + (9 - 4*r)*r))/(maxLength*pow(-1 + r,2));
     /* Repulsive Force */
     tmpForce += eij * k_rep/(L*L);
+
+//    potential = k_WLC * ( 3.0*pow(r, 2) - 2.0*pow(r, 3) ) * 1.0 / (1.0 - r);
+//    potential += - k_rep / pow(L,1);
     return tmpForce;
 }
 
 
 template<typename T>
-Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLengthRatio, T eqLength, T k_inPlane) {
+Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLengthRatio, T eqLength, T k_inPlane, T & potential) {
 /*
  *  Computes In-Plane forces based on Worm-like chain forces and a repulsive potential.
  *  Has the same function as computeInPlaneForce but with different arguments.
@@ -64,9 +67,10 @@ Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x
  *  Related publications: [FedosovCaswellKarniadakis2010, FedosovCaswell2010b, Pivkin2008]
 
 */
+    T Lmax = eqLength*eqLengthRatio;
     Array<T,3> dL = (x1 - x2)*1.0;
     T L = norm(dL);
-    T r = L/(eqLength*eqLengthRatio), r0=1.0/eqLengthRatio; // T Lmax = eqLength*eqLengthRatio;
+    T r = L/Lmax, r0=1.0/eqLengthRatio; // T Lmax = eqLength*eqLengthRatio;
     Array<T,3> eij = dL/L;
     /* In Plane Force (WLC) and Repulsive Force */
     Array<T,3> tmpForce =  eij * k_inPlane * r * (-6 + (9 - 4*r)*r)/( (r-1)*(r-1) );
@@ -75,7 +79,29 @@ Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x
 //    Array<T,3> tmpForce =  eij * k_inPlane *
 //                    (1 - (4*L*eqLengthRatio)/eqLength +
 //                            pow(eqLength,2)*((-1 + pow(-1 + eqLengthRatio,-2) + 4*eqLengthRatio)/pow(L,2) - pow(eqLength - L*eqLengthRatio,-2)));
+//    potential = k_inPlane * Lmax * ( 3.0*pow(r, 2) - 2.0*pow(r, 3) ) * 1.0 / (1.0 - r);
+//    potential +=  - k_rep / pow(L,1);
     return tmpForce;
+}
+
+template<typename T>
+Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLengthRatio, T eqLength, T k_inPlane) {
+/*
+ *  Wrapper when calling without potential
+
+*/
+    T potential = 0.0;
+    return computeInPlaneExplicitForce(x1, x2, eqLengthRatio, eqLength, k_inPlane, potential);
+}
+
+template<typename T>
+Array<T,3> computeInPlaneForce(Array<T,3> const& x1, Array<T,3> const& x2, T maxLength, T k_WLC, T k_rep) {
+/*
+ *  Wrapper when calling without potential
+
+*/
+    T potential = 0.0;
+    return computeInPlaneExplicitForce(x1,x2, maxLength, k_WLC, k_rep, potential);
 }
 
 

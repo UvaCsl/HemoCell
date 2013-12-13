@@ -67,16 +67,16 @@ void ApplyStretchingForce3D<T,Descriptor>::processGenericBlocks (
         plint tag = outerLeftTags[it];
         if (tagToParticle3D->count(tag) > 0) {
             ImmersedCellParticle3D<T,Descriptor> * particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>( (*tagToParticle3D)[tag]);
-            //particle->get_a() += -(stretchingForce * 1.0/numOuterLeftTags) * 1.0/cellDensity;
-            particle->get_force() = particle->get_force() -stretchingForce * (1.0/numOuterLeftTags);
+            particle->get_a()     += - stretchingForce * (1.0/numOuterLeftTags)/cellDensity;
+            particle->get_force() += -  stretchingForce * (1.0/numOuterLeftTags);
         } else pcout << "ImmerseCellParticle3D not found! Something is wrong here!" << std::endl;
     }
     for(plint it = 0; it < numOuterRightTags; it++) {
         plint tag = outerRightTags[it];
         if (tagToParticle3D->count(tag) > 0) {
             ImmersedCellParticle3D<T,Descriptor>* particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>( (*tagToParticle3D)[tag]);
-            particle->get_a() = particle->get_a() + stretchingForce * (1.0/numOuterRightTags)/cellDensity;
-            particle->get_force() = particle->get_force() + stretchingForce * (1.0/numOuterRightTags);
+            particle->get_a()     +=  stretchingForce * (1.0/numOuterRightTags)/cellDensity;
+            particle->get_force() +=  stretchingForce * (1.0/numOuterRightTags);
         } else pcout << "ImmerseCellParticle3D not found! Something is wrong here!" << std::endl;
     }
 }

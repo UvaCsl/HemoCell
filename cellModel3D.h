@@ -54,11 +54,7 @@ public:
     virtual Array<T,3> computeCellForce (
             TriangleBoundary3D<T> const& boundary,
             T cellVolume, T cellSurface, T & iSurface,
-            std::map< plint, Array<T,3> > & particleVelocity,
-            std::map< plint, Array<T,3>* > & particleForces,
-            plint iVertex,
-            Array<T,3> & f_wlc, Array<T,3> & f_bending, Array<T,3> & f_volume,
-            Array<T,3> & f_surface, Array<T,3> & f_shear, Array<T,3> & f_viscosity)=0;
+            plint iVertex)=0;
     virtual Array<T,3> computeElasticForce (
             TriangleBoundary3D<T> const& boundary,
             plint iVertex )=0;
@@ -105,7 +101,7 @@ public:
 };
 
 
-template<typename T>
+template<typename T, template<typename U> class Descriptor>
 class CellModel3D : public RBCModel3D<T>
 {
 public:
@@ -115,19 +111,17 @@ public:
             T k_volume_, T k_surface_, T eta_m_,
             T eqArea_, T eqLength_, T eqAngle_,
             T eqVolume_, T eqSurface_, T eqTileSpan_,
-            T persistenceLengthFine, T eqLengthRatio_, pluint cellNumTriangles_, pluint cellNumVertices_);
+            T persistenceLengthFine, T eqLengthRatio_,
+            std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_,
+            pluint cellNumTriangles_, pluint cellNumVertices_);
     virtual Array<T,3> computeCellForce (
             TriangleBoundary3D<T> const& boundary,
             T cellVolume, T cellSurface, T & iSurface,
-            std::map< plint, Array<T,3> > & particleVelocity,
-            std::map< plint, Array<T,3>* > & particleForces,
-            plint iVertex,
-            Array<T,3> & f_wlc, Array<T,3> & f_bending, Array<T,3> & f_volume,
-            Array<T,3> & f_surface, Array<T,3> & f_shear, Array<T,3> & f_viscosity);
+            plint iVertex);
     virtual Array<T,3> computeElasticForce (
             TriangleBoundary3D<T> const& boundary,
             plint iVertex );
-    virtual CellModel3D<T>* clone() const;
+    virtual CellModel3D<T, Descriptor>* clone() const;
 private:
     T k_rest, k_shear, k_bend, k_stretch, k_inPlane, k_elastic, k_surface, k_volume;
     T C_elastic;
@@ -135,6 +129,7 @@ private:
     T eqLength, eqArea, eqAngle;
     T eqVolume, eqSurface, eqTileSpan;
     T persistenceLengthCoarse, eqLengthRatio;
+    std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D;
     pluint cellNumTriangles, cellNumVertices;
 public:
     /* Computes the equilibrium quantities to correspond to the an inflated cell with

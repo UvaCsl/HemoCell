@@ -127,9 +127,8 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
     std::vector<T> weights;
     std::vector<Cell<T,Descriptor>*> cells;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        Particle3D<T,Descriptor>* nonTypedParticle = particles[iParticle];
         ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
         Array<T,3> velocity; velocity.resetToZero();
@@ -183,9 +182,8 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
     std::vector<T> weights;
     Cell<T,Descriptor>* cell;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        Particle3D<T,Descriptor>* nonTypedParticle = particles[iParticle];
         ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
         interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
@@ -236,9 +234,8 @@ void CountTaggedParticlesFunctional3D<T,Descriptor>::processGenericBlocks (
     particleField.findParticles(domain, particles);
     plint numParts = 0;
     for (pluint iA = 0; iA < particles.size(); ++iA) {
-        Particle3D<T,Descriptor>* nonTypedParticle = particles[iA];
         ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iA]);
             
         if (particle->get_cellId() == tag) {
 //         if (particle->getTag() == tag) {
@@ -295,9 +292,8 @@ void AbsorbTaggedParticlesFunctional3D<T,Descriptor>::processGenericBlocks (
     particleField.findParticles(domain, particles);
     std::vector<plint> cellIds;
     for (pluint iP = 0; iP < particles.size(); ++iP) {
-        Particle3D<T,Descriptor>* nonTypedParticle = particles[iP];
         ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iP]);
 
         if (particle->get_cellId() == tag) {
             cellIds.push_back(particle->getTag());
@@ -427,53 +423,24 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
 
     std::vector<Particle3D<T,Descriptor>*> found;
     particleField.findParticles(domain, found);
-
-    std::map< plint, Array<T,3> > particleVelocity;
-//    std::map< plint, Array<T,3> > particleForces;
-    std::map< plint, Array<T,3>* > particleForces;
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
-        Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
         ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
-        plint vertexId = particle->getTag();
-        particleVelocity[vertexId] = particle->get_v();
-//        particleForces[vertexId] = Array<T,3>(0., 0., 0.);
-        particleForces[vertexId] = new Array<T,3> [7]; // [f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, E_bending]
-        for (pluint var = 0; var < 7; ++var) {
-            particleForces[vertexId][var].resetToZero();
-        }
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
+        particle->reset(particle->getPosition(), particle->get_v());
     }
     // T eqArea = cellModel->getEquilibriumTriangleArea();
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
-        Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
         ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
         plint vertexId = particle->getTag();
         T iSurface = T(); // one third of the sum of the areas of all triangles that share the given vertex.
         plint cellId = particle->get_cellId();
         if (!isRigid(triangleBoundary.getVertexProperty(vertexId))) {
-            Array<T,3> elasticForce = cellModel->computeElasticForce (
-                    triangleBoundary, vertexId );
-            Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity;
-            f_wlc.resetToZero(); f_bending.resetToZero(); f_volume.resetToZero();
-            f_surface.resetToZero(); f_shear.resetToZero(); f_viscosity.resetToZero();
+            particle->get_force().resetToZero();
             Array<T,3> cellForce = cellModel->computeCellForce (
-                    triangleBoundary, cellsVolume[cellId], cellsSurface[cellId], iSurface, particleVelocity, particleForces, vertexId,
-                    f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity);
-            particle->get_f_wlc() = f_wlc;
-            particle->get_f_bending() = f_bending;
-            particle->get_f_volume() = f_volume;
-            particle->get_f_surface() = f_surface;
-            particle->get_f_shear() = f_shear;
-            particle->get_f_viscosity() = f_viscosity;
-            particle->get_E_bending().resetToZero();
-
-            Array<T,3> force, acc; force.resetToZero(); acc.resetToZero();
-            force = elasticForce + cellForce;
-            acc = force*1.0 / cellModel->getDensity();
-            particle->get_a() = acc;
-            particle->get_force() = force;
-            particle->get_stress() = force*1.0/iSurface;
+                    triangleBoundary, cellsVolume[cellId], cellsSurface[cellId], iSurface, vertexId);
+            particle->get_force() += cellForce;
+            particle->get_stress() = particle->get_force()*1.0/iSurface;
         }
     }
     Array<T,3> sforce; sforce.resetToZero();
@@ -481,22 +448,8 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
     sf_wlc.resetToZero(); sf_bending.resetToZero(); sf_volume.resetToZero(); sf_surface.resetToZero();
     sf_shear.resetToZero(); sf_viscosity.resetToZero();
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
-        Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
         ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
-        plint vertexId = particle->getTag();
-
-        particle->get_f_wlc() += particleForces[vertexId][0];
-        particle->get_f_bending() += particleForces[vertexId][1];
-        particle->get_f_volume() += particleForces[vertexId][2];
-        particle->get_f_surface() += particleForces[vertexId][3];
-        particle->get_f_shear() += particleForces[vertexId][4];
-        particle->get_f_viscosity() += particleForces[vertexId][5];
-        for (pluint var = 0; var < 6; ++var) {
-            particle->get_force() += particleForces[vertexId][var];
-        }
-        particle->get_E_bending() += particleForces[vertexId][6];
-        delete [] particleForces[vertexId];
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
 
         sforce += particle->get_force();
         sf_wlc += particle->get_f_wlc();

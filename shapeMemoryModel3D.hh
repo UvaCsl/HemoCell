@@ -26,13 +26,15 @@
 
 namespace plb {
 
-template<typename T>
-ShapeMemoryModel3D<T>::ShapeMemoryModel3D (
+template<typename T, template<typename U> class Descriptor>
+ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (
         T density_, T k_rest_, T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
         T k_volume_, T k_surface_, T eta_m_,
         vector<T> eqArea_, map<plint,T> eqLength_, map<plint,T> eqAngle_,
         T eqVolume_, T eqSurface_, T eqTileSpan_,
-        T persistenceLengthFine, T eqLengthRatio_, pluint cellNumTriangles_, pluint cellNumVertices_)
+        T persistenceLengthFine, T eqLengthRatio_,
+        std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_,
+        pluint cellNumTriangles_, pluint cellNumVertices_)
     : RBCModel3D<T>(density_),
       k_rest(k_rest_),
       k_shear(k_shear_),
@@ -49,6 +51,7 @@ ShapeMemoryModel3D<T>::ShapeMemoryModel3D (
       eqSurface(eqSurface_),
       eqTileSpan(eqTileSpan_),
       eqLengthRatio(eqLengthRatio_),
+      tagToParticle3D(tagToParticle3D_),
       cellNumTriangles(cellNumTriangles_),
       cellNumVertices(cellNumVertices_)
 {
@@ -108,15 +111,15 @@ ShapeMemoryModel3D<T>::ShapeMemoryModel3D (
 }
 
 
-template<typename T>
-plint ShapeMemoryModel3D<T>::getTriangleId(plint iTriangle)
+template<typename T, template<typename U> class Descriptor>
+plint ShapeMemoryModel3D<T,Descriptor>::getTriangleId(plint iTriangle)
 {
     return iTriangle % cellNumTriangles;
 };
 
 
-template<typename T>
-plint ShapeMemoryModel3D<T>::getEdgeId(plint iVertex, plint jVertex) {
+template<typename T, template<typename U> class Descriptor>
+plint ShapeMemoryModel3D<T,Descriptor>::getEdgeId(plint iVertex, plint jVertex) {
     iVertex = iVertex % cellNumVertices;
     jVertex = jVertex % cellNumVertices;
     if (iVertex > jVertex){
@@ -128,21 +131,18 @@ plint ShapeMemoryModel3D<T>::getEdgeId(plint iVertex, plint jVertex) {
 };
 
 
-template<typename T>
-Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
+template<typename T, template<typename U> class Descriptor>
+Array<T,3> ShapeMemoryModel3D<T,Descriptor>::computeCellForce (
         TriangleBoundary3D<T> const& boundary,
         T cellVolume, T cellSurface, T & iSurface,
-        std::map< plint, Array<T,3> > & particleVelocity,
-        std::map< plint, Array<T,3>* > & particleForces,
-        plint iVertex,
-        Array<T,3> & f_wlc, Array<T,3> & f_bending, Array<T,3> & f_volume,
-        Array<T,3> & f_surface, Array<T,3> & f_shear, Array<T,3> & f_viscosity)
+        plint iVertex)
  /* Some force calculations are according to KrugerThesis, Appendix C */
 {
     /* Initializations from input */
     TriangularSurfaceMesh<T> const& dynMesh = boundary.getMesh();
     Array<T,3> x1 = dynMesh.getVertex(iVertex), x2, x3, x4;
-    Array<T,3> iVelocity = particleVelocity[iVertex];
+    ImmersedCellParticle3D<T,Descriptor>* iParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (tagToParticle3D[iVertex]);
+    Array<T,3> iVelocity = iParticle->get_v();
     /* ===================== In case of quasi-rigid object =====================
      *
      * If this is a boundary element (k_rest != 0), get the reference locations
@@ -175,6 +175,9 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
     T eqMeanArea = eqSurface/cellNumTriangles;
     T areaCoefficient = k_shear/eqMeanArea ;
     iSurface = 0.0;
+
+    iParticle->get_E_volume() = 0.5*volumeCoefficient*(cellVolume - eqVolume)*1.0/cellNumVertices;
+    iParticle->get_E_area() = 0.5*surfaceCoefficient*(cellSurface - eqSurface)*1.0/cellNumVertices;
 
     /* Run through all the neighbouring faces of iVertex and calculate:
          x Volume conservation force
@@ -210,11 +213,13 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
         /* Shear force */
         T eqArea = eqAreaPerTriangle[getTriangleId(iTriangle)];
         shearForce += computeLocalAreaConservationForce(dAdx, triangleArea, eqArea, areaCoefficient);
+        iParticle->get_E_area() += 0.5*areaCoefficient*pow(eqArea - triangleArea, 2)/3.0; // 3 vertices on each triangle
+
         /* Elastice Force */
 //        elasticForce += computeElasticRepulsiveForce(dAdx, triangleArea, C_elastic);
         /* Volume conservation force */
         volumeForce  += computeVolumeConservationForce(x1, x2, x3, volumeCoefficient);
-        }
+    }
 
     /* Run through all the neighbouring vertices of iVertex and calculate:
          x In plane (WLC) force
@@ -230,7 +235,9 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
         plint edgeId = getEdgeId(iVertex, jVertex);
         T eqLength = eqLengthPerEdge[edgeId];
         /* In Plane (WLC) and repulsive forces*/
-        inPlaneForce += computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane);
+        T potential;
+        inPlaneForce += computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane, potential);
+        iParticle->get_E_inPlane() += potential / 2.0; // Each spring consists of 2 particles.
 
         /*  Dissipative Forces Calculations */
 //        dissipativeForce += computeDissipativeForce(x1, x3, iVelocity, particleVelocity[jVertex], gamma_T, gamma_C);
@@ -244,41 +251,41 @@ Array<T,3> ShapeMemoryModel3D<T>::computeCellForce (
         // Compute bending force for the vertex as part of the main edge
         bendingForce += computeBendingForceEdge (edgeAngle, eqAngle, k_bend,
 				iNormal, jNormal);
-        particleForces[iVertex][6][0] += computeBendingPotential (edgeAngle, eqAngle, k_bend);
+        iParticle->get_E_bending() += computeBendingPotential (edgeAngle, eqAngle, k_bend);
         // Compute bending force for the vertex as a lateral vertex
         edgeId = getEdgeId(jVertex, kVertex);
         eqAngle = eqAnglePerEdge[edgeId];
         edgeAngle = calculateSignedAngle(dynMesh, jVertex, kVertex);
         bendingForce += computeBendingForceLateral (edgeAngle, eqAngle, k_bend, iNormal)*0.5; // Is calculated twice, for the other triangle as well
-        particleForces[iVertex][6][0] += computeBendingPotential (edgeAngle, eqAngle, k_bend)*0.5; // Is calculated twice, for the other triangle as well
+        iParticle->get_E_bending() += computeBendingPotential (edgeAngle, eqAngle, k_bend)*0.5; // Is calculated twice, for the other triangle as well
         // Compute bending force for the vertex as a lateral vertex
         edgeId = getEdgeId(jVertex, lVertex);
         eqAngle = eqAnglePerEdge[edgeId];
         edgeAngle = calculateSignedAngle(dynMesh, jVertex, lVertex);
         bendingForce += computeBendingForceLateral (edgeAngle, eqAngle, k_bend, jNormal)*0.5; // Is calculated twice, for the other triangle as well
-        particleForces[iVertex][6][0] += computeBendingPotential (edgeAngle, eqAngle, k_bend)*0.5; // Is calculated twice, for the other triangle as well
+        iParticle->get_E_bending() += computeBendingPotential (edgeAngle, eqAngle, k_bend)*0.5; // Is calculated twice, for the other triangle as well
     }
-    f_wlc = inPlaneForce + repulsiveForce;
-    f_bending = bendingForce;
-    f_volume = volumeForce;
-    f_surface = surfaceForce;
-    f_shear = shearForce;
-    f_viscosity = dissipativeForce;
+    iParticle->get_f_wlc() = inPlaneForce + repulsiveForce;
+    iParticle->get_f_bending() = bendingForce;
+    iParticle->get_f_volume() = volumeForce;
+    iParticle->get_f_surface() = surfaceForce;
+    iParticle->get_f_shear() = shearForce;
+    iParticle->get_f_viscosity() = dissipativeForce;
     return (inPlaneForce + elasticForce + repulsiveForce) + bendingForce + (volumeForce + surfaceForce + shearForce) + dissipativeForce;// + stretchForce;
 }
 
 
-template<typename T>
-Array<T,3> ShapeMemoryModel3D<T>::computeElasticForce (
+template<typename T, template<typename U> class Descriptor>
+Array<T,3> ShapeMemoryModel3D<T,Descriptor>::computeElasticForce (
         TriangleBoundary3D<T> const& boundary,
         plint iVertex )
 {
     return Array<T,3>(0,0,0);
 }
 
-template<typename T>
-ShapeMemoryModel3D<T>* ShapeMemoryModel3D<T>::clone() const {
-    return new ShapeMemoryModel3D<T>(*this);
+template<typename T, template<typename U> class Descriptor>
+ShapeMemoryModel3D<T, Descriptor>* ShapeMemoryModel3D<T,Descriptor>::clone() const {
+    return new ShapeMemoryModel3D<T,Descriptor>(*this);
 }
 
 

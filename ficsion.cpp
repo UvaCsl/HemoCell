@@ -338,13 +338,13 @@ int main(int argc, char* argv[])
         }
     }
     if (rbcModel == 0) {
-       cellModel = new ShapeMemoryModel3D<T>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
+       cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
                        eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, eqVolume, eqSurface, eqTileSpan,
-                       persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
+                       persistenceLengthFine, eqLengthRatio, tagToParticle3D, cellNumTriangles, cellNumVertices);
     } else  { // if (rbcModel == 1) {
-       cellModel = new CellModel3D<T>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
+       cellModel = new CellModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m, \
                        eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan,
-                       persistenceLengthFine, eqLengthRatio, cellNumTriangles, cellNumVertices);
+                       persistenceLengthFine, eqLengthRatio, tagToParticle3D, cellNumTriangles, cellNumVertices);
     }
     pcout << "mu_0 = " << cellModel->getMembraneShearModulus()*dNewton/dx << std::endl;
     pcout << "K = " << cellModel->getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;

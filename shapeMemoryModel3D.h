@@ -45,7 +45,7 @@ const double pi = 4.*atan(1.);
 
 namespace plb {
 
-template<typename T>
+template<typename T, template<typename U> class Descriptor>
 class ShapeMemoryModel3D : public RBCModel3D<T>
 {
 public:
@@ -55,19 +55,17 @@ public:
                 T k_volume_, T k_surface_, T eta_m_,
                 vector<T> eqArea_, map<plint,T> eqLength_, map<plint,T> eqAngle_,
                 T eqVolume_, T eqSurface_, T eqTileSpan_,
-                T persistenceLengthFine, T eqLengthRatio_, pluint cellNumTriangles_, pluint cellNumVertices_);
+                T persistenceLengthFine, T eqLengthRatio_,
+                std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_,
+                pluint cellNumTriangles_, pluint cellNumVertices_);
     virtual Array<T,3> computeCellForce (
             TriangleBoundary3D<T> const& boundary,
             T cellVolume, T cellSurface, T & iSurface,
-            std::map< plint, Array<T,3> > & particleVelocity,
-            std::map< plint, Array<T,3>* > & particleForces,
-            plint iVertex,
-            Array<T,3> & f_wlc, Array<T,3> & f_bending, Array<T,3> & f_volume,
-            Array<T,3> & f_surface, Array<T,3> & f_shear, Array<T,3> & f_viscosity);
+            plint iVertex);
     virtual Array<T,3> computeElasticForce (
             TriangleBoundary3D<T> const& boundary,
             plint iVertex );
-    virtual ShapeMemoryModel3D<T>* clone() const;
+    virtual ShapeMemoryModel3D<T,Descriptor>* clone() const;
 private:
     plint getTriangleId(plint iTriangle);
     plint getEdgeId(plint iVertex, plint jVertex);
@@ -80,6 +78,7 @@ private:
     map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
     T eqVolume, eqSurface, eqTileSpan;
     T persistenceLengthCoarse, eqLengthRatio;
+    std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D;
     pluint cellNumTriangles, cellNumVertices;
 public:
     /* Computes the equilibrium quantities to correspond to the an inflated cell with
