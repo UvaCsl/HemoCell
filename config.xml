@@ -53,7 +53,7 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
-    <dx> 1.0e-6 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dx> 0.25e-6 </dx> <!--Physical length of 1 Lattice Unit -->
     <lx> 20.0e-6 </lx> <!--Size of domain in SI. For Lattice Units try: nx, ny, nz -->
     <ly> 20.0e-6 </ly>
     <lz> 20.0e-6 </lz>

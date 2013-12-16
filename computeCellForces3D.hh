@@ -30,6 +30,8 @@ namespace plb {
 template<typename T>
 Array<T,3> computeInPlaneForce(Array<T,3> const& x1, Array<T,3> const& x2, T maxLength, T k_WLC, T k_rep, T & potential) {
 /*
+ * ** DOES NOT COMPUTE POTENTIAL **
+ *
  *  Computes In-Plane forces based on Worm-like chain forces and a repulsive potential.
  *
  *    k_WLC = kBT * maxLength/(4.0*persistenceLengthCoarse);
@@ -49,8 +51,11 @@ Array<T,3> computeInPlaneForce(Array<T,3> const& x1, Array<T,3> const& x2, T max
     /* Repulsive Force */
     tmpForce += eij * k_rep/(L*L);
 
+    potential = 0.0;
 //    potential = k_WLC * ( 3.0*pow(r, 2) - 2.0*pow(r, 3) ) * 1.0 / (1.0 - r);
 //    potential += - k_rep / pow(L,1);
+
+
     return tmpForce;
 }
 
@@ -74,13 +79,14 @@ Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x
     Array<T,3> eij = dL/L;
     /* In Plane Force (WLC) and Repulsive Force */
     Array<T,3> tmpForce =  eij * k_inPlane * r * (-6 + (9 - 4*r)*r)/( (r-1)*(r-1) );
-    T k_rep = -(eqLength*eqLength)* k_inPlane * r0 * (-6 + (9 - 4*r0)*r0)/( (r0-1)*(r0-1) );
-    tmpForce +=  eij * k_rep / (L*L) ;
+    T k_rep = (eqLength*eqLength)* k_inPlane * r0 * (-6 + (9 - 4*r0)*r0)/( (r0-1)*(r0-1) );
+    tmpForce +=  - eij * k_rep / (L*L) ;
 //    Array<T,3> tmpForce =  eij * k_inPlane *
 //                    (1 - (4*L*eqLengthRatio)/eqLength +
 //                            pow(eqLength,2)*((-1 + pow(-1 + eqLengthRatio,-2) + 4*eqLengthRatio)/pow(L,2) - pow(eqLength - L*eqLengthRatio,-2)));
-//    potential = k_inPlane * Lmax * ( 3.0*pow(r, 2) - 2.0*pow(r, 3) ) * 1.0 / (1.0 - r);
-//    potential +=  - k_rep / pow(L,1);
+    potential = k_inPlane * Lmax * ( 3.0*pow(r, 2) - 2.0*pow(r, 3) ) * 1.0 / (1.0 - r);
+    potential +=  k_rep * 1.0 / L;
+    potential -= k_inPlane * Lmax * ( 3.0*pow(r0, 2) - 2.0*pow(r0, 3) ) * 1.0 / (1.0 - r0) + k_rep * 1.0 / eqLength; // Energy residual from potential calculation (potential at rest state)
     return tmpForce;
 }
 
