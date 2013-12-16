@@ -28,6 +28,7 @@
  *      Position       : 6
  *      Velocity       : 7
  *      Inertia        : 8
+ *      Energy         : 9
  */
 #define CCR_VOLUME                 101 // 1d
 #define CCR_ANGLE_MEAN             211 // 1d
@@ -50,6 +51,7 @@
 #define CCR_VELOCITY_MIN           723 // 3d
 #define CCR_VELOCITY_MAX           733 // 3d
 #define CCR_INERTIA                809 // 9d, Not working
+#define CCR_ENERGY                 901 // 1d
 // #define CCR_MAX               41 // 9d
 
 

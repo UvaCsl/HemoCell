@@ -127,6 +127,7 @@ public:
     T& get_E_volume() { return E_volume; }
 
     T const get_E_total() const { return (E_other + E_inPlane + E_bending + E_area + E_volume);}
+    T const get_Energy() const { return (E_other + E_inPlane + E_bending + E_area + E_volume);}
 
 };
 

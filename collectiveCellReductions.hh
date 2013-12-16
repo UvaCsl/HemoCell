@@ -34,11 +34,15 @@ void CollectiveCellReductionBox3D<T,Descriptor>::CollectiveCellReductionBox3D(Tr
 // *      Position       : 6 // 3D
 // *      Velocity       : 7 // 3D
 // *      Inertia        : 8 // ND
+// *      Energy         : 9 // 1D
 
 template<typename T, template<typename U> class Descriptor>
 T CollectiveCellReductionBox3D<T,Descriptor>::computeQuantity1D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle) {
 /*
  *    Calculates Volume, Angle, Area, Edge Distance and Edge Tile Span for each particle.
+ *    Input:
+ *      q is the ID for the quantity of interest
+ *      particle corresponds to the particle of interest.
  */
     T quantity1D;
     plint iVertex = particle->getTag();
@@ -68,6 +72,9 @@ T CollectiveCellReductionBox3D<T,Descriptor>::computeQuantity1D (plint q, Immers
             edgeTileSpan +=  triangleMesh.computeEdgeTileSpan(iVertex, neighbors[iB]) ;
         }
         quantity1D = edgeTileSpan = edgeTileSpan*1.0/neighbors.size();
+    } else if (q==9) {
+    // Return Energy of particle
+        quantity1D = particle->get_Energy();
     } else if (q==1) {
         // Calculate VOLUME
             for (pluint iB = 0; iB < neighbors.size(); ++iB) {
