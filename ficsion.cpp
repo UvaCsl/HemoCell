@@ -306,7 +306,7 @@ int main(int argc, char* argv[])
         immersedParticles.getBoundingBox(), particleArg );
 
     std::string logFileName = global::directories().getLogOutDir() + "plbCells.log";
-    CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, tagToParticle3D, logFileName, dx, dt);
+    CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, tagToParticle3D, logFileName, dx, dt, checkpointed);
     rbcQuantities.calculateAll();
 
 
@@ -366,10 +366,11 @@ int main(int argc, char* argv[])
 
     plint timesToStretch = 40;
     CellStretching3D<T,DESCRIPTOR, DenseParticleField3D>  rbcStretch(Cells, immersedParticles, 0.05*numParts[0], flowType, dx, dt, dNewton,
-                                                                                            &tagToParticle3D, stretchForceScalar, timesToStretch);
+                                                                                            &tagToParticle3D, checkpointed,
+                                                                                            stretchForceScalar, timesToStretch);
     SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds,
-                                    rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume(), 0.05*numParts[0], flowType, dx, dt, T(dNewton), &tagToParticle3D);
-    shearFlow.writeHeader( (flowType==6) );
+                                    rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume(), 0.05*numParts[0], flowType,
+                                    dx, dt, T(dNewton), &tagToParticle3D, checkpointed);
     rbcQuantities.print(0, eqVolume, eqSurface, eqArea, eqLength);
     rbcQuantities.write(0, eqVolumeFinal, eqSurface, eqArea, eqLength) ; // Write Log file for the cell Particles
     pcout << "== Inertia Tensor == "<< std::endl;
@@ -447,15 +448,15 @@ int main(int argc, char* argv[])
 
                 std::string od = global::directories().getOutputDir();
                 std::string fromFileName; std::string toFileName ;
-                fromFileName = od + "cLattice.dat";    toFileName = od + "coldLattice.dat";
+                fromFileName = od + "cLattice.dat";    toFileName = od + "_cLattice.dat";
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf Lattice.dat) "; }
-                fromFileName = od + "cLattice.plb";    toFileName = od + "coldLattice.plb";
+                fromFileName = od + "cLattice.plb";    toFileName = od + "_cLattice.plb";
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf Lattice.plb) "; }
-                fromFileName = od + "cImmersedParticles.dat"; toFileName = od + "coldImmersedParticles.dat";
+                fromFileName = od + "cImmersedParticles.dat"; toFileName = od + "_cImmersedParticles.dat";
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf cImmersedParticles.dat) "; }
-                fromFileName = od + "cImmersedParticles.plb"; toFileName = od + "coldImmersedParticles.plb";
+                fromFileName = od + "cImmersedParticles.plb"; toFileName = od + "_cImmersedParticles.plb";
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf cImmersedParticles.plb) "; }
-                fromFileName = od + "cInfo.xml"; toFileName = od + "coldInfo.xml";
+                fromFileName = od + "cInfo.xml"; toFileName = od + "_cInfo.xml";
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf cInfo.xml) "; }
                 parallelIO::save(lattice, "cLattice", true);
                 parallelIO::save(immersedParticles, "cImmersedParticles", true);

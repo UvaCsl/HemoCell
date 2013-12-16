@@ -29,13 +29,14 @@ public:
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> > &  particles_,
                 std::vector<plint> const&  cellIds_, plint numberOfCells_,
                 std::map <plint, Particle3D<T,Descriptor>*> const & tagToParticle3D_,
-                std::string cmhFileName, T dx_, T dt_);
+                std::string cmhFileName, T dx_, T dt_, bool checkpointed_=false);
         virtual ~CellQuantities3D();
         void calculateAll() ;
         void calculateVolumeAndSurface() ;
         void calculateVolumeAndSurfaceAndCenters() ;
+        void writeHeader(); // Does not work if checkpointed
+        void write(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength);  // Does not work if checkpointed
         void print(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength);
-        void write(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength);
 public:
         std::vector<T> & getCellsVolume();
         std::vector<T> & getCellsSurface();
@@ -59,6 +60,7 @@ private:
         std::map <plint, Particle3D<T,Descriptor>*> const & tagToParticle3D;
         plb_ofstream logFile;
         T dx, dt;
+        bool checkpointed;
 };
 
 

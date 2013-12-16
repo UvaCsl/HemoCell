@@ -28,15 +28,21 @@ CellQuantities3D<T,Descriptor,ParticleFieldT>::CellQuantities3D(
         MultiParticleField3D<ParticleFieldT<T,Descriptor> > &  particles_,
         std::vector<plint> const&  cellIds_, plint numberOfCells_,
         std::map <plint, Particle3D<T,Descriptor>*> const & tagToParticle3D_,
-        std::string cmhFileName, T dx_, T dt_) :
+        std::string cmhFileName, T dx_, T dt_, bool checkpointed_) :
             Cells(Cells_),
             particles(&particles_),
             cellIds(cellIds_),
             numberOfCells(numberOfCells_),
             tagToParticle3D(tagToParticle3D_),
-            logFile(cmhFileName.c_str()),
-            dx(dx_), dt(dt_)
+            dx(dx_), dt(dt_), checkpointed(checkpointed_)
 {
+        std::ostream::openmode mode = std::ostream::out;
+        if (not checkpointed) { mode = mode | std::ostream::trunc; }
+        else { mode = mode | std::ostream::app; }
+        logFile.open(cmhFileName.c_str(), mode);
+        if (not checkpointed_) {
+            writeHeader();
+        }
 
 }
 template< typename T, template<typename U> class Descriptor,
@@ -96,41 +102,48 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateVolumeAndSurface()
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void CellQuantities3D<T,Descriptor,ParticleFieldT>::writeHeader() {
+    std::string delim(" ; ");
+    logFile << "# Iteration " << delim
+            << " Volume" << delim
+            << " Surface" << delim
+            << " Mean Triangle Surface" << delim
+            << " Mean Edge Distance" << delim
+            << " Mean Angle [^o]" << delim
+            << " Mean Edge Distance [LU]" << delim
+            << " Max Edge Distance [LU]" << delim
+            << " x [LU]" << delim
+            << " y [LU]" << delim
+            << " z [LU]" << delim
+            << " vx [LU]" << delim
+            << " vy [LU]" << delim
+            << " vz [LU]" << delim
+            << "00" << std::endl;
+}
+
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void CellQuantities3D<T,Descriptor,ParticleFieldT>::write(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength)
 {
         std::string delim(" ; ");
-        if (iter==0) {
-            logFile << "# Iteration " << delim
-                    << " Volume" << delim
-                    << " Surface" << delim
-                    << " Mean Triangle Surface" << delim
-                    << " Mean Edge Distance" << delim
-                    << " Mean Angle [^o]" << delim
-                    << " Mean Edge Distance [LU]" << delim
-                    << " Max Edge Distance [LU]" << delim
-                    << " x [LU]" << delim
-                    << " y [LU]" << delim
-                    << " z [LU]" << delim
-                    << " vx [LU]" << delim
-                    << " vy [LU]" << delim
-                    << " vz [LU]" << delim
+        if (iter != 0 or (iter == 0 and not checkpointed)) {
+            logFile << iter*1.0 << delim
+                    << cellsVolume[0]*100.0/eqVolume - 100 <<  delim
+                    << cellsSurface[0]*100.0/eqSurface - 100 << delim
+                    << cellsMeanTriangleArea[0]*100.0/eqArea - 100 << delim
+                    << cellsMeanEdgeDistance[0]*100.0/eqLength - 100 << delim
+                    << cellsMeanAngle[0]*180.0/pi << delim
+                    << cellsMeanEdgeDistance[0] << delim
+                    << cellsMaxEdgeDistance[0] << delim
+                    << cellsCenter[0][0] << delim
+                    << cellsCenter[0][1] << delim
+                    << cellsCenter[0][2] << delim
+                    << cellsVelocity[0][0] << delim
+                    << cellsVelocity[0][1] << delim
+                    << cellsVelocity[0][2] << delim
                     << "00" << std::endl;
         }
-        logFile << iter*1.0 << delim
-                << cellsVolume[0]*100.0/eqVolume - 100 <<  delim
-                << cellsSurface[0]*100.0/eqSurface - 100 << delim
-                << cellsMeanTriangleArea[0]*100.0/eqArea - 100 << delim
-                << cellsMeanEdgeDistance[0]*100.0/eqLength - 100 << delim
-                << cellsMeanAngle[0]*180.0/pi << delim
-                << cellsMeanEdgeDistance[0] << delim
-                << cellsMaxEdgeDistance[0] << delim
-                << cellsCenter[0][0] << delim
-                << cellsCenter[0][1] << delim
-                << cellsCenter[0][2] << delim
-                << cellsVelocity[0][0] << delim
-                << cellsVelocity[0][1] << delim
-                << cellsVelocity[0][2] << delim
-                << "00" << std::endl;
 }
 
 

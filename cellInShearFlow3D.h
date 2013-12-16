@@ -26,11 +26,12 @@ public:
             std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume,
             plint numParticlesPerSide_, plint flowType_, T dx_, T dt_, T dNewton_,
             std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D_,
+            bool checkpointed=false,
             bool store_=false);
     ~SingleCellInShearFlow() {};
     void updateQuantities(plint iteration, std::vector<plint> cellIds,
             std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume);
-    void writeHeader(bool writeOutput=true);
+    void writeHeader(bool writeOutput=true); // Does not write header if checkpointed
     void write(bool writeOutput=true);
     std::vector<T> const& getIterations() { return iterations; } ;
     std::vector< Array<T,3> > const& getTumblingAngles() { return tumblingAngles; } ;
@@ -59,6 +60,7 @@ private:
     plint flowType;
     T dx, dt, dNewton, dm;
     std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D;
+    bool checkpointed;
     bool store;
 
     std::vector< Array<T,3> > tankTreadingAngles; // This quantity is temporary (is not stored)

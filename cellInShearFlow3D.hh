@@ -14,11 +14,13 @@ SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(Triang
         std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume,
         plint numParticlesPerSide_, plint flowType_, T dx_, T dt_, T dNewton_,
         std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D_,
+        bool checkpointed_,
         bool store_)
         :
     Cells(Cells_), particles(&particles_), numParticlesPerSide(numParticlesPerSide_),
     flowType(flowType_), dx(dx_), dt(dt_), dNewton(dNewton_), dm(dNewton_*dt_*dt_/dx_),
     tagToParticle3D(tagToParticle3D_),
+    checkpointed(checkpointed_),
     store(store_)
 {
     lateralCellParticleTags.push_back(&outerLeftTags);
@@ -40,7 +42,13 @@ SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(Triang
         new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerFrontTags, &outerBackTags, 2),
         particles->getBoundingBox(), particleArg );
 
-    shearResultFile.open((global::directories().getLogOutDir() + "shearResults.log").c_str());
+    std::ostream::openmode mode = std::ostream::out;
+    if (not checkpointed) { mode = mode | std::ostream::trunc; }
+    else { mode = mode | std::ostream::app; }
+
+    shearResultFile.open((global::directories().getLogOutDir() + "plbShearResults.log").c_str(), mode);
+    writeHeader();
+
     updateQuantities(0, cellIds, cellCenters, cellsVolume);
     maxDiameter = max(diameters[0][0], diameters[0][1]);
     maxDiameter = max(maxDiameter,  diameters[0][2]);
@@ -88,7 +96,7 @@ void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::updateQuantities(plint 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::writeHeader(bool writeOutput) {
-        if (writeOutput) {
+        if (writeOutput and (not checkpointed)) {
             shearResultFile <<
                     "# time (sec) ; " <<
                     "deformationIndex ; " <<
