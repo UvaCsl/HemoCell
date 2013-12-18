@@ -32,11 +32,11 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
  -->
     <flowType> 6 </flowType>   
     <Re> 10.0 </Re>   <!--Reynolds number-->
-    <shearRate> 3000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
+    <shearRate> 300 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 0.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]-->
     <eulerAngles> 0 90 00 </eulerAngles> <!-- In degrees -->
     <deflationRatio> 1.0 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
-    <relaxationTime>500 </relaxationTime> <!-- Relaxation time for deflation and stretching force [5000] -->
+    <relaxationTime> 500 </relaxationTime> <!-- Relaxation time for deflation and stretching force [5000] -->
 </parameters>
 
 

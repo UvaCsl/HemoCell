@@ -19,6 +19,9 @@ public:
     void set_dt(T dt_) { dt = dt_; } ;
     void set_dm(T dm_) { dm = dm_; } ;
     void set_dxdtdm(T dx_, T dt_, T dm_) { dx = dx_; dt = dt_; dm = dm_;} ;
+    T getMeanLength() { return length; }
+    T getMaxLength() { return maxLength; }
+    T getMinLength() { return minLength; }
 private:
     T Nv, Nt, Nn, Nn6, Nn5, Nn7;
     T area, length, angle;

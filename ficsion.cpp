@@ -148,15 +148,15 @@ int main(int argc, char* argv[])
 {
     plbInit(&argc, &argv);
 
-    global::directories().setOutputDir("./tmp2/");
-    global::directories().setLogOutDir("./tmp2/");
-    global::directories().setInputDir("./tmp2/");
+    global::directories().setOutputDir("./tmp/");
+    global::directories().setLogOutDir("./log/");
+    global::directories().setInputDir("./");
     global::IOpolicy().setStlFilesHaveLowerBound(true);
     global::IOpolicy().setLowerBoundForStlFiles(-1.);
 //    testInPlane(); PLB_ASSERT(false);
 
     global::timer("simulation").start();
-    std::string performanceLogFileName = global::directories().getLogOutDir() + "performance.log";
+    std::string performanceLogFileName = global::directories().getLogOutDir() + "plbPerformance.log";
     plb_ofstream performanceLogFile(performanceLogFileName.c_str());
 
     plint forceToFluid, shape, cellNumTriangles, ibmKernel;
@@ -217,13 +217,38 @@ int main(int argc, char* argv[])
              "kT = " << kBT <<
              std::endl;
 
-    /* LATTICE INTIALIZATIONS */
-    plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
-    plint particleEnvelopeWidth = 2;
-    if ((flowType == 0) or (flowType == 1)) {
-        extendedEnvelopeWidth = 4;
-        particleEnvelopeWidth = 4;
+    /* CREATE MESH */
+    std::vector<Array<T,3> > centers;
+    std::vector<T> radii;
+    positionCells(shape, radius, npar, parameters, centers, radii, flowType);
+    plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
+    std::vector<plint> cellIds;
+    plint cellNumVertices = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
+    Array<T,3> eqShapeRotationEulerAngles = eulerAngles;
+    if (flowParam == 9) {
+        eulerAngles= Array<T,3>(0.,0.,0.);
     }
+
+    TriangleBoundary3D<T> eqShapeCells = createCompleteMesh(centers, radii, eqShapeRotationEulerAngles, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
+    cellIds.clear();
+    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, eulerAngles, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
+    pcout << "Mesh Created" << std::endl;
+    MeshMetrics<T> meshmetric(Cells);
+    meshmetric.write();
+    writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",0,8)+".stl");
+
+
+    /* LATTICE INTIALIZATIONS */
+    plint particleEnvelopeWidth = 2.0*eqLengthRatio*meshmetric.getMaxLength() + 0.5;
+    plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
+    // extendedEnvelopeWidth = particleEnvelopeWidth;  // Because Guo needs 2-cell neighbor access.
+
+    performanceLogFile << "# Nx*Ny*Nz; " << nx * ny * nz << std::endl;
+    performanceLogFile << "# Nparticles; " << Cells.getMesh().getNumVertices() << std::endl;
+    performanceLogFile << "# Nx; Ny; Nz; " << nx << "; " << ny << "; "<< nz << std::endl;
+    performanceLogFile << "# Ncells; " << centers.size() << std::endl;
+    performanceLogFile << "# particleEnvelopeWidth; " << particleEnvelopeWidth << std::endl;
+    pcout << "# particleEnvelopeWidth; " << particleEnvelopeWidth << std::endl;
 
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
@@ -258,32 +283,8 @@ int main(int argc, char* argv[])
 
 
 
-//  === Create Mesh, particles and CellModel ===
-    std::vector<Array<T,3> > centers;
-    std::vector<T> radii;
-    positionCells(shape, radius, npar, parameters, centers, radii, flowType);
-    plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
-    std::vector<plint> cellIds;
-    plint cellNumVertices = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
-    Array<T,3> eqShapeRotationEulerAngles = eulerAngles;
-    if (flowParam == 9) {
-        eulerAngles= Array<T,3>(0.,0.,0.);
-    }
-
-    TriangleBoundary3D<T> eqShapeCells = createCompleteMesh(centers, radii, eqShapeRotationEulerAngles, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
-    cellIds.clear();
-    TriangleBoundary3D<T> Cells = createCompleteMesh(centers, radii, eulerAngles, cellIds, parameters, shape, cellPath, cellNumTriangles, cellNumVertices);
-    pcout << "Mesh Created" << std::endl;
+    /* CREATE MODEL AND PARTICLE FIELDS */
     generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, cellNumVertices, numOfCellsPerInlet, slice);
-    MeshMetrics<T> meshmetric(Cells);
-    meshmetric.write();
-    writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",0,8)+".stl");
-
-    performanceLogFile << "# Nx*Ny*Nz; " << nx * ny * nz << std::endl;
-    performanceLogFile << "# Nparticles; " << Cells.getMesh().getNumVertices() << std::endl;
-    performanceLogFile << "# Nx; Ny; Nz; " << nx << "; " << ny << "; "<< nz << std::endl;
-    performanceLogFile << "# Ncells; " << centers.size() << std::endl;
-
     std::vector<plint> numParts(cellIds.size()); // Count number of particles per Cell
     for (pluint iA = 0; iA < cellIds.size(); ++iA) {
             numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), cellIds[iA]);
@@ -306,10 +307,9 @@ int main(int argc, char* argv[])
         immersedParticles.getBoundingBox(), particleArg );
 
     std::string logFileName = global::directories().getLogOutDir() + "plbCells.log";
+
     CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, tagToParticle3D, logFileName, dx, dt, checkpointed);
     rbcQuantities.calculateAll();
-
-
     /* INITIALIZE MODELS */
     k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
     k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
@@ -394,8 +394,8 @@ int main(int argc, char* argv[])
         reader["Checkpoint"]["Simulation"]["StretchScalarForce"].read(cStretchScalarForce);
         rbcStretch.setStretchScalarForce(cStretchScalarForce);
 
-        parallelIO::load("cLattice", lattice, true);
-        parallelIO::load("cImmersedParticles", immersedParticles, true);
+        parallelIO::load(global::directories().getOutputDir() + "cLattice", lattice, true);
+        parallelIO::load(global::directories().getOutputDir() + "cImmersedParticles", immersedParticles, true);
         applyProcessingFunctional ( // copy fluid velocity on particles
             new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(ibmKernel),
             immersedParticles.getBoundingBox(), particleLatticeArg);
@@ -447,6 +447,7 @@ int main(int argc, char* argv[])
                 else { copyXMLreader2XMLwriter(xmlr["Checkpoint"]["ficsion"], xmlw["Checkpoint"]); }
 
                 std::string od = global::directories().getOutputDir();
+                std::string id = global::directories().getInputDir();
                 std::string fromFileName; std::string toFileName ;
                 fromFileName = od + "cLattice.dat";    toFileName = od + "_cLattice.dat";
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf Lattice.dat) "; }
@@ -456,11 +457,12 @@ int main(int argc, char* argv[])
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf cImmersedParticles.dat) "; }
                 fromFileName = od + "cImmersedParticles.plb"; toFileName = od + "_cImmersedParticles.plb";
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf cImmersedParticles.plb) "; }
-                fromFileName = od + "cInfo.xml"; toFileName = od + "_cInfo.xml";
+                fromFileName = id + "checkpoint.xml"; toFileName = od + "_checkpoint.xml";
                 if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf cInfo.xml) "; }
+
                 parallelIO::save(lattice, "cLattice", true);
                 parallelIO::save(immersedParticles, "cImmersedParticles", true);
-                xmlw.print(od + "cInfo.xml");
+                xmlw.print(id + "checkpoint.xml");
 //                writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+"CH_Mesh.stl");
                 pcout << "OK" << std::endl;
 
