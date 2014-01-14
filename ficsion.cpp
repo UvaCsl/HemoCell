@@ -154,9 +154,12 @@ int main(int argc, char* argv[])
     global::IOpolicy().setStlFilesHaveLowerBound(true);
     global::IOpolicy().setLowerBoundForStlFiles(-1.);
 //    testInPlane(); PLB_ASSERT(false);
+    std::string outputDir = global::directories().getOutputDir();
+    std::string inputDir = global::directories().getInputDir();
+    std::string logOutDir = global::directories().getLogOutDir();
 
     global::timer("simulation").start();
-    std::string performanceLogFileName = global::directories().getLogOutDir() + "plbPerformance.log";
+    std::string performanceLogFileName = logOutDir + "plbPerformance.log";
     plb_ofstream performanceLogFile(performanceLogFileName.c_str());
 
     plint forceToFluid, shape, cellNumTriangles, ibmKernel;
@@ -235,7 +238,7 @@ int main(int argc, char* argv[])
     pcout << "Mesh Created" << std::endl;
     MeshMetrics<T> meshmetric(Cells);
     meshmetric.write();
-    writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+createFileName("Mesh",0,8)+".stl");
+    writeMeshAsciiSTL(Cells, outputDir + createFileName("Mesh",0,8)+".stl");
 
 
     /* LATTICE INTIALIZATIONS */
@@ -306,7 +309,7 @@ int main(int argc, char* argv[])
             Cells, tagToParticle3D),
         immersedParticles.getBoundingBox(), particleArg );
 
-    std::string logFileName = global::directories().getLogOutDir() + "plbCells.log";
+    std::string logFileName = logOutDir + "plbCells.log";
 
     CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, tagToParticle3D, logFileName, dx, dt, checkpointed);
     rbcQuantities.calculateAll();
@@ -394,8 +397,8 @@ int main(int argc, char* argv[])
         reader["Checkpoint"]["Simulation"]["StretchScalarForce"].read(cStretchScalarForce);
         rbcStretch.setStretchScalarForce(cStretchScalarForce);
 
-        parallelIO::load(global::directories().getOutputDir() + "cLattice", lattice, true);
-        parallelIO::load(global::directories().getOutputDir() + "cImmersedParticles", immersedParticles, true);
+        parallelIO::load(logOutDir + "cLattice", lattice, true);
+        parallelIO::load(logOutDir + "cImmersedParticles", immersedParticles, true);
         applyProcessingFunctional ( // copy fluid velocity on particles
             new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(ibmKernel),
             immersedParticles.getBoundingBox(), particleLatticeArg);
@@ -445,26 +448,33 @@ int main(int argc, char* argv[])
                 xmlMultiBlock["Simulation"]["StretchScalarForce"].set(rbcStretch.getStretchScalarForce());
                 if (!checkpointed) { copyXMLreader2XMLwriter(xmlr["ficsion"], xmlw["Checkpoint"]); }
                 else { copyXMLreader2XMLwriter(xmlr["Checkpoint"]["ficsion"], xmlw["Checkpoint"]); }
-
-                std::string od = global::directories().getOutputDir();
-                std::string id = global::directories().getInputDir();
-                std::string fromFileName; std::string toFileName ;
-                fromFileName = od + "cLattice.dat";    toFileName = od + "_cLattice.dat";
-                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf Lattice.dat) "; }
-                fromFileName = od + "cLattice.plb";    toFileName = od + "_cLattice.plb";
-                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf Lattice.plb) "; }
-                fromFileName = od + "cImmersedParticles.dat"; toFileName = od + "_cImmersedParticles.dat";
-                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf cImmersedParticles.dat) "; }
-                fromFileName = od + "cImmersedParticles.plb"; toFileName = od + "_cImmersedParticles.plb";
-                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf cImmersedParticles.plb) "; }
-                fromFileName = id + "checkpoint.xml"; toFileName = od + "_checkpoint.xml";
-                if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " (erf cInfo.xml) "; }
-
+                // Save checkpoint to temporary files
                 parallelIO::save(lattice, "cLattice", true);
                 parallelIO::save(immersedParticles, "cImmersedParticles", true);
-                xmlw.print(id + "checkpoint.xml");
+                // Upon success, save xml and rename files!
+                xmlw.print(outputDir + "checkpoint.xml");
+
+                std::string justSavedFilenames[] = {
+                        outputDir + "cLattice.dat", outputDir + "cLattice.plb",
+                        outputDir + "cImmersedParticles.dat", outputDir + "cImmersedParticles.plb",
+                        outputDir + "checkpoint.xml"};
+                std::string finalFilenames[] = {
+                        logOutDir + "cLattice.dat", logOutDir + "cLattice.plb",
+                        logOutDir + "cImmersedParticles.dat", logOutDir + "cImmersedParticles.plb",
+                        inputDir + "checkpoint.xml"};
+                pluint fiSize = 5;
+                bool cErrors=false;
+                for (pluint fi = 0; fi < fiSize; ++fi) {
+                    std::string fromFileName = finalFilenames[fi];
+                    std::string toFileName = finalFilenames[fi] + ".old";
+                    if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " old" << fi ; cErrors=true; }
+                    fromFileName = justSavedFilenames[fi];
+                    toFileName = finalFilenames[fi];
+                    if (rename(fromFileName.c_str(), toFileName.c_str()) != 0) { pcout << " new" << fi ; cErrors=true; }
+                }
 //                writeMeshAsciiSTL(Cells, global::directories().getOutputDir()+"CH_Mesh.stl");
-                pcout << "OK" << std::endl;
+                if (cErrors) { pcout << " NOT"; }
+                pcout << " OK" << std::endl;
 
             }
             rbcQuantities.write(i, eqVolumeFinal, eqSurface, eqArea, eqLength) ;
@@ -477,7 +487,7 @@ int main(int argc, char* argv[])
             }
             writeImmersedSurfaceVTK (
                 Cells, immersedParticles,
-                global::directories().getOutputDir()+createFileName("RBC",i,8)+".vtk");
+                outputDir+createFileName("RBC",i,8)+".vtk");
             writeVTK(lattice, parameters, i);
             // WRITE PERFORMANCE OUTPUT
             dtIteration = global::timer("mainLoop").stop(); global::timer("mainLoop").reset();
