@@ -48,7 +48,7 @@ useCVMLCPP   = false
 # Path to external libraries (other than Palabos)
 libraryPaths = 
 # Path to inlude directories (other than Palabos)
-includePaths = 
+includePaths = ./core/ ./helper/ ./models/ ./cases/
 # Dynamic and static libraries (other than Palabos)
 libraries    = 
 
