@@ -126,9 +126,11 @@ int ImmersedCellParticle3D<T,Descriptor>::getId() const {
 }
 
 template<typename T, template<typename U> class Descriptor>
-void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_, Array<T,3> const& velocity_) {
+void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_, Array<T,3> const& velocity_, bool allVariables) {
         Particle3D<T,Descriptor>::reset(position_);
-        pbcPosition = position_;
+        if (allVariables) {
+            pbcPosition = position_;
+        }
 
         v = velocity_;
         vPrevious = velocity_;

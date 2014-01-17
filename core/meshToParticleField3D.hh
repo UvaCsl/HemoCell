@@ -165,7 +165,7 @@ void CopyParticleToMeshVertex3D<T,Descriptor>::processGenericBlocks (
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
-        Array<T,3> position(particle->getPosition());
+        Array<T,3> position(particle->get_pbcPosition());
         plint vertexId = particle->getTag();
         mesh.replaceVertex(vertexId, position);
     }
