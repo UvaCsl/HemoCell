@@ -42,6 +42,7 @@
 
 #include "cellCellForces3D.h"
 #include "collectiveCellReductions3D.h"
+#include "reductionParticle3D.h"
 
 using namespace plb;
 using namespace std;
