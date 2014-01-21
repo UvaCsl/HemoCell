@@ -79,9 +79,9 @@ private:
     Array<T,3> v, pbcPosition, a, force, vPrevious;
     static int id;
 private:
-    Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity;
+    Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, f_repulsive;
     Array<T,3> stress;
-    T E_other, E_inPlane, E_bending, E_area,  E_volume;
+    T E_other, E_inPlane, E_bending, E_area,  E_volume, E_repulsive;
 
 private:
     plint processor;
@@ -91,11 +91,14 @@ public:
             plint tag_, Array<T,3> const& position,
             Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
             Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_,
-            Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_, Array<T,3> const& f_surface_, Array<T,3> const& f_shear_, Array<T,3> const& f_viscosity_,
+            Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_,
+            Array<T,3> const& f_surface_, Array<T,3> const& f_shear_, Array<T,3> const& f_viscosity_,
+            Array<T,3> const& f_repulsive_,
             Array<T,3> const& stress_,
             T const& E_other_,
             T const& E_inPlane_, T const& E_bending_,
             T const& E_area_, T const& E_volume_,
+            T const& E_repulsive_,
             plint processor_, plint cellId_ );
 
     Array<T,3> const& get_f_wlc() const { return f_wlc; }
@@ -104,6 +107,7 @@ public:
     Array<T,3> const& get_f_surface() const { return f_surface; }
     Array<T,3> const& get_f_shear() const { return f_shear; }
     Array<T,3> const& get_f_viscosity() const { return f_viscosity; }
+    Array<T,3> const& get_f_repulsive() const { return f_repulsive; }
     Array<T,3> const& get_stress() const { return stress; }
 
     T const& get_E_other() const { return E_other; }
@@ -111,6 +115,7 @@ public:
     T const& get_E_bending() const { return E_bending; }
     T const& get_E_area() const { return E_area; }
     T const& get_E_volume() const { return E_volume; }
+    T const& get_E_repulsive() const { return E_repulsive; }
 
     Array<T,3>& get_f_wlc() { return f_wlc; }
     Array<T,3>& get_f_bending() { return f_bending; }
@@ -118,6 +123,7 @@ public:
     Array<T,3>& get_f_surface() { return f_surface; }
     Array<T,3>& get_f_shear() { return f_shear; }
     Array<T,3>& get_f_viscosity() { return f_viscosity; }
+    Array<T,3>& get_f_repulsive() { return f_repulsive; }
     Array<T,3>& get_stress() { return stress; }
 
     T& get_E_other() { return E_other; }
@@ -125,9 +131,10 @@ public:
     T& get_E_bending() { return E_bending; }
     T& get_E_area() { return E_area; }
     T& get_E_volume() { return E_volume; }
+    T& get_E_repulsive() { return E_repulsive; }
 
-    T const get_E_total() const { return (E_other + E_inPlane + E_bending + E_area + E_volume);}
-    T const get_Energy() const { return (E_other + E_inPlane + E_bending + E_area + E_volume);}
+    T const get_E_total() const { return (E_other + E_inPlane + E_bending + E_area + E_volume + E_repulsive);}
+    T const get_Energy() const { return (E_other + E_inPlane + E_bending + E_area + E_volume + E_repulsive);}
 
 };
 
@@ -149,9 +156,9 @@ class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         plint tag;
         Array<T,3> position;
         Array<T,3> v, pbcPosition, a, force, vPrevious;
-        Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress;
+        Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, f_repulsive, stress;
         T E_other;
-        T E_inPlane, E_bending, E_area,  E_volume;
+        T E_inPlane, E_bending, E_area,  E_volume, E_repulsive;
         plint processor, cellId;
 
         unserializer.readValue(tag);
@@ -167,6 +174,7 @@ class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         unserializer.readValues<T,3>(f_surface);
         unserializer.readValues<T,3>(f_shear);
         unserializer.readValues<T,3>(f_viscosity);
+        unserializer.readValues<T,3>(f_repulsive);
         unserializer.readValues<T,3>(stress);
 
         unserializer.readValue(E_other);
@@ -174,13 +182,14 @@ class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         unserializer.readValue(E_bending);
         unserializer.readValue(E_area);
         unserializer.readValue(E_volume);
+        unserializer.readValue(E_repulsive);
 
         unserializer.readValue(processor);
         unserializer.readValue(cellId);
 
         return new ImmersedCellParticle(tag, position, v, pbcPosition, a, force, vPrevious,
-                f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, stress,
-                E_other, E_inPlane, E_bending, E_area,E_volume,
+                f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, f_repulsive, stress,
+                E_other, E_inPlane, E_bending, E_area, E_volume, E_repulsive,
                 processor, cellId);
     }
 };
