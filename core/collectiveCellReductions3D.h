@@ -65,7 +65,7 @@ class CollectiveCellReductionBox3D : public PlainReductiveBoxProcessingFunctiona
 public:
     CollectiveCellReductionBox3D(TriangleBoundary3D<T> const& triangleBoundary_,
             plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_,
-            std::vector<plint> subscribedQuantities_);
+            std::vector<plint> const& subscribedQuantities_);
     CollectiveCellReductionBox3D(TriangleBoundary3D<T> const& triangleBoundary_,
             plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_,
             plint subscribedQuantities_);
@@ -100,7 +100,7 @@ private:
 private:
     TriangleBoundary3D<T> const& triangleBoundary;
     std::vector<plint> quantitiesToReduce;
-    std::set<plint> subscribedQuantities;
+    std::vector<plint> const& subscribedQuantities;
     std::vector<plint> & cellIDsInsideTheDomain;
     plint maxNumberOfCells, numVerticesPerCell, numTrianglesPerCell;
 public:
@@ -129,6 +129,6 @@ private: /* ReductiveBoxFunctions */
 
 
 
-#include "CollectiveCellReductions.hh"
+#include "collectiveCellReductions3D.hh"
 
 #endif  // COLLECTIVE_CELL_REDUCTIONS_H

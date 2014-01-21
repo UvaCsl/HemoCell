@@ -40,6 +40,8 @@
 #include "meshMetrics.h"
 #include "cellForceChecking3D.h"
 
+#include "cellCellForces3D.h"
+#include "collectiveCellReductions3D.h"
 
 using namespace plb;
 using namespace std;

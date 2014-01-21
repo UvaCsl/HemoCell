@@ -1,13 +1,13 @@
 #ifndef COLLECTIVE_CELL_REDUCTIONS_HH
 #define COLLECTIVE_CELL_REDUCTIONS_HH
 
-#include "collectiveCellReductions.h"
+#include "collectiveCellReductions3D.h"
 
 
 template<typename T, template<typename U> class Descriptor>
-void CollectiveCellReductionBox3D<T,Descriptor>::CollectiveCellReductionBox3D(TriangleBoundary3D<T> const& triangleBoundary_,
+CollectiveCellReductionBox3D<T,Descriptor>::CollectiveCellReductionBox3D(TriangleBoundary3D<T> const& triangleBoundary_,
             plint maxNumberOfCells_, plint numVerticesPerCell_, plint numTrianglesPerCell_,
-            std::vector<plint> subscribedQuantities_) :
+            std::vector<plint> const& subscribedQuantities_) :
             triangleBoundary(triangleBoundary_),
             maxNumberOfCells(maxNumberOfCells_), numVerticesPerCell(numVerticesPerCell_), numTrianglesPerCell(numTrianglesPerCell_),
             subscribedQuantities(subscribedQuantities_)
@@ -57,7 +57,7 @@ T CollectiveCellReductionBox3D<T,Descriptor>::computeQuantity1D (plint q, Immers
         quantity1D = edgeAngle = edgeAngle*1.0/neighbors.size();
     } else if (q==3) {
     // Calculate AREA
-        triangleSurface = triangleMesh.computeVertexArea(iVertex);
+        quantity1D = triangleMesh.computeVertexArea(iVertex);
     } else if (q==4) {
     // Calculate EDGE DISTANCE
         T edgeDistance = 0.0;
@@ -77,24 +77,19 @@ T CollectiveCellReductionBox3D<T,Descriptor>::computeQuantity1D (plint q, Immers
         quantity1D = particle->get_Energy();
     } else if (q==1) {
         // Calculate VOLUME
-            for (pluint iB = 0; iB < neighbors.size(); ++iB) {
-                plint vId = triangleMesh.getVertexId(neighbors[iB],0);
-                ImmersedCellParticle3D<T,Descriptor>* neigboringParticle =
-                        dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D.find(vId)->second);
-                Array<T,3> v0 = neigboringParticle->get_pbcPosition();
-                vId = triangleMesh.getVertexId(neighbors[iB],1);
-                neigboringParticle =
-                        dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D.find(vId)->second);
-                Array<T,3> v1 = neigboringParticle->get_pbcPosition();
-                vId = triangleMesh.getVertexId(neighbors[iB],2);
-                neigboringParticle =
-                        dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D.find(vId)->second);
-                Array<T,3> v2 = neigboringParticle->get_pbcPosition();
-                /* Calculating the volume contibution of a face based on the formula:
-                 * V[j] = 1.0/6.0 * (X3[j] cross X2[j])*X1[j]  */
-                Array<T,3> tmp;
-                crossProduct(v1, v2, tmp);
-                quantity1D  =  VectorTemplate<T,Descriptor>::scalarProduct(v0,tmp); // * (1.0/6.0)
+        std::vector<plint> neighborTriangleIds = triangleMesh.getNeighborTriangleIds(iVertex);
+        for (pluint iB = 0; iB < neighborTriangleIds.size(); ++iB) {
+            plint vId = triangleMesh.getVertexId(neighborTriangleIds[iB],0);
+            Array<T,3> v0 = triangleMesh.getVertex(vId);
+            vId = triangleMesh.getVertexId(neighborTriangleIds[iB],1);
+            Array<T,3> v1 = triangleMesh.getVertex(vId);
+            vId = triangleMesh.getVertexId(neighborTriangleIds[iB],2);
+            Array<T,3> v2 = triangleMesh.getVertex(vId);
+            /* Calculating the volume contibution of a face based on the formula:
+             * V[j] = 1.0/6.0 * (X3[j] cross X2[j])*X1[j]  */
+            Array<T,3> tmp;
+            crossProduct(v1, v2, tmp);
+            quantity1D  =  VectorTemplate<T,Descriptor>::scalarProduct(v0,tmp); // * (1.0/6.0)
         }
     }
     return quantity1D;
@@ -102,7 +97,7 @@ T CollectiveCellReductionBox3D<T,Descriptor>::computeQuantity1D (plint q, Immers
 
 
 template<typename T, template<typename U> class Descriptor>
-Array<T,3> CollectiveCellReductionBox3D<T,Descriptor>::computeQuantityND (plint q, ImmersedCellParticle3D<T,Descriptor>* particle) {
+Array<T,3>  CollectiveCellReductionBox3D<T,Descriptor>::computeQuantity3D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle) {
     /*
      *    Calculates Position and Velocity for each particle.
      */
@@ -128,7 +123,7 @@ std::vector<T> CollectiveCellReductionBox3D<T,Descriptor>::computeQuantityND (pl
      */
     std::vector<T> quantityND;
     plint iVertex = particle->getTag();
-    plit cellId = particle->get_cellId();
+    plint cellId = particle->get_cellId();
     TriangularSurfaceMesh<T> triangleMesh = triangleBoundary.getMesh();
     std::vector<plint> neighbors = triangleMesh.getNeighborVertexIds(iVertex);
     if (q==8) {
@@ -180,7 +175,7 @@ void CollectiveCellReductionBox3D<T,Descriptor>::processGenericBlocks (
         = *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
-    plint ccrId, dim, reductionType, cellId;
+    plint ccrId, dim, reductionType, quantity, cellId;
     std::map<plint, T > values1D;
     std::map<plint, Array<T,3> > values3D;
     std::map<plint, std::vector<T> > valuesND;
@@ -191,7 +186,7 @@ void CollectiveCellReductionBox3D<T,Descriptor>::processGenericBlocks (
                 dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iA]);
         cellId = particle->get_cellId();
 
-        for (pluint i1d = 0; i1d < quantitiesToReduce.size(); ++i1d) {
+        for (pluint id = 0; id < quantitiesToReduce.size(); ++id) {
             ccrId=quantitiesToReduce[id];
             dim = ccrId%10; // Dimension: last digit
             reductionType = (ccrId%100)/10; // Reduction type (min,max,etc): second to last digit
@@ -286,7 +281,7 @@ Array<plint,3> CollectiveCellReductionBox3D<T,Descriptor>::subscribeReduction3D(
 template<typename T, template<typename U> class Descriptor>
 std::vector<plint> CollectiveCellReductionBox3D<T,Descriptor>::subscribeReductionND(plint reductionType, plint dimensions) {
     std::vector<plint> ret;
-    for (i = 0; i < dimensions; ++i) { ret.push_back( subscribeReduction1D(reductionType) ); }
+    for (plint i = 0; i < dimensions; ++i) { ret.push_back( subscribeReduction1D(reductionType) ); }
     return ret;
 }
 
@@ -298,7 +293,7 @@ void CollectiveCellReductionBox3D<T,Descriptor>::gatherReduction3D(plint reducti
 
 template<typename T, template<typename U> class Descriptor>
 void CollectiveCellReductionBox3D<T,Descriptor>::gatherReductionND(plint reductionType, std::vector<plint> qBin, std::vector<T> value) {
-    for (int i = 0; i < qBin.size(); ++i) { gatherReduction1D(reductionType, qBin[i], value[i]); }
+    for (plint i = 0; i < qBin.size(); ++i) { gatherReduction1D(reductionType, qBin[i], value[i]); }
 }
 
 // getReduction
@@ -313,7 +308,8 @@ Array<T,3> CollectiveCellReductionBox3D<T,Descriptor>::getReduction3D(plint redu
 template<typename T, template<typename U> class Descriptor>
 std::vector<T> CollectiveCellReductionBox3D<T,Descriptor>::getReductionND(plint reductionType, std::vector<plint> qBin) {
     std::vector<T> ret;
-    for (i = 0; i < dimensions; ++i) { ret.push_back( subscribeReduction1D(reductionType, qBin[i]) ); }
+    plint dimensions = qBin.size();
+    for (plint i = 0; i < dimensions; ++i) { ret.push_back( subscribeReduction1D(reductionType, qBin[i]) ); }
     return ret;
 }
 
