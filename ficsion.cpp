@@ -41,8 +41,7 @@
 #include "cellForceChecking3D.h"
 
 #include "cellCellForces3D.h"
-#include "collectiveCellReductions3D.h"
-#include "reductionParticle3D.h"
+
 
 using namespace plb;
 using namespace std;
@@ -296,6 +295,7 @@ int main(int argc, char* argv[])
             numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), cellIds[iA]);
             pcout << "Cell: " << iA << ", Particles: " << numParts[iA] << std::endl;
     }
+
     CellFieldQuantityHolder<T,DESCRIPTOR> cqh(npar, numParts[0]);
     // plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox()); //Total number of particles
 
@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
 
     std::string logFileName = logOutDir + "plbCells.log";
 
-    CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, tagToParticle3D, logFileName, dx, dt, checkpointed);
+    CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, tagToParticle3D, logFileName, dx, dt, radius, checkpointed);
     rbcQuantities.calculateAll();
     /* INITIALIZE MODELS */
     k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;

@@ -32,9 +32,11 @@ template<typename T, template<typename U> class Descriptor>
 class ReductionParticle3D : public Particle3D<T,Descriptor> {
 public:
     ReductionParticle3D();
-//    virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
-//    virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
-//    virtual void fluidToParticle(BlockLattice3D<T,Descriptor>& fluid, T scaling=1.) { }
+    ReductionParticle3D(plint cellId_, Array<T,3> const& position);
+
+    virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
+    virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
+    virtual void fluidToParticle(BlockLattice3D<T,Descriptor>& fluid, T scaling=1.) { }
     /// Implements Euler integration with velocity alone.
     virtual void advance();
     virtual void serialize(HierarchicSerializer& serializer) const;
@@ -56,6 +58,11 @@ private:
     std::map<plint, T > quantities1D; // quantities1D[CCR_VOLUME] = CELL_VOLUME
     std::map<plint, Array<T,3> > quantities3D;
     std::map<plint, std::vector<T> > quantitiesND;
+public:
+    void insert(plint ccrId, T value) { quantities1D[ccrId] = value; }
+    void insert(plint ccrId, Array<T,3> value) { quantities3D[ccrId] = value; }
+    void insert(plint ccrId, std::vector<T> value) { quantitiesND[ccrId] = value; }
+    T get1D(plint ccrId) { return quantities1D[ccrId]; }
 public:
     virtual int getId() const;
 
@@ -110,13 +117,13 @@ class ReductionParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
         unserializer.readValue<plint>(size3D);
         for (int id = 0; id < size3D; ++id) {
             unserializer.readValue<plint>(qId);
-            unserializer.readValue<T,3>(quantities3D[qId]);
+            unserializer.readValues<T,3>( (quantities3D[qId]) );
         }
 
         unserializer.readValue<plint>(sizeND);
         for (int id = 0; id < sizeND; ++id) {
             unserializer.readValue<plint>(qId);
-            unserializer.readValue<T,3>(quantitiesND[qId]);
+            unserializer.readValues<T>(quantitiesND[qId]);
         }
 
         return new ReductionParticle();

@@ -62,7 +62,7 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
 <sim>
     <tmax> 500000 </tmax> <!-- total number of iterations -->
     <tmeas> 1000 </tmeas> <!-- interval after which data is written --> 
-    <npar>  1  </npar> <!-- Number of particles > -->
+    <npar>  5  </npar> <!-- Number of particles > -->
 </sim>
 
 </ficsion>

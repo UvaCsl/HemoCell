@@ -31,9 +31,9 @@
  *      Energy         : 9
  *      Position       : 0
  */
-#define CCR_NO_PBC_POSITION_MEAN   013 // 3d
-#define CCR_NO_PBC_POSITION_MIN    023 // 3d
-#define CCR_NO_PBC_POSITION_MAX    033 // 3d
+#define CCR_NO_PBC_POSITION_MEAN    13 // 3d // BEWARE OF 0 IN FRONT! GOES TO OCT
+#define CCR_NO_PBC_POSITION_MIN     23 // 3d // BEWARE OF 0 IN FRONT! GOES TO OCT
+#define CCR_NO_PBC_POSITION_MAX     33 // 3d // BEWARE OF 0 IN FRONT! GOES TO OCT
 #define CCR_VOLUME                 101 // 1d
 #define CCR_ANGLE_MEAN             211 // 1d
 #define CCR_ANGLE_MIN              221 // 1d
@@ -76,32 +76,44 @@ public:
     CollectiveCellReductionBox3D(TriangleBoundary3D<T> const& triangleBoundary_,
             plint numVerticesPerCell_);
     /// Argument: Particle-field.
-    virtual ~CollectiveCellReductionBox3D();
+    virtual ~CollectiveCellReductionBox3D() {};
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
-    virtual CellReduceFunctional3D<T,Descriptor>* clone() const;
-    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+
+    virtual CollectiveCellReductionBox3D<T,Descriptor>* clone() const { return new CollectiveCellReductionBox3D<T,Descriptor>(*this); }
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const {
+        modified[0] = modif::nothing; // Particle field.
+        modified[1] = modif::dynamicVariables; // Reduction particles;
+    }
+    virtual void getModificationPattern(std::vector<bool>& isWritten) const {
+        isWritten[0] = false;
+        isWritten[1] = true;
+    }
+    BlockDomain::DomainT appliesTo() const { return BlockDomain::bulk; }
+    void postProcess(std::vector<MultiBlock3D*> blocks);
+
+private:
     void subscribeParticles(std::vector<Particle3D<T,Descriptor>*> const& particles);
+
+    TriangleBoundary3D<T> const& triangleBoundary;
+    plint numVerticesPerCell;
+    std::vector<plint> subscribedQuantities;
+    std::map<plint, plint> particlesPerCellId;
+    std::vector<plint> cellIds;
+    plint nCellIds;
 private:
     // quantityBins contain the "whichSum"/"whichAverage"/etc
     std::map<plint, std::map<plint, plint >  > quantityBins1D; // quantityBins1D[CCR_EDGE_DISTANCE_MEAN][cellId]
     std::map<plint, std::map<plint, Array<plint,3> >  > quantityBins3D; // quantityBins3D[CCR_VELOCITY_MEAN][cellId]
     std::map<plint, std::map<plint, std::vector<plint> >  > quantityBinsND; // quantityBinsND[CCR_INERTIA][cellId]
 
-    std::map<plint, std::map<plint, T > * > const& carryOnQuantities1D; // carryOnQuantities1D[CCR_EDGE_DISTANCE_STD][cellId] = MEAN_EDGE_DISTANCE
-    std::map<plint, std::map<plint, Array<T,3> > *  > const& carryOnQuantities3D;    // carryOnQuantities3D[CCR_INERTIA][cellId] = Positions
-    std::map<plint, std::map<plint, std::vector<T> > * > const& carryOnQuantitiesND;
+    std::map<plint, std::map<plint, T > * > quantitiesFromReductionParticles1D; // carryOnQuantities1D[cellId][CCR_EDGE_DISTANCE_STD]= MEAN_EDGE_DISTANCE
+    std::map<plint, std::map<plint, Array<T,3> > *  > quantitiesFromReductionParticles3D;
+    std::map<plint, std::map<plint, std::vector<T> > * > quantitiesFromReductionParticlesND;
+
 
     T computeQuantity1D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
     Array<T,3> computeQuantity3D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
     std::vector<T> computeQuantityND (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
-private:
-    TriangleBoundary3D<T> const& triangleBoundary;
-    std::vector<plint> const& subscribedQuantities;
-    plint numVerticesPerCell;
-private:
-    std::map<plint, plint> particlesPerCellId;
-    std::vector<plint> cellIds;
-    plint nCellIds;
 private:
     vector<T> sumV, averageV, maxV;
     vector<plint> averageQV;
@@ -110,7 +122,7 @@ private:
     plint subscribeMax() { maxV.push_back( -std::numeric_limits<double>::max() ); return maxV.size(); } ;
 
     void gatherSum(plint qBin, T value) { sumV[qBin] += value; } ;
-    void gatherAverage(plint qBin, T value) { averageV[qBin] += value; averageQV[qBin]++; } ;
+    void gatherAverage(plint qBin, T value) { averageV[qBin] += value; averageQV[qBin]+=1; } ;
     void gatherMax(plint qBin, T value) { maxV[qBin] = max(maxV[qBin], value); } ;
 
     T getSum(plint qBin) { return sumV[qBin]; } ;

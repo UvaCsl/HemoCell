@@ -18,6 +18,9 @@
 #define CELL_QUANTITIES_H
 
 #include "immersedCellsReductions.h"
+#include "reductionParticle3D.h"
+#include "collectiveCellReductions3D.h"
+
 
 // Class storing all the cell measures
 template< typename T, template<typename U> class Descriptor,
@@ -29,7 +32,7 @@ public:
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> > &  particles_,
                 std::vector<plint> const&  cellIds_, plint numberOfCells_,
                 std::map <plint, Particle3D<T,Descriptor>*> const & tagToParticle3D_,
-                std::string cmhFileName, T dx_, T dt_, bool checkpointed_=false);
+                std::string cmhFileName, T dx_, T dt_, plint cellRadiusLU_, bool checkpointed_=false);
         virtual ~CellQuantities3D();
         void calculateAll() ;
         void calculateVolumeAndSurface() ;
@@ -55,11 +58,13 @@ private:
 
         TriangleBoundary3D<T> const & Cells;
         MultiParticleField3D<ParticleFieldT<T,Descriptor> > * particles;
+        MultiParticleField3D<ParticleFieldT<T,Descriptor> > * reductionParticles;
         std::vector<plint> const& cellIds;
         plint numberOfCells;
         std::map <plint, Particle3D<T,Descriptor>*> const & tagToParticle3D;
         plb_ofstream logFile;
         T dx, dt;
+        plint cellRadiusLU;
         bool checkpointed;
 };
 

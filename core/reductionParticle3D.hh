@@ -37,6 +37,12 @@ ReductionParticle3D<T,Descriptor>::ReductionParticle3D()
 { }
 
 template<typename T, template<typename U> class Descriptor>
+ReductionParticle3D<T,Descriptor>::ReductionParticle3D(plint cellId_, Array<T,3> const& position)
+    :  Particle3D<T,Descriptor>(cellId_, position), processor(0), cellId(cellId_)
+{ }
+
+
+template<typename T, template<typename U> class Descriptor>
 void ReductionParticle3D<T,Descriptor>::advance() {
 //    this->getPosition() += vPrevious;
     processor = this->getMpiProcessor();
@@ -47,6 +53,20 @@ int ReductionParticle3D<T,Descriptor>::getId() const {
     return id;
 }
 
+//template<typename T1, typename T2>
+//class MapIterator {
+//public:
+//    MapIterator(map<T1, T2> const& mymap_)
+//        : mymap(mymap_) { myiterator = mymap.begin(); };
+//
+//private:
+//    map<T1, T2> const& mymap;
+//    map<T1, T2>::iterator myiterator;
+//};
+//std::pair<T1, T2> iterateMap(map<T1, T2> mymap) {
+//
+//}
+
 template<typename T, template<typename U> class Descriptor>
 void ReductionParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializer) const
 {
@@ -56,25 +76,25 @@ void ReductionParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializ
     serializer.addValue<plint>(processor);
     serializer.addValue<plint>(cellId);
 
-    plint size1D, size3D, sizeND;
-    typename std::map<plint, T >::iterator iter1D;
-    typename std::map<plint, Array<T,3> >::iterator iter3D;
-    typename std::map<plint, std::vector<T> >::iterator iterND;
+    typename std::map<plint, T >::const_iterator iter1D;
+    typename std::map<plint, Array<T,3> >::const_iterator iter3D;
+    typename std::map<plint, std::vector<T> >::const_iterator iterND;
+
 
     serializer.addValue<plint>(quantities1D.size());
-    for (iter1D = quantities1D.begin(); iter1D != quantities1D.end(); ++iter1D) {
+    for (iter1D  = quantities1D.begin(); iter1D != quantities1D.end(); ++iter1D) {
         serializer.addValue<plint>(iter1D->first);
         serializer.addValue<T>(iter1D->second);
     }
     serializer.addValue<plint>(quantities3D.size());
-    for (iter3D = quantities3D.begin(); iter3D != quantities3D.end(); ++iter3D) {
+    for (iter3D  = quantities3D.begin(); iter3D != quantities3D.end(); ++iter3D) {
         serializer.addValue<plint>(iter3D->first);
-        serializer.addValue<T>(iter3D->second);
+        serializer.addValues<T,3>(iter3D->second);
     }
     serializer.addValue<plint>(quantitiesND.size());
-    for (iterND = quantitiesND.begin(); iterND != quantitiesND.end(); ++iterND) {
+    for (iterND  = quantitiesND.begin(); iterND != quantitiesND.end(); ++iterND) {
         serializer.addValue<plint>(iterND->first);
-        serializer.addValue<T>(iterND->second);
+        serializer.addValues<T>(iterND->second);
     }
 
 }
@@ -94,23 +114,23 @@ void ReductionParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& unse
     plint size1D, size3D, sizeND;
     unserializer.readValue<plint>(size1D);
     for (int id = 0; id < size1D; ++id) {
-        plint qId; T value;
+        plint qId;
         unserializer.readValue<plint>(qId);
         unserializer.readValue<T>(quantities1D[qId]);
     }
 
     unserializer.readValue<plint>(size3D);
     for (int id = 0; id < size3D; ++id) {
-        plint qId; T value;
+        plint qId;
         unserializer.readValue<plint>(qId);
-        unserializer.readValue<T,3>(quantities3D[qId]);
+        unserializer.readValues<T,3>( (quantities3D[qId]) );
     }
 
     unserializer.readValue<plint>(sizeND);
     for (int id = 0; id < sizeND; ++id) {
-        plint qId; T value;
+        plint qId;
         unserializer.readValue<plint>(qId);
-        unserializer.readValue<T,3>(quantitiesND[qId]);
+        unserializer.readValues<T>(quantitiesND[qId]);
     }
 
 }

@@ -28,13 +28,13 @@ CellQuantities3D<T,Descriptor,ParticleFieldT>::CellQuantities3D(
         MultiParticleField3D<ParticleFieldT<T,Descriptor> > &  particles_,
         std::vector<plint> const&  cellIds_, plint numberOfCells_,
         std::map <plint, Particle3D<T,Descriptor>*> const & tagToParticle3D_,
-        std::string cmhFileName, T dx_, T dt_, bool checkpointed_) :
+        std::string cmhFileName, T dx_, T dt_, plint cellRadiusLU_, bool checkpointed_) :
             Cells(Cells_),
             particles(&particles_),
             cellIds(cellIds_),
             numberOfCells(numberOfCells_),
             tagToParticle3D(tagToParticle3D_),
-            dx(dx_), dt(dt_), checkpointed(checkpointed_)
+            dx(dx_), dt(dt_), cellRadiusLU(cellRadiusLU_), checkpointed(checkpointed_)
 {
         std::ostream::openmode mode = std::ostream::out;
         if (not checkpointed) { mode = mode | std::ostream::trunc; }
@@ -43,11 +43,21 @@ CellQuantities3D<T,Descriptor,ParticleFieldT>::CellQuantities3D(
         if (not checkpointed_) {
             writeHeader();
         }
+        MultiBlockManagement3D const& latticeManagement(particles->getMultiBlockManagement());
+        MultiBlockManagement3D reductionParticleManagement (
+                latticeManagement.getSparseBlockStructure(),
+                latticeManagement.getThreadAttribution().clone(),
+                cellRadiusLU*5,
+                latticeManagement.getRefinementLevel() );
 
+        reductionParticles = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(reductionParticleManagement,
+                defaultMultiBlockPolicy3D().getCombinedStatistics() );
 }
+
+
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-CellQuantities3D<T,Descriptor,ParticleFieldT>::~CellQuantities3D() { };
+CellQuantities3D<T,Descriptor,ParticleFieldT>::~CellQuantities3D() { delete reductionParticles; };
 
 
 template< typename T, template<typename U> class Descriptor,
@@ -74,6 +84,24 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
         countCellMaxEdgeDistance(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsMaxEdgeDistance);
         countCellCenters(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsCenter, cellNumVertices);
         countCellVelocity(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVelocity, cellNumVertices);
+
+        plint numVerticesPerCell = 10;
+        std::vector<plint> subscribedQuantities;
+        subscribedQuantities.push_back(CCR_POSITION_MEAN);
+        subscribedQuantities.push_back(CCR_VOLUME);
+        subscribedQuantities.push_back(CCR_SURFACE);
+        subscribedQuantities.push_back(CCR_EDGE_DISTANCE_MEAN);
+        subscribedQuantities.push_back(CCR_EDGE_DISTANCE_MIN);
+        subscribedQuantities.push_back(CCR_EDGE_DISTANCE_MAX);
+        subscribedQuantities.push_back(CCR_ANGLE_MEAN);
+        subscribedQuantities.push_back(CCR_ANGLE_MIN);
+        subscribedQuantities.push_back(CCR_ANGLE_MAX);
+        subscribedQuantities.push_back(CCR_ENERGY);
+
+        CollectiveCellReductionBox3D<T,Descriptor> * ccrb3d = new CollectiveCellReductionBox3D<T,Descriptor>(Cells, numVerticesPerCell, subscribedQuantities);
+        particleArg.push_back(reductionParticles);
+        applyProcessingFunctional(ccrb3d, particles->getBoundingBox(), particleArg);
+//        ccrb3d->postProcess(particleArg);
 }
 
 
