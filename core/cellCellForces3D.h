@@ -67,7 +67,7 @@ public:
     virtual T calculatePotential (T r) { T x = pow(sigmaLJ*1.0/r, 6.0); return 4*epsilonLJ*(x*x - x); }
     virtual Array<T,3> calculateForce (T r, Array<T,3> const& eij) {
         T x = pow(sigmaLJ*1.0/r, 6.0);
-        return 24.0 * epsilonLJ * (1 - 2*x) * x * (1.0/r);
+        return - 24.0 * epsilonLJ * (1 - 2*x) * x * (1.0/r);
     }
 private:
     T epsilonLJ, sigmaLJ;
@@ -79,7 +79,7 @@ class MorsePotential : public CellCellForce3D<T> {
 // Morse Potential is:
 //    phi = De*( exp(2*beta*(ro - r)) - 2*exp(beta*(r0 - r)));
 // with:
-//    De: well depth of the potential
+//    De: well depth of the potential   
 //    beta: well depth of the potential
 //    r0: zero force distance
 public:
@@ -90,7 +90,7 @@ public:
     virtual T calculatePotential (T r) { return De*( exp(2*beta*(r0 - r)) - 2*exp(beta*(r0 - r))); }
     virtual Array<T,3> calculateForce (T r, Array<T,3> const& eij) {
             T x = exp( beta * (-r + r0) );
-            return 2*beta*De*(x  - x*x) * eij;
+            return -2*beta*De*(x  - x*x) * eij;
     }
 private:
     T De, beta, r0;
