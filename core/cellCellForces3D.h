@@ -24,6 +24,12 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 public:
+    /*
+     All of the following conditions have to be met, in order for the force to be applied:
+           * Particles have to belong to different cells
+           * Particle 1 has to have larger tagId that particle 2
+           * Their distance has to be less that the cutoffRadius.
+     */
     bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T& r, Array<T,3>& eij);
     void applyForce(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T const& r, Array<T,3> const& eij);
 private:
@@ -53,6 +59,32 @@ private:
 
 
 template<typename T>
+class PowerLawForce : public CellCellForce3D<T> {
+// Lennard-Jones Potential is:
+//    F = -k_int * (pow((DeltaX*1.0/r),k) - DeltaXoverRink)*eij;
+// with:
+//    k_int: is the characteristic energy
+//    DeltaX: is the characteristic length
+//    k: is the characteristic length
+//    R: is the characteristic length
+public:
+    PowerLawForce(T k_int_, T DeltaX_, T R_, T k_) : k_int(k_int_), DeltaX(DeltaX_), R(R_), k(k_) {
+        DeltaXoverRink = pow((DeltaX*1.0/R),k);
+    };
+    virtual ~PowerLawForce() { }
+    virtual PowerLawForce<T>* clone() const { return new PowerLawForce<T>(k_int, DeltaX, R, k); } ;
+public:
+    virtual T calculatePotential (T r) { return 0; }
+    virtual Array<T,3> calculateForce (T r, Array<T,3> const& eij) {
+        return k_int * (pow((DeltaX*1.0/r),k) - DeltaXoverRink)*eij;
+    }
+private:
+    T k_int, DeltaX, R, k;
+    T DeltaXoverRink;
+};
+
+
+template<typename T>
 class LennardJonesPotential : public CellCellForce3D<T> {
 // Lennard-Jones Potential is:
 //    phi = 4*epsilonLJ*(pow(sigmaLJ*1.0/r, 12.0) - pow(sigmaLJ*1.0/r, 6.0));
@@ -67,7 +99,7 @@ public:
     virtual T calculatePotential (T r) { T x = pow(sigmaLJ*1.0/r, 6.0); return 4*epsilonLJ*(x*x - x); }
     virtual Array<T,3> calculateForce (T r, Array<T,3> const& eij) {
         T x = pow(sigmaLJ*1.0/r, 6.0);
-        return - 24.0 * epsilonLJ * (1 - 2*x) * x * (1.0/r);
+        return   (24.0/r) * epsilonLJ * (2*x*x - x) * eij;
     }
 private:
     T epsilonLJ, sigmaLJ;
@@ -90,15 +122,12 @@ public:
     virtual T calculatePotential (T r) { return De*( exp(2*beta*(r0 - r)) - 2*exp(beta*(r0 - r))); }
     virtual Array<T,3> calculateForce (T r, Array<T,3> const& eij) {
             T x = exp( beta * (-r + r0) );
-            return -2*beta*De*(x  - x*x) * eij;
+            return 2*beta*De*(x*x  - x) * eij;
     }
 private:
     T De, beta, r0;
 };
 
-#ifndef JKR
-#define JKR JohnsonKendallRoberts
-#endif
 template<typename T>
 class JohnsonKendallRobertsForce : public CellCellForce3D<T> {
 // Johnson Kendall Roberts force F is:
@@ -122,6 +151,10 @@ public:
     }
 private:
 };
+
+#ifndef JKR
+#define JKR JohnsonKendallRoberts
+#endif
 
 
 #include "cellCellForces3D.hh"
