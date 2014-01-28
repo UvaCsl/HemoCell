@@ -120,7 +120,8 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
     BlockLattice3D<T,Descriptor>& fluid =
         *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
-
+    /* Not used */
+//    Dot3D offset = computeRelativeDisplacement(particleField, fluid);
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
     std::vector<Dot3D> cellPos;
@@ -136,7 +137,9 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         particle->get_v().resetToZero();
         for (pluint iCell=0; iCell < weights.size(); ++iCell) {
             velocity.resetToZero();
-            fluid.get(cellPos[iCell].x,cellPos[iCell].y,cellPos[iCell].z).computeVelocity(velocity);
+            Dot3D cellPosition = cellPos[iCell];
+//            Dot3D cellPosition = cellPos[iCell] + offset;
+            fluid.get(cellPosition.x, cellPosition.y, cellPosition.z).computeVelocity(velocity);
             particle->get_v() += weights[iCell] * velocity;
         }
         particle->get_vPrevious() = particle->get_v();
@@ -175,6 +178,7 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
     BlockLattice3D<T,Descriptor>& fluid =
         *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
+//    Dot3D offset = computeRelativeDisplacement(particleField, fluid); NOT USED
 
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
@@ -190,7 +194,9 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
         Array<T,3> elasticForce = particle->get_force();
         // pcout << "elastic force: (" << elasticForce[0] << ", "<< elasticForce[1] << ", "<< elasticForce[2] << ")\n";
         for (pluint iCell = 0; iCell < weights.size(); ++iCell) {
-            cell = &fluid.get(cellPos[iCell].x,cellPos[iCell].y,cellPos[iCell].z);
+            Dot3D cellPosition = cellPos[iCell];
+//            Dot3D cellPosition = cellPos[iCell] + offset;
+            cell = &fluid.get(cellPosition.x, cellPosition.y, cellPosition.z);
             T *locForce = cell->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
             for (pluint iA = 0; iA < 3; ++iA) {
                 locForce[iA] += weights[iCell]*elasticForce[iA];
@@ -521,53 +527,6 @@ std::auto_ptr<MultiParticleField3D<DenseParticleField3D<T,Descriptor> > >
     return particles;
 }
 
-/* ******** MapParticleToRBCSurface *********************************** */
-
-template<typename T, template<typename U> class Descriptor>
-MapParticleToRBCSurface<T,Descriptor>::MapParticleToRBCSurface(std::vector< Array<T,3> > const& cellsCenter_,
-                    std::vector< Array<T,3> > const& cellsVelocity_, T const& radius_)
-            : cellsCenter(cellsCenter_), cellsVelocity(cellsVelocity_), radius(radius_) {};
-
-template<typename T, template<typename U> class Descriptor>
-void MapParticleToRBCSurface<T,Descriptor>::processGenericBlocks (
-        Box3D domain, std::vector<AtomicBlock3D*> blocks )
-{
-    PLB_PRECONDITION( blocks.size()==2 );
-    ParticleField3D<T,Descriptor>& particleField =
-        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
-    BlockLattice3D<T,Descriptor>& fluid =
-        *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
-
-    std::vector<Particle3D<T,Descriptor>*> particles;
-    particleField.findParticles(domain, particles);
-    for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
-        PLB_ASSERT( particle );
-        Array<T,3> position(particle->getPosition());
-        Array<T,3> dp = mapMeshAsRBC(position, cellsCenter[0], radius) - position;
-        particle->get_v() += dp ;
-        particle->get_vPrevious() += dp ;
-    }
-}
-
-template<typename T, template<typename U> class Descriptor>
-MapParticleToRBCSurface<T,Descriptor>* MapParticleToRBCSurface<T,Descriptor>::clone() const {
-    return new MapParticleToRBCSurface<T,Descriptor>(*this);
-}
-
-template<typename T, template<typename U> class Descriptor>
-void MapParticleToRBCSurface<T,Descriptor>::getTypeOfModification (
-        std::vector<modif::ModifT>& modified ) const
-{
-    modified[0] = modif::dynamicVariables; // Particle field.
-    modified[1] = modif::nothing; // Fluid field.
-}
-
-template<typename T, template<typename U> class Descriptor>
-BlockDomain::DomainT MapParticleToRBCSurface<T,Descriptor>::appliesTo () const {
-    return BlockDomain::bulkAndEnvelope;
-}
 
 }  // namespace plb
 
