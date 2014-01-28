@@ -36,20 +36,31 @@ ApplyStretchingForce3D<T,Descriptor>::ApplyStretchingForce3D (
         std::vector<plint> const& outerLeftTags_, std::vector<plint> const& outerRightTags_,
         Array<T,3> const& stretchingForce_, T cellDensity_,
         std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_)
-    : outerLeftTags(outerLeftTags_),
-      outerRightTags(outerRightTags_),
-      stretchingForce(stretchingForce_),
-      cellDensity(cellDensity_),
+    :  cellDensity(cellDensity_),
       tagToParticle3D(tagToParticle3D_)
-{ }
+{
+        particleTags.push_back(outerLeftTags_);
+        particleTags.push_back(outerRightTags_);
+        forces.push_back(stretchingForce_ * (-1.0));
+        forces.push_back(stretchingForce_);
+}
+
+template<typename T, template<typename U> class Descriptor>
+ApplyStretchingForce3D<T,Descriptor>::ApplyStretchingForce3D (
+        std::vector<std::vector<plint> > particleTags_,
+        std::vector<Array<T,3> > forces_, T cellDensity_,
+        std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_)
+    : particleTags(particleTags_),
+      forces(forces_),
+      cellDensity(cellDensity_),
+      tagToParticle3D(tagToParticle3D_) { }
 
 
 template<typename T, template<typename U> class Descriptor>
 ApplyStretchingForce3D<T,Descriptor>::ApplyStretchingForce3D (
         ApplyStretchingForce3D<T,Descriptor> const& rhs)
-    : outerLeftTags(rhs.outerLeftTags),
-      outerRightTags(rhs.outerRightTags),
-      stretchingForce(rhs.stretchingForce),
+    : particleTags(rhs.particleTags),
+      forces(rhs.forces),
       cellDensity(rhs.cellDensity),
       tagToParticle3D(rhs.tagToParticle3D)
 { }
@@ -61,24 +72,19 @@ void ApplyStretchingForce3D<T,Descriptor>::processGenericBlocks (
 {
     PLB_PRECONDITION( blocks.size()==1 );
 
-    plint numOuterLeftTags = outerLeftTags.size();
-    plint numOuterRightTags = outerRightTags.size();
-    for(plint it = 0; it < numOuterLeftTags; it++) {
-        plint tag = outerLeftTags[it];
-        if (tagToParticle3D->count(tag) > 0) {
-            ImmersedCellParticle3D<T,Descriptor> * particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>( (*tagToParticle3D)[tag]);
-            particle->get_a()     += - stretchingForce * (1.0/numOuterLeftTags)/cellDensity;
-            particle->get_force() += -  stretchingForce * (1.0/numOuterLeftTags);
-        } else pcout << "ImmerseCellParticle3D not found! Something is wrong here!" << std::endl;
+    for (pluint var = 0; var < particleTags.size(); ++var) {
+        std::vector<plint> & pTags = particleTags[var];
+        pluint nParts = pTags.size();
+        for (pluint iT = 0; iT < nParts; ++iT) {
+            plint tag = pTags[iT];
+            if (tagToParticle3D->count(tag) > 0) {
+                ImmersedCellParticle3D<T,Descriptor> * particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>( (*tagToParticle3D)[tag]);
+//                particle->get_a()     += forces[var] * (1.0/nParts)/cellDensity;
+                particle->get_force() += forces[var] * (1.0/nParts);
+            } else pcout << "ImmerseCellParticle3D not found! Something is wrong here!" << std::endl;
+        }
     }
-    for(plint it = 0; it < numOuterRightTags; it++) {
-        plint tag = outerRightTags[it];
-        if (tagToParticle3D->count(tag) > 0) {
-            ImmersedCellParticle3D<T,Descriptor>* particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>( (*tagToParticle3D)[tag]);
-            particle->get_a()     +=  stretchingForce * (1.0/numOuterRightTags)/cellDensity;
-            particle->get_force() +=  stretchingForce * (1.0/numOuterRightTags);
-        } else pcout << "ImmerseCellParticle3D not found! Something is wrong here!" << std::endl;
-    }
+
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -221,12 +227,14 @@ void FindTagsOfLateralCellParticles3D<T,Descriptor>::processGenericBlocks (
 
             std::vector<Particle3D<T,Descriptor>*> found;
             particleField.findParticles(domain, found);
-            if (direction == 0) {
+            if (direction == TFL_DIRECTION_X) {
                 std::sort(found.begin(), found.end(), compareParticlesInX<T,Descriptor>);
-            } else if (direction == 1) {
+            } else if (direction == TFL_DIRECTION_Y) {
                 std::sort(found.begin(), found.end(), compareParticlesInY<T,Descriptor>);
-            } else if (direction == 2) {
+            } else if (direction == TFL_DIRECTION_Z) {
                 std::sort(found.begin(), found.end(), compareParticlesInZ<T,Descriptor>);
+            } else if (direction == TFL_DISAGGREGATION_UP or direction == TFL_DISAGGREGATION_UP_HALF or direction == TFL_DISAGGREGATION_LEFT) {
+                std::sort(found.begin(), found.end(), compareParticlesInY<T,Descriptor>);
             }
             plint numParticles = found.size();
             for (plint iP = 0; iP < numParticlesPerSide; ++iP) {
@@ -256,7 +264,7 @@ template<typename T, template<typename U> class Descriptor>
 void FindTagsOfLateralCellParticles3D<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
-    modified[0] = modif::dynamicVariables; // Particle field.
+    modified[0] = modif::nothing; // Particle field.
 }
 
 /* ================================================================================ */

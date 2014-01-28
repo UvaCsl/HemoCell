@@ -41,6 +41,7 @@
 #include "cellForceChecking3D.h"
 
 #include "cellCellForces3D.h"
+#include "rbcDisaggregation.h"
 
 
 using namespace plb;
@@ -225,7 +226,7 @@ int main(int argc, char* argv[])
     /* CREATE MESH */
     std::vector<Array<T,3> > centers;
     std::vector<T> radii;
-    positionCells(shape, radius, npar, parameters, centers, radii, flowType);
+    positionCells(shape, radius, npar, parameters, centers, radii, dx, flowType);
     plint numOfCellsPerInlet = radii.size(); // number used for the generation of Cells at inlet
     std::vector<plint> cellIds;
     plint cellNumVertices = 0; plint slice = 0; // number of particles per tag and number of slice of created particles
@@ -373,6 +374,9 @@ int main(int argc, char* argv[])
     CellStretching3D<T,DESCRIPTOR, DenseParticleField3D>  rbcStretch(Cells, immersedParticles, 0.05*numParts[0], flowType, dx, dt, dNewton,
                                                                                             &tagToParticle3D, checkpointed,
                                                                                             stretchForceScalar, timesToStretch);
+    RBCDisaggregation3D<T,DESCRIPTOR, DenseParticleField3D>  rbcDisaggregation(immersedParticles, stretchForceScalar, 0.5*numParts[0], flowType, dx, dt, dNewton,
+                                                                                            &tagToParticle3D);
+
     SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds,
                                     rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume(), 0.05*numParts[0], flowType,
                                     dx, dt, T(dNewton), chq, checkpointed);
@@ -404,6 +408,9 @@ int main(int argc, char* argv[])
         applyProcessingFunctional ( // copy fluid velocity on particles
             new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(ibmKernel),
             immersedParticles.getBoundingBox(), particleLatticeArg);
+
+        rbcDisaggregation.fixPositions();
+
         applyProcessingFunctional ( // update mesh position
             new CopyParticleToMeshVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
             immersedParticles.getBoundingBox(), particleArg);
@@ -415,7 +422,10 @@ int main(int argc, char* argv[])
         applyProcessingFunctional ( // Compute Cell Model forces
            new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), rbcQuantities.getCellsVolume(), rbcQuantities.getCellsSurface()),
            immersedParticles.getBoundingBox(), particleArg );
+
         rbcStretch.applyForce(0, cellModel->getDensity());
+        rbcDisaggregation.applyForce();
+
         pcout << " (" << initIter << ") ";
         pcout << "OK" << std::endl;
     }
@@ -544,6 +554,8 @@ int main(int argc, char* argv[])
         applyProcessingFunctional ( // copy fluid velocity on particles
             new FluidVelocityToImmersedCell3D<T,DESCRIPTOR>(ibmKernel),
             immersedParticles.getBoundingBox(), particleLatticeArg);
+        rbcDisaggregation.fixPositions();
+
         // #5# Position Update
         applyProcessingFunctional ( // advance particles in time according to velocity
             new AdvanceParticlesEveryWhereFunctional3D<T,DESCRIPTOR>,
@@ -579,6 +591,8 @@ int main(int argc, char* argv[])
                         immersedParticles.getBoundingBox(), particleArg );
         rbcStretch.applyForce(i, cellModel->getDensity());
         dtIteration = global::timer("Model").stop();
+
+        rbcDisaggregation.applyForce();
     }
     pcout << "Simulation finished." << std::endl;
 //    MPI_Finalize();

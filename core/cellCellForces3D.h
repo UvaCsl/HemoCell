@@ -140,11 +140,12 @@ class MorsePotential : public CellCellForce3D<T> {
 // Morse Potential is:
 //    phi = De*( exp(2*beta*(ro - r)) - 2*exp(beta*(r0 - r)));
 // with:
-//    De: well depth of the potential   
-//    beta: well depth of the potential
-//    r0: zero force distance
+//    De: well depth of the potential    (0.3 kbT ) Values for 500 vertices
+//    beta: well depth of the potential  (1.5e6 m)
+//    r0: zero force distance            (0.3e-6 m)
 public:
     MorsePotential(T De_, T beta_, T r0_) : De(De_), beta(beta_), r0(r0_) {};
+    MorsePotential(T dx, plint numVerticesPerCell, T kBT, bool useOtherParameters) { De = 0.3*kBT * (500.0 / numVerticesPerCell); beta=1.5e6/dx; r0=0.3e-6/dx;};
     virtual ~MorsePotential() { }
     virtual MorsePotential<T>* clone() const { return new MorsePotential<T>(De, beta, r0); } ;
 public:

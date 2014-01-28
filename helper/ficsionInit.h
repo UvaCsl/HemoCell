@@ -30,7 +30,7 @@ const T pi = 4.*atan(1.);
 // Position Cells inside the domain
 template<typename T>
 void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> const& parameters,
-        std::vector<Array<T,3> > & centers, std::vector<T> & radii, plint flowType) ;
+        std::vector<Array<T,3> > & centers, std::vector<T> & radii, T dx, plint flowType) ;
 
 /* ************* Functions poiseuillePressure and poiseuilleVelocity ******************* */
 

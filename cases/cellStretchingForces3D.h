@@ -34,6 +34,12 @@
 #include <algorithm>    // std::sort
 #include <vector>       // std::vector
 
+#define TFL_DIRECTION_X 0
+#define TFL_DIRECTION_Y 1
+#define TFL_DIRECTION_Z 2
+#define TFL_DISAGGREGATION_UP 3
+#define TFL_DISAGGREGATION_UP_HALF 4
+#define TFL_DISAGGREGATION_LEFT 5
 
 namespace plb {
 
@@ -42,6 +48,9 @@ template<typename T, template<typename U> class Descriptor>
 class ApplyStretchingForce3D : public BoxProcessingFunctional3D
 {
 public:
+    ApplyStretchingForce3D (std::vector<std::vector<plint> > particleTags_,
+                            std::vector<Array<T,3> > forces_, T cellDensity_,
+                            std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_);
     ApplyStretchingForce3D (std::vector<plint> const& outerLeftTags_, std::vector<plint> const& outerRightTags_,
                             Array<T,3> const& stretchingForce_, T cellDensity_,
                             std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_);
@@ -54,9 +63,9 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
-    std::vector<plint> const& outerLeftTags;
-    std::vector<plint> const& outerRightTags;
-    Array<T,3> const& stretchingForce;
+    std::vector<std::vector<plint> > particleTags;
+    std::vector<Array<T,3> > forces;
+
     T const& cellDensity;
     std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
 };

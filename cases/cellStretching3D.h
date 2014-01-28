@@ -17,7 +17,7 @@ public:
                 std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D_,
                 bool checkpointed_=false,
                 T stretchForceScalarLU_=0, plint timesToStretch_=40,
-                plint firstPlane_=0, plint secondPlane_=2);
+                plint firstPlane_=TFL_DIRECTION_X, plint secondPlane_=TFL_DIRECTION_Z);
         virtual ~CellStretching3D();
         void applyForce(plint iter, T cellDensity) ;
 
