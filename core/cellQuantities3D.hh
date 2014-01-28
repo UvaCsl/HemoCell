@@ -27,13 +27,14 @@ CellQuantities3D<T,Descriptor,ParticleFieldT>::CellQuantities3D(
         TriangleBoundary3D<T> const& Cells_,
         MultiParticleField3D<ParticleFieldT<T,Descriptor> > &  particles_,
         std::vector<plint> const&  cellIds_, plint numberOfCells_,
-        std::map <plint, Particle3D<T,Descriptor>*> const & tagToParticle3D_,
+        CellFieldQuantityHolder<T,Descriptor> & chq_,
         std::string cmhFileName, T dx_, T dt_, plint cellRadiusLU_, bool checkpointed_) :
             Cells(Cells_),
             particles(&particles_),
             cellIds(cellIds_),
             numberOfCells(numberOfCells_),
-            tagToParticle3D(tagToParticle3D_),
+            chq(chq_),
+            tagToParticle3D(chq.get_tagToParticle3D()),
             dx(dx_), dt(dt_), cellRadiusLU(cellRadiusLU_), checkpointed(checkpointed_)
 {
         std::ostream::openmode mode = std::ostream::out;
@@ -85,7 +86,7 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
         countCellCenters(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsCenter, cellNumVertices);
         countCellVelocity(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVelocity, cellNumVertices);
 
-        plint numVerticesPerCell = 10;
+        plint numVerticesPerCell = cellNumVertices[0];
         std::vector<plint> subscribedQuantities;
         subscribedQuantities.push_back(CCR_POSITION_MEAN);
         subscribedQuantities.push_back(CCR_VOLUME);
@@ -98,10 +99,21 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
         subscribedQuantities.push_back(CCR_ANGLE_MAX);
         subscribedQuantities.push_back(CCR_ENERGY);
 
-        CollectiveCellReductionBox3D<T,Descriptor> * ccrb3d = new CollectiveCellReductionBox3D<T,Descriptor>(Cells, numVerticesPerCell, subscribedQuantities);
+        CollectiveCellReductionBox3D<T,Descriptor> * ccrb3d = new CollectiveCellReductionBox3D<T,Descriptor>(Cells, chq, numVerticesPerCell, subscribedQuantities);
         particleArg.push_back(reductionParticles);
         applyProcessingFunctional(ccrb3d, particles->getBoundingBox(), particleArg);
-//        ccrb3d->postProcess(particleArg);
+        particleArg.clear();
+        particleArg.push_back(reductionParticles);
+        syncCellQuantities<T,Descriptor>(reductionParticles->getBoundingBox(), particleArg, chq);
+        for (plint ci = 0; ci < numberOfCells; ++ci) {
+            cout << ci
+                    << " vol " << cellsVolume[ci] - chq.getVolume(ci)
+                    << " sur " << cellsSurface[ci] - chq.getSurface(ci)
+                    << " ang " << cellsMeanAngle[ci] -  chq.getMeanAngle(ci)
+                    << " v-v " << cellsVolume[ci] << " " << chq.getVolume(ci)
+                                        << std::endl;
+        }
+
 }
 
 

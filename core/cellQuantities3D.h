@@ -31,7 +31,7 @@ public:
                 TriangleBoundary3D<T> const& Cells_,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> > &  particles_,
                 std::vector<plint> const&  cellIds_, plint numberOfCells_,
-                std::map <plint, Particle3D<T,Descriptor>*> const & tagToParticle3D_,
+                CellFieldQuantityHolder<T,Descriptor> & chq_,
                 std::string cmhFileName, T dx_, T dt_, plint cellRadiusLU_, bool checkpointed_=false);
         virtual ~CellQuantities3D();
         void calculateAll() ;
@@ -61,6 +61,7 @@ private:
         MultiParticleField3D<ParticleFieldT<T,Descriptor> > * reductionParticles;
         std::vector<plint> const& cellIds;
         plint numberOfCells;
+        CellFieldQuantityHolder<T,Descriptor> & chq;
         std::map <plint, Particle3D<T,Descriptor>*> const & tagToParticle3D;
         plb_ofstream logFile;
         T dx, dt;

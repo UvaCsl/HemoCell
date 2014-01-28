@@ -296,7 +296,6 @@ int main(int argc, char* argv[])
             pcout << "Cell: " << iA << ", Particles: " << numParts[iA] << std::endl;
     }
 
-    CellFieldQuantityHolder<T,DESCRIPTOR> cqh(npar, numParts[0]);
     // plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox()); //Total number of particles
 
     /* Find particles in the domain (+envelopes) and store them in tagToParticle3D */
@@ -313,8 +312,8 @@ int main(int argc, char* argv[])
         immersedParticles.getBoundingBox(), particleArg );
 
     std::string logFileName = logOutDir + "plbCells.log";
-
-    CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, tagToParticle3D, logFileName, dx, dt, radius, checkpointed);
+    CellFieldQuantityHolder<T,DESCRIPTOR> cqh(Cells, numParts[0], tagToParticle3D);
+    CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, cqh, logFileName, dx, dt, radius, checkpointed);
     rbcQuantities.calculateAll();
     /* INITIALIZE MODELS */
     k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;

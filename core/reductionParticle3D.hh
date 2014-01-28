@@ -33,19 +33,29 @@ int ReductionParticle3D<T,Descriptor>::id =
 
 template<typename T, template<typename U> class Descriptor>
 ReductionParticle3D<T,Descriptor>::ReductionParticle3D()
-    : processor(0), cellId(-1)
+    : processor(-1), cellId(-1)
 { }
 
 template<typename T, template<typename U> class Descriptor>
-ReductionParticle3D<T,Descriptor>::ReductionParticle3D(plint cellId_, Array<T,3> const& position)
-    :  Particle3D<T,Descriptor>(cellId_, position), processor(0), cellId(cellId_)
+ReductionParticle3D<T,Descriptor>::ReductionParticle3D(plint tag_, Array<T,3> const& position)
+    :  Particle3D<T,Descriptor>(tag_, position), cellId(tag_), processor(this->getMpiProcessor())
+{ }
+
+
+template<typename T, template<typename U> class Descriptor>
+ReductionParticle3D<T,Descriptor>::ReductionParticle3D(plint tag_, Array<T,3> const& position,
+        plint cellId_, plint processor_, plint nParticles_,
+        std::map<plint, T > const& quantities1D_,
+        std::map<plint, Array<T,3> > const& quantities3D_,
+        std::map<plint, std::vector<T> > const& quantitiesND_)
+    :  Particle3D<T,Descriptor>(tag_, position), cellId(cellId_), processor(processor_), nParticles(nParticles_),
+       quantities1D(quantities1D_), quantities3D(quantities3D_),quantitiesND(quantitiesND_)
 { }
 
 
 template<typename T, template<typename U> class Descriptor>
 void ReductionParticle3D<T,Descriptor>::advance() {
-//    this->getPosition() += vPrevious;
-    processor = this->getMpiProcessor();
+    this->getPosition() = quantities3D[13]; // 13 = CCR_NO_PBC_POSITION_MEAN
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -70,11 +80,12 @@ int ReductionParticle3D<T,Descriptor>::getId() const {
 template<typename T, template<typename U> class Descriptor>
 void ReductionParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializer) const
 {
-    Particle3D<T,Descriptor>::serialize(serializer);
 //    serializer.addValues<T,3>(force);
 //    serializer.addValue<T>(E_repulsive);
-    serializer.addValue<plint>(processor);
+    Particle3D<T,Descriptor>::serialize(serializer);
     serializer.addValue<plint>(cellId);
+    serializer.addValue<plint>(processor);
+    serializer.addValue<plint>(nParticles);
 
     typename std::map<plint, T >::const_iterator iter1D;
     typename std::map<plint, Array<T,3> >::const_iterator iter3D;
@@ -102,13 +113,14 @@ void ReductionParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializ
 template<typename T, template<typename U> class Descriptor>
 void ReductionParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& unserializer)
 {
-    Particle3D<T,Descriptor>::unserialize(unserializer);
 //    unserializer.readValues<T,3>(force);
 //    unserializer.readValue<T>(E_repulsive);
     quantities1D.clear();      quantities3D.clear();     quantitiesND.clear();
 
-    unserializer.readValue<plint>(processor);
+    Particle3D<T,Descriptor>::unserialize(unserializer);
     unserializer.readValue<plint>(cellId);
+    unserializer.readValue<plint>(processor);
+    unserializer.readValue<plint>(nParticles);
 
 
     plint size1D, size3D, sizeND;

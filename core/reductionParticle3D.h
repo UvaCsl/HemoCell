@@ -32,7 +32,12 @@ template<typename T, template<typename U> class Descriptor>
 class ReductionParticle3D : public Particle3D<T,Descriptor> {
 public:
     ReductionParticle3D();
-    ReductionParticle3D(plint cellId_, Array<T,3> const& position);
+    ReductionParticle3D(plint tag_, Array<T,3> const& position);
+    ReductionParticle3D(plint tag_, Array<T,3> const& position,
+                plint cellId_, plint processor_, plint nParticles_,
+                std::map<plint, T > const& quantities1D_,
+                std::map<plint, Array<T,3> > const& quantities3D_,
+                std::map<plint, std::vector<T> > const& quantitiesND_);
 
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
     virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
@@ -52,8 +57,8 @@ public:
     	return plint(myrank); }
 private:
     static int id;
-    plint processor;
     plint cellId;
+    plint processor;
     plint nParticles;
     std::map<plint, T > quantities1D; // quantities1D[CCR_VOLUME] = CELL_VOLUME
     std::map<plint, Array<T,3> > quantities3D;
@@ -62,7 +67,14 @@ public:
     void insert(plint ccrId, T value) { quantities1D[ccrId] = value; }
     void insert(plint ccrId, Array<T,3> value) { quantities3D[ccrId] = value; }
     void insert(plint ccrId, std::vector<T> value) { quantitiesND[ccrId] = value; }
-    T get1D(plint ccrId) { return quantities1D[ccrId]; }
+    T const& get1D(plint ccrId) { return quantities1D[ccrId]; }
+    Array<T,3> const& get3D(plint ccrId) { return quantities3D[ccrId]; }
+    std::vector<T> const& getND(plint ccrId) { return quantitiesND[ccrId]; }
+
+    std::map<plint, T >& getQuantities1D() { return quantities1D; }; // quantities1D[CCR_VOLUME] = CELL_VOLUME
+    std::map<plint, Array<T,3> >& getQuantities3D() { return quantities3D; }; // quantities1D[CCR_VOLUME] = CELL_VOLUME
+    std::map<plint, std::vector<T> >& getQuantitiesND() { return quantitiesND; }; // quantities1D[CCR_VOLUME] = CELL_VOLUME
+
 public:
     virtual int getId() const;
 
@@ -99,13 +111,17 @@ class ReductionParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
     {
         // tag, position, scalars, vectors.
 
-        plint processor, cellId;
+        plint tag, processor, cellId, nParticles;
+        Array<T,3> position;
         std::map<plint, T > quantities1D; // quantities1D[CCR_VOLUME] = CELL_VOLUME
         std::map<plint, Array<T,3> > quantities3D;
         std::map<plint, std::vector<T> > quantitiesND;
 
-        unserializer.readValue<plint>(processor);
+        unserializer.readValue(tag);
+        unserializer.readValues<T,3>(position);
         unserializer.readValue<plint>(cellId);
+        unserializer.readValue<plint>(processor);
+        unserializer.readValue<plint>(nParticles);
 
         plint size1D, size3D, sizeND, qId;
         unserializer.readValue<plint>(size1D);
@@ -126,7 +142,7 @@ class ReductionParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
             unserializer.readValues<T>(quantitiesND[qId]);
         }
 
-        return new ReductionParticle();
+        return new ReductionParticle(tag, position, cellId, processor, nParticles, quantities1D, quantities3D, quantitiesND);
     }
 };
 
