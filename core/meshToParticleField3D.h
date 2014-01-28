@@ -46,7 +46,7 @@ public:
     T getEnergy(plint cellId) { return quantities1D[cellId][CCR_ENERGY];} ;
     T getMeanAngle(plint cellId) { return quantities1D[cellId][CCR_ANGLE_MEAN];} ;
     T getMeanEdgeLength(plint cellId) { return quantities1D[cellId][CCR_EDGE_DISTANCE_MEAN];} ;
-    Array<T,3> const& getPosition(plint cellId) { return quantities3D[cellId][CCR_POSITION_MEAN];} ;
+    Array<T,3> const& getPosition(plint cellId) { return quantities3D[cellId][CCR_POSITION_MEAN];  } ;
     Array<T,3> const& getVelocity(plint cellId) { return quantities3D[cellId][CCR_VELOCITY_MEAN];} ;
     std::vector<T> const& getInertia(plint cellId) { return quantitiesND[cellId][CCR_INERTIA];} ;
 //    Array<Array<T,3>,3> getInertia(plint cellId) ;

@@ -87,6 +87,8 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
         countCellVelocity(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVelocity, cellNumVertices);
 
         plint numVerticesPerCell = cellNumVertices[0];
+
+        chq.clearQuantities();
         std::vector<plint> subscribedQuantities;
         subscribedQuantities.push_back(CCR_POSITION_MEAN);
         subscribedQuantities.push_back(CCR_VOLUME);
@@ -99,12 +101,13 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
         subscribedQuantities.push_back(CCR_ANGLE_MAX);
         subscribedQuantities.push_back(CCR_ENERGY);
 
-        CollectiveCellReductionBox3D<T,Descriptor> * ccrb3d = new CollectiveCellReductionBox3D<T,Descriptor>(Cells, chq, numVerticesPerCell, subscribedQuantities);
         particleArg.push_back(reductionParticles);
-        applyProcessingFunctional(ccrb3d, particles->getBoundingBox(), particleArg);
-        particleArg.clear();
-        particleArg.push_back(reductionParticles);
+        applyProcessingFunctional(
+                new CollectiveCellReductionBox3D<T,Descriptor>(Cells, chq, numVerticesPerCell, subscribedQuantities),
+                particles->getBoundingBox(), particleArg);
+        particleArg.clear();  particleArg.push_back(reductionParticles);
         syncCellQuantities<T,Descriptor>(reductionParticles->getBoundingBox(), particleArg, chq);
+
         for (plint ci = 0; ci < numberOfCells; ++ci) {
             cout << ci
                     << " vol " << cellsVolume[ci] - chq.getVolume(ci)
@@ -121,13 +124,52 @@ template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateVolumeAndSurfaceAndCenters()
 {
-        cellsVolume.clear(); cellsSurface.clear(); cellsCenter.clear();
         std::vector<MultiBlock3D*> particleArg;
         particleArg.push_back(particles);
+        cellsVolume.clear(); cellsSurface.clear(); cellsCenter.clear();
         countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
         countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
         countCellCenters(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsCenter, cellNumVertices);
+
+//        chq.clearQuantities();
+//        std::vector<plint> subscribedQuantities;
+//        subscribedQuantities.push_back(CCR_POSITION_MEAN);
+//        subscribedQuantities.push_back(CCR_VOLUME);
+//        subscribedQuantities.push_back(CCR_SURFACE);
+//
+//        particleArg.push_back(reductionParticles);
+//        applyProcessingFunctional(
+//                new CollectiveCellReductionBox3D<T,Descriptor>(Cells, chq, chq.getNumVerticesPerCell(), subscribedQuantities),
+//                particles->getBoundingBox(), particleArg);
+//        particleArg.clear();  particleArg.push_back(reductionParticles);
+//        syncCellQuantities<T,Descriptor>(reductionParticles->getBoundingBox(), particleArg, chq);
+//        for (plint ci = 0; ci < numberOfCells; ++ci) {
+//            cellsVolume[ci] = chq.getVolume(ci);
+//            cellsSurface[ci] = chq.getSurface(ci);
+//            cellsCenter[ci] = chq.getPosition(ci);
+//        }
 }
+
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateInertia()
+{
+        std::vector<MultiBlock3D*> particleArg;
+        particleArg.push_back(particles);
+        particleArg.push_back(reductionParticles);
+
+        std::vector<plint> subscribedQuantities;
+        subscribedQuantities.push_back(CCR_INERTIA);
+
+        applyProcessingFunctional(
+                new CollectiveCellReductionBox3D<T,Descriptor>(Cells, chq, chq.getNumVerticesPerCell(), subscribedQuantities),
+                particles->getBoundingBox(), particleArg);
+
+        particleArg.clear();  particleArg.push_back(reductionParticles);
+        syncCellQuantities<T,Descriptor>(reductionParticles->getBoundingBox(), particleArg, chq);
+}
+
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >

@@ -25,7 +25,7 @@ public:
             MultiParticleField3D<ParticleFieldT<T,Descriptor> >& particles, std::vector<plint> cellIds,
             std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume,
             plint numParticlesPerSide_, plint flowType_, T dx_, T dt_, T dNewton_,
-            std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D_,
+            CellFieldQuantityHolder<T,Descriptor> & chq_,
             bool checkpointed=false,
             bool store_=false);
     ~SingleCellInShearFlow() {};
@@ -59,6 +59,7 @@ private:
     plint numParticlesPerSide;
     plint flowType;
     T dx, dt, dNewton, dm;
+    CellFieldQuantityHolder<T,Descriptor> & chq;
     std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D;
     bool checkpointed;
     bool store;

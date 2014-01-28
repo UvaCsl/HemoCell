@@ -54,11 +54,6 @@ private:
     std::map<plint, std::map<plint, Array<plint,3> >  > quantityBins3D; // quantityBins3D[CCR_VELOCITY_MEAN][cellId]
     std::map<plint, std::map<plint, std::vector<plint> >  > quantityBinsND; // quantityBinsND[CCR_INERTIA][cellId]
 
-    std::map<plint, std::map<plint, T > > quantitiesFromReductionParticles1D; // carryOnQuantities1D[cellId][CCR_EDGE_DISTANCE_STD]= MEAN_EDGE_DISTANCE
-    std::map<plint, std::map<plint, Array<T,3> > > quantitiesFromReductionParticles3D;
-    std::map<plint, std::map<plint, std::vector<T> > > quantitiesFromReductionParticlesND;
-
-
     T computeQuantity1D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
     Array<T,3> computeQuantity3D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
     std::vector<T> computeQuantityND (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);

@@ -312,8 +312,8 @@ int main(int argc, char* argv[])
         immersedParticles.getBoundingBox(), particleArg );
 
     std::string logFileName = logOutDir + "plbCells.log";
-    CellFieldQuantityHolder<T,DESCRIPTOR> cqh(Cells, numParts[0], tagToParticle3D);
-    CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, cqh, logFileName, dx, dt, radius, checkpointed);
+    CellFieldQuantityHolder<T,DESCRIPTOR> chq(Cells, numParts[0], tagToParticle3D);
+    CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, chq, logFileName, dx, dt, radius, checkpointed);
     rbcQuantities.calculateAll();
     /* INITIALIZE MODELS */
     k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
@@ -375,7 +375,7 @@ int main(int argc, char* argv[])
                                                                                             stretchForceScalar, timesToStretch);
     SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds,
                                     rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume(), 0.05*numParts[0], flowType,
-                                    dx, dt, T(dNewton), &tagToParticle3D, checkpointed);
+                                    dx, dt, T(dNewton), chq, checkpointed);
     rbcQuantities.print(0, eqVolume, eqSurface, eqArea, eqLength);
     rbcQuantities.write(0, eqVolumeFinal, eqSurface, eqArea, eqLength) ; // Write Log file for the cell Particles
     pcout << "== Inertia Tensor == "<< std::endl;

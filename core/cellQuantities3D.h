@@ -37,6 +37,7 @@ public:
         void calculateAll() ;
         void calculateVolumeAndSurface() ;
         void calculateVolumeAndSurfaceAndCenters() ;
+        void calculateInertia();
         void writeHeader(); // Does not work if checkpointed
         void write(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength);  // Does not work if checkpointed
         void print(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength);

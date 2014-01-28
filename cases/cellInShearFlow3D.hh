@@ -13,13 +13,14 @@ SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(Triang
         MultiParticleField3D<ParticleFieldT<T,Descriptor> > & particles_, std::vector<plint> cellIds,
         std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume,
         plint numParticlesPerSide_, plint flowType_, T dx_, T dt_, T dNewton_,
-        std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D_,
+        CellFieldQuantityHolder<T,Descriptor> & chq_,
         bool checkpointed_,
         bool store_)
         :
     Cells(Cells_), particles(&particles_), numParticlesPerSide(numParticlesPerSide_),
     flowType(flowType_), dx(dx_), dt(dt_), dNewton(dNewton_), dm(dNewton_*dt_*dt_/dx_),
-    tagToParticle3D(tagToParticle3D_),
+    chq(chq_),
+    tagToParticle3D(&(chq.get_tagToParticle3D())),
     checkpointed(checkpointed_),
     store(store_)
 {

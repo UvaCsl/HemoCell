@@ -77,20 +77,6 @@ void CollectiveCellReductionBox3D<T,Descriptor>::subscribeParticles(std::vector<
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CollectiveCellReductionBox3D<T,Descriptor>::getQuantitiesFromReductionParticles(std::vector<Particle3D<T,Descriptor>*> const& reductionParticles)
-{
-    plint cellId;
-    for (pluint iA = 0; iA < reductionParticles.size(); ++iA) {
-        ReductionParticle3D<T,Descriptor>* particle =
-                dynamic_cast<ReductionParticle3D<T,Descriptor>*> (reductionParticles[iA]);
-        cellId = particle->get_cellId();
-        quantitiesFromReductionParticles1D[cellId] = particle->getQuantities1D();
-        quantitiesFromReductionParticles3D[cellId] = particle->getQuantities3D();
-        quantitiesFromReductionParticlesND[cellId] = particle->getQuantitiesND();
-    }
-}
-
-template<typename T, template<typename U> class Descriptor>
 void CollectiveCellReductionBox3D<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
@@ -105,7 +91,7 @@ void CollectiveCellReductionBox3D<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
     std::vector<Particle3D<T,Descriptor>*> reductionParticles;
-    reductionParticleField.findParticles(reductionParticleField.getBoundingBox(), reductionParticles);
+    reductionParticleField.removeParticles(reductionParticleField.getBoundingBox());
 
     plint ccrId, dim, reductionType, quantity, cellId;
     std::map<plint, T > values1D;
@@ -113,7 +99,7 @@ void CollectiveCellReductionBox3D<T,Descriptor>::processGenericBlocks (
     std::map<plint, std::vector<T> > valuesND;
 
     subscribeParticles(particles);
-    getQuantitiesFromReductionParticles(reductionParticles);
+
     /* Loop through the particles and compute the quantities */
     for (pluint iA = 0; iA < particles.size(); ++iA) {
         values1D.clear(); values3D.clear(); valuesND.clear();
@@ -285,7 +271,7 @@ std::vector<T> CollectiveCellReductionBox3D<T,Descriptor>::computeQuantityND (pl
         T Ixx=0, Ixy=0, Ixz=0;
         T Iyx=0, Iyy=0, Iyz=0;
         T Izx=0, Izy=0, Izz=0;
-        Array<T,3> r0 = quantitiesFromReductionParticles3D[cellId][CCR_POSITION_MEAN]; // Get the Cell Center;
+        Array<T,3> r0 = chq.getPosition(cellId); // Get the Cell Center;
         for (pluint iB = 0; iB < neighbors.size(); ++iB) {
             T Aj = triangleMesh.computeTriangleArea(neighbors[iB]);
             Array<T,3> nj = triangleMesh.computeTriangleNormal(neighbors[iB]);
