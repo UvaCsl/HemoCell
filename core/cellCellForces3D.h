@@ -39,6 +39,35 @@ private:
 
 
 
+template<typename T, template<typename U> class Descriptor>
+class ComputeDifferentCellForces3D : public BoxProcessingFunctional3D
+{
+public:
+    ComputeDifferentCellForces3D (CellCellForce3D<T> const& calcForce_, T cutoffRadius_);
+    virtual ~ComputeDifferentCellForces3D();
+    ComputeDifferentCellForces3D(ComputeDifferentCellForces3D<T,Descriptor> const& rhs);
+    /// Arguments: [0] Particle-field
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual ComputeDifferentCellForces3D<T,Descriptor>* clone() const;
+    virtual void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+public:
+    /*
+     All of the following conditions have to be met, in order for the force to be applied:
+           * Particles have to belong to different cells
+           * Particle 1 has to have larger tagId that particle 2
+           * Their distance has to be less that the cutoffRadius.
+     */
+    bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T& r, Array<T,3>& eij);
+    void applyForce(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T const& r, Array<T,3> const& eij);
+private:
+    CellCellForce3D<T> const& calcForce;
+    T cutoffRadius;
+};
+
+
+
 
 
 template<typename T>
