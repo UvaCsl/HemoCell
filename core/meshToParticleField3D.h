@@ -130,7 +130,7 @@ public:
     MapVertexToParticle3D (
             TriangleBoundary3D<T> const& triangleBoundary_,
             std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_);
-    ~MapVertexToParticle3D();
+    virtual ~MapVertexToParticle3D();
     MapVertexToParticle3D(MapVertexToParticle3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
@@ -162,7 +162,7 @@ public:
                 numParticlesPerCellId(),
                 cellIdToMeshCellId(&cellInfoHolder_.getCellIdToMeshCellId()),
                 freeMeshCellIds(&cellInfoHolder_.getFreeMeshCellIds())	{	};
-    ~MeshToParticleField3D() { } ;
+    virtual ~MeshToParticleField3D() { } ;
     MeshToParticleField3D(MeshToParticleField3D<T,Descriptor> const& rhs) :
         tagToParticle3D(rhs.tagToParticle3D),
         verticesPerCell(rhs.verticesPerCell),
@@ -189,6 +189,7 @@ class CopyParticleToMeshVertex3D : public BoxProcessingFunctional3D
 {
 public:
     CopyParticleToMeshVertex3D(TriangularSurfaceMesh<T>& mesh_);
+    virtual ~CopyParticleToMeshVertex3D() { };
     /// Arguments: [0] Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual CopyParticleToMeshVertex3D<T,Descriptor>* clone() const;

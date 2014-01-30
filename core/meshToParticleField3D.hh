@@ -36,17 +36,18 @@ void MapVertexToParticle3D<T,Descriptor>::processGenericBlocks (
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
 
     std::vector<Particle3D<T,Descriptor>*> found;
-    particleField.findParticles(domain, found);
-
+    particleField.findParticles(particleField.getBoundingBox(), found); // Gets the whole domain.
+    tagToParticle3D.clear();
+    Array<T,3> pos;
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
         Particle3D<T,Descriptor>* nonTypedParticle = found[iParticle];
-        ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
-        plint vertexId = particle->getTag();
-        tagToParticle3D[vertexId] = nonTypedParticle;
+        plint vertexId = nonTypedParticle->getTag();
+        if (tagToParticle3D.count(vertexId) == 0) {
+            tagToParticle3D[vertexId] = nonTypedParticle;
+        } else if (contained(nonTypedParticle->getPosition(), domain)) {
+            tagToParticle3D[vertexId] = nonTypedParticle;
+        }
     }
-
-
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -63,7 +64,7 @@ void MapVertexToParticle3D<T,Descriptor>::getModificationPattern(std::vector<boo
 
 template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT MapVertexToParticle3D<T,Descriptor>::appliesTo() const {
-    return BlockDomain::bulkAndEnvelope;
+    return BlockDomain::bulk; // This changes in processGenericBlocks with getBoundingBox();
 }
 
 template<typename T, template<typename U> class Descriptor>

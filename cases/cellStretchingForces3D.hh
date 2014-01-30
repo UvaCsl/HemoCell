@@ -78,8 +78,7 @@ void ApplyStretchingForce3D<T,Descriptor>::processGenericBlocks (
         for (pluint iT = 0; iT < nParts; ++iT) {
             plint tag = pTags[iT];
             if (tagToParticle3D.count(tag) > 0) {
-                ImmersedCellParticle3D<T,Descriptor> * particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>( tagToParticle3D[tag]);
-//                particle->get_a()     += forces[var] * (1.0/nParts)/cellDensity;
+                ImmersedCellParticle3D<T,Descriptor> * particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>(tagToParticle3D[tag]);
                 particle->get_force() += forces[var] * (1.0/nParts);
             } else pcout << "ImmerseCellParticle3D not found! Something is wrong here!" << std::endl;
         }
@@ -237,7 +236,7 @@ void FindTagsOfLateralCellParticles3D<T,Descriptor>::processGenericBlocks (
             } else if (direction == TFL_DIRECTION_Z) {
                 std::sort(found.begin(), found.end(), compareParticlesInZ_PBC<T,Descriptor>);
             } else if (direction == TFL_DISAGGREGATION_UP or direction == TFL_DISAGGREGATION_UP_HALF or direction == TFL_DISAGGREGATION_LEFT) {
-                std::sort(found.begin(), found.end(), compareParticlesInY<T,Descriptor>);
+                std::sort(found.begin(), found.end(), compareParticlesInY_PBC<T,Descriptor>);
             }
             plint numParticles = found.size();
             for (plint iP = 0; iP < numParticlesPerSide; ++iP) {
