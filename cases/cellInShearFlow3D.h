@@ -47,7 +47,7 @@ public:
     void set_dxdtdm(T dx_, T dt_, T dm_) { dx = dx_; dt = dt_; dm = dm_;} ;
 private:
     TriangleBoundary3D<T> const& Cells;
-    MultiParticleField3D<ParticleFieldT<T,Descriptor> > * particles;
+    MultiParticleField3D<ParticleFieldT<T,Descriptor> > & particles;
     std::vector<T> iterations;
     std::vector< Array<T,3> > tumblingAngles;
     std::vector< Array<T,3> > diameters;
@@ -60,7 +60,7 @@ private:
     plint flowType;
     T dx, dt, dNewton, dm;
     CellFieldQuantityHolder<T,Descriptor> & chq;
-    std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
+    std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D;
     bool checkpointed;
     bool store;
 

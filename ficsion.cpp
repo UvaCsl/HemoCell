@@ -372,10 +372,10 @@ int main(int argc, char* argv[])
 
     plint timesToStretch = 40;
     CellStretching3D<T,DESCRIPTOR, DenseParticleField3D>  rbcStretch(Cells, immersedParticles, 0.05*numParts[0], flowType, dx, dt, dNewton,
-                                                                                            &tagToParticle3D, checkpointed,
+                                                                                            tagToParticle3D, checkpointed,
                                                                                             stretchForceScalar, timesToStretch);
     RBCDisaggregation3D<T,DESCRIPTOR, DenseParticleField3D>  rbcDisaggregation(immersedParticles, stretchForceScalar, 0.5*numParts[0], flowType, dx, dt, dNewton,
-                                                                                            &tagToParticle3D);
+                                                                                            tagToParticle3D);
 
     SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds,
                                     rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume(), 0.05*numParts[0], flowType,

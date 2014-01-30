@@ -35,7 +35,7 @@ template<typename T, template<typename U> class Descriptor>
 ApplyStretchingForce3D<T,Descriptor>::ApplyStretchingForce3D (
         std::vector<plint> const& outerLeftTags_, std::vector<plint> const& outerRightTags_,
         Array<T,3> const& stretchingForce_, T cellDensity_,
-        std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_)
+        std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_)
     :  cellDensity(cellDensity_),
       tagToParticle3D(tagToParticle3D_)
 {
@@ -49,7 +49,7 @@ template<typename T, template<typename U> class Descriptor>
 ApplyStretchingForce3D<T,Descriptor>::ApplyStretchingForce3D (
         std::vector<std::vector<plint> > particleTags_,
         std::vector<Array<T,3> > forces_, T cellDensity_,
-        std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_)
+        std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_)
     : particleTags(particleTags_),
       forces(forces_),
       cellDensity(cellDensity_),
@@ -77,8 +77,8 @@ void ApplyStretchingForce3D<T,Descriptor>::processGenericBlocks (
         pluint nParts = pTags.size();
         for (pluint iT = 0; iT < nParts; ++iT) {
             plint tag = pTags[iT];
-            if (tagToParticle3D->count(tag) > 0) {
-                ImmersedCellParticle3D<T,Descriptor> * particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>( (*tagToParticle3D)[tag]);
+            if (tagToParticle3D.count(tag) > 0) {
+                ImmersedCellParticle3D<T,Descriptor> * particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>( tagToParticle3D[tag]);
 //                particle->get_a()     += forces[var] * (1.0/nParts)/cellDensity;
                 particle->get_force() += forces[var] * (1.0/nParts);
             } else pcout << "ImmerseCellParticle3D not found! Something is wrong here!" << std::endl;
@@ -120,7 +120,7 @@ template<typename T, template<typename U> class Descriptor>
 MeasureCellStretchDeformation3D<T,Descriptor>::MeasureCellStretchDeformation3D (
         std::vector<std::vector<plint>*> const& tags_,
         std::vector<T> * deformation_, std::vector<Array<T,3> > * angles_,
-        std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_)
+        std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_)
     : tags(tags_),
       deformation(deformation_),
       angles(angles_),
@@ -148,9 +148,9 @@ void MeasureCellStretchDeformation3D<T,Descriptor>::processGenericBlocks (
         meanPositions.push_back(Array<T,3>(0,0,0));
         for (pluint j = 0; j < vec->size(); ++j) {
             plint tag = (*vec)[j];
-            if (tagToParticle3D->count(tag) > 0) {
+            if (tagToParticle3D.count(tag) > 0) {
                 ImmersedCellParticle3D<T,Descriptor>* particle =
-                        dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> ((*tagToParticle3D)[tag]);
+                        dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (tagToParticle3D[tag]);
 
                 meanPositions[i] += particle->get_pbcPosition();
             }

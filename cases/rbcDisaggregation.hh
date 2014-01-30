@@ -12,8 +12,8 @@ template< typename T, template<typename U> class Descriptor,
                 T scalarForce_,
                 plint numParticlesPerSide_, plint flowType_,
                 T dx_, T dt_, T dNewton_,
-                std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_) :
-        particles(&particles_), scalarForce(scalarForce_), numParticlesPerSide(numParticlesPerSide_), flowType(flowType_),
+                std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_) :
+        particles(particles_), scalarForce(scalarForce_), numParticlesPerSide(numParticlesPerSide_), flowType(flowType_),
         dx(dx_), dt(dt_), dNewton(dNewton_), tagToParticle3D(tagToParticle3D_)
 {
     //PLB_PRECONDITION( npar == 1 && MPI::COMM_WORLD.Get_size() == 1 );
@@ -22,10 +22,10 @@ template< typename T, template<typename U> class Descriptor,
         lateralCellParticleTags.push_back(&outerRightTags);
 
         std::vector<MultiBlock3D*> particleArg;
-        particleArg.push_back(particles);
+        particleArg.push_back(&particles);
         applyProcessingFunctional (
             new FindTagsOfLateralCellParticles3D<T,Descriptor>(numParticlesPerSide, &outerLeftTags, &outerRightTags, TFL_DISAGGREGATION_UP),
-            particles->getBoundingBox(), particleArg );
+            particles.getBoundingBox(), particleArg );
         applyForce();
         fixPositions();
     }
@@ -57,7 +57,7 @@ void RBCDisaggregation3D<T,Descriptor,ParticleFieldT>::applyForce()
 {
     if (flowType == 2) {
         std::vector<MultiBlock3D*> particleArg;
-        particleArg.push_back(particles);
+        particleArg.push_back(&particles);
 
         std::vector<std::vector<plint> > particleTags;
         particleTags.push_back(outerRightTags);
@@ -66,11 +66,11 @@ void RBCDisaggregation3D<T,Descriptor,ParticleFieldT>::applyForce()
         T cellDensity = 1.0;
         applyProcessingFunctional (
                 new ApplyStretchingForce3D<T,Descriptor>(particleTags, forces, cellDensity, tagToParticle3D),
-                particles->getBoundingBox(), particleArg );
+                particles.getBoundingBox(), particleArg );
 
         applyProcessingFunctional ( // Zero Out force (==2)
                 new ZeroOutForceVelocity3D<T,Descriptor>(outerLeftTags, tagToParticle3D, 2),
-                particles->getBoundingBox(), particleArg );
+                particles.getBoundingBox(), particleArg );
     }
 }
 
@@ -81,11 +81,11 @@ void RBCDisaggregation3D<T,Descriptor,ParticleFieldT>::fixPositions()
 {
     if (flowType == 2) {
         std::vector<MultiBlock3D*> particleArg;
-        particleArg.push_back(particles);
+        particleArg.push_back(&particles);
 
         applyProcessingFunctional ( // Zero Out velocity (==1)
                 new ZeroOutForceVelocity3D<T,Descriptor>(outerLeftTags, tagToParticle3D, 1),
-                particles->getBoundingBox(), particleArg );
+                particles.getBoundingBox(), particleArg );
     }
 }
 
@@ -101,7 +101,7 @@ void RBCDisaggregation3D<T,Descriptor,ParticleFieldT>::write(plint iter) { }
 
 template<typename T, template<typename U> class Descriptor>
 ZeroOutForceVelocity3D<T,Descriptor>::ZeroOutForceVelocity3D (std::vector<plint> const& pTags_,
-        std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_, plint zeroOut_)
+        std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_, plint zeroOut_)
     :  pTags(pTags_), tagToParticle3D(tagToParticle3D_), zeroOut(zeroOut_)
 { }
 
@@ -124,8 +124,8 @@ void ZeroOutForceVelocity3D<T,Descriptor>::processGenericBlocks (
     pluint nParts = pTags.size();
     for (pluint iT = 0; iT < nParts; ++iT) {
         plint tag = pTags[iT];
-        if (tagToParticle3D->count(tag) > 0) {
-            ImmersedCellParticle3D<T,Descriptor> * particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>( (*tagToParticle3D)[tag]);
+        if (tagToParticle3D.count(tag) > 0) {
+            ImmersedCellParticle3D<T,Descriptor> * particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>( tagToParticle3D[tag]);
 //                particle->get_a()     += forces[var] * (1.0/nParts)/cellDensity;
             if (zeroOut == 0 or zeroOut == 1) { particle->get_v() = particle->get_vPrevious() = Array<T,3>(0,0,0); }
             if (zeroOut == 0 or zeroOut == 2) { particle->get_force() = Array<T,3>(0,0,0); }

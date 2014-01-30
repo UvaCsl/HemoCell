@@ -50,10 +50,10 @@ class ApplyStretchingForce3D : public BoxProcessingFunctional3D
 public:
     ApplyStretchingForce3D (std::vector<std::vector<plint> > particleTags_,
                             std::vector<Array<T,3> > forces_, T cellDensity_,
-                            std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_);
+                            std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_);
     ApplyStretchingForce3D (std::vector<plint> const& outerLeftTags_, std::vector<plint> const& outerRightTags_,
                             Array<T,3> const& stretchingForce_, T cellDensity_,
-                            std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_);
+                            std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_);
     ~ApplyStretchingForce3D() {} ;
     ApplyStretchingForce3D(ApplyStretchingForce3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -67,7 +67,7 @@ private:
     std::vector<Array<T,3> > forces;
 
     T const& cellDensity;
-    std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
+    std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D;
 };
 
 
@@ -78,7 +78,7 @@ public:
     MeasureCellStretchDeformation3D (std::vector<std::vector<plint>*> const& tags_,
             std::vector<T> * deformation_,
             std::vector<Array<T,3> > * angles_,
-            std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_);
+            std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_);
     ~MeasureCellStretchDeformation3D() {} ;
     MeasureCellStretchDeformation3D(MeasureCellStretchDeformation3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -91,7 +91,7 @@ private:
     std::vector<std::vector<plint>*> tags;
     std::vector<T> * deformation;
     std::vector<Array<T,3> > * angles;
-    std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
+    std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D;
 };
 
 

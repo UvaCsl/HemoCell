@@ -17,10 +17,10 @@ SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(Triang
         bool checkpointed_,
         bool store_)
         :
-    Cells(Cells_), particles(&particles_), numParticlesPerSide(numParticlesPerSide_),
+    Cells(Cells_), particles(particles_), numParticlesPerSide(numParticlesPerSide_),
     flowType(flowType_), dx(dx_), dt(dt_), dNewton(dNewton_), dm(dNewton_*dt_*dt_/dx_),
     chq(chq_),
-    tagToParticle3D(&(chq.get_tagToParticle3D())),
+    tagToParticle3D(chq.get_tagToParticle3D()),
     checkpointed(checkpointed_),
     store(store_)
 {
@@ -32,16 +32,16 @@ SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(Triang
     lateralCellParticleTags.push_back(&outerDownTags);
 
     std::vector<MultiBlock3D*> particleArg;
-    particleArg.push_back(particles);
+    particleArg.push_back(&particles);
     applyProcessingFunctional (
         new FindTagsOfLateralCellParticles3D<T,Descriptor>(numParticlesPerSide, &outerLeftTags, &outerRightTags, 0),
-        particles->getBoundingBox(), particleArg );
+        particles.getBoundingBox(), particleArg );
     applyProcessingFunctional (
         new FindTagsOfLateralCellParticles3D<T,Descriptor>(numParticlesPerSide, &outerUpTags, &outerDownTags, 1),
-        particles->getBoundingBox(), particleArg );
+        particles.getBoundingBox(), particleArg );
     applyProcessingFunctional (
         new FindTagsOfLateralCellParticles3D<T,Descriptor>(numParticlesPerSide, &outerFrontTags, &outerBackTags, 2),
-        particles->getBoundingBox(), particleArg );
+        particles.getBoundingBox(), particleArg );
 
     std::ostream::openmode mode = std::ostream::out;
     if (not checkpointed) { mode = mode | std::ostream::trunc; }
@@ -61,16 +61,16 @@ void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::updateQuantities(plint 
         std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume)
 {
     std::vector<MultiBlock3D*> particleArg;
-    particleArg.push_back(particles);
+    particleArg.push_back(&particles);
     applyProcessingFunctional (
         new MeasureCellStretchDeformation3D<T,Descriptor>(lateralCellParticleTags, &tankTreadingLengths, &tankTreadingAngles, tagToParticle3D),
-        particles->getBoundingBox(), particleArg );
+        particles.getBoundingBox(), particleArg );
 
     std::vector< std::vector<T> > ellipsoidAngles;
     std::vector< std::vector<T> > ellipsoidSemiAxes;
     std::vector<T> difference;
     std::vector< std::vector<T> > inertia;
-    computeEllipsoidFit (Cells, *particles, cellIds, cellCenters, cellsVolume,
+    computeEllipsoidFit (Cells, particles, cellIds, cellCenters, cellsVolume,
             ellipsoidAngles, ellipsoidSemiAxes, inertia, difference);
     T currMaxDiameter =  max(max(ellipsoidSemiAxes[0][0], ellipsoidSemiAxes[0][1]),  ellipsoidSemiAxes[0][2]);
     if (maxDiameter <= 0) { maxDiameter = currMaxDiameter; }
@@ -171,7 +171,7 @@ void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::write(bool writeOutput)
                 std::vector<plint>* const pTags = lateralCellParticleTags[iTag];
                 for (pluint iVertex = 0; iVertex < pTags->size(); ++iVertex) {
                     ImmersedCellParticle3D<T,Descriptor>* particle =
-                            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> ((*tagToParticle3D)[ (*pTags)[iVertex]]);
+                            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (tagToParticle3D[ (*pTags)[iVertex]]);
 
                     positions.push_back(particle->get_pbcPosition());
                     tags.push_back(iTag);

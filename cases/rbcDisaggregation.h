@@ -14,7 +14,7 @@ public:
                 T scalarForce_,
                 plint numParticlesPerSide_, plint flowType_,
                 T dx_, T dt_, T dNewton_,
-                std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_);
+                std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_);
         virtual ~RBCDisaggregation3D();
         void applyForce();
         void fixPositions() ;
@@ -26,12 +26,12 @@ private:
         std::vector<plint> outerLeftTags, outerRightTags;
         std::vector<std::vector<plint>*> lateralCellParticleTags;
 
-        MultiParticleField3D<ParticleFieldT<T,Descriptor> > * particles;
+        MultiParticleField3D<ParticleFieldT<T,Descriptor> > & particles;
         T scalarForce;
         plint numParticlesPerSide;
         plint flowType;
         T dx, dt, dNewton;
-        std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
+        std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D;
         bool checkpointed;
 };
 
@@ -41,7 +41,7 @@ class ZeroOutForceVelocity3D : public BoxProcessingFunctional3D
 {
 public:
     ZeroOutForceVelocity3D (std::vector<plint> const& pTags_,
-                            std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_,
+                            std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_,
                             plint zeroOut_=0); // 1: Velocity, 2: Force, -- 0: Both
     virtual ~ZeroOutForceVelocity3D() {} ;
     ZeroOutForceVelocity3D(ZeroOutForceVelocity3D<T,Descriptor> const& rhs);
@@ -53,7 +53,7 @@ public:
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
     std::vector<plint> const& pTags;
-    std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
+    std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D;
     plint zeroOut;
 };
 
