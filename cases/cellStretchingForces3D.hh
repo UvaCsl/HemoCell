@@ -149,7 +149,10 @@ void MeasureCellStretchDeformation3D<T,Descriptor>::processGenericBlocks (
         for (pluint j = 0; j < vec->size(); ++j) {
             plint tag = (*vec)[j];
             if (tagToParticle3D->count(tag) > 0) {
-                meanPositions[i] += (*tagToParticle3D)[tag]->getPosition();
+                ImmersedCellParticle3D<T,Descriptor>* particle =
+                        dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> ((*tagToParticle3D)[tag]);
+
+                meanPositions[i] += particle->get_pbcPosition();
             }
         }
         meanPositions[i] /= 1.0 * vec->size();
@@ -228,11 +231,11 @@ void FindTagsOfLateralCellParticles3D<T,Descriptor>::processGenericBlocks (
             std::vector<Particle3D<T,Descriptor>*> found;
             particleField.findParticles(domain, found);
             if (direction == TFL_DIRECTION_X) {
-                std::sort(found.begin(), found.end(), compareParticlesInX<T,Descriptor>);
+                std::sort(found.begin(), found.end(), compareParticlesInX_PBC<T,Descriptor>);
             } else if (direction == TFL_DIRECTION_Y) {
-                std::sort(found.begin(), found.end(), compareParticlesInY<T,Descriptor>);
+                std::sort(found.begin(), found.end(), compareParticlesInY_PBC<T,Descriptor>);
             } else if (direction == TFL_DIRECTION_Z) {
-                std::sort(found.begin(), found.end(), compareParticlesInZ<T,Descriptor>);
+                std::sort(found.begin(), found.end(), compareParticlesInZ_PBC<T,Descriptor>);
             } else if (direction == TFL_DISAGGREGATION_UP or direction == TFL_DISAGGREGATION_UP_HALF or direction == TFL_DISAGGREGATION_LEFT) {
                 std::sort(found.begin(), found.end(), compareParticlesInY<T,Descriptor>);
             }
@@ -290,6 +293,31 @@ template<typename T, template<typename U> class Descriptor>
 bool compareParticlesInZ (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) {
     T iZ = iParticle->getPosition()[2];
     T jZ = jParticle->getPosition()[2];
+    return (iZ<jZ);
+}
+
+/* With periodic boundary conditions */
+
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInX_PBC (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) {
+    T iX = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iParticle)->get_pbcPosition()[0];
+    T jX = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (jParticle)->get_pbcPosition()[0];
+    return (iX<jX);
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInY_PBC (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) {
+    T iY = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iParticle)->get_pbcPosition()[1];
+    T jY = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (jParticle)->get_pbcPosition()[1];
+    return (iY<jY);
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInZ_PBC (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) {
+    T iZ = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iParticle)->get_pbcPosition()[2];
+    T jZ = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (jParticle)->get_pbcPosition()[2];
     return (iZ<jZ);
 }
 

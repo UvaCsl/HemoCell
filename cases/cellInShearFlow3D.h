@@ -60,7 +60,7 @@ private:
     plint flowType;
     T dx, dt, dNewton, dm;
     CellFieldQuantityHolder<T,Descriptor> & chq;
-    std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D;
+    std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
     bool checkpointed;
     bool store;
 

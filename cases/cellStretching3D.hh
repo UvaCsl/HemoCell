@@ -12,7 +12,7 @@ template< typename T, template<typename U> class Descriptor,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> > & particles_,
                 plint numParticlesPerSide_, plint flowType_,
                 T dx_, T dt_, T dNewton_,
-                std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D_,
+                std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_,
                 bool checkpointed_,
                 T stretchForceScalarLU_, plint timesToStretch_,
                 plint firstPlane_, plint secondPlane_) :
@@ -40,10 +40,10 @@ template< typename T, template<typename U> class Descriptor,
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(particles);
     applyProcessingFunctional (
-        new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerLeftTags, &outerRightTags, firstPlane),
+        new FindTagsOfLateralCellParticles3D<T,Descriptor>(numParticlesPerSide, &outerLeftTags, &outerRightTags, firstPlane),
         particles->getBoundingBox(), particleArg );
     applyProcessingFunctional (
-        new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerFrontTags, &outerBackTags, secondPlane),
+        new FindTagsOfLateralCellParticles3D<T,Descriptor>(numParticlesPerSide, &outerFrontTags, &outerBackTags, secondPlane),
         particles->getBoundingBox(), particleArg );
 
     dStretchingForce = (200.0e-12/dNewton) / timesToStretch; // 200pN
@@ -106,7 +106,7 @@ void CellStretching3D<T,Descriptor,ParticleFieldT>::applyForce(plint iter, T cel
         std::vector<MultiBlock3D*> particleArg;
         particleArg.push_back(particles);
         applyProcessingFunctional ( // compute force applied on the some particles by the stretching force
-                new ApplyStretchingForce3D<T,DESCRIPTOR>(outerLeftTags, outerRightTags, Array<T,3>(stretchForceScalar,0,0), cellDensity, tagToParticle3D),
+                new ApplyStretchingForce3D<T,Descriptor>(outerLeftTags, outerRightTags, Array<T,3>(stretchForceScalar,0,0), cellDensity, tagToParticle3D),
                 particles->getBoundingBox(), particleArg );
     }
 }
@@ -130,7 +130,7 @@ plint CellStretching3D<T,Descriptor,ParticleFieldT>::hasConverged(plint iter)
         particleArg.push_back(particles);
         std::vector<Array<T,3> > angles;
         applyProcessingFunctional (
-            new MeasureCellStretchDeformation3D<T,DESCRIPTOR>(lateralCellParticleTags, &stretchingDeformations, &angles, tagToParticle3D),
+            new MeasureCellStretchDeformation3D<T,Descriptor>(lateralCellParticleTags, &stretchingDeformations, &angles, tagToParticle3D),
             particles->getBoundingBox(), particleArg );
         convergeX.takeValue(stretchingDeformations[0],false);
         convergeY.takeValue(stretchingDeformations[1],false);
@@ -194,7 +194,7 @@ void CellStretching3D<T,Descriptor,ParticleFieldT>::write(plint iter, T meanEdge
             particleArg.push_back(particles);
             std::vector<Array<T,3> > angles;
             applyProcessingFunctional (
-                new MeasureCellStretchDeformation3D<T,DESCRIPTOR>(lateralCellParticleTags, &stretchingDeformations, &angles, tagToParticle3D),
+                new MeasureCellStretchDeformation3D<T,Descriptor>(lateralCellParticleTags, &stretchingDeformations, &angles, tagToParticle3D),
                 particles->getBoundingBox(), particleArg );
             pcout << "StrDeform [m] [";
             for (pluint iDirection = 0; iDirection < stretchingDeformations.size(); ++iDirection) {

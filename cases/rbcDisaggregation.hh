@@ -12,7 +12,7 @@ template< typename T, template<typename U> class Descriptor,
                 T scalarForce_,
                 plint numParticlesPerSide_, plint flowType_,
                 T dx_, T dt_, T dNewton_,
-                std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D_) :
+                std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_) :
         particles(&particles_), scalarForce(scalarForce_), numParticlesPerSide(numParticlesPerSide_), flowType(flowType_),
         dx(dx_), dt(dt_), dNewton(dNewton_), tagToParticle3D(tagToParticle3D_)
 {
@@ -24,7 +24,7 @@ template< typename T, template<typename U> class Descriptor,
         std::vector<MultiBlock3D*> particleArg;
         particleArg.push_back(particles);
         applyProcessingFunctional (
-            new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerLeftTags, &outerRightTags, TFL_DISAGGREGATION_UP),
+            new FindTagsOfLateralCellParticles3D<T,Descriptor>(numParticlesPerSide, &outerLeftTags, &outerRightTags, TFL_DISAGGREGATION_UP),
             particles->getBoundingBox(), particleArg );
         applyForce();
         fixPositions();
@@ -65,11 +65,11 @@ void RBCDisaggregation3D<T,Descriptor,ParticleFieldT>::applyForce()
         forces.push_back(Array<T,3>(0, scalarForce, 0));
         T cellDensity = 1.0;
         applyProcessingFunctional (
-                new ApplyStretchingForce3D<T,DESCRIPTOR>(particleTags, forces, cellDensity, tagToParticle3D),
+                new ApplyStretchingForce3D<T,Descriptor>(particleTags, forces, cellDensity, tagToParticle3D),
                 particles->getBoundingBox(), particleArg );
 
         applyProcessingFunctional ( // Zero Out force (==2)
-                new ZeroOutForceVelocity3D<T,DESCRIPTOR>(outerLeftTags, tagToParticle3D, 2),
+                new ZeroOutForceVelocity3D<T,Descriptor>(outerLeftTags, tagToParticle3D, 2),
                 particles->getBoundingBox(), particleArg );
     }
 }
@@ -84,7 +84,7 @@ void RBCDisaggregation3D<T,Descriptor,ParticleFieldT>::fixPositions()
         particleArg.push_back(particles);
 
         applyProcessingFunctional ( // Zero Out velocity (==1)
-                new ZeroOutForceVelocity3D<T,DESCRIPTOR>(outerLeftTags, tagToParticle3D, 1),
+                new ZeroOutForceVelocity3D<T,Descriptor>(outerLeftTags, tagToParticle3D, 1),
                 particles->getBoundingBox(), particleArg );
     }
 }

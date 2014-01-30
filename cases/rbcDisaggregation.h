@@ -14,7 +14,7 @@ public:
                 T scalarForce_,
                 plint numParticlesPerSide_, plint flowType_,
                 T dx_, T dt_, T dNewton_,
-                std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D_);
+                std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_);
         virtual ~RBCDisaggregation3D();
         void applyForce();
         void fixPositions() ;
@@ -31,7 +31,7 @@ private:
         plint numParticlesPerSide;
         plint flowType;
         T dx, dt, dNewton;
-        std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D;
+        std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
         bool checkpointed;
 };
 

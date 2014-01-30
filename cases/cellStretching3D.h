@@ -14,7 +14,7 @@ public:
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> > & particles_,
                 plint numParticlesPerSide_, plint flowType_,
                 T dx_, T dt_, T dNewton_,
-                std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D_,
+                std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D_,
                 bool checkpointed_=false,
                 T stretchForceScalarLU_=0, plint timesToStretch_=40,
                 plint firstPlane_=TFL_DIRECTION_X, plint secondPlane_=TFL_DIRECTION_Z);
@@ -45,7 +45,7 @@ private:
         plint numParticlesPerSide;
         plint flowType;
         T dx, dt, dNewton;
-        std::map<plint, Particle3D<T,DESCRIPTOR>*> * tagToParticle3D;
+        std::map<plint, Particle3D<T,Descriptor>*> * tagToParticle3D;
         bool checkpointed;
         T stretchForceScalar;
         plint timesToStretch;

@@ -34,13 +34,13 @@ SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(Triang
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(particles);
     applyProcessingFunctional (
-        new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerLeftTags, &outerRightTags, 0),
+        new FindTagsOfLateralCellParticles3D<T,Descriptor>(numParticlesPerSide, &outerLeftTags, &outerRightTags, 0),
         particles->getBoundingBox(), particleArg );
     applyProcessingFunctional (
-        new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerUpTags, &outerDownTags, 1),
+        new FindTagsOfLateralCellParticles3D<T,Descriptor>(numParticlesPerSide, &outerUpTags, &outerDownTags, 1),
         particles->getBoundingBox(), particleArg );
     applyProcessingFunctional (
-        new FindTagsOfLateralCellParticles3D<T,DESCRIPTOR>(numParticlesPerSide, &outerFrontTags, &outerBackTags, 2),
+        new FindTagsOfLateralCellParticles3D<T,Descriptor>(numParticlesPerSide, &outerFrontTags, &outerBackTags, 2),
         particles->getBoundingBox(), particleArg );
 
     std::ostream::openmode mode = std::ostream::out;
@@ -63,7 +63,7 @@ void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::updateQuantities(plint 
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(particles);
     applyProcessingFunctional (
-        new MeasureCellStretchDeformation3D<T,DESCRIPTOR>(lateralCellParticleTags, &tankTreadingLengths, &tankTreadingAngles, tagToParticle3D),
+        new MeasureCellStretchDeformation3D<T,Descriptor>(lateralCellParticleTags, &tankTreadingLengths, &tankTreadingAngles, tagToParticle3D),
         particles->getBoundingBox(), particleArg );
 
     std::vector< std::vector<T> > ellipsoidAngles;
@@ -170,8 +170,10 @@ void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::write(bool writeOutput)
             for (pluint iTag = 0; iTag < lateralCellParticleTags.size(); ++iTag) {
                 std::vector<plint>* const pTags = lateralCellParticleTags[iTag];
                 for (pluint iVertex = 0; iVertex < pTags->size(); ++iVertex) {
-                    Particle3D<T,DESCRIPTOR>* particle = (*tagToParticle3D)[ (*pTags)[iVertex] ];
-                    positions.push_back(particle->getPosition());
+                    ImmersedCellParticle3D<T,Descriptor>* particle =
+                            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> ((*tagToParticle3D)[ (*pTags)[iVertex]]);
+
+                    positions.push_back(particle->get_pbcPosition());
                     tags.push_back(iTag);
                 }
             }

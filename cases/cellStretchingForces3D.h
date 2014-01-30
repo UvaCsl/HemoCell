@@ -118,14 +118,18 @@ private:
 
 template<typename T, template<typename U> class Descriptor>
 bool compareParticlesInX (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
-
-
 template<typename T, template<typename U> class Descriptor>
 bool compareParticlesInY (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
-
-
 template<typename T, template<typename U> class Descriptor>
 bool compareParticlesInZ (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
+
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInX_PBC (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInY_PBC (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
+template<typename T, template<typename U> class Descriptor>
+bool compareParticlesInZ_PBC (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) ;
+
 }  // namespace plb
 
 #include "cellStretchingForces3D.hh"
