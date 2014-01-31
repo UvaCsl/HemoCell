@@ -1,12 +1,12 @@
 #ifndef COLLECTIVE_CELL_REDUCTIONS_HH
 #define COLLECTIVE_CELL_REDUCTIONS_HH
 
-#include "collectiveCellReductions3D.h"
+#include "localCellReductions3D.h"
 
 
 
 template<typename T, template<typename U> class Descriptor>
-void syncCellQuantities(Box3D domain, std::vector<MultiBlock3D*> & particleArg, CellFieldQuantityHolder<T,Descriptor>& chq) {
+void syncCellQuantities(Box3D domain, std::vector<MultiBlock3D*> & particleArg, CellField3D<T,Descriptor>& chq) {
     PLB_PRECONDITION( particleArg.size()==1 );
 
     applyProcessingFunctional ( // advance particles in time according to velocity
@@ -22,8 +22,8 @@ void syncCellQuantities(Box3D domain, std::vector<MultiBlock3D*> & particleArg, 
 
 
 template<typename T, template<typename U> class Descriptor>
-CollectiveCellReductionBox3D<T,Descriptor>::CollectiveCellReductionBox3D(TriangleBoundary3D<T> const& triangleBoundary_,
-            CellFieldQuantityHolder<T,Descriptor> & chq_,
+LocalCellReductions3D<T,Descriptor>::LocalCellReductions3D(TriangleBoundary3D<T> const& triangleBoundary_,
+            CellField3D<T,Descriptor> & chq_,
             plint numVerticesPerCell_, std::vector<plint> const& subscribedQuantities_) :
             triangleBoundary(triangleBoundary_),
             chq(chq_),
@@ -43,7 +43,7 @@ CollectiveCellReductionBox3D<T,Descriptor>::CollectiveCellReductionBox3D(Triangl
 // *      Energy         : 9 // 1D
 
 template<typename T, template<typename U> class Descriptor>
-void CollectiveCellReductionBox3D<T,Descriptor>::subscribeParticles(std::vector<Particle3D<T,Descriptor>*> const& particles)
+void LocalCellReductions3D<T,Descriptor>::subscribeParticles(std::vector<Particle3D<T,Descriptor>*> const& particles)
 {
         subscribedQuantities.push_back(CCR_NO_PBC_POSITION_MEAN);
         sumV.clear(); averageV.clear(); maxV.clear(); averageQV.clear();
@@ -77,7 +77,7 @@ void CollectiveCellReductionBox3D<T,Descriptor>::subscribeParticles(std::vector<
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CollectiveCellReductionBox3D<T,Descriptor>::processGenericBlocks (
+void LocalCellReductions3D<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
     PLB_PRECONDITION( blocks.size()==2 );
@@ -171,7 +171,7 @@ void CollectiveCellReductionBox3D<T,Descriptor>::processGenericBlocks (
 
 
 template<typename T, template<typename U> class Descriptor>
-T CollectiveCellReductionBox3D<T,Descriptor>::computeQuantity1D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle) {
+T LocalCellReductions3D<T,Descriptor>::computeQuantity1D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle) {
 /*
  *    Calculates Volume, Angle, Area, Edge Distance and Edge Tile Span for each particle.
  *    Input:
@@ -233,7 +233,7 @@ T CollectiveCellReductionBox3D<T,Descriptor>::computeQuantity1D (plint q, Immers
 
 
 template<typename T, template<typename U> class Descriptor>
-Array<T,3>  CollectiveCellReductionBox3D<T,Descriptor>::computeQuantity3D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle) {
+Array<T,3>  LocalCellReductions3D<T,Descriptor>::computeQuantity3D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle) {
     /*
      *    Calculates Position and Velocity for each particle.
      */
@@ -256,7 +256,7 @@ Array<T,3>  CollectiveCellReductionBox3D<T,Descriptor>::computeQuantity3D (plint
 
 
 template<typename T, template<typename U> class Descriptor>
-std::vector<T> CollectiveCellReductionBox3D<T,Descriptor>::computeQuantityND (plint q, ImmersedCellParticle3D<T,Descriptor>* particle) {
+std::vector<T> LocalCellReductions3D<T,Descriptor>::computeQuantityND (plint q, ImmersedCellParticle3D<T,Descriptor>* particle) {
     /*
      *    Calculates Position and Velocity for each particle.
      */
@@ -314,7 +314,7 @@ std::vector<T> CollectiveCellReductionBox3D<T,Descriptor>::computeQuantityND (pl
  *                      1D Subscribe Reductions                    *
  *******************************************************************/
 template<typename T, template<typename U> class Descriptor>
-plint CollectiveCellReductionBox3D<T,Descriptor>::subscribeReduction1D(plint reductionType) {
+plint LocalCellReductions3D<T,Descriptor>::subscribeReduction1D(plint reductionType) {
     if (0 == reductionType)      { return subscribeSum(); }
     else if (1 == reductionType) { return subscribeAverage(); }
     else if (2 == reductionType) { return subscribeMax(); }
@@ -328,7 +328,7 @@ plint CollectiveCellReductionBox3D<T,Descriptor>::subscribeReduction1D(plint red
  *******************************************************************/
 
 template<typename T, template<typename U> class Descriptor>
-void CollectiveCellReductionBox3D<T,Descriptor>::gatherReduction1D(plint reductionType, plint qBin, T value) {
+void LocalCellReductions3D<T,Descriptor>::gatherReduction1D(plint reductionType, plint qBin, T value) {
     if (0 == reductionType)      { gatherSum(qBin, value); }
     else if (1 == reductionType) { gatherAverage(qBin, value); }
     else if (2 == reductionType) { gatherMax(qBin, value); }
@@ -342,7 +342,7 @@ void CollectiveCellReductionBox3D<T,Descriptor>::gatherReduction1D(plint reducti
  *******************************************************************/
 
 template<typename T, template<typename U> class Descriptor>
-T CollectiveCellReductionBox3D<T,Descriptor>::getReduction1D(plint reductionType, plint qBin) {
+T LocalCellReductions3D<T,Descriptor>::getReduction1D(plint reductionType, plint qBin) {
     if (0 == reductionType)      { return getSum(qBin); }
     else if (1 == reductionType) { return getAverage(qBin); }
     else if (2 == reductionType) { return getMax(qBin); }
@@ -358,7 +358,7 @@ T CollectiveCellReductionBox3D<T,Descriptor>::getReduction1D(plint reductionType
  */
 // subscribeReduction
 template<typename T, template<typename U> class Descriptor>
-Array<plint,3> CollectiveCellReductionBox3D<T,Descriptor>::subscribeReduction3D(plint reductionType) {
+Array<plint,3> LocalCellReductions3D<T,Descriptor>::subscribeReduction3D(plint reductionType) {
     plint x = subscribeReduction1D(reductionType);
     plint y = subscribeReduction1D(reductionType);
     plint z = subscribeReduction1D(reductionType);
@@ -366,7 +366,7 @@ Array<plint,3> CollectiveCellReductionBox3D<T,Descriptor>::subscribeReduction3D(
 }
 
 template<typename T, template<typename U> class Descriptor>
-std::vector<plint> CollectiveCellReductionBox3D<T,Descriptor>::subscribeReductionND(plint reductionType, plint dimensions) {
+std::vector<plint> LocalCellReductions3D<T,Descriptor>::subscribeReductionND(plint reductionType, plint dimensions) {
     std::vector<plint> ret;
     for (plint i = 0; i < dimensions; ++i) { ret.push_back( subscribeReduction1D(reductionType) ); }
     return ret;
@@ -374,18 +374,18 @@ std::vector<plint> CollectiveCellReductionBox3D<T,Descriptor>::subscribeReductio
 
 // gatherReduction
 template<typename T, template<typename U> class Descriptor>
-void CollectiveCellReductionBox3D<T,Descriptor>::gatherReduction3D(plint reductionType, Array<plint,3> qBin, Array<T,3> value) {
+void LocalCellReductions3D<T,Descriptor>::gatherReduction3D(plint reductionType, Array<plint,3> qBin, Array<T,3> value) {
     for (int i = 0; i < 3; ++i) { gatherReduction1D(reductionType, qBin[i], value[i]); }
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CollectiveCellReductionBox3D<T,Descriptor>::gatherReductionND(plint reductionType, std::vector<plint> qBin, std::vector<T> value) {
+void LocalCellReductions3D<T,Descriptor>::gatherReductionND(plint reductionType, std::vector<plint> qBin, std::vector<T> value) {
     for (pluint i = 0; i < qBin.size(); ++i) { gatherReduction1D(reductionType, qBin[i], value[i]); }
 }
 
 // getReduction
 template<typename T, template<typename U> class Descriptor>
-Array<T,3> CollectiveCellReductionBox3D<T,Descriptor>::getReduction3D(plint reductionType, Array<plint,3> qBin) {
+Array<T,3> LocalCellReductions3D<T,Descriptor>::getReduction3D(plint reductionType, Array<plint,3> qBin) {
     T x = getReduction1D(reductionType, qBin[0]);
     T y = getReduction1D(reductionType, qBin[1]);
     T z = getReduction1D(reductionType, qBin[2]);
@@ -393,7 +393,7 @@ Array<T,3> CollectiveCellReductionBox3D<T,Descriptor>::getReduction3D(plint redu
 }
 
 template<typename T, template<typename U> class Descriptor>
-std::vector<T> CollectiveCellReductionBox3D<T,Descriptor>::getReductionND(plint reductionType, std::vector<plint> qBin) {
+std::vector<T> LocalCellReductions3D<T,Descriptor>::getReductionND(plint reductionType, std::vector<plint> qBin) {
     std::vector<T> ret;
     plint dimensions = qBin.size();
     for (plint i = 0; i < dimensions; ++i) { ret.push_back( getReduction1D(reductionType, qBin[i]) ); }
@@ -414,7 +414,7 @@ std::vector<T> CollectiveCellReductionBox3D<T,Descriptor>::getReductionND(plint 
 /* ******** SyncReductionParticles3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
-SyncReductionParticles3D<T,Descriptor>::SyncReductionParticles3D (CellFieldQuantityHolder<T,Descriptor>& chq_)
+SyncReductionParticles3D<T,Descriptor>::SyncReductionParticles3D (CellField3D<T,Descriptor>& chq_)
 : chq(chq_) { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -460,7 +460,7 @@ void SyncReductionParticles3D<T,Descriptor>::processGenericBlocks (
 
 //            if (particle->getMpiProcessor() !=  particle->get_processor()) { particle->getTag() = -1; }
         }
-        chq.calcCellIds();
+        chq.getCellIds(); // Calculate cellIds
         reductionParticleField.removeParticles(domain, -1);
 }
 

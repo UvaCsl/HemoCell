@@ -27,7 +27,7 @@ CellQuantities3D<T,Descriptor,ParticleFieldT>::CellQuantities3D(
         TriangleBoundary3D<T> const& Cells_,
         MultiParticleField3D<ParticleFieldT<T,Descriptor> > &  particles_,
         std::vector<plint> const&  cellIds_, plint numberOfCells_,
-        CellFieldQuantityHolder<T,Descriptor> & chq_,
+        CellField3D<T,Descriptor> & chq_,
         std::string cmhFileName, T dx_, T dt_, plint cellRadiusLU_, bool checkpointed_) :
             Cells(Cells_),
             particles(&particles_),
@@ -103,7 +103,7 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
 
         particleArg.push_back(reductionParticles);
         applyProcessingFunctional(
-                new CollectiveCellReductionBox3D<T,Descriptor>(Cells, chq, numVerticesPerCell, subscribedQuantities),
+                new LocalCellReductions3D<T,Descriptor>(Cells, chq, numVerticesPerCell, subscribedQuantities),
                 particles->getBoundingBox(), particleArg);
         particleArg.clear();  particleArg.push_back(reductionParticles);
         syncCellQuantities<T,Descriptor>(reductionParticles->getBoundingBox(), particleArg, chq);
@@ -139,7 +139,7 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateVolumeAndSurfaceAnd
 //
 //        particleArg.push_back(reductionParticles);
 //        applyProcessingFunctional(
-//                new CollectiveCellReductionBox3D<T,Descriptor>(Cells, chq, chq.getNumVerticesPerCell(), subscribedQuantities),
+//                new LocalCellReductions3D<T,Descriptor>(Cells, chq, chq.getNumVerticesPerCell(), subscribedQuantities),
 //                particles->getBoundingBox(), particleArg);
 //        particleArg.clear();  particleArg.push_back(reductionParticles);
 //        syncCellQuantities<T,Descriptor>(reductionParticles->getBoundingBox(), particleArg, chq);
@@ -163,7 +163,7 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateInertia()
         subscribedQuantities.push_back(CCR_INERTIA);
 
         applyProcessingFunctional(
-                new CollectiveCellReductionBox3D<T,Descriptor>(Cells, chq, chq.getNumVerticesPerCell(), subscribedQuantities),
+                new LocalCellReductions3D<T,Descriptor>(Cells, chq, chq.getNumVerticesPerCell(), subscribedQuantities),
                 particles->getBoundingBox(), particleArg);
 
         particleArg.clear();  particleArg.push_back(reductionParticles);

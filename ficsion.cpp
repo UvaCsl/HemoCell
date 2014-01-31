@@ -18,30 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <limits>
-#include <stdio.h>
-
-#include "palabos3D.h"
-#include "palabos3D.hh"
-
-#include "ficsionInit.h"
-#include "cellQuantities3D.h"
-#include "immersedCells3D.h"
-#include "immersedCellsReductions.h"
-#include "meshToParticleField3D.h"
-#include <string>
-#include <map>
-
-#include "shapeMemoryModel3D.h"
-#include "cellStretching3D.h"
-#include "cellModel3D.hh"
-
-#include "cellInShearFlow3D.h"
-#include "meshMetrics.h"
-#include "cellForceChecking3D.h"
-
-#include "cellCellForces3D.h"
-#include "rbcDisaggregation.h"
+#include "ficsion.h"
 
 
 using namespace plb;
@@ -313,7 +290,7 @@ int main(int argc, char* argv[])
         immersedParticles.getBoundingBox(), particleArg );
 
     std::string logFileName = logOutDir + "plbCells.log";
-    CellFieldQuantityHolder<T,DESCRIPTOR> chq(Cells, numParts[0], tagToParticle3D);
+    CellField3D<T,DESCRIPTOR> chq(Cells, numParts[0], tagToParticle3D);
     CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, chq, logFileName, dx, dt, radius, checkpointed);
     rbcQuantities.calculateAll();
     /* INITIALIZE MODELS */

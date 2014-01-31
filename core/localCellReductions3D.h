@@ -4,33 +4,33 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "cellReductionTypes.h"
-#include "meshToParticleField3D.hh"
+#include "cellField3D.hh"
 
 
 /*
- *    CollectiveCellReductionBox3D is the Functional Reductive Box that does the actual job.
+ *    LocalCellReductions3D is the Functional Reductive Box that does the actual job.
  *
  */
 template<typename T, template<typename U> class Descriptor>
-void syncCellQuantities(Box3D domain, std::vector<MultiBlock3D*> & particleArg, CellFieldQuantityHolder<T,Descriptor>& chq);
+void syncCellQuantities(Box3D domain, std::vector<MultiBlock3D*> & particleArg, CellField3D<T,Descriptor>& chq);
 
 
 
 template<typename T, template<typename U> class Descriptor>
-class CollectiveCellReductionBox3D : public BoxProcessingFunctional3D
+class LocalCellReductions3D : public BoxProcessingFunctional3D
 {
 public:
-    CollectiveCellReductionBox3D(TriangleBoundary3D<T> const& triangleBoundary_,
-            CellFieldQuantityHolder<T,Descriptor> & chq_,
+    LocalCellReductions3D(TriangleBoundary3D<T> const& triangleBoundary_,
+            CellField3D<T,Descriptor> & chq_,
             plint numVerticesPerCell_,
             std::vector<plint> const& subscribedQuantities_);
-    CollectiveCellReductionBox3D(CollectiveCellReductionBox3D<T,Descriptor> const& rhs) :
+    LocalCellReductions3D(LocalCellReductions3D<T,Descriptor> const& rhs) :
         triangleBoundary(rhs.triangleBoundary),
         chq(rhs.chq),
         numVerticesPerCell(rhs.numVerticesPerCell),
         subscribedQuantities(rhs.subscribedQuantities) { };
-    virtual ~CollectiveCellReductionBox3D() {};
-    virtual CollectiveCellReductionBox3D<T,Descriptor>* clone() const { return new CollectiveCellReductionBox3D<T,Descriptor>(*this); }
+    virtual ~LocalCellReductions3D() {};
+    virtual LocalCellReductions3D<T,Descriptor>* clone() const { return new LocalCellReductions3D<T,Descriptor>(*this); }
     /// Argument: Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const {
@@ -42,7 +42,7 @@ private:
     void subscribeParticles(std::vector<Particle3D<T,Descriptor>*> const& particles);
     void getQuantitiesFromReductionParticles(std::vector<Particle3D<T,Descriptor>*> const& reductionParticles);
     TriangleBoundary3D<T> const& triangleBoundary;
-    CellFieldQuantityHolder<T,Descriptor> & chq;
+    CellField3D<T,Descriptor> & chq;
     plint numVerticesPerCell;
     std::vector<plint> subscribedQuantities;
     std::map<plint, plint> particlesPerCellId;
@@ -91,7 +91,7 @@ template<typename T, template<typename U> class Descriptor>
 class SyncReductionParticles3D : public BoxProcessingFunctional3D
 {
 public:
-    SyncReductionParticles3D (CellFieldQuantityHolder<T,Descriptor> & chq_);
+    SyncReductionParticles3D (CellField3D<T,Descriptor> & chq_);
     virtual ~SyncReductionParticles3D() { };
     SyncReductionParticles3D(SyncReductionParticles3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -101,11 +101,11 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
-    CellFieldQuantityHolder<T,Descriptor> & chq;
+    CellField3D<T,Descriptor> & chq;
     plint numVerticesPerCell;
 };
 
 
-#include "collectiveCellReductions3D.hh"
+#include "localCellReductions3D.hh"
 
 #endif  // COLLECTIVE_CELL_REDUCTIONS_H

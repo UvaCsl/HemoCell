@@ -10,6 +10,9 @@
    damages resulting from your use of the program.
 */
 //---------------------------------------------------------------------------
+#ifndef EXTERNAL_DIAGONALIZE_CPP
+#define EXTERNAL_DIAGONALIZE_CPP
+
 #include <iostream>
 #include <iomanip>
 #include <limits>
@@ -722,3 +725,4 @@ void getLambdasAndAngles(vector<T> inputTensor,
 //	return 0;
 //}
 
+#endif // EXTERNAL_DIAGONALIZE_CPP
