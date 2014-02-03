@@ -49,6 +49,7 @@ void LocalCellReductions3D<T,Descriptor>::subscribeParticles(std::vector<Particl
         sumV.clear(); averageV.clear(); maxV.clear(); averageQV.clear();
         particlesPerCellId.clear();
         plint cellId;
+        // Find how many particles are there per cell.
         for (pluint iA = 0; iA < particles.size(); ++iA) {
             ImmersedCellParticle3D<T,Descriptor>* particle =
                     dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iA]);
@@ -58,6 +59,7 @@ void LocalCellReductions3D<T,Descriptor>::subscribeParticles(std::vector<Particl
         nCellIds = particlesPerCellId.size();
         std::map<plint, plint>::iterator iter;
         cellIds.clear();
+        // Find the cellIds present in this domain.
         for (iter = particlesPerCellId.begin(); iter != particlesPerCellId.end(); ++iter) {
             cellIds.push_back(iter->first);
         }
@@ -264,9 +266,10 @@ std::vector<T> LocalCellReductions3D<T,Descriptor>::computeQuantityND (plint q, 
     plint iVertex = particle->getTag();
     plint cellId = particle->get_cellId();
     TriangularSurfaceMesh<T> triangleMesh = triangleBoundary.getMesh();
-    std::vector<plint> neighbors = triangleMesh.getNeighborVertexIds(iVertex);
+    std::vector<plint> neighbors = triangleMesh.getNeighborTriangleIds(iVertex);
+
     if (q==8) {
-    // INTERTIA
+    // INERTIA
         T rx, ry, rz;
         T Ixx=0, Ixy=0, Ixz=0;
         T Iyx=0, Iyy=0, Iyz=0;
@@ -277,18 +280,18 @@ std::vector<T> LocalCellReductions3D<T,Descriptor>::computeQuantityND (plint q, 
             Array<T,3> nj = triangleMesh.computeTriangleNormal(neighbors[iB]);
             Array<T,3> rj = (triangleMesh.getVertex(neighbors[iB],0) +
                             triangleMesh.getVertex(neighbors[iB],1) + triangleMesh.getVertex(neighbors[iB],2))/3.0;
-            rj = rj - r0; // Subtract the Cell Center;
+            rj = rj - r0;
             T dV = 1.0/5.0 * Aj * dot(nj, rj);
             rx = rj[0]; ry = rj[1]; rz = rj[2];
             Ixx += (rz*rz+ry*ry)*dV;
             Iyy += (rz*rz+rx*rx)*dV;
             Izz += (rx*rx+ry*ry)*dV;
+            Iyx += -rx*ry*dV;
             Ixy += -rx*ry*dV;
-            Iyx = Ixy;
+            Izx += -rx*rz*dV;
             Ixz += -rx*rz*dV;
-            Izx += Ixz;
+            Izy += -ry*rz*dV;
             Iyz += -ry*rz*dV;
-            Izy = Iyz;
         }
         quantityND.clear();
         quantityND.push_back(Ixx/3.0); // [0] every element is evaluated 3 times
@@ -485,9 +488,35 @@ template<typename T, template<typename U> class Descriptor>
 void SyncReductionParticles3D<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
-    modified[0] = modif::dynamicVariables; // Particle field.
+    modified[0] = modif::allVariables; // Particle field.
 }
 
 
+/* ================================================================================ */
+/* ******** computeEllipsoidFit *********************************** */
+/* ================================================================================ */
+template<typename T>
+void computeEllipsoidFit (std::vector<T> & cellInertia,
+                          std::vector<T> & cellsEllipsoidFitAngles,
+                          std::vector<T> & cellsEllipsoidFitSemiAxes,
+                          T & difference,
+                          T cellVolume)
+{
+    vector<T> semiAxes, ellipsoidAngles;
+    T dif;
+    getLambdasAndAngles(cellInertia, semiAxes, ellipsoidAngles, dif);
+
+    T f1 = semiAxes[0] * 5 / cellVolume;
+    T f2 = semiAxes[1] * 5 / cellVolume;
+    T f3 = semiAxes[2] * 5 / cellVolume;
+    semiAxes[0] = (sqrt( (f1 + f2 - f3)/2 ));
+    semiAxes[1] = (sqrt( (f2 + f3 - f1)/2 ));
+    semiAxes[2] = (sqrt( (f3 + f1 - f2)/2 ));
+    std::sort(semiAxes.begin(), semiAxes.end());
+
+    cellsEllipsoidFitSemiAxes = semiAxes;
+    cellsEllipsoidFitAngles = ellipsoidAngles;
+    difference = dif;
+}
 
 #endif  // COLLECTIVE_CELL_REDUCTIONS_HH

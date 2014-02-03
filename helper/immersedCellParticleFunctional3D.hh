@@ -394,12 +394,10 @@ void GetTaggedParticleVelocity3D<T,Descriptor>::getTypeOfModification (
 template<typename T, template<typename U> class Descriptor>
 ComputeImmersedElasticForce3D<T,Descriptor>::ComputeImmersedElasticForce3D (
         TriangleBoundary3D<T> const& triangleBoundary_,
-        RBCModel3D<T>* cellModel_,
-        std::vector<T> const& cellsVolume_, std::vector<T> const& cellsSurface_)
+        RBCModel3D<T>* cellModel_, CellField3D<T,Descriptor> & chq_)
     : triangleBoundary(triangleBoundary_),
       cellModel(cellModel_),
-      cellsVolume(cellsVolume_),
-      cellsSurface(cellsSurface_)
+      chq(chq_)
 { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -413,9 +411,7 @@ ComputeImmersedElasticForce3D<T,Descriptor>::ComputeImmersedElasticForce3D (
             ComputeImmersedElasticForce3D<T,Descriptor> const& rhs)
     : triangleBoundary(rhs.triangleBoundary),
       cellModel(rhs.cellModel->clone()),
-      cellsVolume(rhs.cellsVolume),
-      cellsSurface(rhs.cellsSurface)
-
+      chq(rhs.chq)
 { }
 
 
@@ -444,7 +440,7 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         if (!isRigid(triangleBoundary.getVertexProperty(vertexId))) {
             particle->get_force().resetToZero();
             Array<T,3> cellForce = cellModel->computeCellForce (
-                    triangleBoundary, cellsVolume[cellId], cellsSurface[cellId], iSurface, vertexId);
+                    triangleBoundary, chq.getVolume(cellId), chq.getSurface(cellId), iSurface, vertexId);
             particle->get_force() += cellForce;
             particle->get_stress() = particle->get_force()*1.0/iSurface;
         }

@@ -9,17 +9,21 @@
 #include <map>
 #include <stack>
 
+using namespace plb;
+using namespace std;
 
 template<typename T, template<typename U> class Descriptor>
 class CellField3D
 {
 public:
-    CellField3D(TriangleBoundary3D<T> const& triangleBoundary_, plint numVerticesPerCell_,
+    CellField3D(TriangleBoundary3D<T> const& Cells_,
+            plint numVerticesPerCell_, plint numTriangles_, T maxDiameter_,
             std::map<plint, Particle3D<T,Descriptor>*>& tagToParticle3D_);
     virtual ~CellField3D() { };
 private:
-    TriangleBoundary3D<T> const& triangleBoundary;
-    plint numMeshCells, numVerticesPerCell;
+    TriangleBoundary3D<T> const& Cells;
+    plint numMeshCells, numVerticesPerCell, numTriangles;
+    T maxDiameter;
     std::map<plint, Particle3D<T,Descriptor>*>& tagToParticle3D;
     std::vector<plint> cellIds;
 
@@ -33,19 +37,30 @@ public:
     plint & getNumMeshCells() { return numMeshCells; }
     std::map<plint, Particle3D<T,Descriptor>*>& get_tagToParticle3D() { return tagToParticle3D; }
     plint getNumCells() { return cellIds.size(); }
+    T getMaxDiameter() { return maxDiameter; }
 public:
     void clearQuantities();
+    /* Get Class cointainers */
     std::vector<plint> const& getCellIds();
-    T getVolume(plint cellId) { return quantities1D[cellId][CCR_VOLUME];} ;
-    T getSurface(plint cellId) { return quantities1D[cellId][CCR_SURFACE];} ;
-    T getEnergy(plint cellId) { return quantities1D[cellId][CCR_ENERGY];} ;
-    T getMeanAngle(plint cellId) { return quantities1D[cellId][CCR_ANGLE_MEAN];} ;
-    T getMeanEdgeLength(plint cellId) { return quantities1D[cellId][CCR_EDGE_DISTANCE_MEAN];} ;
+    std::map<plint, plint> & getParticlesPerCellId() { return particlesPerCellId ; }
+    T & getVolume(plint cellId) { return quantities1D[cellId][CCR_VOLUME];} ;
+    T & getSurface(plint cellId) { return quantities1D[cellId][CCR_SURFACE];} ;
+    T & getEnergy(plint cellId) { return quantities1D[cellId][CCR_ENERGY];} ;
+    T & getMeanAngle(plint cellId) { return quantities1D[cellId][CCR_ANGLE_MEAN];} ;
+    T & getMeanEdgeLength(plint cellId) { return quantities1D[cellId][CCR_EDGE_DISTANCE_MEAN];} ;
+    T & getMeanEdgeDistance(plint cellId) { return quantities1D[cellId][CCR_EDGE_DISTANCE_MEAN];} ;
+    T getMeanTriangleArea(plint cellId) { return quantities1D[cellId][CCR_SURFACE]*1.0/numTriangles;} ;
+    T & getMeanTileSpan(plint cellId) { return quantities1D[cellId][CCR_TILE_SPAN_MEAN];} ;
+
     Array<T,3> const& getPosition(plint cellId) { return quantities3D[cellId][CCR_POSITION_MEAN];  } ;
     Array<T,3> const& getVelocity(plint cellId) { return quantities3D[cellId][CCR_VELOCITY_MEAN];} ;
-    std::vector<T> const& getInertia(plint cellId) { return quantitiesND[cellId][CCR_INERTIA];} ;
-//    Array<Array<T,3>,3> getInertia(plint cellId) ;
-    std::map<plint, plint> & getParticlesPerCellId() { return particlesPerCellId ; }
+    std::vector<T> & getInertia(plint cellId) { return quantitiesND[cellId][CCR_INERTIA];} ;
+
+    Array<T,3> & getTumblingAngles(plint cellId) { return quantities3D[cellId][CCR_TUMBLING_ANGLES];  } ;
+    Array<T,3> & getTankTreadingAngles(plint cellId) { return quantities3D[cellId][CCR_TANK_TREADING_ANGLES];  } ;
+    Array<T,3> & getDiameters(plint cellId)  { return quantities3D[cellId][CCR_DIAMETERS];  } ;
+    T & getSymmetryDeviation(plint cellId)  { return quantities1D[cellId][CCR_SYMMETRY_DEVIATION];  } ;
+    T & getDeformationIndex(plint cellId)  { return quantities1D[cellId][CCR_DEFORMATION_INDEX];  } ;
 
     // 0 -- Sum, 1 -- Mean, 2 -- Max, 3 -- Min, 4 -- Std
     void reduceQuantity1D(plint cellId, plint ccrId, T value, plint numParts=0) ;
@@ -60,7 +75,7 @@ public:
 //    std::stack<plint> & getFreeMeshCellIds() { return freeMeshCellIds; }
 //    std::map<plint, plint> & getCellIdToMeshCellId() { return cellIdToMeshCellId; }
 //    void init() {
-//        plint nVertices = triangleBoundary.getMesh().getNumVertices();
+//        plint nVertices = Cells.getMesh().getNumVertices();
 //        numMeshCells = nVertices / numVerticesPerCell;
 //        PLB_ASSERT(numMeshCells * numVerticesPerCell == nVertices);
 //        for (plint i=0; i < numMeshCells; i++) {
@@ -86,7 +101,7 @@ class MapVertexToParticle3D : public BoxProcessingFunctional3D
 {
 public:
     MapVertexToParticle3D (
-            TriangleBoundary3D<T> const& triangleBoundary_,
+            TriangleBoundary3D<T> const& Cells_,
             std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_);
     virtual ~MapVertexToParticle3D();
     MapVertexToParticle3D(MapVertexToParticle3D<T,Descriptor> const& rhs);
@@ -97,7 +112,7 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
-    TriangleBoundary3D<T> const& triangleBoundary;
+    TriangleBoundary3D<T> const& Cells;
     std::map<plint, Particle3D<T,Descriptor>*>& tagToParticle3D;
 };
 

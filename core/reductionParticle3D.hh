@@ -28,12 +28,8 @@ namespace plb {
 /* *************** class ReductionParticle3D ************************************ */
 
 template<typename T, template<typename U> class Descriptor>
-int ReductionParticle3D<T,Descriptor>::id =
-        meta::registerReductionParticle3D<T,Descriptor,ReductionParticle3D<T,Descriptor> >("ReductionParticle");
-
-template<typename T, template<typename U> class Descriptor>
 ReductionParticle3D<T,Descriptor>::ReductionParticle3D()
-    : processor(-1), cellId(-1)
+    : cellId(-1), processor(-1)
 { }
 
 template<typename T, template<typename U> class Descriptor>

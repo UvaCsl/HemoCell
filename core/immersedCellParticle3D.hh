@@ -33,8 +33,7 @@ int ImmersedCellParticle3D<T,Descriptor>::id =
 
 template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
-    : Particle3D<T,Descriptor>(),
-      v(T(),T(),T()),
+    : v(T(),T(),T()),
       pbcPosition(this->getPosition()),
       a(T(),T(),T()), force(T(),T(),T()), vPrevious(T(),T(),T()),
       f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()),

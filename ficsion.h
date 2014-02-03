@@ -3,6 +3,9 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+using namespace plb;
+using namespace std;
+
 
 
 #include <algorithm>
@@ -16,7 +19,7 @@
 
 #include "ficsionInit.h"
 /* CORE libs */
-#include "cellQuantities3D.h"
+#include "cellReductor3D.h"
 #include "immersedCells3D.h"
 #include "immersedCellsReductions.h"
 #include "cellField3D.h"

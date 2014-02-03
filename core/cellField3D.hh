@@ -6,58 +6,68 @@
 /* ******** MapVertexToParticle3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
-CellField3D<T,Descriptor>::CellField3D(TriangleBoundary3D<T> const& triangleBoundary_, plint numVerticesPerCell_,
+CellField3D<T,Descriptor>::CellField3D(TriangleBoundary3D<T> const& Cells_, \
+        plint numVerticesPerCell_, plint numTriangles_, T maxDiameter_,
         std::map<plint, Particle3D<T,Descriptor>*>& tagToParticle3D_) :
-    triangleBoundary(triangleBoundary_), numVerticesPerCell(numVerticesPerCell_), tagToParticle3D(tagToParticle3D_) { }
+    Cells(Cells_), numVerticesPerCell(numVerticesPerCell_), numTriangles(numTriangles_), maxDiameter(maxDiameter_), tagToParticle3D(tagToParticle3D_) { }
 
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T,Descriptor>::reduceQuantity1D(plint cellId, plint ccrId, T value, plint numParts)
 {
-    plint reductionType = (ccrId%100)/10; // Find reduction type (min,max,etc): second to last digit
-    T prValue = quantities1D[cellId][ccrId];
-    if (0 == reductionType)      { quantities1D[cellId][ccrId] += value; }
-    else if (1 == reductionType) { quantities1D[cellId][ccrId] = (prValue*particlesPerCellId[cellId] + value*numParts) * 1.0 / (particlesPerCellId[cellId] + numParts); }
-    else if (2 == reductionType) { quantities1D[cellId][ccrId] = max(prValue, value); }
-    else if (3 == reductionType) { quantities1D[cellId][ccrId] = min(prValue, value);  } // Min can be calculated from the inverse Max
-//        else if (4 == reductionType) { false; } // Std not implemented yet
+    if (quantities1D[cellId].count(ccrId) == 0) { quantities1D[cellId][ccrId] = value; }
+    else {
+        plint reductionType = (ccrId%100)/10; // Find reduction type (min,max,etc): second to last digit
+        T prValue = quantities1D[cellId][ccrId];
+        if (0 == reductionType)      { quantities1D[cellId][ccrId] += value; }
+        else if (1 == reductionType) { quantities1D[cellId][ccrId] = (prValue*particlesPerCellId[cellId] + value*numParts) * 1.0 / (particlesPerCellId[cellId] + numParts); }
+        else if (2 == reductionType) { quantities1D[cellId][ccrId] = max(prValue, value); }
+        else if (3 == reductionType) { quantities1D[cellId][ccrId] = min(prValue, value);  } // Min can be calculated from the inverse Max
+    //        else if (4 == reductionType) { false; } // Std not implemented yet
+    }
 }
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T,Descriptor>::reduceQuantity3D(plint cellId, plint ccrId, Array<T,3> const& value, plint numParts) {
     plint reductionType = (ccrId%100)/10; // Find reduction type (min,max,etc): second to last digit
-    Array<T,3> prValue = quantities3D[cellId][ccrId];
-    if (0 == reductionType)      { quantities3D[cellId][ccrId] = prValue + value; }
-    else if (1 == reductionType) {
-        plint prNumParts =  particlesPerCellId[cellId];
-        quantities3D[cellId][ccrId] = prNumParts * 1.0 * prValue + numParts * 1.0 * value;
-        T factr = 1.0 / (prNumParts + numParts);
-        quantities3D[cellId][ccrId] = quantities3D[cellId][ccrId] * factr;
+    if (quantities3D[cellId].count(ccrId) == 0) { quantities3D[cellId][ccrId] = value; }
+    else {
+        Array<T,3> prValue = quantities3D[cellId][ccrId];
+        if (0 == reductionType)      { quantities3D[cellId][ccrId] = prValue + value; }
+        else if (1 == reductionType) {
+            plint prNumParts =  particlesPerCellId[cellId];
+            quantities3D[cellId][ccrId] = prNumParts * 1.0 * prValue + numParts * 1.0 * value;
+            T factr = 1.0 / (prNumParts + numParts);
+            quantities3D[cellId][ccrId] = quantities3D[cellId][ccrId] * factr;
+        }
+        else if (2 == reductionType) {
+            quantities3D[cellId][ccrId] = Array<T,3>( max(prValue[0], value[0]),
+                                                      max(prValue[1], value[1]),
+                                                      max(prValue[2], value[2]) );
+        }
+        else if (3 == reductionType) {
+            quantities3D[cellId][ccrId] = Array<T,3>( min(prValue[0], value[0]),
+                                                      min(prValue[1], value[1]),
+                                                      min(prValue[2], value[2]) );
+        }
+    //        else if (4 == reductionType) { false; } // Std not implemented yet
     }
-    else if (2 == reductionType) {
-        quantities3D[cellId][ccrId] = Array<T,3>( max(prValue[0], value[0]),
-                                                  max(prValue[1], value[1]),
-                                                  max(prValue[2], value[2]) );
-    }
-    else if (3 == reductionType) {
-        quantities3D[cellId][ccrId] = Array<T,3>( min(prValue[0], value[0]),
-                                                  min(prValue[1], value[1]),
-                                                  min(prValue[2], value[2]) );
-    }
-//        else if (4 == reductionType) { false; } // Std not implemented yet
 }
 
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T,Descriptor>::reduceQuantityND(plint cellId, plint ccrId, std::vector<T> const& value, plint numParts) {
     plint reductionType = (ccrId%100)/10; // Find reduction type (min,max,etc): second to last digit
-    for (pluint iv = 0; iv < value.size(); ++iv) {
-        T prValue = quantitiesND[cellId][ccrId][iv];
-        if (0 == reductionType)      { quantitiesND[cellId][ccrId][iv] = prValue + value[iv]; }
-        else if (1 == reductionType) { quantitiesND[cellId][ccrId][iv] = (prValue*particlesPerCellId[cellId] + numParts*value[iv]) * 1.0 / (particlesPerCellId[cellId] + numParts); }
-        else if (2 == reductionType) { quantitiesND[cellId][ccrId][iv] = max(prValue, value[iv]); }
-        else if (3 == reductionType) { quantitiesND[cellId][ccrId][iv] = min(prValue, value[iv]);  } // Min can be calculated from the inverse Max
-//            else if (4 == reductionType) { false; } // Std not implemented yet
+    if (quantitiesND[cellId].count(ccrId) == 0) { quantitiesND[cellId][ccrId] = value; }
+    else {
+        for (pluint iv = 0; iv < value.size(); ++iv) {
+            T prValue = quantitiesND[cellId][ccrId][iv];
+            if (0 == reductionType)      { quantitiesND[cellId][ccrId][iv] = prValue + value[iv]; }
+            else if (1 == reductionType) { quantitiesND[cellId][ccrId][iv] = (prValue*particlesPerCellId[cellId] + numParts*value[iv]) * 1.0 / (particlesPerCellId[cellId] + numParts); }
+            else if (2 == reductionType) { quantitiesND[cellId][ccrId][iv] = max(prValue, value[iv]); }
+            else if (3 == reductionType) { quantitiesND[cellId][ccrId][iv] = min(prValue, value[iv]);  } // Min can be calculated from the inverse Max
+    //            else if (4 == reductionType) { false; } // Std not implemented yet
+        }
     }
 }
 
@@ -94,9 +104,9 @@ std::vector<plint> const& CellField3D<T,Descriptor>::getCellIds() {
 
 template<typename T, template<typename U> class Descriptor>
 MapVertexToParticle3D<T,Descriptor>::MapVertexToParticle3D (
-            TriangleBoundary3D<T> const& triangleBoundary_,
+            TriangleBoundary3D<T> const& Cells_,
             std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_)
-    : triangleBoundary(triangleBoundary_), tagToParticle3D(tagToParticle3D_)
+    : Cells(Cells_), tagToParticle3D(tagToParticle3D_)
 {
     tagToParticle3D.clear();
 }
@@ -109,7 +119,7 @@ MapVertexToParticle3D<T,Descriptor>::~MapVertexToParticle3D()
 template<typename T, template<typename U> class Descriptor>
 MapVertexToParticle3D<T,Descriptor>::MapVertexToParticle3D (
             MapVertexToParticle3D<T,Descriptor> const& rhs)
-    : triangleBoundary(rhs.triangleBoundary),
+    : Cells(rhs.Cells),
       tagToParticle3D(rhs.tagToParticle3D)
 { }
 

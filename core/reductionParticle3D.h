@@ -25,6 +25,8 @@
 #include "palabos3D.hh"
 #include <vector>
 #include <map>
+using namespace plb;
+using namespace plb;
 
 namespace plb {
 
@@ -56,7 +58,7 @@ public:
 #endif
     	return plint(myrank); }
 private:
-    static int id;
+    static int id ;
     plint cellId;
     plint processor;
     plint nParticles;
@@ -95,67 +97,9 @@ public:
 
 };
 
-namespace meta {
 
 template<typename T, template<typename U> class Descriptor>
-ParticleRegistration3D<T,Descriptor>& particleRegistration3D();
-
-
-template< typename T,
-          template<typename U> class Descriptor,
-          class ReductionParticle >
-class ReductionParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
-{
-    virtual Particle3D<T,Descriptor>* generate (
-            HierarchicUnserializer& unserializer ) const
-    {
-        // tag, position, scalars, vectors.
-
-        plint tag, processor, cellId, nParticles;
-        Array<T,3> position;
-        std::map<plint, T > quantities1D; // quantities1D[CCR_VOLUME] = CELL_VOLUME
-        std::map<plint, Array<T,3> > quantities3D;
-        std::map<plint, std::vector<T> > quantitiesND;
-
-        unserializer.readValue(tag);
-        unserializer.readValues<T,3>(position);
-        unserializer.readValue<plint>(cellId);
-        unserializer.readValue<plint>(processor);
-        unserializer.readValue<plint>(nParticles);
-
-        plint size1D, size3D, sizeND, qId;
-        unserializer.readValue<plint>(size1D);
-        for (int id = 0; id < size1D; ++id) {
-            unserializer.readValue<plint>(qId);
-            unserializer.readValue<T>(quantities1D[qId]);
-        }
-
-        unserializer.readValue<plint>(size3D);
-        for (int id = 0; id < size3D; ++id) {
-            unserializer.readValue<plint>(qId);
-            unserializer.readValues<T,3>( (quantities3D[qId]) );
-        }
-
-        unserializer.readValue<plint>(sizeND);
-        for (int id = 0; id < sizeND; ++id) {
-            unserializer.readValue<plint>(qId);
-            unserializer.readValues<T>(quantitiesND[qId]);
-        }
-
-        return new ReductionParticle(tag, position, cellId, processor, nParticles, quantities1D, quantities3D, quantitiesND);
-    }
-};
-
-
-template< typename T,
-          template<typename U> class Descriptor,
-          class ReductionParticle >
-int registerReductionParticle3D(std::string name) {
-    return particleRegistration3D<T,Descriptor>().announce (
-               name, new ReductionParticleGenerator3D<T,Descriptor,ReductionParticle> );
-}
-
-}  // namespace meta
+int ReductionParticle3D<T,Descriptor>::id = meta::registerGenericParticle3D<T,Descriptor,ReductionParticle3D<T,Descriptor> >("ReductionParticle");
 
 }  // namespace plb
 

@@ -17,31 +17,35 @@
 #ifndef CELL_QUANTITIES_H
 #define CELL_QUANTITIES_H
 
-#include "immersedCellsReductions.h"
 #include "reductionParticle3D.h"
+#include "immersedCellsReductions.h"
 #include "localCellReductions3D.h"
 
 
 // Class storing all the cell measures
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-class CellQuantities3D {
+class CellReductor3D {
 public:
-        CellQuantities3D(
+        CellReductor3D(
                 TriangleBoundary3D<T> const& Cells_,
                 MultiParticleField3D<ParticleFieldT<T,Descriptor> > &  particles_,
                 std::vector<plint> const&  cellIds_, plint numberOfCells_,
                 CellField3D<T,Descriptor> & chq_,
                 std::string cmhFileName, T dx_, T dt_, plint cellRadiusLU_, bool checkpointed_=false);
-        virtual ~CellQuantities3D();
-        void calculateAll() ;
-        void calculateVolumeAndSurface() ;
-        void calculateVolumeAndSurfaceAndCenters() ;
-        void calculateInertia();
+        virtual ~CellReductor3D();
+        void reduce(plint subscribedQuantity);
+        void reduce(std::vector<plint> subscribedQuantities);
+        void reduceAll() ;
+        void reduceVolumeAndSurface() ;
+        void reduceVolumeAndSurfaceAndCenters() ;
+        void reduceInertia();
         void writeHeader(); // Does not work if checkpointed
         void write(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength);  // Does not work if checkpointed
         void print(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength);
 public:
+        CellField3D<T,Descriptor> & getCellField();
+
         std::vector<T> & getCellsVolume();
         std::vector<T> & getCellsSurface();
         std::vector<T> & getCellsMeanEdgeDistance() ;
@@ -51,6 +55,8 @@ public:
         std::vector<T> & getCellsMeanTileSpan() ;
         std::vector< Array<T,3> > & getCellsCenter() ;
         std::vector< Array<T,3> > & getCellsVelocity() ;
+
+
 private:
         std::vector<T> cellsVolume, cellsSurface;
         std::vector<T> cellsMeanEdgeDistance, cellsMaxEdgeDistance, cellsMeanAngle, cellsMeanTriangleArea, cellsMeanTileSpan;
@@ -73,7 +79,7 @@ private:
 
 
 
-#include "cellQuantities3D.hh"
+#include "cellReductor3D.hh"
 #endif  // CELLS_INIT_H
 
 

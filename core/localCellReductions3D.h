@@ -5,6 +5,7 @@
 #include "palabos3D.hh"
 #include "cellReductionTypes.h"
 #include "cellField3D.hh"
+#include "diagonalize.cpp"
 
 
 /*
@@ -104,6 +105,18 @@ private:
     CellField3D<T,Descriptor> & chq;
     plint numVerticesPerCell;
 };
+
+
+/* ================================================================================ */
+/* ******** computeEllipsoidFit *********************************** */
+/* ================================================================================ */
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void computeEllipsoidFit (std::vector<T> & cellInertia,
+                          std::vector<T> & cellsEllipsoidFitAngles,
+                          std::vector<T> & cellsEllipsoidFitSemiAxes,
+                          T & difference,
+                          T cellVolume);
 
 
 #include "localCellReductions3D.hh"

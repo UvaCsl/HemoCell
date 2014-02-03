@@ -21,9 +21,6 @@
 #include "ficsion.h"
 
 
-using namespace plb;
-using namespace std;
-
 typedef double T;
 typedef Array<T,3> Velocity;
 #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor
@@ -278,6 +275,8 @@ int main(int argc, char* argv[])
 
     /* Find particles in the domain (+envelopes) and store them in tagToParticle3D */
     std::map<plint, Particle3D<T,DESCRIPTOR>*> tagToParticle3D;
+    CellField3D<T,DESCRIPTOR> RBCField(Cells, cellNumVertices, cellNumTriangles, 2*radius, tagToParticle3D);
+
     applyProcessingFunctional ( // advance particles in time according to velocity
         new AdvanceParticlesEveryWhereFunctional3D<T,DESCRIPTOR>,
         immersedParticles.getBoundingBox(), particleArg );
@@ -290,17 +289,17 @@ int main(int argc, char* argv[])
         immersedParticles.getBoundingBox(), particleArg );
 
     std::string logFileName = logOutDir + "plbCells.log";
-    CellField3D<T,DESCRIPTOR> chq(Cells, numParts[0], tagToParticle3D);
-    CellQuantities3D<T,DESCRIPTOR, DenseParticleField3D> rbcQuantities(Cells, immersedParticles, cellIds, npar, chq, logFileName, dx, dt, radius, checkpointed);
-    rbcQuantities.calculateAll();
+
+    CellReductor3D<T,DESCRIPTOR, DenseParticleField3D> rbcReductor(Cells, immersedParticles, cellIds, npar, RBCField, logFileName, dx, dt, radius, checkpointed);
+    rbcReductor.reduceAll();
     /* INITIALIZE MODELS */
     k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
     k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
     eta_m /= dNewton*dt/dx;     k_stretch /= dNewton;    k_rest /= dNewton/dx;
     T eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan;
-    eqArea = rbcQuantities.getCellsMeanTriangleArea()[0];     eqLength = rbcQuantities.getCellsMeanEdgeDistance()[0];
-    eqAngle = rbcQuantities.getCellsMeanAngle()[0];     eqVolume = rbcQuantities.getCellsVolume()[0];
-    eqSurface = rbcQuantities.getCellsSurface()[0]; eqTileSpan = rbcQuantities.getCellsMeanTileSpan()[0];
+    eqArea = RBCField.getMeanTriangleArea(0);     eqLength = RBCField.getMeanEdgeDistance(0);
+    eqAngle = RBCField.getMeanAngle(0);     eqVolume = RBCField.getVolume(0);
+    eqSurface = RBCField.getSurface(0); eqTileSpan = RBCField.getMeanTileSpan(0);
     T persistenceLengthFine = 7.5e-9  / dx;
     // T eqLengthRatio = 3.17; // According to Pivkin2008
     T maxLength = eqLengthRatio*eqLength;
@@ -343,7 +342,7 @@ int main(int argc, char* argv[])
     eqVolumeInitial = eqVolume;
     eqVolumeFinal = deflationRatio * eqVolumeInitial ;
     applyProcessingFunctional (
-       new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), rbcQuantities.getCellsVolume(), rbcQuantities.getCellsSurface()),
+       new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), RBCField),
        immersedParticles.getBoundingBox(), particleArg );
 
 
@@ -355,10 +354,10 @@ int main(int argc, char* argv[])
                                                                                             tagToParticle3D);
 
     SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds,
-                                    rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume(), 0.05*numParts[0], flowType,
-                                    dx, dt, T(dNewton), chq, checkpointed);
-    rbcQuantities.print(0, eqVolume, eqSurface, eqArea, eqLength);
-    rbcQuantities.write(0, eqVolumeFinal, eqSurface, eqArea, eqLength) ; // Write Log file for the cell Particles
+                                    rbcReductor.getCellsCenter(), rbcReductor.getCellsVolume(), 0.05*numParts[0], flowType,
+                                    dx, dt, T(dNewton), RBCField, checkpointed);
+    rbcReductor.print(0, eqVolume, eqSurface, eqArea, eqLength);
+    rbcReductor.write(0, eqVolumeFinal, eqSurface, eqArea, eqLength) ; // Write Log file for the cell Particles
     pcout << "== Inertia Tensor == "<< std::endl;
     pcout <<  shearFlow.getInertiaTensor()[0][0] << "\t" <<  shearFlow.getInertiaTensor()[0][1] << "\t" <<  shearFlow.getInertiaTensor()[0][2] << std::endl;
     pcout <<  shearFlow.getInertiaTensor()[0][3] << "\t" <<  shearFlow.getInertiaTensor()[0][4] << "\t" <<  shearFlow.getInertiaTensor()[0][5] << std::endl;
@@ -368,6 +367,18 @@ int main(int argc, char* argv[])
     pcout << "== Cell Angles ==" << std::endl;
     pcout <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
 
+    rbcReductor.reduceInertia();
+//    std::vector<T> inertia = RBCField.getInertia(0);
+//    pcout << "== Inertia Tensor == "<< std::endl;
+//    pcout <<  inertia[0] << "\t" <<  inertia[1] << "\t" <<  inertia[2] << std::endl;
+//    pcout <<  inertia[3] << "\t" <<  inertia[4] << "\t" <<  inertia[5] << std::endl;
+//    pcout <<  inertia[6] << "\t" <<  inertia[7] << "\t" <<  inertia[8] << std::endl;
+//    Array<T,3> diams = RBCField.getDiameters(0);
+//    pcout << "== Cell Diameters ==" << std::endl;
+//    pcout <<  diams[0] << "\t" <<  diams[1] << "\t" <<  diams[2] << std::endl;
+//    Array<T,3> angls = RBCField.getTumblingAngles(0);
+//    pcout << "== Cell Angles ==" << std::endl;
+//    pcout <<  angls[0]*180/pi << "\t" <<  angls[1]*180/pi << "\t" <<  angls[2]*180/pi << std::endl;
 
     pluint initIter=0;
     /* ********************* Load CheckPoint ***************************************** * */
@@ -395,9 +406,9 @@ int main(int argc, char* argv[])
             new MapVertexToParticle3D<T,DESCRIPTOR> (
                 Cells, tagToParticle3D),
             immersedParticles.getBoundingBox(), particleArg );
-        rbcQuantities.calculateVolumeAndSurfaceAndCenters();
+        rbcReductor.reduceVolumeAndSurfaceAndCenters();
         applyProcessingFunctional ( // Compute Cell Model forces
-           new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), rbcQuantities.getCellsVolume(), rbcQuantities.getCellsSurface()),
+           new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), RBCField),
            immersedParticles.getBoundingBox(), particleArg );
 
         rbcStretch.applyForce(0, cellModel->getDensity());
@@ -466,10 +477,10 @@ int main(int argc, char* argv[])
                 pcout << " OK" << std::endl;
 
             }
-            rbcQuantities.write(i, eqVolumeFinal, eqSurface, eqArea, eqLength) ;
-            rbcStretch.write(i, rbcQuantities.getCellsMeanEdgeDistance()[0], rbcQuantities.getCellsMaxEdgeDistance()[0]); // SINGLE CELL STRETCHING
+            rbcReductor.write(i, eqVolumeFinal, eqSurface, eqArea, eqLength) ;
+            rbcStretch.write(i, rbcReductor.getCellsMeanEdgeDistance()[0], rbcReductor.getCellsMaxEdgeDistance()[0]); // SINGLE CELL STRETCHING
             if (flowType==6) { // SINGLE CELL IN SHEAR FLOW
-                shearFlow.updateQuantities(i, cellIds, rbcQuantities.getCellsCenter(), rbcQuantities.getCellsVolume());
+                shearFlow.updateQuantities(i, cellIds, rbcReductor.getCellsCenter(), rbcReductor.getCellsVolume());
                 shearFlow.write();
                 pcout << "[SF] Diameters :" <<  shearFlow.getDiameters()[0][0] << "\t" <<  shearFlow.getDiameters()[0][1] << "\t" <<  shearFlow.getDiameters()[0][2] ;
                 pcout << ", Angles :" <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
@@ -557,14 +568,14 @@ int main(int argc, char* argv[])
                 Cells, tagToParticle3D),
             immersedParticles.getBoundingBox(), particleArg );
 //        pcout << "tagToParticle3D: " << tagToParticle3D.size() << std::endl;
-        if (flowType==6) { rbcQuantities.calculateVolumeAndSurfaceAndCenters(); }
-        else { rbcQuantities.calculateVolumeAndSurface();  }
+        if (flowType==6) { rbcReductor.reduceVolumeAndSurfaceAndCenters(); }
+        else { rbcReductor.reduceVolumeAndSurface();  }
         dtIteration = global::timer("Quantities").stop();
 
         global::timer("Model").start();
         // #1# Membrane Model + Stretching
         applyProcessingFunctional (
-                        new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), rbcQuantities.getCellsVolume(), rbcQuantities.getCellsSurface()),
+                        new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), RBCField),
                         immersedParticles.getBoundingBox(), particleArg );
         rbcStretch.applyForce(i, cellModel->getDensity());
         dtIteration = global::timer("Model").stop();

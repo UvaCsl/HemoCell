@@ -18,12 +18,12 @@
 #define CELL_QUANTITIES_3D_HH
 
 
-#include "cellQuantities3D.h"
+#include "cellReductor3D.h"
 
 // Class storing all the cell measures
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-CellQuantities3D<T,Descriptor,ParticleFieldT>::CellQuantities3D(
+CellReductor3D<T,Descriptor,ParticleFieldT>::CellReductor3D(
         TriangleBoundary3D<T> const& Cells_,
         MultiParticleField3D<ParticleFieldT<T,Descriptor> > &  particles_,
         std::vector<plint> const&  cellIds_, plint numberOfCells_,
@@ -55,15 +55,46 @@ CellQuantities3D<T,Descriptor,ParticleFieldT>::CellQuantities3D(
                 defaultMultiBlockPolicy3D().getCombinedStatistics() );
 }
 
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+CellReductor3D<T,Descriptor,ParticleFieldT>::~CellReductor3D()
+{ delete reductionParticles; };
+
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-CellQuantities3D<T,Descriptor,ParticleFieldT>::~CellQuantities3D() { delete reductionParticles; };
+CellField3D<T,Descriptor> & CellReductor3D<T,Descriptor,ParticleFieldT>::getCellField() {
+        return chq;
+}
 
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
+void CellReductor3D<T,Descriptor,ParticleFieldT>::reduce(plint subscribedQuantity)
+{
+        std::vector<plint> subscribedQuantities;
+        subscribedQuantities.push_back(subscribedQuantity);
+        reduce(subscribedQuantities);
+}
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void CellReductor3D<T,Descriptor,ParticleFieldT>::reduce(std::vector<plint> subscribedQuantities)
+{
+        std::vector<MultiBlock3D*> particleArg;
+        particleArg.push_back(particles);
+        particleArg.push_back(reductionParticles);
+        applyProcessingFunctional(
+                new LocalCellReductions3D<T,Descriptor>(Cells, chq, chq.getNumVerticesPerCell(), subscribedQuantities),
+                particles->getBoundingBox(), particleArg); // Keep particles BoundingBox. It changes in the Functional
+
+        particleArg.clear();  particleArg.push_back(reductionParticles);
+        syncCellQuantities<T,Descriptor>(reductionParticles->getBoundingBox(), particleArg, chq);
+}
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceAll()
 {
 
         cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();
@@ -76,7 +107,7 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
         applyProcessingFunctional(nfunctional, particles->getBoundingBox(), particleArg);
         nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
 
-        calculateVolumeAndSurface();
+        reduceVolumeAndSurface();
         countCellMeanTriangleArea(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsMeanTriangleArea);
         countCellMeanAngle(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsMeanAngle);
         countCellMeanEdgeDistance(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsMeanEdgeDistance);
@@ -86,27 +117,9 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
         countCellCenters(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsCenter, cellNumVertices);
         countCellVelocity(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVelocity, cellNumVertices);
 
-        plint numVerticesPerCell = cellNumVertices[0];
-
         chq.clearQuantities();
-        std::vector<plint> subscribedQuantities;
-        subscribedQuantities.push_back(CCR_POSITION_MEAN);
-        subscribedQuantities.push_back(CCR_VOLUME);
-        subscribedQuantities.push_back(CCR_SURFACE);
-        subscribedQuantities.push_back(CCR_EDGE_DISTANCE_MEAN);
-        subscribedQuantities.push_back(CCR_EDGE_DISTANCE_MIN);
-        subscribedQuantities.push_back(CCR_EDGE_DISTANCE_MAX);
-        subscribedQuantities.push_back(CCR_ANGLE_MEAN);
-        subscribedQuantities.push_back(CCR_ANGLE_MIN);
-        subscribedQuantities.push_back(CCR_ANGLE_MAX);
-        subscribedQuantities.push_back(CCR_ENERGY);
-
-        particleArg.push_back(reductionParticles);
-        applyProcessingFunctional(
-                new LocalCellReductions3D<T,Descriptor>(Cells, chq, numVerticesPerCell, subscribedQuantities),
-                particles->getBoundingBox(), particleArg);
-        particleArg.clear();  particleArg.push_back(reductionParticles);
-        syncCellQuantities<T,Descriptor>(reductionParticles->getBoundingBox(), particleArg, chq);
+        std::vector<plint> subscribedQuantities(allReductions);
+        reduce(allReductions);
 
         for (plint ci = 0; ci < numberOfCells; ++ci) {
             cout << ci
@@ -122,7 +135,7 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateAll()
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateVolumeAndSurfaceAndCenters()
+void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceVolumeAndSurfaceAndCenters()
 {
         std::vector<MultiBlock3D*> particleArg;
         particleArg.push_back(particles);
@@ -131,18 +144,10 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateVolumeAndSurfaceAnd
         countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
         countCellCenters(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsCenter, cellNumVertices);
 
-//        chq.clearQuantities();
-//        std::vector<plint> subscribedQuantities;
-//        subscribedQuantities.push_back(CCR_POSITION_MEAN);
-//        subscribedQuantities.push_back(CCR_VOLUME);
-//        subscribedQuantities.push_back(CCR_SURFACE);
-//
-//        particleArg.push_back(reductionParticles);
-//        applyProcessingFunctional(
-//                new LocalCellReductions3D<T,Descriptor>(Cells, chq, chq.getNumVerticesPerCell(), subscribedQuantities),
-//                particles->getBoundingBox(), particleArg);
-//        particleArg.clear();  particleArg.push_back(reductionParticles);
-//        syncCellQuantities<T,Descriptor>(reductionParticles->getBoundingBox(), particleArg, chq);
+        chq.clearQuantities();
+        std::vector<plint> subscribedQuantities(volumeAndSurfaceAndCentersReductions);
+        reduce(subscribedQuantities);
+
 //        for (plint ci = 0; ci < numberOfCells; ++ci) {
 //            cellsVolume[ci] = chq.getVolume(ci);
 //            cellsSurface[ci] = chq.getSurface(ci);
@@ -153,38 +158,51 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateVolumeAndSurfaceAnd
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateInertia()
+void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceInertia()
 {
-        std::vector<MultiBlock3D*> particleArg;
-        particleArg.push_back(particles);
-        particleArg.push_back(reductionParticles);
+    reduce(CCR_INERTIA);
+    std::vector<plint> const& cellIds = chq.getCellIds();
+    for (pluint ic = 0; ic < cellIds.size(); ++ic) {
+        plint cellId = cellIds[ic];
 
-        std::vector<plint> subscribedQuantities;
-        subscribedQuantities.push_back(CCR_INERTIA);
+        std::vector<T> & cellInertia = chq.getInertia(cellId);
+        std::vector<T> ellipsoidAngles;
+        std::vector<T> ellipsoidSemiAxes;
+        T difference, cellVolume = chq.getVolume(cellId);
+        computeEllipsoidFit (cellInertia, ellipsoidAngles, ellipsoidSemiAxes, difference, cellVolume);
 
-        applyProcessingFunctional(
-                new LocalCellReductions3D<T,Descriptor>(Cells, chq, chq.getNumVerticesPerCell(), subscribedQuantities),
-                particles->getBoundingBox(), particleArg);
+        T currMaxDiameter =  max(max(ellipsoidSemiAxes[0], ellipsoidSemiAxes[1]),  ellipsoidSemiAxes[2]);
+        T maxDiameter = chq.getMaxDiameter();
 
-        particleArg.clear();  particleArg.push_back(reductionParticles);
-        syncCellQuantities<T,Descriptor>(reductionParticles->getBoundingBox(), particleArg, chq);
+        chq.getTumblingAngles(cellId) = Array<T,3>(ellipsoidAngles[0], ellipsoidAngles[1], ellipsoidAngles[2]);
+        // chq.getTankTreadingAngles(cellId);
+        chq.getDiameters(cellId) = Array<T,3>(ellipsoidSemiAxes[0], ellipsoidSemiAxes[1], ellipsoidSemiAxes[2]);
+        chq.getSymmetryDeviation(cellId) = difference;
+        chq.getDeformationIndex(cellId) = (currMaxDiameter - maxDiameter)*1.0/(currMaxDiameter + maxDiameter);
+    }
+
 }
 
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-void CellQuantities3D<T,Descriptor,ParticleFieldT>::calculateVolumeAndSurface()
+void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceVolumeAndSurface()
 {
         cellsVolume.clear(); cellsSurface.clear();
         std::vector<MultiBlock3D*> particleArg;
         particleArg.push_back(particles);
         countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
         countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
+
+        chq.clearQuantities();
+        std::vector<plint> subscribedQuantities(volumeAndSurfaceReductions);
+        reduce(subscribedQuantities);
+
 }
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-void CellQuantities3D<T,Descriptor,ParticleFieldT>::writeHeader() {
+void CellReductor3D<T,Descriptor,ParticleFieldT>::writeHeader() {
     std::string delim(" ; ");
     logFile << "# Iteration " << delim
             << " Volume" << delim
@@ -206,7 +224,7 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::writeHeader() {
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-void CellQuantities3D<T,Descriptor,ParticleFieldT>::write(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength)
+void CellReductor3D<T,Descriptor,ParticleFieldT>::write(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength)
 {
         std::string delim(" ; ");
         if (iter != 0 or (iter == 0 and not checkpointed)) {
@@ -231,7 +249,7 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::write(plint iter, T eqVolume
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-void CellQuantities3D<T,Descriptor,ParticleFieldT>::print(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength)
+void CellReductor3D<T,Descriptor,ParticleFieldT>::print(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength)
 {
         pcout << "=== " << iter << " === " << std::endl;
         pcout << "Volume: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsVolume[iA]*100.0/eqVolume - 100 <<"%, ";
@@ -253,39 +271,39 @@ void CellQuantities3D<T,Descriptor,ParticleFieldT>::print(plint iter, T eqVolume
 
 template< typename T, template<typename U> class Descriptor,
     template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-std::vector<T> & CellQuantities3D<T,Descriptor,ParticleFieldT>::getCellsVolume() { return cellsVolume; }
+std::vector<T> & CellReductor3D<T,Descriptor,ParticleFieldT>::getCellsVolume() { return cellsVolume; }
 
 template< typename T, template<typename U> class Descriptor,
     template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-std::vector<T> & CellQuantities3D<T,Descriptor,ParticleFieldT>::getCellsSurface() { return cellsSurface; }
+std::vector<T> & CellReductor3D<T,Descriptor,ParticleFieldT>::getCellsSurface() { return cellsSurface; }
 
 template< typename T, template<typename U> class Descriptor,
     template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-std::vector<T> & CellQuantities3D<T,Descriptor,ParticleFieldT>::getCellsMeanEdgeDistance() { return cellsMeanEdgeDistance; }
+std::vector<T> & CellReductor3D<T,Descriptor,ParticleFieldT>::getCellsMeanEdgeDistance() { return cellsMeanEdgeDistance; }
 
 template< typename T, template<typename U> class Descriptor,
     template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-std::vector<T> & CellQuantities3D<T,Descriptor,ParticleFieldT>::getCellsMaxEdgeDistance() { return cellsMaxEdgeDistance; }
+std::vector<T> & CellReductor3D<T,Descriptor,ParticleFieldT>::getCellsMaxEdgeDistance() { return cellsMaxEdgeDistance; }
 
 template< typename T, template<typename U> class Descriptor,
     template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-std::vector<T> & CellQuantities3D<T,Descriptor,ParticleFieldT>::getCellsMeanAngle() { return cellsMeanAngle; }
+std::vector<T> & CellReductor3D<T,Descriptor,ParticleFieldT>::getCellsMeanAngle() { return cellsMeanAngle; }
 
 template< typename T, template<typename U> class Descriptor,
     template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-std::vector<T> & CellQuantities3D<T,Descriptor,ParticleFieldT>::getCellsMeanTriangleArea() { return cellsMeanTriangleArea; }
+std::vector<T> & CellReductor3D<T,Descriptor,ParticleFieldT>::getCellsMeanTriangleArea() { return cellsMeanTriangleArea; }
 
 template< typename T, template<typename U> class Descriptor,
     template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-std::vector<T> & CellQuantities3D<T,Descriptor,ParticleFieldT>::getCellsMeanTileSpan() { return cellsMeanTileSpan; }
+std::vector<T> & CellReductor3D<T,Descriptor,ParticleFieldT>::getCellsMeanTileSpan() { return cellsMeanTileSpan; }
 
 template< typename T, template<typename U> class Descriptor,
     template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-std::vector< Array<T,3> > & CellQuantities3D<T,Descriptor,ParticleFieldT>::getCellsCenter() { return cellsCenter; }
+std::vector< Array<T,3> > & CellReductor3D<T,Descriptor,ParticleFieldT>::getCellsCenter() { return cellsCenter; }
 
 template< typename T, template<typename U> class Descriptor,
     template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-std::vector< Array<T,3> > & CellQuantities3D<T,Descriptor,ParticleFieldT>::getCellsVelocity() { return cellsVelocity; }
+std::vector< Array<T,3> > & CellReductor3D<T,Descriptor,ParticleFieldT>::getCellsVelocity() { return cellsVelocity; }
 
 
 #endif  // CELL_QUANTITIES_3D_HH
