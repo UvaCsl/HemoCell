@@ -368,17 +368,17 @@ int main(int argc, char* argv[])
     pcout <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
 
     rbcReductor.reduceInertia();
-//    std::vector<T> inertia = RBCField.getInertia(0);
-//    pcout << "== Inertia Tensor == "<< std::endl;
-//    pcout <<  inertia[0] << "\t" <<  inertia[1] << "\t" <<  inertia[2] << std::endl;
-//    pcout <<  inertia[3] << "\t" <<  inertia[4] << "\t" <<  inertia[5] << std::endl;
-//    pcout <<  inertia[6] << "\t" <<  inertia[7] << "\t" <<  inertia[8] << std::endl;
-//    Array<T,3> diams = RBCField.getDiameters(0);
-//    pcout << "== Cell Diameters ==" << std::endl;
-//    pcout <<  diams[0] << "\t" <<  diams[1] << "\t" <<  diams[2] << std::endl;
-//    Array<T,3> angls = RBCField.getTumblingAngles(0);
-//    pcout << "== Cell Angles ==" << std::endl;
-//    pcout <<  angls[0]*180/pi << "\t" <<  angls[1]*180/pi << "\t" <<  angls[2]*180/pi << std::endl;
+    std::vector<T> inertia = RBCField.getInertia(0);
+    pcout << "== Inertia Tensor == "<< std::endl;
+    pcout <<  inertia[0] << "\t" <<  inertia[1] << "\t" <<  inertia[2] << std::endl;
+    pcout <<  inertia[3] << "\t" <<  inertia[4] << "\t" <<  inertia[5] << std::endl;
+    pcout <<  inertia[6] << "\t" <<  inertia[7] << "\t" <<  inertia[8] << std::endl;
+    Array<T,3> diams = RBCField.getDiameters(0);
+    pcout << "== Cell Diameters ==" << std::endl;
+    pcout <<  diams[0] << "\t" <<  diams[1] << "\t" <<  diams[2] << std::endl;
+    Array<T,3> angls = RBCField.getTumblingAngles(0);
+    pcout << "== Cell Angles ==" << std::endl;
+    pcout <<  angls[0]*180/pi << "\t" <<  angls[1]*180/pi << "\t" <<  angls[2]*180/pi << std::endl;
 
     pluint initIter=0;
     /* ********************* Load CheckPoint ***************************************** * */

@@ -79,7 +79,7 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduce(plint subscribedQuantit
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-void CellReductor3D<T,Descriptor,ParticleFieldT>::reduce(std::vector<plint> subscribedQuantities)
+void CellReductor3D<T,Descriptor,ParticleFieldT>::reduce(std::vector<plint> const& subscribedQuantities)
 {
         std::vector<MultiBlock3D*> particleArg;
         particleArg.push_back(particles);
@@ -108,6 +108,9 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceAll()
         nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
 
         reduceVolumeAndSurface();
+        cellsVolume.clear(); cellsSurface.clear();
+        countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
+        countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
         countCellMeanTriangleArea(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsMeanTriangleArea);
         countCellMeanAngle(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsMeanAngle);
         countCellMeanEdgeDistance(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsMeanEdgeDistance);
@@ -137,22 +140,27 @@ template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceVolumeAndSurfaceAndCenters()
 {
-        std::vector<MultiBlock3D*> particleArg;
-        particleArg.push_back(particles);
-        cellsVolume.clear(); cellsSurface.clear(); cellsCenter.clear();
-        countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
-        countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
-        countCellCenters(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsCenter, cellNumVertices);
-
+//        std::vector<MultiBlock3D*> particleArg;
+//        particleArg.push_back(particles);
+//        cellsVolume.clear(); cellsSurface.clear(); cellsCenter.clear();
+//        countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
+//        countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
+//        countCellCenters(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsCenter, cellNumVertices);
         chq.clearQuantities();
         std::vector<plint> subscribedQuantities(volumeAndSurfaceAndCentersReductions);
         reduce(subscribedQuantities);
 
-//        for (plint ci = 0; ci < numberOfCells; ++ci) {
-//            cellsVolume[ci] = chq.getVolume(ci);
-//            cellsSurface[ci] = chq.getSurface(ci);
-//            cellsCenter[ci] = chq.getPosition(ci);
-//        }
+        std::vector<plint> const& cellIds = chq.getCellIds();
+
+        cellsVolume = std::vector<T>(numberOfCells);
+        cellsSurface = std::vector<T>(numberOfCells);
+        cellsCenter = std::vector<Array<T,3>  >(numberOfCells);
+        for (pluint ci = 0; ci < cellIds.size(); ++ci) {
+            plint cellId = cellIds[ci];
+            cellsVolume[cellId] = chq.getVolume(cellId);
+            cellsSurface[cellId] = chq.getSurface(cellId);
+            cellsCenter[cellId] = chq.getPosition(cellId);
+        }
 }
 
 
@@ -188,16 +196,24 @@ template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceVolumeAndSurface()
 {
-        cellsVolume.clear(); cellsSurface.clear();
-        std::vector<MultiBlock3D*> particleArg;
-        particleArg.push_back(particles);
-        countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
-        countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
+//        cellsVolume.clear(); cellsSurface.clear();
+//        std::vector<MultiBlock3D*> particleArg;
+//        particleArg.push_back(particles);
+//        countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
+//        countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
 
         chq.clearQuantities();
         std::vector<plint> subscribedQuantities(volumeAndSurfaceReductions);
         reduce(subscribedQuantities);
 
+        std::vector<plint> const& cellIds = chq.getCellIds();
+        cellsVolume = std::vector<T>(numberOfCells);
+        cellsSurface = std::vector<T>(numberOfCells);
+        for (pluint ci = 0; ci < cellIds.size(); ++ci) {
+            plint cellId = cellIds[ci];
+            cellsVolume[cellId] = chq.getVolume(cellId);
+            cellsSurface[cellId] = chq.getSurface(cellId);
+        }
 }
 
 template< typename T, template<typename U> class Descriptor,

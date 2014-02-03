@@ -99,7 +99,7 @@ public:
 
 
 template<typename T, template<typename U> class Descriptor>
-int ReductionParticle3D<T,Descriptor>::id = meta::registerGenericParticle3D<T,Descriptor,ReductionParticle3D<T,Descriptor> >("ReductionParticle");
+int ReductionParticle3D<T,Descriptor>::id = meta::registerGenericParticle3D<T,Descriptor,ReductionParticle3D<T,Descriptor> >("ReductionParticle3D");
 
 }  // namespace plb
 

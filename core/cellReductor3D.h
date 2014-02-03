@@ -35,7 +35,7 @@ public:
                 std::string cmhFileName, T dx_, T dt_, plint cellRadiusLU_, bool checkpointed_=false);
         virtual ~CellReductor3D();
         void reduce(plint subscribedQuantity);
-        void reduce(std::vector<plint> subscribedQuantities);
+        void reduce(std::vector<plint> const& subscribedQuantities);
         void reduceAll() ;
         void reduceVolumeAndSurface() ;
         void reduceVolumeAndSurfaceAndCenters() ;

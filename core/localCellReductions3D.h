@@ -36,7 +36,7 @@ public:
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const {
         modified[0] = modif::nothing; // Particle field.
-        modified[1] = modif::dynamicVariables; // Reduction particles;
+        modified[1] = modif::allVariables; // Reduction particles;
     }
     BlockDomain::DomainT appliesTo() const { return BlockDomain::bulk; }
 private:
