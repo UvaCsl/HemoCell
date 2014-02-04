@@ -73,6 +73,33 @@ int ReductionParticle3D<T,Descriptor>::getId() const {
 //
 //}
 
+template<typename T>
+void serializeVector(HierarchicSerializer& serializer, std::vector<T> const& vec)
+{
+    plint n = vec.size();
+    serializer.addValue<plint>(n);
+    for (int i = 0; i < n; ++i) {
+        serializer.addValue<T>(vec[i]);
+    }
+}
+
+
+template<typename T>
+std::vector<T> unserializeVector(HierarchicUnserializer& unserializer)
+{
+    std::vector<T> vec;
+    plint n;
+    unserializer.readValue<plint>(n);
+    for (int i = 0; i < n; ++i) {
+        T value;
+        unserializer.readValue<T>(value);
+        vec.push_back(value);
+    }
+    return vec;
+}
+
+
+
 template<typename T, template<typename U> class Descriptor>
 void ReductionParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializer) const
 {
@@ -101,7 +128,7 @@ void ReductionParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializ
     serializer.addValue<plint>(quantitiesND.size());
     for (iterND  = quantitiesND.begin(); iterND != quantitiesND.end(); ++iterND) {
         serializer.addValue<plint>(iterND->first);
-        serializer.addValues<T>(iterND->second);
+        serializeVector<T>(serializer, iterND->second);
     }
 
 }
@@ -138,7 +165,7 @@ void ReductionParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& unse
     for (int id = 0; id < sizeND; ++id) {
         plint qId;
         unserializer.readValue<plint>(qId);
-        unserializer.readValues<T>(quantitiesND[qId]);
+        quantitiesND[qId] = unserializeVector<T>(unserializer);
     }
 
 }
