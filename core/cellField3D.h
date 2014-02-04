@@ -40,6 +40,7 @@ public:
     T getMaxDiameter() { return maxDiameter; }
 public:
     void clearQuantities();
+    void clearQuantity(plint subscribedQuantity);
     /* Get Class cointainers */
     std::vector<plint> const& getCellIds();
     std::map<plint, plint> & getParticlesPerCellId() { return particlesPerCellId ; }

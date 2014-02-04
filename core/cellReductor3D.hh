@@ -72,8 +72,9 @@ template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void CellReductor3D<T,Descriptor,ParticleFieldT>::reduce(plint subscribedQuantity)
 {
-        std::vector<plint> subscribedQuantities;
-        subscribedQuantities.push_back(subscribedQuantity);
+        chq.clearQuantity(subscribedQuantity);
+        std::vector<plint> subscribedQuantities(1);
+        subscribedQuantities[0] = subscribedQuantity;
         reduce(subscribedQuantities);
 }
 
@@ -121,9 +122,8 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceAll()
         countCellVelocity(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVelocity, cellNumVertices);
 
         chq.clearQuantities();
-        std::vector<plint> subscribedQuantities(allReductions);
+        std::vector<plint> subscribedQuantities(allReductions); // All minus Inertia
         reduce(allReductions);
-
         for (plint ci = 0; ci < numberOfCells; ++ci) {
             cout << ci
                     << " vol " << cellsVolume[ci] - chq.getVolume(ci)
@@ -132,7 +132,7 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceAll()
                     << " v-v " << cellsVolume[ci] << " " << chq.getVolume(ci)
                                         << std::endl;
         }
-
+        reduceInertia();
 }
 
 
@@ -168,12 +168,17 @@ template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
 void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceInertia()
 {
-    reduce(CCR_INERTIA);
+    reduce(plint(CCR_INERTIA));
     std::vector<plint> const& cellIds = chq.getCellIds();
     for (pluint ic = 0; ic < cellIds.size(); ++ic) {
         plint cellId = cellIds[ic];
-
         std::vector<T> & cellInertia = chq.getInertia(cellId);
+
+        cout << cellId << "== Inertia Tensor == "<< cellIds.size() << std::endl;
+        cout <<  cellInertia[0] << "\t" <<  cellInertia[1] << "\t" <<  cellInertia[2] << std::endl;
+        cout <<  cellInertia[3] << "\t" <<  cellInertia[4] << "\t" <<  cellInertia[5] << std::endl;
+        cout <<  cellInertia[6] << "\t" <<  cellInertia[7] << "\t" <<  cellInertia[8] << std::endl;
+
         std::vector<T> ellipsoidAngles;
         std::vector<T> ellipsoidSemiAxes;
         T difference, cellVolume = chq.getVolume(cellId);

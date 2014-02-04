@@ -145,7 +145,7 @@ void LocalCellReductions3D<T,Descriptor>::processGenericBlocks (
         ReductionParticle3D<T,Descriptor>* rParticle
             = new ReductionParticle3D<T,Descriptor>(cellId, vertex);
         rParticle->get_nParticles() = particlesPerCellId[cellId];
-        for (pluint id = 0; id < subscribedQuantities.size()-1; ++id) {
+        for (pluint id = 0; id < subscribedQuantities.size()-1; ++id) { // CCR_NO_PBC_POSITION_MEAN is the last value of the vector
             ccrId = subscribedQuantities[id];
             dim = ccrId%10; // Dimension: last digit
             reductionType = (ccrId%100)/10; // Reduction type (min,max,etc): second to last digit
@@ -243,7 +243,7 @@ Array<T,3>  LocalCellReductions3D<T,Descriptor>::computeQuantity3D (plint q, Imm
     plint iVertex = particle->getTag();
     TriangularSurfaceMesh<T> triangleMesh = triangleBoundary.getMesh();
     std::vector<plint> neighbors = triangleMesh.getNeighborVertexIds(iVertex);
-    if (q==0) {
+    if (q==0) { // CCR_NO_PBC_POSITION_MEAN
     // POSITION
         quantity3D = particle->getPosition();
     } else if (q==6) {

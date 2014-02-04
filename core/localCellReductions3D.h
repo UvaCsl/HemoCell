@@ -61,9 +61,9 @@ private:
 private:
     vector<T> sumV, averageV, maxV;
     vector<plint> averageQV;
-    plint subscribeSum() { sumV.push_back(T()); return sumV.size(); } ;
-    plint subscribeAverage() { averageV.push_back(T()); averageQV.push_back(0); return averageV.size(); } ;
-    plint subscribeMax() { maxV.push_back( -std::numeric_limits<double>::max() ); return maxV.size(); } ;
+    plint subscribeSum() { sumV.push_back(T()); return sumV.size() - 1; } ;
+    plint subscribeAverage() { averageV.push_back(T()); averageQV.push_back(0); return averageV.size()  - 1; } ;
+    plint subscribeMax() { maxV.push_back( -std::numeric_limits<double>::max() ); return maxV.size() - 1; } ;
 
     void gatherSum(plint qBin, T value) { sumV[qBin] += value; } ;
     void gatherAverage(plint qBin, T value) { averageV[qBin] += value; averageQV[qBin]+=1; } ;

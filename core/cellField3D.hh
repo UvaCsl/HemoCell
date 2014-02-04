@@ -92,6 +92,22 @@ void CellField3D<T,Descriptor>::clearQuantities() {
 }
 
 template<typename T, template<typename U> class Descriptor>
+void CellField3D<T,Descriptor>::clearQuantity(plint subscribedQuantity) {
+        plint ccrId = subscribedQuantity;
+        plint dim = ccrId%10; // Dimension: last digit
+        for (pluint ci = 0; ci < cellIds.size(); ++ci) {
+            plint cellId = cellIds[ci];
+            if (dim == 1) {
+                if (quantities1D.count(cellId) >0 ) { quantities1D[cellId].erase(ccrId); }
+            } else if (dim == 3) {
+                if (quantities3D.count(cellId) >0 ) { quantities3D[cellId].erase(ccrId); }
+            } else {
+                if (quantitiesND.count(cellId) >0 ) { quantitiesND[cellId].erase(ccrId); }
+            }
+        }
+}
+
+template<typename T, template<typename U> class Descriptor>
 std::vector<plint> const& CellField3D<T,Descriptor>::getCellIds() {
         if (cellIds.size() == 0) {
             calcCellIds();
