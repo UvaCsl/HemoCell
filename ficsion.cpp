@@ -220,8 +220,7 @@ int main(int argc, char* argv[])
 
     /* LATTICE INTIALIZATIONS */
     plint particleEnvelopeWidth = 2.0*eqLengthRatio*meshmetric.getMaxLength() + 0.5;
-    plint extendedEnvelopeWidth = 2;  // Because Guo needs 2-cell neighbor access.
-    // extendedEnvelopeWidth = particleEnvelopeWidth;  // Because Guo needs 2-cell neighbor access.
+    plint extendedEnvelopeWidth = 1;  // Because Guo needs 2-cell neighbor access, but we don't use Guo
 
     performanceLogFile << "# Nx*Ny*Nz; " << nx * ny * nz << std::endl;
     performanceLogFile << "# Nparticles; " << Cells.getMesh().getNumVertices() << std::endl;
@@ -367,7 +366,7 @@ int main(int argc, char* argv[])
     pcout << "== Cell Angles ==" << std::endl;
     pcout <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
 
-    rbcReductor.reduceInertia();
+//    rbcReductor.reduceInertia();
     std::vector<T> inertia = RBCField.getInertia(0);
     pcout << "== Inertia Tensor == "<< std::endl;
     pcout <<  inertia[0] << "\t" <<  inertia[1] << "\t" <<  inertia[2] << std::endl;

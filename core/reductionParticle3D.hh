@@ -51,7 +51,7 @@ ReductionParticle3D<T,Descriptor>::ReductionParticle3D(plint tag_, Array<T,3> co
 
 template<typename T, template<typename U> class Descriptor>
 void ReductionParticle3D<T,Descriptor>::advance() {
-    this->getPosition() = quantities3D[13]; // 13 = CCR_NO_PBC_POSITION_MEAN
+//    this->getPosition() = quantities3D[13]; // 13 = CCR_NO_PBC_POSITION_MEAN, but it is unnecessary, since these particles are temporary
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -167,7 +167,6 @@ void ReductionParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& unse
         unserializer.readValue<plint>(qId);
         quantitiesND[qId] = unserializeVector<T>(unserializer);
     }
-
 }
 
 
