@@ -25,8 +25,9 @@
 #include "palabos3D.hh"
 #include <vector>
 #include <map>
+#include "cellReductionTypes.h"
 using namespace plb;
-using namespace plb;
+using namespace std;
 
 namespace plb {
 
@@ -86,6 +87,12 @@ public:
     plint& get_processor() { return processor; }
     plint const& get_nParticles() const { return nParticles; }
     plint& get_nParticles() { return nParticles; }
+
+    T const& getVolume() const { return quantities1D[CCR_VOLUME]; }
+    T& getVolume() { return quantities1D[CCR_VOLUME]; }
+
+    T const& getSurface() const { return quantities1D[CCR_SURFACE]; }
+    T& getSurface() { return quantities1D[CCR_SURFACE]; }
 
     virtual bool getScalar(plint whichScalar, T& scalar) const;
     std::string getScalarName(plint whichScalar) const;

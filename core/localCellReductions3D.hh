@@ -6,22 +6,6 @@
 
 
 template<typename T, template<typename U> class Descriptor>
-void syncCellQuantities(Box3D domain, std::vector<MultiBlock3D*> & particleArg, CellField3D<T,Descriptor>& chq) {
-    PLB_PRECONDITION( particleArg.size()==1 );
-
-    applyProcessingFunctional ( // advance particles in time according to velocity
-        new AdvanceParticlesEveryWhereFunctional3D<T,Descriptor>,
-        domain, particleArg );
-
-
-    applyProcessingFunctional ( // Sync all cell quantities
-        new SyncReductionParticles3D<T,Descriptor>(chq),
-        domain, particleArg );
-
-}
-
-
-template<typename T, template<typename U> class Descriptor>
 LocalCellReductions3D<T,Descriptor>::LocalCellReductions3D(TriangleBoundary3D<T> const& triangleBoundary_,
             CellField3D<T,Descriptor> & chq_,
             plint numVerticesPerCell_, std::vector<plint> const& subscribedQuantities_) :
@@ -163,6 +147,8 @@ void LocalCellReductions3D<T,Descriptor>::processGenericBlocks (
         }
         reductionParticleField.addParticle(reductionParticleField.getBoundingBox(), rParticle);
     }
+//    cout << "LocalCellReductions3D ended " << ReductionParticle3D<T,Descriptor>().getMpiProcessor() <<  " " << cellIds.size() << endl;
+
 }
 
 
@@ -433,35 +419,46 @@ void SyncReductionParticles3D<T,Descriptor>::processGenericBlocks (
         PLB_PRECONDITION( blocks.size()==1 );
         ParticleField3D<T,Descriptor>& reductionParticleField
             = *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
-
         std::vector<Particle3D<T,Descriptor>*> reductionParticles;
-        reductionParticleField.findParticles(domain, reductionParticles);
+        reductionParticleField.findParticles(reductionParticleField.getBoundingBox(), reductionParticles);
 
+
+//        cout << "SyncReductionParticles3D started " << ReductionParticle3D<T,Descriptor>().getMpiProcessor() <<  " " << reductionParticles.size() << endl;
+        std::map< plint, std::map<plint, bool> > particleInProcessorAndCellid; // processorCellIdMap[processor][cellId] = true
         for (pluint iA = 0; iA < reductionParticles.size(); ++iA) {
             ReductionParticle3D<T,Descriptor>* particle =
                     dynamic_cast<ReductionParticle3D<T,Descriptor>*> (reductionParticles[iA]);
 
             plint cellId = particle->get_cellId();
+            plint processor = particle->get_processor();
             plint nParticles = particle->get_nParticles();
+//            cout << " cellid " << cellId
+//                    << " nParticles: " << nParticles
+//                    << " MpiProc: " << particle->getMpiProcessor() << " " << particle->get_processor()
+//                    << " Volume: " << particle->getVolume()
+//                    << " Surface: " << particle->getSurface()
+//                 << std::endl;
+            particleInProcessorAndCellid[processor];
+            if (particleInProcessorAndCellid[processor].count(cellId) == 0) {
+                particleInProcessorAndCellid[processor][cellId] = true;
+                std::map<plint, T > const& q1d = particle->getQuantities1D();
+                std::map<plint, Array<T,3> > const& q3d = particle->getQuantities3D();
+                std::map<plint, std::vector<T> > const& qNd = particle->getQuantitiesND();
+                typename std::map<plint, T >::const_iterator iter1D;
+                for (iter1D  = q1d.begin(); iter1D != q1d.end(); ++iter1D) {
+                    chq.reduceQuantity1D(cellId, iter1D->first, iter1D->second, nParticles);
+                }
+                typename std::map<plint, Array<T,3> >::const_iterator iter3D;
+                for (iter3D  = q3d.begin(); iter3D != q3d.end(); ++iter3D) {
+                    chq.reduceQuantity3D(cellId, iter3D->first, iter3D->second, nParticles);
+                }
+                typename std::map<plint, std::vector<T> >::const_iterator iterND;
+                for (iterND  = qNd.begin(); iterND != qNd.end(); ++iterND) {
+                    chq.reduceQuantityND(cellId, iterND->first, iterND->second, nParticles);
+                }
+                chq.getParticlesPerCellId()[cellId] += nParticles;
+            }
 
-            std::map<plint, T > const& q1d = particle->getQuantities1D();
-            std::map<plint, Array<T,3> > const& q3d = particle->getQuantities3D();
-            std::map<plint, std::vector<T> > const& qNd = particle->getQuantitiesND();
-            typename std::map<plint, T >::const_iterator iter1D;
-            for (iter1D  = q1d.begin(); iter1D != q1d.end(); ++iter1D) {
-                chq.reduceQuantity1D(cellId, iter1D->first, iter1D->second, nParticles);
-            }
-            typename std::map<plint, Array<T,3> >::const_iterator iter3D;
-            for (iter3D  = q3d.begin(); iter3D != q3d.end(); ++iter3D) {
-                chq.reduceQuantity3D(cellId, iter3D->first, iter3D->second, nParticles);
-            }
-            typename std::map<plint, std::vector<T> >::const_iterator iterND;
-            for (iterND  = qNd.begin(); iterND != qNd.end(); ++iterND) {
-                chq.reduceQuantityND(cellId, iterND->first, iterND->second, nParticles);
-            }
-            chq.getParticlesPerCellId()[cellId] += nParticles;
-
-//            if (particle->getMpiProcessor() !=  particle->get_processor()) { particle->getTag() = -1; }
         }
         chq.getCellIds(); // Calculate cellIds
         reductionParticleField.removeParticles(domain, -1);
@@ -481,7 +478,7 @@ void SyncReductionParticles3D<T,Descriptor>::getModificationPattern(std::vector<
 
 template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT SyncReductionParticles3D<T,Descriptor>::appliesTo() const {
-    return BlockDomain::bulkAndEnvelope;
+    return BlockDomain::bulk;
 }
 
 template<typename T, template<typename U> class Descriptor>

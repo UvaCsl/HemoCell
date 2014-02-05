@@ -29,7 +29,7 @@ namespace plb {
 
 template<typename T, template<typename U> class Descriptor>
 ReductionParticle3D<T,Descriptor>::ReductionParticle3D()
-    : cellId(-1), processor(-1)
+    : Particle3D<T,Descriptor>(), cellId(-1), processor(-1)
 { }
 
 template<typename T, template<typename U> class Descriptor>

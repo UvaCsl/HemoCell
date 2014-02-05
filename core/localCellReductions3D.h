@@ -12,10 +12,6 @@
  *    LocalCellReductions3D is the Functional Reductive Box that does the actual job.
  *
  */
-template<typename T, template<typename U> class Descriptor>
-void syncCellQuantities(Box3D domain, std::vector<MultiBlock3D*> & particleArg, CellField3D<T,Descriptor>& chq);
-
-
 
 template<typename T, template<typename U> class Descriptor>
 class LocalCellReductions3D : public BoxProcessingFunctional3D
@@ -41,7 +37,6 @@ public:
     BlockDomain::DomainT appliesTo() const { return BlockDomain::bulk; }
 private:
     void subscribeParticles(std::vector<Particle3D<T,Descriptor>*> const& particles);
-    void getQuantitiesFromReductionParticles(std::vector<Particle3D<T,Descriptor>*> const& reductionParticles);
     TriangleBoundary3D<T> const& triangleBoundary;
     CellField3D<T,Descriptor> & chq;
     plint numVerticesPerCell;

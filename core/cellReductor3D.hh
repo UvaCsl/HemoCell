@@ -92,7 +92,9 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduce(std::vector<plint> cons
                 particles->getBoundingBox(), particleArg); // Keep particles BoundingBox. It changes in the Functional
 
         particleArg.clear();  particleArg.push_back(reductionParticles);
-        syncCellQuantities<T,Descriptor>(reductionParticles->getBoundingBox(), particleArg, chq);
+        applyProcessingFunctional ( // Sync all cell quantities
+                new SyncReductionParticles3D<T,Descriptor>(chq),
+                reductionParticles->getBoundingBox(), particleArg );
 }
 
 template< typename T, template<typename U> class Descriptor,
@@ -110,7 +112,6 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceAll()
         applyProcessingFunctional(nfunctional, particles->getBoundingBox(), particleArg);
         nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
 
-        reduceVolumeAndSurface();
         cellsVolume.clear(); cellsSurface.clear();
         countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
         countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
@@ -229,11 +230,11 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceVolumeAndSurface(plint i
         T cellVolume = cellsVolume[cellId];
         T cellSurface = cellsSurface[cellId];
         if (not ((cellVolume > 0) and (cellSurface > 0))) {
-            cout << "iter: " << iter
-                 << ", cellId: " << cellId
-                 << ", volume: " << cellVolume
-                 << ", surface: " << cellSurface
-                 << endl;
+//            cout << "iter: " << iter
+//                 << ", cellId: " << cellId
+//                 << ", volume: " << cellVolume
+//                 << ", surface: " << cellSurface
+//                 << endl;
             PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
         }
     }
@@ -292,20 +293,25 @@ template< typename T, template<typename U> class Descriptor,
 void CellReductor3D<T,Descriptor,ParticleFieldT>::print(plint iter, T eqVolume, T eqSurface, T eqArea, T eqLength)
 {
         pcout << "=== " << iter << " === " << std::endl;
-        pcout << "Volume: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsVolume[iA]*100.0/eqVolume - 100 <<"%, ";
-        pcout << std::endl <<"Surface: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsSurface[iA]*100.0/eqSurface - 100 << "%, ";
-        pcout << std::endl <<"Mean Edge Distance: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA]*100.0/eqLength - 100<< "%, ";
-        pcout << std::endl <<"Mean Angle [^o]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanAngle[iA]*180.0/pi << ", ";
-        pcout << std::endl <<"Mean Triangle Surface [LU^2]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanTriangleArea[iA] << ", ";
-        pcout << std::endl <<"Mean Edge Distance [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA] << ", ";
-        pcout << std::endl <<"Max Edge Distance  [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMaxEdgeDistance[iA] << ", ";
+//        pcout << "Volume: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsVolume[iA]*100.0/eqVolume - 100 <<"%, ";
+//        pcout << std::endl <<"Surface: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsSurface[iA]*100.0/eqSurface - 100 << "%, ";
+//        pcout << std::endl <<"Mean Edge Distance: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA]*100.0/eqLength - 100<< "%, ";
+//        pcout << std::endl <<"Mean Angle [^o]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanAngle[iA]*180.0/pi << ", ";
+//        pcout << std::endl <<"Mean Triangle Surface [LU^2]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanTriangleArea[iA] << ", ";
+//        pcout << std::endl <<"Mean Edge Distance [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMeanEdgeDistance[iA] << ", ";
+//        pcout << std::endl <<"Max Edge Distance  [LU]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsMaxEdgeDistance[iA] << ", ";
         pcout << std::endl <<"Volume  [mu{m}^3]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsVolume[iA]*dx*dx*dx*1e18 <<", ";
         pcout << std::endl <<"Surface [mu{m}^2]: "; for (pluint iA = 0; iA < cellsVolume.size(); ++iA) pcout << cellsSurface[iA]*dx*dx*1e12 << ", ";
         pcout << std::endl;
+        pcout << "Coordinates: ";
         for (pluint iA = 0; iA < cellsCenter.size(); ++iA)
-            pcout <<"Coordinates: (" << cellsCenter[iA][0] << ", " << cellsCenter[iA][1] << ", " << cellsCenter[iA][2] << ")" << std::endl;
+            pcout <<" (" << cellsCenter[iA][0] << ", " << cellsCenter[iA][1] << ", " << cellsCenter[iA][2] << ") ";
+        pcout << std::endl;
+        pcout << "Velocity: ";
         for (pluint iA = 0; iA < cellsCenter.size(); ++iA)
-            pcout <<"Velocity: (" << cellsVelocity[iA][0] << ", " << cellsVelocity[iA][1] << ", " << cellsVelocity[iA][2] << ")" << std::endl;
+            pcout <<" (" << cellsVelocity[iA][0] << ", " << cellsVelocity[iA][1] << ", " << cellsVelocity[iA][2] << ") ";
+        pcout << std::endl;
+
 }
 
 
