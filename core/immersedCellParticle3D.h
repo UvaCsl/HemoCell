@@ -138,72 +138,9 @@ public:
 
 };
 
-namespace meta {
-
 template<typename T, template<typename U> class Descriptor>
-ParticleRegistration3D<T,Descriptor>& particleRegistration3D();
+int ImmersedCellParticle3D<T,Descriptor>::id = meta::registerGenericParticle3D<T,Descriptor,ImmersedCellParticle3D<T,Descriptor> >("ImmersedCellParticle3D");
 
-
-template< typename T,
-          template<typename U> class Descriptor,
-          class ImmersedCellParticle >
-class ImmersedCellParticleGenerator3D : public ParticleGenerator3D<T,Descriptor>
-{
-    virtual Particle3D<T,Descriptor>* generate (
-            HierarchicUnserializer& unserializer ) const
-    {
-        // tag, position, scalars, vectors.
-        plint tag;
-        Array<T,3> position;
-        Array<T,3> v, pbcPosition, a, force, vPrevious;
-        Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, f_repulsive, stress;
-        T E_other;
-        T E_inPlane, E_bending, E_area,  E_volume, E_repulsive;
-        plint processor, cellId;
-
-        unserializer.readValue(tag);
-        unserializer.readValues<T,3>(position);
-        unserializer.readValues<T,3>(v);
-        unserializer.readValues<T,3>(pbcPosition);
-        unserializer.readValues<T,3>(a);
-        unserializer.readValues<T,3>(force);
-        unserializer.readValues<T,3>(vPrevious);
-        unserializer.readValues<T,3>(f_wlc);
-        unserializer.readValues<T,3>(f_bending);
-        unserializer.readValues<T,3>(f_volume);
-        unserializer.readValues<T,3>(f_surface);
-        unserializer.readValues<T,3>(f_shear);
-        unserializer.readValues<T,3>(f_viscosity);
-        unserializer.readValues<T,3>(f_repulsive);
-        unserializer.readValues<T,3>(stress);
-
-        unserializer.readValue(E_other);
-        unserializer.readValue(E_inPlane);
-        unserializer.readValue(E_bending);
-        unserializer.readValue(E_area);
-        unserializer.readValue(E_volume);
-        unserializer.readValue(E_repulsive);
-
-        unserializer.readValue(processor);
-        unserializer.readValue(cellId);
-
-        return new ImmersedCellParticle(tag, position, v, pbcPosition, a, force, vPrevious,
-                f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, f_repulsive, stress,
-                E_other, E_inPlane, E_bending, E_area, E_volume, E_repulsive,
-                processor, cellId);
-    }
-};
-
-
-template< typename T,
-          template<typename U> class Descriptor,
-          class ImmersedCellParticle >
-int registerImmersedCellParticle3D(std::string name) {
-    return particleRegistration3D<T,Descriptor>().announce (
-               name, new ImmersedCellParticleGenerator3D<T,Descriptor,ImmersedCellParticle> );
-}
-
-}  // namespace meta
 
 }  // namespace plb
 

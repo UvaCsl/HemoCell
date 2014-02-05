@@ -37,7 +37,7 @@ public:
         void reduce(plint subscribedQuantity);
         void reduce(std::vector<plint> const& subscribedQuantities);
         void reduceAll() ;
-        void reduceVolumeAndSurface() ;
+        void reduceVolumeAndSurface(plint iter=-1) ;
         void reduceVolumeAndSurfaceAndCenters() ;
         void reduceInertia();
         void writeHeader(); // Does not work if checkpointed

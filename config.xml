@@ -31,8 +31,8 @@ Tumbling-TankTreading Measurements [6],
 Fast Cell Stretching release [8],
 Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType], 
  -->
-    <flowType> 1 </flowType>   
-    <Re> 10.0 </Re>   <!--Reynolds number-->
+    <flowType> 0 </flowType>   
+    <Re> 0.70 </Re>   <!--Reynolds number-->
     <shearRate> 3000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 0.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. When used with 2, it's the disaggregation force-->
     <eulerAngles> 0 0 0 </eulerAngles> <!-- In degrees -->
@@ -55,15 +55,15 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1.0e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <lx> 25.0e-6 </lx> <!--Size of domain in SI. For Lattice Units try: nx, ny, nz -->
-    <ly> 25.0e-6 </ly>
-    <lz> 25.0e-6 </lz>
+    <lx> 40.0e-6 </lx> <!--Size of domain in SI. For Lattice Units try: nx, ny, nz -->
+    <ly> 40.0e-6 </ly>
+    <lz> 40.0e-6 </lz>
 </domain>
 
 <sim>
     <tmax> 500000 </tmax> <!-- total number of iterations -->
-    <tmeas> 1000 </tmeas> <!-- interval after which data is written --> 
-    <npar>  3  </npar> <!-- Number of particles > -->
+    <tmeas> 50 </tmeas> <!-- interval after which data is written --> 
+    <npar> 999  </npar> <!-- Number of particles > -->
 </sim>
 
 </ficsion>

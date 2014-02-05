@@ -138,6 +138,15 @@ Array<T,3> ShapeMemoryModel3D<T,Descriptor>::computeCellForce (
         plint iVertex)
  /* Some force calculations are according to KrugerThesis, Appendix C */
 {
+    if (not ((cellVolume > 0) and (cellSurface > 0))) {
+        cout << "iVertex: " << iVertex
+             << ", processor: " << dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (tagToParticle3D[iVertex])->get_processor()
+             << ", cellId: " << dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (tagToParticle3D[iVertex])->get_cellId()
+             << ", volume: " << cellVolume
+             << ", surface: " << cellSurface
+             << endl;
+        PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
+    }
     /* Initializations from input */
     TriangularSurfaceMesh<T> const& dynMesh = boundary.getMesh();
     Array<T,3> x1 = dynMesh.getVertex(iVertex), x2, x3, x4;

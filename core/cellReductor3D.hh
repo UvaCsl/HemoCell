@@ -53,6 +53,8 @@ CellReductor3D<T,Descriptor,ParticleFieldT>::CellReductor3D(
 
         reductionParticles = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(reductionParticleManagement,
                 defaultMultiBlockPolicy3D().getCombinedStatistics() );
+        reductionParticles->periodicity().toggleAll(true);
+
 }
 
 template< typename T, template<typename U> class Descriptor,
@@ -194,27 +196,49 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceInertia()
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceVolumeAndSurface()
+void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceVolumeAndSurface(plint iter)
 {
-//        cellsVolume.clear(); cellsSurface.clear();
-//        std::vector<MultiBlock3D*> particleArg;
-//        particleArg.push_back(particles);
-//        countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
-//        countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
+    bool collective=false;
 
+    if (collective) {
+        cellsVolume.clear(); cellsSurface.clear();
+        std::vector<MultiBlock3D*> particleArg;
+        particleArg.push_back(particles);
+        countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
+        countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
+    } else {
         chq.clearQuantities();
         std::vector<plint> subscribedQuantities(volumeAndSurfaceReductions);
         reduce(subscribedQuantities);
-
-        std::vector<plint> const& cellIds = chq.getCellIds();
+    }
+    std::vector<plint> const& cellIds = chq.getCellIds();
+    if (not collective) {
         cellsVolume = std::vector<T>(numberOfCells);
         cellsSurface = std::vector<T>(numberOfCells);
-        for (pluint ci = 0; ci < cellIds.size(); ++ci) {
-            plint cellId = cellIds[ci];
+    }
+    for (pluint ci = 0; ci < cellIds.size(); ++ci) {
+        plint cellId = cellIds[ci];
+        if (collective) {
+            chq.getVolume(cellId) = cellsVolume[cellId];
+            chq.getSurface(cellId) = cellsSurface[cellId];
+        } else {
             cellsVolume[cellId] = chq.getVolume(cellId);
             cellsSurface[cellId] = chq.getSurface(cellId);
+//            cout << iter << " cellid " << cellId << " volume: " << chq.getVolume(cellId) << " surface: " << chq.getSurface(cellId)<< std::endl;
         }
+        T cellVolume = cellsVolume[cellId];
+        T cellSurface = cellsSurface[cellId];
+        if (not ((cellVolume > 0) and (cellSurface > 0))) {
+            cout << "iter: " << iter
+                 << ", cellId: " << cellId
+                 << ", volume: " << cellVolume
+                 << ", surface: " << cellSurface
+                 << endl;
+            PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
+        }
+    }
 }
+
 
 template< typename T, template<typename U> class Descriptor,
           template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >

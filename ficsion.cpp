@@ -250,7 +250,8 @@ int main(int argc, char* argv[])
             particleManagement,
             defaultMultiBlockPolicy3D().getCombinedStatistics() );
     lattice.periodicity().toggleAll(true);
-    immersedParticles.periodicity().toggle(0, true);
+    immersedParticles.periodicity().toggleAll(true);
+//    immersedParticles.periodicity().toggle(0, true);
     Box3D inlet(0, 3, 0, ny-1, 0, nz-1);
     Box3D outlet(nx-2, nx-1, 0, ny-1, 0, nz-1);
     /* Measure Cell Variables */
@@ -367,15 +368,16 @@ int main(int argc, char* argv[])
     pcout <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
 
 //    rbcReductor.reduceInertia();
-    std::vector<T> inertia = RBCField.getInertia(0);
+    plint inertiaCellId=RBCField.getCellIds()[0];
+    std::vector<T> inertia = RBCField.getInertia(inertiaCellId);
     pcout << "== Inertia Tensor == "<< std::endl;
     pcout <<  inertia[0] << "\t" <<  inertia[1] << "\t" <<  inertia[2] << std::endl;
     pcout <<  inertia[3] << "\t" <<  inertia[4] << "\t" <<  inertia[5] << std::endl;
     pcout <<  inertia[6] << "\t" <<  inertia[7] << "\t" <<  inertia[8] << std::endl;
-    Array<T,3> diams = RBCField.getDiameters(0);
+    Array<T,3> diams = RBCField.getDiameters(inertiaCellId);
     pcout << "== Cell Diameters ==" << std::endl;
     pcout <<  diams[0] << "\t" <<  diams[1] << "\t" <<  diams[2] << std::endl;
-    Array<T,3> angls = RBCField.getTumblingAngles(0);
+    Array<T,3> angls = RBCField.getTumblingAngles(inertiaCellId);
     pcout << "== Cell Angles ==" << std::endl;
     pcout <<  angls[0]*180/pi << "\t" <<  angls[1]*180/pi << "\t" <<  angls[2]*180/pi << std::endl;
 
@@ -568,7 +570,7 @@ int main(int argc, char* argv[])
             immersedParticles.getBoundingBox(), particleArg );
 //        pcout << "tagToParticle3D: " << tagToParticle3D.size() << std::endl;
         if (flowType==6) { rbcReductor.reduceVolumeAndSurfaceAndCenters(); }
-        else { rbcReductor.reduceVolumeAndSurface();  }
+        else { rbcReductor.reduceVolumeAndSurface(i);  }
         dtIteration = global::timer("Quantities").stop();
 
         global::timer("Model").start();

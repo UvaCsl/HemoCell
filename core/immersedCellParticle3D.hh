@@ -28,10 +28,6 @@ namespace plb {
 /* *************** class ImmersedCellParticle3D ************************************ */
 
 template<typename T, template<typename U> class Descriptor>
-int ImmersedCellParticle3D<T,Descriptor>::id =
-        meta::registerImmersedCellParticle3D<T,Descriptor,ImmersedCellParticle3D<T,Descriptor> >("ImmersedCell");
-
-template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
     : v(T(),T(),T()),
       pbcPosition(this->getPosition()),
@@ -324,7 +320,7 @@ plint ImmersedCellParticle3D<T,Descriptor>::getVectorsNumber() const {
 template<typename T, template<typename U> class Descriptor>
 bool ImmersedCellParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) const {
     if (whichScalar==0) {
-    	scalar = T(this->getTag());
+    	scalar = T(this->get_cellId());
         return true;
     } else if (whichScalar==1) {
         scalar = T(get_cellId());
@@ -361,7 +357,7 @@ bool ImmersedCellParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scala
 template<typename T, template<typename U> class Descriptor>
 std::string ImmersedCellParticle3D<T,Descriptor>::getScalarName(plint whichScalar) const {
     if (whichScalar==0) {
-        return "tag";
+        return "cellId";
     } else if (whichScalar==1) {
         return "processor";
     } else if (whichScalar==2) {

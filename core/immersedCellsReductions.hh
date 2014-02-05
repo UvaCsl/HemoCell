@@ -248,28 +248,19 @@ void countCellVertices (TriangleBoundary3D<T> Cells,
 /* ******** VolumeCellReduceFunctional3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
 void VolumeCellReduceFunctional3D<T,Descriptor>::calculateQuantity(TriangularSurfaceMesh<T> & triangleMesh,
-		std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_)
+        std::vector<Particle3D<T,Descriptor>*> & particles, std::vector<plint> & quantityIds_)
 {
     for (pluint iA = 0; iA < particles.size(); ++iA) {
         Particle3D<T,Descriptor>* nonTypedParticle = particles[iA];
         ImmersedCellParticle3D<T,Descriptor>* particle =
                 dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
         plint iVertex = particle->getTag();
-        std::vector<plint> neighbors = triangleMesh.getNeighborTriangleIds(iVertex);
-        for (pluint iB = 0; iB < neighbors.size(); ++iB) {
-        	plint vId;
-        	vId = triangleMesh.getVertexId(neighbors[iB],0);
-            ImmersedCellParticle3D<T,Descriptor>* neigboringParticle =
-                    dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D.find(vId)->second);
-        	Array<T,3> v0 = neigboringParticle->get_pbcPosition();
-        	vId = triangleMesh.getVertexId(neighbors[iB],1);
-            neigboringParticle =
-                    dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D.find(vId)->second);
-        	Array<T,3> v1 = neigboringParticle->get_pbcPosition();
-        	vId = triangleMesh.getVertexId(neighbors[iB],2);
-            neigboringParticle =
-                    dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D.find(vId)->second);
-        	Array<T,3> v2 = neigboringParticle->get_pbcPosition();
+        std::vector<plint> neighborTriangleIds = triangleMesh.getNeighborTriangleIds(iVertex);
+        for (pluint iB = 0; iB < neighborTriangleIds.size(); ++iB) {
+            plint iTriangle = neighborTriangleIds[iB];
+            Array<T,3> v0 = triangleMesh.getVertex(iTriangle, 0);
+            Array<T,3> v1 = triangleMesh.getVertex(iTriangle, 1);
+            Array<T,3> v2 = triangleMesh.getVertex(iTriangle, 2);
 //       /* ************* Other Calculation ********* */
 //          Array<T,3> areaTimesNormal = triangleMesh.computeTriangleNormal(neighbors[iB], true);
 //          T triangleVolumeT6 = VectorTemplate<T,Descriptor>::scalarProduct(areaTimesNormal, ((v0+v1+v2)/3.0)) ;
