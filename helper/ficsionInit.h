@@ -83,7 +83,8 @@ void changeCouetteShearRate( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
 /* ******************* writeFicsionLogFile ***************************************** */
 template<typename T>
 void writeFicsionLogFile(IncomprFlowParam<T> const& parameters,
-                  std::string const& title, T Re, T shearRate, plint flowType);
+                  std::string const& title, T Re, T shearRate, plint flowType,
+                  plint npar, T volumePerCell_LU);
 
 
 /* ******************* writeVTK ***************************************** */

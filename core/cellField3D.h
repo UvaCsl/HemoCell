@@ -50,6 +50,8 @@ public:
     T & getMeanAngle(plint cellId) { return quantities1D[cellId][CCR_ANGLE_MEAN];} ;
     T & getMeanEdgeLength(plint cellId) { return quantities1D[cellId][CCR_EDGE_DISTANCE_MEAN];} ;
     T & getMeanEdgeDistance(plint cellId) { return quantities1D[cellId][CCR_EDGE_DISTANCE_MEAN];} ;
+    T & getMaxEdgeLength(plint cellId) { return quantities1D[cellId][CCR_EDGE_DISTANCE_MAX];} ;
+    T & getMaxEdgeDistance(plint cellId) { return quantities1D[cellId][CCR_EDGE_DISTANCE_MAX];} ;
     T getMeanTriangleArea(plint cellId) { return quantities1D[cellId][CCR_SURFACE]*1.0/numTriangles;} ;
     T & getMeanTileSpan(plint cellId) { return quantities1D[cellId][CCR_TILE_SPAN_MEAN];} ;
 

@@ -190,7 +190,6 @@ int main(int argc, char* argv[])
     kBT = kBT_p / ( dm * dx*dx/(dt*dt) );
     shearRate = shearRate_p * dt;
     stretchForceScalar = stretchForce_p / dNewton;
-    writeFicsionLogFile(parameters, "log", Re, shearRate, flowType);
     pcout << "dx = " << dx << ", " <<
              "dt = " << dt << ", " <<
              "dm = " << dt << ", " <<
@@ -297,13 +296,20 @@ int main(int argc, char* argv[])
     k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
     eta_m /= dNewton*dt/dx;     k_stretch /= dNewton;    k_rest /= dNewton/dx;
     T eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan;
-    eqArea = RBCField.getMeanTriangleArea(0);     eqLength = RBCField.getMeanEdgeDistance(0);
-    eqAngle = RBCField.getMeanAngle(0);     eqVolume = RBCField.getVolume(0);
-    eqSurface = RBCField.getSurface(0); eqTileSpan = RBCField.getMeanTileSpan(0);
+
+    plint cid = RBCField.getCellIds()[0];
+    eqArea = RBCField.getMeanTriangleArea(cid);     eqLength = RBCField.getMeanEdgeDistance(cid);
+    eqAngle = RBCField.getMeanAngle(cid);     eqVolume = RBCField.getVolume(cid);
+    eqSurface = RBCField.getSurface(cid); eqTileSpan = RBCField.getMeanTileSpan(cid);
     T persistenceLengthFine = 7.5e-9  / dx;
     // T eqLengthRatio = 3.17; // According to Pivkin2008
     T maxLength = eqLengthRatio*eqLength;
     pcout << "eqLengthRatio:" << eqLengthRatio  << ", maxLength [LU]:" << maxLength << std::endl;
+
+    writeFicsionLogFile(parameters, "log", Re, shearRate, flowType, npar, eqVolume);
+    T hct = (npar*eqVolume) * 1.0 / ( (nx-1)*(ny-1)*(nz-1) );
+    pcout << "Hematocrit [x100%]: " << hct*100 << std::endl;
+
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
     // PLB_PRECONDITION( maxLength < 2.0 );
 

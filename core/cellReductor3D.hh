@@ -135,6 +135,32 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceAll()
                     << " v-v " << cellsVolume[ci] << " " << chq.getVolume(ci)
                                         << std::endl;
         }
+
+
+//        cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();
+//        cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsCenter.clear(); cellsVelocity.clear();
+//        cellsMeanTileSpan.clear();
+//
+//        cellsVolume = std::vector<T>(numberOfCells);
+//        cellsSurface = std::vector<T>(numberOfCells);
+//        cellsCenter = std::vector<Array<T,3>  >(numberOfCells);
+//
+//        cellsMeanTriangleArea = std::vector<T>(numberOfCells);
+//        cellsMeanEdgeDistance = std::vector<T>(numberOfCells);
+//        cellsMaxEdgeDistance = std::vector<T>(numberOfCells);
+//        cellsMeanAngle = std::vector<T>(numberOfCells);
+//        cellsVelocity = std::vector<Array<T,3>  >(numberOfCells);
+//        for (pluint ci = 0; ci < cellIds.size(); ++ci) {
+//            plint cellId = cellIds[ci];
+//            cellsVolume[cellId] = chq.getVolume(cellId);
+//            cellsSurface[cellId] = chq.getSurface(cellId);
+//            cellsCenter[cellId] = chq.getPosition(cellId);
+//            cellsMeanTriangleArea[cellId] = chq.getMeanTriangleArea(cellId);
+//            cellsMeanEdgeDistance[cellId] = chq.getMeanEdgeDistance(cellId);
+//            cellsMaxEdgeDistance[cellId] = chq.getMaxEdgeDistance(cellId);
+//            cellsMeanAngle[cellId] = chq.getMeanAngle(cellId);
+//            cellsVelocity[cellId] = chq.getVelocity(cellId);
+//        }
         reduceInertia();
 }
 
