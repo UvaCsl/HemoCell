@@ -359,19 +359,19 @@ int main(int argc, char* argv[])
     RBCDisaggregation3D<T,DESCRIPTOR, DenseParticleField3D>  rbcDisaggregation(immersedParticles, stretchForceScalar, 0.5*numParts[0], flowType, dx, dt, dNewton,
                                                                                             tagToParticle3D);
 
-    SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds,
-                                    rbcReductor.getCellsCenter(), rbcReductor.getCellsVolume(), 0.05*numParts[0], flowType,
-                                    dx, dt, T(dNewton), RBCField, checkpointed);
-    rbcReductor.print(0, eqVolume, eqSurface, eqArea, eqLength);
-    rbcReductor.write(0, eqVolumeFinal, eqSurface, eqArea, eqLength) ; // Write Log file for the cell Particles
-    pcout << "== Inertia Tensor == "<< std::endl;
-    pcout <<  shearFlow.getInertiaTensor()[0][0] << "\t" <<  shearFlow.getInertiaTensor()[0][1] << "\t" <<  shearFlow.getInertiaTensor()[0][2] << std::endl;
-    pcout <<  shearFlow.getInertiaTensor()[0][3] << "\t" <<  shearFlow.getInertiaTensor()[0][4] << "\t" <<  shearFlow.getInertiaTensor()[0][5] << std::endl;
-    pcout <<  shearFlow.getInertiaTensor()[0][6] << "\t" <<  shearFlow.getInertiaTensor()[0][7] << "\t" <<  shearFlow.getInertiaTensor()[0][8] << std::endl;
-    pcout << "== Cell Diameters ==" << std::endl;
-    pcout <<  shearFlow.getDiameters()[0][0] << "\t" <<  shearFlow.getDiameters()[0][1] << "\t" <<  shearFlow.getDiameters()[0][2] << std::endl;
-    pcout << "== Cell Angles ==" << std::endl;
-    pcout <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
+     SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds,
+                                     rbcReductor.getCellsCenter(), rbcReductor.getCellsVolume(), 0.05*numParts[0], flowType,
+                                     dx, dt, T(dNewton), RBCField, checkpointed);
+//     rbcReductor.print(0, eqVolume, eqSurface, eqArea, eqLength);
+     rbcReductor.write(0, eqVolumeFinal, eqSurface, eqArea, eqLength) ; // Write Log file for the cell Particles
+//     pcout << "== Inertia Tensor == "<< std::endl;
+//     pcout <<  shearFlow.getInertiaTensor()[0][0] << "\t" <<  shearFlow.getInertiaTensor()[0][1] << "\t" <<  shearFlow.getInertiaTensor()[0][2] << std::endl;
+//     pcout <<  shearFlow.getInertiaTensor()[0][3] << "\t" <<  shearFlow.getInertiaTensor()[0][4] << "\t" <<  shearFlow.getInertiaTensor()[0][5] << std::endl;
+//     pcout <<  shearFlow.getInertiaTensor()[0][6] << "\t" <<  shearFlow.getInertiaTensor()[0][7] << "\t" <<  shearFlow.getInertiaTensor()[0][8] << std::endl;
+//     pcout << "== Cell Diameters ==" << std::endl;
+//     pcout <<  shearFlow.getDiameters()[0][0] << "\t" <<  shearFlow.getDiameters()[0][1] << "\t" <<  shearFlow.getDiameters()[0][2] << std::endl;
+//     pcout << "== Cell Angles ==" << std::endl;
+//     pcout <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
 
 //    rbcReductor.reduceInertia();
     plint inertiaCellId=RBCField.getCellIds()[0];

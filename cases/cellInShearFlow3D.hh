@@ -50,9 +50,11 @@ SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(Triang
     shearResultFile.open((global::directories().getLogOutDir() + "plbShearResults.log").c_str(), mode);
     writeHeader();
 
-    updateQuantities(0, cellIds, cellCenters, cellsVolume);
-    maxDiameter = max(diameters[0][0], diameters[0][1]);
-    maxDiameter = max(maxDiameter,  diameters[0][2]);
+    if (flowType==6) {
+        updateQuantities(0, cellIds, cellCenters, cellsVolume);
+        maxDiameter = max(diameters[0][0], diameters[0][1]);
+        maxDiameter = max(maxDiameter,  diameters[0][2]);
+    }
 }
 
 template< typename T, template<typename U> class Descriptor,
