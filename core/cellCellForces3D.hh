@@ -8,7 +8,7 @@
 /* ******** ComputeCellCellForces3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
-ComputeCellCellForces3D<T,Descriptor>::ComputeCellCellForces3D (CellCellForce3D<T> const& calcForce_, T cutoffRadius_)
+ComputeCellCellForces3D<T,Descriptor>::ComputeCellCellForces3D (CellCellForce3D<T> & calcForce_, T cutoffRadius_)
 : calcForce(calcForce_), cutoffRadius(cutoffRadius_) { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -36,7 +36,7 @@ bool ComputeCellCellForces3D<T,Descriptor>::conditionsAreMet (
 
 template<typename T, template<typename U> class Descriptor>
 void ComputeCellCellForces3D<T,Descriptor>::applyForce (
-        Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T const& r, Array<T,3> const& eij)
+        Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> const& eij)
 {
         ImmersedCellParticle3D<T,Descriptor>* cParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p1);
         ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
@@ -70,7 +70,12 @@ void ComputeCellCellForces3D<T,Descriptor>::processGenericBlocks (
                 currentParticles.clear(); neighboringParticles.clear();
 
                 Box3D currentBox(iX,iX,iY,iY,iZ,iZ);
-                Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
+                plint x0, x1, y0, y1, z0, z1;
+                x0 = max(domain.x0, iX-dR); x1 = min(domain.x1, iX+dR);
+                y0 = max(domain.y0, iY-dR); y1 = min(domain.y1, iY+dR);
+                z0 = max(domain.z0, iZ-dR); z1 = min(domain.z1, iZ+dR);
+
+                Box3D neighboringBoxes(x0, x1, y0, y1, z0, z1);
                 particleField.findParticles(currentBox, currentParticles);
                 particleField.findParticles(neighboringBoxes, neighboringParticles);
 
@@ -150,7 +155,7 @@ void ComputeDifferentCellForces3D<T,Descriptor>::applyForce (
         cParticle->get_f_repulsive() += force;
         nParticle->get_f_repulsive() -= force;
         T potential = calcForce.calculatePotential(r,eij);
-        nParticle->get_E_repulsive() += potential;
+        cParticle->get_E_repulsive() += potential;
         nParticle->get_E_repulsive() += potential;
 }
 

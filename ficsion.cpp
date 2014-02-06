@@ -350,7 +350,12 @@ int main(int argc, char* argv[])
     applyProcessingFunctional (
        new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), RBCField),
        immersedParticles.getBoundingBox(), particleArg );
-
+    MorsePotential<T> interCellularForce(dx, cellNumVertices, kBT, true);
+    if (flowType == 2) {
+        applyProcessingFunctional (
+           new ComputeCellCellForces3D<T,DESCRIPTOR> (interCellularForce, 1.1e-6/dx),
+           immersedParticles.getBoundingBox(), particleArg );
+    }
 
     plint timesToStretch = 40;
     CellStretching3D<T,DESCRIPTOR, DenseParticleField3D>  rbcStretch(Cells, immersedParticles, 0.05*numParts[0], flowType, dx, dt, dNewton,
@@ -417,7 +422,11 @@ int main(int argc, char* argv[])
         applyProcessingFunctional ( // Compute Cell Model forces
            new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), RBCField),
            immersedParticles.getBoundingBox(), particleArg );
-
+        if (flowType == 2) {
+            applyProcessingFunctional (
+               new ComputeCellCellForces3D<T,DESCRIPTOR> (interCellularForce, 1.1e-6/dx),
+               immersedParticles.getBoundingBox(), particleArg );
+        }
         rbcStretch.applyForce(0, cellModel->getDensity());
         rbcDisaggregation.applyForce();
 
@@ -584,6 +593,11 @@ int main(int argc, char* argv[])
         applyProcessingFunctional (
                         new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), RBCField),
                         immersedParticles.getBoundingBox(), particleArg );
+        if (flowType == 2) {
+            applyProcessingFunctional (
+               new ComputeCellCellForces3D<T,DESCRIPTOR> (interCellularForce, 1.1e-6/dx),
+               immersedParticles.getBoundingBox(), particleArg );
+        }
         rbcStretch.applyForce(i, cellModel->getDensity());
         dtIteration = global::timer("Model").stop();
 

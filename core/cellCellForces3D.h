@@ -14,7 +14,7 @@ template<typename T, template<typename U> class Descriptor>
 class ComputeCellCellForces3D : public BoxProcessingFunctional3D
 {
 public:
-    ComputeCellCellForces3D (CellCellForce3D<T> const& calcForce_, T cutoffRadius_);
+    ComputeCellCellForces3D (CellCellForce3D<T> & calcForce_, T cutoffRadius_);
     virtual ~ComputeCellCellForces3D();
     ComputeCellCellForces3D(ComputeCellCellForces3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -31,9 +31,9 @@ public:
            * Their distance has to be less that the cutoffRadius.
      */
     bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T& r, Array<T,3>& eij);
-    void applyForce(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T const& r, Array<T,3> const& eij);
+    void applyForce(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> const& eij);
 private:
-    CellCellForce3D<T> const& calcForce;
+    CellCellForce3D<T> & calcForce;
     T cutoffRadius;
 };
 
@@ -73,7 +73,7 @@ private:
 template<typename T>
 class CellCellForce3D {
 public:
-    CellCellForce3D();
+    CellCellForce3D() { } ;
     virtual ~CellCellForce3D() { }
     virtual CellCellForce3D<T>* clone() const=0;
     // CellCellForce3D X; X(r, eij) returns the force.
@@ -144,8 +144,12 @@ class MorsePotential : public CellCellForce3D<T> {
 //    beta: well depth of the potential  (1.5e6 m)
 //    r0: zero force distance            (0.3e-6 m)
 public:
-    MorsePotential(T De_, T beta_, T r0_) : De(De_), beta(beta_), r0(r0_) {};
-    MorsePotential(T dx, plint numVerticesPerCell, T kBT, bool useOtherParameters) { De = 0.3*kBT * (500.0 / numVerticesPerCell); beta=1.5e6/dx; r0=0.3e-6/dx;};
+    MorsePotential(T De_, T beta_, T r0_)
+        : De(De_), beta(beta_), r0(r0_) {};
+    MorsePotential(T dx, plint numVerticesPerCell, T kBT, bool useOtherParameters)
+    {
+        De = 2*kBT * (500.0 / numVerticesPerCell); beta=1.5e6*dx; r0=0.3e-6/dx;
+    };
     virtual ~MorsePotential() { }
     virtual MorsePotential<T>* clone() const { return new MorsePotential<T>(De, beta, r0); } ;
 public:

@@ -19,7 +19,7 @@ void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> cons
     plint NdX, NdY, NdZ;
     if (flowType == 2) { // If RBC disaggregation
         dY = 2.7e-6/dx;
-        npar = (ny-2)*0.5/dY - 1;
+        npar = min(npar, plint((ny-2)*0.5/dY - 1) );
 
         for (plint iA = 0; iA < npar; ++iA) {
             centers.push_back(Array<T,3>(0.5*nx, 0.5*ny + iA*dY, 0.5*nz));
