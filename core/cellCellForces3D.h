@@ -148,7 +148,7 @@ public:
         : De(De_), beta(beta_), r0(r0_) {};
     MorsePotential(T dx, plint numVerticesPerCell, T kBT, bool useOtherParameters)
     {
-        De = 2*kBT * (500.0 / numVerticesPerCell); beta=1.5e6*dx; r0=0.3e-6/dx;
+        De = 0.3*kBT * (500.0 / numVerticesPerCell); beta=1.5e6*dx; r0=0.5e-6/dx;
     };
     virtual ~MorsePotential() { }
     virtual MorsePotential<T>* clone() const { return new MorsePotential<T>(De, beta, r0); } ;
@@ -189,6 +189,39 @@ private:
 #ifndef JKR
 #define JKR JohnsonKendallRoberts
 #endif
+
+
+template<typename T>
+class MorseAndPowerLawForce: public CellCellForce3D<T> {
+// Only the Morse contribution is accounted for the potential.
+public:
+    MorseAndPowerLawForce(T De_, T beta_, T r0_, T k_int_, T DeltaX_, T R_, T k_)
+        : De(De_), beta(beta_), r0(r0_),
+          k_int(k_int_), DeltaX(DeltaX_), R(R_), k(k_)
+    {};
+    MorseAndPowerLawForce(T dx, plint numVerticesPerCell, T kBT, bool useOtherParameters)
+    {
+        De = 2*kBT * (500.0 / numVerticesPerCell); beta=1.5e6*dx; r0=0.3e-6/dx;
+        k_int = 5e5*kBT * (500.0 / numVerticesPerCell); DeltaX=2.0; R=dx, k = 0.5*dx;
+        DeltaXoverRink = pow((DeltaX*1.0/R),k);
+    };
+    virtual ~MorseAndPowerLawForce() { }
+    virtual MorseAndPowerLawForce<T>* clone() const { return new MorseAndPowerLawForce<T>(De, beta, r0, k_int, DeltaX, R, k); } ;
+public:
+    virtual T calculatePotential (T r) { // Only the Morse contribution is accounted for the potential.
+        return De*( exp(2*beta*(r0 - r)) - 2*exp(beta*(r0 - r)));
+    }
+    virtual Array<T,3> calculateForce (T r, Array<T,3> const& eij) {
+            T x = exp( beta * (-r + r0) );
+            Array<T,3> force = 2*beta*De*(x*x  - x) * eij;
+            force = force + k_int * (pow((DeltaX*1.0/r),k) - DeltaXoverRink)*eij;
+            return force;
+    }
+private:
+    T De, beta, r0;
+    T k_int, DeltaX, R, k;
+    T DeltaXoverRink;
+};
 
 
 #include "cellCellForces3D.hh"

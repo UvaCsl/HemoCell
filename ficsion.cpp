@@ -351,6 +351,7 @@ int main(int argc, char* argv[])
        new ComputeImmersedElasticForce3D<T,DESCRIPTOR> (Cells, cellModel->clone(), RBCField),
        immersedParticles.getBoundingBox(), particleArg );
     MorsePotential<T> interCellularForce(dx, cellNumVertices, kBT, true);
+//    MorseAndPowerLawForce<T> interCellularForce(dx, cellNumVertices, kBT, true);
     if (flowType == 2) {
         applyProcessingFunctional (
            new ComputeCellCellForces3D<T,DESCRIPTOR> (interCellularForce, 1.1e-6/dx),

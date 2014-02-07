@@ -150,13 +150,13 @@ void ComputeDifferentCellForces3D<T,Descriptor>::applyForce (
         ImmersedCellParticle3D<T,Descriptor>* cParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p1);
         ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
         Array<T,3> force = calcForce(r, eij);
-        cParticle->get_force() += force;
-        nParticle->get_force() -= force;
-        cParticle->get_f_repulsive() += force;
-        nParticle->get_f_repulsive() -= force;
+        cParticle->get_force() -= force;
+        nParticle->get_force() += force;
+        cParticle->get_f_repulsive() -= force;
+        nParticle->get_f_repulsive() += force;
         T potential = calcForce.calculatePotential(r,eij);
-        cParticle->get_E_repulsive() += potential;
-        nParticle->get_E_repulsive() += potential;
+        cParticle->get_E_repulsive() -= potential;
+        nParticle->get_E_repulsive() -= potential;
 }
 
 
