@@ -208,14 +208,16 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceInertia()
         T difference, cellVolume = chq.getVolume(cellId);
         computeEllipsoidFit (cellInertia, ellipsoidAngles, ellipsoidSemiAxes, difference, cellVolume);
 
-        T currMaxDiameter =  max(max(ellipsoidSemiAxes[0], ellipsoidSemiAxes[1]),  ellipsoidSemiAxes[2]);
+        T currMaxDiameter =  max(max(ellipsoidSemiAxes[0], ellipsoidSemiAxes[1]),  ellipsoidSemiAxes[2]) * 2.0;
+        T currMinDiameter =  min(min(ellipsoidSemiAxes[0], ellipsoidSemiAxes[1]),  ellipsoidSemiAxes[2]) * 2.0;
         T maxDiameter = chq.getMaxDiameter();
 
         chq.getTumblingAngles(cellId) = Array<T,3>(ellipsoidAngles[0], ellipsoidAngles[1], ellipsoidAngles[2]);
         // chq.getTankTreadingAngles(cellId);
-        chq.getDiameters(cellId) = Array<T,3>(ellipsoidSemiAxes[0], ellipsoidSemiAxes[1], ellipsoidSemiAxes[2]);
+        chq.getDiameters(cellId) = Array<T,3>(ellipsoidSemiAxes[0], ellipsoidSemiAxes[1], ellipsoidSemiAxes[2]) * 2.0;
         chq.getSymmetryDeviation(cellId) = difference;
         chq.getDeformationIndex(cellId) = (currMaxDiameter - maxDiameter)*1.0/(currMaxDiameter + maxDiameter);
+        chq.getTaylorDeformationIndex(cellId) = (currMaxDiameter - currMinDiameter)*1.0/(currMaxDiameter + currMinDiameter);
     }
 
 }

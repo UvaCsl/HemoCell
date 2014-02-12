@@ -38,6 +38,7 @@ public:
     std::map<plint, Particle3D<T,Descriptor>*>& get_tagToParticle3D() { return tagToParticle3D; }
     plint getNumCells() { return cellIds.size(); }
     T getMaxDiameter() { return maxDiameter; }
+    void setMaxDiameter(T maxDiameter_) { maxDiameter = maxDiameter_; }
 public:
     void clearQuantities();
     void clearQuantity(plint subscribedQuantity);
@@ -64,6 +65,7 @@ public:
     Array<T,3> & getDiameters(plint cellId)  { return quantities3D[cellId][CCR_DIAMETERS];  } ;
     T & getSymmetryDeviation(plint cellId)  { return quantities1D[cellId][CCR_SYMMETRY_DEVIATION];  } ;
     T & getDeformationIndex(plint cellId)  { return quantities1D[cellId][CCR_DEFORMATION_INDEX];  } ;
+    T & getTaylorDeformationIndex(plint cellId)  { return quantities1D[cellId][CCR_TAYLOR_DEFORMATION_INDEX];  } ;
 
     // 0 -- Sum, 1 -- Mean, 2 -- Max, 3 -- Min, 4 -- Std
     void reduceQuantity1D(plint cellId, plint ccrId, T value, plint numParts=0) ;

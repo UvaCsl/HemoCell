@@ -387,6 +387,8 @@ int main(int argc, char* argv[])
     pcout <<  inertia[3] << "\t" <<  inertia[4] << "\t" <<  inertia[5] << std::endl;
     pcout <<  inertia[6] << "\t" <<  inertia[7] << "\t" <<  inertia[8] << std::endl;
     Array<T,3> diams = RBCField.getDiameters(inertiaCellId);
+    RBCField.setMaxDiameter( max(max(diams[0], diams[1]), diams[2]) );
+    diams = RBCField.getDiameters(inertiaCellId);
     pcout << "== Cell Diameters ==" << std::endl;
     pcout <<  diams[0] << "\t" <<  diams[1] << "\t" <<  diams[2] << std::endl;
     Array<T,3> angls = RBCField.getTumblingAngles(inertiaCellId);

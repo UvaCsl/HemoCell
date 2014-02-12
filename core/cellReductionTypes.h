@@ -62,6 +62,7 @@
 #define CCR_DIAMETERS             1253 // 1d
 #define CCR_SYMMETRY_DEVIATION    1351 // 1d
 #define CCR_DEFORMATION_INDEX     1451 // 1d
+#define CCR_TAYLOR_DEFORMATION_INDEX             1551 // 1d
 
 
 using namespace plb;

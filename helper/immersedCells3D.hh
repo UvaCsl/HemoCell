@@ -126,7 +126,9 @@ TriangleBoundary3D<T> createCompleteMesh(
         } else if (shape == 3) {
         	wholeTriangleSet.append(constructRBC<T>(center, radius, cellNumTriangles, eulerAngles));
         } else if (shape == 4) {
-        	wholeTriangleSet.append(constructRBCFromSphere<T>(center, radius, cellNumTriangles, eulerAngles, 0));
+            wholeTriangleSet.append(constructRBCFromSphere<T>(center, radius, cellNumTriangles, eulerAngles, 0));
+        } else if (shape == 5) {
+            wholeTriangleSet.append(constructSphere<T>(center, radius, cellNumTriangles));
         }
         cellIds.push_back(iA);
     }
