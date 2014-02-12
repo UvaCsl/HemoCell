@@ -152,6 +152,47 @@ void SquarePoiseuilleVelocity<T>::operator()(plint iX, plint iY, plint iZ, Array
 }
 
 /* ************* iniLatticeSquarePoiseuille ******************* */
+void iniLatticeOutlets( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+                 IncomprFlowParam<T> const& parameters,
+                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition)
+{
+    const plint nx = parameters.getNx();
+    const plint ny = parameters.getNy();
+    const plint nz = parameters.getNz();
+
+    Box3D top    = Box3D(0,    nx-1, 0, ny-1, 0,    0);
+    Box3D bottom = Box3D(0,    nx-1, 0, ny-1, nz-1, nz-1);
+
+    Box3D left   = Box3D(0, nx-1, 0,    0,    0, nz-1);
+    Box3D right  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
+
+    Box3D inlet  = Box3D(0,    0,    0,    ny-1, 0, nz-1);
+    Box3D outlet = Box3D(nx-1, nx-1, 0,    ny-1, 0, nz-1);
+
+
+    boundaryCondition.setVelocityConditionOnBlockBoundaries (
+                                   lattice, top, boundary::outflow );
+    boundaryCondition.setVelocityConditionOnBlockBoundaries (
+                                   lattice, bottom, boundary::outflow );
+
+    boundaryCondition.setVelocityConditionOnBlockBoundaries (
+                                   lattice, left, boundary::outflow );
+    boundaryCondition.setVelocityConditionOnBlockBoundaries (
+                                   lattice, right, boundary::outflow );
+
+    boundaryCondition.setVelocityConditionOnBlockBoundaries (
+                                   lattice, inlet, boundary::outflow );
+    boundaryCondition.setVelocityConditionOnBlockBoundaries (
+                                   lattice, outlet, boundary::outflow );
+
+    setExternalVector( lattice, lattice.getBoundingBox(),
+                       DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
+
+    lattice.initialize();
+}
+
+
+/* ************* iniLatticeSquarePoiseuille ******************* */
 void iniLatticeSquarePoiseuille( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                  IncomprFlowParam<T> const& parameters,
                  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T Re)
@@ -392,6 +433,7 @@ void writeVTK(BlockLatticeT& lattice,
 
     VtkImageOutput3D<T> vtkOut(createFileName("vtk", iter, 8), dx);
     vtkOut.writeData<T>(*computeVelocityNorm(lattice), "velocityNorm", dx/dt);
+    vtkOut.writeData<T>(*computeDensity(lattice), "density", 1.0);
     vtkOut.writeData<3,T>(*computeVelocity(lattice), "velocity", dx/dt);
     vtkOut.writeData<3,T>(force, "force",  (T) 1.0);
 //    vtkOut.writeData<T>(*computeNorm(force, force.getBoundingBox()), "forceNorm",  dx/dt/dt);

@@ -62,6 +62,10 @@ private:
 /* ************************************************************************************* */
 
 /* ******************* iniLattice ***************************************** */
+void iniLatticeOutlets( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+                 IncomprFlowParam<T> const& parameters,
+                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition);
+
 void iniLatticeSquarePoiseuille( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                  IncomprFlowParam<T> const& parameters,
                  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition,
