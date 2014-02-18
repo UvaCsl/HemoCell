@@ -44,6 +44,7 @@ public:
     void clearQuantity(plint subscribedQuantity);
     /* Get Class cointainers */
     std::vector<plint> const& getCellIds();
+    void setCellIds(std::vector<plint> cellIds_);
     std::map<plint, plint> & getParticlesPerCellId() { return particlesPerCellId ; }
     T & getVolume(plint cellId) { return quantities1D[cellId][CCR_VOLUME];} ;
     T & getSurface(plint cellId) { return quantities1D[cellId][CCR_SURFACE];} ;

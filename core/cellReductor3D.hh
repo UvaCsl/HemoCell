@@ -134,8 +134,11 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceAll()
                     << " ang " << cellsMeanAngle[ci] -  chq.getMeanAngle(ci)
                     << " v-v " << cellsVolume[ci] << " " << chq.getVolume(ci)
                                         << std::endl;
-        }
+            chq.getVolume(ci) = cellsVolume[ci];
+            chq.getSurface(ci) = cellsSurface[ci];
+            chq.getMeanAngle(ci) = cellsMeanAngle[ci];
 
+        }
 
 //        cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();
 //        cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsCenter.clear(); cellsVelocity.clear();

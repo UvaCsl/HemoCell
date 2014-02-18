@@ -74,6 +74,13 @@ void CellField3D<T,Descriptor>::reduceQuantityND(plint cellId, plint ccrId, std:
 
 
 template<typename T, template<typename U> class Descriptor>
+void CellField3D<T,Descriptor>::setCellIds(std::vector<plint> cellIds_) {
+    cellIds.clear();
+    cellIds = cellIds_;
+} ;
+
+
+template<typename T, template<typename U> class Descriptor>
 void CellField3D<T,Descriptor>::calcCellIds() {
     cellIds.clear();
     typename std::map<plint, std::map<plint, T > >::iterator iter1D;

@@ -59,6 +59,7 @@ void LocalCellReductions3D<T,Descriptor>::subscribeParticles(std::vector<Particl
                 else          { quantityBinsND[cellId][ccrId] = subscribeReductionND(reductionType, dim); }
             }
         }
+        chq.setCellIds(cellIds);
 
 }
 
@@ -460,7 +461,7 @@ void SyncReductionParticles3D<T,Descriptor>::processGenericBlocks (
             }
 
         }
-        chq.getCellIds(); // Calculate cellIds
+//        chq.getCellIds(); // Calculate cellIds
         reductionParticleField.removeParticles(domain, -1);
 }
 
