@@ -496,7 +496,7 @@ int main(int argc, char* argv[])
                 pcout << " OK" << std::endl;
 
             }
-            rbcReductor.write(i, eqVolumeFinal, eqSurface, eqArea, eqLength) ;
+            RBCField.writeVTK(i);
             rbcStretch.write(i, rbcReductor.getCellsMeanEdgeDistance()[0], rbcReductor.getCellsMaxEdgeDistance()[0]); // SINGLE CELL STRETCHING
             if (flowType==6) { // SINGLE CELL IN SHEAR FLOW
                 shearFlow.updateQuantities(i, cellIds, rbcReductor.getCellsCenter(), rbcReductor.getCellsVolume());

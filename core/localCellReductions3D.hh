@@ -239,6 +239,9 @@ Array<T,3>  LocalCellReductions3D<T,Descriptor>::computeQuantity3D (plint q, Imm
     } else if (q==7) {
     // VELOCITY
         quantity3D = particle->get_v();
+    } else if (q==16) {
+    // Force
+        quantity3D = particle->get_force();
     }
     return quantity3D;
 }
@@ -439,7 +442,7 @@ void SyncReductionParticles3D<T,Descriptor>::processGenericBlocks (
 //                    << " Volume: " << particle->getVolume()
 //                    << " Surface: " << particle->getSurface()
 //                 << std::endl;
-            particleInProcessorAndCellid[processor];
+            particleInProcessorAndCellid[processor]; // Create "processor" entry
             if (particleInProcessorAndCellid[processor].count(cellId) == 0) {
                 particleInProcessorAndCellid[processor][cellId] = true;
                 std::map<plint, T > const& q1d = particle->getQuantities1D();

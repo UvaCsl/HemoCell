@@ -19,9 +19,15 @@ public:
     CellField3D(TriangleBoundary3D<T> const& Cells_,
             plint numVerticesPerCell_, plint numTriangles_, T maxDiameter_,
             std::map<plint, Particle3D<T,Descriptor>*>& tagToParticle3D_);
+    CellField3D(TriangleBoundary3D<T> const& Cells_, T dx_, T dt_,
+            plint numVerticesPerCell_, plint numTriangles_, T maxDiameter_,
+            std::map<plint, Particle3D<T,Descriptor>*>& tagToParticle3D_);
     virtual ~CellField3D() { };
+    void write(plint iter=0);
+    void writeVTK(plint iter=0);
 private:
     TriangleBoundary3D<T> const& Cells;
+    T dx, dt;
     plint numMeshCells, numVerticesPerCell, numTriangles;
     T maxDiameter;
     std::map<plint, Particle3D<T,Descriptor>*>& tagToParticle3D;
@@ -32,7 +38,10 @@ private:
     std::map<plint, std::map<plint, Array<T,3> > > quantities3D;
     std::map<plint, std::map<plint, std::vector<T> > > quantitiesND;
     void calcCellIds();
+    std::vector<plint> ccrIds1D, ccrIds3D, ccrIdsND;
+    std::vector<Particle3D<T,Descriptor>*> cellReductionParticles;
 public:
+    std::vector<Particle3D<T,Descriptor>*> & getCellReductionParticles() { return cellReductionParticles ; }
     plint & getNumVerticesPerCell() { return numVerticesPerCell; }
     plint & getNumMeshCells() { return numMeshCells; }
     std::map<plint, Particle3D<T,Descriptor>*>& get_tagToParticle3D() { return tagToParticle3D; }

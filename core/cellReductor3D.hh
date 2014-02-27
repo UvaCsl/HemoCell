@@ -106,12 +106,53 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceAll()
         cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsCenter.clear(); cellsVelocity.clear();
         cellsMeanTileSpan.clear();
 
+        chq.clearQuantities();
+        std::vector<plint> subscribedQuantities(allReductions); // All minus Inertia
+        reduce(allReductions);
+
+        cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();
+        cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsCenter.clear(); cellsVelocity.clear();
+        cellsMeanTileSpan.clear();
+
+        cellsVolume = std::vector<T>(numberOfCells);         cellsSurface = std::vector<T>(numberOfCells);
+        cellsCenter = std::vector<Array<T,3>  >(numberOfCells);         cellsMeanTriangleArea = std::vector<T>(numberOfCells);
+        cellsMeanEdgeDistance = std::vector<T>(numberOfCells);         cellsMaxEdgeDistance = std::vector<T>(numberOfCells);
+        cellsMeanAngle = std::vector<T>(numberOfCells);         cellsVelocity = std::vector<Array<T,3>  >(numberOfCells);
+
+        for (pluint ci = 0; ci < cellIds.size(); ++ci) {
+            plint cellId = cellIds[ci];
+            cellsVolume[cellId] = chq.getVolume(cellId);
+            cellsSurface[cellId] = chq.getSurface(cellId);
+            cellsCenter[cellId] = chq.getPosition(cellId);
+            cellsMeanTriangleArea[cellId] = chq.getMeanTriangleArea(cellId);
+            cellsMeanEdgeDistance[cellId] = chq.getMeanEdgeDistance(cellId);
+            cellsMaxEdgeDistance[cellId] = chq.getMaxEdgeDistance(cellId);
+            cellsMeanAngle[cellId] = chq.getMeanAngle(cellId);
+            cellsVelocity[cellId] = chq.getVelocity(cellId);
+        }
+        for (plint ci = 0; ci < numberOfCells; ++ci) {
+            chq.getVolume(ci) = cellsVolume[ci];
+            chq.getSurface(ci) = cellsSurface[ci];
+            chq.getMeanAngle(ci) = cellsMeanAngle[ci];
+        }
+        reduceInertia();
+}
+
+
+template< typename T, template<typename U> class Descriptor,
+          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
+void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceCollective()
+{
+
+        cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();
+        cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsCenter.clear(); cellsVelocity.clear();
+        cellsMeanTileSpan.clear();
+
         std::vector<MultiBlock3D*> particleArg;
         particleArg.push_back(particles);
         NumVerticesCellReduceFunctional3D<T,Descriptor> nfunctional(Cells, cellIds, numberOfCells);
         applyProcessingFunctional(nfunctional, particles->getBoundingBox(), particleArg);
         nfunctional.getCellQuantityArray(cellNumVertices, cellIds);
-
         cellsVolume.clear(); cellsSurface.clear();
         countCellVolume(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVolume, tagToParticle3D);
         countCellSurface(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsSurface);
@@ -123,7 +164,6 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceAll()
         countCellMaxEdgeDistance(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsMaxEdgeDistance);
         countCellCenters(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsCenter, cellNumVertices);
         countCellVelocity(Cells, *particles, particles->getBoundingBox(), cellIds, numberOfCells, cellsVelocity, cellNumVertices);
-
         chq.clearQuantities();
         std::vector<plint> subscribedQuantities(allReductions); // All minus Inertia
         reduce(allReductions);
@@ -137,35 +177,11 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceAll()
             chq.getVolume(ci) = cellsVolume[ci];
             chq.getSurface(ci) = cellsSurface[ci];
             chq.getMeanAngle(ci) = cellsMeanAngle[ci];
-
         }
-
-//        cellsMeanTriangleArea.clear(); cellsMeanEdgeDistance.clear();
-//        cellsMaxEdgeDistance.clear(); cellsMeanAngle.clear(); cellsCenter.clear(); cellsVelocity.clear();
-//        cellsMeanTileSpan.clear();
-//
-//        cellsVolume = std::vector<T>(numberOfCells);
-//        cellsSurface = std::vector<T>(numberOfCells);
-//        cellsCenter = std::vector<Array<T,3>  >(numberOfCells);
-//
-//        cellsMeanTriangleArea = std::vector<T>(numberOfCells);
-//        cellsMeanEdgeDistance = std::vector<T>(numberOfCells);
-//        cellsMaxEdgeDistance = std::vector<T>(numberOfCells);
-//        cellsMeanAngle = std::vector<T>(numberOfCells);
-//        cellsVelocity = std::vector<Array<T,3>  >(numberOfCells);
-//        for (pluint ci = 0; ci < cellIds.size(); ++ci) {
-//            plint cellId = cellIds[ci];
-//            cellsVolume[cellId] = chq.getVolume(cellId);
-//            cellsSurface[cellId] = chq.getSurface(cellId);
-//            cellsCenter[cellId] = chq.getPosition(cellId);
-//            cellsMeanTriangleArea[cellId] = chq.getMeanTriangleArea(cellId);
-//            cellsMeanEdgeDistance[cellId] = chq.getMeanEdgeDistance(cellId);
-//            cellsMaxEdgeDistance[cellId] = chq.getMaxEdgeDistance(cellId);
-//            cellsMeanAngle[cellId] = chq.getMeanAngle(cellId);
-//            cellsVelocity[cellId] = chq.getVelocity(cellId);
-//        }
         reduceInertia();
 }
+
+
 
 
 template< typename T, template<typename U> class Descriptor,

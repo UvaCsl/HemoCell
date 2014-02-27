@@ -9,7 +9,16 @@ template<typename T, template<typename U> class Descriptor>
 CellField3D<T,Descriptor>::CellField3D(TriangleBoundary3D<T> const& Cells_, \
         plint numVerticesPerCell_, plint numTriangles_, T maxDiameter_,
         std::map<plint, Particle3D<T,Descriptor>*>& tagToParticle3D_) :
-    Cells(Cells_), numVerticesPerCell(numVerticesPerCell_), numTriangles(numTriangles_), maxDiameter(maxDiameter_), tagToParticle3D(tagToParticle3D_) { }
+    Cells(Cells_), dx(1), dt(1), numVerticesPerCell(numVerticesPerCell_), numTriangles(numTriangles_),
+    maxDiameter(maxDiameter_), tagToParticle3D(tagToParticle3D_) { }
+
+
+template<typename T, template<typename U> class Descriptor>
+CellField3D<T,Descriptor>::CellField3D(TriangleBoundary3D<T> const& Cells_, T dx_, T dt_,
+        plint numVerticesPerCell_, plint numTriangles_, T maxDiameter_,
+        std::map<plint, Particle3D<T,Descriptor>*>& tagToParticle3D_) :
+    Cells(Cells_), dx(dx_), dt(dt_), numVerticesPerCell(numVerticesPerCell_), numTriangles(numTriangles_),
+    maxDiameter(maxDiameter_), tagToParticle3D(tagToParticle3D_) { }
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -26,6 +35,62 @@ void CellField3D<T,Descriptor>::reduceQuantity1D(plint cellId, plint ccrId, T va
     //        else if (4 == reductionType) { false; } // Std not implemented yet
     }
 }
+
+
+template<typename T, template<typename U> class Descriptor>
+void CellField3D<T,Descriptor>::writeVTK(plint iter)
+{
+    calcCellIds();
+    std::string fName = global::directories().getOutputDir() + createFileName("CellQ",iter,8)+".vtk";
+
+    std::ofstream ofile(fName.c_str());
+    plint nParticles = cellIds.size();
+
+    ofile << "# vtk DataFile Version 3.0\n";
+    ofile << "Surface point created with Palabos and ficsion\n";
+    ofile << "ASCII\n";
+    ofile << "DATASET POLYDATA\n";
+    ofile << "POINTS " << nParticles
+          << (sizeof(T)==sizeof(double) ? " double" : " float")
+          << "\n";
+    for (plint ic = 0; ic < nParticles; ++ic) {
+        Array<T,3> vertex = quantities3D[cellIds[ic]][CCR_NO_PBC_POSITION_MEAN];
+        vertex *= dx;
+        ofile << vertex[0] << " " <<vertex[1] << " " <<vertex[2] << "\n";
+    }
+    ofile << "POINT_DATA " << nParticles << "\n";
+    ofile << "SCALARS ID float 1 \n";
+    ofile << "LOOKUP_TABLE default \n";
+    for (plint i = 0; i < nParticles; ++i) {
+        ofile << cellIds[i] << "\n";
+    }
+
+    for (plint i = 0; i < ccrIds1D.size(); ++i) {
+        plint ccrId = ccrIds1D[i];
+        ofile << "SCALARS "<< ccrNames[ccrId] << " double 1\n"
+              << "LOOKUP_TABLE default\n";
+        for (plint ic=0; ic<(plint)cellIds.size(); ++ic) {
+            ofile << quantities1D[cellIds[ic]][ccrId] << "\n";
+        }
+        ofile << "\n";
+    }
+
+    for (plint i = 0; i < ccrIds3D.size(); ++i) {
+        plint ccrId = ccrIds3D[i];
+        ofile << "VECTORS "<< ccrNames[ccrId] << " double \n"
+              << "LOOKUP_TABLE default\n";
+        for (plint ic=0; ic<(plint)cellIds.size(); ++ic) {
+            Array<T,3> vec = quantities3D[cellIds[ic]][ccrId];
+            ofile << vec[0] << " "
+                  << vec[1] << " "
+                  << vec[2] << "\n";
+        }
+        ofile << "\n";
+    }
+
+    ofile.close();
+}
+
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T,Descriptor>::reduceQuantity3D(plint cellId, plint ccrId, Array<T,3> const& value, plint numParts) {
@@ -82,11 +147,33 @@ void CellField3D<T,Descriptor>::setCellIds(std::vector<plint> cellIds_) {
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T,Descriptor>::calcCellIds() {
-    cellIds.clear();
+    cellIds.clear(); ccrIds1D.clear(); ccrIds3D.clear(); ccrIdsND.clear();
+    /* Gather CellIds */
     typename std::map<plint, std::map<plint, T > >::iterator iter1D;
     for (iter1D  = quantities1D.begin(); iter1D != quantities1D.end(); ++iter1D) {
         cellIds.push_back(iter1D->first);
     }
+
+    /* Gather Cell Collective Reduction Ids  ccrId*/
+    typename std::map<plint, T >::iterator iterScalar;
+    for (  iterScalar  = quantities1D[cellIds[0]].begin();
+           iterScalar != quantities1D[cellIds[0]].end();
+         ++iterScalar) {
+        ccrIds1D.push_back(iterScalar->first);
+    }
+    typename std::map<plint, Array<T,3> >::iterator iterVector;
+    for (    iterVector  = quantities3D[cellIds[0]].begin();
+             iterVector != quantities3D[cellIds[0]].end();
+           ++iterVector) {
+        ccrIds3D.push_back(iterVector->first);
+    }
+    typename std::map<plint, std::vector<T> >::iterator iterTensor;
+    for (  iterTensor  = quantitiesND[cellIds[0]].begin();
+           iterTensor != quantitiesND[cellIds[0]].end();
+         ++iterTensor) {
+        ccrIdsND.push_back(iterTensor->first);
+    }
+
 } ;
 
 template<typename T, template<typename U> class Descriptor>

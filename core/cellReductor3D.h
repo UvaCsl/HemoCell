@@ -37,6 +37,7 @@ public:
         void reduce(plint subscribedQuantity);
         void reduce(std::vector<plint> const& subscribedQuantities);
         void reduceAll() ;
+        void reduceCollective() ;
         void reduceVolumeAndSurface(plint iter=-1) ;
         void reduceVolumeAndSurfaceAndCenters() ;
         void reduceInertia();

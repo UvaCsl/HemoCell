@@ -248,7 +248,7 @@ void draftPostProcessPBCPositions(std::vector<Particle3D<T,Descriptor>*> const &
     plint cellId;
     Array<T,3> pbcPosition;
     std::map<plint, Array<T,3> > pMin, pMax;
-    Array<T,3> domainEdge = Array<T,3>(nx-1,ny-1,nz-1);
+    Array<T,3> domainEdge = Array<T,3>(nx,ny,nz);
 
     // Find minimum and maximum X,Y,Z
     for (pluint iParticle = 0; iParticle < particles.size(); ++iParticle) {

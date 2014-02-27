@@ -3,7 +3,8 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
-
+#include <map>
+#include <string>
 
 /* IDs for the reduction types,
  * they are created based on the following rules:
@@ -30,6 +31,8 @@
  *      Velocity       : 7
  *      Inertia        : 8
  *      Energy         : 9
+ *      Force          : 16
+ *      Torque         : 17
  *      Position       : 0
  */
 #define CCR_NO_PBC_POSITION_MEAN    13 // 3d // BEWARE OF 0 IN FRONT! GOES TO OCT
@@ -55,8 +58,12 @@
 #define CCR_VELOCITY_MEAN          713 // 3d
 #define CCR_VELOCITY_MIN           723 // 3d
 #define CCR_VELOCITY_MAX           733 // 3d
-#define CCR_INERTIA                809 // 9d, Not working
 #define CCR_ENERGY                 901 // 1d
+#define CCR_FORCE                 1603 // 1d
+#define CCR_INERTIA                809 // 9d, Not working
+#define CCR_TORQUE                1703 // 3d
+
+// The following are not calculated
 #define CCR_TUMBLING_ANGLES       1053 // 1d
 #define CCR_TANK_TREADING_ANGLES  1153 // 1d
 #define CCR_DIAMETERS             1253 // 1d
@@ -77,7 +84,8 @@ const plb::plint allReductions_array[] = {CCR_NO_PBC_POSITION_MEAN, CCR_NO_PBC_P
                                      CCR_POSITION_MEAN, CCR_POSITION_MIN, CCR_POSITION_MAX,
                                      CCR_VELOCITY_MEAN, CCR_VELOCITY_MIN, CCR_VELOCITY_MAX,
                                      /* CCR_INERTIA, */ // CellInertia cannot be calculated at once.
-                                     CCR_ENERGY };
+                                     /* CCR_TORQUE, */  // Neither can torque.
+                                     CCR_ENERGY, CCR_FORCE};
 
 const plb::plint volumeAndSurfaceAndCentersReductions_array[] = {CCR_VOLUME, CCR_SURFACE, CCR_POSITION_MEAN};
 const plb::plint volumeAndSurfaceReductions_array[] = {CCR_VOLUME, CCR_SURFACE};
@@ -87,4 +95,52 @@ std::vector<plb::plint> const allReductions(allReductions_array, allReductions_a
 std::vector<plb::plint> const volumeAndSurfaceAndCentersReductions(volumeAndSurfaceAndCentersReductions_array, volumeAndSurfaceAndCentersReductions_array + sizeof(volumeAndSurfaceAndCentersReductions_array) / sizeof(volumeAndSurfaceAndCentersReductions_array[0]) );
 std::vector<plb::plint> const volumeAndSurfaceReductions(volumeAndSurfaceReductions_array, volumeAndSurfaceReductions_array + sizeof(volumeAndSurfaceReductions_array) / sizeof(volumeAndSurfaceReductions_array[0]) );
 
+
+std::map<int, std::string> createMapCCR() {
+    std::map<int, std::string> ccrNames;
+    ccrNames[CCR_VOLUME] = "Volume";
+    ccrNames[CCR_SURFACE] = "Surface";
+
+    ccrNames[CCR_NO_PBC_POSITION_MEAN] = "Position (not periodic)";
+    ccrNames[CCR_NO_PBC_POSITION_MIN] = "Min positions (not periodic)";
+    ccrNames[CCR_NO_PBC_POSITION_MAX] = "Max positions (not periodic)";
+
+
+    ccrNames[CCR_ANGLE_MEAN] = "Mean Angle";
+    ccrNames[CCR_ANGLE_MIN] = "Min Angle";
+    ccrNames[CCR_ANGLE_MAX] = "Max Angle";
+    ccrNames[CCR_TRIANGLE_AREA_MEAN] = "Mean triangle area";
+    ccrNames[CCR_TRIANGLE_AREA_MIN] = "Min triangle area";
+    ccrNames[CCR_TRIANGLE_AREA_MAX] = "Max triangle area";
+    ccrNames[CCR_EDGE_DISTANCE_MEAN] = "Mean edge distance";
+    ccrNames[CCR_EDGE_DISTANCE_MIN] = "Min edge distance";
+    ccrNames[CCR_EDGE_DISTANCE_MAX] = "Max edge distance";
+    ccrNames[CCR_TILE_SPAN_MEAN] = "Mean tile span";
+    ccrNames[CCR_TILE_SPAN_MIN] = "Min tile span";
+    ccrNames[CCR_TILE_SPAN_MAX] = "Max tile span";
+
+    ccrNames[CCR_POSITION_MEAN] = "Position";
+    ccrNames[CCR_POSITION_MIN] = "Min positions";
+    ccrNames[CCR_POSITION_MAX] = "Max positions";
+    ccrNames[CCR_VELOCITY_MEAN] = "Velocity";
+    ccrNames[CCR_VELOCITY_MIN] = "Min velocity";
+    ccrNames[CCR_VELOCITY_MAX] = "Max velocity";
+
+    ccrNames[CCR_INERTIA] = "Inertia";
+    ccrNames[CCR_TORQUE] = "Torque";
+    ccrNames[CCR_ENERGY] = "Energy";
+    ccrNames[CCR_FORCE] = "Force";
+
+    ccrNames[CCR_TUMBLING_ANGLES] = "Tumbling angles";
+    ccrNames[CCR_DIAMETERS] = "Diameters";
+    ccrNames[CCR_SYMMETRY_DEVIATION] = "Symmetry deviation";
+    ccrNames[CCR_TAYLOR_DEFORMATION_INDEX] = "Taylor deviation index";
+    return ccrNames;
+}
+
+std::map<int, std::string> ccrNames(createMapCCR());
+
 #endif
+
+
+

@@ -177,36 +177,96 @@ ReductionParticle3D<T,Descriptor>* ReductionParticle3D<T,Descriptor>::clone() co
 
 
 template<typename T, template<typename U> class Descriptor>
-bool ReductionParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,3>& vector) const {
+void ReductionParticle3D<T,Descriptor>::make_ccrIds() {
+    plint containedData = scalar_ccrIds.size() + vector_ccrIds.size() + tensor_ccrIds.size();
+    if (containedData == 0) {
+        typename std::map<plint, T >::const_iterator iter1D;
+        typename std::map<plint, Array<T,3> >::const_iterator iter3D;
+        typename std::map<plint, std::vector<T> >::const_iterator iterND;
+        scalar_ccrIds.clear();     vector_ccrIds.clear();     tensor_ccrIds.clear();
+        for (iter1D  = quantities1D.begin(); iter1D != quantities1D.end(); ++iter1D) { scalar_ccrIds.push_back(iter1D->first); }
+        for (iter3D  = quantities3D.begin(); iter3D != quantities3D.end(); ++iter3D) { vector_ccrIds.push_back(iter3D->first); }
+        for (iterND  = quantitiesND.begin(); iterND != quantitiesND.end(); ++iterND) { tensor_ccrIds.push_back(iterND->first); }
+    }
+    std::sort(scalar_ccrIds.begin(), scalar_ccrIds.end());
+    std::sort(vector_ccrIds.begin(), vector_ccrIds.end());
+    std::sort(tensor_ccrIds.begin(), tensor_ccrIds.end());
+}
+
+template<typename T, template<typename U> class Descriptor>
+bool ReductionParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,3>& vector) {
+    if (whichVector < getVectorsNumber()) {
+        vector = get3D(vector_ccrIds[whichVector]);
+        return true;
+    }
     return Particle3D<T,Descriptor>::getVector(whichVector, vector);
 }
 
 template<typename T, template<typename U> class Descriptor>
-std::string ReductionParticle3D<T,Descriptor>::getVectorName(plint whichVector) const {
+std::string ReductionParticle3D<T,Descriptor>::getVectorName(plint whichVector) {
+    if (whichVector < getVectorsNumber()) {
+        return ccrNames[vector_ccrIds[whichVector]];
+    }
     return "empty";
 }
 
 template<typename T, template<typename U> class Descriptor>
-plint ReductionParticle3D<T,Descriptor>::getVectorsNumber() const {
-        return 0;
+plint ReductionParticle3D<T,Descriptor>::getVectorsNumber() {
+    make_ccrIds();
+    return vector_ccrIds.size();
 }
 
 /* Same for scalars */
 template<typename T, template<typename U> class Descriptor>
-bool ReductionParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) const {
+bool ReductionParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) {
+    if (whichScalar < getScalarsNumber()) {
+        scalar = get1D(scalar_ccrIds[whichScalar]);
+        return true;
+    }
     return Particle3D<T,Descriptor>::getScalar(whichScalar, scalar);
 }
 
 
 template<typename T, template<typename U> class Descriptor>
-std::string ReductionParticle3D<T,Descriptor>::getScalarName(plint whichScalar) const {
+std::string ReductionParticle3D<T,Descriptor>::getScalarName(plint whichScalar) {
+    if (whichScalar < getScalarsNumber()) {
+        return ccrNames[scalar_ccrIds[whichScalar]];
+    }
     return "empty";
 }
 
 
 template<typename T, template<typename U> class Descriptor>
-plint ReductionParticle3D<T,Descriptor>::getScalarsNumber() const {
-        return 0;
+plint ReductionParticle3D<T,Descriptor>::getScalarsNumber() {
+    make_ccrIds();
+    return scalar_ccrIds.size();
+}
+
+/* Same for Tensors */
+template<typename T, template<typename U> class Descriptor>
+bool ReductionParticle3D<T,Descriptor>::getTensor(plint whichTensor, std::vector<T>& tensor) {
+    if (whichTensor < getTensorsNumber()) {
+        tensor = getND(tensor_ccrIds[whichTensor]);
+        return true;
+    }
+    tensor.clear();
+    return false;
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+std::string ReductionParticle3D<T,Descriptor>::getTensorName(plint whichTensor) {
+    if (whichTensor < getTensorsNumber()) {
+        return ccrNames[tensor_ccrIds[whichTensor]];
+    }
+    return "empty";
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+plint ReductionParticle3D<T,Descriptor>::getTensorsNumber() {
+    make_ccrIds();
+    return tensor_ccrIds.size();
 }
 
 }  // namespace plb

@@ -25,6 +25,7 @@
 #include "palabos3D.hh"
 #include <vector>
 #include <map>
+#include <algorithm>
 #include "cellReductionTypes.h"
 using namespace plb;
 using namespace std;
@@ -50,7 +51,6 @@ public:
     virtual void serialize(HierarchicSerializer& serializer) const;
     virtual void unserialize(HierarchicUnserializer& unserializer);
     virtual ReductionParticle3D<T,Descriptor>* clone() const;
-    /// Return the cellId through a generic interface (vector id=0).
 
     plint getMpiProcessor() {
     	int myrank = 0;
@@ -93,15 +93,22 @@ public:
 
     T const& getSurface() const { return quantities1D[CCR_SURFACE]; }
     T& getSurface() { return quantities1D[CCR_SURFACE]; }
-
-    virtual bool getScalar(plint whichScalar, T& scalar) const;
-    std::string getScalarName(plint whichScalar) const;
-    plint getScalarsNumber() const ;
-
-    virtual bool getVector(plint whichVector, Array<T,3>& vector) const;
-    std::string getVectorName(plint whichVector) const;
-    plint getVectorsNumber() const ;
-
+// General framework for getting data from the particles:
+    /// Return the cellId through a generic interface (vector id=0).
+    virtual bool getScalar(plint whichScalar, T& scalar);
+    std::string getScalarName(plint whichScalar);
+    plint getScalarsNumber() ;
+    /// Return the velocity, acceleration or pbcPosition through a generic interface (vector id=0,1,2).
+    virtual bool getVector(plint whichVector, Array<T,3>& vector);
+    std::string getVectorName(plint whichVector);
+    plint getVectorsNumber()  ;
+    /// Return the velocity, acceleration or pbcPosition through a generic interface (vector id=0,1,2).
+    bool getTensor(plint whichTensor, std::vector<T>& tensor);
+    std::string getTensorName(plint whichTensor);
+    plint getTensorsNumber() ;
+private:
+    std::vector<plint> scalar_ccrIds, vector_ccrIds, tensor_ccrIds;
+    void make_ccrIds();
 };
 
 
@@ -113,6 +120,80 @@ void serializeVector(HierarchicSerializer& serializer, std::vector<T> const& vec
 
 template<typename T>
 std::vector<T> unserializeVector(HierarchicUnserializer& unserializer);
+
+
+
+
+template<typename T, template<typename U> class Descriptor>
+void writeCellPointsVTK(
+        std::vector<Particle3D<T,Descriptor>*> particles, T const& dx,
+                    std::string fName)
+{
+    std::ofstream ofile(fName.c_str());
+    plint nParticles = particles.size();
+
+    std::vector<std::string> scalarNames;
+    std::vector<std::string> vectorNames;
+    std::vector<plint> cellIds;
+
+    std::map<std::string, std::map<plint, T> > scalarData; // scalars["Position"][cellId] = value
+    std::map<std::string, std::map<plint, Array<T,3> > > vectorData; // scalars["Position"][cellId] = vectorValues
+
+    ReductionParticle3D<T,Descriptor>* p0 =
+        dynamic_cast<ReductionParticle3D<T,Descriptor>*> (particles[0]);
+    for (plint iVector = 0; iVector < p0->getVectorsNumber(); ++iVector) { vectorNames.push_back(p0->getVectorName(iVector)); }
+    for (plint iScalar = 0; iScalar < p0->getScalarsNumber(); ++iScalar) { scalarNames.push_back(p0->getScalarName(iScalar)); }
+    cellIds.push_back(p0->get_cellId());
+    for (pluint i = 1; i < nParticles; ++i) {
+        p0 = dynamic_cast<ReductionParticle3D<T,Descriptor>*> (particles[i]);
+        plint cellId = p0->get_cellId();
+        cellIds.push_back(cellId);
+        for (plint iVector = 0; iVector < p0->getVectorsNumber(); ++iVector) { p0->getVector(iVector, vectorData[p0->getVectorName(iVector)][cellId]); }
+        for (plint iScalar = 0; iScalar < p0->getScalarsNumber(); ++iScalar) { p0->getScalar(iScalar, scalarData[p0->getScalarName(iScalar)][cellId]); }
+    }
+
+    ofile << "# vtk DataFile Version 3.0\n";
+    ofile << "Surface point created with Palabos and ficsion\n";
+    ofile << "ASCII\n";
+    ofile << "DATASET POLYDATA\n";
+    ofile << "POINTS " << nParticles
+          << (sizeof(T)==sizeof(double) ? " double" : " float")
+          << "\n";
+    for (pluint i = 0; i < nParticles; ++i) {
+        Array<T,3> vertex = particles[i]->getPosition();
+        vertex *= dx;
+        ofile << vertex[0] << " " <<vertex[1] << " " <<vertex[2] << "\n";
+    }
+    ofile << "POINT_DATA " << nParticles << "\n";
+    ofile << "SCALARS ID float 1 \n";
+    ofile << "LOOKUP_TABLE default \n";
+    for (pluint i = 0; i < nParticles; ++i) {
+        ofile << cellIds[i] << "\n";
+    }
+
+    for (pluint i = 0; i < scalarNames.size(); ++i) {
+        ofile << "SCALARS "<< scalarNames[i] << " double 1\n"
+              << "LOOKUP_TABLE default\n";
+        for (plint ic=0; ic<(plint)cellIds.size(); ++ic) {
+                ofile << scalarData[scalarNames[i]][cellIds[ic]] << "\n";
+        }
+            ofile << "\n";
+    }
+
+    for (pluint i = 0; i < vectorNames.size(); ++i) {
+        ofile << "VECTORS "<< vectorNames[i] << " double 1\n"
+              << "LOOKUP_TABLE default\n";
+        for (plint ic=0; ic<(plint)cellIds.size(); ++ic) {
+            Array<T,3> vec = vectorData[vectorNames[i]][cellIds[ic]];
+            ofile << vec[0] << " "
+                  << vec[1] << " "
+                  << vec[2] << "\n";
+        }
+        ofile << "\n";
+    }
+
+    ofile.close();
+}
 
 
 }  // namespace plb
