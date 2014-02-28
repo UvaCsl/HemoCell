@@ -265,10 +265,11 @@ int main(int argc, char* argv[])
     /* CREATE MODEL AND PARTICLE FIELDS */
     generateCells(immersedParticles, immersedParticles.getBoundingBox(), cellIds, Cells, cellNumVertices, numOfCellsPerInlet, slice);
     std::vector<plint> numParts(cellIds.size()); // Count number of particles per Cell
-    for (pluint iA = 0; iA < cellIds.size(); ++iA) {
-            numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), cellIds[iA]);
-            pcout << "Cell: " << iA << ", Particles: " << numParts[iA] << std::endl;
-    }
+    numParts.push_back(cellNumVertices);
+//    for (pluint iA = 0; iA < cellIds.size(); ++iA) {
+//            numParts[iA] = countParticles(immersedParticles, immersedParticles.getBoundingBox(), cellIds[iA]);
+//            pcout << "Cell: " << iA << ", Particles: " << numParts[iA] << std::endl;
+//    }
 
     // plint totParticles = countParticles(immersedParticles, immersedParticles.getBoundingBox()); //Total number of particles
 
@@ -359,10 +360,10 @@ int main(int argc, char* argv[])
     }
 
     plint timesToStretch = 40;
-    CellStretching3D<T,DESCRIPTOR, DenseParticleField3D>  rbcStretch(Cells, immersedParticles, 0.05*numParts[0], flowType, dx, dt, dNewton,
+    CellStretching3D<T,DESCRIPTOR, DenseParticleField3D>  rbcStretch(Cells, immersedParticles, 0.05*cellNumVertices, flowType, dx, dt, dNewton,
                                                                                             tagToParticle3D, checkpointed,
                                                                                             stretchForceScalar, timesToStretch);
-    RBCDisaggregation3D<T,DESCRIPTOR, DenseParticleField3D>  rbcDisaggregation(immersedParticles, stretchForceScalar, 0.5*numParts[0], flowType, dx, dt, dNewton,
+    RBCDisaggregation3D<T,DESCRIPTOR, DenseParticleField3D>  rbcDisaggregation(immersedParticles, stretchForceScalar, 0.5*cellNumVertices, flowType, dx, dt, dNewton,
                                                                                             tagToParticle3D);
 
      SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds,
