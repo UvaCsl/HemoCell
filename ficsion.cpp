@@ -446,6 +446,7 @@ int main(int argc, char* argv[])
     performanceLogFile << "Init" << "; " << 0 << "; "<< dtIteration << std::endl;
     global::timer("mainLoop").start();
     /* =============================== Main Loop ===================================*/
+    global::profiler().turnOn();
     for (pluint i=initIter; i<tmax+1; ++i) {
         if (flowParam == 7 && i == pluint(tmax - 20/dt)) { // If stopAndGo experiment, turn off the shear
             pcout << "[FICSION]: Switching off shear rate (Fischer2004)" << std::endl;
@@ -457,6 +458,7 @@ int main(int argc, char* argv[])
             // Stop mainLoop timers and start output timers
             global::timer("mainLoop").stop();
             global::timer("output").restart();
+            global::profiler().writeReport();
             if (i%(10*tmeas)==0) {
                 // === Checkpoint ===
                 pcout << "Saving checkpoint... " ;
