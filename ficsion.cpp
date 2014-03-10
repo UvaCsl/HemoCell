@@ -368,9 +368,9 @@ int main(int argc, char* argv[])
     RBCDisaggregation3D<T,DESCRIPTOR, DenseParticleField3D>  rbcDisaggregation(immersedParticles, stretchForceScalar, 0.5*cellNumVertices, flowType, dx, dt, dNewton,
                                                                                             tagToParticle3D);
 
-     SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds,
-                                     rbcReductor.getCellsCenter(), rbcReductor.getCellsVolume(), 0.05*numParts[0], flowType,
-                                     dx, dt, T(dNewton), RBCField, checkpointed);
+//     SingleCellInShearFlow<T,DESCRIPTOR, DenseParticleField3D> shearFlow(Cells, immersedParticles, cellIds,
+//                                     rbcReductor.getCellsCenter(), rbcReductor.getCellsVolume(), 0.05*numParts[0], flowType,
+//                                     dx, dt, T(dNewton), RBCField, checkpointed);
 //     rbcReductor.print(0, eqVolume, eqSurface, eqArea, eqLength);
      rbcReductor.write(0, eqVolumeFinal, eqSurface, eqArea, eqLength) ; // Write Log file for the cell Particles
 //     pcout << "== Inertia Tensor == "<< std::endl;
@@ -501,14 +501,15 @@ int main(int argc, char* argv[])
                 pcout << " OK" << std::endl;
 
             }
+            rbcReductor.reduceAll();
             RBCField.writeVTK(i);
             rbcStretch.write(i, rbcReductor.getCellsMeanEdgeDistance()[0], rbcReductor.getCellsMaxEdgeDistance()[0]); // SINGLE CELL STRETCHING
-            if (flowType==6) { // SINGLE CELL IN SHEAR FLOW
-                shearFlow.updateQuantities(i, cellIds, rbcReductor.getCellsCenter(), rbcReductor.getCellsVolume());
-                shearFlow.write();
-                pcout << "[SF] Diameters :" <<  shearFlow.getDiameters()[0][0] << "\t" <<  shearFlow.getDiameters()[0][1] << "\t" <<  shearFlow.getDiameters()[0][2] ;
-                pcout << ", Angles :" <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
-            }
+//            if (flowType==6) { // SINGLE CELL IN SHEAR FLOW
+//                shearFlow.updateQuantities(i, cellIds, rbcReductor.getCellsCenter(), rbcReductor.getCellsVolume());
+//                shearFlow.write();
+//                pcout << "[SF] Diameters :" <<  shearFlow.getDiameters()[0][0] << "\t" <<  shearFlow.getDiameters()[0][1] << "\t" <<  shearFlow.getDiameters()[0][2] ;
+//                pcout << ", Angles :" <<  shearFlow.getTumblingAngles()[0][0]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][1]*180/pi << "\t" <<  shearFlow.getTumblingAngles()[0][2]*180/pi << std::endl;
+//            }
             writeImmersedSurfaceVTK (
                 Cells, immersedParticles,
                 outputDir+createFileName("RBC",i,8)+".vtk");

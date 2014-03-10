@@ -177,21 +177,21 @@ void ImmersedCellParticle3D<T,Descriptor>::serialize(HierarchicSerializer& seria
     serializer.addValues<T,3>(force);
     serializer.addValues<T,3>(vPrevious);
 
-    serializer.addValues<T,3>(f_wlc);
-    serializer.addValues<T,3>(f_bending);
-    serializer.addValues<T,3>(f_volume);
-    serializer.addValues<T,3>(f_surface);
-    serializer.addValues<T,3>(f_shear);
-    serializer.addValues<T,3>(f_viscosity);
-    serializer.addValues<T,3>(f_repulsive);
-    serializer.addValues<T,3>(stress);
-
-    serializer.addValue<T>(E_other);
-    serializer.addValue<T>(E_inPlane);
-    serializer.addValue<T>(E_bending);
-    serializer.addValue<T>(E_area);
-    serializer.addValue<T>(E_volume);
-    serializer.addValue<T>(E_repulsive);
+//    serializer.addValues<T,3>(f_wlc);
+//    serializer.addValues<T,3>(f_bending);
+//    serializer.addValues<T,3>(f_volume);
+//    serializer.addValues<T,3>(f_surface);
+//    serializer.addValues<T,3>(f_shear);
+//    serializer.addValues<T,3>(f_viscosity);
+//    serializer.addValues<T,3>(f_repulsive);
+//    serializer.addValues<T,3>(stress);
+//
+//    serializer.addValue<T>(E_other);
+//    serializer.addValue<T>(E_inPlane);
+//    serializer.addValue<T>(E_bending);
+//    serializer.addValue<T>(E_area);
+//    serializer.addValue<T>(E_volume);
+//    serializer.addValue<T>(E_repulsive);
 
     serializer.addValue<plint>(processor);
     serializer.addValue<plint>(cellId);
@@ -207,21 +207,21 @@ void ImmersedCellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& u
     unserializer.readValues<T,3>(force);
     unserializer.readValues<T,3>(vPrevious);
 
-    unserializer.readValues<T,3>(f_wlc);
-    unserializer.readValues<T,3>(f_bending);
-    unserializer.readValues<T,3>(f_volume);
-    unserializer.readValues<T,3>(f_surface);
-    unserializer.readValues<T,3>(f_shear);
-    unserializer.readValues<T,3>(f_viscosity);
-    unserializer.readValues<T,3>(f_repulsive);
-    unserializer.readValues<T,3>(stress);
-
-    unserializer.readValue<T>(E_other);
-    unserializer.readValue<T>(E_inPlane);
-    unserializer.readValue<T>(E_bending);
-    unserializer.readValue<T>(E_area);
-    unserializer.readValue<T>(E_volume);
-    unserializer.readValue<T>(E_repulsive);
+//    unserializer.readValues<T,3>(f_wlc);
+//    unserializer.readValues<T,3>(f_bending);
+//    unserializer.readValues<T,3>(f_volume);
+//    unserializer.readValues<T,3>(f_surface);
+//    unserializer.readValues<T,3>(f_shear);
+//    unserializer.readValues<T,3>(f_viscosity);
+//    unserializer.readValues<T,3>(f_repulsive);
+//    unserializer.readValues<T,3>(stress);
+//
+//    unserializer.readValue<T>(E_other);
+//    unserializer.readValue<T>(E_inPlane);
+//    unserializer.readValue<T>(E_bending);
+//    unserializer.readValue<T>(E_area);
+//    unserializer.readValue<T>(E_volume);
+//    unserializer.readValue<T>(E_repulsive);
 
     unserializer.readValue<plint>(processor);
     unserializer.readValue<plint>(cellId);
