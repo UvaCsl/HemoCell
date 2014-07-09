@@ -277,11 +277,11 @@ void CellReductor3D<T,Descriptor,ParticleFieldT>::reduceVolumeAndSurface(plint i
         T cellVolume = cellsVolume[cellId];
         T cellSurface = cellsSurface[cellId];
         if (not ((cellVolume > 0) and (cellSurface > 0))) {
-//            cout << "iter: " << iter
-//                 << ", cellId: " << cellId
-//                 << ", volume: " << cellVolume
-//                 << ", surface: " << cellSurface
-//                 << endl;
+            cout << "iter: " << iter
+                 << ", cellId: " << cellId
+                 << ", volume: " << cellVolume
+                 << ", surface: " << cellSurface
+                 << endl;
             PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
         }
     }

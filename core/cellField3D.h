@@ -68,6 +68,7 @@ public:
 
     Array<T,3> const& getPosition(plint cellId) { return quantities3D[cellId][CCR_POSITION_MEAN];  } ;
     Array<T,3> const& getVelocity(plint cellId) { return quantities3D[cellId][CCR_VELOCITY_MEAN];} ;
+    Array<T,3> const& getForce(plint cellId) { return quantities3D[cellId][CCR_FORCE];} ;
     std::vector<T> & getInertia(plint cellId) { return quantitiesND[cellId][CCR_INERTIA];} ;
 
     Array<T,3> & getTumblingAngles(plint cellId) { return quantities3D[cellId][CCR_TUMBLING_ANGLES];  } ;

@@ -159,13 +159,14 @@ Array<T,3> ShapeMemoryModel3D<T,Descriptor>::computeCellForce (
      *          (FengMichaelides2004, J.Comp.Phys. 195(2))
      *
      * */
+    Array<T,3> restForce; restForce.resetToZero();
     if (k_rest != 0.0) {
         Array<T,3> x1ref;
         boundary.pushSelect(0,1);
         x1ref = boundary.getMesh().getVertex(iVertex);
         boundary.popSelect();
         Array<T,3> dx = x1-x1ref;
-        return (-k_rest*dx) + (-gamma_T*iVelocity); // Dissipative term from Dupin2007
+        restForce = (-k_rest*dx) + (-gamma_T*iVelocity); // Dissipative term from Dupin2007
     }
     /* Force initializations */
     Array<T,3> inPlaneForce; inPlaneForce.resetToZero();
@@ -280,7 +281,7 @@ Array<T,3> ShapeMemoryModel3D<T,Descriptor>::computeCellForce (
     iParticle->get_f_surface() = surfaceForce;
     iParticle->get_f_shear() = shearForce;
     iParticle->get_f_viscosity() = dissipativeForce;
-    return (inPlaneForce + elasticForce + repulsiveForce) + bendingForce + (volumeForce + surfaceForce + shearForce) + dissipativeForce;// + stretchForce;
+    return (inPlaneForce + elasticForce + repulsiveForce) + bendingForce + (volumeForce + surfaceForce + shearForce) + dissipativeForce + restForce;// + stretchForce;
 }
 
 
