@@ -149,6 +149,7 @@ int main(int argc, char* argv[])
     T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic,  k_volume, k_surface, eta_m;
     T eqLengthRatio;
     T u, Re, Re_p, N, lx, ly, lz;
+    T poiseuilleForce=0;
     T rho_p;
     T radius;
     T deflationRatio;
@@ -237,7 +238,12 @@ int main(int argc, char* argv[])
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
-    if (flowType == 0) { iniLatticeSquarePoiseuille(lattice, parameters, *boundaryCondition, Re); }
+    if (flowType == 0) {
+        T L_tmp = parameters.getNy();
+        T nu_tmp = parameters.getLatticeNu();
+        poiseuilleForce = 8 * (nu_tmp*nu_tmp) * Re / (L_tmp*L_tmp*L_tmp) ;
+        iniLatticePoiseuilleWithBodyForce<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, poiseuilleForce);
+    }
     else { iniLatticeSquareCouette(lattice, parameters, *boundaryCondition, shearRate); }
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
@@ -549,7 +555,7 @@ int main(int argc, char* argv[])
         global::timer("IBM").start();
         if (forceToFluid != 0) { // Force from the Cell dynamics to the Fluid
             setExternalVector( lattice, lattice.getBoundingBox(),
-                           DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
+                           DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(poiseuilleForce,0.0,0.0));
             applyProcessingFunctional ( // compute force applied on the fluid by the particles
                     new ForceToFluid3D<T,DESCRIPTOR> (ibmKernel),
                     immersedParticles.getBoundingBox(), particleLatticeArg );

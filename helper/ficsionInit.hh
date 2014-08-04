@@ -236,33 +236,28 @@ void iniLatticeSquarePoiseuille( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
 }
 
 /* ************* iniLatticeSquarePoiseuille ******************* */
-void iniLatticePoiseuilleWithBodyForce(MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+template<typename T, template<class U> class Descriptor>
+void iniLatticePoiseuilleWithBodyForce(MultiBlockLattice3D<T,Descriptor>& lattice,
                  IncomprFlowParam<T> const& parameters,
-                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T poiseuilleForce)
+                 OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T poiseuilleForce)
 {
     const plint nx = parameters.getNx();
     const plint ny = parameters.getNy();
     const plint nz = parameters.getNz();
 
-    Box3D top    = Box3D(0,    nx-1, 0, ny-1, 0,    0);
-    Box3D bottom = Box3D(0,    nx-1, 0, ny-1, nz-1, nz-1);
-
     Box3D left   = Box3D(0, nx-1, 0,    0,    1, nz-2);
     Box3D right  = Box3D(0, nx-1, ny-1, ny-1, 1, nz-2);
 
-    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, top );
-    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, bottom );
-
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, left );
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, right );
-
-    setBoundaryVelocity(lattice, top, Array<T,3>(0.0,0.0,0.0));
-    setBoundaryVelocity(lattice, bottom, Array<T,3>(0.0,0.0,0.0));
     setBoundaryVelocity(lattice, left, Array<T,3>(0.0,0.0,0.0));
     setBoundaryVelocity(lattice, right, Array<T,3>(0.0,0.0,0.0));
 
+    T rhoInit=1.0; Array<T,3> uInit(0.0,0.0,0.0);
+    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), rhoInit, uInit);
+
     setExternalVector( lattice, lattice.getBoundingBox(),
-                       DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+            Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(poiseuilleForce, 0.0, 0.0));
 
     lattice.initialize();
 }
