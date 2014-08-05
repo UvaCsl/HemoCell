@@ -149,11 +149,13 @@ TriangleBoundary3D<T> createCompleteMesh(
     plint modulo = Cells.getMesh().getNumVertices() % centers.size();
 //     pcout << "num parts per triangles = " << numPartsPerCell << ", modulo = " << modulo << std::endl;
     pcout << "num Vertices = " << Cells.getMesh().getNumVertices() ;
-    pcout << ", num Triangles = " << Cells.getMesh().getNumTriangles() << ", centers = " << centers.size() ;
+    pcout << " (" << Cells.getMesh().getNumVertices()/centers.size() << ")" ;
+    pcout << ", num Triangles = " << Cells.getMesh().getNumTriangles();
+    pcout << " (" << Cells.getMesh().getNumTriangles()/centers.size() << ")" ;
+    pcout << ", centers = " << centers.size() ;
     pcout << ", modulo = " << modulo << std::endl;
-    cellNumTriangles = Cells.getMesh().getNumTriangles()/centers.size();
-    PLB_ASSERT(modulo == 0);
 
+    PLB_ASSERT(modulo == 0);
     Cells.cloneVertexSet(0);
     
     return Cells;

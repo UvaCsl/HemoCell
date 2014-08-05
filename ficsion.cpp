@@ -124,10 +124,10 @@ void readFicsionXML(XMLreader documentXML,std::string & caseId, plint & rbcModel
 int main(int argc, char* argv[])
 {
     plbInit(&argc, &argv);
-
     global::directories().setOutputDir("./tmp/");
     global::directories().setLogOutDir("./log/");
     global::directories().setInputDir("./");
+    global::IOpolicy().activateParallelIO(true);
     global::IOpolicy().setStlFilesHaveLowerBound(true);
     global::IOpolicy().setLowerBoundForStlFiles(-1.);
 //    testInPlane(); PLB_ASSERT(false);
