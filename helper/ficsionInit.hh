@@ -13,9 +13,9 @@ void positionCells(plint shape, T radius, plint & npar, IncomprFlowParam<T> cons
     const plint nx = parameters.getNx() - 1 ;
     const plint ny = parameters.getNy()  - 1;
     const plint nz = parameters.getNz()  - 1;
-    T dX = 2.1 * radius ;
-    T dY = 2.1 * radius * ( (shape==1) ? 0.5 : 1 );
-    T dZ = 2.1 * radius;
+    T dX = 2.05 * radius ;
+    T dY = 2.05 * radius * ( (shape==1) ? 0.4 : 1 );
+    T dZ = 2.05 * radius;
     plint NdX, NdY, NdZ;
     if (flowType == 2) { // If RBC disaggregation
         dY = 2.7e-6/dx;
