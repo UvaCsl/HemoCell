@@ -227,8 +227,12 @@ int main(int argc, char* argv[])
     performanceLogFile << "# Nx; Ny; Nz; " << nx << "; " << ny << "; "<< nz << std::endl;
     performanceLogFile << "# Ncells; " << centers.size() << std::endl;
     performanceLogFile << "# particleEnvelopeWidth; " << particleEnvelopeWidth << std::endl;
+#ifdef PLB_MPI_PARALLEL
+    int ntasks;
+    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+    performanceLogFile << "# Nprocs; " << ntasks << std::endl;
+#endif
     pcout << "# particleEnvelopeWidth; " << particleEnvelopeWidth << std::endl;
-
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
         defaultMultiBlockPolicy3D().getBlockCommunicator(),
