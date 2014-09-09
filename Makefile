@@ -55,6 +55,7 @@ libraries    =
 # Compiler to use without MPI parallelism
 serialCXX    = g++
 UNAME := $(shell uname)
+HOSTNAME := $(shell hostname)
 ifeq ($(UNAME),Darwin)
 # Compiler to use with MPI parallelism
 	parallelCXX  = /usr/local/bin/mpicxx
