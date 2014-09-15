@@ -44,6 +44,10 @@ usePOSIX     = true
 # cvmlcpp. But first, you need to download cvmlcpp and put it into the
 # directory "externalLibraries" of the Palabos root.
 useCVMLCPP   = false
+# This flag must be defined true if you want to use the parallel I/O 
+# library HDF5 for the output of the files. HDF5 library must be 
+# installed.
+useHDF5 = true
 
 # Path to external libraries (other than Palabos)
 libraryPaths = 
@@ -60,7 +64,7 @@ ifeq ($(UNAME),Darwin)
 # Compiler to use with MPI parallelism
 	parallelCXX  = /usr/local/bin/mpicxx
 # General compiler flags (e.g. -Wall to turn on all warnings on g++)
-	compileFlags = -DPLB_MAC_OS_X -Wall
+	compileFlags = -DPLB_MAC_OS_X -Wall -fpermissive
 else
 # Compiler to use with MPI parallelism
     ifeq (${HOSTNAME}, kolmogorov) # WorkMachine needs special treatment!
@@ -69,11 +73,13 @@ else
         parallelCXX = mpicxx
     endif
 # General compiler flags (e.g. -Wall to turn on all warnings on g++)
-	compileFlags = -Wall 
+    compileFlags = -Wall 
 endif
 
+ifeq ($(useHDF5), true)
+    compileFlags  += -lhdf5_cpp -lhdf5 -lhdf5_hl_cpp -lhdf5_hl -DFCN_USE_HDF5
+endif
 
-# compileFlags = -Wall 
 # General linker flags (don't put library includes into this flag)
 linkFlags    =
 # Compiler flags to use when optimization mode is on
