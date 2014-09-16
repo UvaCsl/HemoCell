@@ -30,22 +30,61 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      int p=1;
      int id = 0;
 #endif
-
+     hsize_t dim[4];
      std::string fileName = global::directories().getOutputDir() + createFileName("Fluid.p",id,3) + createFileName(".",iter,8) + ".h5";
      hid_t file_id;
      file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-    hsize_t   dim[4];
-//    dims[0] = DIM0;     dims[1] = DIM1;    dims[2] = DIM2;    dims[3] = 3;
+     int Nx, Ny, Nz;
+     Nx = domain.x1 - domain.x0 + 1;
+     Ny = domain.y1 - domain.y0 + 1;
+     Nz = domain.z1 - domain.z0 + 1;
+     Dot3D relativePositionDot3D = blocks[0]->getLocation();
+     long int relativePosition[] = {relativePositionDot3D.x, relativePositionDot3D.y, relativePositionDot3D.z};
+     hsize_t rDim[1]; rDim[0] = 3;
+     H5LTmake_dataset_long(file_id, "relativePosition", 1, rDim, relativePosition);
+     long int domainSize[] = {Nx, Ny, Nz};
+     H5LTmake_dataset_long(file_id, "domainSize", 1, rDim, domainSize);
+
+     dim[0] = Nx; dim[1] = Ny; dim[2] = Nz;
+     dim[3] = 3;
+
     for (int i = 0; i < hdf5ContainerNames.size(); ++i) {
-        if (hdf5ContainerDimensions[i] == 1) {
+        int nDim = hdf5ContainerDimensions[i];
+        if (nDim == 1) {
             ScalarField3D<T>& scalarF =
                     *dynamic_cast<ScalarField3D<T>*>(blocks[i]);
-    //        H5LTmake_dataset_double(file_id, hdf5ContainerNames[i].c_str(), 3, dim, matrixScalar);
+            int Np = Nx*Ny*Nz;
+            double * matrixScalar = new double [Np];
+            int iter = 0;
+            for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
+                for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
+                    for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+                        matrixScalar[iter++] = scalarF.get(iX,iY,iZ);
+                    }
+                }
+            }
+            H5LTmake_dataset_double(file_id, hdf5ContainerNames[i].c_str(), 3, dim, matrixScalar);
+            delete [] matrixScalar;
+
         } else {
             TensorField3D<T,3>& tensorF =
                     *dynamic_cast<TensorField3D<T,3>*>(blocks[i]);
-    //        H5LTmake_dataset_double(file_id, hdf5ContainerNames[i].c_str(), 4, dim, matrixTensor);
+            int Np = Nx*Ny*Nz*3;
+            double * matrixTensor = new double [Np];
+            int iter = 0;
+            for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
+                for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
+                    for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+                        Array<T,3> vector =  tensorF.get(iX,iY,iZ);
+                        matrixTensor[iter++] = vector[0];
+                        matrixTensor[iter++] = vector[1];
+                        matrixTensor[iter++] = vector[2];
+                    }
+                }
+            }
+            H5LTmake_dataset_double(file_id, hdf5ContainerNames[i].c_str(), 4, dim, matrixTensor);
+            delete [] matrixTensor;
         }
     }
     H5Fclose(file_id);

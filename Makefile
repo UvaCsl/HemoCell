@@ -81,7 +81,7 @@ endif
 
 ifeq ($(useHDF5), true)
     compileFlags  += -lhdf5_cpp -lhdf5 -lhdf5_hl_cpp -lhdf5_hl -DFCN_USE_HDF5
-    libraries     += -lhdf5
+    libraries     += -lhdf5 -lhdf5_hl
 endif
 
 # General linker flags (don't put library includes into this flag)

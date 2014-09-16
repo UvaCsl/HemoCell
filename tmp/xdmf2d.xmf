@@ -1,0 +1,37 @@
+<?xml version="1.0" ?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="2.0">
+ <Domain>
+   <Grid Name="mesh1" GridType="Uniform">
+     <Topology TopologyType="3DCoRectMesh" NumberOfElements="11 10 56"/>
+     <Geometry GeometryType="Origin_DxDyDz">
+       <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="XML">
+        0. 0. 0.
+       </DataItem>
+       <DataItem Dimensions="3" NumberType="Float" Precision="4" Format="XML">
+        1. 1. 1.
+       </DataItem>
+     </Geometry>
+     <Attribute Name="velocity" AttributeType="Vector" Center="Cell">
+       <DataItem Dimensions="11 10 56 3" Format="HDF">
+        tmp/Fluid.p001.00000100.h5:/velocity
+       </DataItem>
+     </Attribute>
+     <Attribute Name="vorticity" AttributeType="Vector" Center="Cell">
+       <DataItem Dimensions="11 10 56 3" Format="HDF">
+        tmp/Fluid.p001.00000100.h5:/vorticity
+       </DataItem>
+     </Attribute>
+     <Attribute Name="force" AttributeType="Vector" Center="Cell">
+       <DataItem Dimensions="11 10 56 3" Format="HDF">
+        tmp/Fluid.p001.00000100.h5:/force
+       </DataItem>
+     </Attribute>
+     <Attribute Name="velNorm" AttributeType="Scalar" Center="Cell">
+       <DataItem Dimensions="11 10 56" Format="HDF">
+        tmp/Fluid.p001.00000100.h5:/velNorm
+       </DataItem>
+     </Attribute>
+   </Grid>
+ </Domain>
+</Xdmf>
