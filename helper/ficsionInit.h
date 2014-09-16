@@ -109,6 +109,19 @@ void copyXMLreader2XMLwriter(XMLreader const& reader, XMLwriter & writer);
 void copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwriter & writer);
 
 
-#include "ficsionInit.hh"
+
+
+/* ************* Class GetTensorFieldFromExternalVectorFunctional3D ******************* */
+template<typename T, template<typename U> class Descriptor, int nDim>
+class GetTensorFieldFromExternalVectorFunctional3D : public BoxProcessingFunctional3D_LT<T,Descriptor, T, nDim> {
+public:
+    GetTensorFieldFromExternalVectorFunctional3D (int vectorStartsAt_ );
+    virtual void process(Box3D domain, BlockLattice3D<T,Descriptor>& lattice, TensorField3D<T,nDim>& tensor);
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const ;
+    virtual GetTensorFieldFromExternalVectorFunctional3D<T,Descriptor,nDim>* clone() const ;
+private:
+    int vectorStartsAt;
+};
+
 
 #endif  // FICSIONINIT_H

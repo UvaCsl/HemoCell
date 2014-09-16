@@ -374,44 +374,45 @@ void writeFicsionLogFile(IncomprFlowParam<T> const& parameters,
 
 /* ************* Class GetTensorFieldFromExternalVectorFunctional3D ******************* */
 template<typename T, template<typename U> class Descriptor, int nDim>
-class GetTensorFieldFromExternalVectorFunctional3D : public BoxProcessingFunctional3D_LT<T,Descriptor, T, nDim> {
-public:
-    GetTensorFieldFromExternalVectorFunctional3D (
-        int vectorStartsAt_ ) : vectorStartsAt(vectorStartsAt_)
-    {
-        PLB_ASSERT( vectorStartsAt+nDim <=
-        Descriptor<T>::ExternalField::numScalars );
-    }
-    virtual void process(Box3D domain, BlockLattice3D<T,Descriptor>& lattice, TensorField3D<T,nDim>& tensor) {
-        Dot3D offset = computeRelativeDisplacement(lattice, tensor);
-        for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
-            plint oX = iX + offset.x;
-            for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
-                plint oY = iY + offset.y;
-                for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
-                    plint oZ = iZ + offset.z;
-                    Cell<T,Descriptor>& cell = lattice.get(iX,iY,iZ);
-                    Array<T,nDim> externalVector;
+GetTensorFieldFromExternalVectorFunctional3D<T,Descriptor,nDim>::GetTensorFieldFromExternalVectorFunctional3D (
+    int vectorStartsAt_ ) : vectorStartsAt(vectorStartsAt_)
+{
+    PLB_ASSERT( vectorStartsAt+nDim <=
+    Descriptor<T>::ExternalField::numScalars );
+};
 
-                    for (plint iD=0; iD<nDim; ++iD) {
-                        externalVector[iD] = *cell.getExternal(vectorStartsAt+iD);
-                    }
-                    tensor.get(oX,oY,oZ) = externalVector;
+template<typename T, template<typename U> class Descriptor, int nDim>
+void GetTensorFieldFromExternalVectorFunctional3D<T,Descriptor,nDim>::process(Box3D domain, BlockLattice3D<T,Descriptor>& lattice, TensorField3D<T,nDim>& tensor) {
+    Dot3D offset = computeRelativeDisplacement(lattice, tensor);
+    for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
+        plint oX = iX + offset.x;
+        for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
+            plint oY = iY + offset.y;
+            for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+                plint oZ = iZ + offset.z;
+                Cell<T,Descriptor>& cell = lattice.get(iX,iY,iZ);
+                Array<T,nDim> externalVector;
+
+                for (plint iD=0; iD<nDim; ++iD) {
+                    externalVector[iD] = *cell.getExternal(vectorStartsAt+iD);
                 }
+                tensor.get(oX,oY,oZ) = externalVector;
             }
         }
     }
-    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const {
-        modified[0] = modif::nothing;
-        modified[1] = modif::staticVariables;
-    }
-    virtual GetTensorFieldFromExternalVectorFunctional3D<T,Descriptor,nDim>* clone() const {
-        return new GetTensorFieldFromExternalVectorFunctional3D<T,Descriptor,nDim>(*this);
-    }
+}
 
-private:
-    int vectorStartsAt;
-};
+template<typename T, template<typename U> class Descriptor, int nDim>
+void GetTensorFieldFromExternalVectorFunctional3D<T,Descriptor,nDim>::getTypeOfModification(std::vector<modif::ModifT>& modified) const {
+    modified[0] = modif::nothing;
+    modified[1] = modif::staticVariables;
+}
+
+template<typename T, template<typename U> class Descriptor, int nDim>
+GetTensorFieldFromExternalVectorFunctional3D<T,Descriptor,nDim>* GetTensorFieldFromExternalVectorFunctional3D<T,Descriptor,nDim>::clone() const {
+    return new GetTensorFieldFromExternalVectorFunctional3D<T,Descriptor,nDim>(*this);
+}
+
 
 
 /* ************* writeVTK ******************* */
