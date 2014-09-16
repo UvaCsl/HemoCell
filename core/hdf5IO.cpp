@@ -2,6 +2,7 @@
 #define FICSION_HDF5IO_HH
 
 #include "hdf5IO.h"
+#include "ficsionInit.h"
 
 
 /* ******** WriteInMultipleHDF5Files *********************************** */

@@ -2,8 +2,10 @@
 #define FICSION_HDF5IO_H
 
 #include <limits>
-#include "ficsion.h"
+// #include "ficsion.h"
+#include "palabos3D.h"
 
+#include <vector>
 #include <hdf5.h>
 #include <hdf5_hl.h>
 
@@ -36,5 +38,4 @@ void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
               IncomprFlowParam<T> const& parameters, plint iter);
 
 #include "hdf5IO.cpp"
-
 #endif  // FICSION_HDF5IO_H

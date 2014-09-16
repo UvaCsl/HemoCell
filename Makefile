@@ -19,7 +19,7 @@
 #palabosRoot   = /home/lmount/devel/palabos/
 #palabosRoot   = $(PALABOS_ROOT)
 palabosRoot   = ./palabos
-ficsionRoot   = ./
+ficsionRoot   = .
 # Name of source files in current directory to compile and link with Palabos
 # projectFiles = losglobulos.cpp
 projectFiles = ficsion.cpp
@@ -53,9 +53,9 @@ useHDF5 = true
 # Path to external libraries (other than Palabos)
 libraryPaths = 
 # Path to inlude directories (other than Palabos)
-includePaths = $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/
+includePaths = $(ficsionRoot) $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/
 # Path to inlude directories (other than Palabos)
-#ficsionPaths = $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/
+# ficsionPaths = $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/
 # Dynamic and static libraries (other than Palabos)
 libraries    = 
 
@@ -70,7 +70,7 @@ ifeq ($(UNAME),Darwin)
 	compileFlags = -DPLB_MAC_OS_X -Wall -fpermissive
 else
 # Compiler to use with MPI parallelism
-    ifeq (${HOSTNAME}, kolmogorov) # WorkMachine needs special treatment!
+    ifeq ($(HOSTNAME), kolmogorov) # WorkMachine needs special treatment!
         parallelCXX  = mpicxx.openmpi
     else
         parallelCXX = mpicxx
@@ -81,10 +81,11 @@ endif
 
 ifeq ($(useHDF5), true)
     compileFlags  += -lhdf5_cpp -lhdf5 -lhdf5_hl_cpp -lhdf5_hl -DFCN_USE_HDF5
+    libraries     += -lhdf5
 endif
 
 # General linker flags (don't put library includes into this flag)
-linkFlags    =
+linkFlags    = 
 # Compiler flags to use when optimization mode is on
 optimFlags   = -O3 -finline-functions
 # Compiler flags to use when debug mode is on

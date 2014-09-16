@@ -1,11 +1,11 @@
 #ifndef COLLECTIVE_CELL_REDUCTIONS_H
 #define COLLECTIVE_CELL_REDUCTIONS_H
 
+#include "diagonalize.hpp"
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "cellReductionTypes.h"
 #include "cellField3D.hh"
-#include "diagonalize.hpp"
 
 
 /*

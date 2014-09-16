@@ -18,6 +18,7 @@ using namespace std;
 #include <map>
 
 #include "ficsionInit.h"
+#include "ficsionInit.hh"
 /* CORE libs */
 #include "cellReductor3D.h"
 #include "immersedCells3D.h"
