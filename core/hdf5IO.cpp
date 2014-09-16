@@ -10,10 +10,10 @@ template<typename T, template<typename U> class Descriptor>
 WriteInMultipleHDF5Files<T,Descriptor>::WriteInMultipleHDF5Files (
         std::vector<std::string> & hdf5ContainerNames_,
         std::vector<plint> & hdf5ContainerDimensions_,
-        plint iter_) :
+        plint iter_, T dx_, T dt_) :
             hdf5ContainerNames(hdf5ContainerNames_),
             hdf5ContainerDimensions(hdf5ContainerDimensions_),
-            iter(iter_) {};
+            iter(iter_), dx(dx_), dt(dt_) {};
 
 template<typename T, template<typename U> class Descriptor>
 void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
@@ -46,10 +46,15 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      long int domainSize[] = {Nx, Ny, Nz};
      H5LTmake_dataset_long(file_id, "domainSize", 1, rDim, domainSize);
 
+     H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
+     H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
+     H5LTset_attribute_int (file_id, "/", "numberOfProcessors", &p, 1);
+     H5LTset_attribute_int (file_id, "/", "processorId", &id, 1);
+
      dim[0] = Nx; dim[1] = Ny; dim[2] = Nz;
      dim[3] = 3;
 
-    for (int i = 0; i < hdf5ContainerNames.size(); ++i) {
+    for (pluint i = 0; i < hdf5ContainerNames.size(); ++i) {
         int nDim = hdf5ContainerDimensions[i];
         if (nDim == 1) {
             ScalarField3D<T>& scalarF =
@@ -142,7 +147,7 @@ void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
 
 
     applyProcessingFunctional ( // compute force applied on the fluid by the particles
-            new WriteInMultipleHDF5Files<T,Descriptor> (hdf5ContainerNames, hdf5ContainerDimensions, iter),
+            new WriteInMultipleHDF5Files<T,Descriptor> (hdf5ContainerNames, hdf5ContainerDimensions, iter, dx, dt),
             lattice.getBoundingBox(), hdf5ContainerArg );
 
 }

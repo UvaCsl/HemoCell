@@ -523,8 +523,19 @@ int main(int argc, char* argv[])
             writeImmersedSurfaceVTK (
                 Cells, immersedParticles,
                 outputDir+createFileName("RBC",i,8)+".vtk");
+
+            global::timer("HDFOutput").restart();
             writeHDF5(lattice, parameters, i);
+            double dtIterationHDF5 = global::timer("HDFOutput").stop();
+
+            global::timer("HDFOutput").restart();
             writeVTK(lattice, parameters, i);
+            double dtIterationVTK = global::timer("HDFOutput").stop();
+            pcout << "NumberOfProcessors: " << ntasks <<
+            		", Time for VTK: " << dtIterationVTK <<
+            		", Time for HDF5: " << dtIterationHDF5 <<
+            		std::endl;
+
             // WRITE PERFORMANCE OUTPUT
             dtIteration = global::timer("mainLoop").stop(); global::timer("mainLoop").reset();
             if (i>0) { performanceLogFile << "Iteration" << "; " << i-tmeas << "; "<< dtIteration*1.0/tmeas << std::endl; }

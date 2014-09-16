@@ -21,7 +21,7 @@ public:
     WriteInMultipleHDF5Files (
             std::vector<std::string> & hdf5ContainerNames_,
             std::vector<plint> & hdf5ContainerDimensions_,
-            plint iter_);
+            plint iter_, T dx_, T dt_);
     /// Arguments: [0] Particle-field. [1] Lattice.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual WriteInMultipleHDF5Files<T,Descriptor>* clone() const;
@@ -31,6 +31,8 @@ private:
     std::vector<std::string> & hdf5ContainerNames;
     std::vector<plint> & hdf5ContainerDimensions;
     plint iter;
+    T dx;
+    T dt;
 };
 
 template<typename T, template<typename U> class Descriptor>
