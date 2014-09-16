@@ -65,7 +65,7 @@ void CellField3D<T,Descriptor>::writeVTK(plint iter)
         ofile << cellIds[i] << "\n";
     }
 
-    for (plint i = 0; i < ccrIds1D.size(); ++i) {
+    for (pluint i = 0; i < ccrIds1D.size(); ++i) {
         plint ccrId = ccrIds1D[i];
         ofile << "SCALARS "<< ccrNames[ccrId] << " double 1\n"
               << "LOOKUP_TABLE default\n";
@@ -75,7 +75,7 @@ void CellField3D<T,Descriptor>::writeVTK(plint iter)
         ofile << "\n";
     }
 
-    for (plint i = 0; i < ccrIds3D.size(); ++i) {
+    for (pluint i = 0; i < ccrIds3D.size(); ++i) {
         plint ccrId = ccrIds3D[i];
         ofile << "VECTORS "<< ccrNames[ccrId] << " double \n"
               << "LOOKUP_TABLE default\n";
