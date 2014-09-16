@@ -523,6 +523,7 @@ int main(int argc, char* argv[])
             writeImmersedSurfaceVTK (
                 Cells, immersedParticles,
                 outputDir+createFileName("RBC",i,8)+".vtk");
+            writeHDF5(lattice, parameters, i);
             writeVTK(lattice, parameters, i);
             // WRITE PERFORMANCE OUTPUT
             dtIteration = global::timer("mainLoop").stop(); global::timer("mainLoop").reset();
