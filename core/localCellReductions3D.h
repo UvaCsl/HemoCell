@@ -5,7 +5,7 @@
 #include "palabos3D.hh"
 #include "cellReductionTypes.h"
 #include "cellField3D.hh"
-#include "diagonalize.cpp"
+#include "diagonalize.hpp"
 
 
 /*

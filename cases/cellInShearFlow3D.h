@@ -10,7 +10,7 @@
 #include "cellStretchingForces3D.h"
 #include <map>
 #include <algorithm>
-#include "diagonalize.cpp"
+#include "diagonalize.hpp"
 
 namespace plb {
 

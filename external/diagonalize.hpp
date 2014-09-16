@@ -96,4 +96,20 @@ class matrixDiag
 istream & operator>>( istream &, matrixDiag & );
 ostream & operator<<( ostream &, const matrixDiag & );
 
+double compute_maxdif(
+  double minlambda1, double maxlambda1, unsigned int nlambda1,
+  double minlambda2, double maxlambda2, unsigned int nlambda2,
+  double minlambda3, double maxlambda3, unsigned int nlambda3,
+  double minangle1, double maxangle1, unsigned int nangle1,
+  double minangle2, double maxangle2, unsigned int nangle2,
+  double minangle3, double maxangle3, unsigned int nangle3,
+  unsigned int & count );
+
+template<typename T>
+void getLambdasAndAngles(vector<T> inputTensor,
+                         vector<T> & returnLambdas, vector<T> & returnAnglesRad,
+                         double & difference);
+
+#include "diagonalize.cpp"
+
 #endif

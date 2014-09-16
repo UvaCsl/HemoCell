@@ -32,8 +32,10 @@ using namespace std;
 #include "localCellReductions3D.h"
 #include "computeCellForces3D.h"
 #include "immersedBoundaryMethod3D.h"
-#include "immersedCellParticleVtk3D.h"
 #include "meshGeneratingFunctions.h"
+#include "immersedCellParticleVtk3D.h"
+#include "hdf5IO.h"
+
 
 /* MODELS */
 #include "shellModel3D.h"
@@ -53,7 +55,7 @@ using namespace std;
 
 
 /* EXTERNALS */
-#include "diagonalize.cpp"
+#include "diagonalize.hpp"
 
 
 

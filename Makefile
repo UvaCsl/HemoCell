@@ -19,6 +19,7 @@
 #palabosRoot   = /home/lmount/devel/palabos/
 #palabosRoot   = $(PALABOS_ROOT)
 palabosRoot   = ./palabos
+ficsionRoot   = ./
 # Name of source files in current directory to compile and link with Palabos
 # projectFiles = losglobulos.cpp
 projectFiles = ficsion.cpp
@@ -52,7 +53,9 @@ useHDF5 = true
 # Path to external libraries (other than Palabos)
 libraryPaths = 
 # Path to inlude directories (other than Palabos)
-includePaths = ./core/ ./helper/ ./models/ ./cases/ ./external/
+includePaths = $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/
+# Path to inlude directories (other than Palabos)
+#ficsionPaths = $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/
 # Dynamic and static libraries (other than Palabos)
 libraries    = 
 
@@ -95,9 +98,12 @@ profileFlags = -pg
 # to SConstruct. It is recommended not to modify anything there.
 ##########################################################################
 
-SCons     = $(palabosRoot)/scons/scons.py -j 4 -f $(palabosRoot)/SConstruct
+SCons     = $(palabosRoot)/scons/scons.py -j 4 -f $(ficsionRoot)/SConstruct
 SConsArgs = palabosRoot=$(palabosRoot) \
+			ficsionRoot=$(ficsionRoot) \
             projectFiles="$(projectFiles)" \
+            srcPaths="$(srcPaths)" \
+            ficsionPaths="$(ficsionPaths)" \
             precompiled=$(precompiled) \
             optimize=$(optimize) \
             debug=$(debug) \
