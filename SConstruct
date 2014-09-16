@@ -105,16 +105,18 @@ else:
     palabos_library = LibraryGen( target  = palabosRoot+'/lib/plb',
                                   source  = sourceFiles )
 
-ficsionFiles = []
-for srcDir in ficsionPaths:
-    ficsionFiles.extend(glob.glob(srcDir+'/*.cpp'))
-
-ficsion_library = LibraryGen( target  = ficsionRoot+'/lib/fcn',
-                              source  = ficsionFiles )
-
-
 local_objects = env.Object(source = projectFiles)
 
-all_objects = local_objects + ficsion_library + palabos_library 
+if len(ficsionPaths) > 0:
+    ficsionFiles = []
+    for srcDir in ficsionPaths:
+        ficsionFiles.extend(glob.glob(srcDir+'/*.cpp'))
+
+    ficsion_library = LibraryGen( target  = ficsionRoot+'/lib/fcn',
+                                  source  = ficsionFiles )
+
+    all_objects = local_objects + ficsion_library + palabos_library 
+else:
+    all_objects = local_objects + palabos_library 
 
 env.Program(all_objects, LIBS=libraries, LIBPATH=libraryPaths)
