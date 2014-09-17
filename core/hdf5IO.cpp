@@ -41,10 +41,12 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      Nz = domain.z1 - domain.z0 + 1;
      Dot3D relativePositionDot3D = blocks[0]->getLocation();
      long int relativePosition[] = {relativePositionDot3D.x, relativePositionDot3D.y, relativePositionDot3D.z};
-     hsize_t rDim[1]; rDim[0] = 3;
-     H5LTmake_dataset_long(file_id, "relativePosition", 1, rDim, relativePosition);
-     long int domainSize[] = {Nx, Ny, Nz};
-     H5LTmake_dataset_long(file_id, "domainSize", 1, rDim, domainSize);
+     long int subdomainSize[] = {Nx, Ny, Nz};
+//     long int domainSize[] = {blocks[0]->getNx(), blocks[0]->getNy(), blocks[0]->getNz()};
+
+     H5LTset_attribute_long(file_id, "/", "relativePosition", relativePosition, 3);
+     H5LTset_attribute_long(file_id, "/", "subdomainSize", subdomainSize, 3);
+//     H5LTset_attribute_long(file_id, "/", "domainSize", domainSize, 3);
 
      H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
      H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
