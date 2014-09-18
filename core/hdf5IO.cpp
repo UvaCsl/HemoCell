@@ -31,7 +31,7 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      int id = 0;
 #endif
      hsize_t dim[4];
-     std::string fileName = global::directories().getOutputDir() + createFileName("Fluid.p",id,3) + createFileName(".",iter,8) + ".h5";
+     std::string fileName = global::directories().getOutputDir() + createFileName("Fluid_",iter,8) + createFileName("_p",id,3) + ".h5";
      hid_t file_id;
      file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
@@ -50,6 +50,7 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
 
      H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
      H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
+     H5LTset_attribute_long (file_id, "/", "iteration", &iter, 1);
      H5LTset_attribute_int (file_id, "/", "numberOfProcessors", &p, 1);
      H5LTset_attribute_int (file_id, "/", "processorId", &id, 1);
 
