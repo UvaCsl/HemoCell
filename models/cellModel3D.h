@@ -46,11 +46,11 @@ const double pi = 4.*atan(1.);
 namespace plb {
 
 template<typename T>
-class RBCModel3D : public ShellModel3D<T>
+class ConstitutiveModel : public ShellModel3D<T>
 {
 public:
     /* All input should be in dimensionless units */
-    RBCModel3D(T density_): ShellModel3D<T>(density_) { };
+    ConstitutiveModel(T density_): ShellModel3D<T>(density_) { };
     virtual Array<T,3> computeCellForce (
             TriangleBoundary3D<T> const& boundary,
             T cellVolume, T cellSurface, T & iSurface,
@@ -58,7 +58,7 @@ public:
     virtual Array<T,3> computeElasticForce (
             TriangleBoundary3D<T> const& boundary,
             plint iVertex )=0;
-    virtual RBCModel3D<T>* clone() const=0;
+    virtual ConstitutiveModel<T>* clone() const=0;
 public:
     /* Computes the equilibrium quantities to correspond to the an inflated cell with
      *      eqVolume=ratio*eqVolume.
@@ -102,7 +102,7 @@ public:
 
 
 template<typename T, template<typename U> class Descriptor>
-class CellModel3D : public RBCModel3D<T>
+class CellModel3D : public ConstitutiveModel<T>
 {
 public:
     /* All input should be in dimensionless units */

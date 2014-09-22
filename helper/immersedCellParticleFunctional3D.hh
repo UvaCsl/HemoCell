@@ -394,7 +394,7 @@ void GetTaggedParticleVelocity3D<T,Descriptor>::getTypeOfModification (
 template<typename T, template<typename U> class Descriptor>
 ComputeImmersedElasticForce3D<T,Descriptor>::ComputeImmersedElasticForce3D (
         TriangleBoundary3D<T> const& triangleBoundary_,
-        RBCModel3D<T>* cellModel_, CellField3D<T,Descriptor> & chq_)
+        ConstitutiveModel<T>* cellModel_, CellField3D<T,Descriptor> & chq_)
     : triangleBoundary(triangleBoundary_),
       cellModel(cellModel_),
       chq(chq_)

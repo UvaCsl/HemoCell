@@ -46,7 +46,7 @@ const double pi = 4.*atan(1.);
 namespace plb {
 
 template<typename T, template<typename U> class Descriptor>
-class ShapeMemoryModel3D : public RBCModel3D<T>
+class ShapeMemoryModel3D : public ConstitutiveModel<T>
 {
 public:
     /* All input should be in dimensionless units */

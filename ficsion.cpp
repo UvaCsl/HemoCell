@@ -328,7 +328,7 @@ int main(int argc, char* argv[])
 
     vector<T> eqAreaPerTriangle(cellNumTriangles);
     map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
-    RBCModel3D<T> *cellModel;
+    ConstitutiveModel<T> *cellModel;
     getCellShapeQuantitiesFromMesh(eqShapeCells, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
     if (rbcModel == 2) {
         rbcModel = 0;
@@ -410,7 +410,7 @@ int main(int argc, char* argv[])
 
     pluint initIter=0;
     /* ********************* Load CheckPoint ***************************************** * */
-    if (checkpointed) {
+    if (checkpointed and false) {
         pcout << "Loading checkpoint... " ;
         T cStretchScalarForce;
         XMLreader reader(paramXmlFileName);
@@ -469,7 +469,7 @@ int main(int argc, char* argv[])
             global::timer("mainLoop").stop();
             global::timer("output").restart();
             global::profiler().writeReport();
-            if (i%(10*tmeas)==0) {
+            if (i%(10*tmeas)==0 and false) {
                 // === Checkpoint ===
                 pcout << "Saving checkpoint... " ;
                 // Copy input XML to checkpoint XML.
@@ -635,5 +635,5 @@ int main(int argc, char* argv[])
         rbcDisaggregation.applyForce();
     }
     pcout << "Simulation finished." << std::endl;
-//    MPI_Finalize();
+    MPI_Finalize();
 }

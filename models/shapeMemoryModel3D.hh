@@ -35,7 +35,7 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (
         T persistenceLengthFine, T eqLengthRatio_,
         std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_,
         pluint cellNumTriangles_, pluint cellNumVertices_)
-    : RBCModel3D<T>(density_),
+    : ConstitutiveModel<T>(density_),
       k_rest(k_rest_),
       k_shear(k_shear_),
       k_bend(k_bend_),
