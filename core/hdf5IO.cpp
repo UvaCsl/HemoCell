@@ -114,7 +114,7 @@ void WriteInMultipleHDF5Files<T,Descriptor>::getTypeOfModification (
 
 template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT WriteInMultipleHDF5Files<T,Descriptor>::appliesTo () const {
-    return BlockDomain::bulk;
+    return BlockDomain::bulkAndEnvelope;
 }
 
 

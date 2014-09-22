@@ -265,7 +265,7 @@ class HDF5toXDMF_Fluid(object):
 
 def createXDMF(fnameString, processorStrings):
 	"""
-	Reads file fitting the patters and saves an XMF file to the working directory.
+	Reads file fitting the patters and saves an XMF file to the directory of the HDF5s.
 	
 		fnameString = './Fluid_00000000_%s.h5'
 		processorStrings = ['p000', 'p001', 'p002']
@@ -273,7 +273,7 @@ def createXDMF(fnameString, processorStrings):
 
 		Important: reads as many files as number of processors in the first file
 	"""
-	fnameToSave =  ( (fnameString%(""))[:-4] + '.xmf' ).split('/')[-1]
+	fnameToSave =  ( (fnameString%(""))[:-4] + '.xmf' )
 	xdmfFile = HDF5toXDMF_Fluid(fnameToSave)
 	xdmfFile.openCollection("Domain")
 	processorStrings = sorted(processorStrings)
@@ -295,13 +295,16 @@ if __name__ == '__main__':
 	dirname = './'
 	identifier = 'Fluid'
 	fluidH5files = sorted( glob(dirname + identifier + '*_*.h5') )
+	if len(fluidH5files) == 0:
+		dirname = './tmp/'
+		fluidH5files = sorted( glob(dirname + identifier + '*_*.h5') )
 	fluidIDs = map(lambda x: x[:-3], fluidH5files)
 	iterationStrings, processorStrings  = zip(*map(lambda f: f.split('_')[-2:], fluidIDs))
 	iterationStrings, processorStrings = map(lambda l: sorted(set(l)), (iterationStrings, processorStrings))
 
 	for iterString in iterationStrings:
 		fnameString = dirname + identifier + "_" + iterString + "_%s.h5"
-		print createXDMF(fnameString, processorStrings)
+		print "Created file:", createXDMF(fnameString, processorStrings)
 		
 
 
