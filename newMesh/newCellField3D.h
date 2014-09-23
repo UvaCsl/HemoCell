@@ -1,92 +1,107 @@
 #ifndef CELLFIELD_3D_H
 #define CELLFIELD_3D_H
 
+#include "palabos3D.h"
+#include "palabos3D.hh"
+#include "cell3D.h"
+#include "cellReductionTypes.h"
+
+#include <set>
+
+using namespace std;
+using namespace plb;
 
 particleEnvelopeWidth = 2;
+ibmKernel = 2;
+
+
+class SyncRequirements
+{
+public:
+	SyncRequirements();
+	~SyncRequirements();
+
+	virtual std::set<plint> getSyncRequirements() { return ccrRequirements; }
+	virtual void insert(std::set<plint> const& ccrReq) { 
+		for (std::set<plint>::const_iterator it=ccrReq.begin(); it!=ccrReq.end(); ++it) 
+	    	{	ccrRequirements.insert(*it); 	}
+	}
+
+	virtual void insert(std::set<plint> const& ccrReq) { 
+		for (std::set<plint>::const_iterator it=ccrReq.begin(); it!=ccrReq.end(); ++it) 
+			{ ccrRequirements.insert(*it); }
+	}
+
+	virtual void insert(std::vector<plint> const& ccrReq) { 
+		for (int iV = 0; iV < ccrReq.size(); ++iV)
+		{ ccrRequirements.insert( ccrReq[iV] ); }
+	}
+
+private:
+	std::set<plint> ccrRequirements;
+};
+
+
 
 template<typename T, template<typename U> class Descriptor>
 class CellField3D
 {
 public:
-	CellField3D(MultiBlockLattice3D<T, Descriptor> const& lattice_, TriangularSurfaceMesh<T> const& elementaryMesh_, 
-			plint npar_, ConstitutiveModel<T, Descriptor> * cellModel_) : 
-		lattice(lattice_), elementaryMesh(elementaryMesh_) 
-	{
-	    MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
-		MultiBlockManagement3D particleManagement (
-	            latticeManagement.getSparseBlockStructure(),
-	            latticeManagement.getThreadAttribution().clone(),
-	            particleEnvelopeWidth,
-	            latticeManagement.getRefinementLevel() );
-	    immersedParticles = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(
-	            particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
-    	immersedParticles.periodicity().toggleAll(true);
-	    immersedParticles.toggleInternalStatistics(false);
-
-	    particleArg.push_back(&immersedParticles);
-  	  	particleLatticeArg.push_back(&immersedParticles);
-    	particleLatticeArg.push_back(&lattice);
-    	/* Default values*/
-    	ibmKernel = 2;
-    	coupleWithIBM = true;
-
-	}
-	~CellField3D() { delete [] cellModel; };
+	/*    
+	Declaration:
+	-------------
+	CellField3D<T, DESCRIPTOR> RBCField(lattice, Cells.getMesh(), npar, cellModel);
+	
+	Arguments:
+	-------------
+			MultiBlockLattice3D<T, Descriptor> & lattice. Contents may be changed (like IBM Force spreading)
+			ConstitutiveModel<T, Descriptor> * cellModel. Deletion is taken care by CellField3D
+			pluint numberOfCells_. Global numer of Cells
+	*/
+	CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, TriangularSurfaceMesh<T> const& elementaryMesh_, 
+			pluint numberOfCells_, ConstitutiveModel<T, Descriptor> * cellModel_);
+	~CellField3D();
 public:
+	/* Set or change parameters */
 	void setIBMKernel(plint ibmKernel_) { ibmKernel = ibmKernel_; }
 	void setIBMCoupling(bool coupleWithIBM_) { coupleWithIBM = coupleWithIBM_; }
-    Cell3D<T,Descriptor> operator[](plint cellId) { return CellIdToCell3D[cellId]; }
 
+    Cell3D<T,Descriptor> & operator[](plint cellId) { return cellIdToCell3D[cellId]; }
 public:
-	void advanceParticles() {
-	    applyProcessingFunctional ( // advance particles in time according to velocity
-	        new AdvanceParticlesEveryWhereFunctional3D<T,Descriptor>,
-	        immersedParticles.getBoundingBox(), particleArg );
-	}
+	std::map<plint, Cell3D<T,Descriptor> > & getCellIdToCell3D() { return cellIdToCell3D; };
+	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * getParticleField3D() { return immersedParticles; };
+public:
+	virtual void setFluidExternalForce(Array<T,3> force);
+	virtual void setFluidExternalForce(T forceScalar);
+	virtual void setFluidExternalForce() { return setFluidExternalForce(0.0); }
 
-	void spreadForceIBM() {
-        global::timer("IBM").start();
-        if (coupleWithIBM != 0) { // Force from the Cell dynamics to the Fluid
-            applyProcessingFunctional ( // compute force applied on the fluid by the particles
-                    new ForceToFluid3D<T,Descriptor> (ibmKernel),
-                    immersedParticles.getBoundingBox(), particleLatticeArg );
-        }
-        global::timer("IBM").stop();
-	}
-
-	void interpolateVelocityIBM() {
-        global::timer("IBM").start();
-        if (coupleWithIBM != 0) { // Force from the Cell dynamics to the Fluid
-	        applyProcessingFunctional ( // copy fluid velocity on particles
-    	        new FluidVelocityToImmersedCell3D<T,Descriptor>(ibmKernel),
-        	    immersedParticles.getBoundingBox(), particleLatticeArg);
-	    }
-        global::timer("IBM").stop();
-	}
-	void applyConstitutiveModel() {
-        global::timer("Model").start();
-        // #1# Membrane Model + Stretching
-        applyProcessingFunctional (
-                        new ComputeImmersedElasticForce3D<T,Descriptor> (Cells, cellModel->clone(), RBCField),
-                        immersedParticles.getBoundingBox(), particleArg );
-        global::timer("Model").stop();
-	}
-
+	virtual void advanceParticles();
+	virtual void spreadForceIBM();
+	virtual void interpolateVelocityIBM();
+	virtual void applyConstitutiveModel();
+	/* Need implementation */
+	virtual void synchronizeCellQuantities_Local();
+	virtual void synchronizeCellQuantities_Global() =0;
+	virtual void synchronizeCellQuantities() { return synchronizeCellQuantities_Local(); } ;
+	pluint getNumberOfCells_Global();
+	pluint getNumberOfCells_Local() { return cellIdToCell3D.size(); } ;
+	pluint getNumberOfCells() { return getNumberOfCells_Local(); } ;
 
 private:
-	MultiBlockLattice3D<T, Descriptor> const& lattice
+	MultiBlockLattice3D<T, Descriptor> & lattice
+	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles;
 	TriangularSurfaceMesh<T> & elementaryMesh;
 	ConstitutiveModel<T, Descriptor> * cellModel;
 	plint ibmKernel;
 	bool coupleWithIBM;
 
-	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles;
     std::vector<MultiBlock3D*> particleArg;
     std::vector<MultiBlock3D*> particleLatticeArg;
 
-    std::map<plint, Cell3D<T,Descriptor> > CellIdToCell3D;
-
+    std::map<plint, Cell3D<T,Descriptor> > cellIdToCell3D;
+    std::vector<plint> cellIds;
 	/* data */
+	std::set<plint> ccrRequirements;
 };
 
 

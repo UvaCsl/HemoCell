@@ -4,6 +4,7 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include <map>
+#include <set>
 #include <string>
 
 /* IDs for the reduction types,
@@ -120,6 +121,15 @@ public: /* ReductiveBoxFunctions */
     Array<T,3> getReduction3D(plint reductionType, Array<plint,3> whatQ);
     std::vector<T> getReductionND(plint reductionType, std::vector<plint> whatQ);
 
+    void gatherReduction(plint ccrId, plint whatQ, T value) { gatherReduction1D(getReductionType(ccrId), whatQ, value); }
+    void gatherReduction(plint ccrId, Array<plint,3> whatQ, Array<T,3> value) { gatherReduction3D(getReductionType(ccrId), whatQ, value); }
+    void gatherReduction(plint ccrId, std::vector<plint> whatQ, std::vector<T> value) { gatherReductionND(getReductionType(ccrId), whatQ, value); }
+
+    T getReduction(plint ccrId, plint whatQ) { return getReduction1D(getReductionType(ccrId), whatQ); };
+    Array<T,3> getReduction(plint ccrId, Array<plint,3> whatQ)  { return getReduction3D(getReductionType(ccrId), whatQ); };
+    std::vector<T> getReduction(plint ccrId, std::vector<plint> whatQ)  { return getReductionND(getReductionType(ccrId), whatQ); }
+
+
 private:
     vector<T> sumV, averageV, maxV;
     vector<plint> averageQV;
@@ -147,6 +157,9 @@ std::vector<plb::plint> const allReductions(allReductions_array, allReductions_a
 std::vector<plb::plint> const volumeAndSurfaceAndCentersReductions(volumeAndSurfaceAndCentersReductions_array, volumeAndSurfaceAndCentersReductions_array + sizeof(volumeAndSurfaceAndCentersReductions_array) / sizeof(volumeAndSurfaceAndCentersReductions_array[0]) );
 std::vector<plb::plint> const volumeAndSurfaceReductions(volumeAndSurfaceReductions_array, volumeAndSurfaceReductions_array + sizeof(volumeAndSurfaceReductions_array) / sizeof(volumeAndSurfaceReductions_array[0]) );
 
+std::set<plb::plint> const setAllReductions(allReductions_array, allReductions_array + sizeof(allReductions_array) / sizeof(allReductions_array[0]) );
+std::set<plb::plint> const setVolumeAndSurfaceAndCentersReductions(volumeAndSurfaceAndCentersReductions_array, volumeAndSurfaceAndCentersReductions_array + sizeof(volumeAndSurfaceAndCentersReductions_array) / sizeof(volumeAndSurfaceAndCentersReductions_array[0]) );
+std::set<plb::plint> const setVolumeAndSurfaceReductions(volumeAndSurfaceReductions_array, volumeAndSurfaceReductions_array + sizeof(volumeAndSurfaceReductions_array) / sizeof(volumeAndSurfaceReductions_array[0]) );
 
 std::map<int, std::string> createMapCCR() {
     std::map<int, std::string> ccrNames;

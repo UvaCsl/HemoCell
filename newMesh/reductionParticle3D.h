@@ -51,9 +51,10 @@ public:
     plint getMpiProcessor() {
     	int myrank = 0;
 #ifdef PLB_MPI_PARALLEL
-	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+    myrank = MPI::COMM_WORLD.Get_rank();
 #endif
-    	return plint(myrank); }
+    	return plint(myrank); 
+    }
 private:
     static int id ;
     plint cellId;
@@ -69,8 +70,10 @@ public:
     plint const& get_nParticles() const { return nParticles; }
     plint& get_nParticles() { return nParticles; }
 
+
+public:
 // General framework for getting data from the particles:
-    /// Return the cellId through a generic interface (vector id=0).
+    /// Return scalars through a generic interface (vector id=0).
     virtual bool getScalar(plint whichScalar, T& scalar);
     std::string getScalarName(plint whichScalar);
     plint getScalarsNumber() ;
@@ -78,7 +81,7 @@ public:
     virtual bool getVector(plint whichVector, Array<T,3>& vector);
     std::string getVectorName(plint whichVector);
     plint getVectorsNumber()  ;
-    /// Return the velocity, acceleration or pbcPosition through a generic interface (vector id=0,1,2).
+    /// Return tensors through a generic interface (vector id=0,1,2).
     bool getTensor(plint whichTensor, std::vector<T>& tensor);
     std::string getTensorName(plint whichTensor);
     plint getTensorsNumber() ;

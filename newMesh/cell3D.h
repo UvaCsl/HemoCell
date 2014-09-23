@@ -15,151 +15,14 @@
 using namespace std;
 using namespace plb;
 
-template<typename T>
-class BlockStatisticsForCellQuantityHolder<T>
-{
-public:
-    BlockStatisticsForCellQuantityHolder() {};
-    ~BlockStatisticsForCellQuantityHolder() {};
-
-public:
-    plint subscribeSum() { sumV.push_back(T()); return sumV.size() - 1; } ;
-    plint subscribeAverage() { averageV.push_back(T()); averageQV.push_back(0); return averageV.size()  - 1; } ;
-    plint subscribeMax() { maxV.push_back( -std::numeric_limits<double>::max() ); return maxV.size() - 1; } ;
-
-    void gatherSum(plint qBin, T value) { sumV[qBin] += value; } ;
-    void gatherAverage(plint qBin, T value) { averageV[qBin] += value; averageQV[qBin]+=1; } ;
-    void gatherMax(plint qBin, T value) { maxV[qBin] = max(maxV[qBin], value); } ;
-
-    T getSum(plint qBin) { return sumV[qBin]; } ;
-    T getAverage(plint qBin) { return averageV[qBin]*1.0/averageQV[qBin]; } ;
-    T getMax(plint qBin) { return maxV[qBin]; } ;
-
-public: /* ReductiveBoxFunctions */
-    plint subscribeReduction1D(plint reductionType);
-    Array<plint,3> subscribeReduction3D(plint reductionType);
-    std::vector<plint> subscribeReductionND(plint reductionType, plint dimensions);
-
-    void gatherReduction1D(plint reductionType, plint whatQ, T value);
-    void gatherReduction3D(plint reductionType, Array<plint,3> whatQ, Array<T,3> value);
-    void gatherReductionND(plint reductionType, std::vector<plint> whatQ, std::vector<T> value);
-
-    T getReduction1D(plint reductionType, plint whatQ);
-    Array<T,3> getReduction3D(plint reductionType, Array<plint,3> whatQ);
-    std::vector<T> getReductionND(plint reductionType, std::vector<plint> whatQ);
-
-private:
-    vector<T> sumV, averageV, maxV;
-    vector<plint> averageQV;
-    // quantityBins contain the "whichSum"/"whichAverage"/etc
-    std::map<plint, std::map<plint, plint >  > quantityBins1D; // quantityBins1D[CCR_EDGE_DISTANCE_MEAN][cellId]
-    std::map<plint, std::map<plint, Array<plint,3> >  > quantityBins3D; // quantityBins3D[CCR_VELOCITY_MEAN][cellId]
-    std::map<plint, std::map<plint, std::vector<plint> >  > quantityBinsND; // quantityBinsND[CCR_INERTIA][cellId]
-};
-
-
-/*******************************************************************
- *                      1D Subscribe Reductions                    *
- *******************************************************************/
-template<typename T>
-plint BlockStatisticsForCellQuantityHolder<T>::subscribeReduction1D(plint reductionType) {
-    if (0 == reductionType)      { return subscribeSum(); }
-    else if (1 == reductionType) { return subscribeAverage(); }
-    else if (2 == reductionType) { return subscribeMax(); }
-    else if (3 == reductionType) { return subscribeMax(); } // Min can be calculated from the inverse Max
-    else if (4 == reductionType) { return subscribeAverage(); } // Std is essentially an average
-    else { return -1; }
-}
-
-/*******************************************************************
- *                         1D Gather Reductions                    *
- *******************************************************************/
-
-template<typename T>
-void BlockStatisticsForCellQuantityHolder<T>::gatherReduction1D(plint reductionType, plint qBin, T value) {
-    if (0 == reductionType)      { gatherSum(qBin, value); }
-    else if (1 == reductionType) { gatherAverage(qBin, value); }
-    else if (2 == reductionType) { gatherMax(qBin, value); }
-    else if (3 == reductionType) { gatherMax(qBin, -value); } // Min can be calculated from the inverse Max
-    else if (4 == reductionType) { gatherAverage(qBin, value); } // Std is essentially an average
-}
-
-
-/*******************************************************************
- *                          1D Get Reductions                      *
- *******************************************************************/
-
-template<typename T>
-T BlockStatisticsForCellQuantityHolder<T>::getReduction1D(plint reductionType, plint qBin) {
-    if (0 == reductionType)      { return getSum(qBin); }
-    else if (1 == reductionType) { return getAverage(qBin); }
-    else if (2 == reductionType) { return getMax(qBin); }
-    else if (3 == reductionType) { return -getMax(qBin); } // Min can be calculated from the inverse Max
-    else if (4 == reductionType) { return getAverage(qBin); } // Std is essentially an average
-    return -1;
-}
-
-
-
-/*
- * 3D and ND Reduction operations
- */
-// subscribeReduction
-template<typename T>
-Array<plint,3> BlockStatisticsForCellQuantityHolder<T>::subscribeReduction3D(plint reductionType) {
-    plint x = subscribeReduction1D(reductionType);
-    plint y = subscribeReduction1D(reductionType);
-    plint z = subscribeReduction1D(reductionType);
-    return Array<plint,3>(x, y, z);
-}
-
-template<typename T>
-std::vector<plint> BlockStatisticsForCellQuantityHolder<T>::subscribeReductionND(plint reductionType, plint dimensions) {
-    std::vector<plint> ret;
-    for (plint i = 0; i < dimensions; ++i) { ret.push_back( subscribeReduction1D(reductionType) ); }
-    return ret;
-}
-
-// gatherReduction
-template<typename T>
-void BlockStatisticsForCellQuantityHolder<T>::gatherReduction3D(plint reductionType, Array<plint,3> qBin, Array<T,3> value) {
-    for (int i = 0; i < 3; ++i) { gatherReduction1D(reductionType, qBin[i], value[i]); }
-}
-
-template<typename T>
-void BlockStatisticsForCellQuantityHolder<T>::gatherReductionND(plint reductionType, std::vector<plint> qBin, std::vector<T> value) {
-    for (pluint i = 0; i < qBin.size(); ++i) { gatherReduction1D(reductionType, qBin[i], value[i]); }
-}
-
-// getReduction
-template<typename T>
-Array<T,3> BlockStatisticsForCellQuantityHolder<T>::getReduction3D(plint reductionType, Array<plint,3> qBin) {
-    T x = getReduction1D(reductionType, qBin[0]);
-    T y = getReduction1D(reductionType, qBin[1]);
-    T z = getReduction1D(reductionType, qBin[2]);
-    return Array<T,3>(x, y, z);
-}
-
-template<typename T>
-std::vector<T> BlockStatisticsForCellQuantityHolder<T>::getReductionND(plint reductionType, std::vector<plint> qBin) {
-    std::vector<T> ret;
-    plint dimensions = qBin.size();
-    for (plint i = 0; i < dimensions; ++i) { ret.push_back( getReduction1D(reductionType, qBin[i]) ); }
-    return ret;
-}
-
-
-
-
-
 
 
 template<typename T>
 class CellQuantityHolder
 {
 public:
-    CellQuantityHolder(plint cellId_, plint particlesPerCellId_);
-    ~CellQuantityHolder();
+    CellQuantityHolder() { } ;
+    ~CellQuantityHolder() { };
 
     void setParticlesPerCellId(plint particlesPerCellId_) { particlesPerCellId = particlesPerCellId_; }
 
@@ -167,7 +30,7 @@ public:
         quantities1D.clear();
         quantities3D.clear();
         quantitiesND.clear();
-        ccrIds1D.clear(); ccrIds3D.clear(); ccrIdsND.clear();
+        scalar_ccrIds.clear(); vector_ccrIds.clear(); tensor_ccrIds.clear();
     }
 
 
@@ -276,10 +139,6 @@ private:
 
 
 public:
-    virtual plint const& get_cellId() const { return cellId; }
-    virtual plint& get_cellId() { return cellId; }
-    virtual void set_cellId(plint cellId_) { cellId = cellId_; }
-
     T & getVolume() { return quantities1D[CCR_VOLUME];} ;
     T & getSurface() { return quantities1D[CCR_SURFACE];} ;
     T & getEnergy() { return quantities1D[CCR_ENERGY];} ;
@@ -314,6 +173,7 @@ class Cell3D : public CellQuantityHolder<T>
 public:
     Cell3D(TriangularSurfaceMesh<T>& mesh_, plint cellId_=-1) {
         cellId = cellId_;
+        this->setParticlesPerCellId(getNumVertices_Global());
     };
     ~Cell3D() {};
 
@@ -323,19 +183,38 @@ public:
         iVertexToParticle3D[particle->getVertexId()] = particle3D; 
     }
 
-    TriangularSurfaceMesh<T>& getMesh() const { return mesh; }
-    plint getNumTriangles() const { return mesh.getNumTriangles(); }
-    plint getNumVertices() const { return mesh.getNumVertices(); }
+    void setMesh(TriangularSurfaceMesh<T>& mesh_) { mesh = mesh_; }
+    plint set_cellId(plint cellId_) { cellId = cellId_; }
+
+    TriangularSurfaceMesh<T>& getMesh() { return mesh; }
+    plint get_cellId() { return cellId;  }
+
+    plint getMpiProcessor() {
+ #ifdef PLB_MPI_PARALLEL
+        //  Get the individual process ID.
+        int rank = MPI::COMM_WORLD.Get_rank();
+#else
+        int rank = 0;
+#endif
+        return rank;
+    }
+
+    plint getNumVertices() const { return vertices.size(); }
+    plint getNumTriangles() const { return triangles.size(); }
+
+    plint getNumVertices_Global() const { return mesh.getNumVertices(); }
+    plint getNumTriangles_Global() const { return mesh.getNumTriangles(); }
+
+
+    std::vector<plint> const& getTriangles() const { return triangles; }
+    std::vector<plint> & getTriangles() { return triangles; }
+
+   
     plint getVertexId(plint iTriangle, plint id) {   return mesh.getVertexId(iTriangle, id); }
     plint getNeighborVertexIds(plint iVertex) {   return mesh.getNeighborVertexIds(iVertex); }
     std::vector<plint> getNeighborTriangleIds(plint iVertex) { return mesh.getNeighborTriangleIds(iVertex); }
 
-    plint getNumParticles() const { return iVertexToParticle3D.size(); }
-
-    /// Return the cellId of the Cell3D object
-    plint get_cellId() { return cellId;  }
-    plint set_cellId(plint cellId_) { cellId = cellId_; }
-
+ 
     Array<T,3> getVertex(plint iVertex) { 
         ImmersedCellParticle3D<T,Descriptor>* particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D[iVertex]);
         return particle->get_pbcPosition(); 
@@ -344,16 +223,25 @@ public:
         return getVertex( getVertexId(iTriangle, id) ); 
     }
 
-    Array<T,3> get_v(plint iVertex){
+    Array<T,3> get_v(plint iVertex) {
         ImmersedCellParticle3D<T,Descriptor>* particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D[iVertex]);
         return particle->get_v(); 
     }
 
-    T get_Energy(plint iVertex);
-    Array<T,3>  get_force(plint iVertex);
-    Array<T,3>  getPosition(plint iVertex);
+    T get_Energy(plint iVertex) {
+        ImmersedCellParticle3D<T,Descriptor>* particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D[iVertex]);
+        return particle->get_Energy(); 
+    }
+    Array<T,3>  get_force(plint iVertex) {
+        ImmersedCellParticle3D<T,Descriptor>* particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iVertexToParticle3D[iVertex]);
+        return particle->get_force(); 
+    }
+    Array<T,3>  getPosition(plint iVertex) {
+        return iVertexToParticle3D[iVertex]->getPosition();
+    }
 
     T computeEdgeLength(plint iVertex, plint jVertex);
+    T computeEdgeLengthVector(plint iVertex, plint jVertex);
     T computeSignedAngle(plint iVertex, plint jVertex);
     T computeTriangleArea(plint iTriangle);
     Array<T,3> computeTriangleNormal(plint iTriangle);
@@ -362,32 +250,49 @@ public:
     T computeEdgeTileSpan(plint iVertex, plint jVertex);
 
     /* data */
+    void close() {
+        plint numTrianges = mesh.getNumTriangles();
+        triangles.clear();
+        for (int iTriangle = 0; iTriangle < numTrianges; ++iTriangle)
+        {
+            vId0 = getVertexId(iTriangle, 0);
+            vId1 = getVertexId(iTriangle, 1);
+            vId2 = getVertexId(iTriangle, 2);
+            numVert = iVertexToParticle3D.count(vId0) 
+                    + iVertexToParticle3D.count(vId1)
+                    + iVertexToParticle3D.count(vId2);
+            if (numVert == 3) {
+                triangles.push_back(iTriangle);
+            }
+        }
+        vertices.clear();
+        typename std::map<plint, Particle3D<T,Descriptor>* >::iterator it;
+        for (it  = iVertexToParticle3D.begin(); it != iVertexToParticle3D.end(); ++it) {
+            vertices.push_back(it->first);
+        }
+    }
 private:
     plint cellId;
     TriangularSurfaceMesh<T>& mesh;
     std::map<plint, Particle3D<T,Descriptor>*> iVertexToParticle3D;
-    plint numVertices;
-    plint numTriangles;
 
     /* Quantity containers for less computations */
+    std::vector<plint> triangles;
+    std::vector<plint> vertices;
+    /* Quantity containers for less computations */
     std::map<plint, T> edgeLengths;
+    std::map<plint, Array<T,3> > edgeLengthVectors;
     std::map<plint, T> signedAngles;
 
     std::map<plint, T> triangleAreas;
-    std::map<plint, Array<T,3>> triangleNormals;
+    std::map<plint, Array<T,3> > triangleNormals;
     std::map<plint, T> vertexAreas;
-    std::map<plint, Array<T,3>> vertexNormals;
+    std::map<plint, Array<T,3> > vertexNormals;
 
     std::map<plint, T> edgeTileSpans;
 };
 
 
-
-template<typename T, template<typename U> class Descriptor>
-Cell3D<T, Descriptor>::Cell3D(TriangularSurfaceMesh<T>& mesh_) : mesh(mesh_) {
-    numVertices = mesh.getNumVertices();
-    numTriangles = mesh.getNumTriangles();
-}
 
 
 #include "cell3D.hh"

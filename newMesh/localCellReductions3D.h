@@ -15,7 +15,7 @@
  */
 
 template<typename T, template<typename U> class Descriptor>
-class LocalCellReductions3D : public BoxProcessingFunctional3D, BlockStatisticsForCellQuantityHolder<T>
+class LocalCellReductions3D : public BoxProcessingFunctional3D, BlockStatisticsCCR<T>
 {
 public:
     LocalCellReductions3D(TriangleBoundary3D<T> const& triangleBoundary_,
@@ -46,6 +46,11 @@ private:
     std::vector<plint> cellIds;
     plint nCellIds;
 private:
+    // quantityBins contain the "whichSum"/"whichAverage"/etc
+    std::map<plint, std::map<plint, plint >  > quantityBins1D; // quantityBins1D[cellId][CCR_EDGE_DISTANCE_MEAN]
+    std::map<plint, std::map<plint, Array<plint,3> >  > quantityBins3D; // quantityBins3D[cellId][CCR_VELOCITY_MEAN]
+    std::map<plint, std::map<plint, std::vector<plint> >  > quantityBinsND; // quantityBinsND[cellId][CCR_INERTIA]
+
     T computeQuantity1D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
     Array<T,3> computeQuantity3D (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);
     std::vector<T> computeQuantityND (plint q, ImmersedCellParticle3D<T,Descriptor>* particle);

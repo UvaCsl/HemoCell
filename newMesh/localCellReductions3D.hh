@@ -125,15 +125,15 @@ void LocalCellReductions3D<T,Descriptor>::processGenericBlocks (
     for (pluint i = 0; i < cellIds.size(); ++i) {
         cellId = cellIds[i];
         ccrId = CCR_NO_PBC_POSITION_MEAN;
-        reductionType = (ccrId%100)/10; // Reduction type (min,max,etc): second to last digit
+        reductionType = getReductionType(ccrId); // Reduction type (min,max,etc): second to last digit
         Array<T,3> vertex = getReduction3D(reductionType, quantityBins3D[cellId][ccrId]);
         ReductionParticle3D<T,Descriptor>* rParticle
             = new ReductionParticle3D<T,Descriptor>(cellId, vertex);
         rParticle->get_nParticles() = particlesPerCellId[cellId];
         for (pluint id = 0; id < subscribedQuantities.size()-1; ++id) { // CCR_NO_PBC_POSITION_MEAN is the last value of the vector
             ccrId = subscribedQuantities[id];
-            dim = ccrId%10; // Dimension: last digit
-            reductionType = (ccrId%100)/10; // Reduction type (min,max,etc): second to last digit
+            dim = getReductionDimension(ccrId); // Dimension: last digit
+            reductionType = getReductionType(ccrId); // Reduction type (min,max,etc): second to last digit
             quantity = ccrId/100; // Quantity of interest (area, velocity,etc): first digit
             if (dim == 1) {
                 plint qBin = quantityBins1D[cellId][ccrId];
