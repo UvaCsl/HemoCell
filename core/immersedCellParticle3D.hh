@@ -39,7 +39,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()),
       E_repulsive(T()),
-      processor(0), cellId(-1)
+      processor(0), cellId(-1), vertexId(this->getTag())
 { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -56,7 +56,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       stress(T(),T(),T()),
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
-      processor(0), cellId(cellId_)
+      processor(0), cellId(cellId_), vertexId(tag_)
 { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -75,7 +75,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       stress(T(),T(),T()),
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
-      processor(0), cellId(cellId_)
+      processor(0), cellId(cellId_), vertexId(tag_)
 { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -103,7 +103,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       E_other(E_other_),
       E_inPlane(E_inPlane_), E_bending(E_bending_),
       E_area(E_area_), E_volume(E_volume_), E_repulsive(E_repulsive_),
-      processor(processor_), cellId(cellId_)
+      processor(processor_), cellId(cellId_), vertexId(tag_)
 { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -225,6 +225,7 @@ void ImmersedCellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& u
 
     unserializer.readValue<plint>(processor);
     unserializer.readValue<plint>(cellId);
+    vertexId = this->getTag();
 }
 
 
@@ -349,6 +350,9 @@ bool ImmersedCellParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scala
     } else if (whichScalar==9) {
         scalar = T(get_E_other());
         return true;
+    } else if (whichScalar==10) {
+        scalar = T(this->getTag());
+        return true;
     }
     return Particle3D<T,Descriptor>::getScalar(whichScalar, scalar);
 }
@@ -376,6 +380,8 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getScalarName(plint whichScala
         return "E_repulsive";
     } else if (whichScalar==9) {
         return "E_other";
+    } else if (whichScalar==10) {
+        return "VertexId";
     }
     return "empty";
 }
@@ -383,7 +389,7 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getScalarName(plint whichScala
 
 template<typename T, template<typename U> class Descriptor>
 plint ImmersedCellParticle3D<T,Descriptor>::getScalarsNumber() const {
-        return 10;
+        return 11;
 }
 
 }  // namespace plb

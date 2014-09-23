@@ -67,6 +67,8 @@ public:
     Array<T,3>& get_force() { return force; }
     plint const& get_cellId() const { return cellId; }
     plint& get_cellId() { return cellId; }
+    plint const& getVertexId() const { return vertexId; }
+    plint& getVertexId() { return vertexId; }
     plint const& get_processor() const { return processor; }
     plint& get_processor() { return processor; }
     plint getMpiProcessor() {
@@ -86,6 +88,7 @@ private:
 private:
     plint processor;
     plint cellId;
+    plint vertexId;
 public:
     ImmersedCellParticle3D (
             plint tag_, Array<T,3> const& position,

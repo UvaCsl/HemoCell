@@ -12,6 +12,9 @@
 using namespace plb;
 using namespace std;
 
+template<typename T, template<typename U> class Descriptor>
+void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
+              IncomprFlowParam<T> const& parameters, plint iter);
 
 
 template<typename T, template<typename U> class Descriptor>

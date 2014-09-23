@@ -75,6 +75,58 @@
 using namespace plb;
 using namespace std;
 
+
+// Reduction type (min,max,etc): second to last digit
+plint getReductionType(plint ccrId) { return (ccrId%100)/10; }
+
+// Reduction dimension (1,3,N): last digit
+plint getReductionDimension(plint ccrId) { return ccrId%10; }
+
+// Reduction quantity (position, velocity): last digit
+plint getReductionQuantity(plint ccrId) { return ccrId/100; }
+
+
+
+template<typename T>
+class BlockStatisticsCCR
+{
+public:
+    BlockStatisticsCCR() {};
+    ~BlockStatisticsCCR() {};
+
+public:
+    plint subscribeSum() { sumV.push_back(T()); return sumV.size() - 1; } ;
+    plint subscribeAverage() { averageV.push_back(T()); averageQV.push_back(0); return averageV.size()  - 1; } ;
+    plint subscribeMax() { maxV.push_back( -std::numeric_limits<double>::max() ); return maxV.size() - 1; } ;
+
+    void gatherSum(plint qBin, T value) { sumV[qBin] += value; } ;
+    void gatherAverage(plint qBin, T value) { averageV[qBin] += value; averageQV[qBin]+=1; } ;
+    void gatherMax(plint qBin, T value) { maxV[qBin] = max(maxV[qBin], value); } ;
+
+    T getSum(plint qBin) { return sumV[qBin]; } ;
+    T getAverage(plint qBin) { return averageV[qBin]*1.0/averageQV[qBin]; } ;
+    T getMax(plint qBin) { return maxV[qBin]; } ;
+
+public: /* ReductiveBoxFunctions */
+    plint subscribeReduction1D(plint reductionType);
+    Array<plint,3> subscribeReduction3D(plint reductionType);
+    std::vector<plint> subscribeReductionND(plint reductionType, plint dimensions);
+
+    void gatherReduction1D(plint reductionType, plint whatQ, T value);
+    void gatherReduction3D(plint reductionType, Array<plint,3> whatQ, Array<T,3> value);
+    void gatherReductionND(plint reductionType, std::vector<plint> whatQ, std::vector<T> value);
+
+    T getReduction1D(plint reductionType, plint whatQ);
+    Array<T,3> getReduction3D(plint reductionType, Array<plint,3> whatQ);
+    std::vector<T> getReductionND(plint reductionType, std::vector<plint> whatQ);
+
+private:
+    vector<T> sumV, averageV, maxV;
+    vector<plint> averageQV;
+};
+
+
+
 const plb::plint allReductions_array[] = {CCR_NO_PBC_POSITION_MEAN, CCR_NO_PBC_POSITION_MIN, CCR_NO_PBC_POSITION_MAX,
                                      CCR_VOLUME,
                                      CCR_ANGLE_MEAN, CCR_ANGLE_MIN, CCR_ANGLE_MAX,
@@ -139,6 +191,8 @@ std::map<int, std::string> createMapCCR() {
 }
 
 std::map<int, std::string> ccrNames(createMapCCR());
+
+#include "cellReductionTypes.hh"
 
 #endif
 
