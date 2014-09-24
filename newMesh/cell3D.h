@@ -208,6 +208,8 @@ public:
 
     std::vector<plint> const& getTriangles() const { return triangles; }
     std::vector<plint> & getTriangles() { return triangles; }
+    std::vector<plint> const& getVertices() const { return vertices; }
+    std::vector<plint> & getVertices() { return vertices; }
 
    
     plint getVertexId(plint iTriangle, plint id) {   return mesh.getVertexId(iTriangle, id); }

@@ -86,7 +86,7 @@ public:
 	pluint getNumberOfCells_Global();
 	pluint getNumberOfCells_Local() { return cellIdToCell3D.size(); } ;
 	pluint getNumberOfCells() { return getNumberOfCells_Local(); } ;
-
+	bool has_cellId(plint cellId) { return cellIdToCell3D.count(cellId) > 0; }
 private:
 	MultiBlockLattice3D<T, Descriptor> & lattice
 	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles;

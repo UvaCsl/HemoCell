@@ -209,7 +209,7 @@ T LocalCellReductions3D<T,Descriptor>::computeQuantity1D (plint q, ImmersedCellP
             Array<T,3> v0 = triangleMesh.getVertex(iTriangle, 0);
             Array<T,3> v1 = triangleMesh.getVertex(iTriangle, 1);
             Array<T,3> v2 = triangleMesh.getVertex(iTriangle, 2);
-            /* Calculating the volume contibution of a face based on the formula:
+            /* Calculating the volume contribution of a face based on the formula:
              * V[j] = 1.0/6.0 * (X3[j] cross X2[j])*X1[j]  */
             Array<T,3> tmp;
             crossProduct(v1, v2, tmp);
