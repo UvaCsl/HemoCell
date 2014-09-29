@@ -121,7 +121,7 @@ public:
 private:
     std::vector<T> sumV, averageV, maxV;
     std::vector<plint> averageQV;
-    std::map<plint, pluint> ccrIdToBin;
+    std::map<plint, std::vector<pluint> > ccrIdToBin;
 };
 
 

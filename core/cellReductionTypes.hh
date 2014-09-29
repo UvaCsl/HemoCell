@@ -11,14 +11,13 @@ void BlockStatisticsCCR<T>::subscribe(plint ccrId) {
     plint dim = getReductionDimension(ccrId);
     pluint qBin;
     for (int d = 0; d < dim; ++d) {
-        if (0 == reductionType)      { qBin = subscribeSum(); }
-        else if (1 == reductionType) { qBin = subscribeAverage(); }
-        else if (2 == reductionType) { qBin = subscribeMax(); }
-        else if (3 == reductionType) { qBin = subscribeMax(); } // Min can be calculated from the inverse Max
-        else if (4 == reductionType) { qBin = subscribeAverage(); } // Std is essentially an average
-        else { qBin = -1; }
+        if (0 == reductionType)      { ccrIdToBin[ccrId].push_back(subscribeSum()); }
+        else if (1 == reductionType) { ccrIdToBin[ccrId].push_back(subscribeAverage()); }
+        else if (2 == reductionType) { ccrIdToBin[ccrId].push_back(subscribeMax()); }
+        else if (3 == reductionType) { ccrIdToBin[ccrId].push_back(subscribeMax()); } // Min can be calculated from the inverse Max
+        else if (4 == reductionType) { ccrIdToBin[ccrId].push_back(subscribeAverage()); } // Std is essentially an average
+        else { ccrIdToBin[ccrId].push_back(-1); }
     }
-    ccrIdToBin[ccrId] = qBin - (dim-1);
 }
 
 template<typename T>
@@ -34,17 +33,17 @@ void BlockStatisticsCCR<T>::gather(plint ccrId, T value, pluint qBin) {
 
 template<typename T>
 void BlockStatisticsCCR<T>::gather(plint ccrId, T value) {
-    pluint qBin = ccrIdToBin[ccrId];
+    pluint qBin = ccrIdToBin[ccrId][0];
     gather(ccrId, value, qBin);
 }
 
 
 template<typename T>
 void BlockStatisticsCCR<T>::gather(plint ccrId, Array<T,3> const& value) {
-    plint dim = getReductionDimension(ccrId);
+    plint dim = ccrIdToBin[ccrId].size();
     pluint qBin;
     for (int d = 0; d < dim; ++d) {
-        qBin = ccrIdToBin[ccrId] + d;
+        qBin = ccrIdToBin[ccrId][d];
         gather(ccrId, value[d], qBin);
     }
 }
@@ -52,10 +51,10 @@ void BlockStatisticsCCR<T>::gather(plint ccrId, Array<T,3> const& value) {
 
 template<typename T>
 void BlockStatisticsCCR<T>::gather(plint ccrId, std::vector<T> const& value) {
-    plint dim = getReductionDimension(ccrId);
+    plint dim = ccrIdToBin[ccrId].size();
     pluint qBin;
     for (int d = 0; d < dim; ++d) {
-        qBin = ccrIdToBin[ccrId] + d;
+        qBin = ccrIdToBin[ccrId][d];
         gather(ccrId, value[d], qBin);
     }
 }
@@ -74,10 +73,10 @@ void BlockStatisticsCCR<T>::get(plint ccrId, T & value) {
 
 template<typename T>
 void BlockStatisticsCCR<T>::get(plint ccrId, Array<T,3> & value) {
-    plint dim = getReductionDimension(ccrId);
+    plint dim = ccrIdToBin[ccrId].size();
     pluint qBin;
     for (int d = 0; d < dim; ++d) {
-        qBin = ccrIdToBin[ccrId] + d;
+        qBin = ccrIdToBin[ccrId][d];
         get(ccrId, value[d], qBin);
     }
 }
@@ -85,11 +84,11 @@ void BlockStatisticsCCR<T>::get(plint ccrId, Array<T,3> & value) {
 
 template<typename T>
 void BlockStatisticsCCR<T>::get(plint ccrId, std::vector<T> & value) {
-    plint dim = getReductionDimension(ccrId);
+    plint dim = ccrIdToBin[ccrId].size();
     pluint qBin;
     value.resize(dim);
     for (int d = 0; d < dim; ++d) {
-        qBin = ccrIdToBin[ccrId] + d;
+        qBin = ccrIdToBin[ccrId][d];
         gather(ccrId, value[d], qBin);
     }
 }
