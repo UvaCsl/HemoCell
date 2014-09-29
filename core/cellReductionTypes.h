@@ -96,6 +96,17 @@ public:
     ~BlockStatisticsCCR() {};
 
 public:
+    void subscribe(plint ccrId);
+    void gather(plint ccrId, T value, pluint qBin);
+    void gather(plint ccrId, T value);
+    void gather(plint ccrId, Array<T,3> const& value);
+    void gather(plint ccrId, std::vector<T> const& value);
+
+    void get(plint ccrId, T &value, pluint qBin);
+    void get(plint ccrId, T & value);
+    void get(plint ccrId, Array<T,3> & value);
+    void get(plint ccrId, std::vector<T> & value);
+public:
     plint subscribeSum() { sumV.push_back(T()); return sumV.size() - 1; } ;
     plint subscribeAverage() { averageV.push_back(T()); averageQV.push_back(0); return averageV.size()  - 1; } ;
     plint subscribeMax() { maxV.push_back( -std::numeric_limits<double>::max() ); return maxV.size() - 1; } ;
@@ -107,32 +118,10 @@ public:
     T getSum(plint qBin) { return sumV[qBin]; } ;
     T getAverage(plint qBin) { return averageV[qBin]*1.0/averageQV[qBin]; } ;
     T getMax(plint qBin) { return maxV[qBin]; } ;
-
-public: /* ReductiveBoxFunctions */
-    plint subscribeReduction1D(plint reductionType);
-    Array<plint,3> subscribeReduction3D(plint reductionType);
-    std::vector<plint> subscribeReductionND(plint reductionType, plint dimensions);
-
-    void gatherReduction1D(plint reductionType, plint whatQ, T value);
-    void gatherReduction3D(plint reductionType, Array<plint,3> whatQ, Array<T,3> value);
-    void gatherReductionND(plint reductionType, std::vector<plint> whatQ, std::vector<T> value);
-
-    T getReduction1D(plint reductionType, plint whatQ);
-    Array<T,3> getReduction3D(plint reductionType, Array<plint,3> whatQ);
-    std::vector<T> getReductionND(plint reductionType, std::vector<plint> whatQ);
-
-    void gatherReduction(plint ccrId, plint whatQ, T value) { gatherReduction1D(getReductionType(ccrId), whatQ, value); }
-    void gatherReduction(plint ccrId, Array<plint,3> whatQ, Array<T,3> value) { gatherReduction3D(getReductionType(ccrId), whatQ, value); }
-    void gatherReduction(plint ccrId, std::vector<plint> whatQ, std::vector<T> value) { gatherReductionND(getReductionType(ccrId), whatQ, value); }
-
-    T getReduction(plint ccrId, plint whatQ) { return getReduction1D(getReductionType(ccrId), whatQ); };
-    Array<T,3> getReduction(plint ccrId, Array<plint,3> whatQ)  { return getReduction3D(getReductionType(ccrId), whatQ); };
-    std::vector<T> getReduction(plint ccrId, std::vector<plint> whatQ)  { return getReductionND(getReductionType(ccrId), whatQ); }
-
-
 private:
-    vector<T> sumV, averageV, maxV;
-    vector<plint> averageQV;
+    std::vector<T> sumV, averageV, maxV;
+    std::vector<plint> averageQV;
+    std::map<plint, pluint> ccrIdToBin;
 };
 
 
