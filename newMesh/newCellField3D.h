@@ -22,6 +22,12 @@ public:
 	~SyncRequirements();
 
 	virtual std::set<plint> getSyncRequirements() { return ccrRequirements; }
+	virtual std::vector<plint> getSyncRequirements() { 
+		std::vector<plint> ccrRequirementsVector(ccrRequirements.begin(), ccrRequirements.end()); 
+		return ccrRequirementsVector; 
+	}
+
+
 	virtual void insert(std::set<plint> const& ccrReq) { 
 		for (std::set<plint>::const_iterator it=ccrReq.begin(); it!=ccrReq.end(); ++it) 
 	    	{	ccrRequirements.insert(*it); 	}
