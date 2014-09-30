@@ -7,14 +7,29 @@
 template<typename T>
 MeshMetrics<T>::MeshMetrics(TriangleBoundary3D<T> const& Cells)
     : meshQualityFile((global::directories().getLogOutDir() + "plbMeshQuality.log").c_str())
-    {
+    { init(Cells.getMesh()); }
 
-    minArea=10000000; minLength=10000000; minAngle=10000000; minNn=10000000;
+
+template<typename T>
+MeshMetrics<T>::MeshMetrics(TriangularSurfaceMesh<T> const& mesh)
+    : meshQualityFile((global::directories().getLogOutDir() + "plbMeshQuality.log").c_str())
+    { init(mesh); }
+
+
+template<typename T>
+void MeshMetrics<T>::init(TriangularSurfaceMesh<T> const& mesh)    {
+    minArea=std::numeric_limits<T>::max(); minLength=std::numeric_limits<T>::max();
+    minAngle=std::numeric_limits<T>::max(); minNn=std::numeric_limits<T>::max();
     maxArea=0; maxLength=0; maxAngle=0; maxNn=0;
 
-    TriangularSurfaceMesh<T>  mesh = Cells.getMesh();
     Nv = mesh.getNumVertices();
     Nt = mesh.getNumTriangles();
+    Array<T,2>& xRange;
+    Array<T,2>& yRange;
+    Array<T,2>& zRange;
+    mesh.computeBoundingBox (xRange, yRange, zRange);
+    cellRadius = max(xRange[1] - xRange[0], yRange[1] - yRange[0]);
+    cellRadius = max(cellRadius , zRange[1] - zRange[0]);
 
     Nn=0; Nn6=0; Nn5=0; Nn7=0;
     area=0; length=0; angle=0;
@@ -22,6 +37,7 @@ MeshMetrics<T>::MeshMetrics(TriangleBoundary3D<T> const& Cells)
     T tmp;
     // Compute Mean Values
     pluint NEdges = 0;
+    volume = 0.0;
     for (int iV = 0; iV < Nv; ++iV) {
         tmp = mesh.computeVertexArea(iV);
         minArea = minArea>tmp?tmp:minArea;
@@ -50,6 +66,17 @@ MeshMetrics<T>::MeshMetrics(TriangleBoundary3D<T> const& Cells)
             Nn6 += 1.0;
         } else if (NumNeighbors == 7) {
             Nn7 += 1.0;
+        }
+        std::vector<plint> neighborTriangleIds = mesh.getNeighborTriangleIds(iV);
+        for (pluint iB = 0; iB < neighborTriangleIds.size(); ++iB) {
+            plint iTriangle = neighborTriangleIds[iB];
+            Array<T,3> v0 = mesh.getVertex(iTriangle, 0);
+            Array<T,3> v1 = mesh.getVertex(iTriangle, 1);
+            Array<T,3> v2 = mesh.getVertex(iTriangle, 2);
+            Array<T,3> tmp;
+            crossProduct(v1, v2, tmp);
+            T triangleVolumeT6 =  VectorTemplateImpl<T,3>::scalarProduct(v0,tmp);
+            volume += triangleVolumeT6/6.0/3.0; // every volume is evaluated 3 times
         }
     }
     for (int iT = 0; iT < Nt; ++iT) {
@@ -94,6 +121,8 @@ void MeshMetrics<T>::write(plb_ofstream & meshFile) {
 
     meshFile << "Number of vertices, Nv =  " << Nv << std::endl;
     meshFile << "Number of triangles, Nt =  " << Nt << std::endl;
+    meshFile << "Surface, S =  " << area*Nv << std::endl;
+    meshFile << "Volume, V =  " << volume << std::endl;
     meshFile << std::endl;
     meshFile << "Mean Area per face, A =  " << area << std::endl;
     meshFile << "Deviation of Area %, sA =  " << 100*sigmaArea/area << std::endl;
