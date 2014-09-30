@@ -35,6 +35,7 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
     reductionParticles->periodicity().toggleAll(true);
     reductionParticles->toggleInternalStatistics(false);
 
+    ccrRequirements.insert(cellModel->getSyncRequirements());
 
     particleArg.push_back(immersedParticles);
     particleLatticeArg.push_back(immersedParticles);

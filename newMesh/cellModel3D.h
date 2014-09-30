@@ -58,7 +58,7 @@ public:
     virtual ConstitutiveModel<T,Descriptor>* clone() const=0;
     virtual plint getMaximumEdgeExtensionLengthLU()=0;
     virtual plint getCellRadiusLU()=0;
-    virtual SyncRequirements & getSyncRequirements();
+    virtual SyncRequirements & getSyncRequirements()=0;
 
 public:
     /* Computes the equilibrium quantities to correspond to the an inflated cell with

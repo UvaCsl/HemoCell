@@ -143,6 +143,8 @@ public:
         return ccrRequirementsVector; 
     }
 
+    virtual void insert(plint ccrReq) { ccrRequirements.insert(ccrReq); }
+
 
     virtual void insert(std::set<plint> const& ccrReq) {
         for (std::set<plint>::const_iterator it=ccrReq.begin(); it!=ccrReq.end(); ++it) 
