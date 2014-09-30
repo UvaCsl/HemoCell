@@ -15,10 +15,6 @@
 using namespace std;
 using namespace plb;
 
-ImmersedCellParticle3D<T,Descriptor>* castParticleToICP3D(Particle3D<T,Descriptor>* particle) {
-    return  dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particle);
-}
-
 template<typename T>
 class CellQuantityHolder
 {
@@ -27,17 +23,22 @@ public:
     ~CellQuantityHolder() { };
 
     plint & getParticlesPerCellId() { return particlesPerCellId; }
+    plint const& getParticlesPerCellId() { return particlesPerCellId; }
     void clearQuantities() ;
-    void updateCQH(CellQuantityHolder<T> * cqh);
+    void updateCQH(CellQuantityHolder<T> const& cqh);
 
     void insert(plint ccrId, T value)              { quantities1D[ccrId] = value; }
     void insert(plint ccrId, Array<T,3> value)     { quantities3D[ccrId] = value; }
     void insert(plint ccrId, std::vector<T> value) { quantitiesND[ccrId] = value; }
+    virtual void copyFromBlockStatisticsCCR(BlockStatisticsCCR<T> & reducer);
     bool count(plint ccrId);
 
     std::map<plint, T >&              getQuantities1D() { return quantities1D; }; // quantities1D[CCR_VOLUME] = CELL_VOLUME
-    std::map<plint, Array<T,3> >&     getQuantities3D() { return quantities3D; }; // quantities1D[CCR_VOLUME] = CELL_VOLUME
-    std::map<plint, std::vector<T> >& getQuantitiesND() { return quantitiesND; }; // quantities1D[CCR_VOLUME] = CELL_VOLUME
+    std::map<plint, Array<T,3> >&     getQuantities3D() { return quantities3D; }; 
+    std::map<plint, std::vector<T> >& getQuantitiesND() { return quantitiesND; }; 
+    std::map<plint, T > const&              getQuantities1D() { return quantities1D; };
+    std::map<plint, Array<T,3> > const&     getQuantities3D() { return quantities3D; };
+    std::map<plint, std::vector<T> > const& getQuantitiesND() { return quantitiesND; };
 
     T const&                get1D(plint ccrId)   { return quantities1D[ccrId]; }
     Array<T,3> const&       get3D(plint ccrId)   { return quantities3D[ccrId]; }
@@ -96,6 +97,9 @@ public:
 };
 
 
+template<typename T, template<typename U> class Descriptor>
+void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T, Descriptor> * cell, plint iVertex);
+
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -142,6 +146,7 @@ public:
     T get_Energy(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_Energy(); }
     Array<T,3>  get_force(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_force(); }
     Array<T,3>  getPosition(plint iVertex) { return iVertexToParticle3D[iVertex]->getPosition();}
+    Array<T,3> get_pbcPosition(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_pbcPosition(); }
 
     T computeEdgeLength(plint iVertex, plint jVertex);
     Array<T,3> computeEdgeLengthVector(plint iVertex, plint jVertex);
@@ -151,12 +156,16 @@ public:
     T computeVertexArea(plint iVertex);
     Array<T,3> computeVertexNormal(plint iVertex);
     T computeEdgeTileSpan(plint iVertex, plint jVertex);
-
+    virtual void computeCCRQuantities(plint ccrId, plint iVertex) { reducer.clear(); computeCCRQuantities(ccrId, reducer, this, iVertex); }
+    virtual void computeCCRQuantities(plint ccrId, Particle3D<T,Descriptor> * particle) { computeCCRQuantities(ccrId, reducer, this, castParticleToICP3D(particle->getVertexId())); }
+    void closeCCRQuantities() { this->copyFromBlockStatisticsCCR(reducer); }
 private:
     /* data */
     plint cellId;
     TriangularSurfaceMesh<T>& mesh;
     std::map<plint, Particle3D<T,Descriptor>*> iVertexToParticle3D;
+
+    BlockStatisticsCCR<T> reducer;
 
     pluint cellNumVertices, cellNumTriangles, cellNumEdges;
     /* Quantity containers for less computations */

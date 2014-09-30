@@ -13,7 +13,7 @@ void CellQuantityHolder<T, Descriptor>::clearQuantities() {
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellQuantityHolder<T, Descriptor>::updateCQH(CellQuantityHolder<T> * cqh) {
+void CellQuantityHolder<T, Descriptor>::updateCQH(CellQuantityHolder<T> const& cqh) {
     this->clearQuantities();
     particlesPerCellId = cqh->getParticlesPerCellId() ;
     quantities1D = cqh->getQuantities1D();
@@ -29,6 +29,19 @@ bool CellQuantityHolder<T, Descriptor>::count(plint ccrId) {
 	else if (dim==3)  { ret = quantities3D.count(ccrId); }
 	else		      { ret = quantitiesND.count(ccrId); }
 	return (ret==1)
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+void CellQuantityHolder<T, Descriptor>::copyFromBlockStatisticsCCR(BlockStatisticsCCR<T> & reducer) {
+    vector<plint> & ccrIds = reducer.get_ccrIds();
+    for (int i = 0; i < ccrIds.size(); ++i)
+    {   ccrId = ccrIds[i];
+        plint dim = getReductionDimension(ccrId);
+        if (1==dim) { reducer.get(get1D(ccrId)); }
+        else if (3==dim) { reducer.get(get3D(ccrId)); }
+        else { reducer.get(getND(ccrId)); }
+    }
 }
 
 
@@ -331,6 +344,102 @@ T Cell3D<T, Descriptor>::computeEdgeTileSpan(plint iVertex, plint jVertex) {
 
 	}
     return edgeTileSpans[edgeId];
+}
+
+
+
+
+
+template<typename T, template<typename U> class Descriptor>
+void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T, Descriptor> * cell, plint iVertex) {
+    std::vector<plint> neighbors = cell->getNeighborVertexIds(iVertex);
+    plint q = getReductionQuantity(ccrId);
+/****** 1D Quantities ******/
+    // Calculate ANGLE
+    if (q==2) { 
+        T edgeAngle = 0.0;
+        for (pluint iB = 0; iB < neighbors.size(); ++iB)  { edgeAngle += cell->calculateSignedAngle(triangleMesh, neighbors[iB]); }
+        reducer.gather(ccrId, edgeAngle*1.0/neighbors.size() );
+    // Calculate AREA
+    } else if (q==3) {  reducer.gather(ccrId, cell->computeVertexArea(iVertex) );
+    // Calculate EDGE DISTANCE
+    } else if (q==4) { 
+        T edgeDistance = 0.0;
+        for (pluint iB = 0; iB < neighbors.size(); ++iB) 
+        { edgeDistance +=  cell->computeEdgeLength(iVertex, neighbors[iB]) ; }
+        reducer.gather(ccrId, edgeDistance*1.0/neighbors.size());
+    // Calculate EDGE TILE SPAN
+    } else if (q==5) { 
+        T edgeTileSpan = 0.0;
+        for (pluint iB = 0; iB < neighbors.size(); ++iB) 
+        { edgeTileSpan +=  cell->computeEdgeTileSpan(iVertex, neighbors[iB]) ; }
+        reducer.gather(ccrId, edgeTileSpan = edgeTileSpan*1.0/neighbors.size() );
+    // Return Energy of particle
+    } else if (q==9) { reducer.gather(ccrId, cell->get_Energy(iVertex));
+    // Calculate VOLUME
+    } else if (q==1) { 
+        std::vector<plint> neighborTriangleIds = cell->getNeighborTriangleIds(iVertex);
+        quantity1D = 0.0;
+        for (pluint iB = 0; iB < neighborTriangleIds.size(); ++iB) {
+            plint iTriangle = neighborTriangleIds[iB];
+            Array<T,3> v0 = cell->getVertex(iTriangle, 0);
+            Array<T,3> v1 = cell->getVertex(iTriangle, 1);
+            Array<T,3> v2 = cell->getVertex(iTriangle, 2);
+            Array<T,3> tmp;
+            crossProduct(v1, v2, tmp);
+            T triangleVolumeT6 =  VectorTemplate<T,Descriptor>::scalarProduct(v0,tmp); // * (1.0/6.0)
+            quantity1D += triangleVolumeT6/6.0/3.0; // every volume is evaluated 3 times
+        }
+        reducer.gather(ccrId, quantity1D);
+/****** 3D Quantities ******/
+    // CCR_NO_PBC_POSITION_MEAN
+    } else if (q==0) { reducer.gather(ccrId, cell->getPosition(iVertex)); // POSITION
+    // POSITION FROM PERIODIC BOUNDARY CONDITION
+    } else if (q==6) { reducer.gather(ccrId, cell->get_pbcPosition(iVertex));
+    // VELOCITY
+    } else if (q==7) { reducer.gather(ccrId, cell->get_v(iVertex)) ;
+    // Force
+    } else if (q==16) { reducer.gather(ccrId, cell->get_force(iVertex));
+/****** ND Quantities ******/
+    // INERTIA
+    } else if (q==8) {
+        std::vector<T> quantityND;
+        T rx, ry, rz;
+        T Ixx=0, Ixy=0, Ixz=0;
+        T Iyx=0, Iyy=0, Iyz=0;
+        T Izx=0, Izy=0, Izz=0;
+        Array<T,3> r0 = cell->getPosition(); // Get the Cell Center;
+        for (pluint iB = 0; iB < neighbors.size(); ++iB) {
+            T Aj = cell->computeTriangleArea(neighbors[iB]);
+            Array<T,3> nj = cell->computeTriangleNormal(neighbors[iB]);
+            Array<T,3> rj = (cell->getVertex(neighbors[iB],0) +
+                            cell->getVertex(neighbors[iB],1) + cell->getVertex(neighbors[iB],2))/3.0;
+            rj = rj - r0;
+            T dV = 1.0/5.0 * Aj * dot(nj, rj);
+            rx = rj[0]; ry = rj[1]; rz = rj[2];
+            Ixx += (rz*rz+ry*ry)*dV;
+            Iyy += (rz*rz+rx*rx)*dV;
+            Izz += (rx*rx+ry*ry)*dV;
+            Iyx += -rx*ry*dV;
+            Ixy += -rx*ry*dV;
+            Izx += -rx*rz*dV;
+            Ixz += -rx*rz*dV;
+            Izy += -ry*rz*dV;
+            Iyz += -ry*rz*dV;
+        }
+        quantityND.clear();
+        quantityND.push_back(Ixx/3.0); // [0] every element is evaluated 3 times
+        quantityND.push_back(Ixy/3.0); // [1] every element is evaluated 3 times
+        quantityND.push_back(Ixz/3.0); // [2] every element is evaluated 3 times
+        quantityND.push_back(Iyx/3.0); // [3] every element is evaluated 3 times
+        quantityND.push_back(Iyy/3.0); // [4] every element is evaluated 3 times
+        quantityND.push_back(Iyz/3.0); // [5] every element is evaluated 3 times
+        quantityND.push_back(Izx/3.0); // [6] every element is evaluated 3 times
+        quantityND.push_back(Izy/3.0); // [7] every element is evaluated 3 times
+        quantityND.push_back(Izz/3.0); // [8] every element is evaluated 3 times
+        reducer.gather(ccrId, quantityND);
+    }
+
 }
 
 
