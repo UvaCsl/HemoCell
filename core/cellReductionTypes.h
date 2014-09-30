@@ -130,6 +130,37 @@ private:
 
 
 
+
+class SyncRequirements
+{
+public:
+    SyncRequirements();
+    ~SyncRequirements();
+
+    virtual std::set<plint> getSyncRequirementsSet() { return ccrRequirements; }
+    virtual std::vector<plint> getSyncRequirements() {
+        std::vector<plint> ccrRequirementsVector(ccrRequirements.begin(), ccrRequirements.end()); 
+        return ccrRequirementsVector; 
+    }
+
+
+    virtual void insert(std::set<plint> const& ccrReq) {
+        for (std::set<plint>::const_iterator it=ccrReq.begin(); it!=ccrReq.end(); ++it) 
+            {   ccrRequirements.insert(*it);    }
+    }
+
+    virtual void insert(std::vector<plint> const& ccrReq) {
+        for (int iV = 0; iV < ccrReq.size(); ++iV)
+        { ccrRequirements.insert( ccrReq[iV] ); }
+    }
+
+private:
+    std::set<plint> ccrRequirements;
+};
+
+
+
+
 const plb::plint allReductions_array[] = {CCR_NO_PBC_POSITION_MEAN, CCR_NO_PBC_POSITION_MIN, CCR_NO_PBC_POSITION_MAX,
                                      CCR_VOLUME,
                                      CCR_ANGLE_MEAN, CCR_ANGLE_MIN, CCR_ANGLE_MAX,
