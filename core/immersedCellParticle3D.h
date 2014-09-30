@@ -144,6 +144,10 @@ public:
 template<typename T, template<typename U> class Descriptor>
 int ImmersedCellParticle3D<T,Descriptor>::id = meta::registerGenericParticle3D<T,Descriptor,ImmersedCellParticle3D<T,Descriptor> >("ImmersedCellParticle3D");
 
+ImmersedCellParticle3D<T,Descriptor>* castParticleToICP3D(Particle3D<T,Descriptor>* particle) {
+    return  dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particle);
+}
+
 
 }  // namespace plb
 
