@@ -4,16 +4,16 @@
 
 /********************* CellQuantityHolder *********************/
 
-template<typename T, template<typename U> class Descriptor>
-void CellQuantityHolder<T, Descriptor>::clearQuantities() {
+template<typename T>
+void CellQuantityHolder<T>::clearQuantities() {
     quantities1D.clear();
     quantities3D.clear();
     quantitiesND.clear();
     scalar_ccrIds.clear(); vector_ccrIds.clear(); tensor_ccrIds.clear();
 }
 
-template<typename T, template<typename U> class Descriptor>
-void CellQuantityHolder<T, Descriptor>::updateCQH(CellQuantityHolder<T> const& cqh) {
+template<typename T>
+void CellQuantityHolder<T>::updateCQH(CellQuantityHolder<T> const& cqh) {
     this->clearQuantities();
     particlesPerCellId = cqh->getParticlesPerCellId() ;
     quantities1D = cqh->getQuantities1D();
@@ -22,21 +22,22 @@ void CellQuantityHolder<T, Descriptor>::updateCQH(CellQuantityHolder<T> const& c
     this->make_ccrId_List();
 }
 
-template<typename T, template<typename U> class Descriptor>
-bool CellQuantityHolder<T, Descriptor>::count(plint ccrId) {
+template<typename T>
+bool CellQuantityHolder<T>::count(plint ccrId) {
 	plint dim = getReductionDimension(ccrId);
+	plint ret;
 	if      (dim==1)  { ret = quantities1D.count(ccrId); }
 	else if (dim==3)  { ret = quantities3D.count(ccrId); }
 	else		      { ret = quantitiesND.count(ccrId); }
-	return (ret==1)
+	return (ret>0);
 }
 
 
-template<typename T, template<typename U> class Descriptor>
-void CellQuantityHolder<T, Descriptor>::copyFromBlockStatisticsCCR(BlockStatisticsCCR<T> & reducer) {
+template<typename T>
+void CellQuantityHolder<T>::copyFromBlockStatisticsCCR(BlockStatisticsCCR<T> & reducer) {
     vector<plint> & ccrIds = reducer.get_ccrIds();
-    for (int i = 0; i < ccrIds.size(); ++i)
-    {   ccrId = ccrIds[i];
+    for (int i = 0; i < ccrIds.size(); ++i) {
+        plint ccrId = ccrIds[i];
         plint dim = getReductionDimension(ccrId);
         if (1==dim) { reducer.get(get1D(ccrId)); }
         else if (3==dim) { reducer.get(get3D(ccrId)); }
@@ -45,8 +46,8 @@ void CellQuantityHolder<T, Descriptor>::copyFromBlockStatisticsCCR(BlockStatisti
 }
 
 
-template<typename T, template<typename U> class Descriptor>
-void CellQuantityHolder<T, Descriptor>::reduceQuantity(plint ccrId, T value, plint numParts) {
+template<typename T>
+void CellQuantityHolder<T>::reduceQuantity(plint ccrId, T value, plint numParts) {
     if (quantities1D.count(ccrId) == 0) { quantities1D[ccrId] = value; }
     else {
         plint reductionType = (ccrId%100)/10; // Find reduction type (min,max,etc): second to last digit
@@ -61,24 +62,9 @@ void CellQuantityHolder<T, Descriptor>::reduceQuantity(plint ccrId, T value, pli
     }
 }
 
-template<typename T, template<typename U> class Descriptor>
-void CellQuantityHolder<T, Descriptor>::reduceQuantity(plint ccrId, T value, plint numParts) {
-    if (quantities1D.count(ccrId) == 0) { quantities1D[ccrId] = value; }
-    else {
-        plint reductionType = (ccrId%100)/10; // Find reduction type (min,max,etc): second to last digit
-        T prValue = quantities1D[ccrId];
-        if (0 == reductionType)      { quantities1D[ccrId] += value; } // Sum
-        else if (1 == reductionType) { quantities1D[ccrId] = 
-                (prValue*particlesPerCellId + value*numParts) * 1.0 / (particlesPerCellId + numParts); }  // Mean
-        else if (2 == reductionType) { quantities1D[ccrId] = max(prValue, value); } // Max of
-        else if (3 == reductionType) { quantities1D[ccrId] = min(prValue, value);  } // Min
-        // STD, not implemented
-        // else if (4 == reductionType) { false; } // Std not implemented yet
-    }
-}
 
-template<typename T, template<typename U> class Descriptor>
-void CellQuantityHolder<T, Descriptor>::reduceQuantity(plint ccrId, std::vector<T> const& value, plint numParts) {
+template<typename T>
+void CellQuantityHolder<T>::reduceQuantity(plint ccrId, std::vector<T> const& value, plint numParts) {
     if (quantitiesND.count(ccrId) == 0) { quantitiesND[ccrId] = value; }
     else {
         plint reductionType = (ccrId%100)/10; // Find reduction type (min,max,etc): second to last digit
@@ -94,8 +80,8 @@ void CellQuantityHolder<T, Descriptor>::reduceQuantity(plint ccrId, std::vector<
 }
 
 
-template<typename T, template<typename U> class Descriptor>
-void CellQuantityHolder<T, Descriptor>::make_ccrId_List() {
+template<typename T>
+void CellQuantityHolder<T>::make_ccrId_List() {
     if (scalar_ccrIds.size() != quantities1D.size()) {
         scalar_ccrIds.clear();
         typename std::map<plint, T >::const_iterator iter1D;
@@ -125,7 +111,7 @@ void CellQuantityHolder<T, Descriptor>::make_ccrId_List() {
 
 
 template<typename T, template<typename U> class Descriptor>
-Cell3D<T, Descriptor>::Cell3D(TriangularSurfaceMesh<T>& mesh_, plint cellId_=-1) {
+Cell3D<T, Descriptor>::Cell3D(TriangularSurfaceMesh<T>& mesh_, plint cellId_) {
     cellId = cellId_;
     setMesh(mesh_);
 };
@@ -163,7 +149,7 @@ plint Cell3D<T,Descriptor>::getEdgeId(plint iVertex, plint jVertex) {
 
 template<typename T, template<typename U> class Descriptor>
 void Cell3D<T, Descriptor>::push_back(Particle3D<T,Descriptor>* particle3D) {  
-	iVertexToParticle3D[castParticleToICP3D(iVertexToParticle3D[iVertex])->getVertexId()] = particle3D; 
+	iVertexToParticle3D[castParticleToICP3D(particle3D)->getVertexId()] = particle3D; 
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -172,10 +158,10 @@ void Cell3D<T, Descriptor>::close() {
     triangles.clear();
     for (int iTriangle = 0; iTriangle < numTrianges; ++iTriangle)
     {
-        vId0 = getVertexId(iTriangle, 0);
-        vId1 = getVertexId(iTriangle, 1);
-        vId2 = getVertexId(iTriangle, 2);
-        numVert = iVertexToParticle3D.count(vId0) 
+        plint vId0 = getVertexId(iTriangle, 0);
+        plint vId1 = getVertexId(iTriangle, 1);
+        plint vId2 = getVertexId(iTriangle, 2);
+        plint numVert = iVertexToParticle3D.count(vId0) 
                 + iVertexToParticle3D.count(vId1)
                 + iVertexToParticle3D.count(vId2);
         if (numVert == 3) {
@@ -249,6 +235,7 @@ T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex) {
 	    Array<T,3> V2 = computeTriangleNormal(jTriangle);
 	    T angle = angleBetweenVectors(V1, V2);
 		plint sign = dot(x2-x1, V2) >= 0?1:-1;
+        const double pi = 4.*atan(1.);
 		if (sign <= 0) {
 			angle = 2*pi-angle;
 		}
@@ -271,7 +258,7 @@ T Cell3D<T, Descriptor>::computeTriangleArea(plint iTriangle) {
 
 	    Array<T,3> n;
 	    crossProduct(e01, e02, n);
-	    normN = normN;
+	    T normN = norm(n);
         n /= normN;
 	    triangleAreas[iTriangle] = normN;
 	    triangleNormals[iTriangle] = n;
@@ -280,13 +267,26 @@ T Cell3D<T, Descriptor>::computeTriangleArea(plint iTriangle) {
 }
 
 template<typename T, template<typename U> class Descriptor>
+plint Cell3D<T, Descriptor>::findTriangleId(plint iVertex, plint jVertex, plint kVertex) { 
+    std::vector<plint> ati1 = getAdjacentTriangleIds(iVertex, jVertex); 
+    std::vector<plint> ati2 = getAdjacentTriangleIds(iVertex, kVertex); 
+    if (ati1[0] == ati2[0]) return ati1[0];
+    if (ati1[0] == ati2[1]) return ati1[0];
+    if (ati1[1] == ati2[0]) return ati1[1];
+    if (ati1[1] == ati2[1]) return ati1[1];
+} ;
+
+
+template<typename T, template<typename U> class Descriptor>
 Array<T,3> Cell3D<T, Descriptor>::computeTriangleNormal(plint iTriangle) {
     PLB_ASSERT(iTriangle >= 0 && iTriangle < cellNumTriangles);
-	if (triangleAreas.count(iTriangle) == 0) {
-		computeTriangleArea(iTriangle);
-	}
-	return triangleNormals[iTriangle];
+    if (triangleAreas.count(iTriangle) == 0) {
+        computeTriangleArea(iTriangle);
+    }
+    return triangleNormals[iTriangle];
 }
+
+
 
 template<typename T, template<typename U> class Descriptor>
 T Cell3D<T, Descriptor>::computeVertexArea(plint iVertex) {
@@ -358,7 +358,7 @@ void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T
     // Calculate ANGLE
     if (q==2) { 
         T edgeAngle = 0.0;
-        for (pluint iB = 0; iB < neighbors.size(); ++iB)  { edgeAngle += cell->calculateSignedAngle(triangleMesh, neighbors[iB]); }
+        for (pluint iB = 0; iB < neighbors.size(); ++iB)  { edgeAngle += cell->calculateSignedAngle(iVertex, neighbors[iB]); }
         reducer.gather(ccrId, edgeAngle*1.0/neighbors.size() );
     // Calculate AREA
     } else if (q==3) {  reducer.gather(ccrId, cell->computeVertexArea(iVertex) );
@@ -379,7 +379,7 @@ void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T
     // Calculate VOLUME
     } else if (q==1) { 
         std::vector<plint> neighborTriangleIds = cell->getNeighborTriangleIds(iVertex);
-        quantity1D = 0.0;
+        T quantity1D = 0.0;
         for (pluint iB = 0; iB < neighborTriangleIds.size(); ++iB) {
             plint iTriangle = neighborTriangleIds[iB];
             Array<T,3> v0 = cell->getVertex(iTriangle, 0);

@@ -22,8 +22,8 @@ public:
     CellQuantityHolder() { } ;
     ~CellQuantityHolder() { };
 
-    plint & getParticlesPerCellId() { return particlesPerCellId; }
-    plint const& getParticlesPerCellId() { return particlesPerCellId; }
+    plint const& getParticlesPerCellId() const { return particlesPerCellId; };
+    plint & getParticlesPerCellId() { return particlesPerCellId; };
     void clearQuantities() ;
     void updateCQH(CellQuantityHolder<T> const& cqh);
 
@@ -36,19 +36,19 @@ public:
     std::map<plint, T >&              getQuantities1D() { return quantities1D; }; // quantities1D[CCR_VOLUME] = CELL_VOLUME
     std::map<plint, Array<T,3> >&     getQuantities3D() { return quantities3D; }; 
     std::map<plint, std::vector<T> >& getQuantitiesND() { return quantitiesND; }; 
-    std::map<plint, T > const&              getQuantities1D() { return quantities1D; };
-    std::map<plint, Array<T,3> > const&     getQuantities3D() { return quantities3D; };
-    std::map<plint, std::vector<T> > const& getQuantitiesND() { return quantitiesND; };
+    std::map<plint, T > const& getQuantities1D() const { return quantities1D; };
+    std::map<plint, Array<T,3> > const& getQuantities3D() const { return quantities3D; };
+    std::map<plint, std::vector<T> > const& getQuantitiesND() const { return quantitiesND; };
 
-    T const&                get1D(plint ccrId)   { return quantities1D[ccrId]; }
-    Array<T,3> const&       get3D(plint ccrId)   { return quantities3D[ccrId]; }
-    std::vector<T> const&   getND(plint ccrId)   { return quantitiesND[ccrId]; }
+    T const&                get1D(plint ccrId) const  { return quantities1D[ccrId]; }
+    Array<T,3> const&       get3D(plint ccrId) const  { return quantities3D[ccrId]; }
+    std::vector<T> const&   getND(plint ccrId) const  { return quantitiesND[ccrId]; }
     T &                     get1D(plint ccrId)   { return quantities1D[ccrId]; }
     Array<T,3> &            get3D(plint ccrId)   { return quantities3D[ccrId]; }
     std::vector<T> &        getND(plint ccrId)   { return quantitiesND[ccrId]; }
-    void get(plint ccrId, T& value)              { value = get1D(ccrId); return value }
-    void get(plint ccrId, Array<T,3>& value)     { value = get3D(ccrId); return value }
-    void get(plint ccrId, std::vector<T>& value) { value = getND(ccrId); return value }
+    void get(plint ccrId, T& value)              { value = get1D(ccrId); return value; }
+    void get(plint ccrId, Array<T,3>& value)     { value = get3D(ccrId); return value; }
+    void get(plint ccrId, std::vector<T>& value) { value = getND(ccrId); return value; }
 
     // numParts refer to the number of particles contained in the subdomain
     void reduceQuantity(plint ccrId, T value, plint numParts=0) ;
@@ -97,6 +97,11 @@ public:
 };
 
 
+
+template<typename T, template<typename U> class Descriptor>
+class Cell3D ;
+
+
 template<typename T, template<typename U> class Descriptor>
 void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T, Descriptor> * cell, plint iVertex);
 
@@ -113,7 +118,7 @@ public:
     void close();
 
     void setMesh(TriangularSurfaceMesh<T>& mesh_) ;
-    plint set_cellId(plint cellId_) { cellId = cellId_; }
+    void set_cellId(plint cellId_) { cellId = cellId_; }
 
     TriangularSurfaceMesh<T> & getMesh() { return mesh; }
     plint & get_cellId() { return cellId;  }
@@ -135,7 +140,7 @@ public:
     plint getEdgeId(plint iVertex, plint jVertex);
  
     plint getVertexId(plint iTriangle, plint id) {   return mesh.getVertexId(iTriangle, id); }
-    plint getNeighborVertexIds(plint iVertex) {   return mesh.getNeighborVertexIds(iVertex); }
+    std::vector<plint> getNeighborVertexIds(plint iVertex) {   return mesh.getNeighborVertexIds(iVertex); }
     std::vector<plint> getNeighborTriangleIds(plint iVertex) { return mesh.getNeighborTriangleIds(iVertex); }
     std::vector<plint> getAdjacentTriangleIds(plint iVertex, plint jVertex) { return mesh.getAdjacentTriangleIds(iVertex, jVertex); }
  
@@ -153,6 +158,9 @@ public:
     T computeSignedAngle(plint iVertex, plint jVertex);
     T computeTriangleArea(plint iTriangle);
     Array<T,3> computeTriangleNormal(plint iTriangle);
+    plint findTriangleId(plint iVertex, plint jVertex, plint kVertex) ;
+    T computeTriangleArea(plint iVertex, plint jVertex, plint kVertex) { return computeTriangleArea(findTriangleId(iVertex,jVertex,kVertex)); };
+    Array<T,3> computeTriangleNormal(plint iVertex, plint jVertex, plint kVertex) { return computeTriangleNormal(findTriangleId(iVertex,jVertex,kVertex)); };
     T computeVertexArea(plint iVertex);
     Array<T,3> computeVertexNormal(plint iVertex);
     T computeEdgeTileSpan(plint iVertex, plint jVertex);
