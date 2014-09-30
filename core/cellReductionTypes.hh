@@ -18,6 +18,7 @@ void BlockStatisticsCCR<T>::subscribe(plint ccrId) {
         else if (4 == reductionType) { ccrIdToBin[ccrId].push_back(subscribeAverage()); } // Std is essentially an average
         else { ccrIdToBin[ccrId].push_back(-1); }
     }
+    ccrIds.push_back(ccrId);
 }
 
 template<typename T>
@@ -33,6 +34,7 @@ void BlockStatisticsCCR<T>::gather(plint ccrId, T value, pluint qBin) {
 
 template<typename T>
 void BlockStatisticsCCR<T>::gather(plint ccrId, T value) {
+    if (0 == ccrIdToBin.count(ccrId)) { subscribe(ccrId); }
     pluint qBin = ccrIdToBin[ccrId][0];
     gather(ccrId, value, qBin);
 }
@@ -40,6 +42,7 @@ void BlockStatisticsCCR<T>::gather(plint ccrId, T value) {
 
 template<typename T>
 void BlockStatisticsCCR<T>::gather(plint ccrId, Array<T,3> const& value) {
+    if (0 == ccrIdToBin.count(ccrId)) { subscribe(ccrId); }
     plint dim = ccrIdToBin[ccrId].size();
     pluint qBin;
     for (int d = 0; d < dim; ++d) {
@@ -51,6 +54,7 @@ void BlockStatisticsCCR<T>::gather(plint ccrId, Array<T,3> const& value) {
 
 template<typename T>
 void BlockStatisticsCCR<T>::gather(plint ccrId, std::vector<T> const& value) {
+    if (0 == ccrIdToBin.count(ccrId)) { subscribe(ccrId); }
     plint dim = ccrIdToBin[ccrId].size();
     pluint qBin;
     for (int d = 0; d < dim; ++d) {
@@ -61,7 +65,13 @@ void BlockStatisticsCCR<T>::gather(plint ccrId, std::vector<T> const& value) {
 
 template<typename T>
 void BlockStatisticsCCR<T>::get(plint ccrId, T & value, pluint qBin) {
-    gather(ccrId, value, qBin);
+    PLB_ASSERT(ccrIdToBin.count(ccrId) > 0);
+    plint reductionType = getReductionType(ccrId);
+    if (0 == reductionType)      { value = getSum(qBin); }
+    else if (1 == reductionType) { value = getAverage(qBin); }
+    else if (2 == reductionType) { value = getMax(qBin); }
+    else if (3 == reductionType) { value = getMax(qBin); } // Min can be calculated from the inverse Max
+    else if (4 == reductionType) { value = getAverage(qBin); } // Std is essentially an average
 }
 
 template<typename T>

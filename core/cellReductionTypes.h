@@ -96,6 +96,7 @@ public:
     ~BlockStatisticsCCR() {};
 
 public:
+    void clear() { sumV.clear(); averageV.clear(); averageV.clear(); averageQV.clear(); ccrIdToBin.clear(); ccrIds.clear(); } ;
     void subscribe(plint ccrId);
     void gather(plint ccrId, T value, pluint qBin);
     void gather(plint ccrId, T value);
@@ -106,6 +107,8 @@ public:
     void get(plint ccrId, T & value);
     void get(plint ccrId, Array<T,3> & value);
     void get(plint ccrId, std::vector<T> & value);
+    std::vector<plint> & get_ccrIds() { return ccrIds; };
+
 public:
     plint subscribeSum() { sumV.push_back(T()); return sumV.size() - 1; } ;
     plint subscribeAverage() { averageV.push_back(T()); averageQV.push_back(0); return averageV.size()  - 1; } ;
@@ -122,6 +125,7 @@ private:
     std::vector<T> sumV, averageV, maxV;
     std::vector<plint> averageQV;
     std::map<plint, std::vector<pluint> > ccrIdToBin;
+    std::vector<plint> ccrIds;
 };
 
 
