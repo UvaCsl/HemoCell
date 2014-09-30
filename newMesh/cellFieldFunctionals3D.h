@@ -3,6 +3,7 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "immersedCellParticle3D.h"
+#include "reductionParticle3D.h"
 #include "cell3D.h"
 
 using namespace std;

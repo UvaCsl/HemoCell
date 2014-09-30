@@ -94,12 +94,12 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
     reductionParticleField.removeParticles(reductionParticleField.getBoundingBox());
 
     std::map<plint, pluint> particlesPerCellId;
-    for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
+    for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
         for (std::vector<plint>::iterator i = ccrRequirements.begin(); i != ccrRequirements.end(); ++i)
         {
             plint ccrId = *i;
-            plint cellId = castParticleToICP3D(found[iParticle])->get_cellId();
-            cellIdToCell3D[cellId].computeCCRQuantities(ccrId, found[iParticle]);
+            plint cellId = castParticleToICP3D(particles[iParticle])->get_cellId();
+            cellIdToCell3D[cellId].computeCCRQuantities(ccrId, particles[iParticle]);
 
             if (particlesPerCellId.count(cellId) > 0) { particlesPerCellId[cellId] += 1; }
             else  { particlesPerCellId[cellId] = 1; }
@@ -115,8 +115,8 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         ReductionParticle3D<T,Descriptor>* rParticle = new ReductionParticle3D<T,Descriptor>(cellId, vertex);
         rParticle->get_nParticles() = particlesPerCellId[cellId];
         rParticle->updateCQH(cell);
+        reductionParticleField.addParticle(reductionParticleField.getBoundingBox(), rParticle);
     }
-    reductionParticleField.addParticle(reductionParticleField.getBoundingBox(), rParticle);
 }
 
 
