@@ -19,9 +19,23 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
 	immersedParticles->periodicity().toggleAll(true);
     immersedParticles->toggleInternalStatistics(false);
 
+    MultiBlockManagement3D reductionParticleManagement (
+            latticeManagement.getSparseBlockStructure(),
+            latticeManagement.getThreadAttribution().clone(),
+            cellRadiusLU*5,
+            latticeManagement.getRefinementLevel() );
+
+    reductionParticles = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(reductionParticleManagement,
+            defaultMultiBlockPolicy3D().getCombinedStatistics() );
+    reductionParticles->periodicity().toggleAll(true);
+    reductionParticles->toggleInternalStatistics(false);
+
+
     particleArg.push_back(immersedParticles);
-  	particleLatticeArg.push_back(immersedParticles);
-	particleLatticeArg.push_back(&lattice);
+    particleLatticeArg.push_back(immersedParticles);
+    particleLatticeArg.push_back(&lattice);
+    particleReductioParticleArg.push_back(immersedParticles);
+    particleReductioParticleArg.push_back(reductionParticles);
 	/* Default values*/
 	ibmKernel = 2;
 	coupleWithIBM = true;
@@ -106,14 +120,14 @@ template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local() {
     global::timer("Model").start();
     applyProcessingFunctional (
-        new ComputeRequiredQuantities<T,Descriptor> (ccrRequirements, cellIdToCell3D),
-        immersedParticles->getBoundingBox(), particleArg );
+        new ComputeRequiredQuantities<T,Descriptor> (ccrRequirements.getSyncRequirements(), cellIdToCell3D),
+        immersedParticles->getBoundingBox(), particleReductioParticleArg );
     global::timer("Model").stop();
 
     global::timer("Quantities").start();
     applyProcessingFunctional (
-        new SyncCellQuantities<T,Descriptor> (mesh, cellIdToCell3D),
-        immersedParticles->getBoundingBox(), particleArg );
+        new SyncCellQuantities<T,Descriptor> (cellIdToCell3D),
+        immersedParticles->getBoundingBox(), particleReductioParticleArg );
     global::timer("Quantities").stop();
 
 }

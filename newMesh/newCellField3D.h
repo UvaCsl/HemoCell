@@ -96,6 +96,7 @@ public:
 private:
 	MultiBlockLattice3D<T, Descriptor> & lattice
 	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles;
+	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * reductionParticles;
 	TriangularSurfaceMesh<T> & elementaryMesh;
 	ConstitutiveModel<T, Descriptor> * cellModel;
 	plint ibmKernel;
@@ -103,13 +104,14 @@ private:
 
     std::vector<MultiBlock3D*> particleArg;
     std::vector<MultiBlock3D*> particleLatticeArg;
-
+    std::vector<MultiBlock3D*> particleReductioParticleArg;
     std::map<plint, Cell3D<T,Descriptor> > cellIdToCell3D;
     std::vector<plint> cellIds;
 	/* data */
-	std::set<plint> ccrRequirements;
+	SyncRequirements ccrRequirements;
 };
 
 
 #include "CellField3D.hh"
 #endif
+
