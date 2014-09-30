@@ -88,7 +88,11 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
         Array<T,3> velocity; velocity.resetToZero();
-        interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
+        cellPos = particle->getIBMcoordinates();
+        weights = particle->getIBMweights();
+        if (cellPos.size() == 0) {
+        	interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
+        }
         particle->get_v().resetToZero();
         for (pluint iCell=0; iCell < weights.size(); ++iCell) {
             velocity.resetToZero();
@@ -147,16 +151,16 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
-        interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
+        interpolationCoefficients(fluid, position, particle->getIBMcoordinates(), particle->getIBMweights(), ibmKernel);
         Array<T,3> elasticForce = particle->get_force();
         // pcout << "elastic force: (" << elasticForce[0] << ", "<< elasticForce[1] << ", "<< elasticForce[2] << ")\n";
         for (pluint iCell = 0; iCell < weights.size(); ++iCell) {
-            Dot3D cellPosition = cellPos[iCell];
+            Dot3D cellPosition = particle->getIBMcoordinates()[iCell];
 //            Dot3D cellPosition = cellPos[iCell] + offset;
             cell = &fluid.get(cellPosition.x, cellPosition.y, cellPosition.z);
             T *locForce = cell->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
             for (pluint iA = 0; iA < 3; ++iA) {
-                locForce[iA] += weights[iCell]*elasticForce[iA];
+                locForce[iA] += particle->getIBMweights()[iCell]*elasticForce[iA];
             }
         }
     }

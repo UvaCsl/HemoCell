@@ -90,6 +90,12 @@ private:
     plint cellId;
     plint vertexId;
 public:
+    std::vector<Dot3D> & getIBMcoordinates() { return cellPos; }
+    std::vector<Dot3D> & getIBMweights() { return weights; }
+private:
+    std::vector<Dot3D> cellPos;
+    std::vector<T> weights;
+public:
     ImmersedCellParticle3D (
             plint tag_, Array<T,3> const& position,
             Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
