@@ -4,49 +4,15 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "cell3D.h"
+#include "cellModel3D.h"
 #include "cellReductionTypes.h"
-
+#include "cellFieldFunctionals3D.h"
 #include <set>
 
 using namespace std;
 using namespace plb;
 
-particleEnvelopeWidth = 2;
-ibmKernel = 2;
-
-
-class SyncRequirements
-{
-public:
-	SyncRequirements();
-	~SyncRequirements();
-
-	virtual std::set<plint> getSyncRequirements() { return ccrRequirements; }
-	virtual std::vector<plint> getSyncRequirements() { 
-		std::vector<plint> ccrRequirementsVector(ccrRequirements.begin(), ccrRequirements.end()); 
-		return ccrRequirementsVector; 
-	}
-
-
-	virtual void insert(std::set<plint> const& ccrReq) { 
-		for (std::set<plint>::const_iterator it=ccrReq.begin(); it!=ccrReq.end(); ++it) 
-	    	{	ccrRequirements.insert(*it); 	}
-	}
-
-	virtual void insert(std::set<plint> const& ccrReq) { 
-		for (std::set<plint>::const_iterator it=ccrReq.begin(); it!=ccrReq.end(); ++it) 
-			{ ccrRequirements.insert(*it); }
-	}
-
-	virtual void insert(std::vector<plint> const& ccrReq) { 
-		for (int iV = 0; iV < ccrReq.size(); ++iV)
-		{ ccrRequirements.insert( ccrReq[iV] ); }
-	}
-
-private:
-	std::set<plint> ccrRequirements;
-};
-
+plint ibmKernel = 2;
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -94,7 +60,7 @@ public:
 	pluint getNumberOfCells() { return getNumberOfCells_Local(); } ;
 	bool has_cellId(plint cellId) { return cellIdToCell3D.count(cellId) > 0; }
 private:
-	MultiBlockLattice3D<T, Descriptor> & lattice
+	MultiBlockLattice3D<T, Descriptor> & lattice;
 	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles;
 	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * reductionParticles;
 	TriangularSurfaceMesh<T> & elementaryMesh;
@@ -112,6 +78,6 @@ private:
 };
 
 
-#include "CellField3D.hh"
+#include "cellField3D.hh"
 #endif
 

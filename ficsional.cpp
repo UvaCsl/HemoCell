@@ -263,9 +263,6 @@ int main(int argc, char* argv[])
      * Initialize model *
      */
 
-    k_WLC *= 1.0;     k_rep *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
-    k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
-    eta_m /= dNewton*dt/dx;     k_stretch /= dNewton;    k_rest /= dNewton/dx;
     T eqArea, eqLength, eqAngle, eqVolume, eqSurface, eqTileSpan;
 
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/

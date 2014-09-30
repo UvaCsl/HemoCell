@@ -24,9 +24,9 @@ void MeshMetrics<T>::init(TriangularSurfaceMesh<T> const& mesh)    {
 
     Nv = mesh.getNumVertices();
     Nt = mesh.getNumTriangles();
-    Array<T,2>& xRange;
-    Array<T,2>& yRange;
-    Array<T,2>& zRange;
+    Array<T,2> xRange;
+    Array<T,2> yRange;
+    Array<T,2> zRange;
     mesh.computeBoundingBox (xRange, yRange, zRange);
     cellRadius = max(xRange[1] - xRange[0], yRange[1] - yRange[0]);
     cellRadius = max(cellRadius , zRange[1] - zRange[0]);

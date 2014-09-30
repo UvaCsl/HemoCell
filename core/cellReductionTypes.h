@@ -150,7 +150,7 @@ public:
     }
 
     virtual void insert(std::vector<plint> const& ccrReq) {
-        for (int iV = 0; iV < ccrReq.size(); ++iV)
+        for (pluint iV = 0; iV < ccrReq.size(); ++iV)
         { ccrRequirements.insert( ccrReq[iV] ); }
     }
 

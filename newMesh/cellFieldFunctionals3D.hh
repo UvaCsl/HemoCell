@@ -2,7 +2,183 @@
 #define CELL_FIELD_FUNCTIONALS_3D_HH
 #include "cellFieldFunctionals3D.h"
 
+/* ******** ComputeCellForce3D *********************************** */
 
+template<typename T, template<typename U> class Descriptor>
+ComputeCellForce3D<T,Descriptor>::ComputeCellForce3D (ConstitutiveModel<T,Descriptor>* cellModel_, std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D_)
+: cellModel(cellModel_), cellIdToCell3D(cellIdToCell3D_) { }
+
+template<typename T, template<typename U> class Descriptor>
+ComputeCellForce3D<T,Descriptor>::~ComputeCellForce3D()
+{
+    delete cellModel;
+}
+
+template<typename T, template<typename U> class Descriptor>
+ComputeCellForce3D<T,Descriptor>::ComputeCellForce3D (
+            ComputeCellForce3D<T,Descriptor> const& rhs)
+    : cellModel(rhs.cellModel), cellIdToCell3D(rhs.cellIdToCell3D)
+{ }
+
+
+template<typename T, template<typename U> class Descriptor>
+void ComputeCellForce3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    typename std::map<plint, Cell3D<T,Descriptor>  >::iterator iter;
+    for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
+        plint cellId = iter->first;
+        Cell3D<T,Descriptor> & cell = iter->second;
+        cellModel->computeCellForce(cell);
+    }
+}
+
+template<typename T, template<typename U> class Descriptor>
+ComputeCellForce3D<T,Descriptor>*
+    ComputeCellForce3D<T,Descriptor>::clone() const
+{
+    return new ComputeCellForce3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void ComputeCellForce3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Particle field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT ComputeCellForce3D<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulk;
+}
+
+template<typename T, template<typename U> class Descriptor>
+void ComputeCellForce3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::dynamicVariables; // Particle field.
+}
+
+
+
+
+/* ******** FluidVelocityToImmersedCell3D *********************************** */
+
+template<typename T, template<typename U> class Descriptor>
+FluidVelocityToImmersedCell3D<T,Descriptor>::FluidVelocityToImmersedCell3D (
+        plint ibmKernel_) : ibmKernel(ibmKernel_) {};
+
+template<typename T, template<typename U> class Descriptor>
+void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    PLB_PRECONDITION( blocks.size()==2 );
+    ParticleField3D<T,Descriptor>& particleField =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    BlockLattice3D<T,Descriptor>& fluid =
+        *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
+    /* Not used */
+//    Dot3D offset = computeRelativeDisplacement(particleField, fluid);
+    std::vector<Particle3D<T,Descriptor>*> particles;
+    particleField.findParticles(domain, particles);
+    std::vector<Dot3D> cellPos;
+    std::vector<T> weights;
+    std::vector<Cell<T,Descriptor>*> cells;
+    for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+        PLB_ASSERT( particle );
+        Array<T,3> position(particle->getPosition());
+        Array<T,3> velocity; velocity.resetToZero();
+        interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
+        particle->get_v().resetToZero();
+        for (pluint iCell=0; iCell < weights.size(); ++iCell) {
+            velocity.resetToZero();
+            Dot3D cellPosition = cellPos[iCell];
+//            Dot3D cellPosition = cellPos[iCell] + offset;
+            fluid.get(cellPosition.x, cellPosition.y, cellPosition.z).computeVelocity(velocity);
+            particle->get_v() += weights[iCell] * velocity;
+        }
+        particle->get_vPrevious() = particle->get_v();
+    }
+}
+
+template<typename T, template<typename U> class Descriptor>
+FluidVelocityToImmersedCell3D<T,Descriptor>* FluidVelocityToImmersedCell3D<T,Descriptor>::clone() const {
+    return new FluidVelocityToImmersedCell3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void FluidVelocityToImmersedCell3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::dynamicVariables; // Particle field.
+    modified[1] = modif::nothing; // Fluid field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT FluidVelocityToImmersedCell3D<T,Descriptor>::appliesTo () const {
+    return BlockDomain::bulk;
+}
+
+
+
+/* ******** ForceToFluid3D *********************************** */
+template<typename T, template<typename U> class Descriptor>
+ForceToFluid3D<T,Descriptor>::ForceToFluid3D (
+        plint ibmKernel_) : ibmKernel(ibmKernel_) {};
+
+template<typename T, template<typename U> class Descriptor>
+void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    PLB_PRECONDITION( blocks.size()==2 );
+    ParticleField3D<T,Descriptor>& particleField =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    BlockLattice3D<T,Descriptor>& fluid =
+        *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
+//    Dot3D offset = computeRelativeDisplacement(particleField, fluid); NOT USED
+
+    std::vector<Particle3D<T,Descriptor>*> particles;
+    particleField.findParticles(domain, particles);
+    std::vector<Dot3D> cellPos;
+    std::vector<T> weights;
+    Cell<T,Descriptor>* cell;
+    for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+        PLB_ASSERT( particle );
+        Array<T,3> position(particle->getPosition());
+        interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
+        Array<T,3> elasticForce = particle->get_force();
+        // pcout << "elastic force: (" << elasticForce[0] << ", "<< elasticForce[1] << ", "<< elasticForce[2] << ")\n";
+        for (pluint iCell = 0; iCell < weights.size(); ++iCell) {
+            Dot3D cellPosition = cellPos[iCell];
+//            Dot3D cellPosition = cellPos[iCell] + offset;
+            cell = &fluid.get(cellPosition.x, cellPosition.y, cellPosition.z);
+            T *locForce = cell->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
+            for (pluint iA = 0; iA < 3; ++iA) {
+                locForce[iA] += weights[iCell]*elasticForce[iA];
+            }
+        }
+    }
+}
+
+template<typename T, template<typename U> class Descriptor>
+ForceToFluid3D<T,Descriptor>* ForceToFluid3D<T,Descriptor>::clone() const {
+    return new ForceToFluid3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void ForceToFluid3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::nothing; // Particle field.
+    modified[1] = modif::staticVariables; // Fluid field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT ForceToFluid3D<T,Descriptor>::appliesTo () const {
+    return BlockDomain::bulkAndEnvelope;
+}
 
 
 /* ******** FillCellMap *********************************** */

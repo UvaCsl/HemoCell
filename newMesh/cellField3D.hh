@@ -1,13 +1,18 @@
 #ifndef CELLFIELD_3D_HH
 #define CELLFIELD_3D_HH
-#include "CellField3D.h"
+#include "cellField3D.h"
 
 template<typename T, template<typename U> class Descriptor>
 CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, 
 	TriangularSurfaceMesh<T> const& elementaryMesh_,  pluint numberOfCells_, 
 	ConstitutiveModel<T, Descriptor> * cellModel_) : 
-		lattice(lattice_), elementaryMesh(elementaryMesh_) 
+		lattice(lattice_), elementaryMesh(elementaryMesh_), cellModel(cellModel_)
 {
+    plint maxEdgeLengthLU = ceil(cellModel->getMaximumEdgeExtensionLengthLU());
+    plint maxRadiusLU = ceil(cellModel->getCellRadiusLU());
+    pluint particleEnvelopeWidth = maxEdgeLengthLU;
+    pluint reductionParticleEnvelopeWidth = 5*maxEdgeLengthLU;
+
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
             latticeManagement.getSparseBlockStructure(),
@@ -22,7 +27,7 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
     MultiBlockManagement3D reductionParticleManagement (
             latticeManagement.getSparseBlockStructure(),
             latticeManagement.getThreadAttribution().clone(),
-            cellRadiusLU*5,
+            reductionParticleEnvelopeWidth,
             latticeManagement.getRefinementLevel() );
 
     reductionParticles = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(reductionParticleManagement,
@@ -59,7 +64,7 @@ void CellField3D<T, Descriptor>::advanceParticles() {
         immersedParticles->getBoundingBox(), particleArg );
 
     applyProcessingFunctional (
-        new FillCellMap<T,Descriptor> (mesh, cellIdToCell3D),
+        new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
         immersedParticles->getBoundingBox(), particleArg );
     global::timer("Quantities").stop();
 
@@ -87,11 +92,7 @@ void CellField3D<T, Descriptor>::setFluidExternalForce(Array<T,3> force) {
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::setFluidExternalForce(T forceScalar) {
-    global::timer("IBM").start();
-        setExternalVector( lattice, lattice.getBoundingBox(),
-                       Descriptor<T>::ExternalField::forceBeginsAt, 
-                       Array<T,3>(forceScalar,0.0,0.0) );
-    global::timer("IBM").stop();
+    setFluidExternalForce(Array<T,3>(forceScalar,0.0,0.0) );
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -110,7 +111,7 @@ void CellField3D<T, Descriptor>::applyConstitutiveModel() {
     global::timer("Model").start();
     // #1# Membrane Model + Stretching
     applyProcessingFunctional (
-                    new ComputeImmersedElasticForce3D<T,Descriptor> (Cells, cellModel->clone(), RBCField),
+                    new ComputeCellForce3D<T,Descriptor> (cellModel->clone(), cellIdToCell3D),
                     immersedParticles->getBoundingBox(), particleArg );
     global::timer("Model").stop();
 }
