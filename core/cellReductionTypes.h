@@ -136,25 +136,35 @@ class SyncRequirements
 public:
     SyncRequirements();
     ~SyncRequirements();
-
+    SyncRequirements(const SyncRequirements &rhs) { ccrRequirements=rhs.ccrRequirements; };
+    virtual void clear() { ccrRequirements.clear(); }
+    pluint size() { return ccrRequirements.size(); }
     virtual std::set<plint> getSyncRequirementsSet() { return ccrRequirements; }
-    virtual std::vector<plint> getSyncRequirements() {
-        std::vector<plint> ccrRequirementsVector(ccrRequirements.begin(), ccrRequirements.end()); 
-        return ccrRequirementsVector; 
-    }
+    virtual std::vector<plint> const getSyncRequirements() const { return std::vector<plint>(ccrRequirements.begin(), ccrRequirements.end());  }
 
+    virtual void insert(const SyncRequirements &rhs) { insert(rhs.ccrRequirements); }
     virtual void insert(plint ccrReq) { ccrRequirements.insert(ccrReq); }
-
-
     virtual void insert(std::set<plint> const& ccrReq) {
         for (std::set<plint>::const_iterator it=ccrReq.begin(); it!=ccrReq.end(); ++it) 
             {   ccrRequirements.insert(*it);    }
     }
-
     virtual void insert(std::vector<plint> const& ccrReq) {
         for (pluint iV = 0; iV < ccrReq.size(); ++iV)
         { ccrRequirements.insert( ccrReq[iV] ); }
     }
+
+
+    virtual void erase(const SyncRequirements &rhs) { erase(rhs.ccrRequirements); }
+    virtual void erase(plint ccrReq) { ccrRequirements.erase(ccrReq); }
+    virtual void erase(std::set<plint> const& ccrReq) {
+        for (std::set<plint>::const_iterator it=ccrReq.begin(); it!=ccrReq.end(); ++it)
+            {   ccrRequirements.erase(*it);    }
+    }
+    virtual void erase(std::vector<plint> const& ccrReq) {
+        for (pluint iV = 0; iV < ccrReq.size(); ++iV)
+        { ccrRequirements.erase( ccrReq[iV] ); }
+    }
+
 
 private:
     std::set<plint> ccrRequirements;
@@ -175,6 +185,7 @@ const plb::plint allReductions_array[] = {CCR_NO_PBC_POSITION_MEAN, CCR_NO_PBC_P
                                      /* CCR_TORQUE, */  // Neither can torque.
                                      CCR_ENERGY, CCR_FORCE};
 
+
 const plb::plint volumeAndSurfaceAndCentersReductions_array[] = {CCR_VOLUME, CCR_SURFACE, CCR_POSITION_MEAN};
 const plb::plint volumeAndSurfaceReductions_array[] = {CCR_VOLUME, CCR_SURFACE};
 
@@ -187,8 +198,8 @@ std::set<plb::plint> const setAllReductions(allReductions_array, allReductions_a
 std::set<plb::plint> const setVolumeAndSurfaceAndCentersReductions(volumeAndSurfaceAndCentersReductions_array, volumeAndSurfaceAndCentersReductions_array + sizeof(volumeAndSurfaceAndCentersReductions_array) / sizeof(volumeAndSurfaceAndCentersReductions_array[0]) );
 std::set<plb::plint> const setVolumeAndSurfaceReductions(volumeAndSurfaceReductions_array, volumeAndSurfaceReductions_array + sizeof(volumeAndSurfaceReductions_array) / sizeof(volumeAndSurfaceReductions_array[0]) );
 
-std::map<int, std::string> createMapCCR() {
-    std::map<int, std::string> ccrNames;
+std::map<plint, std::string> createMapCCR() {
+    std::map<plint, std::string> ccrNames;
     ccrNames[CCR_VOLUME] = "Volume";
     ccrNames[CCR_SURFACE] = "Surface";
 
@@ -229,9 +240,38 @@ std::map<int, std::string> createMapCCR() {
     return ccrNames;
 }
 
-std::map<int, std::string> ccrNames(createMapCCR());
+std::map<plint, std::vector<plint> > createCcrDependencies() {
+    std::map<plint, std::vector<plint> > ccrD;
+    // INERTIA
+    ccrD[CCR_INERTIA].push_back(CCR_POSITION_MEAN);
+    ccrD[CCR_FORCE].push_back(CCR_POSITION_MEAN);
+    ccrD[CCR_FORCE].push_back(CCR_SURFACE);
+    return ccrD;
+}
+
+
+std::map<plint, std::string> ccrNames(createMapCCR());
+std::map<plint, std::vector<plint> > ccrDependencies(createCcrDependencies());
+
+
+void separateDependencies(SyncRequirements const& input, SyncRequirements & independent, SyncRequirements & dependent) {
+    independent.clear();
+    dependent.clear();
+    std::vector<plint> sReq = input.getSyncRequirements();
+    for (pluint i = 0; i < sReq.size(); ++i) {
+        if ( ccrDependencies.count(sReq[i]) > 0 ) {
+            independent.insert(ccrDependencies[sReq[i]]);
+            dependent.insert(sReq[i]);
+        } else {
+            independent.insert(sReq[i]);
+        }
+    }
+
+}
+
 
 #include "cellReductionTypes.hh"
+
 
 #endif
 

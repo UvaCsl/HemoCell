@@ -119,10 +119,15 @@ void CellField3D<T, Descriptor>::applyConstitutiveModel() {
 
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local() {
+void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirements ccReq) {
+    ccReq.insert(ccrRequirements);
+    SyncRequirements ccrIndependent, ccrDependent;
+    separateDependencies(ccReq, ccrIndependent, ccrDependent);
+
+    // First do the independent reductions (volume surface)...
     global::timer("Model").start();
     applyProcessingFunctional (
-        new ComputeRequiredQuantities<T,Descriptor> (ccrRequirements.getSyncRequirements(), cellIdToCell3D),
+        new ComputeRequiredQuantities<T,Descriptor> (ccrIndependent.getSyncRequirements(), cellIdToCell3D),
         immersedParticles->getBoundingBox(), particleReductioParticleArg );
     global::timer("Model").stop();
 
@@ -132,7 +137,24 @@ void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local() {
         immersedParticles->getBoundingBox(), particleReductioParticleArg );
     global::timer("Quantities").stop();
 
+    // ... and then the ones that depend on something else (Inertia etc)
+    if (ccrDependent.size() > 0) {
+        global::timer("Model").start();
+        applyProcessingFunctional (
+            new ComputeRequiredQuantities<T,Descriptor> (ccrDependent.getSyncRequirements(), cellIdToCell3D),
+            immersedParticles->getBoundingBox(), particleReductioParticleArg );
+        global::timer("Model").stop();
+
+        global::timer("Quantities").start();
+        applyProcessingFunctional (
+            new SyncCellQuantities<T,Descriptor> (cellIdToCell3D),
+            immersedParticles->getBoundingBox(), particleReductioParticleArg );
+        global::timer("Quantities").stop();
+    }
+
 }
 
 
 #endif
+
+

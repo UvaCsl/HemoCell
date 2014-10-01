@@ -399,7 +399,7 @@ void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T
     // VELOCITY
     } else if (q==7) { reducer.gather(ccrId, cell->get_v(iVertex)) ;
     // Force
-    } else if (q==16) { reducer.gather(ccrId, cell->get_force(iVertex));
+    } else if (q==16) { reducer.gather(ccrId, cell->get_force(iVertex) * cell->computeVertexArea(iVertex));
 /****** ND Quantities ******/
     // INERTIA
     } else if (q==8) {

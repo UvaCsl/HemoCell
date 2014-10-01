@@ -84,7 +84,7 @@ public:
 
     virtual Array<T,3> const& getPosition() { return quantities3D[CCR_POSITION_MEAN];  } ;
     virtual Array<T,3> const& getVelocity() { return quantities3D[CCR_VELOCITY_MEAN];} ;
-    virtual Array<T,3> const& getForce()    { return quantities3D[CCR_FORCE];} ;
+    virtual Array<T,3> const& getForce(plint numVertices=1)    { return quantities3D[CCR_FORCE] * (1.0*numVertices) / quantities1D[CCR_SURFACE];} ;
     virtual std::vector<T> & getInertia()   { return quantitiesND[CCR_INERTIA];} ;
 
     virtual Array<T,3> & getTumblingAngles()     { return quantities3D[CCR_TUMBLING_ANGLES];  } ;
@@ -167,6 +167,8 @@ public:
     virtual void computeCCRQuantities(plint ccrId, plint iVertex) { reducer.clear(); computeCCRQuantities(ccrId, reducer, this, iVertex); }
     virtual void computeCCRQuantities(plint ccrId, Particle3D<T,Descriptor> * particle) { computeCCRQuantities(ccrId, reducer, this, castParticleToICP3D(particle->getVertexId())); }
     void closeCCRQuantities() { this->copyFromBlockStatisticsCCR(reducer); }
+public:
+    Array<T,3>  getForce()    { return this->getForce(cellNumVertices); } ;
 private:
     /* data */
     plint cellId;

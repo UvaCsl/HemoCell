@@ -52,9 +52,9 @@ public:
 	virtual void interpolateVelocityIBM();
 	virtual void applyConstitutiveModel();
 	/* Need implementation */
-	virtual void synchronizeCellQuantities_Local();
-	virtual void synchronizeCellQuantities_Global() =0;
-	virtual void synchronizeCellQuantities() { return synchronizeCellQuantities_Local(); } ;
+	virtual void synchronizeCellQuantities_Local(SyncRequirements ccrRequirements_=SyncRequirements());
+	virtual void synchronizeCellQuantities_Global(SyncRequirements ccrRequirements_=SyncRequirements()) =0;
+	virtual void synchronizeCellQuantities(SyncRequirements ccrRequirements_=SyncRequirements()) { return synchronizeCellQuantities_Local(ccrRequirements_); } ;
 	pluint getNumberOfCells_Global();
 	pluint getNumberOfCells_Local() { return cellIdToCell3D.size(); } ;
 	pluint getNumberOfCells() { return getNumberOfCells_Local(); } ;
