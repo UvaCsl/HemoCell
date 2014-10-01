@@ -135,6 +135,13 @@ public:
 
     std::vector<plint> const& getTriangles() const { return triangles; }
     std::vector<plint> & getTriangles() { return triangles; }
+    std::map<plint, plint> getInvertVertices() {
+        std::map<plint, plint> iv;
+        for (int var = 0; var < vertices.size(); ++var) {
+            iv[ vertices[var] ] = var;
+        }
+        return iv;
+    }
     std::vector<plint> const& getVertices() const { return vertices; }
     std::vector<plint> & getVertices() { return vertices; }
     plint getEdgeId(plint iVertex, plint jVertex);
@@ -146,6 +153,8 @@ public:
  
     Array<T,3> getVertex(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_pbcPosition(); }
     Array<T,3> getVertex(plint iTriangle, plint id) { return getVertex( getVertexId(iTriangle, id) ); }
+    Particle3D<T,Descriptor>* getParticle3D(plint iVertex) { return iVertexToParticle3D[iVertex]; }
+
     Array<T,3> get_v(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_v(); }
 
     T get_Energy(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_Energy(); }

@@ -67,14 +67,20 @@ private:
 	ConstitutiveModel<T, Descriptor> * cellModel;
 	plint ibmKernel;
 	bool coupleWithIBM;
+    SyncRequirements ccrRequirements;
 
+public:
+    std::vector<MultiBlock3D*> & getParticleArg()                 { return particleArg; }
+    std::vector<MultiBlock3D*> & getParticleLatticeArg()          { return particleLatticeArg; }
+    std::vector<MultiBlock3D*> & getParticleReductioParticleArg() { return particleReductioParticleArg; }
+    Box3D & getBoundingBox() { return immersedParticles->getBoundingBox(); }
+private:
     std::vector<MultiBlock3D*> particleArg;
     std::vector<MultiBlock3D*> particleLatticeArg;
     std::vector<MultiBlock3D*> particleReductioParticleArg;
     std::map<plint, Cell3D<T,Descriptor> > cellIdToCell3D;
     std::vector<plint> cellIds;
 	/* data */
-	SyncRequirements ccrRequirements;
 };
 
 

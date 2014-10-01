@@ -209,7 +209,7 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
         cellIdToCell3D[cellId].push_back(particle);
     }
 
-    typename std::map<plint, T >::iterator iter;
+    typename std::map<plint, Cell3D<T,Descriptor> >::iterator iter;
     for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
         (iter->second).close();
     }

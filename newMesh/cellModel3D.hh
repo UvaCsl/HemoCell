@@ -132,8 +132,8 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> & cell, 
      /* Some force calculations are according to KrugerThesis, Appendix C */
     if (not ((cellVolume > 0) and (cellSurface > 0))) {
         cout << "iVertex: " << iVertex
-//             << ", processor: " << dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (tagToParticle3D[iVertex])->get_processor()
-//             << ", cellId: " << dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (tagToParticle3D[iVertex])->get_cellId()
+             << ", processor: " << cell.getMpiProcessor()
+             << ", cellId: " << cell.get_cellId()
              << ", volume: " << cellVolume
              << ", surface: " << cellSurface
              << endl;
