@@ -202,10 +202,11 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
                 dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
 
         plint cellId = particle->get_cellId();
-        if (cellIdToCell3D.count(cellId) == 0) {
-            cellIdToCell3D[cellId] = Cell3D<T,Descriptor>(mesh, cellId);
+        typename std::map<plint, Cell3D<T,Descriptor>  >::iterator iter = cellIdToCell3D.find(cellId);
+        if (iter != cellIdToCell3D.end()) {
+            iter->second = Cell3D<T,Descriptor>(mesh, cellId);
         }
-        cellIdToCell3D[cellId].push_back(particle);
+        iter->second.push_back(particle);
     }
 
     typename std::map<plint, Cell3D<T,Descriptor> >::iterator iter;
@@ -282,7 +283,11 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         {
             plint ccrId = *i;
             plint cellId = castParticleToICP3D(particles[iParticle])->get_cellId();
-            cellIdToCell3D[cellId].computeCCRQuantities(ccrId, particles[iParticle]);
+
+            typename std::map<plint, Cell3D<T,Descriptor>  >::iterator iter = cellIdToCell3D.find(cellId);
+            if (iter != cellIdToCell3D.end()) {
+                iter->second.computeCCRQuantities(ccrId, particles[iParticle]);
+            }
 
             if (particlesPerCellId.count(cellId) > 0) { particlesPerCellId[cellId] += 1; }
             else  { particlesPerCellId[cellId] = 1; }
@@ -370,8 +375,9 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
             plint processor = particle->get_processor();
             plint nParticles = particle->get_nParticles();
             particleInProcessorAndCellid[processor]; // Create "processor" entry
-            if (cellIdToCell3D.count(cellId)>0) {
-                Cell3D<T,Descriptor> & chq = cellIdToCell3D[cellId];
+            typename std::map<plint, Cell3D<T,Descriptor>  >::iterator iter = cellIdToCell3D.find(cellId);
+            if (iter != cellIdToCell3D.end()) {
+                Cell3D<T,Descriptor> & chq = iter->second;
                 if (particleInProcessorAndCellid[processor].count(cellId) == 0
                                          &&  processor != particle->getMpiProcessor()) {
                     particleInProcessorAndCellid[processor][cellId] = true;

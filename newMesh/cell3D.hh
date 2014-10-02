@@ -112,7 +112,13 @@ void CellQuantityHolder<T>::make_ccrId_List() {
 
 template<typename T, template<typename U> class Descriptor>
 Cell3D<T, Descriptor>::Cell3D(TriangularSurfaceMesh<T> const& mesh_, plint cellId_) :
-        mesh(mesh_), cellId(cellId_) {
+        mesh(mesh_), cellId(cellId_), CellQuantityHolder<T>() {
+    setMesh();
+};
+
+template<typename T, template<typename U> class Descriptor>
+Cell3D<T, Descriptor>::Cell3D(Cell3D<T,Descriptor> const& rhs) :
+        mesh(rhs.mesh), cellId(rhs.cellId), CellQuantityHolder<T>() {
     setMesh();
 };
 

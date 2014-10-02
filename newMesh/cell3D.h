@@ -82,7 +82,6 @@ public:
     virtual T getMeanTriangleArea(plint numTriangles) { return quantities1D[CCR_SURFACE]*1.0/numTriangles;} ;
     virtual T & getMeanTileSpan()       { return quantities1D[CCR_TILE_SPAN_MEAN];} ;
 
-    virtual Array<T,3> const& getPosition() const { return quantities3D[CCR_POSITION_MEAN];  } ;
     virtual Array<T,3> & getPosition() { return quantities3D[CCR_POSITION_MEAN];  } ;
 
     virtual Array<T,3> const& getVelocity() { return quantities3D[CCR_VELOCITY_MEAN];} ;
@@ -108,14 +107,12 @@ template<typename T, template<typename U> class Descriptor>
 void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T, Descriptor> * cell, plint iVertex);
 
 
-TriangularSurfaceMesh<double> triangularSurfaceMeshTest;
-
 template<typename T, template<typename U> class Descriptor>
 class Cell3D : public CellQuantityHolder<T>
 {
 public:
     Cell3D(TriangularSurfaceMesh<T> const& mesh_, plint cellId_=-1);
-    Cell3D() : mesh(triangularSurfaceMeshTest) { PLB_ASSERT(false); } ;
+    Cell3D(Cell3D<T,Descriptor> const& rhs);
     ~Cell3D() {};
 
     void push_back(Particle3D<T,Descriptor>* particle3D);
