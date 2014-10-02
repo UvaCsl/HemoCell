@@ -21,12 +21,7 @@
 #ifndef SHAPE_MEMORY_MODEL_3D_H
 #define SHAPE_MEMORY_MODEL_3D_H
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
 #include "cellModel3D.h"
-#include <cmath>
-#include <map>
-#include "computeCellForces3D.hh"
 
 
 #ifndef KBT__
@@ -45,31 +40,40 @@ const double pi = 4.*atan(1.);
 
 namespace plb {
 
+
+template<typename T>
+void getCellShapeQuantitiesFromMesh(TriangularSurfaceMesh<T> const& dynMesh,
+                            vector<T> & eqAreaPerTriangle, map<plint,T> & eqLengthPerEdge, map<plint,T> & eqAnglePerEdge,
+                            plint cellNumTriangles, plint cellNumPartsPerCell);
+
+
+
 template<typename T, template<typename U> class Descriptor>
-class ShapeMemoryModel3D : public ConstitutiveModel<T>
+class ShapeMemoryModel3D :  public ConstitutiveModel<T,Descriptor>
 {
 public:
     /* All input should be in dimensionless units */
     ShapeMemoryModel3D(T density_, T k_rest_,
-                T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
-                T k_volume_, T k_surface_, T eta_m_,
-                vector<T> eqArea_, map<plint,T> eqLength_, map<plint,T> eqAngle_,
-                T eqVolume_, T eqSurface_, T eqTileSpan_,
-                T persistenceLengthFine, T eqLengthRatio_,
-                std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_,
-                pluint cellNumTriangles_, pluint cellNumVertices_);
-    virtual Array<T,3> computeCellForce (
-            TriangleBoundary3D<T> const& boundary,
-            T cellVolume, T cellSurface, T & iSurface,
-            plint iVertex);
-    virtual Array<T,3> computeElasticForce (
-            TriangleBoundary3D<T> const& boundary,
-            plint iVertex );
+            T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
+            T k_volume_, T k_surface_, T eta_m_,
+            T persistenceLengthFine, T eqLengthRatio_,
+            T dx_, T dt_, T dm_,
+            TriangularSurfaceMesh<T> const& meshElement);
+    virtual void computeCellForce (Cell3D<T,Descriptor> & cell, T ratio=1.0);
+    virtual plint getMaximumEdgeExtensionLengthLU() { return ceil(2*maxLength); };
+    virtual plint getCellRadiusLU() { return cellRadiusLU; };
+    virtual SyncRequirements & getSyncRequirements() {return syncRequirements;} ;
+    virtual SyncRequirements const& getSyncRequirements() const {return syncRequirements;} ;
+
     virtual ShapeMemoryModel3D<T,Descriptor>* clone() const;
 private:
     plint getTriangleId(plint iTriangle);
     plint getEdgeId(plint iVertex, plint jVertex);
 private:
+    SyncRequirements syncRequirements;
+    T maxLength, cellRadiusLU;
+
+    T dx, dt, dm;
     T k_rest, k_shear, k_bend, k_stretch, k_inPlane, k_elastic, k_surface, k_volume;
     T C_elastic;
     T eta_m, gamma_T, gamma_C;
@@ -175,12 +179,6 @@ public:
     /* State parameters */
     virtual pluint& getNumberOfVertices() { return cellNumVertices; }
 };
-
-template<typename T>
-void getCellShapeQuantitiesFromMesh(TriangleBoundary3D<T>& boundary,
-                            vector<T> & eqAreaPerTriangle, map<plint,T> & eqLengthPerEdge, map<plint,T> & eqAnglePerEdge,
-                            plint cellNumTriangles, plint cellNumPartsPerCell);
-
 
 }
 

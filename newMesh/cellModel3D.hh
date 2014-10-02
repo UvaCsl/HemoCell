@@ -141,7 +141,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> & cell, 
     std::vector<Array<plint,2> > const& edges = cell.getEdges();
     std::vector<plint > const& vertices = cell.getVertices();
     for (int iV = 0; iV < vertices.size(); ++iV) {
-        castParticleToICP3D(cell.getParticle3D(ivertices[iV]))->resetForces();
+        castParticleToICP3D(cell.getParticle3D(vertices[iV]))->resetForces();
     }
     plint iTriangle;
     plint iVertex, jVertex, kVertex, lVertex;
