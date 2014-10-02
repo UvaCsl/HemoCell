@@ -156,19 +156,31 @@ template<typename T, template<typename U> class Descriptor>
 void Cell3D<T, Descriptor>::close() {
     plint numTrianges = mesh.getNumTriangles();
     triangles.clear();
+    vertices.clear();
+    edges.clear();
+    std::map<plint, Array<plint,2> > edgeMap;
     for (int iTriangle = 0; iTriangle < numTrianges; ++iTriangle)
     {
-        plint vId0 = getVertexId(iTriangle, 0);
-        plint vId1 = getVertexId(iTriangle, 1);
-        plint vId2 = getVertexId(iTriangle, 2);
+        plint vId0 = mesh.getVertexId(iTriangle, 0);
+        plint vId1 = mesh.getVertexId(iTriangle, 1);
+        plint vId2 = mesh.getVertexId(iTriangle, 2);
         plint numVert = iVertexToParticle3D.count(vId0) 
                 + iVertexToParticle3D.count(vId1)
                 + iVertexToParticle3D.count(vId2);
         if (numVert == 3) {
             triangles.push_back(iTriangle);
+            edgeMap[getEdgeId(vId0, vId1)] = Array<plint, 2>(vId0, vId1) ;
+            edgeMap[getEdgeId(vId0, vId2)] = Array<plint, 2>(vId0, vId2) ;
+            edgeMap[getEdgeId(vId1, vId2)] = Array<plint, 2>(vId1, vId2) ;
         }
     }
-    vertices.clear();
+
+    typename std::map<plint, Array<plint,2> >::iterator iter;
+    for (iter = edgeMap.begin(); iter != edgeMap.end(); ++iter)
+    {
+        edges.push_back(iter->second);
+    }
+
     typename std::map<plint, Particle3D<T,Descriptor>* >::iterator it;
     for (it  = iVertexToParticle3D.begin(); it != iVertexToParticle3D.end(); ++it) {
         vertices.push_back(it->first);

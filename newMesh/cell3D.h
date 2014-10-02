@@ -135,6 +135,13 @@ public:
 
     std::vector<plint> const& getTriangles() const { return triangles; }
     std::vector<plint> & getTriangles() { return triangles; }
+    std::vector<plint> const& getVertices() const { return vertices; }
+    std::vector<plint> & getVertices() { return vertices; }
+    plint getEdgeId(plint iVertex, plint jVertex);
+
+    std::vector<Array<plint,2> > const& getEdges() const { return edges; }
+    std::vector<Array<plint,2> > & getEdges() { return edges; }
+
     std::map<plint, plint> getInvertVertices() {
         std::map<plint, plint> iv;
         for (int var = 0; var < vertices.size(); ++var) {
@@ -142,9 +149,6 @@ public:
         }
         return iv;
     }
-    std::vector<plint> const& getVertices() const { return vertices; }
-    std::vector<plint> & getVertices() { return vertices; }
-    plint getEdgeId(plint iVertex, plint jVertex);
  
     plint getVertexId(plint iTriangle, plint id) {   return mesh.getVertexId(iTriangle, id); }
     std::vector<plint> getNeighborVertexIds(plint iVertex) {   return mesh.getNeighborVertexIds(iVertex); }
@@ -190,6 +194,7 @@ private:
     /* Quantity containers for less computations */
     std::vector<plint> triangles;
     std::vector<plint> vertices;
+    std::vector<Array<plint,2> > edges;
     /* Quantity containers for less computations */
     std::map<plint, T> edgeLengths;
     std::map<plint, Array<T,3> > edgeLengthVectors;

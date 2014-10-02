@@ -1,2 +1,2 @@
 all:
-	./test.sh newMesh/cellField3D.h
+	./test.sh newMesh/cell3D.h
