@@ -215,10 +215,21 @@ T Cell3D<T, Descriptor>::computeEdgeLength(plint iVertex, plint jVertex) {
 }
 
 template<typename T, template<typename U> class Descriptor>
-T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex) {
+T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex, bool& found) {
+    plint edgeId = getEdgeId(iVertex, jVertex);
+    found = true;
+    if (signedAngles.count(edgeId) == 0) {
+        plint kVertex, lVertex;
+        signedAngles[edgeId] = computeSignedAngle(iVertex, jVertex,kVertex, lVertex,found);
+    }
+    return signedAngles[edgeId];
+}
+
+template<typename T, template<typename U> class Descriptor>
+T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex, plint & kVertex, plint & lVertex, bool& found) {
 	plint edgeId = getEdgeId(iVertex, jVertex);
+	found = true;
 	if (signedAngles.count(edgeId) == 0) {
-		plint kVertex, lVertex;
 	    Array<T,3> x1 = getVertex(iVertex), x2(0.,0.,0.), x3(0.,0.,0.), x4(0.,0.,0.);
 
 	    std::vector<plint> adjacentTriangles = getAdjacentTriangleIds(iVertex, jVertex);
@@ -241,7 +252,8 @@ T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex) {
 	            break;
 	        }
 	    }
-	    PLB_ASSERT(foundVertices == 2); //Assert if some particles are outside of the domain
+	    found = (foundVertices == 3); //Assert if some particles are outside of the domain
+	    if (not found) { return 0.0; };
 
 	    Array<T,3> V1 = computeTriangleNormal(iTriangle);
 	    Array<T,3> V2 = computeTriangleNormal(jTriangle);
@@ -369,9 +381,9 @@ void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T
 /****** 1D Quantities ******/
     // Calculate ANGLE
     if (q==2) { 
-        T edgeAngle = 0.0;
-        for (pluint iB = 0; iB < neighbors.size(); ++iB)  { edgeAngle += cell->calculateSignedAngle(iVertex, neighbors[iB]); }
-        reducer.gather(ccrId, edgeAngle*1.0/neighbors.size() );
+        T edgeAngle = 0.0; bool angleFound; plint anglesFound=0;
+        for (pluint iB = 0; iB < neighbors.size(); ++iB)  { edgeAngle += cell->computeSignedAngle(iVertex, neighbors[iB], angleFound); anglesFound+=anglesFound;}
+        reducer.gather(ccrId, edgeAngle*1.0/anglesFound );
     // Calculate AREA
     } else if (q==3) {  reducer.gather(ccrId, cell->computeVertexArea(iVertex) );
     // Calculate EDGE DISTANCE

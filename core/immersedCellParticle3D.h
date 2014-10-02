@@ -46,6 +46,7 @@ public:
     virtual int getId() const;
     virtual void reset(Array<T,3> const& position, Array<T,3> const& velocity_, bool allVariables=false);
     virtual void reset(Array<T,3> const& position);
+    virtual void resetForces();
     virtual ImmersedCellParticle3D<T,Descriptor>* clone() const;
     /// Return the cellId through a generic interface (vector id=0).
     virtual bool getScalar(plint whichScalar, T& scalar) const;

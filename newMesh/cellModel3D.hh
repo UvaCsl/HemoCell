@@ -126,24 +126,101 @@ CellModel3D<T, Descriptor>::CellModel3D(T density_, T k_rest_,
 
 template<typename T, template<typename U> class Descriptor>
 void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> & cell, T ratio) {
+     /* Some force calculations are according to KrugerThesis, Appendix C */
     T cellVolume = cell.getVolume();
     T cellSurface = cell.getSurface();
-    plint iVertex=1;
-     /* Some force calculations are according to KrugerThesis, Appendix C */
     if (not ((cellVolume > 0) and (cellSurface > 0))) {
-        cout << "iVertex: " << iVertex
-             << ", processor: " << cell.getMpiProcessor()
+        cout << ", processor: " << cell.getMpiProcessor()
              << ", cellId: " << cell.get_cellId()
              << ", volume: " << cellVolume
              << ", surface: " << cellSurface
              << endl;
         PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
     }
-    /* Initializations from input */
-//    TriangularSurfaceMesh<T> const& dynMesh = boundary.getMesh();
-    Array<T,3> x1 = cell.getVertex(iVertex), x2, x3, x4;
-//    ImmersedCellParticle3D<T,Descriptor>* iParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (tagToParticle3D[iVertex]);
-    Array<T,3> iVelocity;// = iParticle->get_v();
+    std::vector<plint> const& triangles = cell.getTriangles();
+    std::vector<Array<plint,2> > const& edges = cell.getEdges();
+    std::vector<plint > const& vertices = cell.getVertices();
+    for (int iV = 0; iV < vertices.size(); ++iV) {
+        castParticleToICP3D(cell.getParticle3D(ivertices[iV]))->resetForces();
+    }
+    plint iTriangle;
+    plint iVertex, jVertex, kVertex, lVertex;
+
+    /* Run through all the edges and calculate:
+         x In plane (WLC and repulsive) force
+         x Dissipative force
+         x Bending force
+         o Stretch force
+     */
+    Array<T,3> force1, force2;
+    T potential;
+    for (int iE = 0; iE < edges.size(); ++iE) {
+        iVertex = edges[iE][0];  jVertex = edges[iE][1];
+        Array<T,3> const& iX = cell.getVertex(iVertex);
+        Array<T,3> const& jX = cell.getVertex(jVertex);
+        ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell.getParticle3D(iVertex));
+        ImmersedCellParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell.getParticle3D(jVertex));
+          /* ------------------------------------*/
+         /* In Plane forces (WLC and repulsive) */
+        /* ------------------------------------*/
+        force1 = computeInPlaneExplicitForce(iX, jX, eqLengthRatio, eqLength, k_inPlane, potential);
+        iParticle->get_force() += force1;
+        jParticle->get_force() -= force1;
+
+        iParticle->get_E_inPlane() += potential;
+        jParticle->get_E_inPlane() += potential;
+        iParticle->get_f_wlc() += force1;
+        jParticle->get_f_wlc() -= force1;
+          /* ------------------------------------*/
+         /*    Dissipative Forces Calculations  */
+        /* ------------------------------------*/
+        if (gamma_T>0.0) {
+            force1 = computeDissipativeForce(iX, jX, iParticle->get_v(), jParticle->get_v(), gamma_T, gamma_C);
+            iParticle->get_force() += force1;
+            jParticle->get_force() -= force1;
+
+            iParticle->get_f_viscosity() += force1;
+            jParticle->get_f_viscosity() -= force1;
+        }
+        /* -------------------------------------------*/
+        /*    Stretch (Hookean) Forces Calculations  */
+        /* -----------------------------------------*/
+        if (k_stretch>0.0) {
+
+        }
+          /* ------------------------------------*/
+         /*    Bending Forces Calculations      */
+        /* ------------------------------------*/
+        bool angleFound;
+        plint kVertex, lVertex;
+        T edgeAngle = cell.computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
+        if (angleFound) {
+            Array<T,3> iNormal = cell.computeTriangleNormal(iVertex, jVertex, kVertex);
+            Array<T,3> jNormal = cell.computeTriangleNormal(iVertex, jVertex, lVertex);
+            ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell.getParticle3D(kVertex));
+            ImmersedCellParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell.getParticle3D(lVertex));
+            Array<T,3> const& kX = cell.getVertex(kVertex);
+            Array<T,3> const& lX = cell.getVertex(lVertex);
+
+            /*== Compute bending force for the vertex as part of the main edge ==*/
+            force1 = computeBendingForceEdge (edgeAngle, eqAngle, k_bend, iNormal, jNormal);
+            Array<T,3> fi, fk, fj, fl;
+            T Ai=0, Aj=0; // Not necessary for this calculation
+            computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqTileSpan, eqLength, eqAngle, k_bend, fk, fj, fl);
+
+            iParticle->get_force() += fi;
+            jParticle->get_force() += fj;
+            kParticle->get_force() += fk;
+            lParticle->get_force() += fl;
+
+            potential = computeBendingPotential (edgeAngle, eqAngle, k_bend);
+            iParticle->get_E_bending() += potential;
+            jParticle->get_E_bending() += potential;
+            kParticle->get_E_bending() += potential;
+            lParticle->get_E_bending() += potential;
+        }
+    }
+
     /* ===================== In case of quasi-rigid object =====================
      *
      * If this is a boundary element (k_rest != 0), get the reference locations
@@ -151,26 +228,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> & cell, 
      *          (FengMichaelides2004, J.Comp.Phys. 195(2))
      * // CURRENTLY UNAVAILABLE
      * */
-    Array<T,3> restForce; restForce.resetToZero();
-//    if (k_rest != 0.0) {
-//        Array<T,3> x1ref;
-//        boundary.pushSelect(0,1);
-//        x1ref = boundary.getMesh().getVertex(iVertex);
-//        boundary.popSelect();
-//        Array<T,3> dx = x1-x1ref;
-//        restForce = (-k_rest*dx) + (-gamma_T*iVelocity); // Dissipative term from Dupin2007
-//    }
-    /* Force initializations */
-    Array<T,3> inPlaneForce; inPlaneForce.resetToZero();
-    Array<T,3> elasticForce; elasticForce.resetToZero();
-    Array<T,3> repulsiveForce; repulsiveForce.resetToZero();
-    Array<T,3> bendingForce; bendingForce.resetToZero();
-    Array<T,3> surfaceForce; surfaceForce.resetToZero();
-    Array<T,3> shearForce; shearForce.resetToZero();
-    Array<T,3> volumeForce; volumeForce.resetToZero();
-    Array<T,3> stretchForce; stretchForce.resetToZero();
-    Array<T,3> dissipativeForce; dissipativeForce.resetToZero();
-    Array<T,3> tmpForce; tmpForce.resetToZero();
+
     /* Calculate cell coefficients */
     T volumeCoefficient = k_volume * (cellVolume - eqVolume)*1.0/eqVolume;
     T surfaceCoefficient = k_surface * (cellSurface - eqSurface)*1.0/eqSurface;
@@ -191,80 +249,37 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> & cell, 
     std::map<plint, Array<T,3> > trianglesNormal;
     T triangleArea;
     Array<T,3> triangleNormal;
-
-    plint iTriangle;
-    plint jVertex, kVertex, lVertex;
     plint vertexIds[3];
-
-    std::vector<plint> neighborTriangles = cell.getNeighborTriangleIds(iVertex);
-    for (pluint iB = 0; iB < neighborTriangles.size(); ++iB) {
-        iTriangle = neighborTriangles[iB];
-        for (pluint id = 0; id < 3; ++id) {
-            vertexIds[id] = cell.getVertexId(iTriangle,id);
-        }
-        plint localVertexId = (iVertex == vertexIds[1])*1 + (iVertex == vertexIds[2])*2;
-        jVertex = vertexIds[(localVertexId + 1)%3];
-        kVertex = vertexIds[(localVertexId + 2)%3];
-        Array<T,3> x2 = cell.getVertex(jVertex);
-        Array<T,3> x3 = cell.getVertex(kVertex);
+    for (int iT = 0; iT < triangles.size(); ++iT) {
+        iTriangle = triangles[iT];
         triangleNormal = cell.computeTriangleNormal(iTriangle);
         triangleArea = cell.computeTriangleArea(iTriangle);
+        iVertex = cell.getVertexId(iTriangle,0);
+        jVertex = cell.getVertexId(iTriangle,1);
+        kVertex = cell.getVertexId(iTriangle,2);
+        Array<T,3> const& x1 = cell.getVertex(iVertex);
+        Array<T,3> const& x2 = cell.getVertex(jVertex);
+        Array<T,3> const& x3 = cell.getVertex(kVertex);
+        ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell.getParticle3D(iVertex));
+        ImmersedCellParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell.getParticle3D(jVertex));
+        ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell.getParticle3D(kVertex));
 
-        /* Surface conservation force */
-        surfaceForce += computeSurfaceConservationForce(x1, x2, x3, triangleNormal, surfaceCoefficient, dAdx);
-        /* Shear force */
-        shearForce += computeLocalAreaConservationForce(dAdx, triangleArea, eqArea, areaCoefficient);
-//        iParticle->get_E_area() += 0.5*areaCoefficient*pow(eqArea - triangleArea, 2)/3.0; // 3 vertices on each triangle
-
-        /* Elastice Force, disabled */
-//        elasticForce += computeElasticRepulsiveForce(dAdx, triangleArea, C_elastic);
-        /* Volume conservation force */
-        volumeForce  += computeVolumeConservationForce(x1, x2, x3, volumeCoefficient);
-
+        /* Surface and local area conservation forces */
+        force1  = computeSurfaceConservationForce(x1, x2, x3, triangleNormal, surfaceCoefficient, dAdx);
+        force1 += computeLocalAreaConservationForce(dAdx, triangleArea, eqArea, areaCoefficient);
+        force2  = computeSurfaceConservationForce(x2, x3, x1, triangleNormal, surfaceCoefficient, dAdx);
+        force2 += computeLocalAreaConservationForce(dAdx, triangleArea, eqArea, areaCoefficient);
+        iParticle->get_force() += force1;
+        jParticle->get_force() += force2;
+        kParticle->get_force() -= (force1+force2);
+        /* Volume conservation forces */
+        force1  = computeVolumeConservationForce(x1, x2, x3, volumeCoefficient);
+        force2  = computeVolumeConservationForce(x2, x3, x1, volumeCoefficient);
+        iParticle->get_force() += force1;
+        jParticle->get_force() += force2;
+        kParticle->get_force() -= (force1+force2);
     }
 
-    /* Run through all the neighbouring vertices of iVertex and calculate:
-         x In plane (WLC) force
-         x Repulsive force
-         o Stretch force
-         x Dissipative force
-         x Bending force
-     */
-    std::vector<plint> neighborVertexIds = cell.getNeighborVertexIds(iVertex);
-    for (pluint jV = 0; jV < neighborVertexIds.size(); jV++) {
-        jVertex = neighborVertexIds[jV];
-        Array<T,3> x3 = cell.getVertex(jVertex);
-        /* In Plane (WLC) and repulsive forces*/
-        T potential;
-        inPlaneForce += computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane, potential);
-//        iParticle->get_E_inPlane() += potential / 2.0; // Each spring consists of 2 particles.
-
-        /*  Dissipative Forces Calculations */
-//        dissipativeForce += computeDissipativeForce(x1, x3, iVelocity, particleVelocity[jVertex], gamma_T, gamma_C);
-        /*  Bending Forces Calculations */
-        T edgeAngle = cell.computeSignedAngle(iVertex, jVertex, kVertex, lVertex); //edge is iVertex, jVertex
-        Array<T,3> iNormal = cell.computeTriangleNormal(iVertex, jVertex, kVertex);
-        Array<T,3> jNormal = cell.computeTriangleNormal(iVertex, jVertex, lVertex);
-
-        /*== Compute bending force for the vertex as part of the main edge ==*/
-        bendingForce += computeBendingForceEdge (edgeAngle, eqAngle, k_bend, iNormal, jNormal);
-//        iParticle->get_E_bending() += computeBendingPotential (edgeAngle, eqAngle, k_bend);
-        // Compute bending force for the vertex as a lateral vertex
-        edgeAngle = cell.calculateSignedAngle(kVertex, jVertex);
-        bendingForce += computeBendingForceLateral (edgeAngle, eqAngle, k_bend, iNormal)*0.5; // Is calculated twice, for the other triangle as well
-//        iParticle->get_E_bending() += computeBendingPotential (edgeAngle, eqAngle, k_bend);
-        // Compute bending force for the vertex as a lateral vertex
-        edgeAngle = cell.calculateSignedAngle(jVertex, lVertex);
-        bendingForce += computeBendingForceLateral (edgeAngle, eqAngle, k_bend, jNormal)*0.5; // Is calculated twice, for the other triangle as well
-//        iParticle->get_E_bending() += computeBendingPotential (edgeAngle, eqAngle, k_bend);
-    }
-//    iParticle->get_f_wlc() = inPlaneForce + repulsiveForce;
-//    iParticle->get_f_bending() = bendingForce;
-//    iParticle->get_f_volume() = volumeForce;
-//    iParticle->get_f_surface() = surfaceForce;
-//    iParticle->get_f_shear() = shearForce;
-//    iParticle->get_f_viscosity() = dissipativeForce;
-    return (inPlaneForce + elasticForce + repulsiveForce) + bendingForce + (volumeForce + surfaceForce + shearForce) + dissipativeForce + restForce;// + stretchForce;
 }
 
 

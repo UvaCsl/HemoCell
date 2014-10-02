@@ -92,12 +92,26 @@ Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x
 
 template<typename T>
 Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLengthRatio, T eqLength, T k_inPlane) {
-/*
- *  Wrapper when calling without potential
+    /*
+     *  Computes In-Plane forces based on Worm-like chain forces and a repulsive potential.
+     *  Has the same function as computeInPlaneForce but with different arguments.
+     *
+     *    eqLengthRatio = eqLength/maxLength ; // Used to be x0
+     *    k_inPlane = kBT /(4.0*persistenceLengthCoarse);
+     *
+     *  Related publications: [FedosovCaswellKarniadakis2010, FedosovCaswell2010b, Pivkin2008]
 
-*/
-    T potential = 0.0;
-    return computeInPlaneExplicitForce(x1, x2, eqLengthRatio, eqLength, k_inPlane, potential);
+    */
+        T Lmax = eqLength*eqLengthRatio;
+        Array<T,3> dL = (x1 - x2)*1.0;
+        T L = norm(dL);
+        T r = L/Lmax, r0=1.0/eqLengthRatio; // T Lmax = eqLength*eqLengthRatio;
+        Array<T,3> eij = dL/L;
+        /* In Plane Force (WLC) and Repulsive Force */
+        Array<T,3> tmpForce =  eij * k_inPlane * r * (-6 + (9 - 4*r)*r)/( (r-1)*(r-1) );
+        T k_rep = (eqLength*eqLength)* k_inPlane * r0 * (-6 + (9 - 4*r0)*r0)/( (r0-1)*(r0-1) );
+        tmpForce +=  - eij * k_rep / (L*L) ;
+    return tmpForce;
 }
 
 template<typename T>

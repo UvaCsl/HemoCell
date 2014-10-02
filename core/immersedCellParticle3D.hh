@@ -161,6 +161,32 @@ void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_, Ar
         processor = this->getMpiProcessor();
 }
 
+
+template<typename T, template<typename U> class Descriptor>
+void ImmersedCellParticle3D<T,Descriptor>::resetForces() {
+        a.resetToZero();
+        force.resetToZero();
+
+        f_wlc.resetToZero();
+        f_bending.resetToZero();
+        f_volume.resetToZero();
+        f_surface.resetToZero();
+        f_shear.resetToZero();
+        f_viscosity.resetToZero();
+        f_repulsive.resetToZero();
+        stress.resetToZero();
+
+        E_other = T();
+        E_inPlane = T();
+        E_bending = T();
+        E_area = T();
+        E_volume = T();
+        E_repulsive = T();
+
+        processor = this->getMpiProcessor();
+}
+
+
 template<typename T, template<typename U> class Descriptor>
 void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_)
 {

@@ -168,7 +168,8 @@ public:
 
     T computeEdgeLength(plint iVertex, plint jVertex);
     Array<T,3> computeEdgeLengthVector(plint iVertex, plint jVertex);
-    T computeSignedAngle(plint iVertex, plint jVertex);
+    T computeSignedAngle(plint iVertex, plint jVertex, bool& found);
+    T computeSignedAngle(plint iVertex, plint jVertex, plint & kVertex, plint & lVertex, bool& found);
     T computeTriangleArea(plint iTriangle);
     Array<T,3> computeTriangleNormal(plint iTriangle);
     plint findTriangleId(plint iVertex, plint jVertex, plint kVertex) ;
