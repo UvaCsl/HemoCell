@@ -277,7 +277,7 @@ void GetTaggedParticleVelocity3D<T,Descriptor>::getTypeOfModification (
 template<typename T, template<typename U> class Descriptor>
 ComputeImmersedElasticForce3D<T,Descriptor>::ComputeImmersedElasticForce3D (
         TriangleBoundary3D<T> const& triangleBoundary_,
-        ConstitutiveModel<T>* cellModel_, CellField3D<T,Descriptor> & chq_)
+        ConstitutiveModel<T,Descriptor>* cellModel_, CellField3D<T,Descriptor> & chq_)
     : triangleBoundary(triangleBoundary_),
       cellModel(cellModel_),
       chq(chq_)
@@ -322,8 +322,8 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
         plint cellId = particle->get_cellId();
         if (!isRigid(triangleBoundary.getVertexProperty(vertexId))) {
             particle->get_force().resetToZero();
-            Array<T,3> cellForce = cellModel->computeCellForce (
-                    triangleBoundary, chq.getVolume(cellId), chq.getSurface(cellId), iSurface, vertexId);
+            Array<T,3> cellForce(0,0,0);// = cellModel->computeCellForce (
+//                    triangleBoundary, chq.getVolume(cellId), chq.getSurface(cellId), iSurface, vertexId);
             particle->get_force() += cellForce;
             particle->get_stress() = particle->get_force()*1.0/iSurface;
         }

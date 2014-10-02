@@ -82,9 +82,11 @@ public:
     virtual T getMeanTriangleArea(plint numTriangles) { return quantities1D[CCR_SURFACE]*1.0/numTriangles;} ;
     virtual T & getMeanTileSpan()       { return quantities1D[CCR_TILE_SPAN_MEAN];} ;
 
-    virtual Array<T,3> const& getPosition() { return quantities3D[CCR_POSITION_MEAN];  } ;
+    virtual Array<T,3> const& getPosition() const { return quantities3D[CCR_POSITION_MEAN];  } ;
+    virtual Array<T,3> & getPosition() { return quantities3D[CCR_POSITION_MEAN];  } ;
+
     virtual Array<T,3> const& getVelocity() { return quantities3D[CCR_VELOCITY_MEAN];} ;
-    virtual Array<T,3> const& getForce(plint numVertices=1)    { return quantities3D[CCR_FORCE] * (1.0*numVertices) / quantities1D[CCR_SURFACE];} ;
+    virtual Array<T,3> getForce(plint numVertices=1)    { return quantities3D[CCR_FORCE] * (1.0*numVertices) / quantities1D[CCR_SURFACE];} ;
     virtual std::vector<T> & getInertia()   { return quantitiesND[CCR_INERTIA];} ;
 
     virtual Array<T,3> & getTumblingAngles()     { return quantities3D[CCR_TUMBLING_ANGLES];  } ;
@@ -106,21 +108,23 @@ template<typename T, template<typename U> class Descriptor>
 void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T, Descriptor> * cell, plint iVertex);
 
 
+TriangularSurfaceMesh<double> triangularSurfaceMeshTest;
 
 template<typename T, template<typename U> class Descriptor>
 class Cell3D : public CellQuantityHolder<T>
 {
 public:
-    Cell3D(TriangularSurfaceMesh<T>& mesh_, plint cellId_=-1);
+    Cell3D(TriangularSurfaceMesh<T> const& mesh_, plint cellId_=-1);
+    Cell3D() : mesh(triangularSurfaceMeshTest) { PLB_ASSERT(false); } ;
     ~Cell3D() {};
 
     void push_back(Particle3D<T,Descriptor>* particle3D);
     void close();
 
-    void setMesh(TriangularSurfaceMesh<T>& mesh_) ;
+    void setMesh() ;
     void set_cellId(plint cellId_) { cellId = cellId_; }
 
-    TriangularSurfaceMesh<T> & getMesh() { return mesh; }
+    TriangularSurfaceMesh<T> const& getMesh() { return mesh; }
     plint & get_cellId() { return cellId;  }
 
     plint getMpiProcessor();
@@ -152,6 +156,7 @@ public:
  
     plint getVertexId(plint iTriangle, plint id) {   return mesh.getVertexId(iTriangle, id); }
     std::vector<plint> getNeighborVertexIds(plint iVertex) {   return mesh.getNeighborVertexIds(iVertex); }
+    std::vector<plint> getNeighborVertexIds(plint iVertex, plint jVertex) {   return mesh.getNeighborVertexIds(iVertex, jVertex); }
     std::vector<plint> getNeighborTriangleIds(plint iVertex) { return mesh.getNeighborTriangleIds(iVertex); }
     std::vector<plint> getAdjacentTriangleIds(plint iVertex, plint jVertex) { return mesh.getAdjacentTriangleIds(iVertex, jVertex); }
  
@@ -178,15 +183,16 @@ public:
     T computeVertexArea(plint iVertex);
     Array<T,3> computeVertexNormal(plint iVertex);
     T computeEdgeTileSpan(plint iVertex, plint jVertex);
-    virtual void computeCCRQuantities(plint ccrId, plint iVertex) { reducer.clear(); computeCCRQuantities(ccrId, reducer, this, iVertex); }
-    virtual void computeCCRQuantities(plint ccrId, Particle3D<T,Descriptor> * particle) { computeCCRQuantities(ccrId, reducer, this, castParticleToICP3D(particle->getVertexId())); }
+    virtual void clearReducer() { reducer.clear();  }
+    virtual void computeCCRQuantities(plint ccrId, plint iVertex) { calculateCCRQuantities(ccrId, reducer, this, iVertex); }
+    virtual void computeCCRQuantities(plint ccrId, Particle3D<T,Descriptor> * particle) { calculateCCRQuantities(ccrId, reducer, this, castParticleToICP3D(particle)->getVertexId()); }
     void closeCCRQuantities() { this->copyFromBlockStatisticsCCR(reducer); }
 public:
     Array<T,3>  getForce()    { return this->getForce(cellNumVertices); } ;
 private:
     /* data */
+    TriangularSurfaceMesh<T> const& mesh;
     plint cellId;
-    TriangularSurfaceMesh<T>& mesh;
     std::map<plint, Particle3D<T,Descriptor>*> iVertexToParticle3D;
 
     BlockStatisticsCCR<T> reducer;

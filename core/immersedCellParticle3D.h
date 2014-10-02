@@ -92,7 +92,7 @@ private:
     plint vertexId;
 public:
     std::vector<Dot3D> & getIBMcoordinates() { return cellPos; }
-    std::vector<Dot3D> & getIBMweights() { return weights; }
+    std::vector<T> & getIBMweights() { return weights; }
 private:
     std::vector<Dot3D> cellPos;
     std::vector<T> weights;

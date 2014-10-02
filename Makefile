@@ -22,12 +22,12 @@ palabosRoot   = ./palabos
 ficsionRoot   = .
 # Name of source files in current directory to compile and link with Palabos
 # projectFiles = losglobulos.cpp
-projectFiles = ficsion.cpp
+projectFiles = ficsional.cpp
  
 # Choose between generic and precompiled mode
 precompiled  = false
 # Set optimization flags on/off
-optimize     = true
+optimize     = false
 # Set debug mode and debug flags on/off
 debug        = true
 # Set profiling flags on/off
@@ -53,7 +53,7 @@ useHDF5 = true
 # Path to external libraries (other than Palabos)
 libraryPaths = 
 # Path to inlude directories (other than Palabos)
-includePaths = $(ficsionRoot) $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/ $(ficsionRoot)/IO/
+includePaths = $(ficsionRoot) $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/ $(ficsionRoot)/IO/ $(ficsionRoot)/newMesh/
 # Path to inlude directories (other than Palabos)
 # ficsionPaths = $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/
 # Dynamic and static libraries (other than Palabos)
@@ -84,8 +84,9 @@ ifeq ($(useHDF5), true)
     libraries     += -lhdf5 -lhdf5_hl
 endif
 
+compileFlags += -Wreorder -Wsign-compare
 # General linker flags (don't put library includes into this flag)
-linkFlags    = 
+linkFlags    = -Wreorder -Wsign-compare
 # Compiler flags to use when optimization mode is on
 optimFlags   = -O3 -finline-functions
 # Compiler flags to use when debug mode is on

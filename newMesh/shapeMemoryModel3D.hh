@@ -46,11 +46,13 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
       dx(dx_), dt(dt_), dm(dm_)
 {
     T dNewton = (dm*dx/(dt*dt)) ;
+    T kBT = kBT_p / ( dm * dx*dx/(dt*dt) );
+
     k_WLC_ *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
     k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
     eta_m /= dNewton*dt/dx;     k_stretch /= dNewton;    k_rest /= dNewton/dx;
 
-    T x0 = eqLengthRatio;
+
     syncRequirements.insert(volumeAndSurfaceReductions);
 
     cellNumTriangles = meshElement.getNumTriangles();
@@ -74,6 +76,8 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
        eqLength += iter->second;
        maxLength = max(iter->second, maxLength);
     }
+    maxLength = maxLength*eqLengthRatio;
+
     eqLength /= eqLengthPerEdge.size();
     /* Calculate cell Radius */
     Array<T,2> xRange;     Array<T,2> yRange;     Array<T,2> zRange;
@@ -146,7 +150,7 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> &
     std::vector<plint> const& triangles = cell.getTriangles();
     std::vector<Array<plint,2> > const& edges = cell.getEdges();
     std::vector<plint > const& vertices = cell.getVertices();
-    for (int iV = 0; iV < vertices.size(); ++iV) {
+    for (pluint iV = 0; iV < vertices.size(); ++iV) {
         castParticleToICP3D(cell.getParticle3D(vertices[iV]))->resetForces();
     }
     plint iTriangle;
@@ -160,7 +164,7 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> &
      */
     Array<T,3> force1, force2;
     T potential;
-    for (int iE = 0; iE < edges.size(); ++iE) {
+    for (pluint iE = 0; iE < edges.size(); ++iE) {
         iVertex = edges[iE][0];  jVertex = edges[iE][1];
         plint edgeId = getEdgeId(iVertex, jVertex);
         Array<T,3> const& iX = cell.getVertex(iVertex);
@@ -199,7 +203,7 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> &
          /*    Bending Forces Calculations      */
         /* ------------------------------------*/
         bool angleFound;
-        plint kVertex, lVertex;
+
         T edgeAngle = cell.computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
         if (angleFound) {
             Array<T,3> iNormal = cell.computeTriangleNormal(iVertex, jVertex, kVertex);
@@ -256,8 +260,8 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> &
     std::map<plint, Array<T,3> > trianglesNormal;
     T triangleArea;
     Array<T,3> triangleNormal;
-    plint vertexIds[3];
-    for (int iT = 0; iT < triangles.size(); ++iT) {
+
+    for (pluint iT = 0; iT < triangles.size(); ++iT) {
         iTriangle = triangles[iT];
         triangleNormal = cell.computeTriangleNormal(iTriangle);
         triangleArea = cell.computeTriangleArea(iTriangle);
@@ -311,6 +315,7 @@ void getCellShapeQuantitiesFromMesh(TriangularSurfaceMesh<T> const& dynMesh,
             }
         }
     }
+    eqAreaPerTriangle.resize(cellNumTriangles);
     for (plint iTriangle = 0; iTriangle < cellNumTriangles; ++iTriangle) {
         eqAreaPerTriangle[iTriangle] = dynMesh.computeTriangleArea(iTriangle);
     }

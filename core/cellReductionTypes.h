@@ -134,8 +134,8 @@ private:
 class SyncRequirements
 {
 public:
-    SyncRequirements();
-    ~SyncRequirements();
+    SyncRequirements() {};
+    ~SyncRequirements() {};
     SyncRequirements(const SyncRequirements &rhs) { ccrRequirements=rhs.ccrRequirements; };
     virtual void clear() { ccrRequirements.clear(); }
     pluint size() { return ccrRequirements.size(); }

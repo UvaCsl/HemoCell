@@ -39,10 +39,6 @@ void MeshMetrics<T>::init(TriangularSurfaceMesh<T> const& mesh)    {
     pluint NEdges = 0;
     volume = 0.0;
     for (int iV = 0; iV < Nv; ++iV) {
-        tmp = mesh.computeVertexArea(iV);
-        minArea = minArea>tmp?tmp:minArea;
-        maxArea = maxArea<tmp?tmp:maxArea;
-        area += tmp;
         std::vector<plint> nvid = mesh.getNeighborVertexIds(iV);
         T NumNeighbors = nvid.size();
         Nn += nvid.size();
@@ -80,7 +76,10 @@ void MeshMetrics<T>::init(TriangularSurfaceMesh<T> const& mesh)    {
         }
     }
     for (int iT = 0; iT < Nt; ++iT) {
-        area += mesh.computeTriangleArea(iT);
+        tmp = mesh.computeTriangleArea(iT);
+        minArea = minArea>tmp?tmp:minArea;
+        maxArea = maxArea<tmp?tmp:maxArea;
+        area += tmp;
     }
     Nn /= Nv; area /= Nt; length /= NEdges; angle /= NEdges;
     // Compute Sigmas

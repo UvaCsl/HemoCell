@@ -9,7 +9,6 @@ template<typename T>
 void BlockStatisticsCCR<T>::subscribe(plint ccrId) {
     plint reductionType = getReductionType(ccrId);
     plint dim = getReductionDimension(ccrId);
-    pluint qBin;
     for (int d = 0; d < dim; ++d) {
         if (0 == reductionType)      { ccrIdToBin[ccrId].push_back(subscribeSum()); }
         else if (1 == reductionType) { ccrIdToBin[ccrId].push_back(subscribeAverage()); }
@@ -76,7 +75,7 @@ void BlockStatisticsCCR<T>::get(plint ccrId, T & value, pluint qBin) {
 
 template<typename T>
 void BlockStatisticsCCR<T>::get(plint ccrId, T & value) {
-    pluint qBin = ccrIdToBin[ccrId];
+    pluint qBin = ccrIdToBin[ccrId][0];
     get(ccrId, value, qBin);
 }
 

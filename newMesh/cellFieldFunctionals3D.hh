@@ -27,9 +27,7 @@ void ComputeCellForce3D<T,Descriptor>::processGenericBlocks (
 {
     typename std::map<plint, Cell3D<T,Descriptor>  >::iterator iter;
     for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
-        plint cellId = iter->first;
-        Cell3D<T,Descriptor> & cell = iter->second;
-        cellModel->computeCellForce(cell);
+        cellModel->computeCellForce(iter->second);
     }
 }
 
@@ -151,16 +149,17 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
-        interpolationCoefficients(fluid, position, particle->getIBMcoordinates(), particle->getIBMweights(), ibmKernel);
+        cellPos = particle->getIBMcoordinates();
+        weights = particle->getIBMweights();
+        interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
         Array<T,3> elasticForce = particle->get_force();
         // pcout << "elastic force: (" << elasticForce[0] << ", "<< elasticForce[1] << ", "<< elasticForce[2] << ")\n";
         for (pluint iCell = 0; iCell < weights.size(); ++iCell) {
-            Dot3D cellPosition = particle->getIBMcoordinates()[iCell];
-//            Dot3D cellPosition = cellPos[iCell] + offset;
+            Dot3D cellPosition = cellPos[iCell];
             cell = &fluid.get(cellPosition.x, cellPosition.y, cellPosition.z);
             T *locForce = cell->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
             for (pluint iA = 0; iA < 3; ++iA) {
-                locForce[iA] += particle->getIBMweights()[iCell]*elasticForce[iA];
+                locForce[iA] += (weights[iCell])*elasticForce[iA];
             }
         }
     }
@@ -219,7 +218,7 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
 
 template<typename T, template<typename U> class Descriptor>
 FillCellMap<T,Descriptor>::FillCellMap (
-	TriangularSurfaceMesh<T>& mesh_,
+	TriangularSurfaceMesh<T> const& mesh_,
 	std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D_)
 : mesh(mesh_), cellIdToCell3D(cellIdToCell3D_) { }
 
@@ -231,7 +230,7 @@ FillCellMap<T,Descriptor>::~FillCellMap() { }
 template<typename T, template<typename U> class Descriptor>
 FillCellMap<T,Descriptor>::FillCellMap (
             FillCellMap<T,Descriptor> const& rhs)
-    : cellIdToCell3D(rhs.cellIdToCell3D), mesh(rhs.mesh) { }
+    : mesh(rhs.mesh), cellIdToCell3D(rhs.cellIdToCell3D) { }
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -273,6 +272,10 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> reductionParticles;
     reductionParticleField.removeParticles(reductionParticleField.getBoundingBox());
 
+    typename std::map<plint, Cell3D<T,Descriptor>  >::iterator iter;
+    for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
+        iter->second.clearReducer();
+    }
     std::map<plint, pluint> particlesPerCellId;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
         for (std::vector<plint>::iterator i = ccrRequirements.begin(); i != ccrRequirements.end(); ++i)
@@ -286,10 +289,9 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         }
     }
 
-    typename std::map<plint, Cell3D<T,Descriptor>  >::iterator iter;
     for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
         plint cellId = iter->first;
-        Cell3D<T,Descriptor> const& cell = iter->second;
+        Cell3D<T,Descriptor> & cell = iter->second;
         cell.closeCCRQuantities();
         Array<T,3> const& vertex = cell.get3D(CCR_NO_PBC_POSITION_MEAN);
         ReductionParticle3D<T,Descriptor>* rParticle = new ReductionParticle3D<T,Descriptor>(cellId, vertex);
@@ -315,7 +317,7 @@ ComputeRequiredQuantities<T,Descriptor>::~ComputeRequiredQuantities() { }
 template<typename T, template<typename U> class Descriptor>
 ComputeRequiredQuantities<T,Descriptor>::ComputeRequiredQuantities (
             ComputeRequiredQuantities<T,Descriptor> const& rhs)
-    : cellIdToCell3D(rhs.cellIdToCell3D), ccrRequirements(rhs.ccrRequirements) { }
+    : ccrRequirements(rhs.ccrRequirements), cellIdToCell3D(rhs.cellIdToCell3D) { }
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -368,28 +370,29 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
             plint processor = particle->get_processor();
             plint nParticles = particle->get_nParticles();
             particleInProcessorAndCellid[processor]; // Create "processor" entry
-            Cell3D<T,Descriptor> & chq = cellIdToCell3D[cellId];
-            if (particleInProcessorAndCellid[processor].count(cellId) == 0
-                                     &&  processor != particle->getMpiProcessor()) {
-                particleInProcessorAndCellid[processor][cellId] = true;
-                std::map<plint, T > const& q1d = particle->getQuantities1D();
-                std::map<plint, Array<T,3> > const& q3d = particle->getQuantities3D();
-                std::map<plint, std::vector<T> > const& qNd = particle->getQuantitiesND();
-                typename std::map<plint, T >::const_iterator iter1D;
-                for (iter1D  = q1d.begin(); iter1D != q1d.end(); ++iter1D) {
-                    chq.reduceQuantity1D(iter1D->first, iter1D->second, nParticles);
+            if (cellIdToCell3D.count(cellId)>0) {
+                Cell3D<T,Descriptor> & chq = cellIdToCell3D[cellId];
+                if (particleInProcessorAndCellid[processor].count(cellId) == 0
+                                         &&  processor != particle->getMpiProcessor()) {
+                    particleInProcessorAndCellid[processor][cellId] = true;
+                    std::map<plint, T > const& q1d = particle->getQuantities1D();
+                    std::map<plint, Array<T,3> > const& q3d = particle->getQuantities3D();
+                    std::map<plint, std::vector<T> > const& qNd = particle->getQuantitiesND();
+                    typename std::map<plint, T >::const_iterator iter1D;
+                    for (iter1D  = q1d.begin(); iter1D != q1d.end(); ++iter1D) {
+                        chq.reduceQuantity(iter1D->first, iter1D->second, nParticles);
+                    }
+                    typename std::map<plint, Array<T,3> >::const_iterator iter3D;
+                    for (iter3D  = q3d.begin(); iter3D != q3d.end(); ++iter3D) {
+                        chq.reduceQuantity(iter3D->first, iter3D->second, nParticles);
+                    }
+                    typename std::map<plint, std::vector<T> >::const_iterator iterND;
+                    for (iterND  = qNd.begin(); iterND != qNd.end(); ++iterND) {
+                        chq.reduceQuantity(iterND->first, iterND->second, nParticles);
+                    }
+                    chq.getParticlesPerCellId() += nParticles;
                 }
-                typename std::map<plint, Array<T,3> >::const_iterator iter3D;
-                for (iter3D  = q3d.begin(); iter3D != q3d.end(); ++iter3D) {
-                    chq.reduceQuantity3D(iter3D->first, iter3D->second, nParticles);
-                }
-                typename std::map<plint, std::vector<T> >::const_iterator iterND;
-                for (iterND  = qNd.begin(); iterND != qNd.end(); ++iterND) {
-                    chq.reduceQuantityND(iterND->first, iterND->second, nParticles);
-                }
-                chq.getParticlesPerCellId()[cellId] += nParticles;
             }
-
         }
         reductionParticleField.removeParticles(reductionParticleField.getBoundingBox(), -1);
 }

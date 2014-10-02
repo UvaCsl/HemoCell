@@ -38,7 +38,7 @@ public:
     // Computed as the maximum dimension from the BoundingBox
     T getRadius() { return cellRadius; }
     T getSurface() { return Nt*area; }
-    T getVolume() { return Nt*area; }
+    T getVolume() { return volume; }
 
     T getNumVertices() { return Nv; }
     T getNumTriangles() { return Nt; }

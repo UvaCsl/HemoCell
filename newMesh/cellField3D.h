@@ -41,7 +41,9 @@ public:
     Cell3D<T,Descriptor> & operator[](plint cellId) { return cellIdToCell3D[cellId]; }
 public:
 	std::map<plint, Cell3D<T,Descriptor> > & getCellIdToCell3D() { return cellIdToCell3D; };
-	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * getParticleField3D() { return immersedParticles; };
+    MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & getParticleField3D() { return *immersedParticles; };
+    void setParticleField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles_)
+            { delete [] immersedParticles; immersedParticles=immersedParticles_; };
 public:
 	virtual void setFluidExternalForce(Array<T,3> force);
 	virtual void setFluidExternalForce(T forceScalar);
@@ -53,9 +55,9 @@ public:
 	virtual void applyConstitutiveModel();
 	/* Need implementation */
 	virtual void synchronizeCellQuantities_Local(SyncRequirements ccrRequirements_=SyncRequirements());
-	virtual void synchronizeCellQuantities_Global(SyncRequirements ccrRequirements_=SyncRequirements()) =0;
+	virtual void synchronizeCellQuantities_Global(SyncRequirements ccrRequirements_=SyncRequirements()) {} ;
 	virtual void synchronizeCellQuantities(SyncRequirements ccrRequirements_=SyncRequirements()) { return synchronizeCellQuantities_Local(ccrRequirements_); } ;
-	pluint getNumberOfCells_Global();
+	pluint getNumberOfCells_Global() {return 0;};
 	pluint getNumberOfCells_Local() { return cellIdToCell3D.size(); } ;
 	pluint getNumberOfCells() { return getNumberOfCells_Local(); } ;
 	bool has_cellId(plint cellId) { return cellIdToCell3D.count(cellId) > 0; }
@@ -63,7 +65,7 @@ private:
 	MultiBlockLattice3D<T, Descriptor> & lattice;
 	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles;
 	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * reductionParticles;
-	TriangularSurfaceMesh<T> & elementaryMesh;
+	TriangularSurfaceMesh<T> const& elementaryMesh;
 	ConstitutiveModel<T, Descriptor> * cellModel;
 	plint ibmKernel;
 	bool coupleWithIBM;

@@ -151,7 +151,7 @@ ReductionParticle3D<T,Descriptor>* ReductionParticle3D<T,Descriptor>::clone() co
 template<typename T, template<typename U> class Descriptor>
 bool ReductionParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,3>& vector) {
     if (whichVector < getVectorsNumber()) {
-        vector = get3D(this->getVectorCcrIds()[whichVector]);
+        vector = this->get3D(this->getVectorCcrIds()[whichVector]);
         return true;
     }
     return Particle3D<T,Descriptor>::getVector(whichVector, vector);
@@ -175,7 +175,7 @@ plint ReductionParticle3D<T,Descriptor>::getVectorsNumber() {
 template<typename T, template<typename U> class Descriptor>
 bool ReductionParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) {
     if (whichScalar < getScalarsNumber()) {
-        scalar = get1D(this->getScalarCcrIds()[whichScalar]);
+        scalar = this->get1D(this->getScalarCcrIds()[whichScalar]);
         return true;
     }
     return Particle3D<T,Descriptor>::getScalar(whichScalar, scalar);
@@ -201,7 +201,7 @@ plint ReductionParticle3D<T,Descriptor>::getScalarsNumber() {
 template<typename T, template<typename U> class Descriptor>
 bool ReductionParticle3D<T,Descriptor>::getTensor(plint whichTensor, std::vector<T>& tensor) {
     if (whichTensor < getTensorsNumber()) {
-        tensor = getND(this->getTensorCcrIds()[whichTensor]);
+        tensor = this->getND(this->getTensorCcrIds()[whichTensor]);
         return true;
     }
     tensor.clear();

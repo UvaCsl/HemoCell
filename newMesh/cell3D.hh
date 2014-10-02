@@ -15,10 +15,10 @@ void CellQuantityHolder<T>::clearQuantities() {
 template<typename T>
 void CellQuantityHolder<T>::updateCQH(CellQuantityHolder<T> const& cqh) {
     this->clearQuantities();
-    particlesPerCellId = cqh->getParticlesPerCellId() ;
-    quantities1D = cqh->getQuantities1D();
-    quantities3D = cqh->getQuantities3D();
-    quantitiesND = cqh->getQuantitiesND();
+    particlesPerCellId = cqh.getParticlesPerCellId() ;
+    quantities1D = cqh.getQuantities1D();
+    quantities3D = cqh.getQuantities3D();
+    quantitiesND = cqh.getQuantitiesND();
     this->make_ccrId_List();
 }
 
@@ -36,12 +36,12 @@ bool CellQuantityHolder<T>::count(plint ccrId) {
 template<typename T>
 void CellQuantityHolder<T>::copyFromBlockStatisticsCCR(BlockStatisticsCCR<T> & reducer) {
     vector<plint> & ccrIds = reducer.get_ccrIds();
-    for (int i = 0; i < ccrIds.size(); ++i) {
+    for (pluint i = 0; i < ccrIds.size(); ++i) {
         plint ccrId = ccrIds[i];
         plint dim = getReductionDimension(ccrId);
-        if (1==dim) { reducer.get(get1D(ccrId)); }
-        else if (3==dim) { reducer.get(get3D(ccrId)); }
-        else { reducer.get(getND(ccrId)); }
+        if (1==dim) { reducer.get(ccrId, get1D(ccrId)); }
+        else if (3==dim) { reducer.get(ccrId, get3D(ccrId)); }
+        else { reducer.get(ccrId, getND(ccrId)); }
     }
 }
 
@@ -111,14 +111,13 @@ void CellQuantityHolder<T>::make_ccrId_List() {
 
 
 template<typename T, template<typename U> class Descriptor>
-Cell3D<T, Descriptor>::Cell3D(TriangularSurfaceMesh<T>& mesh_, plint cellId_) {
-    cellId = cellId_;
-    setMesh(mesh_);
+Cell3D<T, Descriptor>::Cell3D(TriangularSurfaceMesh<T> const& mesh_, plint cellId_) :
+        mesh(mesh_), cellId(cellId_) {
+    setMesh();
 };
 
 template<typename T, template<typename U> class Descriptor>
-void Cell3D<T, Descriptor>::setMesh(TriangularSurfaceMesh<T>& mesh_) {
-	mesh = mesh_;
+void Cell3D<T, Descriptor>::setMesh() {
 	cellNumVertices	 = mesh.getNumVertices();
 	cellNumTriangles = mesh.getNumTriangles();
 };
@@ -271,7 +270,7 @@ T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex, plint 
 
 template<typename T, template<typename U> class Descriptor>
 T Cell3D<T, Descriptor>::computeTriangleArea(plint iTriangle) {
-    PLB_ASSERT(iTriangle >= 0 && iTriangle < cellNumTriangles);
+    PLB_ASSERT(iTriangle >= 0 && iTriangle < plint(cellNumTriangles));
 	if (triangleAreas.count(iTriangle) == 0) {
 	    Array<T,3> v0 = getVertex(iTriangle, 0);
 	    Array<T,3> v1 = getVertex(iTriangle, 1);
@@ -298,12 +297,13 @@ plint Cell3D<T, Descriptor>::findTriangleId(plint iVertex, plint jVertex, plint 
     if (ati1[0] == ati2[1]) return ati1[0];
     if (ati1[1] == ati2[0]) return ati1[1];
     if (ati1[1] == ati2[1]) return ati1[1];
+    return -1;
 } ;
 
 
 template<typename T, template<typename U> class Descriptor>
 Array<T,3> Cell3D<T, Descriptor>::computeTriangleNormal(plint iTriangle) {
-    PLB_ASSERT(iTriangle >= 0 && iTriangle < cellNumTriangles);
+    PLB_ASSERT(iTriangle >= 0 && iTriangle < plint(cellNumTriangles));
     if (triangleAreas.count(iTriangle) == 0) {
         computeTriangleArea(iTriangle);
     }
@@ -375,7 +375,7 @@ T Cell3D<T, Descriptor>::computeEdgeTileSpan(plint iVertex, plint jVertex) {
 
 
 template<typename T, template<typename U> class Descriptor>
-void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T, Descriptor> * cell, plint iVertex) {
+void calculateCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T, Descriptor> * cell, plint iVertex) {
     std::vector<plint> neighbors = cell->getNeighborVertexIds(iVertex);
     plint q = getReductionQuantity(ccrId);
 /****** 1D Quantities ******/
@@ -432,7 +432,7 @@ void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T
         T Ixx=0, Ixy=0, Ixz=0;
         T Iyx=0, Iyy=0, Iyz=0;
         T Izx=0, Izy=0, Izz=0;
-        Array<T,3> r0 = cell->getPosition(); // Get the Cell Center;
+        Array<T,3> & r0 = cell->getPosition(); // Get the Cell Center;
         for (pluint iB = 0; iB < neighbors.size(); ++iB) {
             T Aj = cell->computeTriangleArea(neighbors[iB]);
             Array<T,3> nj = cell->computeTriangleNormal(neighbors[iB]);

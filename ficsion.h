@@ -20,9 +20,6 @@ using namespace std;
 #include "ficsionInit.h"
 #include "ficsionInit.hh"
 /* CORE libs */
-#include "cellReductor3D.h"
-#include "immersedCells3D.h"
-#include "immersedCellsReductions.h"
 #include "cellField3D.h"
 #include "reductionParticle3D.h"
 #include "immersedCellParticle3D.h"
@@ -30,11 +27,9 @@ using namespace std;
 #include "cellCellForces3D.h"
 #include "cellForceChecking3D.h"
 #include "cellReductionTypes.h"
-#include "localCellReductions3D.h"
 #include "computeCellForces3D.h"
 #include "immersedBoundaryMethod3D.h"
 #include "meshGeneratingFunctions.h"
-#include "immersedCellParticleVtk3D.h"
 #include "hdf5IO.h"
 
 
@@ -45,10 +40,10 @@ using namespace std;
 
 
 /* CASES */
-#include "cellStretching3D.h"
-#include "cellInShearFlow3D.h"
-#include "cellStretchingForces3D.h"
-#include "rbcDisaggregation.h"
+//#include "cellStretching3D.h"
+//#include "cellInShearFlow3D.h"
+//#include "cellStretchingForces3D.h"
+//#include "rbcDisaggregation.h"
 
 /* HELPERS */
 #include "immersedCellParticleFunctional3D.h"

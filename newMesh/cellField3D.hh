@@ -11,7 +11,7 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
     plint maxEdgeLengthLU = ceil(cellModel->getMaximumEdgeExtensionLengthLU());
     plint maxRadiusLU = ceil(cellModel->getCellRadiusLU());
     pluint particleEnvelopeWidth = maxEdgeLengthLU;
-    pluint reductionParticleEnvelopeWidth = 5*maxEdgeLengthLU;
+    pluint reductionParticleEnvelopeWidth = 5*maxRadiusLU;
 
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (

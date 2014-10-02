@@ -8,7 +8,6 @@
 
 #include "immersedCellParticle3D.h"
 #include "immersedCellParticleFunctional3D.h"
-#include "immersedCellParticleVtk3D.h"
 #include "shellModel3D.h"
 #include "cellModel3D.h"
 

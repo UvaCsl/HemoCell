@@ -55,8 +55,8 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
-    std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D;
     ConstitutiveModel<T,Descriptor>* cellModel;
+    std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D;
 };
 
 
@@ -64,7 +64,7 @@ template<typename T, template<typename U> class Descriptor>
 class FillCellMap : public BoxProcessingFunctional3D
 {
 public:
-    FillCellMap (TriangularSurfaceMesh<T>& mesh_, std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D_);
+    FillCellMap (TriangularSurfaceMesh<T> const& mesh_, std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D_);
     virtual ~FillCellMap();
     FillCellMap(FillCellMap<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -73,8 +73,8 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
+    TriangularSurfaceMesh<T> const& mesh;
 	std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D;
-	TriangularSurfaceMesh<T>& mesh;
 };
 
 
@@ -91,8 +91,8 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
-    std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D;
     std::vector<plint> ccrRequirements;
+    std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D;
 };
 
 

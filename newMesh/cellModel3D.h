@@ -60,6 +60,9 @@ public:
     virtual plint getCellRadiusLU()=0;
     virtual SyncRequirements & getSyncRequirements()=0;
 
+    Array<T,3> computeElasticForce (
+               TriangleBoundary3D<T> const& boundary,
+                plint iVertex ) { return Array<T,3>(0.0, 0.0, 0.0); }
 public:
     /* Computes the equilibrium quantities to correspond to the an inflated cell with
      *      eqVolume=ratio*eqVolume.
@@ -119,7 +122,8 @@ public:
             T dx_, T dt_, T dm_,
             TriangularSurfaceMesh<T> const& meshElement);
     virtual void computeCellForce (Cell3D<T,Descriptor> & cell, T ratio=1.0);
-    virtual plint getMaximumEdgeExtensionLengthLU() { return ceil(2*maxLength); };
+    virtual void computeCellForce (Cell3D<T,Descriptor> & cell) { return computeCellForce(cell, 1.0); } ;
+    virtual plint getMaximumEdgeExtensionLengthLU() { return ceil(2*maxLength + 0.5); };
     virtual plint getCellRadiusLU() { return cellRadiusLU; };
     virtual SyncRequirements & getSyncRequirements() {return syncRequirements;} ;
     virtual SyncRequirements const& getSyncRequirements() const {return syncRequirements;} ;
@@ -129,10 +133,10 @@ private:
     T k_rest, k_shear, k_bend, k_stretch, k_inPlane, k_elastic, k_surface, k_volume;
     T C_elastic;
     T eta_m, gamma_T, gamma_C;
-    T dx, dt, dm;
     T eqLength, eqArea, eqAngle;
     T eqVolume, eqSurface, eqTileSpan;
     T persistenceLengthCoarse, eqLengthRatio;
+    T dx, dt, dm;
     pluint cellNumTriangles, cellNumVertices;
     plint cellRadiusLU, maxLength;
     SyncRequirements syncRequirements;

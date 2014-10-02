@@ -34,7 +34,7 @@ using namespace std;
 namespace plb {
 
 template<typename T, template<typename U> class Descriptor>
-class ReductionParticle3D : public Particle3D<T,Descriptor>, CellQuantityHolder<T> {
+class ReductionParticle3D : public Particle3D<T,Descriptor>, public CellQuantityHolder<T> {
 public:
     ReductionParticle3D();
     ReductionParticle3D(plint tag_, Array<T,3> const& position);

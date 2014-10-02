@@ -50,9 +50,12 @@ CellModel3D<T, Descriptor>::CellModel3D(T density_, T k_rest_,
       k_volume(k_volume_),
       eta_m(eta_m_),
       eqLengthRatio(eqLengthRatio_),
-      dx(dx_), dt(dt_), dm(dm_)
+      dx(dx_), dt(dt_), dm(dm_),
+      syncRequirements()
 {
     T dNewton = (dm*dx/(dt*dt)) ;
+    T kBT = kBT_p / ( dm * dx*dx/(dt*dt) );
+
     k_WLC_ *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
     k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
     eta_m /= dNewton*dt/dx;     k_stretch /= dNewton;    k_rest /= dNewton/dx;
@@ -65,14 +68,14 @@ CellModel3D<T, Descriptor>::CellModel3D(T density_, T k_rest_,
     cellNumTriangles = meshmetric.getNumTriangles();
     cellRadiusLU = meshmetric.getRadius();
     eqLength = meshmetric.getMeanLength();
-    maxLength = eqLength*eqLengthRatio;
+    maxLength = meshmetric.getMaxLength()*eqLengthRatio;
     eqArea = meshmetric.getMeanArea();
 //    eqAngle = meshmetric.getMeanAngle();
     eqVolume = meshmetric.getVolume();
     eqSurface = meshmetric.getSurface();
     eqTileSpan = 0.0;
 
-    persistenceLengthCoarse = persistenceLengthFine * sqrt( (cellNumVertices-2.0) / (23867-2.0)) ;
+    persistenceLengthCoarse = persistenceLengthFine/dx * sqrt( (cellNumVertices-2.0) / (23867-2.0)) ;
     /* Use dimensionless coefficients */
     k_volume *= kBT/pow(eqLength,3);
     k_surface *= kBT/pow(eqLength,2);
@@ -140,7 +143,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> & cell, 
     std::vector<plint> const& triangles = cell.getTriangles();
     std::vector<Array<plint,2> > const& edges = cell.getEdges();
     std::vector<plint > const& vertices = cell.getVertices();
-    for (int iV = 0; iV < vertices.size(); ++iV) {
+    for (pluint iV = 0; iV < vertices.size(); ++iV) {
         castParticleToICP3D(cell.getParticle3D(vertices[iV]))->resetForces();
     }
     plint iTriangle;
@@ -154,7 +157,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> & cell, 
      */
     Array<T,3> force1, force2;
     T potential;
-    for (int iE = 0; iE < edges.size(); ++iE) {
+    for (pluint iE = 0; iE < edges.size(); ++iE) {
         iVertex = edges[iE][0];  jVertex = edges[iE][1];
         Array<T,3> const& iX = cell.getVertex(iVertex);
         Array<T,3> const& jX = cell.getVertex(jVertex);
@@ -192,7 +195,6 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> & cell, 
          /*    Bending Forces Calculations      */
         /* ------------------------------------*/
         bool angleFound;
-        plint kVertex, lVertex;
         T edgeAngle = cell.computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
         if (angleFound) {
             Array<T,3> iNormal = cell.computeTriangleNormal(iVertex, jVertex, kVertex);
@@ -249,8 +251,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> & cell, 
     std::map<plint, Array<T,3> > trianglesNormal;
     T triangleArea;
     Array<T,3> triangleNormal;
-    plint vertexIds[3];
-    for (int iT = 0; iT < triangles.size(); ++iT) {
+    for (pluint iT = 0; iT < triangles.size(); ++iT) {
         iTriangle = triangles[iT];
         triangleNormal = cell.computeTriangleNormal(iTriangle);
         triangleArea = cell.computeTriangleArea(iTriangle);
