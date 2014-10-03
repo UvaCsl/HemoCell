@@ -86,16 +86,26 @@ void CellQuantityHolder<T>::reduceQuantity(plint ccrId, T value, plint numParts)
 
 template<typename T>
 void CellQuantityHolder<T>::reduceQuantity(plint ccrId, Array<T,3> const& value, plint numParts) {
+    plint reductionType = (ccrId%100)/10; // Find reduction type (min,max,etc): second to last digit
     if (quantities3D.count(ccrId) == 0) { quantities3D[ccrId] = value; }
     else {
-        plint reductionType = (ccrId%100)/10; // Find reduction type (min,max,etc): second to last digit
-        for (pluint iv = 0; iv < 3; ++iv) {
-            T prValue = quantities3D[ccrId][iv];
-            if (0 == reductionType)      { quantities3D[ccrId][iv] = prValue + value[iv]; }
-            else if (1 == reductionType) { quantities3D[ccrId][iv] = (prValue*particlesPerCellId + numParts*value[iv]) * 1.0 / (particlesPerCellId + numParts); }
-            else if (2 == reductionType) { quantities3D[ccrId][iv] = max(prValue, value[iv]); }
-            else if (3 == reductionType) { quantities3D[ccrId][iv] = min(prValue, value[iv]);  } // Min can be calculated from the inverse Max
-    //            else if (4 == reductionType) { false; } // Std not implemented yet
+        Array<T,3> prValue = quantities3D[ccrId];
+        if (0 == reductionType)      { quantities3D[ccrId] = prValue + value; }
+        else if (1 == reductionType) {
+            plint prNumParts =  particlesPerCellId;
+            quantities3D[ccrId] = prNumParts * 1.0 * prValue + numParts * 1.0 * value;
+            T factr = 1.0 / (prNumParts + numParts);
+            quantities3D[ccrId] = quantities3D[ccrId] * factr;
+        }
+        else if (2 == reductionType) {
+            quantities3D[ccrId] = Array<T,3>( max(prValue[0], value[0]),
+                                                      max(prValue[1], value[1]),
+                                                      max(prValue[2], value[2]) );
+        }
+        else if (3 == reductionType) {
+            quantities3D[ccrId] = Array<T,3>( min(prValue[0], value[0]),
+                                                      min(prValue[1], value[1]),
+                                                      min(prValue[2], value[2]) );
         }
     }
 }

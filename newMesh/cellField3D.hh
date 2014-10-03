@@ -19,6 +19,7 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
             latticeManagement.getThreadAttribution().clone(),
             particleEnvelopeWidth,
             latticeManagement.getRefinementLevel() );
+
     immersedParticles = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(
             particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
 	immersedParticles->periodicity().toggleAll(true);
@@ -36,7 +37,7 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
     reductionParticles->toggleInternalStatistics(false);
 
     ccrRequirements.insert(cellModel->getSyncRequirements());
-
+    particleArg.clear(); particleLatticeArg.clear(); particleReductioParticleArg.clear();
     particleArg.push_back(immersedParticles);
     particleLatticeArg.push_back(immersedParticles);
     particleLatticeArg.push_back(&lattice);
@@ -50,10 +51,11 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
 
 template<typename T, template<typename U> class Descriptor>
 CellField3D<T, Descriptor>::~CellField3D() {
-	delete [] cellModel; 
+    std::cout << "CellField Desctructor" << std::endl;
+    delete [] cellModel;
 	delete [] immersedParticles;
+    delete [] reductionParticles;
 }
-
 
 
 

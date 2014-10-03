@@ -34,6 +34,21 @@
 namespace plb {
 
 template<typename T, template<typename U> class Descriptor>
+CellModel3D<T, Descriptor>::CellModel3D(CellModel3D<T,Descriptor> const& rhs) :
+        ConstitutiveModel<T,Descriptor>(rhs),
+        k_rest(rhs.k_rest), k_shear(rhs.k_shear), k_bend(rhs.k_bend), k_stretch(rhs.k_stretch), k_inPlane(rhs.k_inPlane), k_elastic(rhs.k_elastic),
+        k_surface(rhs.k_surface), k_volume(rhs.k_volume),
+        C_elastic(rhs.C_elastic), eta_m(rhs.eta_m), gamma_T(rhs.gamma_T), gamma_C(rhs.gamma_C),
+        eqLength(rhs.eqLength), eqArea(rhs.eqArea), eqAngle(rhs.eqAngle),
+        eqVolume(rhs.eqVolume), eqSurface(rhs.eqSurface), eqTileSpan(rhs.eqTileSpan),
+        persistenceLengthCoarse(rhs.persistenceLengthCoarse),
+        eqLengthRatio(rhs.eqLengthRatio), dx(rhs.dx), dt(rhs.dt), dm(rhs.dm),
+        cellNumTriangles(rhs.cellNumTriangles), cellNumVertices(rhs.cellNumVertices),
+        cellRadiusLU(rhs.cellRadiusLU), maxLength(rhs.maxLength), syncRequirements(rhs.syncRequirements)
+    { }
+
+
+template<typename T, template<typename U> class Descriptor>
 CellModel3D<T, Descriptor>::CellModel3D(T density_, T k_rest_,
             T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
             T k_volume_, T k_surface_, T eta_m_,
@@ -282,7 +297,6 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> & cell, 
     }
 
 }
-
 
 
 template<typename T, template<typename U> class Descriptor>

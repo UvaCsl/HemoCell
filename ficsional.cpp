@@ -156,7 +156,8 @@ int main(int argc, char* argv[])
     plint flowType;
     T shearRate, shearRate_p;
     Array<T,3> stretchForce(0,0,0);
-    T stretchForceScalar, stretchForce_p;
+    T stretchForceScalar;
+    T stretchForce_p;
     Array<T,3> eulerAngles;
     plint flowParam;
     bool checkpointed=0;
@@ -227,7 +228,7 @@ int main(int argc, char* argv[])
      */
 
     /* CREATE MESH */
-    Array<T,3> eqShapeRotationEulerAngles = eulerAngles;
+//    Array<T,3> eqShapeRotationEulerAngles = eulerAngles;
     if (flowParam == 9) { eulerAngles= Array<T,3>(0.,0.,0.); }
     // Radius in LU
     TriangleBoundary3D<T> Cells = constructMeshElement(shape, radius, cellNumTriangles, dx, cellPath, eulerAngles);
@@ -260,7 +261,7 @@ int main(int argc, char* argv[])
     }
 
 //
-    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, npar, cellModel);
+    CellField3D<T, DESCRIPTOR> * RBCField = new CellField3D<T, DESCRIPTOR>(lattice, meshElement, npar, cellModel);
 //
 //    applyProcessingFunctional ( // update mesh position
 //        new CopyParticleToMeshVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
@@ -292,6 +293,6 @@ int main(int argc, char* argv[])
 //    }
 
 
-
+    delete [] RBCField;
     pcout << "Simulation finished." << std::endl;
 }
