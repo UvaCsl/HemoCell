@@ -5,6 +5,27 @@
 /********************* CellQuantityHolder *********************/
 
 template<typename T>
+CellQuantityHolder<T>::CellQuantityHolder(CellQuantityHolder<T> const& rhs):
+    cellId(rhs.cellId),particlesPerCellId(rhs.particlesPerCellId),
+    quantities1D(rhs.quantities1D),quantities3D(rhs.quantities3D),
+    quantitiesND(rhs.quantitiesND),scalar_ccrIds(rhs.scalar_ccrIds),
+    vector_ccrIds(rhs.vector_ccrIds),tensor_ccrIds(rhs.tensor_ccrIds)
+    {    };
+
+template<typename T>
+CellQuantityHolder<T>& CellQuantityHolder<T>::operator=(CellQuantityHolder<T> const& rhs){
+    cellId=rhs.cellId;
+    particlesPerCellId=rhs.particlesPerCellId;
+    quantities1D=rhs.quantities1D;
+    quantities3D=rhs.quantities3D;
+    quantitiesND=rhs.quantitiesND;
+    scalar_ccrIds=rhs.scalar_ccrIds;
+    vector_ccrIds=rhs.vector_ccrIds;
+    tensor_ccrIds=rhs.tensor_ccrIds;
+    return *this;
+};
+
+template<typename T>
 void CellQuantityHolder<T>::clearQuantities() {
     quantities1D.clear();
     quantities3D.clear();
@@ -64,6 +85,23 @@ void CellQuantityHolder<T>::reduceQuantity(plint ccrId, T value, plint numParts)
 
 
 template<typename T>
+void CellQuantityHolder<T>::reduceQuantity(plint ccrId, Array<T,3> const& value, plint numParts) {
+    if (quantities3D.count(ccrId) == 0) { quantities3D[ccrId] = value; }
+    else {
+        plint reductionType = (ccrId%100)/10; // Find reduction type (min,max,etc): second to last digit
+        for (pluint iv = 0; iv < 3; ++iv) {
+            T prValue = quantities3D[ccrId][iv];
+            if (0 == reductionType)      { quantities3D[ccrId][iv] = prValue + value[iv]; }
+            else if (1 == reductionType) { quantities3D[ccrId][iv] = (prValue*particlesPerCellId + numParts*value[iv]) * 1.0 / (particlesPerCellId + numParts); }
+            else if (2 == reductionType) { quantities3D[ccrId][iv] = max(prValue, value[iv]); }
+            else if (3 == reductionType) { quantities3D[ccrId][iv] = min(prValue, value[iv]);  } // Min can be calculated from the inverse Max
+    //            else if (4 == reductionType) { false; } // Std not implemented yet
+        }
+    }
+}
+
+
+template<typename T>
 void CellQuantityHolder<T>::reduceQuantity(plint ccrId, std::vector<T> const& value, plint numParts) {
     if (quantitiesND.count(ccrId) == 0) { quantitiesND[ccrId] = value; }
     else {
@@ -111,14 +149,14 @@ void CellQuantityHolder<T>::make_ccrId_List() {
 
 
 template<typename T, template<typename U> class Descriptor>
-Cell3D<T, Descriptor>::Cell3D(TriangularSurfaceMesh<T> const& mesh_, plint cellId_) :
-        mesh(mesh_), cellId(cellId_), CellQuantityHolder<T>() {
+Cell3D<T, Descriptor>::Cell3D(TriangularSurfaceMesh<T> & mesh_, plint cellId_) :
+    CellQuantityHolder<T>(), mesh(mesh_), cellId(cellId_) {
     setMesh();
 };
 
 template<typename T, template<typename U> class Descriptor>
 Cell3D<T, Descriptor>::Cell3D(Cell3D<T,Descriptor> const& rhs) :
-        mesh(rhs.mesh), cellId(rhs.cellId), CellQuantityHolder<T>() {
+    CellQuantityHolder<T>(rhs), mesh(rhs.mesh), cellId(rhs.cellId) {
     setMesh();
 };
 
@@ -438,7 +476,7 @@ void calculateCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D
         T Ixx=0, Ixy=0, Ixz=0;
         T Iyx=0, Iyy=0, Iyz=0;
         T Izx=0, Izy=0, Izz=0;
-        Array<T,3> & r0 = cell->getPosition(); // Get the Cell Center;
+        Array<T,3> r0 = cell->getPosition(); // Get the Cell Center;
         for (pluint iB = 0; iB < neighbors.size(); ++iB) {
             T Aj = cell->computeTriangleArea(neighbors[iB]);
             Array<T,3> nj = cell->computeTriangleNormal(neighbors[iB]);

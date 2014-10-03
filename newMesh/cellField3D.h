@@ -30,7 +30,7 @@ public:
 			ConstitutiveModel<T, Descriptor> * cellModel. Deletion is taken care by CellField3D
 			pluint numberOfCells_. Global numer of Cells
 	*/
-	CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, TriangularSurfaceMesh<T> const& elementaryMesh_, 
+	CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, TriangularSurfaceMesh<T> & elementaryMesh_,
 			pluint numberOfCells_, ConstitutiveModel<T, Descriptor> * cellModel_);
 	~CellField3D();
 public:
@@ -65,7 +65,7 @@ private:
 	MultiBlockLattice3D<T, Descriptor> & lattice;
 	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles;
 	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * reductionParticles;
-	TriangularSurfaceMesh<T> const& elementaryMesh;
+	TriangularSurfaceMesh<T> & elementaryMesh;
 	ConstitutiveModel<T, Descriptor> * cellModel;
 	plint ibmKernel;
 	bool coupleWithIBM;

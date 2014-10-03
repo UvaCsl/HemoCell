@@ -64,7 +64,7 @@ template<typename T, template<typename U> class Descriptor>
 class FillCellMap : public BoxProcessingFunctional3D
 {
 public:
-    FillCellMap (TriangularSurfaceMesh<T> const& mesh_, std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D_);
+    FillCellMap (TriangularSurfaceMesh<T> & mesh_, std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D_);
     virtual ~FillCellMap();
     FillCellMap(FillCellMap<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -73,7 +73,7 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
-    TriangularSurfaceMesh<T> const& mesh;
+    TriangularSurfaceMesh<T> & mesh;
 	std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D;
 };
 

@@ -219,7 +219,7 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
 
 template<typename T, template<typename U> class Descriptor>
 FillCellMap<T,Descriptor>::FillCellMap (
-	TriangularSurfaceMesh<T> const& mesh_,
+	TriangularSurfaceMesh<T> & mesh_,
 	std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D_)
 : mesh(mesh_), cellIdToCell3D(cellIdToCell3D_) { }
 

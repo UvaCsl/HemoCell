@@ -4,7 +4,7 @@
 
 template<typename T, template<typename U> class Descriptor>
 CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, 
-	TriangularSurfaceMesh<T> const& elementaryMesh_,  pluint numberOfCells_, 
+	TriangularSurfaceMesh<T> & elementaryMesh_,  pluint numberOfCells_,
 	ConstitutiveModel<T, Descriptor> * cellModel_) : 
 		lattice(lattice_), elementaryMesh(elementaryMesh_), cellModel(cellModel_)
 {

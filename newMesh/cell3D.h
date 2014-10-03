@@ -20,7 +20,9 @@ class CellQuantityHolder
 {
 public:
     CellQuantityHolder() { } ;
-    ~CellQuantityHolder() { };
+    ~CellQuantityHolder() { } ;
+    CellQuantityHolder(CellQuantityHolder<T> const& rhs);
+    CellQuantityHolder<T>& operator=(CellQuantityHolder<T> const& rhs);
 
     plint const& getParticlesPerCellId() const { return particlesPerCellId; };
     plint & getParticlesPerCellId() { return particlesPerCellId; };
@@ -111,9 +113,16 @@ template<typename T, template<typename U> class Descriptor>
 class Cell3D : public CellQuantityHolder<T>
 {
 public:
-    Cell3D(TriangularSurfaceMesh<T> const& mesh_, plint cellId_=-1);
+    Cell3D(TriangularSurfaceMesh<T> & mesh_, plint cellId_=-1);
     Cell3D(Cell3D<T,Descriptor> const& rhs);
     ~Cell3D() {};
+    Cell3D<T,Descriptor>& operator=(Cell3D<T,Descriptor> const& rhs) {
+        CellQuantityHolder<T>::operator=(rhs),
+        mesh = rhs.mesh;
+        cellId=rhs.cellId;
+        setMesh();
+        return *this;
+     }
 
     void push_back(Particle3D<T,Descriptor>* particle3D);
     void close();
@@ -185,10 +194,12 @@ public:
     virtual void computeCCRQuantities(plint ccrId, Particle3D<T,Descriptor> * particle) { calculateCCRQuantities(ccrId, reducer, this, castParticleToICP3D(particle)->getVertexId()); }
     void closeCCRQuantities() { this->copyFromBlockStatisticsCCR(reducer); }
 public:
-    Array<T,3>  getForce()    { return this->getForce(cellNumVertices); } ;
+    Array<T,3> getForce()    { return this->getForce(cellNumVertices); } ;
+    Array<T,3> & getPosition() { return this->get3D(CCR_POSITION_MEAN);  } ;
+
 private:
     /* data */
-    TriangularSurfaceMesh<T> const& mesh;
+    TriangularSurfaceMesh<T> & mesh;
     plint cellId;
     std::map<plint, Particle3D<T,Descriptor>*> iVertexToParticle3D;
 
