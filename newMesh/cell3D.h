@@ -154,7 +154,7 @@ public:
 
     std::map<plint, plint> getInvertVertices() {
         std::map<plint, plint> iv;
-        for (int var = 0; var < vertices.size(); ++var) {
+        for (pluint var = 0; var < vertices.size(); ++var) {
             iv[ vertices[var] ] = var;
         }
         return iv;

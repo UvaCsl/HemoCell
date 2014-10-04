@@ -261,15 +261,11 @@ int main(int argc, char* argv[])
     }
 
 //
-    CellField3D<T, DESCRIPTOR> * RBCField = new CellField3D<T, DESCRIPTOR>(lattice, meshElement, npar, cellModel);
-//
-//    applyProcessingFunctional ( // update mesh position
-//        new CopyParticleToMeshVertex3D<T,DESCRIPTOR>(Cells.getMesh()),
-//        immersedParticles.getBoundingBox(), particleArg);
-//    applyProcessingFunctional (
-//        new MapVertexToParticle3D<T,DESCRIPTOR> (
-//            Cells, tagToParticle3D),
-//        immersedParticles.getBoundingBox(), particleArg );
+    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, npar, cellModel);
+    RBCField.initialize();
+    writeCellField3D_HDF5(RBCField, parameters, 0, "RBC");
+
+
 
     std::string logFileName = logOutDir + "plbCells.log";
 
@@ -284,8 +280,8 @@ int main(int argc, char* argv[])
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
 
     /* Deflate if I say so */
-    MorsePotential<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
-//    MorseAndPowerLawForce<T> interCellularForce(dx, cellNumVertices, kBT, true);
+//    MorsePotential<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
+    MorseAndPowerLawForce<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
 //    if (flowType == 2) {
 //        applyProcessingFunctional (
 //           new ComputeCellCellForces3D<T,DESCRIPTOR> (interCellularForce, 1.1e-6/dx),
@@ -293,6 +289,5 @@ int main(int argc, char* argv[])
 //    }
 
 
-    delete [] RBCField;
     pcout << "Simulation finished." << std::endl;
 }

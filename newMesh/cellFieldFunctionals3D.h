@@ -12,6 +12,24 @@ using namespace plb;
 
 
 template<typename T, template<typename U> class Descriptor>
+class PositionCellParticles3D : public BoxProcessingFunctional3D
+{
+public:
+    PositionCellParticles3D (
+    		TriangularSurfaceMesh<T> const& elementaryMesh_, std::vector<Array<T,3> > const& cellOrigins_);
+    /// Arguments: [0] Particle-field.
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual PositionCellParticles3D<T,Descriptor>* clone() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+private:
+    TriangularSurfaceMesh<T> const& elementaryMesh;
+    std::vector<Array<T,3> > cellOrigins;
+};
+
+
+
+template<typename T, template<typename U> class Descriptor>
 class ForceToFluid3D : public BoxProcessingFunctional3D
 {
 public:

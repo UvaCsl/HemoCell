@@ -43,12 +43,13 @@ public:
 	std::map<plint, Cell3D<T,Descriptor> > & getCellIdToCell3D() { return cellIdToCell3D; };
     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & getParticleField3D() { return *immersedParticles; };
     void setParticleField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles_)
-            { delete [] immersedParticles; immersedParticles=immersedParticles_; };
+            { delete immersedParticles; immersedParticles=immersedParticles_; };
 public:
 	virtual void setFluidExternalForce(Array<T,3> force);
 	virtual void setFluidExternalForce(T forceScalar);
 	virtual void setFluidExternalForce() { return setFluidExternalForce(0.0); }
 
+	virtual void initialize();
 	virtual void advanceParticles();
 	virtual void spreadForceIBM();
 	virtual void interpolateVelocityIBM();
@@ -75,7 +76,7 @@ public:
     std::vector<MultiBlock3D*> & getParticleArg()                 { return particleArg; }
     std::vector<MultiBlock3D*> & getParticleLatticeArg()          { return particleLatticeArg; }
     std::vector<MultiBlock3D*> & getParticleReductioParticleArg() { return particleReductioParticleArg; }
-    Box3D & getBoundingBox() { return immersedParticles->getBoundingBox(); }
+    Box3D getBoundingBox() { return immersedParticles->getBoundingBox(); }
 private:
     std::vector<MultiBlock3D*> particleArg;
     std::vector<MultiBlock3D*> particleLatticeArg;

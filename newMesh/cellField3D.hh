@@ -51,12 +51,27 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
 
 template<typename T, template<typename U> class Descriptor>
 CellField3D<T, Descriptor>::~CellField3D() {
-    std::cout << "CellField Desctructor" << std::endl;
-    delete [] cellModel;
-	delete [] immersedParticles;
-    delete [] reductionParticles;
+    delete cellModel;
+	delete immersedParticles;
+    delete reductionParticles;
 }
 
+
+
+template<typename T, template<typename U> class Descriptor>
+void CellField3D<T, Descriptor>::initialize() {
+    global::timer("Quantities").start();
+	std::vector<Array<T,3> > cellOrigins;
+    applyProcessingFunctional ( // advance particles in time according to velocity
+        new PositionCellParticles3D<T,Descriptor>(elementaryMesh, cellOrigins),
+        immersedParticles->getBoundingBox(), particleArg );
+    applyProcessingFunctional (
+        new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
+        immersedParticles->getBoundingBox(), particleArg );
+    global::timer("Quantities").stop();
+
+
+}
 
 
 template<typename T, template<typename U> class Descriptor>

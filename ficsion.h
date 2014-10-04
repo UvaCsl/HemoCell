@@ -31,6 +31,7 @@ using namespace std;
 #include "immersedBoundaryMethod3D.h"
 #include "meshGeneratingFunctions.h"
 #include "hdf5IO.h"
+#include "ParticleHdf5IO.h"
 
 
 /* MODELS */

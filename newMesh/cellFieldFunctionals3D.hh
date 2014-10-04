@@ -2,6 +2,65 @@
 #define CELL_FIELD_FUNCTIONALS_3D_HH
 #include "cellFieldFunctionals3D.h"
 
+
+/* ******** PositionCellParticles3D *********************************** */
+
+template<typename T, template<typename U> class Descriptor>
+PositionCellParticles3D<T,Descriptor>::PositionCellParticles3D (
+		TriangularSurfaceMesh<T> const& elementaryMesh_, std::vector<Array<T,3> > const& cellOrigins_)
+    : elementaryMesh(elementaryMesh_), cellOrigins(cellOrigins_)
+{ }
+
+template<typename T, template<typename U> class Descriptor>
+void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    PLB_PRECONDITION( blocks.size()==1 );
+    ParticleField3D<T,Descriptor>& particleField =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+
+    T dx = (domain.x1 + domain.x0)/2.0;
+    T dy = (domain.y1 + domain.y0)/2.0;
+    T dz = (domain.z1 + domain.z0)/2.0;
+    cellOrigins.clear();
+    cellOrigins.push_back(  Array<T,3>(dx, dy, dz)  );
+    int ntasks=0;
+
+#ifdef PLB_MPI_PARALLEL
+    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+#endif
+
+    plint nVertices = elementaryMesh.getNumVertices();
+	for (pluint iCO=0; iCO < cellOrigins.size(); ++iCO) {
+		Array<T,3> & cellOrigin = cellOrigins[iCO];
+		plint cellId = iCO + 50*ntasks;
+		for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
+			Array<T,3> vertex = cellOrigin + elementaryMesh.getVertex(iVertex);
+			particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );
+		}
+    }
+}
+
+template<typename T, template<typename U> class Descriptor>
+PositionCellParticles3D<T,Descriptor>* PositionCellParticles3D<T,Descriptor>::clone() const {
+    return new PositionCellParticles3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void PositionCellParticles3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::dynamicVariables; // Particle field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT PositionCellParticles3D<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulkAndEnvelope;
+}
+
+
+
+
 /* ******** ComputeCellForce3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
@@ -202,11 +261,14 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
                 dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
 
         plint cellId = particle->get_cellId();
-        typename std::map<plint, Cell3D<T,Descriptor>  >::iterator iter = cellIdToCell3D.find(cellId);
-        if (iter != cellIdToCell3D.end()) {
-            iter->second = Cell3D<T,Descriptor>(mesh, cellId);
+        pcout << "cellId=" << cellId << " " << iParticle << std::endl;
+
+        if (cellIdToCell3D.count(cellId) == 0) {
+            pcout << "creating " << cellId << std::endl;
+            cellIdToCell3D.insert(std::pair<plint, Cell3D<T,Descriptor> >(cellId,Cell3D<T,Descriptor>(mesh, cellId)));
         }
-        iter->second.push_back(particle);
+        pcout << "pushing " << iParticle << std::endl;
+        cellIdToCell3D[cellId].push_back(particle);
     }
 
     typename std::map<plint, Cell3D<T,Descriptor> >::iterator iter;
