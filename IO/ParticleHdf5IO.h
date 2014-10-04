@@ -1,5 +1,5 @@
-#ifndef FICSION_HDF5IO_H
-#define FICSION_HDF5IO_H
+#ifndef FICSION_PARTICLE_HDF5IO_H
+#define FICSION_PARTICLE_HDF5IO_H
 
 #include <limits>
 // #include "ficsion.h"
@@ -47,5 +47,5 @@ void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
 
 
 
-#include "hdf5IO.cpp"
-#endif  // FICSION_HDF5IO_H
+#include "ParticleHdf5IO.cpp"
+#endif  // FICSION_PARTICLE_HDF5IO_H
