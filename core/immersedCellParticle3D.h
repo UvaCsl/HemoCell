@@ -82,11 +82,6 @@ private:
     Array<T,3> v, pbcPosition, a, force, vPrevious;
     static int id;
 private:
-    Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, f_repulsive;
-    Array<T,3> stress;
-    T E_other, E_inPlane, E_bending, E_area,  E_volume, E_repulsive;
-
-private:
     plint processor;
     plint cellId;
     plint vertexId;
@@ -145,6 +140,11 @@ public:
 
     T const get_E_total() const { return (E_other + E_inPlane + E_bending + E_area + E_volume + E_repulsive);}
     T const get_Energy() const { return (E_other + E_inPlane + E_bending + E_area + E_volume + E_repulsive);}
+private:
+    Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, f_repulsive;
+    Array<T,3> stress;
+    T E_other, E_inPlane, E_bending, E_area,  E_volume, E_repulsive;
+
 
 };
 
