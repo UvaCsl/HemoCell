@@ -63,7 +63,7 @@ template<typename T, template<typename U> class Descriptor>
 class ComputeCellForce3D : public BoxProcessingFunctional3D
 {
 public:
-    ComputeCellForce3D (ConstitutiveModel<T,Descriptor>* cellModel_, std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D_) ;
+    ComputeCellForce3D (ConstitutiveModel<T,Descriptor>* cellModel_, std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_) ;
     ~ComputeCellForce3D();
     ComputeCellForce3D(ComputeCellForce3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -74,7 +74,7 @@ public:
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
     ConstitutiveModel<T,Descriptor>* cellModel;
-    std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D;
+    std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
 };
 
 
@@ -82,7 +82,7 @@ template<typename T, template<typename U> class Descriptor>
 class FillCellMap : public BoxProcessingFunctional3D
 {
 public:
-    FillCellMap (TriangularSurfaceMesh<T> & mesh_, std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D_);
+    FillCellMap (TriangularSurfaceMesh<T> & mesh_, std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_);
     virtual ~FillCellMap();
     FillCellMap(FillCellMap<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -92,7 +92,7 @@ public:
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
     TriangularSurfaceMesh<T> & mesh;
-	std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D;
+	std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
 };
 
 
@@ -100,7 +100,7 @@ template<typename T, template<typename U> class Descriptor>
 class ComputeRequiredQuantities : public BoxProcessingFunctional3D
 {
 public:
-    ComputeRequiredQuantities (std::vector<plint> ccrRequirements_, std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D_);
+    ComputeRequiredQuantities (std::vector<plint> ccrRequirements_, std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_);
     virtual ~ComputeRequiredQuantities();
     ComputeRequiredQuantities(ComputeRequiredQuantities<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -110,7 +110,7 @@ public:
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
     std::vector<plint> ccrRequirements;
-    std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D;
+    std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
 };
 
 
@@ -118,7 +118,7 @@ template<typename T, template<typename U> class Descriptor>
 class SyncCellQuantities : public BoxProcessingFunctional3D
 {
 public:
-    SyncCellQuantities (std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D_);
+    SyncCellQuantities (std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_);
     virtual ~SyncCellQuantities() { };
     SyncCellQuantities(SyncCellQuantities<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -127,7 +127,7 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
-    std::map<plint, Cell3D<T,Descriptor> > & cellIdToCell3D;
+    std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
 };
 
 

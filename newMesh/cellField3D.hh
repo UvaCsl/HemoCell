@@ -51,6 +51,12 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
 
 template<typename T, template<typename U> class Descriptor>
 CellField3D<T, Descriptor>::~CellField3D() {
+    typename std::map<plint, Cell3D<T,Descriptor>* >::iterator iter;
+    for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
+        delete (iter->second);
+    }
+    cellIdToCell3D.clear();
+
     delete cellModel;
 	delete immersedParticles;
     delete reductionParticles;
@@ -69,8 +75,7 @@ void CellField3D<T, Descriptor>::initialize() {
         new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
         immersedParticles->getBoundingBox(), particleArg );
     global::timer("Quantities").stop();
-
-
+    synchronizeCellQuantities();
 }
 
 

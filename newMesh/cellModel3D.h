@@ -54,8 +54,9 @@ class ConstitutiveModel : public ShellModel3D<T>
 public:
     /* All input should be in dimensionless units */
     ConstitutiveModel(T density_): ShellModel3D<T>(density_) { };
+    ConstitutiveModel(ConstitutiveModel<T,Descriptor> const& constModel): ShellModel3D<T>(constModel.getDensity()) { };
     ~ConstitutiveModel() { std::cout << "ConstitutiveModel Destructor" << std::endl; };
-    virtual void computeCellForce (Cell3D<T,Descriptor> & cell)=0;
+    virtual void computeCellForce (Cell3D<T,Descriptor> * cell)=0;
     virtual ConstitutiveModel<T,Descriptor>* clone() const=0;
     virtual plint getMaximumEdgeExtensionLengthLU()=0;
     virtual plint getCellRadiusLU()=0;
@@ -124,8 +125,7 @@ public:
             TriangularSurfaceMesh<T> const& meshElement);
     ~CellModel3D() {std::cout << "CellModel3D Destructor" << std::endl;} ;
     CellModel3D(CellModel3D<T,Descriptor> const& rhs);
-    virtual void computeCellForce (Cell3D<T,Descriptor> & cell, T ratio=1.0);
-    virtual void computeCellForce (Cell3D<T,Descriptor> & cell) { return computeCellForce(cell, 1.0); } ;
+    virtual void computeCellForce (Cell3D<T,Descriptor> * cell);
     virtual plint getMaximumEdgeExtensionLengthLU() { return ceil(2*maxLength + 0.5); };
     virtual plint getCellRadiusLU() { return cellRadiusLU; };
     virtual SyncRequirements & getSyncRequirements() {return syncRequirements;} ;

@@ -260,12 +260,6 @@ int main(int argc, char* argv[])
                persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
     }
 
-//
-    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, npar, cellModel);
-    RBCField.initialize();
-    writeCellField3D_HDF5(RBCField, parameters, 0, "RBC");
-
-
 
     std::string logFileName = logOutDir + "plbCells.log";
 
@@ -287,6 +281,35 @@ int main(int argc, char* argv[])
 //           new ComputeCellCellForces3D<T,DESCRIPTOR> (interCellularForce, 1.1e-6/dx),
 //           immersedParticles.getBoundingBox(), particleArg );
 //    }
+
+    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, npar, cellModel);
+	pcout << "initializing"<< std::endl;
+    RBCField.initialize();
+	pcout << "applyConstitutiveModel"<< std::endl;
+    RBCField.applyConstitutiveModel();
+    for (pluint iter=0; iter<tmax+1; ++iter) {
+    	pcout << "Iteration:" << iter << std::endl;
+        if (iter%tmeas==0) {
+            global::timer("HDFOutput").restart();
+            writeHDF5(lattice, parameters, iter);
+            writeCellField3D_HDF5(RBCField, parameters, iter, "RBC");
+            global::timer("HDFOutput").stop();
+        }
+        // #2# IBM Spreading
+        RBCField.setFluidExternalForce(poiseuilleForce);
+        RBCField.spreadForceIBM();
+        // #3# LBM
+        global::timer("LBM").start();
+        lattice.collideAndStream();
+        global::timer("LBM").stop();
+        // #4# IBM Interpolation
+        RBCField.interpolateVelocityIBM();
+        // #5# Position Update
+        RBCField.advanceParticles();
+        RBCField.synchronizeCellQuantities();
+        // #1# Membrane Model
+       RBCField.applyConstitutiveModel();
+    }
 
 
     pcout << "Simulation finished." << std::endl;

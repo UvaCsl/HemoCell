@@ -152,23 +152,25 @@ plint ShapeMemoryModel3D<T,Descriptor>::getEdgeId(plint iVertex, plint jVertex) 
 
 
 template<typename T, template<typename U> class Descriptor>
-void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> & cell, T ratio) {
+void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) {
      /* Some force calculations are according to KrugerThesis, Appendix C */
-    T cellVolume = cell.getVolume();
-    T cellSurface = cell.getSurface();
+	pcout << "ShapeMemoryModel3D<T, Descriptor>::computeCellForce" << std::endl;
+
+    T cellVolume = cell->getVolume();
+    T cellSurface = cell->getSurface();
     if (not ((cellVolume > 0) and (cellSurface > 0))) {
-        cout << ", processor: " << cell.getMpiProcessor()
-             << ", cellId: " << cell.get_cellId()
+        cout << ", processor: " << cell->getMpiProcessor()
+             << ", cellId: " << cell->get_cellId()
              << ", volume: " << cellVolume
              << ", surface: " << cellSurface
              << endl;
         PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
     }
-    std::vector<plint> const& triangles = cell.getTriangles();
-    std::vector<Array<plint,2> > const& edges = cell.getEdges();
-    std::vector<plint > const& vertices = cell.getVertices();
+    std::vector<plint> const& triangles = cell->getTriangles();
+    std::vector<Array<plint,2> > const& edges = cell->getEdges();
+    std::vector<plint > const& vertices = cell->getVertices();
     for (pluint iV = 0; iV < vertices.size(); ++iV) {
-        castParticleToICP3D(cell.getParticle3D(vertices[iV]))->resetForces();
+        castParticleToICP3D(cell->getParticle3D(vertices[iV]))->resetForces();
     }
     plint iTriangle;
     plint iVertex, jVertex, kVertex, lVertex;
@@ -184,10 +186,10 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> &
     for (pluint iE = 0; iE < edges.size(); ++iE) {
         iVertex = edges[iE][0];  jVertex = edges[iE][1];
         plint edgeId = getEdgeId(iVertex, jVertex);
-        Array<T,3> const& iX = cell.getVertex(iVertex);
-        Array<T,3> const& jX = cell.getVertex(jVertex);
-        ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell.getParticle3D(iVertex));
-        ImmersedCellParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell.getParticle3D(jVertex));
+        Array<T,3> const& iX = cell->getVertex(iVertex);
+        Array<T,3> const& jX = cell->getVertex(jVertex);
+        ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        ImmersedCellParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
           /* ------------------------------------*/
          /* In Plane forces (WLC and repulsive) */
         /* ------------------------------------*/
@@ -221,14 +223,14 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> &
         /* ------------------------------------*/
         bool angleFound;
 
-        T edgeAngle = cell.computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
+        T edgeAngle = cell->computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
         if (angleFound) {
-            Array<T,3> iNormal = cell.computeTriangleNormal(iVertex, jVertex, kVertex);
-            Array<T,3> jNormal = cell.computeTriangleNormal(iVertex, jVertex, lVertex);
-            ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell.getParticle3D(kVertex));
-            ImmersedCellParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell.getParticle3D(lVertex));
-            Array<T,3> const& kX = cell.getVertex(kVertex);
-            Array<T,3> const& lX = cell.getVertex(lVertex);
+            Array<T,3> iNormal = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
+            Array<T,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
+            ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+            ImmersedCellParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
+            Array<T,3> const& kX = cell->getVertex(kVertex);
+            Array<T,3> const& lX = cell->getVertex(lVertex);
 
             /*== Compute bending force for the vertex as part of the main edge ==*/
             force1 = computeBendingForceEdge (edgeAngle, eqAnglePerEdge[edgeId], k_bend, iNormal, jNormal);
@@ -280,17 +282,17 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> &
 
     for (pluint iT = 0; iT < triangles.size(); ++iT) {
         iTriangle = triangles[iT];
-        triangleNormal = cell.computeTriangleNormal(iTriangle);
-        triangleArea = cell.computeTriangleArea(iTriangle);
-        iVertex = cell.getVertexId(iTriangle,0);
-        jVertex = cell.getVertexId(iTriangle,1);
-        kVertex = cell.getVertexId(iTriangle,2);
-        Array<T,3> const& x1 = cell.getVertex(iVertex);
-        Array<T,3> const& x2 = cell.getVertex(jVertex);
-        Array<T,3> const& x3 = cell.getVertex(kVertex);
-        ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell.getParticle3D(iVertex));
-        ImmersedCellParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell.getParticle3D(jVertex));
-        ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell.getParticle3D(kVertex));
+        triangleNormal = cell->computeTriangleNormal(iTriangle);
+        triangleArea = cell->computeTriangleArea(iTriangle);
+        iVertex = cell->getVertexId(iTriangle,0);
+        jVertex = cell->getVertexId(iTriangle,1);
+        kVertex = cell->getVertexId(iTriangle,2);
+        Array<T,3> const& x1 = cell->getVertex(iVertex);
+        Array<T,3> const& x2 = cell->getVertex(jVertex);
+        Array<T,3> const& x3 = cell->getVertex(kVertex);
+        ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        ImmersedCellParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+        ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
 
         /* Surface and local area conservation forces */
         force1  = computeSurfaceConservationForce(x1, x2, x3, triangleNormal, surfaceCoefficient, dAdx);

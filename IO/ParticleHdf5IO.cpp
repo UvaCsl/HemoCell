@@ -37,26 +37,26 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
    /**            Fill triangle and particle lists            **/
   /************************************************************/
 
-     std::map<plint, Cell3D<T,Descriptor> > cellIdToCell3D = cellField3D.getCellIdToCell3D();
+     std::map<plint, Cell3D<T,Descriptor>* > cellIdToCell3D = cellField3D.getCellIdToCell3D();
      std::vector< plint > triangles;
      std::vector<Particle3D<T,Descriptor>* > particles;
      plint sumLocalVertices=0;
 
-     typename std::map<plint, Cell3D<T,Descriptor> >::iterator itrtr;
+     typename std::map<plint, Cell3D<T,Descriptor>* >::iterator itrtr;
      for (itrtr  = cellIdToCell3D.begin(); itrtr != cellIdToCell3D.end(); ++itrtr) {
-         Cell3D<T,Descriptor> & cell3d = (itrtr->second);
-         std::vector<plint> const& cellVertices = cell3d.getVertices();
-         std::vector<plint> const& cellTriangles = cell3d.getTriangles();
+         Cell3D<T,Descriptor> * cell3d = (itrtr->second);
+         std::vector<plint> const& cellVertices = cell3d->getVertices();
+         std::vector<plint> const& cellTriangles = cell3d->getTriangles();
          for (std::vector<plint>::const_iterator iVP = cellVertices.begin(); iVP != cellVertices.end(); ++iVP)
          {
-             particles.push_back( cell3d.getParticle3D(*iVP) );
+             particles.push_back( cell3d->getParticle3D(*iVP) );
          }
-         std::map<plint, plint> iv = cell3d.getInvertVertices();
+         std::map<plint, plint> iv = cell3d->getInvertVertices();
          for (pluint iT=0; iT < cellTriangles.size(); iT++) {
              plint iTriangle=cellTriangles[iT];
-             plint t0 = iv[cell3d.getVertexId(iTriangle, 0)]+sumLocalVertices;
-             plint t1 = iv[cell3d.getVertexId(iTriangle, 1)]+sumLocalVertices;
-             plint t2 = iv[cell3d.getVertexId(iTriangle, 2)]+sumLocalVertices;
+             plint t0 = iv[cell3d->getVertexId(iTriangle, 0)]+sumLocalVertices;
+             plint t1 = iv[cell3d->getVertexId(iTriangle, 1)]+sumLocalVertices;
+             plint t2 = iv[cell3d->getVertexId(iTriangle, 2)]+sumLocalVertices;
              triangles.push_back(t0);
              triangles.push_back(t1);
              triangles.push_back(t2);
@@ -72,7 +72,6 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
    /************************************************************/
 
      std::string fileName = global::directories().getOutputDir() + createFileName(identifier.c_str(),iter,8) + createFileName("_p",id,3) + ".h5";
-     pcout << "fname=" << fileName << " " << Np << std::endl;
      hid_t file_id;
      file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
@@ -83,17 +82,10 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      /************************************************************/
     /**            Write output to HDF5 file                   **/
    /************************************************************/
-     pcout << "Write output to HDF5 file"<< std::endl;
-
-
      /*  Take care of Vectors    */
      ImmersedCellParticle3D<T,Descriptor> * icParticle = castParticleToICP3D(particles[0]);
-     pcout << "Created icParticle"<< std::endl;
-
      plint vN = icParticle->getVectorsNumber();
-     pcout << "Created vN"<< std::endl;
      double * matrixTensor = new double [3 * Np];
-     pcout << "Created matrixTensor"<< std::endl;
 
      Array<T,3> vector;
      for (plint ivN = 0; ivN < vN; ++ivN) {
@@ -107,7 +99,6 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          H5LTmake_dataset_double(file_id, icParticle->getVectorName(ivN).c_str(), 2, dimVertices, matrixTensor);
      }
      delete [] matrixTensor;
-     pcout << "Vectors written"<< std::endl;
 
      /*  Take care of Scalars    */
      plint sN = icParticle->getScalarsNumber();
@@ -119,7 +110,6 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          H5LTmake_dataset_double(file_id, icParticle->getScalarName(isN).c_str(), 1, dimVertices, scalarTensor);
      }
      delete [] scalarTensor;
-     pcout << "Scalars written"<< std::endl;
 
 
      H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
@@ -127,15 +117,12 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      H5LTset_attribute_long (file_id, "/", "iteration", &iter, 1);
      H5LTset_attribute_int (file_id, "/", "numberOfProcessors", &p, 1);
      H5LTset_attribute_int (file_id, "/", "processorId", &id, 1);
-     pcout << "processorId written"<< std::endl;
 
      H5LTset_attribute_long (file_id, "/", "numberOfParticles", &Np, 1);
      H5LTset_attribute_long (file_id, "/", "numberOfTriangles", &Nt, 1);
-     pcout << "numberOfTriangles written"<< std::endl;
 
      H5Fclose(file_id);
 
-     pcout << "H5Fclose written"<< std::endl;
 
 }
 

@@ -38,9 +38,9 @@ public:
 	void setIBMKernel(plint ibmKernel_) { ibmKernel = ibmKernel_; }
 	void setIBMCoupling(bool coupleWithIBM_) { coupleWithIBM = coupleWithIBM_; }
 
-    Cell3D<T,Descriptor> & operator[](plint cellId) { return cellIdToCell3D[cellId]; }
+//    Cell3D<T,Descriptor> & operator[](plint cellId) { return cellIdToCell3D[cellId]; }
 public:
-	std::map<plint, Cell3D<T,Descriptor> > & getCellIdToCell3D() { return cellIdToCell3D; };
+	std::map<plint, Cell3D<T,Descriptor>* > & getCellIdToCell3D() { return cellIdToCell3D; };
     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & getParticleField3D() { return *immersedParticles; };
     void setParticleField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles_)
             { delete immersedParticles; immersedParticles=immersedParticles_; };
@@ -81,7 +81,7 @@ private:
     std::vector<MultiBlock3D*> particleArg;
     std::vector<MultiBlock3D*> particleLatticeArg;
     std::vector<MultiBlock3D*> particleReductioParticleArg;
-    std::map<plint, Cell3D<T,Descriptor> > cellIdToCell3D;
+    std::map<plint, Cell3D<T,Descriptor>* > cellIdToCell3D;
     std::vector<plint> cellIds;
 	/* data */
 };

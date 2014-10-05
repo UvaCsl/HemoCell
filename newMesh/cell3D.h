@@ -20,7 +20,7 @@ class CellQuantityHolder
 {
 public:
     CellQuantityHolder() { } ;
-    ~CellQuantityHolder() { } ;
+    virtual ~CellQuantityHolder() { } ;
     CellQuantityHolder(CellQuantityHolder<T> const& rhs);
     CellQuantityHolder<T>& operator=(CellQuantityHolder<T> const& rhs);
 
@@ -115,7 +115,7 @@ class Cell3D : public CellQuantityHolder<T>
 public:
     Cell3D(TriangularSurfaceMesh<T> & mesh_, plint cellId_=-1);
     Cell3D(Cell3D<T,Descriptor> const& rhs);
-    ~Cell3D() {};
+    virtual ~Cell3D() { };
     Cell3D<T,Descriptor>& operator=(Cell3D<T,Descriptor> const& rhs) {
         CellQuantityHolder<T>::operator=(rhs),
         mesh = rhs.mesh;

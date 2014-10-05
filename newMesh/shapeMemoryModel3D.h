@@ -64,8 +64,7 @@ public:
     Array<T,3> computeElasticForce (
                TriangleBoundary3D<T> const& boundary,
                 plint iVertex ) { return Array<T,3>(0.0, 0.0, 0.0); }
-    virtual void computeCellForce (Cell3D<T,Descriptor> & cell, T ratio=1.0);
-    virtual void computeCellForce (Cell3D<T,Descriptor> & cell) { return computeCellForce(cell, 1.0); } ;
+    virtual void computeCellForce (Cell3D<T,Descriptor> * cell);
     virtual plint getMaximumEdgeExtensionLengthLU() { return ceil(2*maxLength + 0.5); };
     virtual plint getCellRadiusLU() { return cellRadiusLU; };
     virtual SyncRequirements & getSyncRequirements() {return syncRequirements;} ;
