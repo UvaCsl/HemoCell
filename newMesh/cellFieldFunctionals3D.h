@@ -64,12 +64,11 @@ class ComputeCellForce3D : public BoxProcessingFunctional3D
 {
 public:
     ComputeCellForce3D (ConstitutiveModel<T,Descriptor>* cellModel_, std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_) ;
-    ~ComputeCellForce3D();
+    ~ComputeCellForce3D() {}; // { delete cellModel; } ;
     ComputeCellForce3D(ComputeCellForce3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual ComputeCellForce3D<T,Descriptor>* clone() const;
-    virtual void getModificationPattern(std::vector<bool>& isWritten) const;
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:

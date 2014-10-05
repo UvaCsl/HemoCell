@@ -27,13 +27,18 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
     int ntasks=0;
 
 #ifdef PLB_MPI_PARALLEL
-    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+    //  Get the number of processes.
+    int  p = MPI::COMM_WORLD.Get_size();
+    //  Get the individual process ID.
+     int id = MPI::COMM_WORLD.Get_rank();
+#else
+     int p=1;
+     int id = 0;
 #endif
-
     plint nVertices = elementaryMesh.getNumVertices();
 	for (pluint iCO=0; iCO < cellOrigins.size(); ++iCO) {
 		Array<T,3> & cellOrigin = cellOrigins[iCO];
-		plint cellId = iCO + 50*ntasks;
+		plint cellId = iCO + 50*id;
 		for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
 			Array<T,3> vertex = cellOrigin + elementaryMesh.getVertex(iVertex);
 			particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );
@@ -68,12 +73,6 @@ ComputeCellForce3D<T,Descriptor>::ComputeCellForce3D (ConstitutiveModel<T,Descri
 : cellModel(cellModel_), cellIdToCell3D(cellIdToCell3D_) { }
 
 template<typename T, template<typename U> class Descriptor>
-ComputeCellForce3D<T,Descriptor>::~ComputeCellForce3D()
-{
-    delete cellModel;
-}
-
-template<typename T, template<typename U> class Descriptor>
 ComputeCellForce3D<T,Descriptor>::ComputeCellForce3D (
             ComputeCellForce3D<T,Descriptor> const& rhs)
     : cellModel(rhs.cellModel), cellIdToCell3D(rhs.cellIdToCell3D)
@@ -86,10 +85,7 @@ void ComputeCellForce3D<T,Descriptor>::processGenericBlocks (
 {
     typename std::map<plint, Cell3D<T,Descriptor>*  >::iterator iter;
     for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
-    	pcout << "CCF: cellId:" << iter->first << std::endl;
         cellModel->computeCellForce(iter->second);
-    	pcout << "CCF: END:" << std::endl;
-
     }
 }
 
@@ -98,11 +94,6 @@ ComputeCellForce3D<T,Descriptor>*
     ComputeCellForce3D<T,Descriptor>::clone() const
 {
     return new ComputeCellForce3D<T,Descriptor>(*this);
-}
-
-template<typename T, template<typename U> class Descriptor>
-void ComputeCellForce3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
-    isWritten[0] = true;  // Particle field.
 }
 
 template<typename T, template<typename U> class Descriptor>

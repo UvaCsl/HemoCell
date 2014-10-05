@@ -71,7 +71,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
     /**            Initialise HDF5 file                        **/
    /************************************************************/
 
-     std::string fileName = global::directories().getOutputDir() + createFileName(identifier.c_str(),iter,8) + createFileName("_p",id,3) + ".h5";
+     std::string fileName = global::directories().getOutputDir() + createFileName((identifier+"_").c_str(),iter,8) + createFileName("_p",id,3) + ".h5";
      hid_t file_id;
      file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 

@@ -32,7 +32,7 @@ Fast Cell Stretching release [8],
 Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType], 
  -->
     <flowType> 0 </flowType>   
-    <Re> 1.5 </Re>   <!--Reynolds number-->
+    <Re> 1. </Re>   <!--Reynolds number-->
     <shearRate> 100 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 0.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. When used with 2, it's the disaggregation force-->
     <eulerAngles> 0 0 0 </eulerAngles> <!-- In degrees -->
@@ -44,9 +44,9 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
 <ibm>
     <forceToFluid> 1 </forceToFluid>
     <ibmKernel> 2 </ibmKernel> <!-- ibmKernel: Phi2 [2], Phi3 [3], Phi4 [4],  Phi4c [5] -->
-    <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5] -->
+    <shape> 0 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5] -->
     <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
-    <minNumOfTriangles> 400 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
+    <minNumOfTriangles> 200 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
     <cellPath> ./lib/RBC.stl </cellPath>
 </ibm>
 
@@ -61,7 +61,7 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
 </domain>
 
 <sim>
-    <tmax> 1 </tmax> <!-- total number of iterations -->
+    <tmax> 100 </tmax> <!-- total number of iterations -->
     <tmeas> 100 </tmeas> <!-- interval after which data is written --> 
     <npar> 3  </npar> <!-- Number of particles > -->
 </sim>

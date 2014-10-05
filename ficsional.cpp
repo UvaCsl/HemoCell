@@ -285,7 +285,7 @@ int main(int argc, char* argv[])
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, npar, cellModel);
 	pcout << "initializing"<< std::endl;
     RBCField.initialize();
-	pcout << "applyConstitutiveModel"<< std::endl;
+	cout << ntasks << " " << RBCField.getNumberOfCells() << " applyConstitutiveModel"<< std::endl;
     RBCField.applyConstitutiveModel();
     for (pluint iter=0; iter<tmax+1; ++iter) {
     	pcout << "Iteration:" << iter << std::endl;

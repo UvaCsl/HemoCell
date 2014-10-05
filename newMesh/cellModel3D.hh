@@ -145,7 +145,7 @@ CellModel3D<T, Descriptor>::CellModel3D(T density_, T k_rest_,
 template<typename T, template<typename U> class Descriptor>
 void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) {
      /* Some force calculations are according to KrugerThesis, Appendix C */
-	pcout << "CellModel3D<T, Descriptor>::computeCellForce" << std::endl;
+//	pcout << "CellModel3D<T, Descriptor>::computeCellForce" << std::endl;
     T cellVolume = cell->getVolume();
     T cellSurface = cell->getSurface();
 

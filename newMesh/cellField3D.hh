@@ -134,7 +134,7 @@ void CellField3D<T, Descriptor>::applyConstitutiveModel() {
     global::timer("Model").start();
     // #1# Membrane Model + Stretching
     applyProcessingFunctional (
-                    new ComputeCellForce3D<T,Descriptor> (cellModel->clone(), cellIdToCell3D),
+                    new ComputeCellForce3D<T,Descriptor> (cellModel, cellIdToCell3D),
                     immersedParticles->getBoundingBox(), particleArg );
     global::timer("Model").stop();
 }
