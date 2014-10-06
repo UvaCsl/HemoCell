@@ -41,6 +41,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      std::vector< plint > triangles;
      std::vector<Particle3D<T,Descriptor>* > particles;
      plint sumLocalVertices=0;
+     plint numCells=cellIdToCell3D.size();
 
      typename std::map<plint, Cell3D<T,Descriptor>* >::iterator itrtr;
      for (itrtr  = cellIdToCell3D.begin(); itrtr != cellIdToCell3D.end(); ++itrtr) {
@@ -79,39 +80,6 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      hsize_t dimVertices[2]; dimVertices[0] = Np; dimVertices[1] = 3;
      H5LTmake_dataset_long(file_id, "triangles", 2, dimTriangles, &triangles[0]);
 
-     /************************************************************/
-    /**            Write output to HDF5 file                   **/
-   /************************************************************/
-     /*  Take care of Vectors    */
-     ImmersedCellParticle3D<T,Descriptor> * icParticle = castParticleToICP3D(particles[0]);
-     plint vN = icParticle->getVectorsNumber();
-     double * matrixTensor = new double [3 * Np];
-
-     Array<T,3> vector;
-     for (plint ivN = 0; ivN < vN; ++ivN) {
-         plint itr=0;
-         for (pluint iP = 0; iP < Np; ++iP) {
-            castParticleToICP3D(particles[iP])->getVector(ivN, vector);
-            matrixTensor[itr++] = vector[0];
-            matrixTensor[itr++] = vector[1];
-            matrixTensor[itr++] = vector[2];
-         }
-         H5LTmake_dataset_double(file_id, icParticle->getVectorName(ivN).c_str(), 2, dimVertices, matrixTensor);
-     }
-     delete [] matrixTensor;
-
-     /*  Take care of Scalars    */
-     plint sN = icParticle->getScalarsNumber();
-     double * scalarTensor = new double [Np];
-     for (plint isN = 0; isN < sN; ++isN) {
-         for (plint iP = 0; iP < Np; ++iP) {
-            castParticleToICP3D(particles[iP])->getScalar(isN, scalarTensor[iP]);
-         }
-         H5LTmake_dataset_double(file_id, icParticle->getScalarName(isN).c_str(), 1, dimVertices, scalarTensor);
-     }
-     delete [] scalarTensor;
-
-
      H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
      H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
      H5LTset_attribute_long (file_id, "/", "iteration", &iter, 1);
@@ -121,8 +89,40 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      H5LTset_attribute_long (file_id, "/", "numberOfParticles", &Np, 1);
      H5LTset_attribute_long (file_id, "/", "numberOfTriangles", &Nt, 1);
 
-     H5Fclose(file_id);
+     /************************************************************/
+    /**            Write output to HDF5 file                   **/
+   /************************************************************/
+     /*  Take care of Vectors    */
+     if (numCells > 0) {
+         ImmersedCellParticle3D<T,Descriptor> * icParticle = castParticleToICP3D(particles[0]);
+         plint vN = icParticle->getVectorsNumber();
+         double * matrixTensor = new double [3 * Np];
 
+         Array<T,3> vector;
+         for (plint ivN = 0; ivN < vN; ++ivN) {
+             plint itr=0;
+             for (pluint iP = 0; iP < Np; ++iP) {
+                castParticleToICP3D(particles[iP])->getVector(ivN, vector);
+                matrixTensor[itr++] = vector[0];
+                matrixTensor[itr++] = vector[1];
+                matrixTensor[itr++] = vector[2];
+             }
+             H5LTmake_dataset_double(file_id, icParticle->getVectorName(ivN).c_str(), 2, dimVertices, matrixTensor);
+         }
+         delete [] matrixTensor;
+
+         /*  Take care of Scalars    */
+         plint sN = icParticle->getScalarsNumber();
+         double * scalarTensor = new double [Np];
+         for (plint isN = 0; isN < sN; ++isN) {
+             for (plint iP = 0; iP < Np; ++iP) {
+                castParticleToICP3D(particles[iP])->getScalar(isN, scalarTensor[iP]);
+             }
+             H5LTmake_dataset_double(file_id, icParticle->getScalarName(isN).c_str(), 1, dimVertices, scalarTensor);
+         }
+         delete [] scalarTensor;
+     }
+     H5Fclose(file_id);
 
 }
 

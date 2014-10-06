@@ -24,7 +24,6 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
     T dz = (domain.z1 + domain.z0)/2.0;
     cellOrigins.clear();
     cellOrigins.push_back(  Array<T,3>(dx, dy, dz)  );
-    int ntasks=0;
 
 #ifdef PLB_MPI_PARALLEL
     //  Get the number of processes.
@@ -35,14 +34,16 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
      int p=1;
      int id = 0;
 #endif
-    plint nVertices = elementaryMesh.getNumVertices();
-	for (pluint iCO=0; iCO < cellOrigins.size(); ++iCO) {
-		Array<T,3> & cellOrigin = cellOrigins[iCO];
-		plint cellId = iCO + 50*id;
-		for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
-			Array<T,3> vertex = cellOrigin + elementaryMesh.getVertex(iVertex);
-			particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );
-		}
+    if (id==0) {
+        plint nVertices = elementaryMesh.getNumVertices();
+        for (pluint iCO=0; iCO < cellOrigins.size(); ++iCO) {
+            Array<T,3> & cellOrigin = cellOrigins[iCO];
+            plint cellId = iCO + 50*id;
+            for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
+                Array<T,3> vertex = cellOrigin + elementaryMesh.getVertex(iVertex);
+                particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );
+            }
+        }
     }
 }
 

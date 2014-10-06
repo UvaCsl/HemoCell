@@ -12,7 +12,8 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
     plint maxRadiusLU = ceil(cellModel->getCellRadiusLU());
     pluint particleEnvelopeWidth = maxEdgeLengthLU;
     pluint reductionParticleEnvelopeWidth = 5*maxRadiusLU;
-
+    cout << "particleEnvelopeWidth " << particleEnvelopeWidth << std::endl;
+    cout << "reductionParticleEnvelopeWidth " << reductionParticleEnvelopeWidth << std::endl;
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
             latticeManagement.getSparseBlockStructure(),
@@ -75,7 +76,6 @@ void CellField3D<T, Descriptor>::initialize() {
         new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
         immersedParticles->getBoundingBox(), particleArg );
     global::timer("Quantities").stop();
-    synchronizeCellQuantities();
 }
 
 

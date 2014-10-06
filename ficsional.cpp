@@ -270,9 +270,6 @@ int main(int argc, char* argv[])
     pcout << "YoungsModulus = " << cellModel->getYoungsModulus()*dNewton/dx << std::endl;
     pcout << "Poisson ratio = " << cellModel->getPoissonRatio() << std::endl;
 
-    pcout << std::endl << "Starting simulation" << std::endl;
-    pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
-
     /* Deflate if I say so */
 //    MorsePotential<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
     MorseAndPowerLawForce<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
@@ -285,7 +282,17 @@ int main(int argc, char* argv[])
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, npar, cellModel);
 	pcout << "initializing"<< std::endl;
     RBCField.initialize();
+
+    /*    I/O       */
+    global::timer("HDFOutput").restart();
+    writeHDF5(lattice, parameters, 0);
     writeCellField3D_HDF5(RBCField, parameters, 0, "RBC");
+    global::timer("HDFOutput").stop();
+    /*   *******    */
+    pcout << std::endl << "Starting simulation" << std::endl;
+    pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
+    RBCField.advanceParticles();
+    RBCField.synchronizeCellQuantities();
 	cout << ntasks << " " << RBCField.getNumberOfCells() << " applyConstitutiveModel"<< std::endl;
     RBCField.applyConstitutiveModel();
     for (pluint iter=0; iter<tmax+1; ++iter) {
