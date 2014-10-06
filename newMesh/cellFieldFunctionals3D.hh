@@ -357,6 +357,7 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         ReductionParticle3D<T,Descriptor>* rParticle = new ReductionParticle3D<T,Descriptor>(cellId, vertex);
         rParticle->get_nParticles() = particlesPerCellId[cellId];
         rParticle->updateCQH(*cell);
+        cout << "Cell " << cell->getVolume() << " rPart "  << rParticle->getVolume() << std::endl;
         reductionParticleField.addParticle(reductionParticleField.getBoundingBox(), rParticle);
     }
 }

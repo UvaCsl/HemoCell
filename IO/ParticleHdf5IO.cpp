@@ -65,7 +65,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      }
 
      plint Np = particles.size();
-     plint Nt = triangles.size();
+     plint Nt = triangles.size() / 3;
 
      /************************************************************/
     /**            Initialise HDF5 file                        **/
@@ -75,7 +75,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      hid_t file_id;
      file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-     hsize_t dimTriangles[2]; dimTriangles[0] = Nt/3; dimTriangles[1] = 3;
+     hsize_t dimTriangles[2]; dimTriangles[0] = Nt; dimTriangles[1] = 3;
      hsize_t dimVertices[2]; dimVertices[0] = Np; dimVertices[1] = 3;
      H5LTmake_dataset_long(file_id, "triangles", 2, dimTriangles, &triangles[0]);
 
