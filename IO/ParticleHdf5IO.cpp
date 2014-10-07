@@ -101,7 +101,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          Array<T,3> vector;
          for (plint ivN = 0; ivN < vN; ++ivN) {
              plint itr=0;
-             for (pluint iP = 0; iP < Np; ++iP) {
+             for (plint iP = 0; iP < Np; ++iP) {
                 castParticleToICP3D(particles[iP])->getVector(ivN, vector);
                 matrixTensor[itr++] = vector[0];
                 matrixTensor[itr++] = vector[1];

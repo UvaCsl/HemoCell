@@ -41,7 +41,7 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      Nz = domain.z1 - domain.z0 + 1;
      Dot3D relativePositionDot3D = blocks[0]->getLocation();
      long int relativePosition[] = {relativePositionDot3D.x, relativePositionDot3D.y, relativePositionDot3D.z};
-     long int subdomainSize[] = {Nx, Ny, Nz};
+     long int subdomainSize[] = {Nx+1, Ny+1, Nz+1};
 //     long int domainSize[] = {blocks[0]->getNx(), blocks[0]->getNy(), blocks[0]->getNz()};
 
      H5LTset_attribute_long(file_id, "/", "relativePosition", relativePosition, 3);
@@ -114,7 +114,7 @@ void WriteInMultipleHDF5Files<T,Descriptor>::getTypeOfModification (
 
 template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT WriteInMultipleHDF5Files<T,Descriptor>::appliesTo () const {
-    return BlockDomain::bulkAndEnvelope;
+    return BlockDomain::bulk;
 }
 
 
