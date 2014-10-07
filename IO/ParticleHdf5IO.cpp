@@ -154,8 +154,6 @@ void writeCellField3D_HDF5(CellField3D<T, Descriptor>& cellField3D,
     T dx = parameters.getDeltaX();
     T dt = parameters.getDeltaT();
 
-    pcout << "identifier=" << identifier << std::endl;
-
     applyProcessingFunctional ( // compute force applied on the fluid by the particles
             new WriteCellField3DInMultipleHDF5Files<T,Descriptor> (cellField3D, iter, identifier, dx, dt),
             cellField3D.getBoundingBox(), cellField3D.getParticleArg() );

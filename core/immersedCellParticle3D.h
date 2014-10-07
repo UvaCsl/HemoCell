@@ -31,6 +31,9 @@ template<typename T, template<typename U> class Descriptor>
 class ImmersedCellParticle3D : public Particle3D<T,Descriptor> {
 public:
     ImmersedCellParticle3D();
+    ~ImmersedCellParticle3D() {
+//        std::cout <<" ~ImmersedCellParticle3D() " << this->getVertexId() << std::endl;
+    };
     ImmersedCellParticle3D( plint tag_, Array<T,3> const& position, plint cellId_ = -1 );
     ImmersedCellParticle3D( plint tag_, Array<T,3> const& position,
                           Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
