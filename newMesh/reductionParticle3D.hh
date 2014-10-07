@@ -83,12 +83,6 @@ void ReductionParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializ
     serializer.addValue<plint>(getMpiProcessor());
     serializer.addValue<plint>(nParticles);
 
-    std::cout << MPI::COMM_WORLD.Get_rank() << " Serializer "
-              << " cellId:" << cellId
-              << " processor:" << getMpiProcessor()
-              << " nParticles:" << nParticles
-              << std::endl;
-
     typename std::map<plint, T >::const_iterator iter1D;
     typename std::map<plint, Array<T,3> >::const_iterator iter3D;
     typename std::map<plint, std::vector<T> >::const_iterator iterND;
@@ -123,12 +117,6 @@ void ReductionParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& unse
     unserializer.readValue<plint>(cellId);
     unserializer.readValue<plint>(processor);
     unserializer.readValue<plint>(nParticles);
-    std::cout << MPI::COMM_WORLD.Get_rank() << " UnSerializer "
-              << " cellId:" << cellId
-              << " processor:" << processor
-              << " nParticles:" << nParticles
-              << std::endl;
-
 
     plint size1D, size3D, sizeND;
     unserializer.readValue<plint>(size1D);
