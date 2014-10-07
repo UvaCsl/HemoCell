@@ -21,6 +21,7 @@ public:
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual PositionCellParticles3D<T,Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
     virtual BlockDomain::DomainT appliesTo() const;
 private:
     TriangularSurfaceMesh<T> const& elementaryMesh;
@@ -38,6 +39,7 @@ public:
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual ForceToFluid3D<T,Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
     virtual BlockDomain::DomainT appliesTo() const;
 private:
     plint ibmKernel;
@@ -53,6 +55,7 @@ public:
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual FluidVelocityToImmersedCell3D<T,Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
     virtual BlockDomain::DomainT appliesTo() const;
 private:
     plint ibmKernel;
@@ -71,6 +74,7 @@ public:
     virtual ComputeCellForce3D<T,Descriptor>* clone() const;
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
 private:
     ConstitutiveModel<T,Descriptor>* cellModel;
     std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
@@ -89,6 +93,7 @@ public:
     virtual FillCellMap<T,Descriptor>* clone() const;
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
 private:
     TriangularSurfaceMesh<T> & mesh;
 	std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
@@ -107,6 +112,7 @@ public:
     virtual ComputeRequiredQuantities<T,Descriptor>* clone() const;
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
 private:
     std::vector<plint> ccrRequirements;
     std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
@@ -125,6 +131,7 @@ public:
     virtual SyncCellQuantities<T,Descriptor>* clone() const;
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
 private:
     std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
 };

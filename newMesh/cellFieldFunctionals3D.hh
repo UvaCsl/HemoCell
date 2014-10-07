@@ -55,7 +55,6 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
     }
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
-    std::cout <<id << " PositionCellParticles3D particles:" << particles.size() <<std::endl;
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -68,6 +67,11 @@ void PositionCellParticles3D<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::dynamicVariables; // Particle field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+void PositionCellParticles3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Particle field.
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -120,6 +124,10 @@ void ComputeCellForce3D<T,Descriptor>::getTypeOfModification (
     modified[0] = modif::dynamicVariables; // Particle field.
 }
 
+template<typename T, template<typename U> class Descriptor>
+void ComputeCellForce3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Particle field.
+}
 
 
 
@@ -182,6 +190,13 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::getTypeOfModification (
 }
 
 template<typename T, template<typename U> class Descriptor>
+void FluidVelocityToImmersedCell3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Particle field.
+    isWritten[1] = false;  // Fluid field.
+}
+
+
+template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT FluidVelocityToImmersedCell3D<T,Descriptor>::appliesTo () const {
     return BlockDomain::bulk;
 }
@@ -242,6 +257,13 @@ void ForceToFluid3D<T,Descriptor>::getTypeOfModification (
     modified[0] = modif::nothing; // Particle field.
     modified[1] = modif::staticVariables; // Fluid field.
 }
+
+template<typename T, template<typename U> class Descriptor>
+void ForceToFluid3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = false;  // Particle field.
+    isWritten[1] = true;  // Fluid field.
+}
+
 
 template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT ForceToFluid3D<T,Descriptor>::appliesTo () const {
@@ -317,6 +339,10 @@ void FillCellMap<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {    modified[0] = modif::nothing;  } // Particle field.
 
+template<typename T, template<typename U> class Descriptor>
+void FillCellMap<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = false;  // Particle field.
+}
 
 
 /* ******** ComputeRequiredQuantities *********************************** */
@@ -367,10 +393,10 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         ReductionParticle3D<T,Descriptor>* rParticle = new ReductionParticle3D<T,Descriptor>(cellId, vertex);
         rParticle->get_nParticles() = particlesPerCellId[cellId];
         rParticle->updateCQH(*cell);
-        std::cout << MPI::COMM_WORLD.Get_rank() << " Cell " << cell->getVolume() << " rPart "  << rParticle->get_nParticles() << std::endl;
         cell->clearQuantities();
         reductionParticleField.addParticle(reductionParticleField.getBoundingBox(), rParticle);
     }
+    reductionParticleField.findParticles(reductionParticleField.getBoundingBox(), reductionParticles); // Gets particle only from the bulk
 }
 
 
@@ -410,6 +436,12 @@ void ComputeRequiredQuantities<T,Descriptor>::getTypeOfModification (
     modified[1] = modif::allVariables; // Reduction particles;
 }
 
+template<typename T, template<typename U> class Descriptor>
+void ComputeRequiredQuantities<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = false;  // Particle field.
+    isWritten[1] = true;  // Reduction field.
+}
+
 
 
 /* ******** SyncCellQuantities *********************************** */
@@ -428,9 +460,9 @@ template<typename T, template<typename U> class Descriptor>
 void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
-        PLB_PRECONDITION( blocks.size()==2 );
+        PLB_PRECONDITION( blocks.size()==1 );
         ParticleField3D<T,Descriptor>& reductionParticleField
-            = *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[1]);
+            = *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
         std::vector<Particle3D<T,Descriptor>*> reductionParticles;
         reductionParticleField.findParticles(reductionParticleField.getBoundingBox(), reductionParticles);
 
@@ -447,15 +479,6 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
             if (cellIdToCell3D.count(cellId)) {
                 Cell3D<T,Descriptor> * chq = cellIdToCell3D[cellId];
                 if (particleInProcessorAndCellid[processor].find(cellId) == particleInProcessorAndCellid[processor].end()) {
-                    std::cout << MPI::COMM_WORLD.Get_rank()
-                              << " cellId:" << cellId
-                              << " processor:" << processor
-                              << " nParticles:" << nParticles
-                              << " iParticles " << iA
-                              << " reductionParticles.size() " << reductionParticles.size()
-                              << std::endl;
-
-
                     particleInProcessorAndCellid[processor][cellId] = true;
                     std::map<plint, T > const& q1d = particle->getQuantities1D();
                     std::map<plint, Array<T,3> > const& q3d = particle->getQuantities3D();
@@ -497,10 +520,13 @@ template<typename T, template<typename U> class Descriptor>
 void SyncCellQuantities<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
-    modified[0] = modif::nothing; // Particle field.
-    modified[1] = modif::allVariables; // Reduction Particle field.
+    modified[0] = modif::allVariables; // Reduction Particle field.
 }
 
+template<typename T, template<typename U> class Descriptor>
+void SyncCellQuantities<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Reduction Particle field.
+}
 
 
 #endif  // CELL_FIELD_FUNCTIONALS_3D_HH
