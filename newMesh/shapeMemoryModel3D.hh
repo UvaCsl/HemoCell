@@ -154,18 +154,17 @@ plint ShapeMemoryModel3D<T,Descriptor>::getEdgeId(plint iVertex, plint jVertex) 
 template<typename T, template<typename U> class Descriptor>
 void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) {
      /* Some force calculations are according to KrugerThesis, Appendix C */
-	pcout << "ShapeMemoryModel3D<T, Descriptor>::computeCellForce" << std::endl;
-
     T cellVolume = cell->getVolume();
     T cellSurface = cell->getSurface();
-    if (not ((cellVolume > 0) and (cellSurface > 0))) {
-        cout << ", processor: " << cell->getMpiProcessor()
+//    if (not ((cellVolume > 0) and (cellSurface > 0))) {
+        cout << "processor: " << cell->getMpiProcessor()
              << ", cellId: " << cell->get_cellId()
              << ", volume: " << cellVolume
              << ", surface: " << cellSurface
+             << ", cellNumVertices: " << cellNumVertices
              << endl;
-        PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
-    }
+//        PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
+//    }
     std::vector<plint> const& triangles = cell->getTriangles();
     std::vector<Array<plint,2> > const& edges = cell->getEdges();
     std::vector<plint > const& vertices = cell->getVertices();
@@ -181,7 +180,7 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
          x Bending force
          o Stretch force
      */
-    Array<T,3> force1, force2;
+    Array<T,3> force1, force2, force3;
     T potential;
     for (pluint iE = 0; iE < edges.size(); ++iE) {
         iVertex = edges[iE][0];  jVertex = edges[iE][1];
@@ -227,6 +226,8 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
         if (angleFound) {
             Array<T,3> iNormal = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
             Array<T,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
+            T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
+            T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
             ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
             ImmersedCellParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
             Array<T,3> const& kX = cell->getVertex(kVertex);
@@ -235,14 +236,18 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
             /*== Compute bending force for the vertex as part of the main edge ==*/
             force1 = computeBendingForceEdge (edgeAngle, eqAnglePerEdge[edgeId], k_bend, iNormal, jNormal);
             Array<T,3> fi, fk, fj, fl;
-            T Ai=0, Aj=0; // Not necessary for this calculation
-            computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqTileSpan, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fk, fj, fl);
+            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqTileSpan, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fk, fj, fl);
 
             iParticle->get_force() += fi;
             jParticle->get_force() += fj;
             kParticle->get_force() += fk;
             lParticle->get_force() += fl;
 
+
+            iParticle->get_f_bending() += fi;
+            jParticle->get_f_bending() += fj;
+            kParticle->get_f_bending() += fk;
+            lParticle->get_f_bending() += fl;
             potential = computeBendingPotential (edgeAngle, eqAnglePerEdge[edgeId], k_bend);
             iParticle->get_E_bending() += potential;
             jParticle->get_E_bending() += potential;
@@ -274,7 +279,7 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
          x Surface conservation force
          x Shear force
      */
-    Array<T,3> dAdx, dVdx, tmp(0,0,0);
+    Array<T,3> dAdx1, dAdx2, dAdx3, dVdx, tmp(0,0,0);
     std::map<plint, T> trianglesArea;
     std::map<plint, Array<T,3> > trianglesNormal;
     T triangleArea;
@@ -294,20 +299,55 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
         ImmersedCellParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
         ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
 
-        /* Surface and local area conservation forces */
-        force1  = computeSurfaceConservationForce(x1, x2, x3, triangleNormal, surfaceCoefficient, dAdx);
-        force1 += computeLocalAreaConservationForce(dAdx, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
-        force2  = computeSurfaceConservationForce(x2, x3, x1, triangleNormal, surfaceCoefficient, dAdx);
-        force2 += computeLocalAreaConservationForce(dAdx, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
+        /* Surface conservation forces */
+        force1  = computeSurfaceConservationForce(x1, x2, x3, triangleNormal, surfaceCoefficient, dAdx1);
+        force2  = computeSurfaceConservationForce(x2, x3, x1, triangleNormal, surfaceCoefficient, dAdx2);
+        force3  = computeSurfaceConservationForce(x3, x1, x2, triangleNormal, surfaceCoefficient, dAdx3);
         iParticle->get_force() += force1;
         jParticle->get_force() += force2;
-        kParticle->get_force() -= (force1+force2);
+        kParticle->get_force() += force3;
+
+        iParticle->get_f_surface() += force1;
+        jParticle->get_f_surface() += force2;
+        kParticle->get_f_surface() += force3;
+        potential = 0.5*surfaceCoefficient*(cellSurface - eqSurface)*1.0/cellNumVertices;
+        iParticle->get_E_area() += potential;
+        jParticle->get_E_area() += potential;
+        kParticle->get_E_area() += potential;
+
+        /* Local area conservation forces */
+        force1 = computeLocalAreaConservationForce(dAdx1, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
+        force2 = computeLocalAreaConservationForce(dAdx2, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
+        force3 = computeLocalAreaConservationForce(dAdx3, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
+        iParticle->get_force() += force1;
+        jParticle->get_force() += force2;
+        kParticle->get_force() += force3;
+
+        iParticle->get_f_shear() += force1;
+        jParticle->get_f_shear() += force2;
+        kParticle->get_f_shear() += force3;
+        potential = 0.5*areaCoefficient*pow(eqAreaPerTriangle[iTriangle] - triangleArea, 2)/3.0; // 3 vertices on each triangle
+        iParticle->get_E_area() += potential;
+        jParticle->get_E_area() += potential;
+        kParticle->get_E_area() += potential;
+
         /* Volume conservation forces */
         force1  = computeVolumeConservationForce(x1, x2, x3, volumeCoefficient);
         force2  = computeVolumeConservationForce(x2, x3, x1, volumeCoefficient);
+        force3  = computeVolumeConservationForce(x3, x1, x2, volumeCoefficient);
         iParticle->get_force() += force1;
         jParticle->get_force() += force2;
-        kParticle->get_force() -= (force1+force2);
+        kParticle->get_force() += force3;
+
+        iParticle->get_f_volume() += force1;
+        jParticle->get_f_volume() += force2;
+        kParticle->get_f_volume() += force3;
+        potential = 0.5*volumeCoefficient*(cellVolume - eqVolume)*1.0/cellNumVertices;
+        iParticle->get_E_volume() += potential;
+        jParticle->get_E_volume() += potential;
+        kParticle->get_E_volume() += potential;
+
+
     }
 
 }
