@@ -12,8 +12,8 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
     plint maxRadiusLU = ceil(cellModel->getCellRadiusLU());
     pluint particleEnvelopeWidth = maxEdgeLengthLU;
     pluint reductionParticleEnvelopeWidth = 5*maxRadiusLU;
-    cout << "particleEnvelopeWidth " << particleEnvelopeWidth << std::endl;
-    cout << "reductionParticleEnvelopeWidth " << reductionParticleEnvelopeWidth << std::endl;
+    pcout << "particleEnvelopeWidth " << particleEnvelopeWidth << std::endl;
+    pcout << "reductionParticleEnvelopeWidth " << reductionParticleEnvelopeWidth << std::endl;
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
             latticeManagement.getSparseBlockStructure(),
@@ -38,12 +38,14 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
     reductionParticles->toggleInternalStatistics(false);
 
     ccrRequirements.insert(cellModel->getSyncRequirements());
+    ccrRequirements.insert(CCR_NO_PBC_POSITION_MEAN);
     particleArg.clear(); particleLatticeArg.clear(); particleReductioParticleArg.clear();
     particleArg.push_back(immersedParticles);
     particleLatticeArg.push_back(immersedParticles);
     particleLatticeArg.push_back(&lattice);
     particleReductioParticleArg.push_back(immersedParticles);
     particleReductioParticleArg.push_back(reductionParticles);
+    reductionParticleArg.push_back(reductionParticles);
 	/* Default values*/
 	ibmKernel = 2;
 	coupleWithIBM = true;
@@ -76,6 +78,8 @@ void CellField3D<T, Descriptor>::initialize() {
         new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
         immersedParticles->getBoundingBox(), particleArg );
     global::timer("Quantities").stop();
+    advanceParticles();
+    synchronizeCellQuantities();
 }
 
 
@@ -156,7 +160,7 @@ void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirement
     global::timer("Quantities").start();
     applyProcessingFunctional (
         new SyncCellQuantities<T,Descriptor> (cellIdToCell3D),
-        reductionParticles->getBoundingBox(), particleReductioParticleArg );
+        reductionParticles->getBoundingBox(), reductionParticleArg );
     global::timer("Quantities").stop();
 
     // ... and then the ones that depend on something else (Inertia etc)
@@ -170,7 +174,7 @@ void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirement
         global::timer("Quantities").start();
         applyProcessingFunctional (
             new SyncCellQuantities<T,Descriptor> (cellIdToCell3D),
-            reductionParticles->getBoundingBox(), particleReductioParticleArg );
+            reductionParticles->getBoundingBox(), reductionParticleArg );
         global::timer("Quantities").stop();
     }
 
