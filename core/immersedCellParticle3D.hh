@@ -202,7 +202,7 @@ void ImmersedCellParticle3D<T,Descriptor>::serialize(HierarchicSerializer& seria
     serializer.addValues<T,3>(a);
     serializer.addValues<T,3>(force);
     serializer.addValues<T,3>(vPrevious);
-//    serializer.addValue<plint>(processor);
+   serializer.addValue<plint>(processor);
     serializer.addValue<plint>(cellId);
 }
 
@@ -215,7 +215,7 @@ void ImmersedCellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& u
     unserializer.readValues<T,3>(a);
     unserializer.readValues<T,3>(force);
     unserializer.readValues<T,3>(vPrevious);
-    processor= getMpiProcessor(); //    unserializer.readValue<plint>(processor);
+    unserializer.readValue<plint>(processor);
     unserializer.readValue<plint>(cellId);
     vertexId = this->getTag();
 }
