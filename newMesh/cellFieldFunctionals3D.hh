@@ -19,19 +19,6 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
     ParticleField3D<T,Descriptor>& particleField =
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
 
-    T dx = (domain.x1 + domain.x0)/2.0;
-    T dy = (domain.y1 + domain.y0)/2.0;
-    T dz = (domain.z1 + domain.z0)/2.0;
-
-    // Access the position of the atomic-block inside the multi-block.
-    Dot3D relativePosition = particleField.getLocation();
-
-    // Convert local coordinates to global ones.
-    T globalX = dx + relativePosition.x;
-    T globaly = dy + relativePosition.y;
-    T globalZ = dz + relativePosition.z;
-
-
     cellOrigins.clear();
     cellOrigins.push_back(  Array<T,3>(20.0, 20.0, 20.0)  );
 
@@ -396,7 +383,6 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         cell->clearQuantities();
         reductionParticleField.addParticle(reductionParticleField.getBoundingBox(), rParticle);
     }
-    reductionParticleField.findParticles(reductionParticleField.getBoundingBox(), reductionParticles); // Gets particle only from the bulk
 }
 
 

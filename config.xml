@@ -2,7 +2,7 @@
 <ficsion>
 <caseId> caseId </caseId>
 <cellModel>
-    <rbcModel> 1 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
+    <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
     <shellDensity> 1.0 </shellDensity>
 
     <kBend> 75e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
@@ -62,7 +62,7 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
 
 <sim>
     <tmax> 100 </tmax> <!-- total number of iterations -->
-    <tmeas> 100 </tmeas> <!-- interval after which data is written --> 
+    <tmeas> 2 </tmeas> <!-- interval after which data is written --> 
     <npar> 3  </npar> <!-- Number of particles > -->
 </sim>
 

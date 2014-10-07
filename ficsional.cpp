@@ -282,27 +282,18 @@ int main(int argc, char* argv[])
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, npar, cellModel);
 	pcout << "initializing"<< std::endl;
     RBCField.initialize();
-
-    /*    I/O       */
+    pcout << std::endl << "Starting simulation" << std::endl;
+    pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
+    /*            I/O              */
     global::timer("HDFOutput").restart();
     writeHDF5(lattice, parameters, 0);
     writeCellField3D_HDF5(RBCField, parameters, 0, "RBC");
     global::timer("HDFOutput").stop();
-    /*   *******    */
-    pcout << std::endl << "Starting simulation" << std::endl;
-    pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
-    RBCField.advanceParticles();
-    RBCField.synchronizeCellQuantities();
-	cout << ntasks << " " << RBCField.getNumberOfCells() << " applyConstitutiveModel"<< std::endl;
-    RBCField.applyConstitutiveModel();
+    /* --------------------------- */
     for (pluint iter=0; iter<tmax+1; ++iter) {
-    	pcout << "Iteration:" << iter << std::endl;
-        if (iter%tmeas==0) {
-            global::timer("HDFOutput").restart();
-            writeHDF5(lattice, parameters, iter);
-            writeCellField3D_HDF5(RBCField, parameters, iter, "RBC");
-            global::timer("HDFOutput").stop();
-        }
+        pcout << "Iteration:" << iter << std::endl;
+        // #1# Membrane Model
+       RBCField.applyConstitutiveModel();
         // #2# IBM Spreading
         RBCField.setFluidExternalForce(poiseuilleForce);
         RBCField.spreadForceIBM();
@@ -315,8 +306,12 @@ int main(int argc, char* argv[])
         // #5# Position Update
         RBCField.advanceParticles();
         RBCField.synchronizeCellQuantities();
-        // #1# Membrane Model
-       RBCField.applyConstitutiveModel();
+        if ((iter+1)%tmeas==0) {
+            global::timer("HDFOutput").restart();
+            writeHDF5(lattice, parameters, iter+1);
+            writeCellField3D_HDF5(RBCField, parameters, iter+1, "RBC");
+            global::timer("HDFOutput").stop();
+        }
     }
 
 
