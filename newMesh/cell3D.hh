@@ -305,7 +305,7 @@ T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex, plint 
 	            break;
 	        }
 	    }
-	    found = (foundVertices == 3); //Assert if some particles are outside of the domain
+	    found = (foundVertices == 2); //Assert if some particles are outside of the domain
 	    if (not found) { return 0.0; };
 
 	    Array<T,3> V1 = computeTriangleNormal(iTriangle);
@@ -374,7 +374,7 @@ T Cell3D<T, Descriptor>::computeVertexArea(plint iVertex) {
 	    std::vector<plint>::iterator it = neighborTriangleIds.begin();
 	    for (n.resetToZero(); it != neighborTriangleIds.end(); ++it)
 	        n += computeTriangleNormal(*it);
-	    T normN = norm(n);
+	    T normN = norm(n) / 3.0;
 	    n /= normN;
 	    vertexAreas[iVertex] = normN;
 	    vertexNormals[iVertex] = n;
