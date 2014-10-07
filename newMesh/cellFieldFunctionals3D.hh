@@ -22,8 +22,18 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
     T dx = (domain.x1 + domain.x0)/2.0;
     T dy = (domain.y1 + domain.y0)/2.0;
     T dz = (domain.z1 + domain.z0)/2.0;
+
+    // Access the position of the atomic-block inside the multi-block.
+    Dot3D relativePosition = particleField.getLocation();
+
+    // Convert local coordinates to global ones.
+    T globalX = dx + relativePosition.x;
+    T globaly = dy + relativePosition.y;
+    T globalZ = dz + relativePosition.z;
+
+
     cellOrigins.clear();
-    cellOrigins.push_back(  Array<T,3>(dx, dy, dz)  );
+    cellOrigins.push_back(  Array<T,3>(20.0, 20.0, 20.0)  );
 
 #ifdef PLB_MPI_PARALLEL
     //  Get the number of processes.
@@ -34,17 +44,18 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
      int p=1;
      int id = 0;
 #endif
-    if (id==0) {
-        plint nVertices = elementaryMesh.getNumVertices();
-        for (pluint iCO=0; iCO < cellOrigins.size(); ++iCO) {
-            Array<T,3> & cellOrigin = cellOrigins[iCO];
-            plint cellId = iCO + 50*id;
-            for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
-                Array<T,3> vertex = cellOrigin + elementaryMesh.getVertex(iVertex);
-                particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );
-            }
+    plint nVertices = elementaryMesh.getNumVertices();
+    for (pluint iCO=0; iCO < cellOrigins.size(); ++iCO) {
+        Array<T,3> & cellOrigin = cellOrigins[iCO];
+        plint cellId = iCO;
+        for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
+            Array<T,3> vertex = cellOrigin + elementaryMesh.getVertex(iVertex);
+            particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );
         }
     }
+    std::vector<Particle3D<T,Descriptor>*> particles;
+    particleField.findParticles(domain, particles);
+    std::cout <<id << " PositionCellParticles3D particles:" << particles.size() <<std::endl;
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -61,7 +72,7 @@ void PositionCellParticles3D<T,Descriptor>::getTypeOfModification (
 
 template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT PositionCellParticles3D<T,Descriptor>::appliesTo() const {
-    return BlockDomain::bulkAndEnvelope;
+    return BlockDomain::bulk;
 }
 
 
@@ -335,18 +346,16 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
     }
     std::map<plint, pluint> particlesPerCellId;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
+        plint cellId = castParticleToICP3D(particles[iParticle])->get_cellId();
+        if (particlesPerCellId.count(cellId) > 0) { particlesPerCellId[cellId] += 1; }
+        else  { particlesPerCellId[cellId] = 1; }
         for (std::vector<plint>::iterator i = ccrRequirements.begin(); i != ccrRequirements.end(); ++i)
         {
             plint ccrId = *i;
-            plint cellId = castParticleToICP3D(particles[iParticle])->get_cellId();
-
             typename std::map<plint, Cell3D<T,Descriptor>* >::iterator iter = cellIdToCell3D.find(cellId);
             if (iter != cellIdToCell3D.end()) {
                 (iter->second)->computeCCRQuantities(ccrId, particles[iParticle]);
             }
-
-            if (particlesPerCellId.count(cellId) > 0) { particlesPerCellId[cellId] += 1; }
-            else  { particlesPerCellId[cellId] = 1; }
         }
     }
 
@@ -358,7 +367,8 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         ReductionParticle3D<T,Descriptor>* rParticle = new ReductionParticle3D<T,Descriptor>(cellId, vertex);
         rParticle->get_nParticles() = particlesPerCellId[cellId];
         rParticle->updateCQH(*cell);
-        cout << "Cell " << cell->getVolume() << " rPart "  << rParticle->getVolume() << std::endl;
+        std::cout << MPI::COMM_WORLD.Get_rank() << " Cell " << cell->getVolume() << " rPart "  << rParticle->get_nParticles() << std::endl;
+        cell->clearQuantities();
         reductionParticleField.addParticle(reductionParticleField.getBoundingBox(), rParticle);
     }
 }
@@ -423,6 +433,7 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
             = *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[1]);
         std::vector<Particle3D<T,Descriptor>*> reductionParticles;
         reductionParticleField.findParticles(reductionParticleField.getBoundingBox(), reductionParticles);
+
         std::map< plint, std::map<plint, bool> > particleInProcessorAndCellid; // processorCellIdMap[processor][cellId] = true
         for (pluint iA = 0; iA < reductionParticles.size(); ++iA) {
             ReductionParticle3D<T,Descriptor>* particle =
@@ -432,11 +443,19 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
             plint processor = particle->get_processor();
             plint nParticles = particle->get_nParticles();
             particleInProcessorAndCellid[processor]; // Create "processor" entry
-            typename std::map<plint, Cell3D<T,Descriptor>* >::iterator iter = cellIdToCell3D.find(cellId);
-            if (iter != cellIdToCell3D.end()) {
-                Cell3D<T,Descriptor> * chq = iter->second;
-                if (particleInProcessorAndCellid[processor].count(cellId) == 0
-                                         &&  processor != particle->getMpiProcessor()) {
+
+            if (cellIdToCell3D.count(cellId)) {
+                Cell3D<T,Descriptor> * chq = cellIdToCell3D[cellId];
+                if (particleInProcessorAndCellid[processor].find(cellId) == particleInProcessorAndCellid[processor].end()) {
+                    std::cout << MPI::COMM_WORLD.Get_rank()
+                              << " cellId:" << cellId
+                              << " processor:" << processor
+                              << " nParticles:" << nParticles
+                              << " iParticles " << iA
+                              << " reductionParticles.size() " << reductionParticles.size()
+                              << std::endl;
+
+
                     particleInProcessorAndCellid[processor][cellId] = true;
                     std::map<plint, T > const& q1d = particle->getQuantities1D();
                     std::map<plint, Array<T,3> > const& q3d = particle->getQuantities3D();
@@ -479,7 +498,7 @@ void SyncCellQuantities<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::nothing; // Particle field.
-    modified[1] = modif::nothing; // Reduction Particle field.
+    modified[1] = modif::allVariables; // Reduction Particle field.
 }
 
 

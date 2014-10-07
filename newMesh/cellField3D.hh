@@ -156,7 +156,7 @@ void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirement
     global::timer("Quantities").start();
     applyProcessingFunctional (
         new SyncCellQuantities<T,Descriptor> (cellIdToCell3D),
-        immersedParticles->getBoundingBox(), particleReductioParticleArg );
+        reductionParticles->getBoundingBox(), particleReductioParticleArg );
     global::timer("Quantities").stop();
 
     // ... and then the ones that depend on something else (Inertia etc)
@@ -170,7 +170,7 @@ void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirement
         global::timer("Quantities").start();
         applyProcessingFunctional (
             new SyncCellQuantities<T,Descriptor> (cellIdToCell3D),
-            immersedParticles->getBoundingBox(), particleReductioParticleArg );
+            reductionParticles->getBoundingBox(), particleReductioParticleArg );
         global::timer("Quantities").stop();
     }
 
