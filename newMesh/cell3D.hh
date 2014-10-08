@@ -275,7 +275,7 @@ T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex, bool& 
         plint kVertex, lVertex;
         T angle = computeSignedAngle(iVertex, jVertex,kVertex, lVertex,found);
         if (found) { signedAngles[edgeId] = angle;  }
-        else       { signedAngles.erase(edgeId); return 0.0;}
+        else       { signedAngles.erase(edgeId); return angle;}
     }
     return signedAngles[edgeId];
 }
@@ -338,7 +338,7 @@ T Cell3D<T, Descriptor>::computeTriangleArea(plint iTriangle) {
 	    crossProduct(e01, e02, n);
 	    T normN = norm(n);
         n /= normN;
-	    triangleAreas[iTriangle] = normN;
+	    triangleAreas[iTriangle] = normN * 0.5;
 	    triangleNormals[iTriangle] = n;
 	}
     return triangleAreas[iTriangle];
@@ -439,11 +439,13 @@ void calculateCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D
 /****** 1D Quantities ******/
     // Calculate ANGLE
     if (q==2) { 
-        T edgeAngle = 0.0; bool angleFound; plint anglesFound=0;
-        for (pluint iB = 0; iB < neighbors.size(); ++iB)  { edgeAngle += cell->computeSignedAngle(iVertex, neighbors[iB], angleFound); anglesFound+=anglesFound;}
+        T edgeAngle = 0.0; bool found; plint anglesFound=0;
+        for (pluint iB = 0; iB < neighbors.size(); ++iB)  { edgeAngle += cell->computeSignedAngle(iVertex, neighbors[iB], found); anglesFound+=found;}
         reducer.gather(ccrId, edgeAngle*1.0/anglesFound );
     // Calculate AREA
-    } else if (q==3) {  reducer.gather(ccrId, cell->computeVertexArea(iVertex) );
+    } else if (q==3) {
+//        cout << iVertex << "cell->computeVertexArea(iVertex) " << cell->computeVertexArea(iVertex) << std::endl;
+        reducer.gather(ccrId, cell->computeVertexArea(iVertex) );
     // Calculate EDGE DISTANCE
     } else if (q==4) { 
         T edgeDistance = 0.0;
@@ -481,7 +483,7 @@ void calculateCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D
     // VELOCITY
     } else if (q==7) { reducer.gather(ccrId, cell->get_v(iVertex)) ;
     // Force
-    } else if (q==16) { reducer.gather(ccrId, cell->get_force(iVertex) * cell->computeVertexArea(iVertex));
+    } else if (q==16) { reducer.gather(ccrId, cell->get_force(iVertex) );
 /****** ND Quantities ******/
     // INERTIA
     } else if (q==8) {
