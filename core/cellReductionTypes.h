@@ -135,6 +135,9 @@ class SyncRequirements
 {
 public:
     SyncRequirements() {};
+    SyncRequirements(plint ccrReq) {  insert(ccrReq); };
+    SyncRequirements(std::set<plint> const& ccrReq) {  insert(ccrReq); };
+    SyncRequirements(std::vector<plint> const& ccrReq) {  insert(ccrReq); };
     ~SyncRequirements() {};
     SyncRequirements(const SyncRequirements &rhs) { ccrRequirements=rhs.ccrRequirements; };
     virtual void clear() { ccrRequirements.clear(); }
