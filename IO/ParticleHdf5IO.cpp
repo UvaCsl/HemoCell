@@ -46,6 +46,18 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      typename std::map<plint, Cell3D<T,Descriptor>* >::iterator itrtr;
      for (itrtr  = cellIdToCell3D.begin(); itrtr != cellIdToCell3D.end(); ++itrtr) {
          Cell3D<T,Descriptor> * cell3d = (itrtr->second);
+
+         std::cout << MPI::COMM_WORLD.Get_rank() << " Cell Volume " << cell3d->getVolume()
+                         << " surface " << cell3d->getSurface()
+                         << " CCR_ANGLE_MEAN " << cell3d->getMeanAngle()
+                         << " getMeanEdgeLength " << cell3d->getMeanEdgeLength()
+                         << " getEnergy " << cell3d->getEnergy()
+                         << " CCR_FORCE (" << cell3d->getForce()[0]
+                         << ", " << cell3d->getForce()[1]
+                         << ", " << cell3d->getForce()[2] << ") "
+                 << std::endl;
+
+
          std::vector<plint> const& cellVertices = cell3d->getVertices();
          std::vector<plint> const& cellTriangles = cell3d->getTriangles();
          for (std::vector<plint>::const_iterator iVP = cellVertices.begin(); iVP != cellVertices.end(); ++iVP)
@@ -72,7 +84,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
     /**            Initialise HDF5 file                        **/
    /************************************************************/
 
-     std::string fileName = global::directories().getOutputDir() + createFileName((identifier+"_").c_str(),iter,8) + createFileName("_p",id,3) + ".h5";
+     std::string fileName = global::directories().getOutputDir() + createFileName((identifier+".").c_str(),iter,8) + createFileName(".p.",id,3) + ".h5";
      hid_t file_id;
      file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
