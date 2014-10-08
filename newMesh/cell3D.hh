@@ -273,7 +273,9 @@ T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex, bool& 
     found = true;
     if (signedAngles.count(edgeId) == 0) {
         plint kVertex, lVertex;
-        signedAngles[edgeId] = computeSignedAngle(iVertex, jVertex,kVertex, lVertex,found);
+        T angle = computeSignedAngle(iVertex, jVertex,kVertex, lVertex,found);
+        if (found) { signedAngles[edgeId] = angle;  }
+        else       { signedAngles.erase(edgeId); return 0.0;}
     }
     return signedAngles[edgeId];
 }
@@ -282,32 +284,31 @@ template<typename T, template<typename U> class Descriptor>
 T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex, plint & kVertex, plint & lVertex, bool& found) {
 	plint edgeId = getEdgeId(iVertex, jVertex);
 	found = true;
+    Array<T,3> x1 = getVertex(iVertex), x2(0.,0.,0.), x3(0.,0.,0.), x4(0.,0.,0.);
+
+    std::vector<plint> adjacentTriangles = getAdjacentTriangleIds(iVertex, jVertex);
+    plint iTriangle=adjacentTriangles[0], jTriangle=adjacentTriangles[1];
+    x3 = getVertex(jVertex);
+    T foundVertices=0;
+    for (pluint id = 0; id < 3; ++id) {
+        kVertex = getVertexId(iTriangle,id);
+        if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
+            x2 = getVertex(kVertex);
+            foundVertices += 1;
+            break;
+        }
+    }
+    for (pluint id = 0; id < 3; ++id) {
+        lVertex = getVertexId(jTriangle,id);
+        if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
+            x4 = getVertex(lVertex);
+            foundVertices += 1;
+            break;
+        }
+    }
+    found = (foundVertices == 2); //Assert if some particles are outside of the domain
+    if (not found) { signedAngles.erase(edgeId);  return 0.0; }
 	if (signedAngles.count(edgeId) == 0) {
-	    Array<T,3> x1 = getVertex(iVertex), x2(0.,0.,0.), x3(0.,0.,0.), x4(0.,0.,0.);
-
-	    std::vector<plint> adjacentTriangles = getAdjacentTriangleIds(iVertex, jVertex);
-		plint iTriangle=adjacentTriangles[0], jTriangle=adjacentTriangles[1];
-	    x3 = getVertex(jVertex);
-	    T foundVertices=0;
-	    for (pluint id = 0; id < 3; ++id) {
-	        kVertex = getVertexId(iTriangle,id);
-	        if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
-	            x2 = getVertex(kVertex);
-	            foundVertices += 1;
-	            break;
-	        }
-	    }
-	    for (pluint id = 0; id < 3; ++id) {
-	        lVertex = getVertexId(jTriangle,id);
-	        if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
-	            x4 = getVertex(lVertex);
-	            foundVertices += 1;
-	            break;
-	        }
-	    }
-	    found = (foundVertices == 2); //Assert if some particles are outside of the domain
-	    if (not found) { return 0.0; };
-
 	    Array<T,3> V1 = computeTriangleNormal(iTriangle);
 	    Array<T,3> V2 = computeTriangleNormal(jTriangle);
 	    T angle = angleBetweenVectors(V1, V2);
