@@ -337,12 +337,14 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
 
         sforce += particle->get_force();
+#ifdef PLB_DEBUG // Less Calculations
         sf_wlc += particle->get_f_wlc();
         sf_bending += particle->get_f_bending();
         sf_volume += particle->get_f_volume();
         sf_surface += particle->get_f_surface();
         sf_shear += particle->get_f_shear();
         sf_viscosity += particle->get_f_viscosity();
+#endif
     }
     bool pcoutForceSum = true;
 	#ifdef PLB_MPI_PARALLEL
@@ -352,12 +354,14 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
 	#endif
     if (pcoutForceSum and (fabs(sforce[0]) + fabs(sforce[1]) + fabs(sforce[2]) > 1e-10)) {
         pcout << "sforce (" << sforce[0] << ", " << sforce[1] << ", " << sforce[2] << ") " << std::endl;
+#ifdef PLB_DEBUG // Less Calculations
         pcout << "sf_wlc (" << sf_wlc[0] << ", " << sf_wlc[1] << ", " << sf_wlc[2] << ") " << std::endl;
         pcout << "sf_bending (" << sf_bending[0] << ", " << sf_bending[1] << ", " << sf_bending[2] << ") " << std::endl;
         pcout << "sf_volume (" << sf_volume[0] << ", " << sf_volume[1] << ", " << sf_volume[2] << ") " << std::endl;
         pcout << "sf_surface (" << sf_surface[0] << ", " << sf_surface[1] << ", " << sf_surface[2] << ") " << std::endl;
         pcout << "sf_shear (" << sf_shear[0] << ", " << sf_shear[1] << ", " << sf_shear[2] << ") " << std::endl;
         pcout << "sf_viscosity (" << sf_viscosity[0] << ", " << sf_viscosity[1] << ", " << sf_viscosity[2] << ") " << std::endl;
+#endif
     }
 }
 

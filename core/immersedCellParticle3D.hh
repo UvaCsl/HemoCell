@@ -32,6 +32,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
     : v(T(),T(),T()),
       pbcPosition(this->getPosition()),
       a(T(),T(),T()), force(T(),T(),T()), vPrevious(T(),T(),T()),
+#ifdef PLB_DEBUG // Less Calculations
       f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()),
       f_surface(T(),T(),T()), f_shear(T(),T(),T()), f_viscosity(T(),T(),T()),
       f_repulsive(T(),T(),T()),
@@ -39,6 +40,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()),
       E_repulsive(T()),
+#endif
       processor(getMpiProcessor()), cellId(-1), vertexId(this->getTag())
 { }
 
@@ -51,11 +53,13 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       a(T(),T(),T()),
       force(T(),T(),T()),
       vPrevious(T(),T(),T()),
+#ifdef PLB_DEBUG // Less Calculations
       f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()), f_surface(T(),T(),T()), f_shear(T(),T(),T()),
       f_viscosity(T(),T(),T()), f_repulsive(T(),T(),T()),
       stress(T(),T(),T()),
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
+#endif
       processor(getMpiProcessor()), cellId(cellId_), vertexId(tag_)
 { }
 
@@ -70,14 +74,18 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       a(a_),
       force(force_),
       vPrevious(vPrevious_),
+#ifdef PLB_DEBUG // Less Calculations
       f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()), f_surface(T(),T(),T()), f_shear(T(),T(),T()), f_viscosity(T(),T(),T()),
       f_repulsive(T(),T(),T()),
       stress(T(),T(),T()),
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
+#endif
       processor(getMpiProcessor()), cellId(cellId_), vertexId(tag_)
 { }
 
+
+#ifdef PLB_DEBUG // Less Calculations
 template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
         plint tag_, Array<T,3> const& position,
@@ -105,6 +113,8 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       E_area(E_area_), E_volume(E_volume_), E_repulsive(E_repulsive_),
       processor(getMpiProcessor()), cellId(cellId_), vertexId(tag_)
 { }
+#endif
+
 
 template<typename T, template<typename U> class Descriptor>
 void ImmersedCellParticle3D<T,Descriptor>::advance() {
@@ -141,7 +151,7 @@ void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_, Ar
 
         a.resetToZero();
         force.resetToZero();
-
+#ifdef PLB_DEBUG // Less Calculations
         f_wlc.resetToZero();
         f_bending.resetToZero();
         f_volume.resetToZero();
@@ -157,6 +167,7 @@ void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_, Ar
         E_area = T();
         E_volume = T();
         E_repulsive = T();
+#endif
 
         processor = this->getMpiProcessor();
 }
@@ -166,7 +177,7 @@ template<typename T, template<typename U> class Descriptor>
 void ImmersedCellParticle3D<T,Descriptor>::resetForces() {
         a.resetToZero();
         force.resetToZero();
-
+#ifdef PLB_DEBUG // Less Calculations
         f_wlc.resetToZero();
         f_bending.resetToZero();
         f_volume.resetToZero();
@@ -175,13 +186,13 @@ void ImmersedCellParticle3D<T,Descriptor>::resetForces() {
         f_viscosity.resetToZero();
         f_repulsive.resetToZero();
         stress.resetToZero();
-
         E_other = T();
         E_inPlane = T();
         E_bending = T();
         E_area = T();
         E_volume = T();
         E_repulsive = T();
+#endif
 
         processor = this->getMpiProcessor();
 }
@@ -244,6 +255,7 @@ bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,
     } else if (whichVector==4) {
         vector = get_vPrevious();
         return true;
+#ifdef PLB_DEBUG // Less Calculations
     } else if (whichVector==5) {
         vector = get_f_wlc();
         return true;
@@ -268,6 +280,7 @@ bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,
     } else if (whichVector==12) {
         vector = get_stress();
         return true;
+#endif
     }
     return Particle3D<T,Descriptor>::getVector(whichVector, vector);
 }
@@ -284,6 +297,7 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getVectorName(plint whichVecto
         return "force";
     } else if (whichVector==4) {
         return "vPrevious";
+#ifdef PLB_DEBUG // Less Calculations
     } else if (whichVector==5) {
         return "f_wlc";
     } else if (whichVector==6) {
@@ -300,13 +314,18 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getVectorName(plint whichVecto
         return "f_repulsive";
     } else if (whichVector==12) {
         return "stress";
+#endif
     }
     return "empty";
 }
 
 template<typename T, template<typename U> class Descriptor>
 plint ImmersedCellParticle3D<T,Descriptor>::getVectorsNumber() const {
+#ifdef PLB_DEBUG // Less Calculations
         return 13;
+#else
+        return 5;
+#endif
 }
 
 /* Same for scalars */
@@ -321,6 +340,7 @@ bool ImmersedCellParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scala
     } else if (whichScalar==2) {
         scalar = T(get_processor());
         return true;
+#ifdef PLB_DEBUG // Less Calculations
     } else if (whichScalar==3) {
         scalar = get_E_total();
         return true;
@@ -342,6 +362,7 @@ bool ImmersedCellParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scala
     } else if (whichScalar==9) {
         scalar = T(get_E_other());
         return true;
+#endif
     }
     return Particle3D<T,Descriptor>::getScalar(whichScalar, scalar);
 }
@@ -355,6 +376,7 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getScalarName(plint whichScala
         return "cellId";
     } else if (whichScalar==2) {
         return "processor";
+#ifdef PLB_DEBUG // Less Calculations
     } else if (whichScalar==3) {
         return "E_total";
     } else if (whichScalar==4) {
@@ -369,6 +391,7 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getScalarName(plint whichScala
         return "E_repulsive";
     } else if (whichScalar==9) {
         return "E_other";
+#endif
     }
     return "empty";
 }
@@ -376,7 +399,11 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getScalarName(plint whichScala
 
 template<typename T, template<typename U> class Descriptor>
 plint ImmersedCellParticle3D<T,Descriptor>::getScalarsNumber() const {
+#ifdef PLB_DEBUG // Less Calculations
         return 10;
+#else
+        return 3;
+#endif
 }
 
 }  // namespace plb

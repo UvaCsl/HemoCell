@@ -95,6 +95,7 @@ private:
     std::vector<Dot3D> cellPos;
     std::vector<T> weights;
 public:
+#ifdef PLB_DEBUG // Less Calculations
     ImmersedCellParticle3D (
             plint tag_, Array<T,3> const& position,
             Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
@@ -147,6 +148,7 @@ private:
     Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, f_repulsive;
     Array<T,3> stress;
     T E_other, E_inPlane, E_bending, E_area,  E_volume, E_repulsive;
+#endif
 
 
 };
