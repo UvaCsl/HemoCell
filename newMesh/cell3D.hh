@@ -370,13 +370,16 @@ template<typename T, template<typename U> class Descriptor>
 T Cell3D<T, Descriptor>::computeVertexArea(plint iVertex) {
 	if (vertexAreas.count(iVertex) == 0) {
 	    std::vector<plint> neighborTriangleIds = getNeighborTriangleIds(iVertex);
-	    Array<T,3> n;
+	    Array<T,3> n(0.,0.,0.);
+	    T s = 0.0;
 	    std::vector<plint>::iterator it = neighborTriangleIds.begin();
-	    for (n.resetToZero(); it != neighborTriangleIds.end(); ++it)
-	        n += computeTriangleNormal(*it);
-	    T normN = norm(n) / 3.0;
+	    for (n.resetToZero(); it != neighborTriangleIds.end(); ++it) {
+	        s += computeTriangleArea(*it) ;
+	    	n += computeTriangleNormal(*it) * computeTriangleArea(*it) ;
+	    }
+	    T normN = norm(n);
 	    n /= normN;
-	    vertexAreas[iVertex] = normN;
+	    vertexAreas[iVertex] = s/3.0;
 	    vertexNormals[iVertex] = n;
 	}
     return vertexAreas[iVertex];
