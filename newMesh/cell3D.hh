@@ -31,6 +31,7 @@ void CellQuantityHolder<T>::clearQuantities() {
     quantities3D.clear();
     quantitiesND.clear();
     scalar_ccrIds.clear(); vector_ccrIds.clear(); tensor_ccrIds.clear();
+    numParts_ccrId.clear();
 }
 
 template<typename T>
@@ -74,8 +75,10 @@ void CellQuantityHolder<T>::reduceQuantity(plint ccrId, T value, plint numParts)
         plint reductionType = (ccrId%100)/10; // Find reduction type (min,max,etc): second to last digit
         T prValue = quantities1D[ccrId];
         if (0 == reductionType)      { quantities1D[ccrId] += value; } // Sum
-        else if (1 == reductionType) { quantities1D[ccrId] = 
-                (prValue*particlesPerCellId + value*numParts) * 1.0 / (particlesPerCellId + numParts); }  // Mean
+        else if (1 == reductionType) {
+            quantities1D[ccrId] = (prValue*numParts_ccrId[ccrId] + value*numParts) * 1.0 / (numParts_ccrId[ccrId] + numParts);
+            numParts_ccrId[ccrId] += numParts;
+        }  // Mean
         else if (2 == reductionType) { quantities1D[ccrId] = max(prValue, value); } // Max of
         else if (3 == reductionType) { quantities1D[ccrId] = min(prValue, value);  } // Min
         // STD, not implemented
@@ -92,10 +95,11 @@ void CellQuantityHolder<T>::reduceQuantity(plint ccrId, Array<T,3> const& value,
         Array<T,3> prValue = quantities3D[ccrId];
         if (0 == reductionType)      { quantities3D[ccrId] = prValue + value; }
         else if (1 == reductionType) {
-            plint prNumParts =  particlesPerCellId;
+            plint prNumParts =  numParts_ccrId[ccrId];
             quantities3D[ccrId] = prNumParts * 1.0 * prValue + numParts * 1.0 * value;
             T factr = 1.0 / (prNumParts + numParts);
             quantities3D[ccrId] = quantities3D[ccrId] * factr;
+            numParts_ccrId[ccrId] += numParts;
         }
         else if (2 == reductionType) {
             quantities3D[ccrId] = Array<T,3>( max(prValue[0], value[0]),
@@ -119,10 +123,15 @@ void CellQuantityHolder<T>::reduceQuantity(plint ccrId, std::vector<T> const& va
         for (pluint iv = 0; iv < value.size(); ++iv) {
             T prValue = quantitiesND[ccrId][iv];
             if (0 == reductionType)      { quantitiesND[ccrId][iv] = prValue + value[iv]; }
-            else if (1 == reductionType) { quantitiesND[ccrId][iv] = (prValue*particlesPerCellId + numParts*value[iv]) * 1.0 / (particlesPerCellId + numParts); }
+            else if (1 == reductionType) {
+                quantitiesND[ccrId][iv] = (prValue*numParts_ccrId[ccrId] + numParts*value[iv]) * 1.0 / (numParts_ccrId[ccrId] + numParts);
+            }
             else if (2 == reductionType) { quantitiesND[ccrId][iv] = max(prValue, value[iv]); }
             else if (3 == reductionType) { quantitiesND[ccrId][iv] = min(prValue, value[iv]);  } // Min can be calculated from the inverse Max
     //            else if (4 == reductionType) { false; } // Std not implemented yet
+        }
+        if (1 == reductionType) {
+            numParts_ccrId[ccrId] += numParts;
         }
     }
 }
@@ -439,9 +448,11 @@ void calculateCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D
 /****** 1D Quantities ******/
     // Calculate ANGLE
     if (q==2) { 
-        T edgeAngle = 0.0; bool found; plint anglesFound=0;
-        for (pluint iB = 0; iB < neighbors.size(); ++iB)  { edgeAngle += cell->computeSignedAngle(iVertex, neighbors[iB], found); anglesFound+=found;}
-        reducer.gather(ccrId, edgeAngle*1.0/anglesFound );
+        T edgeAngle = 0.0; bool found;
+        for (pluint iB = 0; iB < neighbors.size(); ++iB) {
+            edgeAngle += cell->computeSignedAngle(iVertex, neighbors[iB], found);
+        }
+        reducer.gather(ccrId, edgeAngle*1.0/neighbors.size() );
     // Calculate AREA
     } else if (q==3) {
 //        cout << iVertex << "cell->computeVertexArea(iVertex) " << cell->computeVertexArea(iVertex) << std::endl;
@@ -459,7 +470,9 @@ void calculateCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D
         { edgeTileSpan +=  cell->computeEdgeTileSpan(iVertex, neighbors[iB]) ; }
         reducer.gather(ccrId, edgeTileSpan = edgeTileSpan*1.0/neighbors.size() );
     // Return Energy of particle
+#ifdef PLB_DEBUG // Less Calculations
     } else if (q==9) { reducer.gather(ccrId, cell->get_Energy(iVertex));
+#endif
     // Calculate VOLUME
     } else if (q==1) { 
         std::vector<plint> neighborTriangleIds = cell->getNeighborTriangleIds(iVertex);

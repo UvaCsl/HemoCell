@@ -64,6 +64,7 @@ public:
     std::vector<plint> const& getTensorCcrIds() { make_ccrId_List(); return tensor_ccrIds; }
 private:
     plint cellId, particlesPerCellId;
+    std::map<plint, plint > numParts_ccrId; // quantities1D[CCR_VOLUME] = CELL_VOLUME
 
     std::map<plint, T > quantities1D; // quantities1D[CCR_VOLUME] = CELL_VOLUME
     std::map<plint, Array<T,3> > quantities3D;
@@ -194,7 +195,6 @@ public:
     virtual void computeCCRQuantities(plint ccrId, Particle3D<T,Descriptor> * particle) { calculateCCRQuantities(ccrId, reducer, this, castParticleToICP3D(particle)->getVertexId()); }
     void closeCCRQuantities() { this->copyFromBlockStatisticsCCR(reducer); }
 public:
-    Array<T,3> getForce()    { return this->getForce(cellNumVertices); } ;
     Array<T,3> & getPosition() { return this->get3D(CCR_POSITION_MEAN);  } ;
 
 private:
