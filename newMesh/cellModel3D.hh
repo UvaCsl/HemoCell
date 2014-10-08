@@ -77,6 +77,9 @@ CellModel3D<T, Descriptor>::CellModel3D(T density_, T k_rest_,
 
     T x0 = eqLengthRatio;
     syncRequirements.insert(volumeAndSurfaceReductions);
+    syncRequirements.insert(allReductions);
+
+
     MeshMetrics<T> meshmetric(meshElement);
 
     cellNumVertices = meshmetric.getNumVertices();
@@ -165,7 +168,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         castParticleToICP3D(cell->getParticle3D(vertices[iV]))->resetForces();
     }
     plint iTriangle;
-    plint iVertex, jVertex, kVertex, lVertex;
+    plint iVertex, jVertex, kVertex=-1, lVertex=-1;
 
     /* Run through all the edges and calculate:
          x In plane (WLC and repulsive) force
@@ -215,6 +218,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         bool angleFound;
         T edgeAngle = cell->computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
         if (angleFound) {
+        	cout << "i " << iVertex << " j " << jVertex << " k " <<  kVertex << " l " <<  lVertex << " edgeAngle "<< edgeAngle<< std::endl;
             Array<T,3> iNormal = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
             Array<T,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
             T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);

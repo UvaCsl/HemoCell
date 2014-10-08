@@ -360,8 +360,7 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
     std::map<plint, pluint> particlesPerCellId;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
         plint cellId = castParticleToICP3D(particles[iParticle])->get_cellId();
-        if (particlesPerCellId.count(cellId) > 0) { particlesPerCellId[cellId] += 1; }
-        else  { particlesPerCellId[cellId] = 1; }
+        particlesPerCellId[cellId] = particlesPerCellId[cellId] + 1;
         for (std::vector<plint>::iterator i = ccrRequirements.begin(); i != ccrRequirements.end(); ++i)
         {
             plint ccrId = *i;
@@ -382,6 +381,15 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         rParticle->updateCQH(*cell);
         cell->clearQuantities();
         reductionParticleField.addParticle(reductionParticleField.getBoundingBox(), rParticle);
+//        std::cout << MPI::COMM_WORLD.Get_rank() << " Cell Volume " << rParticle->getVolume()
+//                		<< " surface " << rParticle->getSurface()
+//                		<< " CCR_ANGLE_MEAN " << rParticle->getMeanAngle()*180.0/pi
+//                		<< " getMeanEdgeLength " << rParticle->getMeanEdgeLength()
+//                		<< " CCR_FORCE (" << rParticle->getForce()[0]
+//						<< ", " << rParticle->getForce()[1]
+//						<< ", " << rParticle->getForce()[2] << ") "
+//        		<< " rPart "  << rParticle->get_nParticles() << std::endl;
+
     }
 }
 
