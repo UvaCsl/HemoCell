@@ -77,9 +77,6 @@ CellModel3D<T, Descriptor>::CellModel3D(T density_, T k_rest_,
 
     T x0 = eqLengthRatio;
     syncRequirements.insert(volumeAndSurfaceReductions);
-    syncRequirements.insert(allReductions);
-
-
     MeshMetrics<T> meshmetric(meshElement);
 
     cellNumVertices = meshmetric.getNumVertices();
@@ -88,6 +85,7 @@ CellModel3D<T, Descriptor>::CellModel3D(T density_, T k_rest_,
     eqLength = meshmetric.getMeanLength();
     maxLength = meshmetric.getMaxLength()*eqLengthRatio;
     eqArea = meshmetric.getMeanArea();
+    cout << " meshmetric.getMeanAngle() " <<  meshmetric.getMeanAngle() << std::endl;
 //    eqAngle = meshmetric.getMeanAngle();
     eqVolume = meshmetric.getVolume();
     eqSurface = meshmetric.getSurface();
@@ -152,15 +150,15 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
     T cellVolume = cell->getVolume();
     T cellSurface = cell->getSurface();
 
-//    if (not ((cellVolume > 0) and (cellSurface > 0))) {
+    if (not ((cellVolume > 0) and (cellSurface > 0))) {
         cout << "processor: " << cell->getMpiProcessor()
              << ", cellId: " << cell->get_cellId()
              << ", volume: " << cellVolume
              << ", surface: " << cellSurface
              << ", cellNumVertices: " << cellNumVertices
              << endl;
-//        PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
-//    }
+        PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
+    }
     std::vector<plint> const& triangles = cell->getTriangles();
     std::vector<Array<plint,2> > const& edges = cell->getEdges();
     std::vector<plint > const& vertices = cell->getVertices();
@@ -190,11 +188,12 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         force1 = computeInPlaneExplicitForce(iX, jX, eqLengthRatio, eqLength, k_inPlane, potential);
         iParticle->get_force() += force1;
         jParticle->get_force() -= force1;
-
+#ifdef PLB_DEBUG // Less Calculations
         iParticle->get_E_inPlane() += potential;
         jParticle->get_E_inPlane() += potential;
         iParticle->get_f_wlc() += force1;
         jParticle->get_f_wlc() -= force1;
+#endif
           /* ------------------------------------*/
          /*    Dissipative Forces Calculations  */
         /* ------------------------------------*/
@@ -202,9 +201,10 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
             force1 = computeDissipativeForce(iX, jX, iParticle->get_v(), jParticle->get_v(), gamma_T, gamma_C);
             iParticle->get_force() += force1;
             jParticle->get_force() -= force1;
-
+#ifdef PLB_DEBUG // Less Calculations
             iParticle->get_f_viscosity() += force1;
             jParticle->get_f_viscosity() -= force1;
+#endif
         }
         /* -------------------------------------------*/
         /*    Stretch (Hookean) Forces Calculations  */
@@ -218,7 +218,6 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         bool angleFound;
         T edgeAngle = cell->computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
         if (angleFound) {
-        	cout << "i " << iVertex << " j " << jVertex << " k " <<  kVertex << " l " <<  lVertex << " edgeAngle "<< edgeAngle<< std::endl;
             Array<T,3> iNormal = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
             Array<T,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
             T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
@@ -239,7 +238,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
             jParticle->get_force() += fj;
             kParticle->get_force() += fk;
             lParticle->get_force() += fl;
-
+#ifdef PLB_DEBUG // Less Calculations
             iParticle->get_f_bending() += fi;
             jParticle->get_f_bending() += fj;
             kParticle->get_f_bending() += fk;
@@ -249,6 +248,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
             jParticle->get_E_bending() += potential;
             kParticle->get_E_bending() += potential;
             lParticle->get_E_bending() += potential;
+#endif  // Less Calculations
         }
     }
 
@@ -301,7 +301,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         iParticle->get_force() += force1;
         jParticle->get_force() += force2;
         kParticle->get_force() += force3;
-
+#ifdef PLB_DEBUG // Less Calculations
         iParticle->get_f_surface() += force1;
         jParticle->get_f_surface() += force2;
         kParticle->get_f_surface() += force3;
@@ -309,7 +309,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         iParticle->get_E_area() += potential;
         jParticle->get_E_area() += potential;
         kParticle->get_E_area() += potential;
-
+#endif
         /* Local area conservation forces */
         force1 = computeLocalAreaConservationForce(dAdx1, triangleArea, eqArea, areaCoefficient);
         force2 = computeLocalAreaConservationForce(dAdx2, triangleArea, eqArea, areaCoefficient);
@@ -317,7 +317,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         iParticle->get_force() += force1;
         jParticle->get_force() += force2;
         kParticle->get_force() += force3;
-
+#ifdef PLB_DEBUG // Less Calculations
         iParticle->get_f_shear() += force1;
         jParticle->get_f_shear() += force2;
         kParticle->get_f_shear() += force3;
@@ -325,7 +325,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         iParticle->get_E_area() += potential;
         jParticle->get_E_area() += potential;
         kParticle->get_E_area() += potential;
-
+#endif
         /* Volume conservation forces */
         force1  = computeVolumeConservationForce(x1, x2, x3, volumeCoefficient);
         force2  = computeVolumeConservationForce(x2, x3, x1, volumeCoefficient);
@@ -333,7 +333,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         iParticle->get_force() += force1;
         jParticle->get_force() += force2;
         kParticle->get_force() += force3;
-
+#ifdef PLB_DEBUG // Less Calculations
         iParticle->get_f_volume() += force1;
         jParticle->get_f_volume() += force2;
         kParticle->get_f_volume() += force3;
@@ -341,7 +341,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         iParticle->get_E_volume() += potential;
         jParticle->get_E_volume() += potential;
         kParticle->get_E_volume() += potential;
-
+#endif
     }
 
 }
