@@ -50,7 +50,7 @@ void MeshMetrics<T>::init(TriangularSurfaceMesh<T> const& mesh)    {
             minLength = minLength>tmp?tmp:minLength;
             maxLength = maxLength<tmp?tmp:maxLength;
             length += tmp;
-            tmp = calculateSignedAngle(mesh, iV, jV) * 180/3.14159;
+            tmp = calculateSignedAngle(mesh, iV, jV);
             minAngle = minAngle>tmp?tmp:minAngle;
             maxAngle = maxAngle<tmp?tmp:maxAngle;
             angle += tmp;
@@ -94,7 +94,7 @@ void MeshMetrics<T>::init(TriangularSurfaceMesh<T> const& mesh)    {
             int jV = nvid[ijV];
             tmp=(mesh.computeEdgeLength(iV, jV)-length);
             sigmaLength += tmp*tmp;
-            tmp = (calculateSignedAngle(mesh, iV, jV) * 180/3.14159 - angle);
+            tmp = (calculateSignedAngle(mesh, iV, jV) - angle);
             sigmaAngle += tmp*tmp;
         }
     }
