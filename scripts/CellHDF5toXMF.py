@@ -127,14 +127,14 @@ def updateDictForXDMFStringsCell(h5File, h5dict):
 		return attributeType, rankString 
 	def dictFromObject(obj):
 		d = {
-		"attributeName": obj.name[1:], 
-		"objectSubdomainSize": obj.shape,
-		"AttributeType": getAttributeTypeAndRankStringFromObjectsShape(obj.shape)[0],
-		"rankString":getAttributeTypeAndRankStringFromObjectsShape(obj.shape)[1],
+		"attributeName": obj[0], 
+		"objectSubdomainSize": obj[1].shape,
+		"AttributeType": getAttributeTypeAndRankStringFromObjectsShape(obj[1].shape)[0],
+		"rankString":getAttributeTypeAndRankStringFromObjectsShape(obj[1].shape)[1],
 		}
 		return d
 	#if key not in ('triangles',):
-	h5ListObjects = filter(lambda x: x.name[1:] not in ('triangles',), h5File.listobjects())
+	h5ListObjects = filter(lambda x: x[0] not in ('triangles',), h5File.items())
 	h5dict['DataSets'] =  map(dictFromObject,  h5ListObjects)
 	return h5dict
 

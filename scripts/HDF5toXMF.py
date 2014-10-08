@@ -133,13 +133,13 @@ def updateDictForXDMFStrings(h5File, h5dict):
 		return attributeType, rankString 
 	def dictFromObject(obj):
 		d = {
-		"attributeName": obj.name[1:], 
-		"objectSubdomainSize": obj.shape,
-		"AttributeType": getAttributeTypeAndRankStringFromObjectsShape(obj.shape)[0],
-		"rankString":getAttributeTypeAndRankStringFromObjectsShape(obj.shape)[1],
+		"attributeName": obj[0], 
+		"objectSubdomainSize": obj[1],
+		"AttributeType": getAttributeTypeAndRankStringFromObjectsShape(obj[1].shape)[0],
+		"rankString":getAttributeTypeAndRankStringFromObjectsShape(obj[1].shape)[1],
 		}
 		return d
-	h5dict['DataSets'] =  map(dictFromObject,  h5File.listobjects())
+	h5dict['DataSets'] =  map(dictFromObject,  h5File.items())
 	return h5dict
 
 
