@@ -282,6 +282,8 @@ int main(int argc, char* argv[])
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, npar, cellModel);
 	pcout << "initializing"<< std::endl;
     RBCField.initialize();
+//    RBCField.applyConstitutiveModel();
+
     pcout << std::endl << "Starting simulation" << std::endl;
     pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
     /*            I/O              */
@@ -291,7 +293,6 @@ int main(int argc, char* argv[])
     global::timer("HDFOutput").stop();
     /* --------------------------- */
     for (pluint iter=0; iter<tmax+1; ++iter) {
-        pcout << "Iteration:" << iter << std::endl;
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
         // #2# IBM Spreading
@@ -305,12 +306,16 @@ int main(int argc, char* argv[])
         RBCField.interpolateVelocityIBM();
         // #5# Position Update
         RBCField.advanceParticles();
-        RBCField.synchronizeCellQuantities();
         if ((iter+1)%tmeas==0) {
+            pcout << "Iteration:" << iter + 1<< std::endl;
+            SyncRequirements everyCCR(allReductions);
+            RBCField.synchronizeCellQuantities(everyCCR);
             global::timer("HDFOutput").restart();
             writeHDF5(lattice, parameters, iter+1);
             writeCellField3D_HDF5(RBCField, parameters, iter+1, "RBC");
             global::timer("HDFOutput").stop();
+        } else {
+            RBCField.synchronizeCellQuantities();
         }
     }
 

@@ -383,8 +383,9 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         reductionParticleField.addParticle(reductionParticleField.getBoundingBox(), rParticle);
 //        std::cout << MPI::COMM_WORLD.Get_rank() << " Cell Volume " << rParticle->getVolume()
 //                		<< " surface " << rParticle->getSurface()
-//                		<< " CCR_ANGLE_MEAN " << rParticle->getMeanAngle()*180.0/pi
-//                		<< " getMeanEdgeLength " << rParticle->getMeanEdgeLength()
+//                		<< " CCR_ANGLE_MEAN " << rParticle->getMeanAngle()
+//                        << " getMeanEdgeLength " << rParticle->getMeanEdgeLength()
+//                        << " getEnergy " << rParticle->getEnergy()
 //                		<< " CCR_FORCE (" << rParticle->getForce()[0]
 //						<< ", " << rParticle->getForce()[1]
 //						<< ", " << rParticle->getForce()[2] << ") "
@@ -469,7 +470,6 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
             plint processor = particle->get_processor();
             plint nParticles = particle->get_nParticles();
             particleInProcessorAndCellid[processor]; // Create "processor" entry
-
             if (cellIdToCell3D.count(cellId)) {
                 Cell3D<T,Descriptor> * chq = cellIdToCell3D[cellId];
                 if (particleInProcessorAndCellid[processor].find(cellId) == particleInProcessorAndCellid[processor].end()) {
