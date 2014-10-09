@@ -72,7 +72,7 @@ void CellField3D<T, Descriptor>::initialize() {
     global::timer("Quantities").start();
 	std::vector<Array<T,3> > cellOrigins;
     applyProcessingFunctional (
-        new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(elementaryMesh, .2),
+        new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(elementaryMesh, .4),
         lattice.getBoundingBox(), particleLatticeArg );
     applyProcessingFunctional (
         new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),

@@ -81,7 +81,6 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     PLB_PRECONDITION( hematocrit < 1.0 );
 
     srand (p * id);
-    const T pi = 4.*atan(1.);
     PLB_PRECONDITION( blocks.size()==2 );
     ParticleField3D<T,Descriptor>& particleField =
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
@@ -102,14 +101,14 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     MeshMetrics<T> mm(*mesh);
     T volume = mm.getVolume();
 
-    plint step = plint( pow(volume/hematocrit, 1.0/3.0) );
+    plint step = plint( pow(volume/hematocrit, 1.0/3.0) ) - 1;
     plint DeltaX = domain.x1-domain.x0;
     plint DeltaY = domain.y1-domain.y0;
     plint DeltaZ = domain.z1-domain.z0;
 
 
-//    T pcOfDomainNotConsidered = 1 - ((DeltaX-1)/step) * ((DeltaY-1)/step) * ((DeltaZ-1)/step) * step*step*step / (DeltaX*DeltaY*DeltaZ * 1.0);
-    T rescaledHematocrit = hematocrit  ;// * (1 + pcOfDomainNotConsidered) ;
+    T pcOfDomainConsidered = ((DeltaX-1)/step) * ((DeltaY-1)/step) * ((DeltaZ-1)/step) * step*step*step / (DeltaX*DeltaY*DeltaZ * 1.0);
+    T rescaledHematocrit = hematocrit  / pcOfDomainConsidered;
     T prob = step * step * step * 1.0 / volume * rescaledHematocrit;
 
     T scale = step*1.0/maxSide;
@@ -117,21 +116,22 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     mesh->scale(scale);
 
     // Access the position of the atomic-block inside the multi-block.
-    Dot3D offset = computeRelativeDisplacement(fluid, particleField);
     Dot3D relativePosition = fluid.getLocation();
     Array<T,3> relativeCoordinate(relativePosition.x, relativePosition.y, relativePosition.z);
-    relativeCoordinate += mvp * (0.5/ scale);
+    relativeCoordinate += mvp * (0.5/ scale) + 2.0;
 
     plint nVertices = mesh->getNumVertices();
     PLB_PRECONDITION( step <= DeltaX &&  step <= DeltaY && step <= DeltaZ );
     plint cellId = 0;
     // Loop through the domain and place cell depending on the
-    for (plint iX=(domain.x0 + step); iX<=(domain.x1-step-1); iX += step) {
-        for (plint iY=(domain.y0+ step); iY<=(domain.y1-step-1); iY+=step) {
-            for (plint iZ=(domain.z0 + step); iZ<=(domain.z1-step-1); iZ+=step) {
+    for (plint iX=0; iX<(DeltaX-step-1); iX += step) {
+        for (plint iY=0; iY<(DeltaY-step-1); iY+=step) {
+            for (plint iZ=0; iZ<(DeltaZ-step-1); iZ+=step) {
                 T rn = guessRandomNumber();
                 if (rn <= prob) {
-//                    mesh->rotate(guessRandomNumber() * 2 * pi, guessRandomNumber() * pi, guessRandomNumber() * 2 * pi);
+                    meshRandomRotation(mesh);
+//                    Array<T,3> cntr = Array<T,3>(iX*1.0, iY*1.0, iZ*1.0) + relativeCoordinate;
+//                    cout << "cntr = (" << cntr[0] << ", " << cntr[1] << ", " << cntr[2]<< ")" << std::endl;
                     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
                         Array<T,3> vertex = Array<T,3>(iX*1.0, iY*1.0, iZ*1.0) + relativeCoordinate + mesh->getVertex(iVertex);
                         particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );

@@ -67,12 +67,19 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          std::map<plint, plint> iv = cell3d->getInvertVertices();
          for (pluint iT=0; iT < cellTriangles.size(); iT++) {
              plint iTriangle=cellTriangles[iT];
-             plint t0 = iv[cell3d->getVertexId(iTriangle, 0)]+sumLocalVertices;
-             plint t1 = iv[cell3d->getVertexId(iTriangle, 1)]+sumLocalVertices;
-             plint t2 = iv[cell3d->getVertexId(iTriangle, 2)]+sumLocalVertices;
-             triangles.push_back(t0);
-             triangles.push_back(t1);
-             triangles.push_back(t2);
+             plint v0 = cell3d->getVertexId(iTriangle, 0);
+             plint v1 = cell3d->getVertexId(iTriangle, 1);
+             plint v2 = cell3d->getVertexId(iTriangle, 2);
+//             if (castParticleToICP3D(cell3d->getParticle3D(v0))->get_processor() == id &&
+//                     castParticleToICP3D(cell3d->getParticle3D(v1))->get_processor() == id &&
+//                     castParticleToICP3D(cell3d->getParticle3D(v2))->get_processor() == id) {
+                 plint t0 = iv[v0]+sumLocalVertices;
+                 plint t1 = iv[v1]+sumLocalVertices;
+                 plint t2 = iv[v2]+sumLocalVertices;
+                 triangles.push_back(t0);
+                 triangles.push_back(t1);
+                 triangles.push_back(t2);
+//             }
          }
          sumLocalVertices += cellVertices.size();
      }

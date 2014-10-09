@@ -27,12 +27,12 @@ projectFiles = ficsional.cpp
 # Choose between generic and precompiled mode
 precompiled  = false
 # Set optimization flags on/off
-optimize     = true
+optimize     = false
 # Set debug mode and debug flags on/off
-debug        = false
+debug        = true
 # Set profiling flags on/off
 #profile      = false
-profile      = true
+profile      = false
 # Set MPI-parallel mode on/off (parallelism in cluster-like environment)
 MPIparallel  = true
 # Set SMP-parallel mode on/off (shared-memory parallelism)

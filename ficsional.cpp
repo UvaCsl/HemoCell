@@ -127,8 +127,8 @@ int main(int argc, char* argv[])
     global::directories().setLogOutDir("./log/");
     global::directories().setInputDir("./");
     global::IOpolicy().activateParallelIO(true);
-    global::IOpolicy().setStlFilesHaveLowerBound(true);
-    global::IOpolicy().setLowerBoundForStlFiles(-1.);
+    global::IOpolicy().setStlFilesHaveLowerBound(false);
+//    global::IOpolicy().setLowerBoundForStlFiles(-1.);
 //    testInPlane(); PLB_ASSERT(false);
     std::string outputDir = global::directories().getOutputDir();
     std::string inputDir = global::directories().getInputDir();
