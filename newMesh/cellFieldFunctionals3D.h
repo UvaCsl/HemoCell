@@ -6,6 +6,9 @@
 #include "immersedCellParticle3D.h"
 #include "reductionParticle3D.h"
 #include "cell3D.h"
+#include "meshMetrics.h"
+#include <stdlib.h>     /* srand, rand */
+
 
 using namespace std;
 using namespace plb;
@@ -16,7 +19,8 @@ class PositionCellParticles3D : public BoxProcessingFunctional3D
 {
 public:
     PositionCellParticles3D (
-    		TriangularSurfaceMesh<T> const& elementaryMesh_, std::vector<Array<T,3> > const& cellOrigins_);
+            TriangularSurfaceMesh<T> const& elementaryMesh_, std::vector<Array<T,3> > const& cellOrigins_) :
+    elementaryMesh(elementaryMesh_), cellOrigins(cellOrigins_) { }
     /// Arguments: [0] Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual PositionCellParticles3D<T,Descriptor>* clone() const;
@@ -26,6 +30,30 @@ public:
 private:
     TriangularSurfaceMesh<T> const& elementaryMesh;
     std::vector<Array<T,3> > cellOrigins;
+};
+
+
+double guessRandomNumber() {
+    return rand()*1.0/RAND_MAX;
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+class RandomPositionCellParticlesForGrowth3D : public BoxProcessingFunctional3D
+{
+public:
+    RandomPositionCellParticlesForGrowth3D (
+            TriangularSurfaceMesh<T> const& elementaryMesh_, T hematocrit_):
+                elementaryMesh(elementaryMesh_), hematocrit(hematocrit_) { }
+    /// Arguments: [0] Particle-field.
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual RandomPositionCellParticlesForGrowth3D<T,Descriptor>* clone() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+private:
+    TriangularSurfaceMesh<T> const& elementaryMesh;
+    T hematocrit;
 };
 
 

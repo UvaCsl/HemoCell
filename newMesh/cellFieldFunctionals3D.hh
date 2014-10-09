@@ -6,18 +6,14 @@
 /* ******** PositionCellParticles3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
-PositionCellParticles3D<T,Descriptor>::PositionCellParticles3D (
-		TriangularSurfaceMesh<T> const& elementaryMesh_, std::vector<Array<T,3> > const& cellOrigins_)
-    : elementaryMesh(elementaryMesh_), cellOrigins(cellOrigins_)
-{ }
-
-template<typename T, template<typename U> class Descriptor>
 void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
-    PLB_PRECONDITION( blocks.size()==1 );
+    PLB_PRECONDITION( blocks.size()==2 );
     ParticleField3D<T,Descriptor>& particleField =
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    BlockLattice3D<T,Descriptor>& fluid =
+        *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
 
     cellOrigins.clear();
     cellOrigins.push_back(  Array<T,3>(20.0, 20.0, 20.0)  );
@@ -40,8 +36,6 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
             particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );
         }
     }
-    std::vector<Particle3D<T,Descriptor>*> particles;
-    particleField.findParticles(domain, particles);
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -54,15 +48,125 @@ void PositionCellParticles3D<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::dynamicVariables; // Particle field.
+    modified[1] = modif::nothing; // Fluid field.
 }
 
 template<typename T, template<typename U> class Descriptor>
 void PositionCellParticles3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
     isWritten[0] = true;  // Particle field.
+    isWritten[1] = false;  // Particle field.
 }
 
 template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT PositionCellParticles3D<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulk;
+}
+
+/* ******** RandomPositionCellParticlesForGrowth3D *********************************** */
+
+template<typename T, template<typename U> class Descriptor>
+void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+#ifdef PLB_MPI_PARALLEL
+    //  Get the number of processes.
+    int  p = MPI::COMM_WORLD.Get_size();
+    //  Get the individual process ID.
+     int id = MPI::COMM_WORLD.Get_rank();
+#else
+     int p=1;
+     int id = 0;
+#endif
+    if (hematocrit > 1.0) { hematocrit /= 100; }
+    PLB_PRECONDITION( hematocrit < 1.0 );
+
+    srand (p * id);
+    const T pi = 4.*atan(1.);
+    PLB_PRECONDITION( blocks.size()==2 );
+    ParticleField3D<T,Descriptor>& particleField =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    BlockLattice3D<T,Descriptor>& fluid =
+        *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
+
+    ElementsOfTriangularSurfaceMesh<T> emptyEoTSM;
+    TriangularSurfaceMesh<T> * mesh = copyTriangularSurfaceMesh(elementaryMesh, emptyEoTSM);
+
+    Array<T,2> xRange, yRange, zRange;
+    mesh->computeBoundingBox (xRange, yRange, zRange);
+    T dx = xRange[1] - xRange[0], dy = yRange[1] - yRange[0], dz = zRange[1] - zRange[0];
+    T maxSide = max( max(dx, dy), dz);
+    // Bring mesh to the center
+    Array<T,3> mvp(dx, dy, dz);
+    Array<T,3> meshCenter = Array<T,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
+    mesh->translate(-1.0 * meshCenter);
+    MeshMetrics<T> mm(*mesh);
+    T volume = mm.getVolume();
+
+    plint step = plint( pow(volume/hematocrit, 1.0/3.0) );
+    plint DeltaX = domain.x1-domain.x0;
+    plint DeltaY = domain.y1-domain.y0;
+    plint DeltaZ = domain.z1-domain.z0;
+
+
+//    T pcOfDomainNotConsidered = 1 - ((DeltaX-1)/step) * ((DeltaY-1)/step) * ((DeltaZ-1)/step) * step*step*step / (DeltaX*DeltaY*DeltaZ * 1.0);
+    T rescaledHematocrit = hematocrit  ;// * (1 + pcOfDomainNotConsidered) ;
+    T prob = step * step * step * 1.0 / volume * rescaledHematocrit;
+
+    T scale = step*1.0/maxSide;
+    if (scale > 0.8) { scale = 0.8; };
+    mesh->scale(scale);
+
+    // Access the position of the atomic-block inside the multi-block.
+    Dot3D offset = computeRelativeDisplacement(fluid, particleField);
+    Dot3D relativePosition = fluid.getLocation();
+    Array<T,3> relativeCoordinate(relativePosition.x, relativePosition.y, relativePosition.z);
+    relativeCoordinate += mvp * (0.5/ scale);
+
+    plint nVertices = mesh->getNumVertices();
+    PLB_PRECONDITION( step <= DeltaX &&  step <= DeltaY && step <= DeltaZ );
+    plint cellId = 0;
+    // Loop through the domain and place cell depending on the
+    for (plint iX=(domain.x0 + step); iX<=(domain.x1-step-1); iX += step) {
+        for (plint iY=(domain.y0+ step); iY<=(domain.y1-step-1); iY+=step) {
+            for (plint iZ=(domain.z0 + step); iZ<=(domain.z1-step-1); iZ+=step) {
+                T rn = guessRandomNumber();
+                if (rn <= prob) {
+//                    mesh->rotate(guessRandomNumber() * 2 * pi, guessRandomNumber() * pi, guessRandomNumber() * 2 * pi);
+                    for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
+                        Array<T,3> vertex = Array<T,3>(iX*1.0, iY*1.0, iZ*1.0) + relativeCoordinate + mesh->getVertex(iVertex);
+                        particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );
+                    }
+                    cellId+=1;
+                }
+            }
+        }
+    }
+    cout << p << " scale " << scale << " step " << step <<  " NCells " << cellId << " h " << cellId * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << std::endl;
+
+
+}
+
+template<typename T, template<typename U> class Descriptor>
+RandomPositionCellParticlesForGrowth3D<T,Descriptor>* RandomPositionCellParticlesForGrowth3D<T,Descriptor>::clone() const {
+    return new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::dynamicVariables; // Particle field.
+    modified[1] = modif::nothing; // Fluid field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Particle field.
+    isWritten[1] = false;  // Particle field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT RandomPositionCellParticlesForGrowth3D<T,Descriptor>::appliesTo() const {
     return BlockDomain::bulk;
 }
 

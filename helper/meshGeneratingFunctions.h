@@ -33,7 +33,7 @@ TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint 
 
 template<typename T>
 TriangleBoundary3D<T> constructMeshElement(plint shape, T radius, plint cellNumTriangles, T dx, std::string& cellPath, Array<T,3> const& eulerAngles) {
-    Array<T,3> center(radius, radius, radius);
+    Array<T,3> center(0.0, 0.0, 0.0);
     std::vector<TriangleSet<T> > allTriangles;
     TriangleSet<T> wholeTriangleSet;
     if (shape == 0) {

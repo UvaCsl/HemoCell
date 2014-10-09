@@ -71,15 +71,15 @@ template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::initialize() {
     global::timer("Quantities").start();
 	std::vector<Array<T,3> > cellOrigins;
-    applyProcessingFunctional ( // advance particles in time according to velocity
-        new PositionCellParticles3D<T,Descriptor>(elementaryMesh, cellOrigins),
-        immersedParticles->getBoundingBox(), particleArg );
+    applyProcessingFunctional (
+        new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(elementaryMesh, .2),
+        lattice.getBoundingBox(), particleLatticeArg );
     applyProcessingFunctional (
         new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
         immersedParticles->getBoundingBox(), particleArg );
     global::timer("Quantities").stop();
     advanceParticles();
-    synchronizeCellQuantities();
+//    synchronizeCellQuantities();
 }
 
 
