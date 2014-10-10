@@ -9,15 +9,6 @@ template<typename T, template<typename U> class Descriptor>
 void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
-    PLB_PRECONDITION( blocks.size()==2 );
-    ParticleField3D<T,Descriptor>& particleField =
-        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
-    BlockLattice3D<T,Descriptor>& fluid =
-        *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
-
-    cellOrigins.clear();
-    cellOrigins.push_back(  Array<T,3>(20.0, 20.0, 20.0)  );
-
 #ifdef PLB_MPI_PARALLEL
     //  Get the number of processes.
     int  p = MPI::COMM_WORLD.Get_size();
@@ -27,13 +18,31 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
      int p=1;
      int id = 0;
 #endif
+
+    PLB_PRECONDITION( blocks.size()==2 );
+    ParticleField3D<T,Descriptor>& particleField =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    BlockLattice3D<T,Descriptor>& fluid =
+        *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
+
+    cellOrigins.clear();
+
+    Dot3D relativePosition = fluid.getLocation();
+    Array<T,3> relativeCoordinate(relativePosition.x+2.0, relativePosition.y+2.0, relativePosition.z+2.0);
+    plint DeltaX = domain.x1 - domain.x0;
+    plint DeltaY = domain.y1 - domain.y0;
+    plint DeltaZ = domain.z1 - domain.z0;
+    relativeCoordinate += Array<T,3>(DeltaX/2.0, DeltaY/2.0, DeltaZ/2.0);
+    cellOrigins.push_back(  relativeCoordinate );
+
     plint nVertices = elementaryMesh.getNumVertices();
     for (pluint iCO=0; iCO < cellOrigins.size(); ++iCO) {
         Array<T,3> & cellOrigin = cellOrigins[iCO];
-        plint cellId = iCO;
+        plint cellId = iCO + id*100 ;
+        cout << "cellId " << cellId << std::endl;
         for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
             Array<T,3> vertex = cellOrigin + elementaryMesh.getVertex(iVertex);
-            particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );
+            particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );
         }
     }
 }

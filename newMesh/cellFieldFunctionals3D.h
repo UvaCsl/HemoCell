@@ -44,7 +44,6 @@ void meshRandomRotation (TriangularSurfaceMesh<T> * mesh) {
     const T pi = 4.*atan(1.);
     Array<T,2> xRange, yRange, zRange;
     mesh->computeBoundingBox (xRange, yRange, zRange);
-    T dx = xRange[1] - xRange[0], dy = yRange[1] - yRange[0], dz = zRange[1] - zRange[0];
     Array<T,3> meshCenter = Array<T,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
     mesh->translate(-1.0 * meshCenter);
     mesh->rotate(guessRandomNumber() * 2 * pi, guessRandomNumber() * pi, guessRandomNumber() * 2 * pi);
