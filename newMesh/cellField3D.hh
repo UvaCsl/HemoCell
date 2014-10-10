@@ -69,8 +69,8 @@ CellField3D<T, Descriptor>::~CellField3D() {
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::initialize() {
-    global::timer("Quantities").start();
-	std::vector<Array<T,3> > cellOrigins;
+    global::timer("Init").start();
+    std::vector<Array<T,3> > cellOrigins;
     applyProcessingFunctional (
 //        new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(elementaryMesh, .4),
         new PositionCellParticles3D<T,Descriptor>(elementaryMesh, cellOrigins),
@@ -78,9 +78,43 @@ void CellField3D<T, Descriptor>::initialize() {
     applyProcessingFunctional (
         new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
         immersedParticles->getBoundingBox(), particleArg );
-    global::timer("Quantities").stop();
     advanceParticles();
-//    synchronizeCellQuantities();
+    synchronizeCellQuantities();
+    global::timer("Init").stop();
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+void CellField3D<T, Descriptor>::grow() {
+
+    T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
+    PowerLawForce<T> PLF(k_int, DeltaX, R, k);
+    T iRatio = 0.5;
+    for (int i = 0; i < 6000; ++i) {
+        T ratio = iRatio + 0.5 * i/5000.0;
+        if (ratio > 1.0) { ratio = 1.0; }
+
+        // #1a# Membrane Model
+        applyProcessingFunctional (
+                        new ComputeCellForce3D<T,Descriptor> (cellModel, cellIdToCell3D),
+                        immersedParticles->getBoundingBox(), particleArg );
+        // #1b# Repulsive force
+        applyProcessingFunctional (
+           new ComputeCellCellForces3D<T,Descriptor> (PLF, R),
+           immersedParticles->getBoundingBox(), particleArg );
+
+        // #2# Force to velocity
+        applyProcessingFunctional ( // copy fluid velocity on particles
+            new ViscousPositionUpdate3D<T,Descriptor>(ratio),
+            immersedParticles->getBoundingBox(), particleLatticeArg);
+        // #3# Update position of particles
+        applyProcessingFunctional ( // advance particles in time according to velocity
+            new AdvanceParticlesEveryWhereFunctional3D<T,Descriptor>,
+            immersedParticles->getBoundingBox(), particleArg );
+        applyProcessingFunctional (
+            new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
+            immersedParticles->getBoundingBox(), particleArg );
+    }
 }
 
 

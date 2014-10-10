@@ -100,6 +100,22 @@ private:
     plint ibmKernel;
 };
 
+template<typename T, template<typename U> class Descriptor>
+class ViscousPositionUpdate3D : public BoxProcessingFunctional3D
+{
+public:
+    ViscousPositionUpdate3D (T ratio_=1.0);
+    ViscousPositionUpdate3D (ViscousPositionUpdate3D<T,Descriptor> const& rhs);
+    /// Arguments: [0] Particle-field. [1] Lattice.
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual ViscousPositionUpdate3D<T,Descriptor>* clone() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+private:
+    T ratio;
+};
+
 
 template<typename T, template<typename U> class Descriptor>
 class ComputeCellForce3D : public BoxProcessingFunctional3D

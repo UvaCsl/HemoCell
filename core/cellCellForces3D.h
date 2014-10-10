@@ -89,13 +89,13 @@ private:
 
 template<typename T>
 class PowerLawForce : public CellCellForce3D<T> {
-// Lennard-Jones Potential is:
+// PowerLaw Force is:
 //    F = -k_int * (pow((DeltaX*1.0/r),k) - DeltaXoverRink)*eij;
 // with:
 //    k_int: is the characteristic energy
 //    DeltaX: is the characteristic length
-//    k: is the characteristic length
-//    R: is the characteristic length
+//    k: powerlaw exponent (>1.0, Krueger == 2.0)
+//    R: is the characteristic length (= DeltaX)
 public:
     PowerLawForce(T k_int_, T DeltaX_, T R_, T k_) : k_int(k_int_), DeltaX(DeltaX_), R(R_), k(k_) {
         DeltaXoverRink = pow((DeltaX*1.0/R),k);

@@ -143,16 +143,14 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
 //                    cout << "cntr = (" << cntr[0] << ", " << cntr[1] << ", " << cntr[2]<< ")" << std::endl;
                     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
                         Array<T,3> vertex = Array<T,3>(iX*1.0, iY*1.0, iZ*1.0) + relativeCoordinate + mesh->getVertex(iVertex);
-                        particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );
+                        particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId + 1000*id) );
                     }
                     cellId+=1;
                 }
             }
         }
     }
-    cout << p << " scale " << scale << " step " << step <<  " NCells " << cellId << " h " << cellId * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << std::endl;
-
-
+//    cout << p << " scale " << scale << " step " << step <<  " NCells " << cellId << " h " << cellId * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << std::endl;
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -262,7 +260,7 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         cellPos = particle->getIBMcoordinates();
         weights = particle->getIBMweights();
         if (cellPos.size() == 0) {
-        	interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
+            interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
         }
         particle->get_v().resetToZero();
         for (pluint iCell=0; iCell < weights.size(); ++iCell) {
@@ -298,6 +296,65 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::getModificationPattern(std::ve
 
 template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT FluidVelocityToImmersedCell3D<T,Descriptor>::appliesTo () const {
+    return BlockDomain::bulk;
+}
+
+
+/* ******** ViscousPositionUpdate3D *********************************** */
+
+template<typename T, template<typename U> class Descriptor>
+ViscousPositionUpdate3D<T,Descriptor>::ViscousPositionUpdate3D (
+        T ratio_) : ratio(ratio_) {};
+
+template<typename T, template<typename U> class Descriptor>
+ViscousPositionUpdate3D<T,Descriptor>::ViscousPositionUpdate3D (
+        ViscousPositionUpdate3D<T,Descriptor> const& rhs) : ratio(rhs.ratio) {};
+
+template<typename T, template<typename U> class Descriptor>
+void ViscousPositionUpdate3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    PLB_PRECONDITION( blocks.size()==2 );
+    ParticleField3D<T,Descriptor>& particleField =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    BlockLattice3D<T,Descriptor>& fluid =
+        *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
+    /* Not used */
+//    Dot3D offset = computeRelativeDisplacement(particleField, fluid);
+    std::vector<Particle3D<T,Descriptor>*> particles;
+    particleField.findParticles(domain, particles);
+
+    for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+        PLB_ASSERT( particle );
+        T dt = 1.0;
+        particle->get_vPrevious() = particle->get_v() = ratio * 0.5 * particle->get_force() * dt * dt;
+    }
+}
+
+template<typename T, template<typename U> class Descriptor>
+ViscousPositionUpdate3D<T,Descriptor>* ViscousPositionUpdate3D<T,Descriptor>::clone() const {
+    return new ViscousPositionUpdate3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void ViscousPositionUpdate3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::dynamicVariables; // Particle field.
+    modified[1] = modif::nothing; // Fluid field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+void ViscousPositionUpdate3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Particle field.
+    isWritten[1] = false;  // Fluid field.
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT ViscousPositionUpdate3D<T,Descriptor>::appliesTo () const {
     return BlockDomain::bulk;
 }
 

@@ -7,6 +7,7 @@
 #include "cellModel3D.h"
 #include "cellReductionTypes.h"
 #include "cellFieldFunctionals3D.h"
+#include "cellCellForces3D.h"
 #include <set>
 
 using namespace std;
@@ -57,7 +58,8 @@ public:
 	virtual void setFluidExternalForce(T forceScalar);
 	virtual void setFluidExternalForce() { return setFluidExternalForce(0.0); }
 
-	virtual void initialize();
+    virtual void initialize();
+    virtual void grow();
 	virtual void advanceParticles();
 	virtual void spreadForceIBM();
 	virtual void interpolateVelocityIBM();
