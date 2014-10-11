@@ -279,7 +279,7 @@ int main(int argc, char* argv[])
 //           immersedParticles.getBoundingBox(), particleArg );
 //    }
 
-    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.2, cellModel);
+    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.1, cellModel);
 	pcout << "initializing"<< std::endl;
     RBCField.grow();
 //    RBCField.applyConstitutiveModel();
