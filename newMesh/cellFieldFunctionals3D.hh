@@ -95,7 +95,7 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
     BlockLattice3D<T,Descriptor>& fluid =
         *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
-
+//    fluid.get(1, 1, 1).getDynamics().isBoundary();
     ElementsOfTriangularSurfaceMesh<T> emptyEoTSM;
     TriangularSurfaceMesh<T> * mesh = copyTriangularSurfaceMesh(elementaryMesh, emptyEoTSM);
 
@@ -116,13 +116,14 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     plint DeltaZ = domain.z1-domain.z0;
 
 
-    T pcOfDomainConsidered = ((DeltaX-1)/step) * ((DeltaY-1)/step) * ((DeltaZ-1)/step) * step*step*step / (DeltaX*DeltaY*DeltaZ * 1.0);
+    T pcOfDomainConsidered = plint((DeltaX-3)/step) * plint((DeltaY-3)/step) * plint((DeltaZ-3)/step) * step*step*step / (DeltaX*DeltaY*DeltaZ * 1.0);
     T rescaledHematocrit = hematocrit  / pcOfDomainConsidered;
     T prob = step * step * step * 1.0 / volume * rescaledHematocrit;
 
     T scale = step*1.0/maxSide;
     if (scale > 0.8) { scale = 0.8; };
     mesh->scale(scale);
+    ratio = scale;
 
     // Access the position of the atomic-block inside the multi-block.
     Dot3D relativePosition = fluid.getLocation();
@@ -133,9 +134,9 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     PLB_PRECONDITION( step <= DeltaX &&  step <= DeltaY && step <= DeltaZ );
     plint cellId = 0;
     // Loop through the domain and place cell depending on the
-    for (plint iX=0; iX<(DeltaX-step-1); iX += step) {
-        for (plint iY=0; iY<(DeltaY-step-1); iY+=step) {
-            for (plint iZ=0; iZ<(DeltaZ-step-1); iZ+=step) {
+    for (plint iX=0; iX<(DeltaX-step-2); iX += step) {
+        for (plint iY=0; iY<(DeltaY-step-2); iY+=step) {
+            for (plint iZ=0; iZ<(DeltaZ-step-2); iZ+=step) {
                 T rn = guessRandomNumber();
                 if (rn <= prob) {
                     meshRandomRotation(mesh);
@@ -150,7 +151,7 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
             }
         }
     }
-//    cout << p << " scale " << scale << " step " << step <<  " NCells " << cellId << " h " << cellId * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << std::endl;
+    cout << p << " scale " << scale << " step " << step <<  " NCells " << cellId << " h " << cellId * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << std::endl;
 }
 
 template<typename T, template<typename U> class Descriptor>

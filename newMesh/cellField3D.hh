@@ -4,9 +4,10 @@
 
 template<typename T, template<typename U> class Descriptor>
 CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, 
-	TriangularSurfaceMesh<T> & elementaryMesh_,  pluint numberOfCells_,
+	TriangularSurfaceMesh<T> & elementaryMesh_, T hematocrit_,
 	ConstitutiveModel<T, Descriptor> * cellModel_) : 
-		lattice(lattice_), elementaryMesh(elementaryMesh_), cellModel(cellModel_)
+		lattice(lattice_), elementaryMesh(elementaryMesh_),
+		hematocrit(hematocrit_), cellModel(cellModel_)
 {
     plint maxEdgeLengthLU = ceil(cellModel->getMaximumEdgeExtensionLengthLU());
     plint maxRadiusLU = ceil(cellModel->getCellRadiusLU());
@@ -86,26 +87,34 @@ void CellField3D<T, Descriptor>::initialize() {
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::grow() {
+    global::timer("Init").start();
+    T ratio;
+    applyProcessingFunctional (
+        new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(elementaryMesh, hematocrit, ratio),
+        lattice.getBoundingBox(), particleLatticeArg );
+    applyProcessingFunctional (
+        new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
+        immersedParticles->getBoundingBox(), particleArg );
+    writeCellField3D_HDF5(*this, 1.0, 1.0, 0, "RBC");
+    synchronizeCellQuantities();
 
     T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
-    T iRatio = 0.5;
-    for (int i = 0; i < 6000; ++i) {
-        T ratio = iRatio + 0.5 * i/5000.0;
-        if (ratio > 1.0) { ratio = 1.0; }
-
-        // #1a# Membrane Model
-        applyProcessingFunctional (
+    plint nIter = (1-ratio)*10000 + 1000;
+    for (plint i = 0; i < nIter; ++i) {
+        T iRatio = ratio + i*1.0 / 10000.0 ;
+        if (iRatio > 1.0) { iRatio = 1.0; }
+        // #1# Calculate forces
+        applyProcessingFunctional ( // #1a# Membrane Model
                         new ComputeCellForce3D<T,Descriptor> (cellModel, cellIdToCell3D),
                         immersedParticles->getBoundingBox(), particleArg );
-        // #1b# Repulsive force
-        applyProcessingFunctional (
+        applyProcessingFunctional (  // #1b# Repulsive force
            new ComputeCellCellForces3D<T,Descriptor> (PLF, R),
            immersedParticles->getBoundingBox(), particleArg );
 
         // #2# Force to velocity
         applyProcessingFunctional ( // copy fluid velocity on particles
-            new ViscousPositionUpdate3D<T,Descriptor>(ratio),
+            new ViscousPositionUpdate3D<T,Descriptor>(iRatio),
             immersedParticles->getBoundingBox(), particleLatticeArg);
         // #3# Update position of particles
         applyProcessingFunctional ( // advance particles in time according to velocity
@@ -114,7 +123,11 @@ void CellField3D<T, Descriptor>::grow() {
         applyProcessingFunctional (
             new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
             immersedParticles->getBoundingBox(), particleArg );
+        synchronizeCellQuantities();
+        writeCellField3D_HDF5(*this, 1.0, 1.0, 0, "RBC");
     }
+
+    global::timer("Init").stop();
 }
 
 

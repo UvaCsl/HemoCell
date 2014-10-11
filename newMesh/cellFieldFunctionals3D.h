@@ -54,8 +54,8 @@ class RandomPositionCellParticlesForGrowth3D : public BoxProcessingFunctional3D
 {
 public:
     RandomPositionCellParticlesForGrowth3D (
-            TriangularSurfaceMesh<T> const& elementaryMesh_, T hematocrit_):
-                elementaryMesh(elementaryMesh_), hematocrit(hematocrit_) { }
+            TriangularSurfaceMesh<T> const& elementaryMesh_, T hematocrit_, T & ratio_):
+                elementaryMesh(elementaryMesh_), hematocrit(hematocrit_), ratio(ratio_) { }
     /// Arguments: [0] Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual RandomPositionCellParticlesForGrowth3D<T,Descriptor>* clone() const;
@@ -65,6 +65,7 @@ public:
 private:
     TriangularSurfaceMesh<T> const& elementaryMesh;
     T hematocrit;
+    T & ratio;
 };
 
 

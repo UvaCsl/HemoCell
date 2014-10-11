@@ -32,7 +32,7 @@ public:
 			pluint numberOfCells_. Global numer of Cells
 	*/
 	CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, TriangularSurfaceMesh<T> & elementaryMesh_,
-			pluint numberOfCells_, ConstitutiveModel<T, Descriptor> * cellModel_);
+			T hematocrit_, ConstitutiveModel<T, Descriptor> * cellModel_);
 	~CellField3D();
 public:
 	/* Set or change parameters */
@@ -89,6 +89,7 @@ public:
     std::vector<MultiBlock3D*> & getParticleReductioParticleArg() { return particleReductioParticleArg; }
     Box3D getBoundingBox() { return immersedParticles->getBoundingBox(); }
 private:
+    T hematocrit;
     std::vector<MultiBlock3D*> reductionParticleArg;
     std::vector<MultiBlock3D*> particleArg;
     std::vector<MultiBlock3D*> particleLatticeArg;

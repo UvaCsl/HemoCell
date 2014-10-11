@@ -55,8 +55,8 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1.0e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <lx> 30.0e-6 </lx> <!--Size of domain in SI. For Lattice Units try: nx, ny, nz -->
-    <ly> 40.0e-6 </ly> <!--ly/ny is used for the Reynolds number calculation -->
+    <lx> 50.0e-6 </lx> <!--Size of domain in SI. For Lattice Units try: nx, ny, nz -->
+    <ly> 50.0e-6 </ly> <!--ly/ny is used for the Reynolds number calculation -->
     <lz> 50.0e-6 </lz>
 </domain>
 

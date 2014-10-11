@@ -279,9 +279,9 @@ int main(int argc, char* argv[])
 //           immersedParticles.getBoundingBox(), particleArg );
 //    }
 
-    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, npar, cellModel);
+    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.2, cellModel);
 	pcout << "initializing"<< std::endl;
-    RBCField.initialize();
+    RBCField.grow();
 //    RBCField.applyConstitutiveModel();
 
     pcout << std::endl << "Starting simulation" << std::endl;
@@ -289,8 +289,9 @@ int main(int argc, char* argv[])
     /*            I/O              */
     global::timer("HDFOutput").restart();
     writeHDF5(lattice, parameters, 0);
-    writeCellField3D_HDF5(RBCField, parameters, 0, "RBC");
+    writeCellField3D_HDF5(RBCField, dx, dt, 0, "RBC");
     global::timer("HDFOutput").stop();
+
     /* --------------------------- */
     for (pluint iter=0; iter<tmax+1; ++iter) {
         // #1# Membrane Model
@@ -312,7 +313,7 @@ int main(int argc, char* argv[])
             RBCField.synchronizeCellQuantities(everyCCR);
             global::timer("HDFOutput").restart();
             writeHDF5(lattice, parameters, iter+1);
-            writeCellField3D_HDF5(RBCField, parameters, iter+1, "RBC");
+            writeCellField3D_HDF5(RBCField, dx, dt, iter+1, "RBC");
             global::timer("HDFOutput").stop();
         } else {
             RBCField.synchronizeCellQuantities();

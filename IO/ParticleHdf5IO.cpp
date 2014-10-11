@@ -47,15 +47,15 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      for (itrtr  = cellIdToCell3D.begin(); itrtr != cellIdToCell3D.end(); ++itrtr) {
          Cell3D<T,Descriptor> * cell3d = (itrtr->second);
 
-         std::cout << MPI::COMM_WORLD.Get_rank() << " Cell Volume " << cell3d->getVolume()
-                         << " surface " << cell3d->getSurface()
-                         << " CCR_ANGLE_MEAN " << cell3d->getMeanAngle()
-                         << " getMeanEdgeLength " << cell3d->getMeanEdgeLength()
-                         << " getEnergy " << cell3d->getEnergy()
-                         << " CCR_FORCE (" << cell3d->getForce()[0]
-                         << ", " << cell3d->getForce()[1]
-                         << ", " << cell3d->getForce()[2] << ") "
-                 << std::endl;
+//         std::cout << MPI::COMM_WORLD.Get_rank() << " Cell Volume " << cell3d->getVolume()
+//                         << " surface " << cell3d->getSurface()
+//                         << " CCR_ANGLE_MEAN " << cell3d->getMeanAngle()
+//                         << " getMeanEdgeLength " << cell3d->getMeanEdgeLength()
+//                         << " getEnergy " << cell3d->getEnergy()
+//                         << " CCR_FORCE (" << cell3d->getForce()[0]
+//                         << ", " << cell3d->getForce()[1]
+//                         << ", " << cell3d->getForce()[2] << ") "
+//                 << std::endl;
 
 
          std::vector<plint> const& cellVertices = cell3d->getVertices();
@@ -70,16 +70,16 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
              plint v0 = cell3d->getVertexId(iTriangle, 0);
              plint v1 = cell3d->getVertexId(iTriangle, 1);
              plint v2 = cell3d->getVertexId(iTriangle, 2);
-//             if (castParticleToICP3D(cell3d->getParticle3D(v0))->get_processor() == id &&
-//                     castParticleToICP3D(cell3d->getParticle3D(v1))->get_processor() == id &&
-//                     castParticleToICP3D(cell3d->getParticle3D(v2))->get_processor() == id) {
+             if (castParticleToICP3D(cell3d->getParticle3D(v0))->get_processor() == id &&
+                     castParticleToICP3D(cell3d->getParticle3D(v1))->get_processor() == id &&
+                     castParticleToICP3D(cell3d->getParticle3D(v2))->get_processor() == id) {
                  plint t0 = iv[v0]+sumLocalVertices;
                  plint t1 = iv[v1]+sumLocalVertices;
                  plint t2 = iv[v2]+sumLocalVertices;
                  triangles.push_back(t0);
                  triangles.push_back(t1);
                  triangles.push_back(t2);
-//             }
+             }
          }
          sumLocalVertices += cellVertices.size();
      }
@@ -167,12 +167,8 @@ BlockDomain::DomainT WriteCellField3DInMultipleHDF5Files<T,Descriptor>::appliesT
 
 
 template<typename T, template<typename U> class Descriptor>
-void writeCellField3D_HDF5(CellField3D<T, Descriptor>& cellField3D,
-              IncomprFlowParam<T> const& parameters, plint iter, std::string identifier)
+void writeCellField3D_HDF5(CellField3D<T, Descriptor>& cellField3D, T dx, T dt, plint iter, std::string identifier)
 {
-    T dx = parameters.getDeltaX();
-    T dt = parameters.getDeltaT();
-
     applyProcessingFunctional ( // compute force applied on the fluid by the particles
             new WriteCellField3DInMultipleHDF5Files<T,Descriptor> (cellField3D, iter, identifier, dx, dt),
             cellField3D.getBoundingBox(), cellField3D.getParticleArg() );
