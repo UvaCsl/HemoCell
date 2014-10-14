@@ -79,6 +79,7 @@ void ComputeCellCellForces3D<T,Descriptor>::processGenericBlocks (
 
                 Box3D neighboringBoxes(x0, x1, y0, y1, z0, z1);
                 particleField.findParticles(currentBox, currentParticles);
+                if (currentParticles.size() == 0) { break; }
                 particleField.findParticles(neighboringBoxes, neighboringParticles);
 
                 for (pluint cP=0; cP<currentParticles.size(); ++cP) {
@@ -187,7 +188,9 @@ void ComputeDifferentCellForces3D<T,Descriptor>::processGenericBlocks (
                 Box3D currentBox(iX,iX,iY,iY,iZ,iZ);
                 Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
                 particleField1.findParticles(currentBox, currentParticles);
+                if (currentParticles.size() == 0) { break; }
                 particleField2.findParticles(neighboringBoxes, neighboringParticles);
+                if (neighboringParticles.size() == 0) { break; }
 
                 for (pluint cP=0; cP<currentParticles.size(); ++cP) {
                     for (pluint nP=0; nP<neighboringParticles.size(); ++nP) {
