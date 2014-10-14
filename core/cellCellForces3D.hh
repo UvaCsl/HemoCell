@@ -43,11 +43,13 @@ void ComputeCellCellForces3D<T,Descriptor>::applyForce (
         Array<T,3> force = calcForce(r, eij);
         cParticle->get_force() += force;
         nParticle->get_force() -= force;
+#ifdef PLB_DEBUG // Less Calculations
         cParticle->get_f_repulsive() += force;
         nParticle->get_f_repulsive() -= force;
         T potential = calcForce.calculatePotential(r,eij);
         nParticle->get_E_repulsive() += potential;
         nParticle->get_E_repulsive() += potential;
+#endif
 }
 
 
@@ -152,11 +154,13 @@ void ComputeDifferentCellForces3D<T,Descriptor>::applyForce (
         Array<T,3> force = calcForce(r, eij);
         cParticle->get_force() -= force;
         nParticle->get_force() += force;
+#ifdef PLB_DEBUG // Less Calculations
         cParticle->get_f_repulsive() -= force;
         nParticle->get_f_repulsive() += force;
         T potential = calcForce.calculatePotential(r,eij);
         cParticle->get_E_repulsive() -= potential;
         nParticle->get_E_repulsive() -= potential;
+#endif
 }
 
 

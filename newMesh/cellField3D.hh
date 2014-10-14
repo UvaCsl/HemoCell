@@ -124,7 +124,10 @@ void CellField3D<T, Descriptor>::grow() {
             new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
             immersedParticles->getBoundingBox(), particleArg );
         synchronizeCellQuantities();
-        writeCellField3D_HDF5(*this, 1.0, 1.0, 0, "RBC");
+        if (i%100 == 0) {
+            pcout << "growth iter:" << i<<std::endl;
+            writeCellField3D_HDF5(*this, 1.0, 1.0, i, "RBC");
+        }
     }
 
     global::timer("Init").stop();

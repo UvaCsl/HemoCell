@@ -115,6 +115,10 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     plint DeltaY = domain.y1-domain.y0;
     plint DeltaZ = domain.z1-domain.z0;
 
+    T Delta = 7;
+    DeltaX -= Delta*2;
+    DeltaY -= Delta*2;
+    DeltaZ -= Delta*2;
 
     T pcOfDomainConsidered = plint((DeltaX-3)/step) * plint((DeltaY-3)/step) * plint((DeltaZ-3)/step) * step*step*step / (DeltaX*DeltaY*DeltaZ * 1.0);
     T rescaledHematocrit = hematocrit  / pcOfDomainConsidered;
@@ -128,15 +132,15 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     // Access the position of the atomic-block inside the multi-block.
     Dot3D relativePosition = fluid.getLocation();
     Array<T,3> relativeCoordinate(relativePosition.x, relativePosition.y, relativePosition.z);
-    relativeCoordinate += mvp * (0.5/ scale) + 2.0;
+    relativeCoordinate += mvp * (0.5/ scale) + 2.0 + Delta;
 
     plint nVertices = mesh->getNumVertices();
     PLB_PRECONDITION( step <= DeltaX &&  step <= DeltaY && step <= DeltaZ );
     plint cellId = 0;
     // Loop through the domain and place cell depending on the
-    for (plint iX=0; iX<(DeltaX-step-2); iX += step) {
-        for (plint iY=0; iY<(DeltaY-step-2); iY+=step) {
-            for (plint iZ=0; iZ<(DeltaZ-step-2); iZ+=step) {
+    for (plint iX=0; iX<(DeltaX-step-2 - Delta); iX += step) {
+        for (plint iY=0; iY<(DeltaY-step-2- Delta); iY+=step) {
+            for (plint iZ=0; iZ<(DeltaZ-step-2 - Delta); iZ+=step) {
                 T rn = guessRandomNumber();
                 if (rn <= prob) {
                     meshRandomRotation(mesh);
