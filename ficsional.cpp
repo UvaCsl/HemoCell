@@ -279,6 +279,10 @@ int main(int argc, char* argv[])
 //           immersedParticles.getBoundingBox(), particleArg );
 //    }
 
+
+    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
+    													createBoundaryParticleField3D(lattice);
+
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.4, cellModel);
 	pcout << "initializing"<< std::endl;
     RBCField.grow();

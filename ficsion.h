@@ -23,6 +23,8 @@ using namespace std;
 #include "cellField3D.h"
 #include "reductionParticle3D.h"
 #include "immersedCellParticle3D.h"
+#include "helperFunctionals.h"
+
 
 #include "cellCellForces3D.h"
 #include "cellForceChecking3D.h"
