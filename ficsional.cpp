@@ -304,16 +304,20 @@ int main(int argc, char* argv[])
     }
 
 
-    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
-                                                        createBoundaryParticleField3D(lattice);
-
-
     pcout << "Hematocrit [x100%]: " << hct*100 << std::endl;
     pcout << "mu_0 = " << cellModel->getMembraneShearModulus()*dNewton/dx << std::endl;
     pcout << "K = " << cellModel->getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
     pcout << "YoungsModulus = " << cellModel->getYoungsModulus()*dNewton/dx << std::endl;
     pcout << "Poisson ratio = " << cellModel->getPoissonRatio() << std::endl;
     pcout << std::endl << "Starting simulation i=" << initIter << std::endl;
+    pcout << "Poisson ratio = " << cellModel->getPoissonRatio() << std::endl;
+    cout << "nCells (global) = " << RBCField.getNumberOfCells_Global() << ", pid: " << global::mpi().getRank() << std::endl;
+
+    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
+                                                        createBoundaryParticleField3D(lattice);
+
+
+
     /*            I/O              */
     global::timer("HDFOutput").restart();
     writeHDF5(lattice, parameters, 0);

@@ -72,7 +72,12 @@ public:
 	virtual void synchronizeCellQuantities_Local(SyncRequirements ccrRequirements_=SyncRequirements());
 	virtual void synchronizeCellQuantities_Global(SyncRequirements ccrRequirements_=SyncRequirements()) {} ;
 	virtual void synchronizeCellQuantities(SyncRequirements ccrRequirements_=SyncRequirements()) { return synchronizeCellQuantities_Local(ccrRequirements_); } ;
-	pluint getNumberOfCells_Global() {return 0;};
+	pluint getNumberOfCells_Global() {
+	    CountGlobalNumberOfCells<T,Descriptor> nfunctional( getNumberOfCells_Local() );
+	    applyProcessingFunctional(nfunctional, immersedParticles->getBoundingBox(), particleArg);
+	    pluint gnoc =  nfunctional.getValue();
+	    return gnoc;
+	};
 	pluint getNumberOfCells_Local() { return cellIdToCell3D.size(); } ;
 	pluint getNumberOfCells() { return getNumberOfCells_Local(); } ;
 	bool has_cellId(plint cellId) { return cellIdToCell3D.count(cellId) > 0; }

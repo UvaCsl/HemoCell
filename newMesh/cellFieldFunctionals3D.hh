@@ -507,10 +507,33 @@ void FillCellMap<T,Descriptor>::getModificationPattern(std::vector<bool>& isWrit
 }
 
 
+
+
+/* ******** CountGlobalNumberOfCells *********************************** */
+template<typename T, template<typename U> class Descriptor>
+CountGlobalNumberOfCells<T,Descriptor>::CountGlobalNumberOfCells(pluint numberOfCells_)
+    : numberOfCells(numberOfCells_)
+{
+    qId  = this->getStatistics().subscribeIntSum();
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+void CountGlobalNumberOfCells<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    this->getStatistics().gatherIntSum(qId, numberOfCells);
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+pluint CountGlobalNumberOfCells<T,Descriptor>::getValue() {
+    return pluint(this->getStatistics().getIntSum(qId));
+}
+
+
+
 /* ******** ComputeRequiredQuantities *********************************** */
-
-
-
 
 template<typename T, template<typename U> class Descriptor>
 void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
