@@ -26,7 +26,6 @@ void FcnCheckpoint<T, Descriptor>::load(std::string paramXmlFileName, MultiBlock
 template<typename T, template<typename U> class Descriptor>
 void FcnCheckpoint<T, Descriptor>::load(XMLreader & documentXML, MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<CellField3D<T, Descriptor>* > & cellFields, plint & iter) {
     std::string outDir = global::directories().getOutputDir();
-
     std::string firstField = (*(documentXML.getChildren( documentXML.getFirstId() )[0])).getName(); // VERY COMPLICATED! Hope I could find sth easier!
     isCheckpointed = (firstField=="Checkpoint");
     if (isCheckpointed) {
@@ -45,21 +44,24 @@ template<typename T, template<typename U> class Descriptor>
 void FcnCheckpoint<T, Descriptor>::save(MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<CellField3D<T, Descriptor>* > & cellFields, plint iter) {
     std::string outDir = global::directories().getOutputDir();
     /* Rename files, for safety reasons */
-    renameFileToDotOld(outDir + "lattice.dat");
-    renameFileToDotOld(outDir + "lattice.plb");
-    renameFileToDotOld(outDir + "checkpoint.xml");
-    for (int icf= 0; icf < cellFields.size(); ++icf) {
-        renameFileToDotOld(outDir + cellFields[icf]->getIdentifier() + ".dat");
-        renameFileToDotOld(outDir + cellFields[icf]->getIdentifier() + ".plb");
+    if (global::mpi().isMainProcessor()) {
+        renameFileToDotOld(outDir + "lattice.dat");
+        renameFileToDotOld(outDir + "lattice.plb");
+        renameFileToDotOld(outDir + "checkpoint.xml");
+        for (int icf= 0; icf < cellFields.size(); ++icf) {
+            renameFileToDotOld(outDir + cellFields[icf]->getIdentifier() + ".dat");
+            renameFileToDotOld(outDir + cellFields[icf]->getIdentifier() + ".plb");
+        }
+        /* Save XML */
+        xmlw["Checkpoint"]["General"]["Iteration"].set(iter);
+        xmlw.print(outDir + "checkpoint.xml");
     }
-    /* Save */
+    /* Save Data */
     parallelIO::save(lattice, "lattice", true);
     for (int icf= 0; icf < cellFields.size(); ++icf) {
         parallelIO::save(cellFields[icf]->getParticleField3D(), cellFields[icf]->getIdentifier(), true);
     }
     // Upon success, save xml and rename files!
-    xmlw["Checkpoint"]["General"]["Iteration"].set(iter);
-    xmlw.print(outDir + "checkpoint.xml");
 }
 
 
