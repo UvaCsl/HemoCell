@@ -7,6 +7,7 @@
 #include "reductionParticle3D.h"
 #include "cell3D.h"
 #include "meshMetrics.h"
+#include "diagonalize.hpp"
 #include <stdlib.h>     /* srand, rand */
 
 
@@ -209,6 +210,16 @@ public:
 private:
     std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
 };
+
+/* ================================================================================ */
+/* ******** computeEllipsoidFit *********************************** */
+/* ================================================================================ */
+template<typename T>
+void computeEllipsoidFit (std::vector<T> & cellInertia,
+                          std::vector<T> & cellsEllipsoidFitAngles,
+                          std::vector<T> & cellsEllipsoidFitSemiAxes,
+                          T & difference,
+                          T cellVolume);
 
 
 #include "cellFieldFunctionals3D.hh"

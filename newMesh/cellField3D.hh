@@ -144,11 +144,11 @@ void CellField3D<T, Descriptor>::createCellMap() {
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::advanceParticles() {
-    global::timer("Quantities").start();
+    global::timer("IBM").start();
     applyProcessingFunctional ( // advance particles in time according to velocity
         new AdvanceParticlesEveryWhereFunctional3D<T,Descriptor>,
         immersedParticles->getBoundingBox(), particleArg );
-    global::timer("Quantities").stop();
+    global::timer("IBM").stop();
     createCellMap();
 
 }

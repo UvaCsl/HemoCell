@@ -692,6 +692,26 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
             }
         }
         reductionParticleField.removeParticles(reductionParticleField.getBoundingBox(), -1);
+
+        typename std::map<plint, Cell3D<T,Descriptor>*  >::iterator iter;
+        for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
+            Cell3D<T,Descriptor> & cell = *(iter->second);
+            if ( cell.count(CCR_INERTIA) ) {
+                std::vector<T> & cellInertia = cell.getInertia();
+                std::vector<T> ellipsoidAngles;
+                std::vector<T> ellipsoidSemiAxes;
+                T difference, cellVolume = cell.getVolume();
+                computeEllipsoidFit (cellInertia, ellipsoidAngles, ellipsoidSemiAxes, difference, cellVolume);
+
+                T currMaxDiameter =  max(max(ellipsoidSemiAxes[0], ellipsoidSemiAxes[1]),  ellipsoidSemiAxes[2]) * 2.0;
+                T currMinDiameter =  min(min(ellipsoidSemiAxes[0], ellipsoidSemiAxes[1]),  ellipsoidSemiAxes[2]) * 2.0;
+
+                cell.getTumblingAngles() = Array<T,3>(ellipsoidAngles[0], ellipsoidAngles[1], ellipsoidAngles[2]);
+                cell.getDiameters() = Array<T,3>(ellipsoidSemiAxes[0], ellipsoidSemiAxes[1], ellipsoidSemiAxes[2]) * 2.0;
+                cell.getSymmetryDeviation() = difference;
+                cell.getTaylorDeformationIndex() = (currMaxDiameter - currMinDiameter)*1.0/(currMaxDiameter + currMinDiameter);
+            }
+        }
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -718,6 +738,34 @@ void SyncCellQuantities<T,Descriptor>::getTypeOfModification (
 template<typename T, template<typename U> class Descriptor>
 void SyncCellQuantities<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
     isWritten[0] = true;  // Reduction Particle field.
+}
+
+
+/* ================================================================================ */
+/* ******** computeEllipsoidFit *********************************** */
+/* ================================================================================ */
+template<typename T>
+void computeEllipsoidFit (std::vector<T> & cellInertia,
+                          std::vector<T> & cellsEllipsoidFitAngles,
+                          std::vector<T> & cellsEllipsoidFitSemiAxes,
+                          T & difference,
+                          T cellVolume)
+{
+    vector<T> semiAxes, ellipsoidAngles;
+    T dif;
+    getLambdasAndAngles(cellInertia, semiAxes, ellipsoidAngles, dif);
+
+    T f1 = semiAxes[0] * 5 / cellVolume;
+    T f2 = semiAxes[1] * 5 / cellVolume;
+    T f3 = semiAxes[2] * 5 / cellVolume;
+    semiAxes[0] = (sqrt( (f1 + f2 - f3)/2 ));
+    semiAxes[1] = (sqrt( (f2 + f3 - f1)/2 ));
+    semiAxes[2] = (sqrt( (f3 + f1 - f2)/2 ));
+    std::sort(semiAxes.begin(), semiAxes.end());
+
+    cellsEllipsoidFitSemiAxes = semiAxes;
+    cellsEllipsoidFitAngles = ellipsoidAngles;
+    difference = dif;
 }
 
 
