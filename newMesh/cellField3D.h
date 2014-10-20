@@ -9,6 +9,7 @@
 #include "cellFieldFunctionals3D.h"
 #include "cellCellForces3D.h"
 #include <set>
+#include <string>
 
 using namespace std;
 using namespace plb;
@@ -32,7 +33,7 @@ public:
 			pluint numberOfCells_. Global numer of Cells
 	*/
 	CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, TriangularSurfaceMesh<T> & elementaryMesh_,
-			T hematocrit_, ConstitutiveModel<T, Descriptor> * cellModel_);
+			T hematocrit_, ConstitutiveModel<T, Descriptor> * cellModel_, std::string identifier_);
 	~CellField3D();
 public:
 	/* Set or change parameters */
@@ -43,6 +44,8 @@ public:
 public:
 	std::map<plint, Cell3D<T,Descriptor>* > & getCellIdToCell3D() { return cellIdToCell3D; };
     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & getParticleField3D() { return *immersedParticles; };
+    std::string getIdentifier() { return identifier; };
+
     void setParticleField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles_) {
         delete immersedParticles;
         immersedParticles=immersedParticles_;
@@ -81,6 +84,7 @@ private:
 	plint ibmKernel;
 	bool coupleWithIBM;
     SyncRequirements ccrRequirements;
+    std::string identifier;
 
 public:
     std::vector<MultiBlock3D*> & getReductionParticleArg()                 { return reductionParticleArg; }

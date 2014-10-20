@@ -5,9 +5,9 @@
 template<typename T, template<typename U> class Descriptor>
 CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, 
 	TriangularSurfaceMesh<T> & elementaryMesh_, T hematocrit_,
-	ConstitutiveModel<T, Descriptor> * cellModel_) : 
+	ConstitutiveModel<T, Descriptor> * cellModel_, std::string identifier_) :
 		lattice(lattice_), elementaryMesh(elementaryMesh_),
-		hematocrit(hematocrit_), cellModel(cellModel_)
+		hematocrit(hematocrit_), cellModel(cellModel_), identifier(identifier_)
 {
     plint maxEdgeLengthLU = ceil(cellModel->getMaximumEdgeExtensionLengthLU());
     plint maxRadiusLU = ceil(cellModel->getCellRadiusLU());
@@ -95,7 +95,7 @@ void CellField3D<T, Descriptor>::grow() {
     applyProcessingFunctional (
         new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
         immersedParticles->getBoundingBox(), particleArg );
-    writeCellField3D_HDF5(*this, 1.0, 1.0, 0, "RBC");
+    writeCellField3D_HDF5(*this, 1.0, 1.0, 0);
     synchronizeCellQuantities();
 
     T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
@@ -126,7 +126,7 @@ void CellField3D<T, Descriptor>::grow() {
         synchronizeCellQuantities();
         if (i%100 == 0) {
             pcout << "growth iter:" << i<<std::endl;
-            writeCellField3D_HDF5(*this, 1.0, 1.0, i, "RBC");
+            writeCellField3D_HDF5(*this, 1.0, 1.0, i);
         }
     }
 

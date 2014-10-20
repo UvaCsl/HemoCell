@@ -17,7 +17,7 @@ using namespace std;
 
 template<typename T, template<typename U> class Descriptor>
 void writeCellField3D_HDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
-              IncomprFlowParam<T> const& parameters, plint iter, std::string identifier="RBC");
+              IncomprFlowParam<T> const& parameters, plint iter);
 
 
 template<typename T, template<typename U> class Descriptor>

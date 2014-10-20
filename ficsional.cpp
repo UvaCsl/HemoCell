@@ -283,7 +283,7 @@ int main(int argc, char* argv[])
     MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
     													createBoundaryParticleField3D(lattice);
 
-    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.4, cellModel);
+    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.4, cellModel, "RBC");
 	pcout << "initializing"<< std::endl;
     RBCField.grow();
 //    RBCField.applyConstitutiveModel();
@@ -293,7 +293,7 @@ int main(int argc, char* argv[])
     /*            I/O              */
     global::timer("HDFOutput").restart();
     writeHDF5(lattice, parameters, 0);
-    writeCellField3D_HDF5(RBCField, dx, dt, 0, "RBC");
+    writeCellField3D_HDF5(RBCField, dx, dt, 0);
     global::timer("HDFOutput").stop();
 
     /* --------------------------- */
@@ -317,7 +317,7 @@ int main(int argc, char* argv[])
             RBCField.synchronizeCellQuantities(everyCCR);
             global::timer("HDFOutput").restart();
             writeHDF5(lattice, parameters, iter+1);
-            writeCellField3D_HDF5(RBCField, dx, dt, iter+1, "RBC");
+            writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
             global::timer("HDFOutput").stop();
         } else {
             RBCField.synchronizeCellQuantities();
