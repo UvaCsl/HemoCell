@@ -126,6 +126,7 @@ int main(int argc, char* argv[])
     global::directories().setOutputDir("./tmp/");
     global::directories().setLogOutDir("./log/");
     global::directories().setInputDir("./");
+
     global::IOpolicy().activateParallelIO(true);
     global::IOpolicy().setStlFilesHaveLowerBound(false);
 //    global::IOpolicy().setLowerBoundForStlFiles(-1.);
@@ -133,6 +134,8 @@ int main(int argc, char* argv[])
     std::string outputDir = global::directories().getOutputDir();
     std::string inputDir = global::directories().getInputDir();
     std::string logOutDir = global::directories().getLogOutDir();
+    mkpath((outputDir + "/hdf5/").c_str(), 0777);
+    mkpath(logOutDir.c_str(), 0777);
 
     global::timer("simulation").start();
     std::string performanceLogFileName = logOutDir + "plbPerformance.log";

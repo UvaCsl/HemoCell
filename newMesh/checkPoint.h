@@ -3,6 +3,7 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "cellField3D.h"
+#include "fcnGenericFunctions.h"
 #include <sys/stat.h>
 #include <vector>
 #include <string>
@@ -14,9 +15,6 @@ using namespace plb;
 void copyXMLreader2XMLwriter(XMLreader const& reader, XMLwriter & writer);
 void copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwriter & writer);
 
-/* Checks if a file exists */
-inline bool file_exists (const std::string& name);
-int renameFileToDotOld(std::string fName);
 
 
 template<typename T, template<typename U> class Descriptor>

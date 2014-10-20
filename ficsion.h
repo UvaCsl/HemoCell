@@ -16,6 +16,7 @@ using namespace std;
 #include <vector>
 #include <limits>
 #include <map>
+#include "fcnGenericFunctions.h"
 
 #include "ficsionInit.h"
 #include "ficsionInit.hh"

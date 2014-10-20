@@ -270,6 +270,7 @@ def createXDMF(fnameString, processorStrings):
 		Important: reads as many files as number of processors in the first file
 	"""
 	fnameToSave =  ( (fnameString%(""))[:-6] + '.xmf' )
+	fnameToSave = fnameToSave.replace('/hdf5/','/')
 	xdmfFile = HDF5toXDMF_Cell(fnameToSave)
 	xdmfFile.openCollection("Domain")
 	processorStrings = sorted(processorStrings)
@@ -288,11 +289,11 @@ def createXDMF(fnameString, processorStrings):
 
 
 if __name__ == '__main__':
-	dirname = './'
+	dirname = './hdf5/'
 	identifier = 'RBC'
 	fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
 	if len(fluidH5files) == 0:
-		dirname = './tmp/'
+		dirname = './tmp/hdf5/'
 		fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
 	fluidIDs = map(lambda x: x[:-3], fluidH5files)
 	iterationStrings, processorStrings  = zip(*map(lambda f: [f.split('.')[-3], f.split('.')[-1]], fluidIDs))
