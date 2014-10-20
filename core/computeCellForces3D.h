@@ -25,7 +25,6 @@
 #include "palabos3D.hh"
 #include <cmath>
 #include <map>
-#include "cellModel3D.h"
 
 
 #ifndef KBT__

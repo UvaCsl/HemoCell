@@ -11,6 +11,9 @@
 #include "cellReductionTypes.h"
 #include <vector>
 #include <map>
+#include <string>
+#include "meshMetrics.h"
+
 
 using namespace std;
 using namespace plb;
@@ -129,6 +132,8 @@ public:
     void close();
 
     void setMesh() ;
+    // Saves the mesh structure as long as all the vertices belong to the same processor
+    void saveMesh(std::string fileName) ;
     void set_cellId(plint cellId_) { cellId = cellId_; }
 
     TriangularSurfaceMesh<T> const& getMesh() { return mesh; }

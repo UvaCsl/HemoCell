@@ -185,6 +185,18 @@ void Cell3D<T, Descriptor>::setMesh() {
 	cellNumTriangles = mesh.getNumTriangles();
 };
 
+template<typename T, template<typename U> class Descriptor>
+void Cell3D<T, Descriptor>::saveMesh(std::string fileName) {
+	if ( vertices.size() == mesh->getNumVertices() ) {
+		ElementsOfTriangularSurfaceMesh<T> emptyEoTSM;
+		TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(mesh, emptyEoTSM);
+	    for (int iV = 0; iV< mesh->getNumVertices(); ++iV) {
+	    	meshCopy->replaceVertex(iV,  getVertex(iV));
+	    }
+		writeSurfaceMeshAsciiSTL(*meshCopy, fileName);
+	}
+};
+
 
 template<typename T, template<typename U> class Descriptor>
 plint Cell3D<T, Descriptor>::getMpiProcessor() {

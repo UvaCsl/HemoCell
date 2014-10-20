@@ -76,6 +76,9 @@ private:
 
 
 
+template<typename T>
+void writeSurfaceMeshAsciiSTL(TriangularSurfaceMesh<T> const& mesh, std::string fname);
+
 
 
 #include "meshMetrics.hh"

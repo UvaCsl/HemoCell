@@ -149,4 +149,50 @@ void MeshMetrics<T>::write(plb_ofstream & meshFile) {
 };
 
 
+
+template<typename T>
+void writeSurfaceMeshAsciiSTL(TriangularSurfaceMesh<T> const& mesh, std::string fname)
+{
+	T dx = 1;
+    // Output only from one MPI process.
+
+    FILE *fp = fopen(fname.c_str(), "w");
+    PLB_ASSERT(fp != NULL);
+
+    char fmt1[64] = "  facet normal ";
+    char fmt2[64] = "      vertex ";
+    if (sizeof(T) == sizeof(long double)) {
+        strcat(fmt1, "% Le % Le % Le\n");
+        strcat(fmt2, "% Le % Le % Le\n");
+    }
+    else if (sizeof(T) == sizeof(float) ||
+             sizeof(T) == sizeof(double)) {
+        strcat(fmt1, "% e % e % e\n");
+        strcat(fmt2, "% e % e % e\n");
+    }
+    else {
+        PLB_ASSERT(false);
+    }
+
+    fprintf(fp, "solid surface\n");
+    for (plint i = 0; i < mesh.getNumTriangles(); i++) {
+        Array<T,3> n = mesh.computeTriangleNormal(i);
+        Array<T,3> v;
+        fprintf(fp, fmt1, n[0], n[1], n[2]);
+        fprintf(fp, "    outer loop\n");
+        v = dx * mesh.getVertex(i, 0);
+        fprintf(fp, fmt2, v[0], v[1], v[2]);
+        v = dx * mesh.getVertex(i, 1);
+        fprintf(fp, fmt2, v[0], v[1], v[2]);
+        v = dx * mesh.getVertex(i, 2);
+        fprintf(fp, fmt2, v[0], v[1], v[2]);
+        fprintf(fp, "    endloop\n");
+        fprintf(fp, "  endfacet\n");
+    }
+    fprintf(fp, "endsolid surface\n");
+
+    fclose(fp);
+}
+
+
 #endif  // MESH_METRICS_HH
