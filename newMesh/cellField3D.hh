@@ -70,7 +70,7 @@ CellField3D<T, Descriptor>::~CellField3D() {
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::initialize() {
-    global::timer("Init").start();
+    global::timer("CellInit").start();
     std::vector<Array<T,3> > cellOrigins;
     applyProcessingFunctional (
 //        new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(elementaryMesh, .4),
@@ -81,13 +81,13 @@ void CellField3D<T, Descriptor>::initialize() {
         immersedParticles->getBoundingBox(), particleArg );
     advanceParticles();
     synchronizeCellQuantities();
-    global::timer("Init").stop();
+    global::timer("CellInit").stop();
 }
 
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::grow() {
-    global::timer("Init").start();
+    global::timer("CellInit").start();
     T ratio;
     applyProcessingFunctional (
         new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(elementaryMesh, hematocrit, ratio),
@@ -130,7 +130,7 @@ void CellField3D<T, Descriptor>::grow() {
         }
     }
 
-    global::timer("Init").stop();
+    global::timer("CellInit").stop();
 }
 
 template<typename T, template<typename U> class Descriptor>

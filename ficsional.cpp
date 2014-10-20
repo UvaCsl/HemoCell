@@ -130,6 +130,8 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
 int main(int argc, char* argv[])
 {
     plbInit(&argc, &argv);
+    global::timer("ficsion_init").start();
+
     global::directories().setOutputDir("./tmp/");
     global::directories().setLogOutDir("./log/");
     global::directories().setInputDir("./");
@@ -143,10 +145,6 @@ int main(int argc, char* argv[])
     std::string logOutDir = global::directories().getLogOutDir();
     mkpath((outputDir + "/hdf5/").c_str(), 0777);
     mkpath(logOutDir.c_str(), 0777);
-
-    global::timer("simulation").start();
-    std::string performanceLogFileName = logOutDir + "plbPerformance.log";
-    plb_ofstream performanceLogFile(performanceLogFileName.c_str());
 
     plint forceToFluid, shape, cellNumTriangles, ibmKernel;
     plint rbcModel;
@@ -247,16 +245,6 @@ int main(int argc, char* argv[])
     MeshMetrics<T> meshmetric(meshElement);    meshmetric.write();
     T eqVolume = meshmetric.getVolume();
     plint numVerticesPerCell = meshElement.getNumVertices();
-    performanceLogFile << "# Nx*Ny*Nz; " << nx * ny * nz << std::endl;
-    performanceLogFile << "# Nparticles; " << meshElement.getNumVertices() << std::endl;
-    performanceLogFile << "# Nx; Ny; Nz; " << nx << "; " << ny << "; "<< nz << std::endl;
-//    performanceLogFile << "# Ncells; " << npar << std::endl;
-//    performanceLogFile << "# particleEnvelopeWidth; " << particleEnvelopeWidth << std::endl;
-#ifdef PLB_MPI_PARALLEL
-    int ntasks;
-    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-    performanceLogFile << "# Nprocs; " << ntasks << std::endl;
-#endif
 
 
 
@@ -289,7 +277,7 @@ int main(int argc, char* argv[])
 
 
     FcnCheckpoint<T, DESCRIPTOR> checkpointer(document);
-    global::timer("Checkpoint").restart();
+    global::timer("Checkpoint").start();
     plint initIter=0;
     checkpointer.load(document, lattice, cellFields, initIter);
     if (not checkpointer.wasCheckpointed()) {
@@ -302,7 +290,7 @@ int main(int argc, char* argv[])
         RBCField.initialize();
 //        RBCField.grow();
     }
-
+    plint nCells = RBCField.getNumberOfCells_Global();
 
     pcout << "Hematocrit [x100%]: " << hct*100 << std::endl;
     pcout << "mu_0 = " << cellModel->getMembraneShearModulus()*dNewton/dx << std::endl;
@@ -311,7 +299,7 @@ int main(int argc, char* argv[])
     pcout << "Poisson ratio = " << cellModel->getPoissonRatio() << std::endl;
     pcout << std::endl << "Starting simulation i=" << initIter << std::endl;
     pcout << "Poisson ratio = " << cellModel->getPoissonRatio() << std::endl;
-    cout << "nCells (global) = " << RBCField.getNumberOfCells_Global() << ", pid: " << global::mpi().getRank() << std::endl;
+    cout << "nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() << std::endl;
 
     MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
                                                         createBoundaryParticleField3D(lattice);
@@ -319,13 +307,15 @@ int main(int argc, char* argv[])
 
 
     /*            I/O              */
-    global::timer("HDFOutput").restart();
+    global::timer("HDFOutput").start();
     writeHDF5(lattice, parameters, 0);
     writeCellField3D_HDF5(RBCField, dx, dt, 0);
     global::timer("HDFOutput").stop();
 
-
+    SimpleFicsionProfiler simpleProfiler(tmeas);
+    simpleProfiler.writeInitial(nx, ny, nz, nCells, numVerticesPerCell);
     /* --------------------------- */
+    global::timer("mainLoop").start();
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
@@ -341,17 +331,20 @@ int main(int argc, char* argv[])
         // #5# Position Update
         RBCField.advanceParticles();
         if ((iter+1)%tmeas==0) {
-            pcout << "Iteration:" << iter + 1<< std::endl;
             SyncRequirements everyCCR(allReductions);
             RBCField.synchronizeCellQuantities(everyCCR);
-            global::timer("HDFOutput").restart();
+            global::timer("HDFOutput").start();
             writeHDF5(lattice, parameters, iter+1);
             writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
             global::timer("HDFOutput").stop();
 
-            global::timer("Checkpoint").restart();
+            global::timer("Checkpoint").start();
             checkpointer.save(lattice, cellFields, iter+1);
             global::timer("Checkpoint").stop();
+
+            T dtIteration = global::timer("mainLoop").stop();
+            pcout << "Iteration:" << iter + 1 << ", time "<< dtIteration*1.0/tmeas << std::endl;
+            simpleProfiler.writeIteration(iter+1);
         } else {
             RBCField.synchronizeCellQuantities();
         }

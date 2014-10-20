@@ -17,6 +17,7 @@ using namespace std;
 #include <limits>
 #include <map>
 #include "fcnGenericFunctions.h"
+#include "simpleProfiler.cpp"
 
 #include "ficsionInit.h"
 #include "ficsionInit.hh"
