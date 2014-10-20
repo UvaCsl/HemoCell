@@ -284,7 +284,11 @@ int main(int argc, char* argv[])
     													createBoundaryParticleField3D(lattice);
 
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.4, cellModel, "RBC");
-	pcout << "initializing"<< std::endl;
+
+    std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
+    cellFields.push_back(&RBCField);
+
+    pcout << "initializing"<< std::endl;
     RBCField.grow();
 //    RBCField.applyConstitutiveModel();
 
