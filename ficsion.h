@@ -24,6 +24,7 @@ using namespace std;
 #include "reductionParticle3D.h"
 #include "immersedCellParticle3D.h"
 #include "helperFunctionals.h"
+#include "checkPoint.h"
 
 
 #include "cellCellForces3D.h"

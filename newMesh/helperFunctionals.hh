@@ -37,7 +37,7 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
             for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
             	if (fluid.get(iX, iY, iZ).getDynamics().isBoundary()) {
             		Array<T,3> vertex = Array<T,3>(iX,iY,iZ) + relativePosition;
-            		std::cout << "(" << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << ") " << id << std::endl;
+//            		std::cout << "(" << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << ") " << id << std::endl;
             		std::vector<Array<T,3> > vertices;
 					vertices.push_back(Array<T,3>(0.25, 0.25, 0.25) + vertex);
 					vertices.push_back(Array<T,3>(0.25, 0.25, 0.50) + vertex);

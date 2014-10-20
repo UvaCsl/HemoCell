@@ -63,6 +63,7 @@ public:
 
     virtual void initialize();
     virtual void grow();
+    virtual void createCellMap();
 	virtual void advanceParticles();
 	virtual void spreadForceIBM();
 	virtual void interpolateVelocityIBM();

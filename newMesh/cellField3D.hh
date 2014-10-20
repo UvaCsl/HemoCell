@@ -133,6 +133,14 @@ void CellField3D<T, Descriptor>::grow() {
     global::timer("Init").stop();
 }
 
+template<typename T, template<typename U> class Descriptor>
+void CellField3D<T, Descriptor>::createCellMap() {
+    global::timer("Quantities").start();
+    applyProcessingFunctional (
+        new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
+        immersedParticles->getBoundingBox(), particleArg );
+    global::timer("Quantities").stop();
+}
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::advanceParticles() {
@@ -140,11 +148,8 @@ void CellField3D<T, Descriptor>::advanceParticles() {
     applyProcessingFunctional ( // advance particles in time according to velocity
         new AdvanceParticlesEveryWhereFunctional3D<T,Descriptor>,
         immersedParticles->getBoundingBox(), particleArg );
-
-    applyProcessingFunctional (
-        new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
-        immersedParticles->getBoundingBox(), particleArg );
     global::timer("Quantities").stop();
+    createCellMap();
 
 }
 

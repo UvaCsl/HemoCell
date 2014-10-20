@@ -279,29 +279,41 @@ int main(int argc, char* argv[])
 //           immersedParticles.getBoundingBox(), particleArg );
 //    }
 
-
-    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
-    													createBoundaryParticleField3D(lattice);
-
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.4, cellModel, "RBC");
-
     std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
     cellFields.push_back(&RBCField);
 
-    pcout << "initializing"<< std::endl;
-    RBCField.grow();
-//    RBCField.applyConstitutiveModel();
 
-    pcout << std::endl << "Starting simulation" << std::endl;
-    pcout << "Timer; iteration; LU; Cells; Vertices; Triangles; Processors; dt" << std::endl;
+    FcnCheckpoint<T, DESCRIPTOR> checkpointer(document);
+    global::timer("Checkpoint").restart();
+    plint initIter=0;
+    checkpointer.load(document, lattice, cellFields, initIter);
+    if (not checkpointer.wasCheckpointed()) {
+        checkpointer.save(lattice, cellFields, initIter);
+    }
+    global::timer("Checkpoint").stop();
+
+    if (not checkpointer.wasCheckpointed()) {
+        pcout << "initializing"<< std::endl;
+        RBCField.initialize();
+//        RBCField.grow();
+    }
+
+
+    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
+                                                        createBoundaryParticleField3D(lattice);
+
+
+    pcout << std::endl << "Starting simulation i=" << initIter << std::endl;
     /*            I/O              */
     global::timer("HDFOutput").restart();
     writeHDF5(lattice, parameters, 0);
     writeCellField3D_HDF5(RBCField, dx, dt, 0);
     global::timer("HDFOutput").stop();
 
+
     /* --------------------------- */
-    for (pluint iter=0; iter<tmax+1; ++iter) {
+    for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
         // #2# IBM Spreading
@@ -323,6 +335,10 @@ int main(int argc, char* argv[])
             writeHDF5(lattice, parameters, iter+1);
             writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
             global::timer("HDFOutput").stop();
+
+            global::timer("Checkpoint").restart();
+            checkpointer.save(lattice, cellFields, iter+1);
+            global::timer("Checkpoint").stop();
         } else {
             RBCField.synchronizeCellQuantities();
         }
