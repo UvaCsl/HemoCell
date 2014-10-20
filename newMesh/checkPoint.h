@@ -5,6 +5,7 @@
 #include "cellField3D.h"
 #include "fcnGenericFunctions.h"
 #include <sys/stat.h>
+#include <unistd.h>
 #include <vector>
 #include <string>
 

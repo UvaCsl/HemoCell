@@ -52,13 +52,14 @@ void FcnCheckpoint<T, Descriptor>::save(MultiBlockLattice3D<T, Descriptor> & lat
             renameFileToDotOld(outDir + cellFields[icf]->getIdentifier() + ".dat");
             renameFileToDotOld(outDir + cellFields[icf]->getIdentifier() + ".plb");
         }
-        /* Save XML */
-        xmlw["Checkpoint"]["General"]["Iteration"].set(iter);
-        xmlw.print(outDir + "checkpoint.xml");
+    } else {
+        usleep(1000); // Sleep for 1000 milliseconds
     }
-    /* Save Data */
+    /* Save XML & Data */
+    xmlw["Checkpoint"]["General"]["Iteration"].set(iter);
+    xmlw.print(outDir + "checkpoint.xml");
     parallelIO::save(lattice, "lattice", true);
-    for (int icf= 0; icf < cellFields.size(); ++icf) {
+    for (pluint icf= 0; icf < cellFields.size(); ++icf) {
         parallelIO::save(cellFields[icf]->getParticleField3D(), cellFields[icf]->getIdentifier(), true);
     }
     // Upon success, save xml and rename files!
