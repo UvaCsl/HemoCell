@@ -28,7 +28,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
-        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, plint & npar, plint & flowParam, bool & checkpointed)
+        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & flowParam, bool & checkpointed)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
@@ -95,7 +95,14 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     }
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
-    document["sim"]["npar"].read(npar);
+    try {
+        plint npar;
+        document["sim"]["npar"].read(npar);
+        hct = npar * (90e-18) / (lx*ly*lz);
+    } catch(const plb::PlbIOException & message) {
+        document["sim"]["hct"].read(hct);
+    }
+    if (hct>1.0) { hct /= 100.0; }
 
     radius = radius*1.0/dx; // Transform from [m] to [LU]
     nu_lb = (tau-0.5)/3.0;
@@ -146,7 +153,8 @@ int main(int argc, char* argv[])
     std::string caseId;
     std::string cellPath;
     pluint tmax;
-    plint tmeas, npar;
+    plint tmeas;
+    T hct;
 //    T dtIteration = 0;
     T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic,  k_volume, k_surface, eta_m;
     T eqLengthRatio;
@@ -172,7 +180,7 @@ int main(int argc, char* argv[])
     readFicsionXML(document, caseId, rbcModel, shellDensity,
             k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, shape, cellPath, radius, deflationRatio, relaxationTime,
-            cellNumTriangles, tmax, tmeas, npar, flowParam, checkpointed);
+            cellNumTriangles, tmax, tmeas, hct, flowParam, checkpointed);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -242,7 +250,7 @@ int main(int argc, char* argv[])
     performanceLogFile << "# Nx*Ny*Nz; " << nx * ny * nz << std::endl;
     performanceLogFile << "# Nparticles; " << meshElement.getNumVertices() << std::endl;
     performanceLogFile << "# Nx; Ny; Nz; " << nx << "; " << ny << "; "<< nz << std::endl;
-    performanceLogFile << "# Ncells; " << npar << std::endl;
+//    performanceLogFile << "# Ncells; " << npar << std::endl;
 //    performanceLogFile << "# particleEnvelopeWidth; " << particleEnvelopeWidth << std::endl;
 #ifdef PLB_MPI_PARALLEL
     int ntasks;
@@ -266,13 +274,6 @@ int main(int argc, char* argv[])
 
     std::string logFileName = logOutDir + "plbCells.log";
 
-    T hct = (npar*eqVolume) * 1.0 / ( (nx-1)*(ny-1)*(nz-1) );
-    pcout << "Hematocrit [x100%]: " << hct*100 << std::endl;
-    pcout << "mu_0 = " << cellModel->getMembraneShearModulus()*dNewton/dx << std::endl;
-    pcout << "K = " << cellModel->getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
-    pcout << "YoungsModulus = " << cellModel->getYoungsModulus()*dNewton/dx << std::endl;
-    pcout << "Poisson ratio = " << cellModel->getPoissonRatio() << std::endl;
-
     /* Deflate if I say so */
 //    MorsePotential<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
     MorseAndPowerLawForce<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
@@ -282,7 +283,7 @@ int main(int argc, char* argv[])
 //           immersedParticles.getBoundingBox(), particleArg );
 //    }
 
-    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.4, cellModel, "RBC");
+    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, "RBC");
     std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
     cellFields.push_back(&RBCField);
 
@@ -307,6 +308,11 @@ int main(int argc, char* argv[])
                                                         createBoundaryParticleField3D(lattice);
 
 
+    pcout << "Hematocrit [x100%]: " << hct*100 << std::endl;
+    pcout << "mu_0 = " << cellModel->getMembraneShearModulus()*dNewton/dx << std::endl;
+    pcout << "K = " << cellModel->getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
+    pcout << "YoungsModulus = " << cellModel->getYoungsModulus()*dNewton/dx << std::endl;
+    pcout << "Poisson ratio = " << cellModel->getPoissonRatio() << std::endl;
     pcout << std::endl << "Starting simulation i=" << initIter << std::endl;
     /*            I/O              */
     global::timer("HDFOutput").restart();
