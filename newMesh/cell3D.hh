@@ -26,6 +26,17 @@ CellQuantityHolder<T>& CellQuantityHolder<T>::operator=(CellQuantityHolder<T> co
 };
 
 template<typename T>
+void CellQuantityHolder<T>::clearQuantities(std::vector<plint> ccrIds) {
+    for (pluint i=0; i<ccrIds.size(); ++i) {
+        plint ccrId = ccrIds[i];
+        plint d = getReductionDimension(ccrId);
+        if (d==1) { quantities1D.erase(ccrId); }
+        else if (d==3) { quantities3D.erase(ccrId); }
+        else { quantitiesND.erase(ccrId); }
+    }
+}
+
+template<typename T>
 void CellQuantityHolder<T>::clearQuantities() {
     quantities1D.clear();
     quantities3D.clear();
@@ -313,7 +324,7 @@ T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex, plint 
     T foundVertices=0;
     for (pluint id = 0; id < 3; ++id) {
         kVertex = getVertexId(iTriangle,id);
-        if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
+        if ( (kVertex != iVertex) && (kVertex != jVertex) && (iVertexToParticle3D.count(kVertex)>0)) {
             x2 = getVertex(kVertex);
             foundVertices += 1;
             break;
@@ -321,7 +332,7 @@ T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex, plint 
     }
     for (pluint id = 0; id < 3; ++id) {
         lVertex = getVertexId(jTriangle,id);
-        if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
+        if ( (lVertex != iVertex) && (lVertex != jVertex) && (iVertexToParticle3D.count(lVertex)>0)) {
             x4 = getVertex(lVertex);
             foundVertices += 1;
             break;

@@ -30,6 +30,7 @@ public:
     plint const& getParticlesPerCellId() const { return particlesPerCellId; };
     plint & getParticlesPerCellId() { return particlesPerCellId; };
     void clearQuantities() ;
+    void clearQuantities(std::vector<plint> ccrIds) ;
     void updateCQH(CellQuantityHolder<T> const& cqh);
 
     void insert(plint ccrId, T value)              { quantities1D[ccrId] = value; }

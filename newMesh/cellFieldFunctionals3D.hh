@@ -577,7 +577,8 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         ReductionParticle3D<T,Descriptor>* rParticle = new ReductionParticle3D<T,Descriptor>(cellId, vertex);
         rParticle->get_nParticles() = particlesPerCellId[cellId];
         rParticle->updateCQH(*cell);
-        cell->clearQuantities();
+        if (keepQuantities) { cell->clearQuantities(ccrRequirements); }
+        else { cell->clearQuantities(); }
         reductionParticleField.addParticle(reductionParticleField.getBoundingBox(), rParticle);
 //        std::cout << MPI::COMM_WORLD.Get_rank() << " Cell Volume " << rParticle->getVolume()
 //                		<< " surface " << rParticle->getSurface()
@@ -597,8 +598,8 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
 template<typename T, template<typename U> class Descriptor>
 ComputeRequiredQuantities<T,Descriptor>::ComputeRequiredQuantities (
     std::vector<plint> ccrRequirements_, 
-    std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_)
-: ccrRequirements(ccrRequirements_), cellIdToCell3D(cellIdToCell3D_) { }
+    std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_, bool keepQuantities_)
+: ccrRequirements(ccrRequirements_), cellIdToCell3D(cellIdToCell3D_), keepQuantities(keepQuantities_) { }
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -668,7 +669,7 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
             plint processor = particle->get_processor();
             plint nParticles = particle->get_nParticles();
             particleInProcessorAndCellid[processor]; // Create "processor" entry
-            if (cellIdToCell3D.count(cellId)) {
+            if (cellIdToCell3D.count(cellId) > 0) {
                 Cell3D<T,Descriptor> * chq = cellIdToCell3D[cellId];
                 if (particleInProcessorAndCellid[processor].find(cellId) == particleInProcessorAndCellid[processor].end()) {
                     particleInProcessorAndCellid[processor][cellId] = true;
