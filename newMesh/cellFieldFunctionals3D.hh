@@ -9,16 +9,6 @@ template<typename T, template<typename U> class Descriptor>
 void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
-#ifdef PLB_MPI_PARALLEL
-    //  Get the number of processes.
-    int  p = MPI::COMM_WORLD.Get_size();
-    //  Get the individual process ID.
-     int id = MPI::COMM_WORLD.Get_rank();
-#else
-     int p=1;
-     int id = 0;
-#endif
-
     PLB_PRECONDITION( blocks.size()==2 );
     ParticleField3D<T,Descriptor>& particleField =
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
@@ -38,7 +28,7 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
     plint nVertices = elementaryMesh.getNumVertices();
     for (pluint iCO=0; iCO < cellOrigins.size(); ++iCO) {
         Array<T,3> & cellOrigin = cellOrigins[iCO];
-        plint cellId = iCO + id*100 ;
+        plint cellId = iCO + global::mpi().getRank()*1000 ;
         cout << "cellId " << cellId << std::endl;
         for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
             Array<T,3> vertex = cellOrigin + elementaryMesh.getVertex(iVertex);
@@ -77,19 +67,13 @@ template<typename T, template<typename U> class Descriptor>
 void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
-#ifdef PLB_MPI_PARALLEL
-    //  Get the number of processes.
-    int  p = MPI::COMM_WORLD.Get_size();
-    //  Get the individual process ID.
-     int id = MPI::COMM_WORLD.Get_rank();
-#else
-     int p=1;
-     int id = 0;
-#endif
+    int mpiSize = global::mpi().getSize();;
+    int mpiRank = global::mpi().getRank();
+
     if (hematocrit > 1.0) { hematocrit /= 100; }
     PLB_PRECONDITION( hematocrit < 1.0 );
 
-    srand (p * id);
+    srand (mpiSize * mpiRank);
     PLB_PRECONDITION( blocks.size()==2 );
     ParticleField3D<T,Descriptor>& particleField =
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
@@ -115,7 +99,7 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     plint DeltaY = domain.y1-domain.y0;
     plint DeltaZ = domain.z1-domain.z0;
 
-    T Delta = 7;
+    T Delta = 1;
     DeltaX -= Delta*2;
     DeltaY -= Delta*2;
     DeltaZ -= Delta*2;
@@ -148,14 +132,17 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
 //                    cout << "cntr = (" << cntr[0] << ", " << cntr[1] << ", " << cntr[2]<< ")" << std::endl;
                     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
                         Array<T,3> vertex = Array<T,3>(iX*1.0, iY*1.0, iZ*1.0) + relativeCoordinate + mesh->getVertex(iVertex);
-                        particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId + 1000*id) );
+                        particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId + 1000*mpiRank) );
                     }
                     cellId+=1;
                 }
             }
         }
     }
-    cout << p << " scale " << scale << " step " << step <<  " NCells " << cellId << " h " << cellId * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << std::endl;
+    std::vector<Particle3D<T,Descriptor>*> particles;
+    particleField.findParticles(domain, particles);
+
+    cout << mpiRank << "Number of particles/nVertices " << particles.size()*1.0/nVertices << " scale " << scale << " step " << step <<  " NCells " << cellId << " h " << cellId * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << std::endl;
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -454,11 +441,21 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
         ImmersedCellParticle3D<T,Descriptor>* particle = 
                 dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
 
+        plint iX, iY, iZ;
+        particleField.computeGridPosition(particle->getPosition(), iX, iY, iZ);
+        Box3D finalDomain;
+        bool particleIsInBulk = intersect(domain, particleField.getBoundingBox(), finalDomain) &&
+            contained(iX,iY,iZ, finalDomain);
+
+
         plint cellId = particle->get_cellId();
+        plint iVertex = particle->getVertexId();
         if (cellIdToCell3D.count(cellId) == 0) {
             cellIdToCell3D[cellId] = new Cell3D<T,Descriptor>(mesh, cellId);
         }
-        cellIdToCell3D[cellId]->push_back(particle);
+        if ((not cellIdToCell3D[cellId]->hasVertex(iVertex)) || particleIsInBulk) {
+            cellIdToCell3D[cellId]->push_back(particle);
+        }
     }
 
     for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
@@ -492,8 +489,9 @@ FillCellMap<T,Descriptor>*
 
 
 template<typename T, template<typename U> class Descriptor>
-BlockDomain::DomainT FillCellMap<T,Descriptor>::appliesTo() const 
-{    return BlockDomain::bulk;   } // This changes in processGenericBlocks with getBoundingBox();
+BlockDomain::DomainT FillCellMap<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulk; // It is extended in the processGenericBlocks
+}
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -548,9 +546,6 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles); // Gets particle only from the bulk
 
-    std::vector<Particle3D<T,Descriptor>*> reductionParticles;
-    reductionParticleField.removeParticles(reductionParticleField.getBoundingBox());
-
     typename std::map<plint, Cell3D<T,Descriptor>*  >::iterator iter;
     for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
         (iter->second)->clearReducer();
@@ -580,7 +575,8 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         if (keepQuantities) { cell->clearQuantities(ccrRequirements); }
         else { cell->clearQuantities(); }
         reductionParticleField.addParticle(reductionParticleField.getBoundingBox(), rParticle);
-//        std::cout << MPI::COMM_WORLD.Get_rank() << " Cell Volume " << rParticle->getVolume()
+//        std::cout << global::mpi().getRank() << " cellId " << rParticle->get_cellId()
+//         << " Cell Volume " << rParticle->getVolume()
 //                		<< " surface " << rParticle->getSurface()
 //                		<< " CCR_ANGLE_MEAN " << rParticle->getMeanAngle()
 //                        << " getMeanEdgeLength " << rParticle->getMeanEdgeLength()
@@ -697,6 +693,19 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
         typename std::map<plint, Cell3D<T,Descriptor>*  >::iterator iter;
         for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
             Cell3D<T,Descriptor> & cell = *(iter->second);
+
+//            std::cout << "(SyncCellQuantities) " << global::mpi().getRank() << " cellId " << iter->second->get_cellId()
+//             << " Cell Volume " << iter->second->getVolume()
+//                          << " surface " << iter->second->getSurface()
+//                          << " CCR_ANGLE_MEAN " << iter->second->getMeanAngle()
+//                            << " getMeanEdgeLength " << iter->second->getMeanEdgeLength()
+//                            << " getEnergy " << iter->second->getEnergy()
+//                          << " CCR_FORCE (" << iter->second->getForce()[0]
+//                          << ", " << iter->second->getForce()[1]
+//                          << ", " << iter->second->getForce()[2] << ") "
+//                  << " rPart "  << iter->second->getNumVertices_Local() << std::endl;
+
+
             if ( cell.count(CCR_INERTIA) ) {
                 std::vector<T> & cellInertia = cell.getInertia();
                 std::vector<T> ellipsoidAngles;

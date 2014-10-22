@@ -10,9 +10,10 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
 		hematocrit(hematocrit_), cellModel(cellModel_), identifier(identifier_)
 {
     plint maxEdgeLengthLU = ceil(cellModel->getMaximumEdgeExtensionLengthLU());
-    plint maxRadiusLU = ceil(cellModel->getCellRadiusLU());
+    plint maxCellDiameterLU = ceil(cellModel->getMaxCellDiameterLU());
     pluint particleEnvelopeWidth = maxEdgeLengthLU;
-    pluint reductionParticleEnvelopeWidth = 5*maxRadiusLU;
+    pluint reductionParticleEnvelopeWidth = maxCellDiameterLU;
+
     pcout << "particleEnvelopeWidth " << particleEnvelopeWidth << std::endl;
     pcout << "reductionParticleEnvelopeWidth " << reductionParticleEnvelopeWidth << std::endl;
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
@@ -40,12 +41,12 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
 
     ccrRequirements.insert(cellModel->getSyncRequirements());
     ccrRequirements.insert(CCR_NO_PBC_POSITION_MEAN);
-    particleArg.clear(); particleLatticeArg.clear(); particleReductioParticleArg.clear();
+    particleArg.clear(); particleLatticeArg.clear(); particleReductionParticleArg.clear();
     particleArg.push_back(immersedParticles);
     particleLatticeArg.push_back(immersedParticles);
     particleLatticeArg.push_back(&lattice);
-    particleReductioParticleArg.push_back(immersedParticles);
-    particleReductioParticleArg.push_back(reductionParticles);
+    particleReductionParticleArg.push_back(immersedParticles);
+    particleReductionParticleArg.push_back(reductionParticles);
     reductionParticleArg.push_back(reductionParticles);
 	/* Default values*/
 	ibmKernel = 2;
@@ -92,21 +93,31 @@ void CellField3D<T, Descriptor>::grow() {
     applyProcessingFunctional (
         new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(elementaryMesh, hematocrit, ratio),
         lattice.getBoundingBox(), particleLatticeArg );
+
+    ConstitutiveModel<T,Descriptor> *moreRigidCellModel =
+            new ShapeMemoryModel3D<T, Descriptor>(1.0, 0.0, 6000, 500.0, 0.0, 0.5, 0.0, 60000.0, 60000.0, 0.0, 7.5e-9, 2.5, cellModel->getDx(), cellModel->getDt(), cellModel->getDm(), elementaryMesh);
+
+    applyProcessingFunctional ( // advance particles in time according to velocity
+        new AdvanceParticlesEveryWhereFunctional3D<T,Descriptor>,
+        immersedParticles->getBoundingBox(), particleArg );
     applyProcessingFunctional (
         new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
         immersedParticles->getBoundingBox(), particleArg );
-    writeCellField3D_HDF5(*this, 1.0, 1.0, 0);
-    synchronizeCellQuantities();
+    synchronizeCellQuantities(moreRigidCellModel->getSyncRequirements());
 
     T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
-    plint nIter = (1-ratio)*10000 + 1000;
-    for (plint i = 0; i < nIter; ++i) {
-        T iRatio = ratio + i*1.0 / 10000.0 ;
+    plint nIter = (1-ratio)*5000 + 500;
+    for (plint i = nIter; i < nIter; ++i) {
+        T iRatio = ratio + i*1.0 / 5000.0 ;
         if (iRatio > 1.0) { iRatio = 1.0; }
+        if (i%100 == 0) {
+            pcout << "growth iter:" << i<<std::endl;
+            writeCellField3D_HDF5(*this, 1.0, 1.0, i);
+        }
         // #1# Calculate forces
         applyProcessingFunctional ( // #1a# Membrane Model
-                        new ComputeCellForce3D<T,Descriptor> (cellModel, cellIdToCell3D),
+                        new ComputeCellForce3D<T,Descriptor> (moreRigidCellModel, cellIdToCell3D),
                         immersedParticles->getBoundingBox(), particleArg );
         applyProcessingFunctional (  // #1b# Repulsive force
            new ComputeCellCellForces3D<T,Descriptor> (PLF, R),
@@ -116,6 +127,7 @@ void CellField3D<T, Descriptor>::grow() {
         applyProcessingFunctional ( // copy fluid velocity on particles
             new ViscousPositionUpdate3D<T,Descriptor>(iRatio),
             immersedParticles->getBoundingBox(), particleLatticeArg);
+
         // #3# Update position of particles
         applyProcessingFunctional ( // advance particles in time according to velocity
             new AdvanceParticlesEveryWhereFunctional3D<T,Descriptor>,
@@ -123,11 +135,8 @@ void CellField3D<T, Descriptor>::grow() {
         applyProcessingFunctional (
             new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
             immersedParticles->getBoundingBox(), particleArg );
-        synchronizeCellQuantities();
-        if (i%100 == 0) {
-            pcout << "growth iter:" << i<<std::endl;
-            writeCellField3D_HDF5(*this, 1.0, 1.0, i);
-        }
+        synchronizeCellQuantities(moreRigidCellModel->getSyncRequirements());
+
     }
 
     global::timer("CellInit").stop();
@@ -210,7 +219,7 @@ void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirement
     global::timer("Model").start();
     applyProcessingFunctional (
         new ComputeRequiredQuantities<T,Descriptor> (ccrIndependent.getSyncRequirements(), cellIdToCell3D),
-        immersedParticles->getBoundingBox(), particleReductioParticleArg );
+        immersedParticles->getBoundingBox(), particleReductionParticleArg );
     global::timer("Model").stop();
 
     global::timer("Quantities").start();
@@ -225,7 +234,7 @@ void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirement
         bool keepQuantities=true;
         applyProcessingFunctional (
             new ComputeRequiredQuantities<T,Descriptor> (ccrDependent.getSyncRequirements(), cellIdToCell3D, keepQuantities),
-            immersedParticles->getBoundingBox(), particleReductioParticleArg );
+            immersedParticles->getBoundingBox(), particleReductionParticleArg );
         global::timer("Model").stop();
 
         global::timer("Quantities").start();

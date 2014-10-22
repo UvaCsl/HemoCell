@@ -5,6 +5,7 @@
 #include "palabos3D.hh"
 #include "cell3D.h"
 #include "cellModel3D.h"
+#include "shapeMemoryModel3D.h"
 #include "cellReductionTypes.h"
 #include "cellFieldFunctionals3D.h"
 #include "cellCellForces3D.h"
@@ -49,12 +50,12 @@ public:
     void setParticleField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles_) {
         delete immersedParticles;
         immersedParticles=immersedParticles_;
-        particleArg.clear(); particleLatticeArg.clear(); particleReductioParticleArg.clear();
+        particleArg.clear(); particleLatticeArg.clear(); particleReductionParticleArg.clear();
         particleArg.push_back(immersedParticles);
         particleLatticeArg.push_back(immersedParticles);
         particleLatticeArg.push_back(&lattice);
-        particleReductioParticleArg.push_back(immersedParticles);
-        particleReductioParticleArg.push_back(reductionParticles);
+        particleReductionParticleArg.push_back(immersedParticles);
+        particleReductionParticleArg.push_back(reductionParticles);
     };
 public:
 	virtual void setFluidExternalForce(Array<T,3> force);
@@ -96,14 +97,14 @@ public:
     std::vector<MultiBlock3D*> & getReductionParticleArg()                 { return reductionParticleArg; }
     std::vector<MultiBlock3D*> & getParticleArg()                 { return particleArg; }
     std::vector<MultiBlock3D*> & getParticleLatticeArg()          { return particleLatticeArg; }
-    std::vector<MultiBlock3D*> & getParticleReductioParticleArg() { return particleReductioParticleArg; }
+    std::vector<MultiBlock3D*> & getparticleReductionParticleArg() { return particleReductionParticleArg; }
     Box3D getBoundingBox() { return immersedParticles->getBoundingBox(); }
 private:
     T hematocrit;
     std::vector<MultiBlock3D*> reductionParticleArg;
     std::vector<MultiBlock3D*> particleArg;
     std::vector<MultiBlock3D*> particleLatticeArg;
-    std::vector<MultiBlock3D*> particleReductioParticleArg;
+    std::vector<MultiBlock3D*> particleReductionParticleArg;
     std::map<plint, Cell3D<T,Descriptor>* > cellIdToCell3D;
     std::vector<plint> cellIds;
 	/* data */

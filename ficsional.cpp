@@ -287,9 +287,10 @@ int main(int argc, char* argv[])
 
     if (not checkpointer.wasCheckpointed()) {
         pcout << "initializing"<< std::endl;
-        RBCField.initialize();
-//        RBCField.grow();
+//        RBCField.initialize();
+        RBCField.grow();
     }
+    RBCField.synchronizeCellQuantities();
     plint nCells = RBCField.getNumberOfCells_Global();
 
     pcout << "Hematocrit [x100%]: " << hct*100 << std::endl;

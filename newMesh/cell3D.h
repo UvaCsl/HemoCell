@@ -11,6 +11,7 @@
 #include "cellReductionTypes.h"
 #include <vector>
 #include <map>
+#include <set>
 #include <string>
 #include "meshMetrics.h"
 
@@ -113,7 +114,7 @@ class Cell3D ;
 template<typename T, template<typename U> class Descriptor>
 void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T, Descriptor> * cell, plint iVertex);
 
-
+/* An interface class between Particles and Cells */
 template<typename T, template<typename U> class Descriptor>
 class Cell3D : public CellQuantityHolder<T>
 {
@@ -173,6 +174,7 @@ public:
     std::vector<plint> getNeighborTriangleIds(plint iVertex) { return mesh.getNeighborTriangleIds(iVertex); }
     std::vector<plint> getAdjacentTriangleIds(plint iVertex, plint jVertex) { return mesh.getAdjacentTriangleIds(iVertex, jVertex); }
  
+    bool hasVertex(plint iVertex) { return (iVertexToParticle3D.count(iVertex) > 0); }
     Array<T,3> getVertex(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_pbcPosition(); }
     Array<T,3> getVertex(plint iTriangle, plint id) { return getVertex( getVertexId(iTriangle, id) ); }
     Particle3D<T,Descriptor>* getParticle3D(plint iVertex) { return iVertexToParticle3D[iVertex]; }
@@ -196,6 +198,7 @@ public:
     T computeVertexArea(plint iVertex);
     Array<T,3> computeVertexNormal(plint iVertex);
     T computeEdgeTileSpan(plint iVertex, plint jVertex);
+    /* Reduction functions */
     virtual void clearReducer() { reducer.clear();  }
     virtual void computeCCRQuantities(plint ccrId, plint iVertex) { calculateCCRQuantities(ccrId, reducer, this, iVertex); }
     virtual void computeCCRQuantities(plint ccrId, Particle3D<T,Descriptor> * particle) { calculateCCRQuantities(ccrId, reducer, this, castParticleToICP3D(particle)->getVertexId()); }
@@ -208,6 +211,7 @@ private:
     TriangularSurfaceMesh<T> & mesh;
     plint cellId;
     std::map<plint, Particle3D<T,Descriptor>*> iVertexToParticle3D;
+    std::set<plint> verticesInBulk;
 
     BlockStatisticsCCR<T> reducer;
 
