@@ -30,7 +30,7 @@ void MeshMetrics<T>::init(TriangularSurfaceMesh<T> const& mesh)    {
     Array<T,2> zRange;
     mesh.computeBoundingBox (xRange, yRange, zRange);
     cellRadius = max(xRange[1] - xRange[0], yRange[1] - yRange[0]);
-    cellRadius = max(cellRadius , zRange[1] - zRange[0]);
+    cellRadius = max(cellRadius , zRange[1] - zRange[0]) * 0.5;
 
     Nn=0; Nn6=0; Nn5=0; Nn7=0;
     area=0; length=0; angle=0;
