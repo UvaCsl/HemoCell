@@ -58,8 +58,11 @@ public:
     ~ConstitutiveModel() { std::cout << "ConstitutiveModel Destructor" << std::endl; };
     virtual void computeCellForce (Cell3D<T,Descriptor> * cell)=0;
     virtual ConstitutiveModel<T,Descriptor>* clone() const=0;
+    virtual T getDx()=0;
+    virtual T getDt()=0;
+    virtual T getDm()=0;
     virtual plint getMaximumEdgeExtensionLengthLU()=0;
-    virtual plint getCellRadiusLU()=0;
+    virtual plint getMaxCellDiameterLU()=0;
     virtual SyncRequirements & getSyncRequirements()=0;
 
     Array<T,3> computeElasticForce (
@@ -127,7 +130,11 @@ public:
     CellModel3D(CellModel3D<T,Descriptor> const& rhs);
     virtual void computeCellForce (Cell3D<T,Descriptor> * cell);
     virtual plint getMaximumEdgeExtensionLengthLU() { return ceil(2*maxLength + 0.5); };
-    virtual plint getCellRadiusLU() { return cellRadiusLU; };
+    virtual plint getMaxCellDiameterLU() { return 4*cellRadiusLU; };
+    virtual T getDx() { return dx; };
+    virtual T getDt() { return dt; };
+    virtual T getDm() { return dm; };
+
     virtual SyncRequirements & getSyncRequirements() {return syncRequirements;} ;
     virtual SyncRequirements const& getSyncRequirements() const {return syncRequirements;} ;
 

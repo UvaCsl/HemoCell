@@ -97,10 +97,7 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
 
 
     /* Calculate cell Radius */
-    Array<T,2> xRange;     Array<T,2> yRange;     Array<T,2> zRange;
-    meshElement.computeBoundingBox (xRange, yRange, zRange);
-    cellRadiusLU = max(xRange[1] - xRange[0], yRange[1] - yRange[0]);
-    cellRadiusLU = max(cellRadiusLU , zRange[1] - zRange[0]);
+    cellRadiusLU = meshmetric.getRadius();
 
     /* Use Mean eqLength for stiffness coefficients of:
      *  Volume, Surface and Shear.
@@ -124,8 +121,8 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
     pcout << "k_surface: " << k_surface << ",\t eqSurface: " << eqSurface << std::endl;
     pcout << "k_shear: " << k_shear << ",\t eqMeanArea: " << eqMeanArea << std::endl;
     pcout << "eta_m: " << eta_m << ",\t eqLengthRatio: " << eqLengthRatio << std::endl;
-    pcout << "gamma_T: " << gamma_T << ",\t persistenceLengthCoarse: " << persistenceLengthCoarse << std::endl;
-    pcout << "gamma_C: " << gamma_C << ",\t 0: " << 0 << std::endl;
+    pcout << "persistenceLengthFine: " << persistenceLengthFine << ",\t persistenceLengthCoarse: " << persistenceLengthCoarse << std::endl;
+    pcout << "gamma_T: " << gamma_T << ", gamma_C: " << gamma_C << std::endl;
     pcout << "k_rest: " << k_rest << ",\t 0 : " << 0 << std::endl;
     pcout << "k_stretch: " << k_stretch << ",\t eqTileSpan: " << eqTileSpan << std::endl;
     pcout << "k_elastic: " << k_elastic << ",\t eqLength: " << eqLength << std::endl;
