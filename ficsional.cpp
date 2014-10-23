@@ -317,6 +317,7 @@ int main(int argc, char* argv[])
     simpleProfiler.writeInitial(nx, ny, nz, nCells, numVerticesPerCell);
     /* --------------------------- */
     global::timer("mainLoop").start();
+    global::profiler().turnOn();
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
@@ -346,6 +347,7 @@ int main(int argc, char* argv[])
             T dtIteration = global::timer("mainLoop").stop();
             pcout << "Iteration:" << iter + 1 << ", time "<< dtIteration*1.0/tmeas << std::endl;
             simpleProfiler.writeIteration(iter+1);
+            global::profiler().writeReport();
         } else {
             RBCField.synchronizeCellQuantities();
         }
