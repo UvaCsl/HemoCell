@@ -168,9 +168,9 @@ BlockDomain::DomainT WriteCellField3DInMultipleHDF5Files<T,Descriptor>::appliesT
 
 
 template<typename T, template<typename U> class Descriptor>
-void writeCellField3D_HDF5(CellField3D<T, Descriptor>& cellField3D, T dx, T dt, plint iter)
+void writeCellField3D_HDF5(CellField3D<T, Descriptor>& cellField3D, T dx, T dt, plint iter, std::string preString)
 {
-	std::string identifier = cellField3D.getIdentifier();
+	std::string identifier = preString + cellField3D.getIdentifier();
     applyProcessingFunctional ( // compute force applied on the fluid by the particles
             new WriteCellField3DInMultipleHDF5Files<T,Descriptor> (cellField3D, iter, identifier, dx, dt),
             cellField3D.getBoundingBox(), cellField3D.getParticleArg() );

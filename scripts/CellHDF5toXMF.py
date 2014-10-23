@@ -290,7 +290,11 @@ def createXDMF(fnameString, processorStrings):
 
 if __name__ == '__main__':
 	dirname = './hdf5/'
-	identifier = 'RBC'
+	try:
+		identifier = sys.argv[1]
+		print identifier
+	except:
+		identifier = 'RBC'
 	fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
 	if len(fluidH5files) == 0:
 		dirname = './tmp/hdf5/'
