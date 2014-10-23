@@ -105,15 +105,16 @@ void CellField3D<T, Descriptor>::grow() {
         immersedParticles->getBoundingBox(), particleArg );
     synchronizeCellQuantities(moreRigidCellModel->getSyncRequirements());
 
-    T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
+    T k_int = 0.0025, DeltaX=1.0, R=0.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
-    plint nIter = (1-ratio)*1000 + 500;
-    for (plint i = nIter-1; i < nIter; ++i) {
-        T iRatio = ratio + i*1.0 / 1000.0 ;
+    plint nIter = (1-ratio)*5000 + 500;
+    for (plint i = 0; i < nIter; ++i) {
+        T iRatio = ratio + i*1.0 / 5000.0 ;
         if (iRatio > 1.0) { iRatio = 1.0; }
+        moreRigidCellModel->inflate(iRatio);
         if (i%100 == 0) {
-            pcout << "growth iter:" << i<<std::endl;
-            writeCellField3D_HDF5(*this, 1.0, 1.0, i);
+            pcout << "growth iter:" << i<< ", " <<  i*100.0/nIter << "%" <<std::endl;
+            writeCellField3D_HDF5(*this, 1.0, 1.0, i, "init_");
         }
         // #1# Calculate forces
         applyProcessingFunctional ( // #1a# Membrane Model
