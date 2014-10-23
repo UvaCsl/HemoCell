@@ -79,6 +79,7 @@ private:
     plint getTriangleId(plint iTriangle);
     plint getEdgeId(plint iVertex, plint jVertex);
 private:
+    MeshMetrics<T> meshmetric;
     SyncRequirements syncRequirements;
     T maxLength, cellRadiusLU;
 
@@ -91,28 +92,27 @@ private:
     T eqVolume, eqSurface, eqTileSpan;
     T persistenceLengthCoarse, eqLengthRatio;
     T dx, dt, dm;
+    T persistenceLengthFine;
     pluint cellNumTriangles, cellNumVertices;
 public:
     /* Computes the equilibrium quantities to correspond to the an inflated cell with
      * 		eqVolume=ratio*eqVolume.
      * Can also be used for deflation. */
-    virtual void inflate(T ratio, bool scaleCoefficients=true) {
-    	eqVolume *= ratio;
-    	eqSurface *= pow(ratio,2.0/3.0);
-    	eqTileSpan *= pow(ratio,1.0/3.0);
+    virtual void inflate(T ratio) {
+        eqVolume = meshmetric.getVolume() * ratio*ratio*ratio;
+        eqSurface = meshmetric.getSurface() * ratio*ratio;
+
+        getCellShapeQuantitiesFromMesh(meshmetric.getMesh(), eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
+        persistenceLengthCoarse = persistenceLengthFine/dx * sqrt( (cellNumVertices-2.0) / (23867-2.0)) * ratio;
+
     	for (pluint i=0; i < eqAreaPerTriangle.size() ; i++) {
-    		eqAreaPerTriangle[i] *= pow(ratio,2.0/3.0);
+    		eqAreaPerTriangle[i] *= ratio*ratio;
     	}
     	typename std::map<plint,T>::iterator iter;
         for (iter = eqLengthPerEdge.begin(); iter != eqLengthPerEdge.end(); ++iter) {
-        	eqLengthPerEdge[iter->first] *= pow(ratio,1.0/3.0);
+        	eqLengthPerEdge[iter->first] *= ratio;
         }
-    	eqLength *= pow(ratio,1.0/3.0);
-    	if (scaleCoefficients) {
-    	    k_volume *= 1.0/ratio;
-    	    k_surface *= 1.0/pow(ratio,2.0/3.0);
-    	    k_shear *= 1.0/pow(ratio,2.0/3.0);
-    	}
+    	eqLength *= ratio;
     }
 public:
     /* Coefficients */

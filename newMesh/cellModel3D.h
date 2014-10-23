@@ -72,7 +72,7 @@ public:
     /* Computes the equilibrium quantities to correspond to the an inflated cell with
      *      eqVolume=ratio*eqVolume.
      * Can also be used for deflation. */
-    virtual void inflate(T ratio, bool scaleCoefficients=true) =0;
+    virtual void inflate(T ratio) =0;
 public:
     /* Get/Set Coefficients */
     virtual T& getRestingStiffness()=0;
@@ -140,6 +140,7 @@ public:
 
     virtual CellModel3D<T, Descriptor>* clone() const;
 private:
+    MeshMetrics<T> meshmetric;
     T k_rest, k_shear, k_bend, k_stretch, k_inPlane, k_elastic, k_surface, k_volume;
     T C_elastic;
     T eta_m, gamma_T, gamma_C;
@@ -147,6 +148,7 @@ private:
     T eqVolume, eqSurface, eqTileSpan;
     T persistenceLengthCoarse, eqLengthRatio;
     T dx, dt, dm;
+    T persistenceLengthFine;
     pluint cellNumTriangles, cellNumVertices;
     plint cellRadiusLU, maxLength;
     SyncRequirements syncRequirements;
@@ -154,17 +156,13 @@ public:
     /* Computes the equilibrium quantities to correspond to the an inflated cell with
      * 		eqVolume=ratio*eqVolume.
      * Can also be used for deflation. */
-    virtual void inflate(T ratio, bool scaleCoefficients=true) {
-    	eqVolume *= ratio;
-    	eqArea *= pow(ratio,2.0/3.0);
-    	eqSurface *= pow(ratio,2.0/3.0);
-    	eqLength *= pow(ratio,1.0/3.0);
-    	eqTileSpan *= pow(ratio,1.0/3.0);
-    	if (scaleCoefficients) {
-    	    k_volume *= 1.0/ratio;
-    	    k_surface *= 1.0/pow(ratio,2.0/3.0);
-    	    k_shear *= 1.0/pow(ratio,2.0/3.0);
-    	}
+    virtual void inflate(T ratio) {
+        eqLength = meshmetric.getMeanLength() * ratio;
+        maxLength = meshmetric.getMaxLength()*eqLengthRatio * ratio;
+        eqArea = meshmetric.getMeanArea() * ratio * ratio;
+        eqVolume = meshmetric.getVolume() * ratio * ratio* ratio;
+        eqSurface = meshmetric.getSurface() * ratio * ratio;
+        persistenceLengthCoarse = persistenceLengthFine/dx * sqrt( (cellNumVertices-2.0) / (23867-2.0))  * ratio;
     }
 public:
     /* Coefficients */

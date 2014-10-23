@@ -28,7 +28,7 @@ namespace plb {
 
 template<typename T, template<typename U> class Descriptor>
 ShapeMemoryModel3D<T, Descriptor>::ShapeMemoryModel3D(ShapeMemoryModel3D<T,Descriptor> const& rhs) :
-    ConstitutiveModel<T,Descriptor>(rhs),
+    ConstitutiveModel<T,Descriptor>(rhs), meshmetric(meshmetric),
     syncRequirements(rhs.syncRequirements), maxLength(rhs.maxLength), cellRadiusLU(rhs.cellRadiusLU),
     k_rest(rhs.k_rest), k_shear(rhs.k_shear), k_bend(rhs.k_bend), k_stretch(rhs.k_stretch),
     k_inPlane(rhs.k_inPlane), k_elastic(rhs.k_elastic), k_surface(rhs.k_surface), k_volume(rhs.k_volume),
@@ -46,10 +46,11 @@ template<typename T, template<typename U> class Descriptor>
 ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
         T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
         T k_volume_, T k_surface_, T eta_m_,
-        T persistenceLengthFine, T eqLengthRatio_,
+        T persistenceLengthFine_, T eqLengthRatio_,
         T dx_, T dt_, T dm_,
         TriangularSurfaceMesh<T> const& meshElement)
     : ConstitutiveModel<T,Descriptor>(density_),
+      meshmetric(meshElement),
       k_rest(k_rest_),
       k_shear(k_shear_),
       k_bend(k_bend_),
@@ -59,7 +60,8 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
       k_volume(k_volume_),
       eta_m(eta_m_),
       eqLengthRatio(eqLengthRatio_),
-      dx(dx_), dt(dt_), dm(dm_)
+      dx(dx_), dt(dt_), dm(dm_),
+      persistenceLengthFine(persistenceLengthFine_)
 {
     T dNewton = (dm*dx/(dt*dt)) ;
     T kBT = kBT_p / ( dm * dx*dx/(dt*dt) );
@@ -70,8 +72,6 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
 
 
     syncRequirements.insert(volumeAndSurfaceReductions);
-
-    MeshMetrics<T> meshmetric(meshElement);
 
     cellNumVertices = meshmetric.getNumVertices();
     cellNumTriangles = meshmetric.getNumTriangles();

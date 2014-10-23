@@ -4,20 +4,27 @@
 #include "meshMetrics.h"
 
 
-template<typename T>
-MeshMetrics<T>::MeshMetrics(TriangleBoundary3D<T> const& Cells)
-    : meshQualityFile((global::directories().getLogOutDir() + "plbMeshQuality.log").c_str())
-    { init(Cells.getMesh()); }
 
 
 template<typename T>
-MeshMetrics<T>::MeshMetrics(TriangularSurfaceMesh<T> const& mesh)
-    : meshQualityFile((global::directories().getLogOutDir() + "plbMeshQuality.log").c_str())
-    { init(mesh); }
+MeshMetrics<T>::MeshMetrics(MeshMetrics<T> const& rhs) : mesh(rhs.mesh)  {
+    init();
+}
 
 
 template<typename T>
-void MeshMetrics<T>::init(TriangularSurfaceMesh<T> const& mesh)    {
+MeshMetrics<T>::MeshMetrics(TriangleBoundary3D<T> const& Cells) : mesh(Cells.getMesh())  {
+    init();
+}
+
+
+template<typename T>
+MeshMetrics<T>::MeshMetrics(TriangularSurfaceMesh<T> const& mesh_) : mesh(mesh_)  {
+    init();
+}
+
+template<typename T>
+void MeshMetrics<T>::init()    {
     minArea=std::numeric_limits<T>::max(); minLength=std::numeric_limits<T>::max();
     minAngle=std::numeric_limits<T>::max(); minNn=std::numeric_limits<T>::max();
     maxArea=0; maxLength=0; maxAngle=0; maxNn=0;

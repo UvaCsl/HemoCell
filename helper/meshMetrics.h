@@ -32,16 +32,18 @@ template<typename T>
 class MeshMetrics
 {
 public:
+    MeshMetrics(MeshMetrics<T> const& rhs);
     MeshMetrics(TriangleBoundary3D<T> const& Cells);
-    MeshMetrics(TriangularSurfaceMesh<T>  const& mesh);
+    MeshMetrics(TriangularSurfaceMesh<T>  const& mesh_);
     ~MeshMetrics();
     void write(plb_ofstream & meshFile);
-    void init(TriangularSurfaceMesh<T>  const& mesh);
-    void write() { this->write(meshQualityFile); } ;
+    void init();
+    void write() { plb_ofstream meshQualityFile((global::directories().getLogOutDir() + "plbMeshQuality.log").c_str());  this->write(meshQualityFile); } ;
     void set_dx(T dx_) { dx = dx_; } ;
     void set_dt(T dt_) { dt = dt_; } ;
     void set_dm(T dm_) { dm = dm_; } ;
     void set_dxdtdm(T dx_, T dt_, T dm_) { dx = dx_; dt = dt_; dm = dm_;} ;
+    TriangularSurfaceMesh<T>  const& getMesh() { return mesh; }
     T getMeanLength() { return length; }
     T getMaxLength() { return maxLength; }
     T getMinLength() { return minLength; }
@@ -63,6 +65,7 @@ public:
     T getNumTriangles() { return Nt; }
 
 private:
+    TriangularSurfaceMesh<T>  const& mesh;
     T Nv, Nt, Nn, Nn6, Nn5, Nn7;
     T area, length, angle, volume;
     Array<T,3> meanVertexPosition;
@@ -71,7 +74,6 @@ private:
     T maxArea, maxLength, maxAngle, maxNn;
     T dx,dt,dm;
     T cellRadius;
-    plb_ofstream meshQualityFile;
 };
 
 
