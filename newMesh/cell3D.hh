@@ -233,8 +233,12 @@ plint Cell3D<T,Descriptor>::getEdgeId(plint iVertex, plint jVertex) {
 };
 
 template<typename T, template<typename U> class Descriptor>
-void Cell3D<T, Descriptor>::push_back(Particle3D<T,Descriptor>* particle3D) {  
-	iVertexToParticle3D[castParticleToICP3D(particle3D)->getVertexId()] = particle3D; 
+void Cell3D<T, Descriptor>::push_back(Particle3D<T,Descriptor>* particle3D, bool particleIsInBulk) {
+    plint vertexId = castParticleToICP3D(particle3D)->getVertexId();
+	iVertexToParticle3D[vertexId] = particle3D;
+	if (particleIsInBulk) {
+	    verticesInBulk.insert(vertexId);
+	}
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -244,19 +248,33 @@ void Cell3D<T, Descriptor>::close() {
     vertices.clear();
     edges.clear();
     std::map<plint, Array<plint,2> > edgeMap;
+    std::set<plint> triangleSet;
     for (int iTriangle = 0; iTriangle < numTrianges; ++iTriangle)
     {
         plint vId0 = mesh.getVertexId(iTriangle, 0);
         plint vId1 = mesh.getVertexId(iTriangle, 1);
         plint vId2 = mesh.getVertexId(iTriangle, 2);
-        plint numVert = iVertexToParticle3D.count(vId0) 
-                + iVertexToParticle3D.count(vId1)
-                + iVertexToParticle3D.count(vId2);
-        if (numVert == 3) {
-            triangles.push_back(iTriangle);
+        plint v0inBulk = verticesInBulk.count(vId0);
+        plint v1inBulk = verticesInBulk.count(vId1);
+        plint v2inBulk = verticesInBulk.count(vId2);
+        plint numVert = v0inBulk + v1inBulk + v2inBulk;
+        if (numVert > 0) {
+            triangleSet.insert(iTriangle);
             edgeMap[getEdgeId(vId0, vId1)] = Array<plint, 2>(vId0, vId1) ;
             edgeMap[getEdgeId(vId0, vId2)] = Array<plint, 2>(vId0, vId2) ;
             edgeMap[getEdgeId(vId1, vId2)] = Array<plint, 2>(vId1, vId2) ;
+            std::vector<plint> adjacentTriangleIds = mesh.getAdjacentTriangleIds(iTriangle);
+            // Bending force requires also the adjacent triangles of the edge.
+            for (pluint iatId = 0; iatId < adjacentTriangleIds.size(); ++iatId) {
+                plint jT = adjacentTriangleIds[iatId];
+                triangleSet.insert(jT);
+                vId0 = mesh.getVertexId(iTriangle, 0);
+                vId1 = mesh.getVertexId(iTriangle, 1);
+                vId2 = mesh.getVertexId(iTriangle, 2);
+                edgeMap[getEdgeId(vId0, vId1)] = Array<plint, 2>(vId0, vId1) ;
+                edgeMap[getEdgeId(vId0, vId2)] = Array<plint, 2>(vId0, vId2) ;
+                edgeMap[getEdgeId(vId1, vId2)] = Array<plint, 2>(vId1, vId2) ;
+            }
         }
     }
 
@@ -264,6 +282,12 @@ void Cell3D<T, Descriptor>::close() {
     for (iter = edgeMap.begin(); iter != edgeMap.end(); ++iter)
     {
         edges.push_back(iter->second);
+    }
+
+    typename std::set<plint>::iterator iterSet;
+    for (iterSet = triangleSet.begin(); iterSet != triangleSet.end(); ++iterSet)
+    {
+        triangles.push_back(*iterSet);
     }
 
     typename std::map<plint, Particle3D<T,Descriptor>* >::iterator it;

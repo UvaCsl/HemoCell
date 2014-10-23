@@ -130,7 +130,7 @@ public:
         return *this;
      }
 
-    void push_back(Particle3D<T,Descriptor>* particle3D);
+    void push_back(Particle3D<T,Descriptor>* particle3D, bool particleIsInBulk=true);
     void close();
 
     void setMesh() ;

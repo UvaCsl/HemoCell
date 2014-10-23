@@ -95,7 +95,7 @@ void CellField3D<T, Descriptor>::grow() {
         lattice.getBoundingBox(), particleLatticeArg );
 
     ConstitutiveModel<T,Descriptor> *moreRigidCellModel =
-            new ShapeMemoryModel3D<T, Descriptor>(1.0, 0.0, 6000, 500.0, 0.0, 0.5, 0.0, 60000.0, 60000.0, 0.0, 7.5e-9, 2.5, cellModel->getDx(), cellModel->getDt(), cellModel->getDm(), elementaryMesh);
+            new ShapeMemoryModel3D<T, Descriptor>(1.0, 0.0, 6000, 500.0, 0.0, 1.5, 0.0, 60000.0, 60000.0, 0.0, 7.5e-9, 2.5, cellModel->getDx(), cellModel->getDt(), cellModel->getDm(), elementaryMesh);
 
     applyProcessingFunctional ( // advance particles in time according to velocity
         new AdvanceParticlesEveryWhereFunctional3D<T,Descriptor>,
@@ -107,9 +107,9 @@ void CellField3D<T, Descriptor>::grow() {
 
     T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
-    plint nIter = (1-ratio)*5000 + 500;
-    for (plint i = nIter; i < nIter; ++i) {
-        T iRatio = ratio + i*1.0 / 5000.0 ;
+    plint nIter = (1-ratio)*1000 + 500;
+    for (plint i = nIter-1; i < nIter; ++i) {
+        T iRatio = ratio + i*1.0 / 1000.0 ;
         if (iRatio > 1.0) { iRatio = 1.0; }
         if (i%100 == 0) {
             pcout << "growth iter:" << i<<std::endl;

@@ -99,7 +99,7 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     plint DeltaY = domain.y1-domain.y0;
     plint DeltaZ = domain.z1-domain.z0;
 
-    T Delta = 1;
+    T Delta = 2;
     DeltaX -= Delta*2;
     DeltaY -= Delta*2;
     DeltaZ -= Delta*2;
@@ -436,7 +436,7 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
 
     std::vector<Particle3D<T,Descriptor>*> found;
     particleField.findParticles(particleField.getBoundingBox(), found); // Gets the whole domain.
-
+    std::map<plint, pluint> cellIdToVerticesInBulk;
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
         ImmersedCellParticle3D<T,Descriptor>* particle = 
                 dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
@@ -450,16 +450,23 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
 
         plint cellId = particle->get_cellId();
         plint iVertex = particle->getVertexId();
+        cellIdToVerticesInBulk[cellId] += particleIsInBulk;
         if (cellIdToCell3D.count(cellId) == 0) {
             cellIdToCell3D[cellId] = new Cell3D<T,Descriptor>(mesh, cellId);
         }
         if ((not cellIdToCell3D[cellId]->hasVertex(iVertex)) || particleIsInBulk) {
-            cellIdToCell3D[cellId]->push_back(particle);
+            cellIdToCell3D[cellId]->push_back(particle, particleIsInBulk);
         }
     }
 
-    for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
-        (iter->second)->close();
+    typename std::map<plint, pluint >::iterator iterVIB;
+    for (iterVIB  = cellIdToVerticesInBulk.begin(); iterVIB != cellIdToVerticesInBulk.end(); ++iterVIB) {
+        if (cellIdToVerticesInBulk[(iterVIB->first)] > 0) {
+            cellIdToCell3D[iterVIB->first]->close();
+        } else {
+            delete cellIdToCell3D[iterVIB->first];
+            cellIdToCell3D.erase(iterVIB->first);
+        }
     }
 }
 
