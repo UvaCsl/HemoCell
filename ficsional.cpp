@@ -301,6 +301,10 @@ int main(int argc, char* argv[])
     MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
                                                         createBoundaryParticleField3D(lattice);
 
+    /* Repulsive force */
+    T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
+    PowerLawForce<T> PLF(k_int, DeltaX, R, k);
+    RBCField.applyCellCellForce(PLF, R);
 
 
     /*            I/O              */
@@ -317,6 +321,7 @@ int main(int argc, char* argv[])
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
+       RBCField.applyCellCellForce(PLF, R);
         // #2# IBM Spreading
         RBCField.setFluidExternalForce(poiseuilleForce);
         RBCField.spreadForceIBM();

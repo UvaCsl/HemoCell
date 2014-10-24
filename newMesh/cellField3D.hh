@@ -209,6 +209,15 @@ void CellField3D<T, Descriptor>::applyConstitutiveModel() {
     global::timer("Model").stop();
 }
 
+template<typename T, template<typename U> class Descriptor>
+void CellField3D<T, Descriptor>::applyCellCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius) {
+    global::timer("Model").start();
+    applyProcessingFunctional (
+       new ComputeCellCellForces3D<T,Descriptor> (calcForce, cutoffRadius),
+       immersedParticles->getBoundingBox(), particleArg );
+    global::timer("Model").stop();
+}
+
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirements ccReq) {

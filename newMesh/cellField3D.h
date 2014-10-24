@@ -68,7 +68,8 @@ public:
 	virtual void advanceParticles();
 	virtual void spreadForceIBM();
 	virtual void interpolateVelocityIBM();
-	virtual void applyConstitutiveModel();
+    virtual void applyConstitutiveModel();
+    virtual void applyCellCellForce(CellCellForce3D<T> & calcForce_, T cutoffRadius_);
 	/* Need implementation */
 	virtual void synchronizeCellQuantities_Local(SyncRequirements ccrRequirements_=SyncRequirements());
 	virtual void synchronizeCellQuantities_Global(SyncRequirements ccrRequirements_=SyncRequirements()) {} ;
