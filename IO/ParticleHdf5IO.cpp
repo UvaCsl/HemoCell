@@ -24,15 +24,8 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
 {
     PLB_PRECONDITION( blocks.size() > 0 );
 
-#ifdef PLB_MPI_PARALLEL
-    //  Get the number of processes.
-    int  p = MPI::COMM_WORLD.Get_size();
-    //  Get the individual process ID.
-     int id = MPI::COMM_WORLD.Get_rank();
-#else
-     int p=1;
-     int id = 0;
-#endif
+     int p = global::mpi().getSize();
+     int id = global::mpi().getRank();
     /************************************************************/
    /**            Fill triangle and particle lists            **/
   /************************************************************/
