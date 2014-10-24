@@ -74,6 +74,9 @@ void iniLatticePoiseuilleWithBodyForce(MultiBlockLattice3D<T,DESCRIPTOR>& lattic
                  IncomprFlowParam<T> const& parameters,
                  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T poiseuilleForce);
 
+template<typename T, template<class U> class Descriptor>
+void iniLatticeFullyPeriodic(MultiBlockLattice3D<T,Descriptor>& lattice, IncomprFlowParam<T> const& parameters, Array<T,3> uInit);
+
 void iniLatticeSquareCouette( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                  IncomprFlowParam<T> const& parameters,
                  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T shearRate);

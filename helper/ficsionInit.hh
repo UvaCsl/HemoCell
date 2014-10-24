@@ -262,6 +262,27 @@ void iniLatticePoiseuilleWithBodyForce(MultiBlockLattice3D<T,Descriptor>& lattic
     lattice.initialize();
 }
 
+/* ************* iniLatticeFullyPeriodic ******************* */
+template<typename T, template<class U> class Descriptor>
+void iniLatticeFullyPeriodic(MultiBlockLattice3D<T,Descriptor>& lattice, IncomprFlowParam<T> const& parameters, Array<T,3> uInit)
+{
+    const plint nx = parameters.getNx();
+    const plint ny = parameters.getNy();
+    const plint nz = parameters.getNz();
+
+    T rhoInit=1.0;
+    Array<T,6> strainRateInit(0., 0., 0., 0., 0., 0.);
+    MultiScalarField3D<T> density(nx, ny, nz, rhoInit);
+    MultiTensorField3D<T,3> velocity(nx, ny, nz, uInit);
+    MultiTensorField3D<T,6> strainRate(nx, ny, nz, strainRateInit);
+
+    recomposeFromFlowVariables(lattice, density, velocity, strainRate);
+    lattice.periodicity().toggleAll(true);
+    setExternalVector( lattice, lattice.getBoundingBox(),
+            Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(0.0, 0.0, 0.0));
+    lattice.initialize();
+}
+
 /* ************* iniLatticeSquareCouette ******************* */
 void iniLatticeSquareCouette( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                  IncomprFlowParam<T> const& parameters,
