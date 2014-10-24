@@ -63,7 +63,7 @@ public:
 	virtual void setFluidExternalForce() { return setFluidExternalForce(0.0); }
 
     virtual void initialize();
-    virtual void grow();
+    virtual void grow(bool growThem=false);
     virtual void createCellMap();
 	virtual void advanceParticles();
 	virtual void spreadForceIBM();
@@ -74,7 +74,7 @@ public:
 	virtual void synchronizeCellQuantities_Global(SyncRequirements ccrRequirements_=SyncRequirements()) {} ;
 	virtual void synchronizeCellQuantities(SyncRequirements ccrRequirements_=SyncRequirements()) { return synchronizeCellQuantities_Local(ccrRequirements_); } ;
 	pluint getNumberOfCells_Global() {
-	    CountGlobalNumberOfCells<T,Descriptor> nfunctional( getNumberOfCells_Local() );
+	    CountGlobalNumberOfCells<T,Descriptor> nfunctional( elementaryMesh.getNumVertices() );
 	    applyProcessingFunctional(nfunctional, immersedParticles->getBoundingBox(), particleArg);
 	    pluint gnoc =  nfunctional.getValue();
 	    return gnoc;

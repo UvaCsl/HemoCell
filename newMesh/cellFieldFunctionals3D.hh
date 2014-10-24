@@ -516,10 +516,10 @@ void FillCellMap<T,Descriptor>::getModificationPattern(std::vector<bool>& isWrit
 
 /* ******** CountGlobalNumberOfCells *********************************** */
 template<typename T, template<typename U> class Descriptor>
-CountGlobalNumberOfCells<T,Descriptor>::CountGlobalNumberOfCells(pluint numberOfCells_)
-    : numberOfCells(numberOfCells_)
+CountGlobalNumberOfCells<T,Descriptor>::CountGlobalNumberOfCells(plint numVertices_)
+    : numVertices(numVertices_)
 {
-    qId  = this->getStatistics().subscribeIntSum();
+    qId  = this->getStatistics().subscribeSum();
 }
 
 
@@ -527,15 +527,24 @@ template<typename T, template<typename U> class Descriptor>
 void CountGlobalNumberOfCells<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
-    this->getStatistics().gatherIntSum(qId, numberOfCells);
+    ParticleField3D<T,Descriptor>& particleField =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    std::vector<Particle3D<T,Descriptor>*> particles;
+    particleField.findParticles(domain, particles); // Gets particle only from the bulk
+
+    this->getStatistics().gatherSum(qId, particles.size()*1.0/numVertices);
 }
 
 
 template<typename T, template<typename U> class Descriptor>
 pluint CountGlobalNumberOfCells<T,Descriptor>::getValue() {
-    return pluint(this->getStatistics().getIntSum(qId));
+    return pluint(this->getStatistics().getSum(qId));
 }
 
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT CountGlobalNumberOfCells<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulk; // It is NOT extended in the processGenericBlocks
+}
 
 
 /* ******** ComputeRequiredQuantities *********************************** */

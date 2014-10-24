@@ -277,19 +277,15 @@ int main(int argc, char* argv[])
 
 
     FcnCheckpoint<T, DESCRIPTOR> checkpointer(document);
-    global::timer("Checkpoint").start();
     plint initIter=0;
     checkpointer.load(document, lattice, cellFields, initIter);
-    if (not checkpointer.wasCheckpointed()) {
-        checkpointer.save(lattice, cellFields, initIter);
-    }
-    global::timer("Checkpoint").stop();
-
     if (not checkpointer.wasCheckpointed()) {
         pcout << "initializing"<< std::endl;
 //        RBCField.initialize();
         RBCField.grow();
+        checkpointer.save(lattice, cellFields, initIter);
     }
+
     RBCField.synchronizeCellQuantities();
     plint nCells = RBCField.getNumberOfCells_Global();
 

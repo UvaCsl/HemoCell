@@ -162,14 +162,15 @@ template<typename T, template<typename U> class Descriptor>
 class CountGlobalNumberOfCells : public PlainReductiveBoxProcessingFunctional3D
 {
 public:
-    CountGlobalNumberOfCells(pluint numberOfCells_);
+    CountGlobalNumberOfCells(plint numVertices_);
     /// Argument: Particle-field.
     virtual CountGlobalNumberOfCells<T,Descriptor>* clone() const { return new CountGlobalNumberOfCells<T,Descriptor>(*this); };
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const { modified[0] = modif::nothing; };
     virtual pluint getValue();
+    virtual BlockDomain::DomainT appliesTo() const;
 protected:
-    pluint numberOfCells;
+    plint numVertices;
     plint qId;
 };
 

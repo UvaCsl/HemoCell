@@ -87,7 +87,7 @@ void CellField3D<T, Descriptor>::initialize() {
 
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::grow() {
+void CellField3D<T, Descriptor>::grow(bool growThem) {
     global::timer("CellInit").start();
     T ratio;
     applyProcessingFunctional (
@@ -108,7 +108,7 @@ void CellField3D<T, Descriptor>::grow() {
     T k_int = 0.0025, DeltaX=1.0, R=0.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
     plint nIter = (1-ratio)*5000 + 500;
-    for (plint i = 0; i < nIter; ++i) {
+    for (plint i = 0; i < nIter*growThem; ++i) {
         T iRatio = ratio + i*1.0 / 5000.0 ;
         if (iRatio > 1.0) { iRatio = 1.0; }
         moreRigidCellModel->inflate(iRatio);
