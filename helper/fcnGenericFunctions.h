@@ -6,6 +6,7 @@
 #include <string>
 
 #include <errno.h>
+#include <math.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
@@ -13,6 +14,16 @@ typedef struct stat Stat;
 
 
 using namespace std;
+
+
+/*
+ * Returns the new dimensions in case of weak scaling
+ * eg.
+ *       dim -> (32, 32, 32), numberOfProcesses-> 4
+ *    newdim -> (64, 64, 32)
+ *
+ */
+void weakScaling(int Nx, int Ny, int Nz, int numberOfProcesses, vector<int> & newNxNyNz);
 
 /* Checks if a file exists */
 // http://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exist-using-standard-c-c11-c

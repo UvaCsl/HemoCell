@@ -3,6 +3,16 @@
 #include "fcnGenericFunctions.h"
 
 
+void weakScaling(int Nx, int Ny, int Nz, int numberOfProcesses, vector<int> & newNxNyNz) {
+    int fmod = int(log2(numberOfProcesses))%3;
+    int fdiv = int((log2(numberOfProcesses)/3));
+    int ffactor = pow(2.0,fdiv);
+    newNxNyNz.clear();
+    newNxNyNz.push_back(Nx * (ffactor * (1 + fmod>1) + int(pow(2.0,fdiv))));
+    newNxNyNz.push_back(Ny * (ffactor * (1 + fmod>2) + int(pow(2.0,fdiv))));
+    newNxNyNz.push_back(Nz * (ffactor * (1 + fmod>0)));
+}
+
 
 
 inline bool file_exists (const std::string& name) {
