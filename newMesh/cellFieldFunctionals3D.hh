@@ -633,7 +633,7 @@ ComputeRequiredQuantities<T,Descriptor>::~ComputeRequiredQuantities() { }
 template<typename T, template<typename U> class Descriptor>
 ComputeRequiredQuantities<T,Descriptor>::ComputeRequiredQuantities (
             ComputeRequiredQuantities<T,Descriptor> const& rhs)
-    : ccrRequirements(rhs.ccrRequirements), cellIdToCell3D(rhs.cellIdToCell3D) { }
+    : ccrRequirements(rhs.ccrRequirements), cellIdToCell3D(rhs.cellIdToCell3D), keepQuantities(rhs.keepQuantities) { }
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -716,7 +716,7 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
                 }
             }
         }
-        reductionParticleField.removeParticles(reductionParticleField.getBoundingBox(), -1);
+        reductionParticleField.removeParticles(reductionParticleField.getBoundingBox());
 
         typename std::map<plint, Cell3D<T,Descriptor>*  >::iterator iter;
         for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
