@@ -46,8 +46,11 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          Array<T,3> cellPosition = cell3d->getPosition();
          correctPBPosition[itrtr->first].resetToZero();
          if (cellPosition[0] > Nx) { correctPBPosition[itrtr->first][0] = -int(cellPosition[0]/Nx)*Nx;}
+         if (cellPosition[0] <  0) { correctPBPosition[itrtr->first][0] =  int(cellPosition[0]/Nx)*Nx;}
          if (cellPosition[1] > Ny) { correctPBPosition[itrtr->first][1] = -int(cellPosition[1]/Ny)*Ny;}
+         if (cellPosition[1] <  0) { correctPBPosition[itrtr->first][1] =  int(cellPosition[1]/Ny)*Ny;}
          if (cellPosition[2] > Nz) { correctPBPosition[itrtr->first][2] = -int(cellPosition[2]/Nz)*Nz;}
+         if (cellPosition[2] <  0) { correctPBPosition[itrtr->first][2] =  int(cellPosition[2]/Nz)*Nz;}
 //         std::cout << MPI::COMM_WORLD.Get_rank() << " Cell Volume " << cell3d->getVolume()
 //                         << " surface " << cell3d->getSurface()
 //                         << " CCR_ANGLE_MEAN " << cell3d->getMeanAngle()
@@ -71,16 +74,12 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
              plint v0 = cell3d->getVertexId(iTriangle, 0);
              plint v1 = cell3d->getVertexId(iTriangle, 1);
              plint v2 = cell3d->getVertexId(iTriangle, 2);
-             if (castParticleToICP3D(cell3d->getParticle3D(v0))->get_processor() == id &&
-                     castParticleToICP3D(cell3d->getParticle3D(v1))->get_processor() == id &&
-                     castParticleToICP3D(cell3d->getParticle3D(v2))->get_processor() == id) {
-                 plint t0 = iv[v0]+sumLocalVertices;
-                 plint t1 = iv[v1]+sumLocalVertices;
-                 plint t2 = iv[v2]+sumLocalVertices;
-                 triangles.push_back(t0);
-                 triangles.push_back(t1);
-                 triangles.push_back(t2);
-             }
+             plint t0 = iv[v0]+sumLocalVertices;
+             plint t1 = iv[v1]+sumLocalVertices;
+             plint t2 = iv[v2]+sumLocalVertices;
+             triangles.push_back(t0);
+             triangles.push_back(t1);
+             triangles.push_back(t2);
          }
          sumLocalVertices += cellVertices.size();
      }
