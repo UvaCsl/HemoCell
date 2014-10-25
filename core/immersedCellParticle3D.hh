@@ -241,10 +241,10 @@ ImmersedCellParticle3D<T,Descriptor>* ImmersedCellParticle3D<T,Descriptor>::clon
 template<typename T, template<typename U> class Descriptor>
 bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,3>& vector) const {
     if (whichVector==0) {
-        vector = get_v();
+        vector = get_pbcPosition();
         return true;
     } else if (whichVector==1) {
-        vector = get_pbcPosition();
+        vector = get_v();
         return true;
     } else if (whichVector==2) {
         vector = get_a();
@@ -288,9 +288,9 @@ bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,
 template<typename T, template<typename U> class Descriptor>
 std::string ImmersedCellParticle3D<T,Descriptor>::getVectorName(plint whichVector) const {
     if (whichVector==0) {
-        return "velocity";
-    } else if (whichVector==1) {
         return "pbcPosition";
+    } else if (whichVector==1) {
+        return "velocity";
     } else if (whichVector==2) {
         return "acceleration";
     } else if (whichVector==3) {

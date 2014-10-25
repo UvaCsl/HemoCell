@@ -23,9 +23,12 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
     PLB_PRECONDITION( blocks.size() > 0 );
+    int p = global::mpi().getSize();
+    int id = global::mpi().getRank();
+    plint Nx = cellField3D.getParticleArg()[0]->getNx();
+    plint Ny = cellField3D.getParticleArg()[0]->getNy();
+    plint Nz = cellField3D.getParticleArg()[0]->getNz();
 
-     int p = global::mpi().getSize();
-     int id = global::mpi().getRank();
     /************************************************************/
    /**            Fill triangle and particle lists            **/
   /************************************************************/
@@ -36,10 +39,15 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      plint sumLocalVertices=0;
      plint numCells=cellIdToCell3D.size();
 
+     std::map<plint, Array<T,3> > correctPBPosition;
      typename std::map<plint, Cell3D<T,Descriptor>* >::iterator itrtr;
      for (itrtr  = cellIdToCell3D.begin(); itrtr != cellIdToCell3D.end(); ++itrtr) {
          Cell3D<T,Descriptor> * cell3d = (itrtr->second);
-
+         Array<T,3> cellPosition = cell3d->getPosition();
+         correctPBPosition[itrtr->first].resetToZero();
+         if (cellPosition[0] > Nx) { correctPBPosition[itrtr->first][0] = -int(cellPosition[0]/Nx)*Nx;}
+         if (cellPosition[1] > Ny) { correctPBPosition[itrtr->first][1] = -int(cellPosition[1]/Ny)*Ny;}
+         if (cellPosition[2] > Nz) { correctPBPosition[itrtr->first][2] = -int(cellPosition[2]/Nz)*Nz;}
 //         std::cout << MPI::COMM_WORLD.Get_rank() << " Cell Volume " << cell3d->getVolume()
 //                         << " surface " << cell3d->getSurface()
 //                         << " CCR_ANGLE_MEAN " << cell3d->getMeanAngle()
@@ -114,7 +122,10 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          for (plint ivN = 0; ivN < vN; ++ivN) {
              plint itr=0;
              for (plint iP = 0; iP < Np; ++iP) {
-                castParticleToICP3D(particles[iP])->getVector(ivN, vector);
+                icParticle = castParticleToICP3D(particles[iP]);
+                icParticle->getVector(ivN, vector);
+                // If is pbcPosition
+                if (ivN == 0) { vector = vector + correctPBPosition[icParticle->get_cellId()] ; }
                 // TODO: Change in XDMF file.
                 matrixTensor[itr++] = vector[2];
                 matrixTensor[itr++] = vector[1];
