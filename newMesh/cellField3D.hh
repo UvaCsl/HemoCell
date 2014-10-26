@@ -87,7 +87,7 @@ void CellField3D<T, Descriptor>::initialize() {
 
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::grow(bool growThem) {
+void CellField3D<T, Descriptor>::grow(plint growIterations) {
     global::timer("CellInit").start();
     T ratio;
     applyProcessingFunctional (
@@ -105,15 +105,15 @@ void CellField3D<T, Descriptor>::grow(bool growThem) {
         immersedParticles->getBoundingBox(), particleArg );
     synchronizeCellQuantities(moreRigidCellModel->getSyncRequirements());
 
-    T k_int = 0.0025, DeltaX=1.0, R=0.75, k=1.5;
+    T k_int = 0.25, DeltaX=1.0, R=3.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
-    plint nIter = (1-ratio)*5000 + 500;
-    for (plint i = 0; i < nIter*growThem; ++i) {
-        T iRatio = ratio + i*1.0 / 5000.0 ;
+    plint nIter = (1-ratio)*growIterations;
+    for (plint i = 0; i < growIterations; ++i) {
+        T iRatio = 1.0; ratio + i*1.0 / (growIterations*0.5) ;
         if (iRatio > 1.0) { iRatio = 1.0; }
-        moreRigidCellModel->inflate(iRatio);
+//        moreRigidCellModel->inflate(iRatio);
         if (i%100 == 0) {
-            pcout << "growth iter:" << i<< ", " <<  i*100.0/nIter << "%" <<std::endl;
+            pcout << "growth iter:" << i<< ", " <<  i*100.0/growIterations << "%" <<std::endl;
             writeCellField3D_HDF5(*this, 1.0, 1.0, i, "init_");
         }
         // #1# Calculate forces

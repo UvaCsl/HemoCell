@@ -63,7 +63,7 @@ public:
 	virtual void setFluidExternalForce() { return setFluidExternalForce(0.0); }
 
     virtual void initialize();
-    virtual void grow(bool growThem=false);
+    virtual void grow(plint growIterations=0);
     virtual void createCellMap();
 	virtual void advanceParticles();
 	virtual void spreadForceIBM();
