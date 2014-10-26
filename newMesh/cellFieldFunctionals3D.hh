@@ -32,7 +32,7 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
         cout << "cellId " << cellId << std::endl;
         for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
             Array<T,3> vertex = cellOrigin + elementaryMesh.getVertex(iVertex);
-            particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId) );
+            particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
         }
     }
 }
@@ -94,18 +94,12 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     MeshMetrics<T> mm(*mesh);
     T volume = mm.getVolume();
 
-    plint step = plint( pow(volume/hematocrit, 1.0/3.0) ) - 1;
-    plint DeltaX = domain.x1-domain.x0;
-    plint DeltaY = domain.y1-domain.y0;
-    plint DeltaZ = domain.z1-domain.z0;
+    plint DeltaX = domain.x1-domain.x0 + 1;
+    plint DeltaY = domain.y1-domain.y0 + 1;
+    plint DeltaZ = domain.z1-domain.z0 + 1;
 
-    T Delta = 2;
-    DeltaX -= Delta*2;
-    DeltaY -= Delta*2;
-    DeltaZ -= Delta*2;
-
-    T pcOfDomainConsidered = plint((DeltaX-3)/step) * plint((DeltaY-3)/step) * plint((DeltaZ-3)/step) * step*step*step / (DeltaX*DeltaY*DeltaZ * 1.0);
-    T rescaledHematocrit = hematocrit  / pcOfDomainConsidered;
+    plint step = plint( pow(volume/hematocrit, 1.0/3.0) );
+    T rescaledHematocrit = hematocrit / (plint(DeltaX/step) * plint(DeltaY/step) * plint(DeltaZ/step) * step*step*step / (DeltaX*DeltaY*DeltaZ * 1.0));
     T prob = step * step * step * 1.0 / volume * rescaledHematocrit;
 
     T scale = step*1.0/maxSide;
@@ -114,35 +108,49 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     ratio = scale;
 
     // Access the position of the atomic-block inside the multi-block.
-    Dot3D relativePosition = fluid.getLocation();
+    Dot3D relativePosition = particleField.getLocation();
     Array<T,3> relativeCoordinate(relativePosition.x, relativePosition.y, relativePosition.z);
-    relativeCoordinate += mvp * (0.5/ scale) + 2.0 + Delta;
 
     plint nVertices = mesh->getNumVertices();
-    PLB_PRECONDITION( step <= DeltaX &&  step <= DeltaY && step <= DeltaZ );
     plint cellId = 0;
     // Loop through the domain and place cell depending on the
-    for (plint iX=0; iX<(DeltaX-step-2 - Delta); iX += step) {
-        for (plint iY=0; iY<(DeltaY-step-2- Delta); iY+=step) {
-            for (plint iZ=0; iZ<(DeltaZ-step-2 - Delta); iZ+=step) {
+    for (plint iX=domain.x0; iX<=domain.x1-step; iX+=step) {
+        for (plint iY=domain.y0; iY<=domain.y1-step; iY+=step) {
+            for (plint iZ=domain.z0; iZ<=domain.z1-step; iZ+=step) {
                 T rn = guessRandomNumber();
                 if (rn <= prob) {
                     meshRandomRotation(mesh);
-//                    Array<T,3> cntr = Array<T,3>(iX*1.0, iY*1.0, iZ*1.0) + relativeCoordinate;
-//                    cout << "cntr = (" << cntr[0] << ", " << cntr[1] << ", " << cntr[2]<< ")" << std::endl;
                     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
                         Array<T,3> vertex = Array<T,3>(iX*1.0, iY*1.0, iZ*1.0) + relativeCoordinate + mesh->getVertex(iVertex);
-                        particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, cellId + 1000*mpiRank) );
+                        particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId + 1000*mpiRank, iVertex) );
                     }
                     cellId+=1;
                 }
             }
         }
     }
+
+    // DELETE CELLS THAT ARE NOT WHOLE
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
-
-    cout << mpiRank << "Number of particles/nVertices " << particles.size()*1.0/nVertices << " scale " << scale << " step " << step <<  " NCells " << cellId << " h " << cellId * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << std::endl;
+    std::map<plint, plint> cellIdToNumberOfVertices;
+    for (int iP = 0; iP < particles.size(); ++iP) {
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iP]);
+        cellIdToNumberOfVertices[particle->get_cellId()]++;
+    }
+    plint cellsDeleted=0;
+    typename std::map<plint, plint >::iterator itrt;
+    for (itrt  = cellIdToNumberOfVertices.begin(); itrt != cellIdToNumberOfVertices.end(); ++itrt) {
+        if (itrt->second < nVertices) {
+            cellsDeleted++;
+            particleField.removeParticles(domain, itrt->first);
+        }
+    }
+    particleField.findParticles(domain, particles);
+    cout << mpiRank << "Number of particles/nVertices " << particles.size()*1.0/nVertices
+            << " scale " << scale << " step " << step
+            << " h " << particles.size()*1.0/nVertices * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << " (deleted:" << cellsDeleted << ")" << std::endl;
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -252,17 +260,14 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
 //    Dot3D offset = computeRelativeDisplacement(particleField, fluid);
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
-    std::vector<Dot3D> cellPos;
-    std::vector<T> weights;
-    std::vector<Cell<T,Descriptor>*> cells;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
         Array<T,3> velocity; velocity.resetToZero();
-        cellPos = particle->getIBMcoordinates();
-        weights = particle->getIBMweights();
+        std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
+        std::vector<T>  & weights = particle->getIBMweights();
         if (cellPos.size() == 0) {
             interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
         }
@@ -326,13 +331,18 @@ void ViscousPositionUpdate3D<T,Descriptor>::processGenericBlocks (
     /* Not used */
 //    Dot3D offset = computeRelativeDisplacement(particleField, fluid);
     std::vector<Particle3D<T,Descriptor>*> particles;
-    particleField.findParticles(domain, particles);
+    particleField.findParticles(particleField.getBoundingBox(), particles);
 
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
         PLB_ASSERT( particle );
         T dt = 1.0;
+        if ((particle->get_force()[0]!=0) || (particle->get_force()[1]!=0) || (particle->get_force()[2]!=0))
+        pcout << "(ViscousPositionUpdate3D) " << particle->get_force()[0] << " "
+                                              << particle->get_force()[1] << " "
+                                              << particle->get_force()[2] << std::endl;
+
         particle->get_vPrevious() = particle->get_v() = ratio * 0.5 * particle->get_force() * dt * dt;
     }
 }
@@ -383,15 +393,14 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
     std::vector<Dot3D> cellPos;
-    std::vector<T> weights;
     Cell<T,Descriptor>* cell;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
-        cellPos = particle->getIBMcoordinates();
-        weights = particle->getIBMweights();
+        std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
+        std::vector<T> & weights = particle->getIBMweights();
         interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
         Array<T,3> elasticForce = particle->get_force();
         // pcout << "elastic force: (" << elasticForce[0] << ", "<< elasticForce[1] << ", "<< elasticForce[2] << ")\n";

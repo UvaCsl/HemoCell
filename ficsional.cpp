@@ -227,9 +227,18 @@ int main(int argc, char* argv[])
         T L_tmp = parameters.getNy();
         T nu_tmp = parameters.getLatticeNu();
         poiseuilleForce = 8 * (nu_tmp*nu_tmp) * Re / (L_tmp*L_tmp*L_tmp) ;
+        pcout << "(main) Using iniLatticePoiseuilleWithBodyForce. "<< flowType << std::endl;
         iniLatticePoiseuilleWithBodyForce<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, poiseuilleForce);
     }
-    else { iniLatticeSquareCouette(lattice, parameters, *boundaryCondition, shearRate); }
+    else if (flowType == 1) {
+        pcout << "(main) Using iniLatticeSquareCouette. "<< flowType << std::endl;
+        iniLatticeSquareCouette(lattice, parameters, *boundaryCondition, shearRate);
+    }
+    else if (flowType == 2) {
+        pcout << "(main) Using iniLatticeFullyPeriodic. "<< flowType << std::endl;
+//        envelope-update
+        iniLatticeFullyPeriodic(lattice, parameters, Array<T,3>(0.02, 0.02, 0.02));
+    }
 
 
     /*
@@ -282,21 +291,21 @@ int main(int argc, char* argv[])
     if (not checkpointer.wasCheckpointed()) {
         pcout << "initializing"<< std::endl;
 //        RBCField.initialize();
-        RBCField.grow();
+        RBCField.grow(0);
         checkpointer.save(lattice, cellFields, initIter);
     }
 
     RBCField.synchronizeCellQuantities();
     plint nCells = RBCField.getNumberOfCells_Global();
 
-    pcout << "Hematocrit [x100%]: " << hct*100 << std::endl;
+    pcout << "Hematocrit [x100%]: " << nCells*eqVolume*100.0/(nx*ny*nz) << std::endl;
     pcout << "mu_0 = " << cellModel->getMembraneShearModulus()*dNewton/dx << std::endl;
     pcout << "K = " << cellModel->getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
     pcout << "YoungsModulus = " << cellModel->getYoungsModulus()*dNewton/dx << std::endl;
     pcout << "Poisson ratio = " << cellModel->getPoissonRatio() << std::endl;
-    pcout << std::endl << "Starting simulation i=" << initIter << std::endl;
     pcout << "Poisson ratio = " << cellModel->getPoissonRatio() << std::endl;
     cout << "nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() << std::endl;
+    pcout << std::endl << "Starting simulation i=" << initIter << std::endl;
 
     MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
                                                         createBoundaryParticleField3D(lattice);
@@ -321,7 +330,7 @@ int main(int argc, char* argv[])
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
-       RBCField.applyCellCellForce(PLF, R);
+//       RBCField.applyCellCellForce(PLF, R);
         // #2# IBM Spreading
         RBCField.setFluidExternalForce(poiseuilleForce);
         RBCField.spreadForceIBM();

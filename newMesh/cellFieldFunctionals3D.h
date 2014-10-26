@@ -48,6 +48,9 @@ void meshRandomRotation (TriangularSurfaceMesh<T> * mesh) {
     Array<T,3> meshCenter = Array<T,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
     mesh->translate(-1.0 * meshCenter);
     mesh->rotate(guessRandomNumber() * 2 * pi, guessRandomNumber() * pi, guessRandomNumber() * 2 * pi);
+
+    mesh->computeBoundingBox (xRange, yRange, zRange);
+    mesh->translate(Array<T,3>(-xRange[0], -yRange[0], -zRange[0]));
 }
 
 template<typename T, template<typename U> class Descriptor>
