@@ -145,6 +145,7 @@ public:
 
     plint getCellNumVertices() const { return cellNumVertices; }
     plint getCellNumTriangles() const { return cellNumTriangles; }
+    plint getNumVertices_LocalBulk() const { return verticesInBulk.size(); }
     plint getNumVertices_Local() const { return vertices.size(); }
     plint getNumTriangles_Local() const { return triangles.size(); }
     plint getNumVertices_Global() const { return cellNumVertices; }

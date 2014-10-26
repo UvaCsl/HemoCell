@@ -273,7 +273,7 @@ int main(int argc, char* argv[])
 
     /* Deflate if I say so */
 //    MorsePotential<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
-    MorseAndPowerLawForce<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
+//    MorseAndPowerLawForce<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
 //    if (flowType == 2) {
 //        applyProcessingFunctional (
 //           new ComputeCellCellForces3D<T,DESCRIPTOR> (interCellularForce, 1.1e-6/dx),

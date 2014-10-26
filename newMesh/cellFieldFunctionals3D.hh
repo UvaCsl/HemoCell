@@ -99,11 +99,19 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     plint DeltaZ = domain.z1-domain.z0 + 1;
 
     plint step = plint( pow(volume/hematocrit, 1.0/3.0) );
-    T rescaledHematocrit = hematocrit / (plint(DeltaX/step) * plint(DeltaY/step) * plint(DeltaZ/step) * step*step*step / (DeltaX*DeltaY*DeltaZ * 1.0));
+    T Vdomain = DeltaX * DeltaY * DeltaZ;
+    T Vsubdomain = plint((DeltaX-0.5)/step) * plint((DeltaY-0.5)/step) * plint((DeltaZ-0.5)/step) * step*step*step ;
+    T rescaledHematocrit = hematocrit * Vdomain / Vsubdomain;
     T prob = step * step * step * 1.0 / volume * rescaledHematocrit;
+    while (prob > 1.0) {
+        step -= 1.0;
+        Vsubdomain = plint(DeltaX/step) * plint(DeltaY/step) * plint(DeltaZ/step) * step*step*step ;
+        rescaledHematocrit = hematocrit * Vdomain / Vsubdomain;
+        prob = step * step * step * 1.0 / volume * rescaledHematocrit;
+    }
 
     T scale = step*1.0/maxSide;
-    if (scale > 0.8) { scale = 0.8; };
+    if (scale > 1.0) { scale = 1.0; };
     mesh->scale(scale);
     ratio = scale;
 
@@ -150,6 +158,7 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     particleField.findParticles(domain, particles);
     cout << mpiRank << "Number of particles/nVertices " << particles.size()*1.0/nVertices
             << " scale " << scale << " step " << step
+            << " prob " << prob
             << " h " << particles.size()*1.0/nVertices * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << " (deleted:" << cellsDeleted << ")" << std::endl;
 }
 
