@@ -38,12 +38,14 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      std::vector<Particle3D<T,Descriptor>* > particles;
      plint sumLocalVertices=0;
      plint numCells=cellIdToCell3D.size();
+     plint NpBulk = 0;
 
      std::map<plint, Array<T,3> > correctPBPosition;
      typename std::map<plint, Cell3D<T,Descriptor>* >::iterator itrtr;
      for (itrtr  = cellIdToCell3D.begin(); itrtr != cellIdToCell3D.end(); ++itrtr) {
          Cell3D<T,Descriptor> * cell3d = (itrtr->second);
          Array<T,3> cellPosition = cell3d->getPosition();
+         NpBulk += cell3d->getNumVertices_LocalBulk();
          correctPBPosition[itrtr->first].resetToZero();
          if (cellPosition[0] > Nx) { correctPBPosition[itrtr->first][0] = -int(cellPosition[0]/Nx)*Nx;}
          if (cellPosition[0] <  0) { correctPBPosition[itrtr->first][0] =  int(cellPosition[0]/Nx)*Nx;}
@@ -106,6 +108,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      H5LTset_attribute_int (file_id, "/", "processorId", &id, 1);
 
      H5LTset_attribute_long (file_id, "/", "numberOfParticles", &Np, 1);
+     H5LTset_attribute_long (file_id, "/", "numberOfParticlesBulk", &NpBulk, 1);
      H5LTset_attribute_long (file_id, "/", "numberOfTriangles", &Nt, 1);
 
      /************************************************************/
