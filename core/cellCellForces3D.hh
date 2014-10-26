@@ -43,6 +43,7 @@ void ComputeCellCellForces3D<T,Descriptor>::applyForce (
         Array<T,3> force = calcForce(r, eij);
         cParticle->get_force() += force;
         nParticle->get_force() -= force;
+
 #ifdef PLB_DEBUG // Less Calculations
         cParticle->get_f_repulsive() += force;
         nParticle->get_f_repulsive() -= force;
@@ -60,28 +61,27 @@ void ComputeCellCellForces3D<T,Descriptor>::processGenericBlocks (
     PLB_PRECONDITION( blocks.size()==1 );
     ParticleField3D<T,Descriptor>& particleField =
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
-
+    Box3D extendedDomain = particleField.getBoundingBox();
     T r;
     Array<T,3> eij;
     plint dR = ceil(cutoffRadius);
 
     std::vector<Particle3D<T,Descriptor>*> currentParticles, neighboringParticles;
-    for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
-        for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
-            for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+    for (plint iX=extendedDomain.x0; iX<=extendedDomain.x1; ++iX) {
+        for (plint iY=extendedDomain.y0; iY<=extendedDomain.y1; ++iY) {
+            for (plint iZ=extendedDomain.z0; iZ<=extendedDomain.z1; ++iZ) {
                 currentParticles.clear(); neighboringParticles.clear();
 
                 Box3D currentBox(iX,iX,iY,iY,iZ,iZ);
                 plint x0, x1, y0, y1, z0, z1;
-                x0 = max(domain.x0, iX-dR); x1 = min(domain.x1, iX+dR);
-                y0 = max(domain.y0, iY-dR); y1 = min(domain.y1, iY+dR);
-                z0 = max(domain.z0, iZ-dR); z1 = min(domain.z1, iZ+dR);
+                x0 = max(extendedDomain.x0, iX-dR); x1 = min(extendedDomain.x1, iX+dR);
+                y0 = max(extendedDomain.y0, iY-dR); y1 = min(extendedDomain.y1, iY+dR);
+                z0 = max(extendedDomain.z0, iZ-dR); z1 = min(extendedDomain.z1, iZ+dR);
 
                 Box3D neighboringBoxes(x0, x1, y0, y1, z0, z1);
                 particleField.findParticles(currentBox, currentParticles);
                 if (currentParticles.size() == 0) { break; }
                 particleField.findParticles(neighboringBoxes, neighboringParticles);
-
                 for (pluint cP=0; cP<currentParticles.size(); ++cP) {
                     for (pluint nP=0; nP<neighboringParticles.size(); ++nP) {
                         if (conditionsAreMet(currentParticles[cP], neighboringParticles[nP], r, eij)) {
@@ -108,7 +108,7 @@ void ComputeCellCellForces3D<T,Descriptor>::getModificationPattern(std::vector<b
 
 template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT ComputeCellCellForces3D<T,Descriptor>::appliesTo() const {
-    return BlockDomain::bulkAndEnvelope;
+    return BlockDomain::bulk;
 }
 
 template<typename T, template<typename U> class Descriptor>
