@@ -29,7 +29,6 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
     for (pluint iCO=0; iCO < cellOrigins.size(); ++iCO) {
         Array<T,3> & cellOrigin = cellOrigins[iCO];
         plint cellId = iCO + global::mpi().getRank()*1000 ;
-        cout << "cellId " << cellId << std::endl;
         for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
             Array<T,3> vertex = cellOrigin + elementaryMesh.getVertex(iVertex);
             particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
@@ -156,7 +155,8 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
         }
     }
     particleField.findParticles(domain, particles);
-    cout << mpiRank << "Number of particles/nVertices " << particles.size()*1.0/nVertices
+    pcout << "(RandomPositionCellParticlesForGrowth3D) "
+            << mpiRank << "Number of particles/nVertices " << particles.size()*1.0/nVertices
             << " scale " << scale << " step " << step
             << " prob " << prob
             << " h " << particles.size()*1.0/nVertices * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << " (deleted:" << cellsDeleted << ")" << std::endl;

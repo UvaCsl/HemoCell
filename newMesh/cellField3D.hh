@@ -14,8 +14,8 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
     pluint particleEnvelopeWidth = maxEdgeLengthLU;
     pluint reductionParticleEnvelopeWidth = maxCellDiameterLU;
 
-    pcout << "particleEnvelopeWidth " << particleEnvelopeWidth << std::endl;
-    pcout << "reductionParticleEnvelopeWidth " << reductionParticleEnvelopeWidth << std::endl;
+    pcout << "(CellField3D) particleEnvelopeWidth " << particleEnvelopeWidth << std::endl;
+    pcout << "(CellField3D) reductionParticleEnvelopeWidth " << reductionParticleEnvelopeWidth << std::endl;
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
             latticeManagement.getSparseBlockStructure(),
@@ -211,11 +211,11 @@ void CellField3D<T, Descriptor>::applyConstitutiveModel() {
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::applyCellCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius) {
-    global::timer("Model").start();
+    global::timer("CellCellForce").start();
     applyProcessingFunctional (
        new ComputeCellCellForces3D<T,Descriptor> (calcForce, cutoffRadius),
        immersedParticles->getBoundingBox(), particleArg );
-    global::timer("Model").stop();
+    global::timer("CellCellForce").stop();
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -225,11 +225,11 @@ void CellField3D<T, Descriptor>::applyDifferentCellForce(CellCellForce3D<T> & ca
     std::vector<MultiBlock3D*> differentCellCellParticleArg;
     differentCellCellParticleArg.push_back(otherCellParticles);
     differentCellCellParticleArg.push_back(immersedParticles);
-    global::timer("Model").start();
+    global::timer("CellCellForce").start();
     applyProcessingFunctional (
        new ComputeDifferentCellForces3D<T,Descriptor> (calcForce, cutoffRadius),
        immersedParticles->getBoundingBox(), differentCellCellParticleArg );
-    global::timer("Model").stop();
+    global::timer("CellCellForce").stop();
 
 }
 

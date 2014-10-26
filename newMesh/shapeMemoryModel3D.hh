@@ -113,7 +113,7 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
     /* Dissipative term coefficients from FedosovCaswellKarniadakis2010 */
     gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
     gamma_C = (gamma_T/3.0);
-
+#ifdef PLB_DEBUG // Less Calculations
     pcout << std::endl;
     pcout << " ============================================= " << std::endl;
     pcout << "k_bend: " << k_bend << ",\t eqAngle (degrees): " << eqAngle*180.0/pi << std::endl;
@@ -131,7 +131,12 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
     pcout << "* k_surface: " << k_surface/(kBT/pow(eqLength,2)) <<  std::endl;
     pcout << "* k_shear: " << k_shear/(kBT/pow(eqLength,2)) <<  std::endl;
     pcout << "* eqLength from eqArea: " << sqrt(4*eqMeanArea/sqrt(3.0)) << ",\t eqLength: " << eqLength << std::endl;
+    pcout << "# mu_0 = " << getMembraneShearModulus()*dNewton/dx << std::endl;
+    pcout << "# K = " << getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
+    pcout << "# YoungsModulus = " << getYoungsModulus()*dNewton/dx << std::endl;
+    pcout << "# Poisson ratio = " << getPoissonRatio() << std::endl;
     pcout << " ============================================= " << std::endl;
+#endif // PLB_DEBUG // Less Calculations
 }
 
 

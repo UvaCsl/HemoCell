@@ -93,6 +93,12 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
         ly = ny * dx;
         lz = nz * dx;
     }
+    flowType = 2;
+    vector<int> newNxNyNz;
+    weakScaling(32, 32, 32, global::mpi().getSize(), newNxNyNz);
+    lx = (newNxNyNz[0]-1) * dx; // Palabos adds 1LU at the boundaries
+    ly = (newNxNyNz[1]-1) * dx;
+    lz = (newNxNyNz[2]-1) * dx;
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
     try {

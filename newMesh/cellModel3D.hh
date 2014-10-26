@@ -86,7 +86,6 @@ CellModel3D<T, Descriptor>::CellModel3D(T density_, T k_rest_,
     eqLength = meshmetric.getMeanLength();
     maxLength = meshmetric.getMaxLength()*eqLengthRatio;
     eqArea = meshmetric.getMeanArea();
-    cout << " meshmetric.getMeanAngle() " <<  meshmetric.getMeanAngle() << std::endl;
 //    eqAngle = meshmetric.getMeanAngle();
     eqVolume = meshmetric.getVolume();
     eqSurface = meshmetric.getSurface();
@@ -121,6 +120,7 @@ CellModel3D<T, Descriptor>::CellModel3D(T density_, T k_rest_,
 //             / (64.0*persistenceLengthCoarse)
 //             * (4*x0*x0 - 9*x0 + 6)
 //             / (1-x0)*(1-x0);
+#ifdef PLB_DEBUG // Less Calculations
     pcout << std::endl;
     pcout << " ============================================= " << std::endl;
     pcout << "k_WLC: " << k_WLC << ",\t eqLength: " << eqLength << std::endl;
@@ -140,7 +140,13 @@ CellModel3D<T, Descriptor>::CellModel3D(T density_, T k_rest_,
     pcout << "* k_surface: " << k_surface/(kBT/pow(eqLength,2)) <<  std::endl;
     pcout << "* k_shear: " << k_shear/(kBT/pow(eqLength,2)) <<  std::endl;
     pcout << "* eqLength from eqArea: " << sqrt(4*eqArea/sqrt(3.0)) << ",\t eqLength: " << eqLength << std::endl;
+    pcout << "# mu_0 = " << getMembraneShearModulus()*dNewton/dx << std::endl;
+    pcout << "# K = " << getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
+    pcout << "# YoungsModulus = " << getYoungsModulus()*dNewton/dx << std::endl;
+    pcout << "# Poisson ratio = " << getPoissonRatio() << std::endl;
     pcout << " ============================================= " << std::endl;
+#endif // PLB_DEBUG // Less Calculations
+
 }
 
 

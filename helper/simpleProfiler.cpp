@@ -19,7 +19,7 @@ public:
     ~SimpleFicsionProfiler() { };
 
     void writeInitial(plint nx, plint ny, plint nz, plint nCells, plint nVerticesPerCell) {
-        performanceLogFile << "## mainLoop, LBM, IBM, Quantities and Model are calculated per iteration ##" << nx * ny * nz << std::endl;
+        performanceLogFile << "## mainLoop, LBM, IBM, Quantities and Model are calculated per iteration ##" << std::endl;
         performanceLogFile << "# Nx*Ny*Nz; " << nx * ny * nz << std::endl;
         performanceLogFile << "# Ncells; " << nCells << std::endl;
         performanceLogFile << "# Nparticles; " << nCells * nVerticesPerCell << std::endl;
@@ -47,11 +47,14 @@ public:
         performanceLogFile << "Quantities" << "; " << iter << "; "<< dtIteration*1.0/interval  << std::endl;
         dtIteration = global::timer("Model").stop(); global::timer("Model").reset();
         performanceLogFile << "Model" << "; " << iter << "; "<< dtIteration*1.0/interval  << std::endl;
+        dtIteration = global::timer("CellCellForce").stop(); global::timer("CellCellForce").reset();
+        performanceLogFile << "CellCellForce" << "; " << iter << "; "<< dtIteration*1.0/interval  << std::endl;
         dtIteration = global::timer("HDFOutput").stop(); global::timer("HDFOutput").reset();
         performanceLogFile << "HDFOutput" << "; " << iter << "; "<< dtIteration << std::endl;
         dtIteration = global::timer("Checkpoint").stop(); global::timer("Checkpoint").reset();
-        performanceLogFile << "Checkpoint" << "; " << iter << "; "<< dtIteration << std::endl;
-
+        if (dtIteration>0) {
+            performanceLogFile << "Checkpoint" << "; " << iter << "; "<< dtIteration << std::endl;
+        }
         global::timer("mainLoop").start();
     }
 private:
