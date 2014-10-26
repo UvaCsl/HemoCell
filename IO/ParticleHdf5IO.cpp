@@ -34,11 +34,11 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
   /************************************************************/
 
      std::map<plint, Cell3D<T,Descriptor>* > cellIdToCell3D = cellField3D.getCellIdToCell3D();
-     std::vector< plint > triangles;
+     std::vector< long int > triangles;
      std::vector<Particle3D<T,Descriptor>* > particles;
      plint sumLocalVertices=0;
      plint numCells=cellIdToCell3D.size();
-     plint NpBulk = 0;
+     long int NpBulk = 0;
 
      std::map<plint, Array<T,3> > correctPBPosition;
      typename std::map<plint, Cell3D<T,Descriptor>* >::iterator itrtr;
@@ -86,8 +86,8 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          sumLocalVertices += cellVertices.size();
      }
 
-     plint Np = particles.size();
-     plint Nt = triangles.size() / 3;
+     long int Np = particles.size();
+     long int Nt = triangles.size() / 3;
 
      /************************************************************/
     /**            Initialise HDF5 file                        **/
@@ -103,7 +103,8 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
 
      H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
      H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
-     H5LTset_attribute_long (file_id, "/", "iteration", &iter, 1);
+     long int iterHDF5=iter;
+     H5LTset_attribute_long (file_id, "/", "iteration", &iterHDF5, 1);
      H5LTset_attribute_int (file_id, "/", "numberOfProcessors", &p, 1);
      H5LTset_attribute_int (file_id, "/", "processorId", &id, 1);
 

@@ -98,13 +98,6 @@ template<class BlockLatticeT>
 void writeVTK(BlockLatticeT& lattice,
               IncomprFlowParam<T> const& parameters, plint iter);
 
-/// Export the surface mesh as an ASCII STL file considering the dx.
-template<typename T> // Copied from void TriangularSurfaceMesh<T>::writeAsciiSTL(std::string fname).
-void writeMeshAsciiSTL(TriangleBoundary3D<T> & Cells, std::string fname, T dx=0.0);
-
-/// Export the surface mesh as an binary STL file considering the dx.
-template<typename T> // Copied from void TriangularSurfaceMesh<T>::writeBinarySTL(std::string fname).
-void writeMeshBinarySTL(TriangleBoundary3D<T> & Cells, std::string fname, T dx=0.0);
 
 
 /* ************* Class GetTensorFieldFromExternalVectorFunctional3D ******************* */

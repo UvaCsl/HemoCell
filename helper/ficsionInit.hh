@@ -271,7 +271,8 @@ void iniLatticeFullyPeriodic(MultiBlockLattice3D<T,Descriptor>& lattice, Incompr
     const plint nz = parameters.getNz();
 
     T rhoInit=1.0;
-    Array<T,6> strainRateInit(0., 0., 0., 0., 0., 0.);
+    Array<T,6> strainRateInit;
+    for(int i=0; i<6; i++) {  strainRateInit[i] = 0.; }
     MultiScalarField3D<T> density(nx, ny, nz, rhoInit);
     MultiTensorField3D<T,3> velocity(nx, ny, nz, uInit);
     MultiTensorField3D<T,6> strainRate(nx, ny, nz, strainRateInit);
