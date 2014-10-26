@@ -60,7 +60,7 @@ public:
             T dx_, T dt_, T dm_,
             TriangularSurfaceMesh<T> const& meshElement);
     ShapeMemoryModel3D(ShapeMemoryModel3D<T,Descriptor> const& rhs);
-    ~ShapeMemoryModel3D() {std::cout << "ShapeMemoryModel3D Destructor" << std::endl;} ;
+    ~ShapeMemoryModel3D() { } ;
     Array<T,3> computeElasticForce (
                TriangleBoundary3D<T> const& boundary,
                 plint iVertex ) { return Array<T,3>(0.0, 0.0, 0.0); }
