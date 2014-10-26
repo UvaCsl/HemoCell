@@ -31,7 +31,7 @@ public:
            * Their distance has to be less that the cutoffRadius.
      */
     bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T& r, Array<T,3>& eij);
-    void applyForce(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> const& eij);
+    void applyForce(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> & eij);
 private:
     CellCellForce3D<T> & calcForce;
     T cutoffRadius;
@@ -43,7 +43,7 @@ template<typename T, template<typename U> class Descriptor>
 class ComputeDifferentCellForces3D : public BoxProcessingFunctional3D
 {
 public:
-    ComputeDifferentCellForces3D (CellCellForce3D<T> const& calcForce_, T cutoffRadius_);
+    ComputeDifferentCellForces3D (CellCellForce3D<T> & calcForce_, T cutoffRadius_);
     virtual ~ComputeDifferentCellForces3D();
     ComputeDifferentCellForces3D(ComputeDifferentCellForces3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -60,9 +60,9 @@ public:
            * Their distance has to be less that the cutoffRadius.
      */
     bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T& r, Array<T,3>& eij);
-    void applyForce(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T const& r, Array<T,3> const& eij);
+    void applyForce(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij);
 private:
-    CellCellForce3D<T> const& calcForce;
+    CellCellForce3D<T> & calcForce;
     T cutoffRadius;
 };
 
@@ -77,12 +77,12 @@ public:
     virtual ~CellCellForce3D() { }
     virtual CellCellForce3D<T>* clone() const=0;
     // CellCellForce3D X; X(r, eij) returns the force.
-    virtual Array<T,3> operator() (T r, Array<T,3> const& eij);
-    virtual Array<T,3> operator() (Array<T,3> const& x1, Array<T,3> const& x2) ;
+    virtual Array<T,3> operator() (T r, Array<T,3> & eij);
+    virtual Array<T,3> operator() (Array<T,3> & x1, Array<T,3> & x2) ;
 public:
-    virtual Array<T,3> calculateForce (T r, Array<T,3> const& eij) = 0;
+    virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) = 0;
     virtual T calculatePotential (T r) = 0;
-    virtual T calculatePotential (T r, Array<T,3> const& eij);
+    virtual T calculatePotential (T r, Array<T,3> & eij);
 private:
 };
 
@@ -104,7 +104,7 @@ public:
     virtual PowerLawForce<T>* clone() const { return new PowerLawForce<T>(k_int, DeltaX, R, k); } ;
 public:
     virtual T calculatePotential (T r) { return 0; }
-    virtual Array<T,3> calculateForce (T r, Array<T,3> const& eij) {
+    virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
         return k_int * (pow((DeltaX*1.0/r),k) - DeltaXoverRink)*eij;
     }
 private:
@@ -126,7 +126,7 @@ public:
     virtual LennardJonesPotential<T>* clone() const { return new LennardJonesPotential<T>(epsilonLJ, sigmaLJ); } ;
 public:
     virtual T calculatePotential (T r) { T x = pow(sigmaLJ*1.0/r, 6.0); return 4*epsilonLJ*(x*x - x); }
-    virtual Array<T,3> calculateForce (T r, Array<T,3> const& eij) {
+    virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
         T x = pow(sigmaLJ*1.0/r, 6.0);
         return   (24.0/r) * epsilonLJ * (2*x*x - x) * eij;
     }
@@ -154,7 +154,7 @@ public:
     virtual MorsePotential<T>* clone() const { return new MorsePotential<T>(De, beta, r0); } ;
 public:
     virtual T calculatePotential (T r) { return De*( exp(2*beta*(r0 - r)) - 2*exp(beta*(r0 - r))); }
-    virtual Array<T,3> calculateForce (T r, Array<T,3> const& eij) {
+    virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
             T x = exp( beta * (-r + r0) );
             return 2*beta*De*(x*x  - x) * eij;
     }
@@ -180,7 +180,7 @@ public:
     virtual JohnsonKendallRobertsForce<T>* clone() const { return new JohnsonKendallRobertsForce<T>(); } ;
 public:
     virtual T calculatePotential (T r) {return 0.0; }
-    virtual Array<T,3> calculateForce (T r, Array<T,3> const& eij) {
+    virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
         return Array<T,3>(0,0,0);
     }
 private:
@@ -211,7 +211,7 @@ public:
     virtual T calculatePotential (T r) { // Only the Morse contribution is accounted for the potential.
         return De*( exp(2*beta*(r0 - r)) - 2*exp(beta*(r0 - r)));
     }
-    virtual Array<T,3> calculateForce (T r, Array<T,3> const& eij) {
+    virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
             T x = exp( beta * (-r + r0) );
             Array<T,3> force = 2*beta*De*(x*x  - x) * eij;
             force = force + k_int * (pow((DeltaX*1.0/r),k) - DeltaXoverRink)*eij;

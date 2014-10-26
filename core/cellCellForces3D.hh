@@ -36,7 +36,7 @@ bool ComputeCellCellForces3D<T,Descriptor>::conditionsAreMet (
 
 template<typename T, template<typename U> class Descriptor>
 void ComputeCellCellForces3D<T,Descriptor>::applyForce (
-        Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> const& eij)
+        Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> & eij)
 {
         ImmersedCellParticle3D<T,Descriptor>* cParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p1);
         ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
@@ -124,7 +124,7 @@ void ComputeCellCellForces3D<T,Descriptor>::getTypeOfModification (
 /* ******** ComputeDifferentCellForces3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
-ComputeDifferentCellForces3D<T,Descriptor>::ComputeDifferentCellForces3D (CellCellForce3D<T> const& calcForce_, T cutoffRadius_)
+ComputeDifferentCellForces3D<T,Descriptor>::ComputeDifferentCellForces3D (CellCellForce3D<T> & calcForce_, T cutoffRadius_)
 : calcForce(calcForce_), cutoffRadius(cutoffRadius_) { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -148,7 +148,7 @@ bool ComputeDifferentCellForces3D<T,Descriptor>::conditionsAreMet (
 
 template<typename T, template<typename U> class Descriptor>
 void ComputeDifferentCellForces3D<T,Descriptor>::applyForce (
-        Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T const& r, Array<T,3> const& eij)
+        Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
         ImmersedCellParticle3D<T,Descriptor>* cParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p1);
         ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
@@ -232,13 +232,13 @@ void ComputeDifferentCellForces3D<T,Descriptor>::getTypeOfModification (
 
 
 template<typename T>
-Array<T,3> CellCellForce3D<T>::operator() (T r, Array<T,3> const& eij) {
+Array<T,3> CellCellForce3D<T>::operator() (T r, Array<T,3> & eij) {
     return calculateForce (r, eij);
 }
 
 
 template<typename T>
-Array<T,3> CellCellForce3D<T>::operator() (Array<T,3> const& x1, Array<T,3> const& x2) {
+Array<T,3> CellCellForce3D<T>::operator() (Array<T,3> & x1, Array<T,3> & x2) {
     Array<T,3> eij = (x1 - x2)*1.0;
     T r = norm(eij);
     eij = eij * (1.0/r);
@@ -246,7 +246,7 @@ Array<T,3> CellCellForce3D<T>::operator() (Array<T,3> const& x1, Array<T,3> cons
 }
 
 template<typename T>
-T CellCellForce3D<T>::calculatePotential (T r, Array<T,3> const& eij) {
+T CellCellForce3D<T>::calculatePotential (T r, Array<T,3> & eij) {
     return calculatePotential (r);
 }
 
