@@ -41,13 +41,12 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()),
       E_repulsive(T()),
 #endif
-      processor(getMpiProcessor()), cellId(-1), vertexId(this->getTag())
+      processor(getMpiProcessor()), cellId(this->getTag()), vertexId(0)
 { }
 
 template<typename T, template<typename U> class Descriptor>
-ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
-        plint tag_, Array<T,3> const& position, plint cellId_ )
-    : Particle3D<T,Descriptor>(tag_, position), 
+ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (Array<T,3> const& position, plint cellId_, plint vertexId_ )
+    : Particle3D<T,Descriptor>(cellId_, position),
       v(T(),T(),T()),
       pbcPosition(position),
       a(T(),T(),T()),
@@ -60,15 +59,15 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
 #endif
-      processor(getMpiProcessor()), cellId(cellId_), vertexId(tag_)
+      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_)
 { }
 
 template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
-        plint tag_, Array<T,3> const& position,
+        Array<T,3> const& position,
         Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
-        Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_, plint cellId_ )
-    : Particle3D<T,Descriptor>(tag_, position),
+        Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_, plint cellId_, plint vertexId_)
+    : Particle3D<T,Descriptor>(cellId_, position),
       v(v_),
       pbcPosition(pbcPosition_),
       a(a_),
@@ -81,14 +80,14 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
 #endif
-      processor(getMpiProcessor()), cellId(cellId_), vertexId(tag_)
+      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_)
 { }
 
 
 #ifdef PLB_DEBUG // Less Calculations
 template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
-        plint tag_, Array<T,3> const& position,
+        Array<T,3> const& position,
         Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
         Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_,
         Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_,
@@ -98,8 +97,8 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
         T const& E_other_,
         T const& E_inPlane_, T const& E_bending_,
         T const& E_area_, T const& E_volume_, T const& E_repulsive_,
-        plint processor_, plint cellId_ )
-    : Particle3D<T,Descriptor>(tag_, position),
+        plint processor_, plint cellId_, plint vertexId_)
+    : Particle3D<T,Descriptor>(cellId_, position),
       v(v_),
       pbcPosition(pbcPosition_),
       a(a_),
@@ -213,8 +212,9 @@ void ImmersedCellParticle3D<T,Descriptor>::serialize(HierarchicSerializer& seria
     serializer.addValues<T,3>(a);
     serializer.addValues<T,3>(force);
     serializer.addValues<T,3>(vPrevious);
-   serializer.addValue<plint>(processor);
+    serializer.addValue<plint>(processor);
     serializer.addValue<plint>(cellId);
+    serializer.addValue<plint>(vertexId);
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -228,7 +228,7 @@ void ImmersedCellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& u
     unserializer.readValues<T,3>(vPrevious);
     unserializer.readValue<plint>(processor);
     unserializer.readValue<plint>(cellId);
-    vertexId = this->getTag();
+    unserializer.readValue<plint>(vertexId);
 }
 
 

@@ -45,7 +45,7 @@ void CreateImmersedCellParticle3D<T,Descriptor>::processGenericBlocks (
     for (plint iVertex=0; iVertex<mesh.getNumVertices(); ++iVertex) {
         Array<T,3> vertex(mesh.getVertex(iVertex));
         ImmersedCellParticle3D<T,Descriptor>* particle
-            = new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex);
+            = new ImmersedCellParticle3D<T,Descriptor>(vertex, 0, iVertex);
         particleField.addParticle(domain, particle);
     }
 }
@@ -82,7 +82,7 @@ void CreateTaggedImmersedCellParticle3D<T,Descriptor>::processGenericBlocks (
     for (plint iVertex= tag * numPartsPerTag; iVertex < (tag+1) * numPartsPerTag; ++iVertex) {
         Array<T,3> vertex(mesh.getVertex(iVertex));
         ImmersedCellParticle3D<T,Descriptor>* particle
-            = new ImmersedCellParticle3D<T,Descriptor>(iVertex, vertex, tag);
+            = new ImmersedCellParticle3D<T,Descriptor>(vertex, tag, iVertex);
 		particleField.addParticle(domain, particle);
     }
 }

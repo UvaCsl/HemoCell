@@ -34,11 +34,11 @@ public:
     ~ImmersedCellParticle3D() {
 //        std::cout <<" ~ImmersedCellParticle3D() " << this->getVertexId() << std::endl;
     };
-    ImmersedCellParticle3D( plint tag_, Array<T,3> const& position, plint cellId_ = -1 );
-    ImmersedCellParticle3D( plint tag_, Array<T,3> const& position,
+    ImmersedCellParticle3D(Array<T,3> const& position, plint cellId_ = -1, plint vertexId_ = 0);
+    ImmersedCellParticle3D(Array<T,3> const& position,
                           Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
                             Array<T,3> const& a_, Array<T,3> const& force_, Array<T,3> const& vPrevious_,
-                            plint cellId_ = -1);
+                            plint cellId_ = -1, plint vertexId_=0);
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
     virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
     virtual void fluidToParticle(BlockLattice3D<T,Descriptor>& fluid, T scaling=1.) { }
@@ -97,7 +97,7 @@ private:
 public:
 #ifdef PLB_DEBUG // Less Calculations
     ImmersedCellParticle3D (
-            plint tag_, Array<T,3> const& position,
+            Array<T,3> const& position,
             Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
             Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_,
             Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_,
@@ -108,7 +108,7 @@ public:
             T const& E_inPlane_, T const& E_bending_,
             T const& E_area_, T const& E_volume_,
             T const& E_repulsive_,
-            plint processor_, plint cellId_ );
+            plint processor_, plint cellId_, plint vertexId_);
 
     Array<T,3> const& get_f_wlc() const { return f_wlc; }
     Array<T,3> const& get_f_bending() const { return f_bending; }
