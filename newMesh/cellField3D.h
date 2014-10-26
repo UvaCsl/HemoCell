@@ -70,6 +70,8 @@ public:
 	virtual void interpolateVelocityIBM();
     virtual void applyConstitutiveModel();
     virtual void applyCellCellForce(CellCellForce3D<T> & calcForce_, T cutoffRadius_);
+    virtual void applyDifferentCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
+            MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * otherCellParticles);
 	/* Need implementation */
 	virtual void synchronizeCellQuantities_Local(SyncRequirements ccrRequirements_=SyncRequirements());
 	virtual void synchronizeCellQuantities_Global(SyncRequirements ccrRequirements_=SyncRequirements()) {} ;

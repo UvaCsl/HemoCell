@@ -139,7 +139,7 @@ void CellField3D<T, Descriptor>::grow(plint growIterations) {
         synchronizeCellQuantities(moreRigidCellModel->getSyncRequirements());
 
     }
-
+    delete moreRigidCellModel;
     global::timer("CellInit").stop();
 }
 
@@ -218,6 +218,20 @@ void CellField3D<T, Descriptor>::applyCellCellForce(CellCellForce3D<T> & calcFor
     global::timer("Model").stop();
 }
 
+template<typename T, template<typename U> class Descriptor>
+void CellField3D<T, Descriptor>::applyDifferentCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
+        MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * otherCellParticles) {
+
+    std::vector<MultiBlock3D*> differentCellCellParticleArg;
+    differentCellCellParticleArg.push_back(otherCellParticles);
+    differentCellCellParticleArg.push_back(immersedParticles);
+    global::timer("Model").start();
+    applyProcessingFunctional (
+       new ComputeDifferentCellForces3D<T,Descriptor> (calcForce, cutoffRadius),
+       immersedParticles->getBoundingBox(), differentCellCellParticleArg );
+    global::timer("Model").stop();
+
+}
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirements ccReq) {
