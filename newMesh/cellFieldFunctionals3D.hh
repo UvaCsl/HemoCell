@@ -9,31 +9,38 @@ template<typename T, template<typename U> class Descriptor>
 void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
-    PLB_PRECONDITION( blocks.size()==2 );
+    PLB_PRECONDITION( blocks.size()==1 );
     ParticleField3D<T,Descriptor>& particleField =
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
-    BlockLattice3D<T,Descriptor>& fluid =
-        *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
+    /* ######## Center mesh ######## */
+    ElementsOfTriangularSurfaceMesh<T> emptyEoTSM;
+    TriangularSurfaceMesh<T> * mesh = copyTriangularSurfaceMesh(elementaryMesh, emptyEoTSM);
+    Array<T,2> xRange, yRange, zRange;
+    mesh->computeBoundingBox (xRange, yRange, zRange);
+    T dx = xRange[1] - xRange[0], dy = yRange[1] - yRange[0], dz = zRange[1] - zRange[0];
+    T maxSide = max( max(dx, dy), dz);
+    // Bring mesh to the center
+    Array<T,3> mvp(dx, dy, dz);
+    Array<T,3> meshCenter = Array<T,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
+    mesh->translate(-1.0 * meshCenter);
+    /* ############################# */
 
-    cellOrigins.clear();
-
-    Dot3D relativePosition = fluid.getLocation();
-    Array<T,3> relativeCoordinate(relativePosition.x+2.0, relativePosition.y+2.0, relativePosition.z+2.0);
-    plint DeltaX = domain.x1 - domain.x0;
-    plint DeltaY = domain.y1 - domain.y0;
-    plint DeltaZ = domain.z1 - domain.z0;
-    relativeCoordinate += Array<T,3>(DeltaX/2.0, DeltaY/2.0, DeltaZ/2.0);
-    cellOrigins.push_back(  relativeCoordinate );
-
-    plint nVertices = elementaryMesh.getNumVertices();
+    plint nVertices = mesh->getNumVertices();
     for (pluint iCO=0; iCO < cellOrigins.size(); ++iCO) {
         Array<T,3> & cellOrigin = cellOrigins[iCO];
-        plint cellId = iCO + global::mpi().getRank()*1000 ;
+        plint cellId = iCO;
         for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
-            Array<T,3> vertex = cellOrigin + elementaryMesh.getVertex(iVertex);
-            particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
+            Array<T,3> vertex = cellOrigin + mesh->getVertex(iVertex);
+            particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
         }
     }
+    std::vector<Particle3D<T,Descriptor>*> particles;
+    particleField.findParticles(domain, particles);
+
+    cout << "(PositionCellParticles3D) pid " << global::mpi().getRank()
+        << " particles.size " << particles.size()
+        << " nVertices " << nVertices
+        << " cellOrigin.size " << cellOrigins.size() << std::endl;
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -45,14 +52,12 @@ template<typename T, template<typename U> class Descriptor>
 void PositionCellParticles3D<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
-    modified[0] = modif::dynamicVariables; // Particle field.
-    modified[1] = modif::nothing; // Fluid field.
+    modified[0] = modif::allVariables; // Particle field.
 }
 
 template<typename T, template<typename U> class Descriptor>
 void PositionCellParticles3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
     isWritten[0] = true;  // Particle field.
-    isWritten[1] = false;  // Particle field.
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -141,7 +146,7 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
     std::map<plint, plint> cellIdToNumberOfVertices;
-    for (int iP = 0; iP < particles.size(); ++iP) {
+    for (pluint iP = 0; iP < particles.size(); ++iP) {
         ImmersedCellParticle3D<T,Descriptor>* particle =
             dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iP]);
         cellIdToNumberOfVertices[particle->get_cellId()]++;
@@ -458,6 +463,7 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
     PLB_PRECONDITION( blocks.size()==1 );
     ParticleField3D<T,Descriptor>& particleField =
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    // Delete all cells;
     typename std::map<plint, Cell3D<T,Descriptor>* >::iterator iter;
     for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
         delete (iter->second);
@@ -470,13 +476,12 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
         ImmersedCellParticle3D<T,Descriptor>* particle = 
                 dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
-
+        PLB_ASSERT(particle);
         plint iX, iY, iZ;
         particleField.computeGridPosition(particle->getPosition(), iX, iY, iZ);
         Box3D finalDomain;
         bool particleIsInBulk = intersect(domain, particleField.getBoundingBox(), finalDomain) &&
             contained(iX,iY,iZ, finalDomain);
-
 
         plint cellId = particle->get_cellId();
         plint iVertex = particle->getVertexId();
@@ -485,6 +490,13 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
             cellIdToCell3D[cellId] = new Cell3D<T,Descriptor>(mesh, cellId);
         }
         if ((not cellIdToCell3D[cellId]->hasVertex(iVertex)) || particleIsInBulk) {
+//            cout
+//                << "(FillCellMap) " << global::mpi().getRank()
+//                << " iP " << iParticle
+//                << " cellid " << particle->getTag()
+//                << " vertexId " << castParticleToICP3D(particle)->getVertexId()
+//                << " particleIsInBulk " << particleIsInBulk
+//            << std::endl;
             cellIdToCell3D[cellId]->push_back(particle, particleIsInBulk);
         }
     }

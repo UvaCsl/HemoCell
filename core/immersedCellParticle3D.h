@@ -32,7 +32,7 @@ class ImmersedCellParticle3D : public Particle3D<T,Descriptor> {
 public:
     ImmersedCellParticle3D();
     ~ImmersedCellParticle3D() {
-//        std::cout <<" ~ImmersedCellParticle3D() " << this->getVertexId() << std::endl;
+//        std::cout <<" ~ImmersedCellParticle3D() " << global::mpi().getRank() << " vertexId " << this->getVertexId() << std::endl;
     };
     ImmersedCellParticle3D(Array<T,3> const& position, plint cellId_ = -1, plint vertexId_ = 0);
     ImmersedCellParticle3D(Array<T,3> const& position,
@@ -96,19 +96,6 @@ private:
     std::vector<T> weights;
 public:
 #ifdef PLB_DEBUG // Less Calculations
-    ImmersedCellParticle3D (
-            Array<T,3> const& position,
-            Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
-            Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_,
-            Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_,
-            Array<T,3> const& f_surface_, Array<T,3> const& f_shear_, Array<T,3> const& f_viscosity_,
-            Array<T,3> const& f_repulsive_,
-            Array<T,3> const& stress_,
-            T const& E_other_,
-            T const& E_inPlane_, T const& E_bending_,
-            T const& E_area_, T const& E_volume_,
-            T const& E_repulsive_,
-            plint processor_, plint cellId_, plint vertexId_);
 
     Array<T,3> const& get_f_wlc() const { return f_wlc; }
     Array<T,3> const& get_f_bending() const { return f_bending; }

@@ -84,37 +84,6 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
 { }
 
 
-#ifdef PLB_DEBUG // Less Calculations
-template<typename T, template<typename U> class Descriptor>
-ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
-        Array<T,3> const& position,
-        Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
-        Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_,
-        Array<T,3> const& f_wlc_, Array<T,3> const& f_bending_, Array<T,3> const& f_volume_,
-        Array<T,3> const& f_surface_, Array<T,3> const& f_shear_, Array<T,3> const& f_viscosity_,
-        Array<T,3> const& f_repulsive_,
-        Array<T,3> const& stress_,
-        T const& E_other_,
-        T const& E_inPlane_, T const& E_bending_,
-        T const& E_area_, T const& E_volume_, T const& E_repulsive_,
-        plint processor_, plint cellId_, plint vertexId_)
-    : Particle3D<T,Descriptor>(cellId_, position),
-      v(v_),
-      pbcPosition(pbcPosition_),
-      a(a_),
-      force(force_),
-      vPrevious(vPrevious_),
-      f_wlc(f_wlc_), f_bending(f_bending_), f_volume(f_volume_),
-      f_surface(f_surface_), f_shear(f_shear_), f_viscosity(f_viscosity_), f_repulsive(f_repulsive_),
-      stress(stress_),
-      E_other(E_other_),
-      E_inPlane(E_inPlane_), E_bending(E_bending_),
-      E_area(E_area_), E_volume(E_volume_), E_repulsive(E_repulsive_),
-      processor(getMpiProcessor()), cellId(cellId_), vertexId(tag_)
-{ }
-#endif
-
-
 template<typename T, template<typename U> class Descriptor>
 void ImmersedCellParticle3D<T,Descriptor>::advance() {
 // No fluid interaction

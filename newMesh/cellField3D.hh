@@ -93,10 +93,10 @@ void CellField3D<T, Descriptor>::grow(plint growIterations) {
         new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(elementaryMesh, hematocrit, ratio),
         lattice.getBoundingBox(), particleLatticeArg );
     advanceParticles();
+    synchronizeCellQuantities();
     for (plint i = 0; i < growIterations; ++i) {
         T iRatio = 1.0; ratio + i*1.0 / (growIterations*0.5) ;
         if (iRatio > 1.0) { iRatio = 1.0; }
-//        moreRigidCellModel->inflate(iRatio);
         if (i%100 == 0) {
             pcout << "growth iter:" << i<< ", " <<  i*100.0/growIterations << "%" <<std::endl;
             writeCellField3D_HDF5(*this, 1.0, 1.0, i, "init_");

@@ -116,7 +116,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
     /**            Write output to HDF5 file                   **/
    /************************************************************/
      /*  Take care of Vectors    */
-     if (numCells > 0) {
+     if (numCells > 0 and particles.size() > 0) {
          ImmersedCellParticle3D<T,Descriptor> * icParticle = castParticleToICP3D(particles[0]);
          plint vN = icParticle->getVectorsNumber();
          double * matrixTensor = new double [3 * Np];

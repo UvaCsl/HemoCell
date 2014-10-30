@@ -27,9 +27,9 @@ projectFiles = ficsional.cpp
 # Choose between generic and precompiled mode
 precompiled  = false
 # Set optimization flags on/off
-optimize     = true
+optimize     = false
 # Set debug mode and debug flags on/off
-debug        = false
+debug        = true
 # Set profiling flags on/off
 #profile      = false
 profile      = false

@@ -15,7 +15,7 @@ class ComputeCellCellForces3D : public BoxProcessingFunctional3D
 {
 public:
     ComputeCellCellForces3D (CellCellForce3D<T> & calcForce_, T cutoffRadius_);
-    virtual ~ComputeCellCellForces3D();
+    ~ComputeCellCellForces3D();
     ComputeCellCellForces3D(ComputeCellCellForces3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);

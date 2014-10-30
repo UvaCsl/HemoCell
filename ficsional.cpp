@@ -290,12 +290,11 @@ int main(int argc, char* argv[])
         pcout << "(main) initializing"<< std::endl;
         std::vector<Array<T,3> > cellsOrigin;
         cellsOrigin.push_back( Array<T,3>(16.,16.,16.) );
-        RBCField.initialize(cellsOrigin);
-//        RBCField.grow(0);
+        if (flowType == 2) { RBCField.grow(0); }
+        else { RBCField.initialize(cellsOrigin); }
         checkpointer.save(lattice, cellFields, initIter);
     }
 
-    RBCField.synchronizeCellQuantities();
     plint nCells = RBCField.getNumberOfCells_Global();
     pcout << std::endl ;
     pcout << "(main) Hematocrit [x100%]: " << nCells*eqVolume*100.0/(nx*ny*nz) << std::endl;
@@ -308,7 +307,6 @@ int main(int argc, char* argv[])
     /* Repulsive force */
     T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
-    RBCField.applyCellCellForce(PLF, R);
 
 
     /*            I/O              */
