@@ -5,9 +5,9 @@
 template<typename T, template<typename U> class Descriptor>
 CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, 
 	TriangularSurfaceMesh<T> & elementaryMesh_, T hematocrit_,
-	ConstitutiveModel<T, Descriptor> * cellModel_, std::string identifier_) :
+	ConstitutiveModel<T, Descriptor> * cellModel_, plint ibmKernel_, std::string identifier_) :
 		lattice(lattice_), elementaryMesh(elementaryMesh_),
-		hematocrit(hematocrit_), cellModel(cellModel_), identifier(identifier_)
+		hematocrit(hematocrit_), cellModel(cellModel_), ibmKernel(ibmKernel_), identifier(identifier_)
 {
     plint maxEdgeLengthLU = ceil(cellModel->getMaximumEdgeExtensionLengthLU());
     plint maxCellDiameterLU = ceil(cellModel->getMaxCellDiameterLU());
@@ -49,7 +49,6 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
     particleReductionParticleArg.push_back(reductionParticles);
     reductionParticleArg.push_back(reductionParticles);
 	/* Default values*/
-	ibmKernel = 2;
 	coupleWithIBM = true;
 
 }
@@ -70,15 +69,10 @@ CellField3D<T, Descriptor>::~CellField3D() {
 
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::initialize() {
+void CellField3D<T, Descriptor>::initialize(std::vector<Array<T,3> > & centers) {
     global::timer("CellInit").start();
-    std::vector<Array<T,3> > cellOrigins;
     applyProcessingFunctional (
-//        new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(elementaryMesh, .4),
-        new PositionCellParticles3D<T,Descriptor>(elementaryMesh, cellOrigins),
-        lattice.getBoundingBox(), particleLatticeArg );
-    applyProcessingFunctional (
-        new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
+        new PositionCellParticles3D<T,Descriptor>(elementaryMesh, centers),
         immersedParticles->getBoundingBox(), particleArg );
     advanceParticles();
     synchronizeCellQuantities();
@@ -90,24 +84,15 @@ template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::grow(plint growIterations) {
     global::timer("CellInit").start();
     T ratio;
-    applyProcessingFunctional (
-        new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(elementaryMesh, hematocrit, ratio),
-        lattice.getBoundingBox(), particleLatticeArg );
-
-    ConstitutiveModel<T,Descriptor> *moreRigidCellModel =
-            new ShapeMemoryModel3D<T, Descriptor>(1.0, 0.0, 6000, 500.0, 0.0, 1.5, 0.0, 60000.0, 60000.0, 0.0, 7.5e-9, 2.5, cellModel->getDx(), cellModel->getDt(), cellModel->getDm(), elementaryMesh);
-
-    applyProcessingFunctional ( // advance particles in time according to velocity
-        new AdvanceParticlesEveryWhereFunctional3D<T,Descriptor>,
-        immersedParticles->getBoundingBox(), particleArg );
-    applyProcessingFunctional (
-        new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
-        immersedParticles->getBoundingBox(), particleArg );
-    synchronizeCellQuantities(moreRigidCellModel->getSyncRequirements());
-
+    coupleWithIBM = false;
     T k_int = 0.25, DeltaX=1.0, R=3.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
     plint nIter = (1-ratio)*growIterations;
+
+    applyProcessingFunctional (
+        new RandomPositionCellParticlesForGrowth3D<T,Descriptor>(elementaryMesh, hematocrit, ratio),
+        lattice.getBoundingBox(), particleLatticeArg );
+    advanceParticles();
     for (plint i = 0; i < growIterations; ++i) {
         T iRatio = 1.0; ratio + i*1.0 / (growIterations*0.5) ;
         if (iRatio > 1.0) { iRatio = 1.0; }
@@ -117,29 +102,15 @@ void CellField3D<T, Descriptor>::grow(plint growIterations) {
             writeCellField3D_HDF5(*this, 1.0, 1.0, i, "init_");
         }
         // #1# Calculate forces
-        applyProcessingFunctional ( // #1a# Membrane Model
-                        new ComputeCellForce3D<T,Descriptor> (moreRigidCellModel, cellIdToCell3D),
-                        immersedParticles->getBoundingBox(), particleArg );
-        applyProcessingFunctional (  // #1b# Repulsive force
-           new ComputeCellCellForces3D<T,Descriptor> (PLF, R),
-           immersedParticles->getBoundingBox(), particleArg );
-
+        applyConstitutiveModel();
+        applyCellCellForce(PLF, R); // #1b# Repulsive force
         // #2# Force to velocity
-        applyProcessingFunctional ( // copy fluid velocity on particles
-            new ViscousPositionUpdate3D<T,Descriptor>(iRatio),
-            immersedParticles->getBoundingBox(), particleLatticeArg);
-
+        computeVelocity(ratio);
         // #3# Update position of particles
-        applyProcessingFunctional ( // advance particles in time according to velocity
-            new AdvanceParticlesEveryWhereFunctional3D<T,Descriptor>,
-            immersedParticles->getBoundingBox(), particleArg );
-        applyProcessingFunctional (
-            new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
-            immersedParticles->getBoundingBox(), particleArg );
-        synchronizeCellQuantities(moreRigidCellModel->getSyncRequirements());
-
+        advanceParticles();
+        synchronizeCellQuantities();
     }
-    delete moreRigidCellModel;
+    coupleWithIBM = true;
     global::timer("CellInit").stop();
 }
 
@@ -193,10 +164,23 @@ void CellField3D<T, Descriptor>::interpolateVelocityIBM() {
     global::timer("IBM").start();
     if (coupleWithIBM != 0) { // Force from the Cell dynamics to the Fluid
         applyProcessingFunctional ( // copy fluid velocity on particles
-	        new FluidVelocityToImmersedCell3D<T,Descriptor>(ibmKernel),
-    	    immersedParticles->getBoundingBox(), particleLatticeArg);
+            new FluidVelocityToImmersedCell3D<T,Descriptor>(ibmKernel),
+            immersedParticles->getBoundingBox(), particleLatticeArg);
     }
     global::timer("IBM").stop();
+}
+
+template<typename T, template<typename U> class Descriptor>
+void CellField3D<T, Descriptor>::computeVelocity(T ratio) {
+    if (coupleWithIBM != 0) { // Force from the Cell dynamics to the Fluid
+        interpolateVelocityIBM();
+    } else {
+        global::timer("IBM").start();
+        applyProcessingFunctional ( // copy fluid velocity on particles
+            new ViscousPositionUpdate3D<T,Descriptor>(ratio),
+            immersedParticles->getBoundingBox(), particleLatticeArg);
+        global::timer("IBM").stop();
+    }
 }
 
 template<typename T, template<typename U> class Descriptor>

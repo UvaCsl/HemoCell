@@ -278,7 +278,7 @@ int main(int argc, char* argv[])
 //           immersedParticles.getBoundingBox(), particleArg );
 //    }
 
-    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, "RBC");
+    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, ibmKernel, "RBC");
     std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
     cellFields.push_back(&RBCField);
 
@@ -288,8 +288,10 @@ int main(int argc, char* argv[])
     checkpointer.load(document, lattice, cellFields, initIter);
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
-//        RBCField.initialize();
-        RBCField.grow(0);
+        std::vector<Array<T,3> > cellsOrigin;
+        cellsOrigin.push_back( Array<T,3>(16.,16.,16.) );
+        RBCField.initialize(cellsOrigin);
+//        RBCField.grow(0);
         checkpointer.save(lattice, cellFields, initIter);
     }
 

@@ -284,7 +284,7 @@ int main(int argc, char* argv[])
 //           immersedParticles.getBoundingBox(), particleArg );
 //    }
 
-    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, "RBC");
+    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, ibmKernel, "RBC");
     std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
     cellFields.push_back(&RBCField);
 
@@ -296,7 +296,6 @@ int main(int argc, char* argv[])
         pcout << "(main) initializing"<< std::endl;
 //        RBCField.initialize();
         RBCField.grow(0);
-        checkpointer.save(lattice, cellFields, initIter);
     }
 
     RBCField.synchronizeCellQuantities();
@@ -315,18 +314,12 @@ int main(int argc, char* argv[])
     RBCField.applyCellCellForce(PLF, R);
 
 
-    /*            I/O              */
-    global::timer("HDFOutput").start();
-    writeHDF5(lattice, parameters, 0);
-    writeCellField3D_HDF5(RBCField, dx, dt, 0);
-    global::timer("HDFOutput").stop();
-
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, nCells, numVerticesPerCell);
     /* --------------------------- */
     global::timer("mainLoop").start();
     global::profiler().turnOn();
-    for (pluint iter=initIter; iter<tmax+1; ++iter) {
+    for (pluint iter=initIter; iter<tmax; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
        RBCField.applyCellCellForce(PLF, R);
@@ -341,27 +334,26 @@ int main(int argc, char* argv[])
         RBCField.interpolateVelocityIBM();
         // #5# Position Update
         RBCField.advanceParticles();
+        RBCField.synchronizeCellQuantities();
         if ((iter+1)%tmeas==0) {
-            SyncRequirements everyCCR(allReductions);
-            RBCField.synchronizeCellQuantities(everyCCR);
-            global::timer("HDFOutput").start();
-            writeHDF5(lattice, parameters, iter+1);
-            writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
-            global::timer("HDFOutput").stop();
-            if ((iter+1)%(2*tmeas)==0) {
-                global::timer("Checkpoint").start();
-                checkpointer.save(lattice, cellFields, iter+1);
-                global::timer("Checkpoint").stop();
-            }
-            T dtIteration = global::timer("mainLoop").stop();
-            pcout << "(main) Iteration:" << iter + 1 << ", time "<< dtIteration*1.0/tmeas << std::endl;
+            pcout << "(main) Iteration:" << iter + 1 << ", time "<< global::timer("mainLoop").stop()*1.0/tmeas << std::endl;
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
-        } else {
-            RBCField.synchronizeCellQuantities();
         }
     }
-    simpleProfiler.writeIteration(tmax+1);
+
+    SyncRequirements everyCCR(allReductions);
+    RBCField.synchronizeCellQuantities(everyCCR);
+    global::timer("Checkpoint").start();
+    checkpointer.save(lattice, cellFields, tmax);
+    global::timer("Checkpoint").stop();
+
+    global::timer("HDFOutput").start();
+    writeHDF5(lattice, parameters, tmax);
+    writeCellField3D_HDF5(RBCField, dx, dt, tmax);
+    global::timer("HDFOutput").stop();
+
+    simpleProfiler.writeIteration(tmax);
     global::profiler().writeReport();
     pcout << "Simulation finished." << std::endl;
 }

@@ -15,8 +15,6 @@
 using namespace std;
 using namespace plb;
 
-plint ibmKernel = 2;
-
 
 template<typename T, template<typename U> class Descriptor>
 class CellField3D
@@ -34,7 +32,7 @@ public:
 			pluint numberOfCells_. Global numer of Cells
 	*/
 	CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, TriangularSurfaceMesh<T> & elementaryMesh_,
-			T hematocrit_, ConstitutiveModel<T, Descriptor> * cellModel_, std::string identifier_);
+			T hematocrit_, ConstitutiveModel<T, Descriptor> * cellModel_, plint ibmKernel_, std::string identifier_);
 	~CellField3D();
 public:
 	/* Set or change parameters */
@@ -62,12 +60,13 @@ public:
 	virtual void setFluidExternalForce(T forceScalar);
 	virtual void setFluidExternalForce() { return setFluidExternalForce(0.0); }
 
-    virtual void initialize();
+    virtual void initialize(std::vector<Array<T,3> > & centers);
     virtual void grow(plint growIterations=0);
     virtual void createCellMap();
 	virtual void advanceParticles();
 	virtual void spreadForceIBM();
-	virtual void interpolateVelocityIBM();
+    virtual void computeVelocity(T ratio=1.0);
+    virtual void interpolateVelocityIBM();
     virtual void applyConstitutiveModel();
     virtual void applyCellCellForce(CellCellForce3D<T> & calcForce_, T cutoffRadius_);
     virtual void applyDifferentCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
