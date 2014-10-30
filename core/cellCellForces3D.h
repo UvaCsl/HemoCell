@@ -4,6 +4,8 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include <math.h>
+using namespace std;
+using namespace plb;
 
 template<typename T>
 class CellCellForce3D;

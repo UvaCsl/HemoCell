@@ -38,8 +38,15 @@ public:
 	/* Set or change parameters */
 	void setIBMKernel(plint ibmKernel_) { ibmKernel = ibmKernel_; }
 	void setIBMCoupling(bool coupleWithIBM_) { coupleWithIBM = coupleWithIBM_; }
+	TriangularSurfaceMesh<T> & getMesh() { return elementaryMesh; }
 
-//    Cell3D<T,Descriptor> & operator[](plint cellId) { return cellIdToCell3D[cellId]; }
+	Cell3D<T,Descriptor>* operator[](plint cellId) {
+	    if(count(cellId) > 0) {
+	        return cellIdToCell3D[cellId];
+	    } else {
+	        return NULL;
+	    }
+	}
 public:
 	std::map<plint, Cell3D<T,Descriptor>* > & getCellIdToCell3D() { return cellIdToCell3D; };
     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & getParticleField3D() { return *immersedParticles; };
@@ -83,7 +90,8 @@ public:
 	};
 	pluint getNumberOfCells_Local() { return cellIdToCell3D.size(); } ;
 	pluint getNumberOfCells() { return getNumberOfCells_Local(); } ;
-	bool has_cellId(plint cellId) { return cellIdToCell3D.count(cellId) > 0; }
+    plint count(plint cellId) { return cellIdToCell3D.count(cellId); }
+    bool has_cellId(plint cellId) { return cellIdToCell3D.count(cellId) > 0; }
 private:
 	MultiBlockLattice3D<T, Descriptor> & lattice;
 	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles;

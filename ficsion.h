@@ -46,7 +46,7 @@ using namespace std;
 
 
 /* CASES */
-//#include "cellStretching3D.h"
+#include "cellStretching3D.h"
 //#include "cellInShearFlow3D.h"
 //#include "cellStretchingForces3D.h"
 //#include "rbcDisaggregation.h"

@@ -281,7 +281,7 @@ int main(int argc, char* argv[])
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, ibmKernel, "RBC");
     std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
     cellFields.push_back(&RBCField);
-
+    CellStretch<T, DESCRIPTOR> cellStretch(RBCField, stretchForceScalar, 0.1);
 
     FcnCheckpoint<T, DESCRIPTOR> checkpointer(document);
     plint initIter=0;
@@ -324,6 +324,7 @@ int main(int argc, char* argv[])
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
        RBCField.applyCellCellForce(PLF, R);
+       cellStretch.stretch();
         // #2# IBM Spreading
         RBCField.setFluidExternalForce(poiseuilleForce);
         RBCField.spreadForceIBM();
@@ -348,9 +349,9 @@ int main(int argc, char* argv[])
                 global::timer("Checkpoint").stop();
             }
             T dtIteration = global::timer("mainLoop").stop();
-            pcout << "(main) Iteration:" << iter + 1 << ", time "<< dtIteration*1.0/tmeas << std::endl;
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
+            pcout << "(main) Iteration:" << iter + 1 << ", time "<< dtIteration*1.0/tmeas << std::endl;
         } else {
             RBCField.synchronizeCellQuantities();
         }

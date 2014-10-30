@@ -127,7 +127,9 @@ class ComputeCellForce3D : public BoxProcessingFunctional3D
 {
 public:
     ComputeCellForce3D (ConstitutiveModel<T,Descriptor>* cellModel_, std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_) ;
-    ~ComputeCellForce3D() {}; // { delete cellModel; } ;
+    ~ComputeCellForce3D() {
+//        std::cout <<" ~ComputeCellForce3D() " << global::mpi().getRank() << std::endl;
+    }; // { delete cellModel; } ;
     ComputeCellForce3D(ComputeCellForce3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);

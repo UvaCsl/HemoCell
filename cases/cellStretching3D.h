@@ -1,66 +1,107 @@
 #ifndef CELL_STRETCHING_3D_H
 #define CELL_STRETCHING_3D_H
 
-#include "cellStretchingForces3D.h"
-#include "immersedCellParticleVtk3D.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
+#include "immersedCellParticle3D.h"
+using namespace std;
+using namespace plb;
 
 
-template< typename T, template<typename U> class Descriptor,
-          template<typename T_, template<typename U_> class Descriptor_> class ParticleFieldT >
-class CellStretching3D {
+template<typename T>
+bool comparePair (std::pair <plint,T> p1, std::pair <plint,T> p2) {
+    T i = p1.second;
+    T j = p2.second;
+    return (i<j);
+}
+
+template<typename T, template<typename U> class Descriptor>
+class ApplyForce3D ;
+
+template<typename T, template<typename U> class Descriptor>
+class CellStretch
+{
 public:
-        CellStretching3D(
-                TriangleBoundary3D<T> const& Cells_,
-                MultiParticleField3D<ParticleFieldT<T,Descriptor> > & particles_,
-                plint numParticlesPerSide_, plint flowType_,
-                T dx_, T dt_, T dNewton_,
-                std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D_,
-                bool checkpointed_=false,
-                T stretchForceScalarLU_=0, plint timesToStretch_=40,
-                plint firstPlane_=TFL_DIRECTION_X, plint secondPlane_=TFL_DIRECTION_Z);
-        virtual ~CellStretching3D();
-        void applyForce(plint iter, T cellDensity) ;
+    CellStretch(CellField3D<T, Descriptor> & cellField_, T force_, T percentage) :
+        cellField(cellField_)
+    {
+        TriangularSurfaceMesh<T> & mesh = cellField.getMesh();
+        plint numVertices = mesh.getNumVertices();
+        nparPerSide = ceil( percentage * numVertices *0.5);
+        forcePerSidePerVertex = force_ * 0.5 / nparPerSide;
+        std::vector<std::pair <plint,T> > iv2X, iv2Y, iv2Z;
+        for (plint iV = 0; iV < numVertices; ++iV) {
+            Array<T,3> vertex = mesh.getVertex(iV);
+            iv2X.push_back(  std::make_pair(iV, vertex[0]) );
+            iv2Y.push_back(  std::make_pair(iV, vertex[1]) );
+            iv2Z.push_back(  std::make_pair(iV, vertex[2]) );
+        }
+        std::sort(iv2X.begin(), iv2X.end(), comparePair<T>);
+        std::sort(iv2Y.begin(), iv2Y.end(), comparePair<T>);
+        std::sort(iv2Z.begin(), iv2Z.end(), comparePair<T>);
 
-/*   hasConverged Return types:
- *      0 -- It has NOT converged
- *      1 -- It HAS converged and simulation is over
- *      2 -- Previous force HAD converged, but moved to the next one.
- *      3 -- Cell has been released but has to recover the initial shape
- */
-        plint hasConverged(plint iter);
+        cellIds.push_back(0); cellIds.push_back(0); // Two cellIds. One for left and one for right
+        forces.push_back(Array<T,3>(-forcePerSidePerVertex, 0, 0) ); forces.push_back(Array<T,3>(forcePerSidePerVertex, 0, 0) ); // Two forces. One for left and one for right
+        xVertices.clear();         yVertices.clear();         zVertices.clear();
+        xVertices.resize(2);         yVertices.resize(2);         zVertices.resize(2);
+        for (plint i = 0; i < nparPerSide; ++i) {
+            xVertices[0].push_back(iv2X[i].first);
+            xVertices[1].push_back(iv2X[numVertices - i - 1].first);
+            yVertices[0].push_back(iv2Y[i].first);
+            yVertices[1].push_back(iv2Y[numVertices - i - 1].first);
+            zVertices[0].push_back(iv2Z[i].first);
+            zVertices[1].push_back(iv2Z[numVertices - i - 1].first);
+        }
+    }
 
-        void writeConverged(plint iter, plint converged) ;
-        void write(plint iter, T meanEdgeDistanceLU, T maxEdgeDistanceLU);
-public:
-        void setStretchScalarForce(T stretchForceScalar_);
-        T getStretchScalarForce();
+    ~CellStretch() {
+    } ;
+
+    void stretch() {
+        applyProcessingFunctional (
+            new ApplyForce3D<T,Descriptor>(cellField, cellIds, xVertices, forces),
+            cellField.getBoundingBox(), cellField.getParticleArg() );
+    }
+
+    void setCellIds(std::vector<plint> cellIds_) { cellIds = cellIds_; } ;
+    void setVertices(std::vector<std::vector<plint> > iVertices_)  { xVertices = iVertices_;} ;
+    void setForces(std::vector<Array<T,3> > forces_)  { forces = forces_; } ;
+    void setForce(T force_)  { forcePerSidePerVertex = force_/nparPerSide; } ;
 private:
-        std::vector<plint> outerLeftTags, outerRightTags;
-        std::vector<plint> outerFrontTags, outerBackTags;
-        std::vector<T> stretchingDeformations;
-        std::vector<std::vector<plint>*> lateralCellParticleTags;
-
-        TriangleBoundary3D<T> const& Cells;
-        MultiParticleField3D<ParticleFieldT<T,Descriptor> > & particles;
-        plint numParticlesPerSide;
-        plint flowType;
-        T dx, dt, dNewton;
-        std::map<plint, Particle3D<T,Descriptor>*> & tagToParticle3D;
-        bool checkpointed;
-        T stretchForceScalar;
-        plint timesToStretch;
-        plint firstPlane, secondPlane;
-        plb_ofstream stretchLogFile, stretchResultFile, stretchReleasedFile;
-        util::ValueTracer<T> convergeX, convergeY;
-
-        T dStretchingForce;
-        plint stretchReleased;
-        plint checkInterval;
-
+    CellField3D<T, Descriptor> & cellField;
+    T forcePerSidePerVertex;
+    plint nparPerSide;
+    std::vector<plint> cellIds;
+    std::vector<std::vector<plint> > xVertices, yVertices, zVertices;
+    std::vector<Array<T,3> > forces;
 };
 
 
 
+
+template<typename T, template<typename U> class Descriptor>
+class ApplyForce3D : public BoxProcessingFunctional3D
+{
+public:
+    ApplyForce3D (CellField3D<T, Descriptor> & cellField_,
+                  std::vector<plint> const& cellIds_, std::vector<std::vector<plint> > const& iVertices_,
+                  std::vector<Array<T,3> > const& forces_);
+    ~ApplyForce3D() {
+//        std::cout <<" ~ApplyForce3D() " << global::mpi().getRank() << std::endl;
+    } ;
+    ApplyForce3D(ApplyForce3D<T,Descriptor> const& rhs);
+    /// Arguments: [0] Particle-field
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual ApplyForce3D<T,Descriptor>* clone() const;
+    virtual void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+private:
+    CellField3D<T, Descriptor> & cellField;
+    std::vector<plint> const& cellIds;
+    std::vector<std::vector<plint> > const& iVertices;
+    std::vector<Array<T,3> > const& forces;
+};
 
 
 #include "cellStretching3D.hh"

@@ -12,7 +12,9 @@ ComputeCellCellForces3D<T,Descriptor>::ComputeCellCellForces3D (CellCellForce3D<
 : calcForce(calcForce_), cutoffRadius(cutoffRadius_) { }
 
 template<typename T, template<typename U> class Descriptor>
-ComputeCellCellForces3D<T,Descriptor>::~ComputeCellCellForces3D() { }
+ComputeCellCellForces3D<T,Descriptor>::~ComputeCellCellForces3D() {
+//    std::cout <<" ~ComputeCellCellForces3D() " << global::mpi().getRank() << std::endl;
+}
 
 template<typename T, template<typename U> class Descriptor>
 ComputeCellCellForces3D<T,Descriptor>::ComputeCellCellForces3D ( ComputeCellCellForces3D<T,Descriptor> const& rhs)

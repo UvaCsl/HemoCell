@@ -175,9 +175,14 @@ public:
     std::vector<plint> getNeighborTriangleIds(plint iVertex) { return mesh.getNeighborTriangleIds(iVertex); }
     std::vector<plint> getAdjacentTriangleIds(plint iVertex, plint jVertex) { return mesh.getAdjacentTriangleIds(iVertex, jVertex); }
  
+    void erase(plint iVertex) { verticesInBulk.erase(iVertex); iVertexToParticle3D.erase(iVertex); }
+    bool isInBulk(plint iVertex) { return (verticesInBulk.count(iVertex) > 0); }
     bool hasVertex(plint iVertex) { return (iVertexToParticle3D.count(iVertex) > 0); }
+    plint count(plint iVertex) { return iVertexToParticle3D.count(iVertex); }
     Array<T,3> getVertex(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_pbcPosition(); }
     Array<T,3> getVertex(plint iTriangle, plint id) { return getVertex( getVertexId(iTriangle, id) ); }
+
+    Particle3D<T,Descriptor>* operator[](plint iVertex)    { return getParticle3D(iVertex); };
     Particle3D<T,Descriptor>* getParticle3D(plint iVertex) { return iVertexToParticle3D[iVertex]; }
 
     Array<T,3> get_v(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_v(); }

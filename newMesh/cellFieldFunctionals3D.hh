@@ -480,8 +480,7 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
         plint iX, iY, iZ;
         particleField.computeGridPosition(particle->getPosition(), iX, iY, iZ);
         Box3D finalDomain;
-        bool particleIsInBulk = intersect(domain, particleField.getBoundingBox(), finalDomain) &&
-            contained(iX,iY,iZ, finalDomain);
+        bool particleIsInBulk = contained(iX,iY,iZ, domain);
 
         plint cellId = particle->get_cellId();
         plint iVertex = particle->getVertexId();
