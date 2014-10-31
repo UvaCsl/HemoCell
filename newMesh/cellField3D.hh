@@ -156,7 +156,9 @@ void CellField3D<T, Descriptor>::setFluidExternalForce(Array<T,3> force) {
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::setFluidExternalForce(T forceScalar) {
-    setFluidExternalForce(Array<T,3>(forceScalar,0.0,0.0) );
+    if (fabs(forceScalar) > 0.0) {
+        setFluidExternalForce(Array<T,3>(forceScalar,0.0,0.0) );
+    }
 }
 
 template<typename T, template<typename U> class Descriptor>

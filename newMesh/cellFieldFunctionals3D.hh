@@ -610,13 +610,14 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
     std::map<plint, pluint> particlesPerCellId;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
         plint cellId = castParticleToICP3D(particles[iParticle])->get_cellId();
+        plint iVertex = castParticleToICP3D(particles[iParticle])->getVertexId();
         particlesPerCellId[cellId] = particlesPerCellId[cellId] + 1;
         for (std::vector<plint>::iterator i = ccrRequirements.begin(); i != ccrRequirements.end(); ++i)
         {
             plint ccrId = *i;
             typename std::map<plint, Cell3D<T,Descriptor>* >::iterator iter = cellIdToCell3D.find(cellId);
             if (iter != cellIdToCell3D.end()) {
-                (iter->second)->computeCCRQuantities(ccrId, particles[iParticle]);
+                (iter->second)->computeCCRQuantities(ccrId, iVertex);
             }
         }
     }
