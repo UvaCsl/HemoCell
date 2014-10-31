@@ -69,7 +69,7 @@ void BlockStatisticsCCR<T>::get(plint ccrId, T & value, pluint qBin) {
     if (0 == reductionType)      { value = getSum(qBin); }
     else if (1 == reductionType) { value = getAverage(qBin); }
     else if (2 == reductionType) { value = getMax(qBin); }
-    else if (3 == reductionType) { value = getMax(qBin); } // Min can be calculated from the inverse Max
+    else if (3 == reductionType) { value = -getMax(qBin); } // Min can be calculated from the inverse Max
     else if (4 == reductionType) { value = getAverage(qBin); } // Std is essentially an average
 }
 

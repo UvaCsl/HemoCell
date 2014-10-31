@@ -63,6 +63,15 @@ public:
             cellField.getBoundingBox(), cellField.getParticleArg() );
     }
 
+    // Measures stretch as the Sx = max{x_i} - min{x_i}
+    Array<T,3> measureStretch() {
+        SyncRequirements sr(CCR_POSITION_MIN);
+        sr.insert(CCR_POSITION_MAX);
+        cellField.synchronizeSyncRequirements(sr);
+        Array<T,3> stretch = cellField[0]->get3D(CCR_POSITION_MIN) - cellField[0]->get3D(CCR_POSITION_MAX);
+        return stretch;
+    }
+
     void setCellIds(std::vector<plint> cellIds_) { cellIds = cellIds_; } ;
     void setVertices(std::vector<std::vector<plint> > iVertices_)  { xVertices = iVertices_;} ;
     void setForces(std::vector<Array<T,3> > forces_)  { forces = forces_; } ;

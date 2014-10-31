@@ -289,7 +289,7 @@ int main(int argc, char* argv[])
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
         std::vector<Array<T,3> > cellsOrigin;
-        cellsOrigin.push_back( Array<T,3>(16.,16.,16.) );
+        cellsOrigin.push_back( Array<T,3>(23.,23.,23.) );
         if (flowType == 2) { RBCField.grow(0); }
         else { RBCField.initialize(cellsOrigin); }
         checkpointer.save(lattice, cellFields, initIter);
@@ -351,7 +351,10 @@ int main(int argc, char* argv[])
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
-            pcout << "(main) Iteration:" << iter + 1 << ", time "<< dtIteration*1.0/tmeas << std::endl;
+            pcout << "(main) Iteration:" << iter + 1 << ", time "<< dtIteration*1.0/tmeas ;
+            Array<T,3> stretch = cellStretch.measureStretch();
+            pcout << ", Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") " << std::endl;
+
         } else {
             RBCField.synchronizeCellQuantities();
         }

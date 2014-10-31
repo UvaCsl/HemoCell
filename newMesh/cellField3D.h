@@ -79,7 +79,10 @@ public:
     virtual void applyDifferentCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
             MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * otherCellParticles);
 	/* Need implementation */
-	virtual void synchronizeCellQuantities_Local(SyncRequirements ccrRequirements_=SyncRequirements());
+    virtual void synchronizeSyncRequirements_Local(SyncRequirements ccrRequirements_);
+    virtual void synchronizeSyncRequirements_Global(SyncRequirements ccrRequirements_) {};
+    virtual void synchronizeSyncRequirements(SyncRequirements ccrRequirements_) { return synchronizeSyncRequirements_Local(ccrRequirements_); } ;
+    virtual void synchronizeCellQuantities_Local(SyncRequirements ccrRequirements_=SyncRequirements());
 	virtual void synchronizeCellQuantities_Global(SyncRequirements ccrRequirements_=SyncRequirements()) {} ;
 	virtual void synchronizeCellQuantities(SyncRequirements ccrRequirements_=SyncRequirements()) { return synchronizeCellQuantities_Local(ccrRequirements_); } ;
 	pluint getNumberOfCells_Global() {

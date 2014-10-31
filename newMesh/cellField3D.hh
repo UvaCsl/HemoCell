@@ -218,8 +218,8 @@ void CellField3D<T, Descriptor>::applyDifferentCellForce(CellCellForce3D<T> & ca
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirements ccReq) {
-    ccReq.insert(ccrRequirements);
+void CellField3D<T, Descriptor>::synchronizeSyncRequirements_Local(SyncRequirements ccReq) {
+    ccReq.insert(CCR_NO_PBC_POSITION_MEAN);
     SyncRequirements ccrIndependent, ccrDependent;
     separateDependencies(ccReq, ccrIndependent, ccrDependent);
 
@@ -252,6 +252,12 @@ void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirement
         global::timer("Quantities").stop();
     }
 
+}
+
+template<typename T, template<typename U> class Descriptor>
+void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirements ccReq) {
+    ccReq.insert(ccrRequirements);
+    synchronizeSyncRequirements_Local(ccReq);
 }
 
 
