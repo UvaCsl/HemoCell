@@ -235,9 +235,14 @@ plint Cell3D<T,Descriptor>::getEdgeId(plint iVertex, plint jVertex) {
 template<typename T, template<typename U> class Descriptor>
 void Cell3D<T, Descriptor>::push_back(Particle3D<T,Descriptor>* particle3D, bool particleIsInBulk) {
     plint vertexId = castParticleToICP3D(particle3D)->getVertexId();
-	iVertexToParticle3D[vertexId] = particle3D;
 	if (particleIsInBulk) {
 	    verticesInBulk.insert(vertexId);
+	    iVertexToParticle3D[vertexId] = particle3D;
+	} else {
+	    // For some reason Palabos deletes particles that are in the envelope after some functionals;
+	    Particle3D<T,Descriptor>* copyParticle3D = particle3D->clone();
+	    iVertexToParticle3D[vertexId] = copyParticle3D;
+	    particlesToDelete.push_back(copyParticle3D);
 	}
 }
 

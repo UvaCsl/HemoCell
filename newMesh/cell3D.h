@@ -121,7 +121,11 @@ class Cell3D : public CellQuantityHolder<T>
 public:
     Cell3D(TriangularSurfaceMesh<T> & mesh_, plint cellId_=-1);
     Cell3D(Cell3D<T,Descriptor> const& rhs);
-    virtual ~Cell3D() { };
+    virtual ~Cell3D() {
+        for (pluint i=0; i<particlesToDelete.size(); i++) {
+            delete particlesToDelete[i];
+        }
+    };
     Cell3D<T,Descriptor>& operator=(Cell3D<T,Descriptor> const& rhs) {
         CellQuantityHolder<T>::operator=(rhs),
         mesh = rhs.mesh;
@@ -217,6 +221,7 @@ private:
     TriangularSurfaceMesh<T> & mesh;
     plint cellId;
     std::map<plint, Particle3D<T,Descriptor>*> iVertexToParticle3D;
+    std::vector<Particle3D<T,Descriptor>*> particlesToDelete;
     std::set<plint> verticesInBulk;
 
     BlockStatisticsCCR<T> reducer;
