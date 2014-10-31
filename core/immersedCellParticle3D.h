@@ -34,11 +34,13 @@ public:
     ~ImmersedCellParticle3D() {
 //        std::cout <<" ~ImmersedCellParticle3D() " << global::mpi().getRank() << " vertexId " << this->getVertexId() << std::endl;
     };
+    ImmersedCellParticle3D(ImmersedCellParticle3D<T,Descriptor> const& rhs);
     ImmersedCellParticle3D(Array<T,3> const& position, plint cellId_ = -1, plint vertexId_ = 0);
     ImmersedCellParticle3D(Array<T,3> const& position,
                           Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
                             Array<T,3> const& a_, Array<T,3> const& force_, Array<T,3> const& vPrevious_,
                             plint cellId_ = -1, plint vertexId_=0);
+    virtual ImmersedCellParticle3D<T,Descriptor>* clone() const;
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
     virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
     virtual void fluidToParticle(BlockLattice3D<T,Descriptor>& fluid, T scaling=1.) { }
@@ -50,7 +52,6 @@ public:
     virtual void reset(Array<T,3> const& position, Array<T,3> const& velocity_, bool allVariables=false);
     virtual void reset(Array<T,3> const& position);
     virtual void resetForces();
-    virtual ImmersedCellParticle3D<T,Descriptor>* clone() const;
     /// Return the cellId through a generic interface (vector id=0).
     virtual bool getScalar(plint whichScalar, T& scalar) const;
     std::string getScalarName(plint whichScalar) const;

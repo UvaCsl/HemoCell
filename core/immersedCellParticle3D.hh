@@ -27,9 +27,19 @@ namespace plb {
 
 /* *************** class ImmersedCellParticle3D ************************************ */
 
+
+template<typename T, template<typename U> class Descriptor>
+ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D(ImmersedCellParticle3D<T,Descriptor> const& rhs)
+    : Particle3D<T,Descriptor>(rhs.getTag(), rhs.getPosition()), v(rhs.v), pbcPosition(rhs.pbcPosition), a(rhs.a),
+      force(rhs.force), vPrevious(rhs.vPrevious), processor(rhs.processor), cellId(rhs.cellId), vertexId(rhs.vertexId)
+{
+}
+
+
 template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
-    : v(T(),T(),T()),
+    : Particle3D<T,Descriptor>(),
+      v(T(),T(),T()),
       pbcPosition(this->getPosition()),
       a(T(),T(),T()), force(T(),T(),T()), vPrevious(T(),T(),T()),
 #ifdef PLB_DEBUG // Less Calculations
