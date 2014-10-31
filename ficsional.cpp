@@ -110,8 +110,8 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     u = dt*1.0/dx;
     Re_p = 1.0/nu_p;
     N = int(1.0/dx);
-    flowParam = flowType/10;
-    flowType = flowType%10;
+    flowParam = 0; flowType/10;
+//    flowType = flowType%10;
     if ( (flowType == 3) or (flowType == 4) or (flowType == 5) or (flowType == 8) ) { // Cell Stretching Analysis
         shearRate = 0;
     } else if (flowType == 6) { // Tumbling Tank Treading Measurements
@@ -216,13 +216,18 @@ int main(int argc, char* argv[])
         defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
         new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(parameters.getOmega()));
     lattice.periodicity().toggleAll(true);
-    lattice.toggleInternalStatistics(false);
     /*
      * Choose case (Square Poiseuille, Couette etc) *
      */
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
+    lattice.toggleInternalStatistics(true);
+    Array<plint,3> forceIds;
+    forceIds[0] = lattice.internalStatSubscription().subscribeSum();
+    forceIds[1] = lattice.internalStatSubscription().subscribeSum();
+    forceIds[2] = lattice.internalStatSubscription().subscribeSum();
+    plint nMomentumExchangeCells=0;
     if (flowType == 0) {
         T L_tmp = parameters.getNy();
         T nu_tmp = parameters.getLatticeNu();
@@ -231,14 +236,22 @@ int main(int argc, char* argv[])
         iniLatticePoiseuilleWithBodyForce<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, poiseuilleForce);
     }
     else if (flowType == 1) {
+        poiseuilleForce = 0;
         pcout << "(main) Using iniLatticeSquareCouette. "<< flowType << std::endl;
-        iniLatticeSquareCouette(lattice, parameters, *boundaryCondition, shearRate);
+        iniLatticeSquareCouette<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate);
+    }
+    else if (flowType == 11) {
+        poiseuilleForce = 0;
+        pcout << "(main) Using iniLatticeSquareCouetteMeasureStress. "<< flowType << std::endl;
+        iniLatticeSquareCouetteMeasureStress<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate, forceIds, nMomentumExchangeCells);
     }
     else if (flowType == 2) {
+        poiseuilleForce = 0;
         pcout << "(main) Using iniLatticeFullyPeriodic. "<< flowType << std::endl;
 //        envelope-update
-        iniLatticeFullyPeriodic(lattice, parameters, Array<T,3>(0.02, 0.02, 0.02));
+        iniLatticeFullyPeriodic<T, DESCRIPTOR>(lattice, parameters, Array<T,3>(0.02, 0.02, 0.02));
     }
+    lattice.toggleInternalStatistics(false);
 
 
     /*
@@ -289,7 +302,7 @@ int main(int argc, char* argv[])
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
         std::vector<Array<T,3> > cellsOrigin;
-        cellsOrigin.push_back( Array<T,3>(23.,23.,23.) );
+//        cellsOrigin.push_back( Array<T,3>(23.,23.,23.) );
         if (flowType == 2) { RBCField.grow(0); }
         else { RBCField.initialize(cellsOrigin); }
         checkpointer.save(lattice, cellFields, initIter);
@@ -324,11 +337,12 @@ int main(int argc, char* argv[])
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
        RBCField.applyCellCellForce(PLF, R);
-       cellStretch.stretch();
+       if (flowType==3) { cellStretch.stretch(); }
         // #2# IBM Spreading
         RBCField.setFluidExternalForce(poiseuilleForce);
         RBCField.spreadForceIBM();
         // #3# LBM
+        if ((iter+1)%tmeas==0 && flowType==11) { lattice.toggleInternalStatistics(true); }
         global::timer("LBM").start();
         lattice.collideAndStream();
         global::timer("LBM").stop();
@@ -351,10 +365,23 @@ int main(int argc, char* argv[])
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
-            pcout << "(main) Iteration:" << iter + 1 << ", time "<< dtIteration*1.0/tmeas ;
-            Array<T,3> stretch = cellStretch.measureStretch();
-            pcout << ", Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") " << std::endl;
-
+            pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
+            if (flowType==3) {
+                Array<T,3> stretch = cellStretch.measureStretch();
+                pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") ";
+            } else  if (flowType==11) {
+                T nu_lb = parameters.getLatticeNu();
+                T coeff = nu_lb * shearRate; // * nMomentumExchangeCells;
+                T drag =  lattice.getInternalStatistics().getSum(forceIds[0]) / coeff;
+                T lift =  lattice.getInternalStatistics().getSum(forceIds[1]) / coeff;
+                T other =  lattice.getInternalStatistics().getSum(forceIds[2]) / coeff;
+                pcout << "; drag=" << drag
+                      << "; lift=" << lift
+                      << "; other=" << other
+                      << "; nMomentumExchangeCells=" << nMomentumExchangeCells*1.0/(nx*nz);
+                lattice.toggleInternalStatistics(false);
+            }
+            pcout << std::endl;
         } else {
             RBCField.synchronizeCellQuantities();
         }

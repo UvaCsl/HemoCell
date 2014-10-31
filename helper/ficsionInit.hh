@@ -152,9 +152,10 @@ void SquarePoiseuilleVelocity<T>::operator()(plint iX, plint iY, plint iZ, Array
 }
 
 /* ************* iniLatticeSquarePoiseuille ******************* */
-void iniLatticeOutlets( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+template<typename T, template<class U> class Descriptor>
+void iniLatticeOutlets( MultiBlockLattice3D<T,Descriptor>& lattice,
                  IncomprFlowParam<T> const& parameters,
-                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition)
+                 OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition)
 {
     const plint nx = parameters.getNx();
     const plint ny = parameters.getNy();
@@ -186,16 +187,17 @@ void iniLatticeOutlets( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
                                    lattice, outlet, boundary::outflow );
 
     setExternalVector( lattice, lattice.getBoundingBox(),
-                       DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
+            Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
 
     lattice.initialize();
 }
 
 
 /* ************* iniLatticeSquarePoiseuille ******************* */
-void iniLatticeSquarePoiseuille( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+template<typename T, template<class U> class Descriptor>
+void iniLatticeSquarePoiseuille( MultiBlockLattice3D<T,Descriptor>& lattice,
                  IncomprFlowParam<T> const& parameters,
-                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T Re)
+                 OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T Re)
 {
     const plint nx = parameters.getNx();
     const plint ny = parameters.getNy();
@@ -230,7 +232,7 @@ void iniLatticeSquarePoiseuille( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
     initializeAtEquilibrium(lattice, lattice.getBoundingBox(), SquarePoiseuilleDensityAndVelocity<T>(parameters, NMAX, Re));
 
     setExternalVector( lattice, lattice.getBoundingBox(),
-                       DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
+            Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
 
     lattice.initialize();
 }
@@ -285,9 +287,10 @@ void iniLatticeFullyPeriodic(MultiBlockLattice3D<T,Descriptor>& lattice, Incompr
 }
 
 /* ************* iniLatticeSquareCouette ******************* */
-void iniLatticeSquareCouette( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+template<typename T, template<class U> class Descriptor>
+void iniLatticeSquareCouette( MultiBlockLattice3D<T,Descriptor>& lattice,
                  IncomprFlowParam<T> const& parameters,
-                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T shearRate)
+                 OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T shearRate)
 {
     const plint nx = parameters.getNx();
     const plint ny = parameters.getNy();
@@ -315,7 +318,7 @@ void iniLatticeSquareCouette( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
 
 //    setBoundaryVelocity(lattice, inlet, SquarePoiseuilleVelocity<T>(parameters, NMAX, Re));
 //    setBoundaryVelocity(lattice, outlet, SquarePoiseuilleVelocity<T>(parameters, NMAX, Re));
-    T vHalf = (nz-1)*shearRate*0.5;
+    T vHalf = (ny-1)*shearRate*0.5;
     setBoundaryVelocity(lattice, left, Array<T,3>(vHalf,0.0,0.0));
     setBoundaryVelocity(lattice, right, Array<T,3>(-vHalf,0.0,0.0));
 //    setBoundaryVelocity(lattice, top, Array<T,3>(0.0,0.0,0.0));
@@ -324,10 +327,47 @@ void iniLatticeSquareCouette( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
 //    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), SquarePoiseuilleDensityAndVelocity<T>(parameters, NMAX, Re));
 
     setExternalVector( lattice, lattice.getBoundingBox(),
-                       DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
+            Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
 
     lattice.initialize();
 }
+
+/* ************* iniLatticeSquareCouetteMeasureStress ******************* */
+template<typename T, template<class U> class Descriptor>
+void iniLatticeSquareCouetteMeasureStress( MultiBlockLattice3D<T,Descriptor>& lattice,
+                 IncomprFlowParam<T> const& parameters,
+                 OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T shearRate,
+                 Array<plint, 3> & forceIds, plint & nMomentumExchangeCells)
+{
+    const plint nx = parameters.getNx();
+    const plint ny = parameters.getNy();
+    const plint nz = parameters.getNz();
+
+    Box3D lid   = Box3D(0, nx-1, 0,    0,    1, nz-2);
+    Box3D top   = Box3D(0, nx-1, 1,    1,    1, nz-2);
+    Box3D bottom  = Box3D(0, nx-1, ny-1, ny-1, 1, nz-2);
+
+    lattice.periodicity().toggleAll(true);
+
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, top );
+//    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, lid );
+
+    T v = (ny-2)*shearRate;
+    setBoundaryVelocity(lattice, top, Array<T,3>(v, 0.0, 0.0));
+//    setBoundaryVelocity(lattice, lid, Array<T,3>(0.0, 0.0,0.0));
+
+    defineDynamics(lattice, bottom, new MomentumExchangeBounceBack<T,Descriptor>(forceIds));
+    initializeMomentumExchange(lattice, bottom);
+    defineDynamics(lattice, lid, new BounceBack<T,Descriptor>);
+
+//    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), SquarePoiseuilleDensityAndVelocity<T>(parameters, NMAX, Re));
+    nMomentumExchangeCells = bottom.nCells();
+    setExternalVector( lattice, lattice.getBoundingBox(),
+            Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
+
+    lattice.initialize();
+}
+
 
 /* ************* changeCouetteShearRate ******************* */
 void changeCouetteShearRate( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
