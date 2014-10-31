@@ -302,7 +302,7 @@ int main(int argc, char* argv[])
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
         std::vector<Array<T,3> > cellsOrigin;
-//        cellsOrigin.push_back( Array<T,3>(23.,23.,23.) );
+        cellsOrigin.push_back( Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
         if (flowType == 2) { RBCField.grow(0); }
         else { RBCField.initialize(cellsOrigin); }
         checkpointer.save(lattice, cellFields, initIter);
@@ -336,7 +336,7 @@ int main(int argc, char* argv[])
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
-       RBCField.applyCellCellForce(PLF, R);
+//       RBCField.applyCellCellForce(PLF, R);
        if (flowType==3) { cellStretch.stretch(); }
         // #2# IBM Spreading
         RBCField.setFluidExternalForce(poiseuilleForce);
@@ -371,7 +371,7 @@ int main(int argc, char* argv[])
                 pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") ";
             } else  if (flowType==11) {
                 T nu_lb = parameters.getLatticeNu();
-                T coeff = nu_lb * shearRate; // * nMomentumExchangeCells;
+                T coeff = nu_lb * nMomentumExchangeCells * shearRate; // * nMomentumExchangeCells;
                 T drag =  lattice.getInternalStatistics().getSum(forceIds[0]) / coeff;
                 T lift =  lattice.getInternalStatistics().getSum(forceIds[1]) / coeff;
                 T other =  lattice.getInternalStatistics().getSum(forceIds[2]) / coeff;
@@ -382,9 +382,8 @@ int main(int argc, char* argv[])
                 lattice.toggleInternalStatistics(false);
             }
             pcout << std::endl;
-        } else {
-            RBCField.synchronizeCellQuantities();
         }
+        RBCField.synchronizeCellQuantities();
     }
     simpleProfiler.writeIteration(tmax+1);
     global::profiler().writeReport();

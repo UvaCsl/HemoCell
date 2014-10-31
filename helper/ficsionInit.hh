@@ -296,35 +296,17 @@ void iniLatticeSquareCouette( MultiBlockLattice3D<T,Descriptor>& lattice,
     const plint ny = parameters.getNy();
     const plint nz = parameters.getNz();
 
-//    Box3D top    = Box3D(0,    nx-1, 0, ny-1, 0,    0);
-//    Box3D bottom = Box3D(0,    nx-1, 0, ny-1, nz-1, nz-1);
+    Box3D left   = Box3D(0, nx-1, 0,    0,    0, nz-1);
+    Box3D right  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
 
-    Box3D left   = Box3D(0, nx-1, 0,    0,    1, nz-2);
-    Box3D right  = Box3D(0, nx-1, ny-1, ny-1, 1, nz-2);
-
-//    Box3D inlet  = Box3D(0,    0,    1,    ny-2, 1, nz-2);
-//    Box3D outlet = Box3D(nx-1, nx-1, 1,    ny-2, 1, nz-2);
-
-    lattice.periodicity().toggle(0, true);
-    lattice.periodicity().toggle(2, true);
-//    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, inlet );
-//    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, outlet );
-
-//    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, top );
-//    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, bottom );
+    lattice.periodicity().toggleAll(true);
 
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, left );
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, right );
 
-//    setBoundaryVelocity(lattice, inlet, SquarePoiseuilleVelocity<T>(parameters, NMAX, Re));
-//    setBoundaryVelocity(lattice, outlet, SquarePoiseuilleVelocity<T>(parameters, NMAX, Re));
     T vHalf = (ny-1)*shearRate*0.5;
     setBoundaryVelocity(lattice, left, Array<T,3>(vHalf,0.0,0.0));
     setBoundaryVelocity(lattice, right, Array<T,3>(-vHalf,0.0,0.0));
-//    setBoundaryVelocity(lattice, top, Array<T,3>(0.0,0.0,0.0));
-//    setBoundaryVelocity(lattice, bottom, Array<T,3>(0.0,0.0,0.0));
-
-//    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), SquarePoiseuilleDensityAndVelocity<T>(parameters, NMAX, Re));
 
     setExternalVector( lattice, lattice.getBoundingBox(),
             Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
@@ -343,21 +325,21 @@ void iniLatticeSquareCouetteMeasureStress( MultiBlockLattice3D<T,Descriptor>& la
     const plint ny = parameters.getNy();
     const plint nz = parameters.getNz();
 
-    Box3D lid   = Box3D(0, nx-1, 0,    0,    1, nz-2);
-    Box3D top   = Box3D(0, nx-1, 1,    1,    1, nz-2);
-    Box3D bottom  = Box3D(0, nx-1, ny-1, ny-1, 1, nz-2);
+    Box3D top    = Box3D(0, nx-1,    0,    0,   0, nz-1);
+    Box3D bottom = Box3D(0, nx-1, ny-2, ny-2,   0, nz-1);
+    Box3D lid    = Box3D(0, nx-1, ny-1, ny-1,   0, nz-1);
 
     lattice.periodicity().toggleAll(true);
 
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, top );
 //    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, lid );
 
-    T v = (ny-2)*shearRate;
+    T v = (ny-2.5)*shearRate;
     setBoundaryVelocity(lattice, top, Array<T,3>(v, 0.0, 0.0));
 //    setBoundaryVelocity(lattice, lid, Array<T,3>(0.0, 0.0,0.0));
 
     defineDynamics(lattice, bottom, new MomentumExchangeBounceBack<T,Descriptor>(forceIds));
-    initializeMomentumExchange(lattice, bottom);
+    initializeMomentumExchange(lattice, lattice.getBoundingBox());
     defineDynamics(lattice, lid, new BounceBack<T,Descriptor>);
 
 //    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), SquarePoiseuilleDensityAndVelocity<T>(parameters, NMAX, Re));
