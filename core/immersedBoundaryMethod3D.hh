@@ -232,6 +232,32 @@ void interpolationCoefficientsPhi4c (
     }
 }
 
+/*
+ * In case one of the interpolating boundary nodes is a boundary,
+ * the force is spread to the rest of the nodes
+ * */
+template<typename T, template<typename U> class Descriptor>
+void curateInterpolationCoefficients (BlockLattice3D<T,Descriptor>& fluid,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights) {
+    Cell<T,Descriptor>* cell;
+    T percentageInBoundaries=1;
+    std::vector<T> newWeights = weights;
+    std::vector<Dot3D> newCellPos = cellPos;
+    weights.clear(); cellPos.clear();
+    for (pluint iCell = 0; iCell < newWeights.size() ; ++iCell) {
+        Dot3D cellPosition = newCellPos[iCell];
+        cell = &fluid.get(cellPosition.x, cellPosition.y, cellPosition.z);
+        if (not cell->getDynamics().isBoundary()) {
+            percentageInBoundaries -= newWeights[iCell];
+            weights.push_back(newWeights[iCell]);
+            cellPos.push_back(newCellPos[iCell]);
+        }
+    }
+    plint nRemaining = weights.size();
+    for (plint iCell = 0; iCell < nRemaining; ++iCell) {
+        weights[iCell] += percentageInBoundaries*1.0/nRemaining;
+    }
+}
 
 }
 #endif  // IMMERSEDBOUNDARYMETHOD_3D_HH

@@ -284,6 +284,7 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         std::vector<T>  & weights = particle->getIBMweights();
         if (cellPos.size() == 0) {
             interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
+            curateInterpolationCoefficients (fluid, cellPos, weights);
         }
         particle->get_v().resetToZero();
         for (pluint iCell=0; iCell < weights.size(); ++iCell) {
@@ -416,6 +417,7 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
         std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
         std::vector<T> & weights = particle->getIBMweights();
         interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
+        curateInterpolationCoefficients (fluid, cellPos, weights);
         Array<T,3> elasticForce = particle->get_force();
         // pcout << "elastic force: (" << elasticForce[0] << ", "<< elasticForce[1] << ", "<< elasticForce[2] << ")\n";
         for (pluint iCell = 0; iCell < weights.size(); ++iCell) {

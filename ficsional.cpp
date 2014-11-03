@@ -303,8 +303,9 @@ int main(int argc, char* argv[])
         pcout << "(main) initializing"<< std::endl;
         std::vector<Array<T,3> > cellsOrigin;
         cellsOrigin.push_back( Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
-        if (flowType == 2) { RBCField.grow(0); }
-        else { RBCField.initialize(cellsOrigin); }
+        RBCField.grow(0);
+//        if (flowType == 2 or flowType==1) { RBCField.grow(0); }
+//        else { RBCField.initialize(cellsOrigin); }
         checkpointer.save(lattice, cellFields, initIter);
     }
 
@@ -336,7 +337,7 @@ int main(int argc, char* argv[])
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
-//       RBCField.applyCellCellForce(PLF, R);
+       RBCField.applyCellCellForce(PLF, R);
        if (flowType==3) { cellStretch.stretch(); }
         // #2# IBM Spreading
         RBCField.setFluidExternalForce(poiseuilleForce);

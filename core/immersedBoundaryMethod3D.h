@@ -69,6 +69,14 @@ void interpolationCoefficientsPhi4c (
         AtomicBlock3D const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights );
 
+/*
+ * In case one of the interpolating boundary nodes is a boundary,
+ * the force is spread to the rest of the nodes
+ * */
+template<typename T, template<typename U> class Descriptor>
+void curateInterpolationCoefficients (BlockLattice3D<T,Descriptor>& fluid,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights) ;
+
 
 }
 
