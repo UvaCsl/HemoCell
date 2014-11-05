@@ -334,6 +334,9 @@ int main(int argc, char* argv[])
     /* --------------------------- */
     global::timer("mainLoop").start();
     global::profiler().turnOn();
+//#ifdef PLB_DEBUG // Palabos has this bug. It's missing the "envelope-update" is the profiler.
+    if (flowType==2) { global::profiler().turnOff(); }
+//#endif
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();

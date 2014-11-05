@@ -31,7 +31,7 @@ Tumbling-TankTreading Measurements [6],
 Fast Cell Stretching release [8],
 Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType], 
  -->
-    <flowType> 0 </flowType>   
+    <flowType> 2 </flowType>   
     <Re> 5. </Re>   <!--Reynolds number-->
     <shearRate> 1000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 100.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. When used with 2, it's the disaggregation force-->
@@ -55,15 +55,15 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1.0e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <lx> 30.0e-6 </lx> <!--Size of domain in SI. For Lattice 5nits try: nx, ny, nz -->
-    <ly> 30.0e-6 </ly> <!--ly/ny is used for the Reynolds number calculation -->
-    <lz> 30.0e-6 </lz>
+    <lx> 31.0e-6 </lx> <!--Size of domain in SI. For Lattice 5nits try: nx, ny, nz -->
+    <ly> 31.0e-6 </ly> <!--ly/ny is used for the Reynolds number calculation -->
+    <lz> 31.0e-6 </lz>
 </domain>
 
 <sim>
-    <tmax> 10000000 </tmax> <!-- total number of iterations -->
-    <tmeas> 10 </tmeas> <!-- interval after which data is written --> 
-    <hct> 0.30  </hct> <!-- Hematocrit  > -->
+    <tmax> 500 </tmax> <!-- total number of iterations -->
+    <tmeas> 50 </tmeas> <!-- interval after which data is written --> 
+    <hct> 0.10  </hct> <!-- Hematocrit  > -->
 </sim>
 
 </ficsion>
