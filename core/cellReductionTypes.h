@@ -23,18 +23,25 @@
  *      STD  : 4 // Still to be implemented
  *      Save:  5 // Only for data saving
  * ID for the quantity of interest, starting from 1. Can be grouped together like:
- *      Volume         : 1
- *      Angle          : 2
- *      Area           : 3
- *      Edge Distance  : 4
- *      Edge Tile Span : 5
- *      Position       : 6 // Periodic boundary position
- *      Velocity       : 7
- *      Inertia        : 8
- *      Energy         : 9
- *      Force          : 16
- *      Torque         : 17
- *      Position       : 0
+ *      Volume                  : 1
+ *      Angle                   : 2
+ *      Area                    : 3
+ *      Edge Distance           : 4
+ *      Edge Tile Span          : 5
+ *      Position                : 6 // Periodic boundary position
+ *      Velocity                : 7
+ *      Inertia                 : 8
+ *      Energy                  : 9
+ *      Tumbling angles         : 10
+ *      Tank treading angles    : 11
+ *      Diamaters               : 12
+ *      Symmetry deviation      : 13
+ *      Deformation index       : 14
+ *      Taylor Deformation index: 15
+ *      Force                   : 16
+ *      Torque                  : 17
+ *      Cell centre distance    : 18
+ *      Position                : 0
  */
 #define CCR_NO_PBC_POSITION_MEAN    13 // 3d // BEWARE OF 0 IN FRONT! GOES TO OCT
 #define CCR_NO_PBC_POSITION_MIN     23 // 3d // BEWARE OF 0 IN FRONT! GOES TO OCT
@@ -71,6 +78,12 @@
 #define CCR_SYMMETRY_DEVIATION    1351 // 1d
 #define CCR_DEFORMATION_INDEX     1451 // 1d
 #define CCR_TAYLOR_DEFORMATION_INDEX             1551 // 1d
+
+// The following are cell related
+#define CCR_CELL_CENTER_DISTANCE_MEAN      1811 // 3d
+#define CCR_CELL_CENTER_DISTANCE_MIN       1821 // 3d
+#define CCR_CELL_CENTER_DISTANCE_MAX       1831 // 3d
+
 
 
 using namespace plb;
@@ -240,6 +253,10 @@ std::map<plint, std::string> createMapCCR() {
     ccrNames[CCR_DIAMETERS] = "Diameters";
     ccrNames[CCR_SYMMETRY_DEVIATION] = "Symmetry deviation";
     ccrNames[CCR_TAYLOR_DEFORMATION_INDEX] = "Taylor deviation index";
+
+    ccrNames[CCR_CELL_CENTER_DISTANCE_MEAN] = "Mean vertex cell distance";
+    ccrNames[CCR_CELL_CENTER_DISTANCE_MIN] = "Min vertex cell distance";
+    ccrNames[CCR_CELL_CENTER_DISTANCE_MAX] = "Max vertex cell distance";
     return ccrNames;
 }
 
@@ -249,6 +266,10 @@ std::map<plint, std::vector<plint> > createCcrDependencies() {
     ccrD[CCR_INERTIA].push_back(CCR_POSITION_MEAN);
     ccrD[CCR_FORCE].push_back(CCR_POSITION_MEAN);
     ccrD[CCR_FORCE].push_back(CCR_SURFACE);
+
+    ccrD[CCR_CELL_CENTER_DISTANCE_MEAN].push_back(CCR_POSITION_MEAN);
+    ccrD[CCR_CELL_CENTER_DISTANCE_MIN].push_back(CCR_POSITION_MEAN);
+    ccrD[CCR_CELL_CENTER_DISTANCE_MAX].push_back(CCR_POSITION_MEAN);
     return ccrD;
 }
 

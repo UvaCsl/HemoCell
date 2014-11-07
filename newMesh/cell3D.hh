@@ -540,6 +540,8 @@ void calculateCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D
             quantity1D += triangleVolumeT6/6.0/3.0; // every volume is evaluated 3 times
         }
         reducer.gather(ccrId, quantity1D);
+    // Vertex distance
+    } else if (q==18) { reducer.gather(ccrId, norm( cell->getPosition() - cell->getPosition(iVertex)) ); // POSITION
 /****** 3D Quantities ******/
     // CCR_NO_PBC_POSITION_MEAN
     } else if (q==0) { reducer.gather(ccrId, cell->getPosition(iVertex)); // POSITION
@@ -548,7 +550,10 @@ void calculateCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D
     // VELOCITY
     } else if (q==7) { reducer.gather(ccrId, cell->get_v(iVertex)) ;
     // Force
-    } else if (q==16) { reducer.gather(ccrId, cell->get_force(iVertex) );
+    } else if (q==16) {
+        // Normalize force with area. Force = force * Vi/Vmean;
+        Array<T,3> normForce = cell->get_force(iVertex) * cell->computeVertexArea(iVertex) * 1.0/ (cell->getSurface()*1.0/cell->getCellNumVertices()) ;
+        reducer.gather(ccrId, normForce );
 /****** ND Quantities ******/
     // INERTIA
     } else if (q==8) {
