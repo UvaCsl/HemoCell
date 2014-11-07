@@ -28,7 +28,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
-        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & flowParam, bool & checkpointed)
+        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
@@ -96,11 +96,11 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
     try {
-        plint npar;
         document["sim"]["npar"].read(npar);
-        hct = npar * (90e-18) / (lx*ly*lz);
+        hct = 0;
     } catch(const plb::PlbIOException & message) {
         document["sim"]["hct"].read(hct);
+        npar = 0;
     }
     if (hct>1.0) { hct /= 100.0; }
 
@@ -114,6 +114,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
 //    flowType = flowType%10;
     if ( (flowType == 3) or (flowType == 4) or (flowType == 5) or (flowType == 8) ) { // Cell Stretching Analysis
         shearRate = 0;
+        Re = 0;
     } else if (flowType == 6) { // Tumbling Tank Treading Measurements
         if (shearRate > 0) {
             tmax  = 100.0/(shearRate*dt); // Measurements for 100 Strain rates
@@ -152,7 +153,8 @@ int main(int argc, char* argv[])
     std::string cellPath;
     pluint tmax;
     plint tmeas;
-    T hct;
+    T hct = 0;
+    plint npar = 0;
 //    T dtIteration = 0;
     T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic,  k_volume, k_surface, eta_m;
     T eqLengthRatio;
@@ -178,7 +180,7 @@ int main(int argc, char* argv[])
     readFicsionXML(document, caseId, rbcModel, shellDensity,
             k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, shape, cellPath, radius, deflationRatio, relaxationTime,
-            cellNumTriangles, tmax, tmeas, hct, flowParam, checkpointed);
+            cellNumTriangles, tmax, tmeas, hct, npar, flowParam, checkpointed);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -222,13 +224,13 @@ int main(int argc, char* argv[])
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
-    lattice.toggleInternalStatistics(true);
+    lattice.toggleInternalStatistics(false);
     Array<plint,3> forceIds;
     forceIds[0] = lattice.internalStatSubscription().subscribeSum();
     forceIds[1] = lattice.internalStatSubscription().subscribeSum();
     forceIds[2] = lattice.internalStatSubscription().subscribeSum();
     plint nMomentumExchangeCells=0;
-    if (flowType == 0) {
+    if (flowType == 0 or flowType == 3) {
         T L_tmp = parameters.getNy();
         T nu_tmp = parameters.getLatticeNu();
         poiseuilleForce = 8 * (nu_tmp*nu_tmp) * Re / (L_tmp*L_tmp*L_tmp) ;
@@ -243,7 +245,9 @@ int main(int argc, char* argv[])
     else if (flowType == 11) {
         poiseuilleForce = 0;
         pcout << "(main) Using iniLatticeSquareCouetteMeasureStress. "<< flowType << std::endl;
+        lattice.toggleInternalStatistics(true);
         iniLatticeSquareCouetteMeasureStress<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate, forceIds, nMomentumExchangeCells);
+        lattice.toggleInternalStatistics(false);
     }
     else if (flowType == 2) {
         poiseuilleForce = 0;
@@ -251,7 +255,6 @@ int main(int argc, char* argv[])
 //        envelope-update
         iniLatticeFullyPeriodic<T, DESCRIPTOR>(lattice, parameters, Array<T,3>(0.02, 0.02, 0.02));
     }
-    lattice.toggleInternalStatistics(false);
 
 
     /*
@@ -282,15 +285,6 @@ int main(int argc, char* argv[])
     }
 
 
-    /* Deflate if I say so */
-//    MorsePotential<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
-//    MorseAndPowerLawForce<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
-//    if (flowType == 2) {
-//        applyProcessingFunctional (
-//           new ComputeCellCellForces3D<T,DESCRIPTOR> (interCellularForce, 1.1e-6/dx),
-//           immersedParticles.getBoundingBox(), particleArg );
-//    }
-
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, ibmKernel, "RBC");
     std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
     cellFields.push_back(&RBCField);
@@ -303,9 +297,8 @@ int main(int argc, char* argv[])
         pcout << "(main) initializing"<< std::endl;
         std::vector<Array<T,3> > cellsOrigin;
         cellsOrigin.push_back( Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
-        RBCField.grow(0);
-//        if (flowType == 2 or flowType==1) { RBCField.grow(0); }
-//        else { RBCField.initialize(cellsOrigin); }
+        if (hct>0) { RBCField.grow(0); }
+        else { RBCField.initialize(cellsOrigin); }
         checkpointer.save(lattice, cellFields, initIter);
     }
 
@@ -354,6 +347,7 @@ int main(int argc, char* argv[])
         RBCField.interpolateVelocityIBM();
         // #5# Position Update
         RBCField.advanceParticles();
+        // #6# Output
         if ((iter+1)%tmeas==0) {
             SyncRequirements everyCCR(allReductions);
             RBCField.synchronizeCellQuantities(everyCCR);
@@ -383,11 +377,12 @@ int main(int argc, char* argv[])
                       << "; lift=" << lift
                       << "; other=" << other
                       << "; nMomentumExchangeCells=" << nMomentumExchangeCells*1.0/(nx*nz);
-                lattice.toggleInternalStatistics(false);
             }
             pcout << std::endl;
+        } else {
+            RBCField.synchronizeCellQuantities();
         }
-        RBCField.synchronizeCellQuantities();
+        if ((iter+1)%tmeas==0 && flowType==11) { lattice.toggleInternalStatistics(false); }
     }
     simpleProfiler.writeIteration(tmax+1);
     global::profiler().writeReport();
