@@ -239,9 +239,8 @@ void CellField3D<T, Descriptor>::synchronizeSyncRequirements_Local(SyncRequireme
     // ... and then the ones that depend on something else (Inertia etc)
     if (ccrDependent.size() > 0) {
         global::timer("Model").start();
-        bool keepQuantities=true;
         applyProcessingFunctional (
-            new ComputeRequiredQuantities<T,Descriptor> (ccrDependent.getSyncRequirements(), cellIdToCell3D, keepQuantities),
+            new ComputeRequiredQuantities<T,Descriptor> (ccrDependent.getSyncRequirements(), cellIdToCell3D),
             immersedParticles->getBoundingBox(), particleReductionParticleArg );
         global::timer("Model").stop();
 

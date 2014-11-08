@@ -31,8 +31,8 @@ Tumbling-TankTreading Measurements [6],
 Fast Cell Stretching release [8],
 Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType], 
  -->
-    <flowType> 3 </flowType>   
-    <Re> 5. </Re>   <!--Reynolds number-->
+    <flowType> 0 </flowType>   
+    <Re> 0. </Re>   <!--Reynolds number-->
     <shearRate> 1000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 150.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. When used with 2, it's the disaggregation force-->
     <eulerAngles> 0 0 0 </eulerAngles> <!-- In degrees -->
@@ -61,9 +61,9 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
 </domain>
 
 <sim>
-    <tmax> 500 </tmax> <!-- total number of iterations -->
+    <tmax> 50000 </tmax> <!-- total number of iterations -->
     <tmeas> 50 </tmeas> <!-- interval after which data is written --> 
-    <hct> 0.10  </hct> <!-- Hematocrit  > -->
+    <hct> 0.010  </hct> <!-- Hematocrit  > -->
 </sim>
 
 </ficsion>

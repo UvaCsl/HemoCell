@@ -33,12 +33,13 @@ public:
     void clearQuantities() ;
     void clearQuantities(std::vector<plint> ccrIds) ;
     void updateCQH(CellQuantityHolder<T> const& cqh);
+    void updateCQH(CellQuantityHolder<T> const& cqh, std::vector<plint> const& ccrRequirements);
 
     void insert(plint ccrId, T value)              { quantities1D[ccrId] = value; }
     void insert(plint ccrId, Array<T,3> value)     { quantities3D[ccrId] = value; }
     void insert(plint ccrId, std::vector<T> value) { quantitiesND[ccrId] = value; }
     virtual void copyFromBlockStatisticsCCR(BlockStatisticsCCR<T> & reducer);
-    bool count(plint ccrId);
+    bool has_ccrId(plint ccrId);
 
     std::map<plint, T >&              getQuantities1D() { return quantities1D; }; // quantities1D[CCR_VOLUME] = CELL_VOLUME
     std::map<plint, Array<T,3> >&     getQuantities3D() { return quantities3D; }; 

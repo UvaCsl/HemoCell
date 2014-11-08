@@ -56,7 +56,23 @@ void CellQuantityHolder<T>::updateCQH(CellQuantityHolder<T> const& cqh) {
 }
 
 template<typename T>
-bool CellQuantityHolder<T>::count(plint ccrId) {
+void CellQuantityHolder<T>::updateCQH(CellQuantityHolder<T> const& cqh, std::vector<plint> const& ccrIds) {
+    this->clearQuantities();
+    particlesPerCellId = cqh.getParticlesPerCellId() ;
+    for (pluint i=0; i<ccrIds.size(); ++i) {
+        plint ccrId = ccrIds[i];
+        plint d = getReductionDimension(ccrId);
+        if (d==1) { quantities1D[ccrId] = cqh.get1D(ccrId); }
+        else if (d==3) { quantities3D[ccrId] = cqh.get3D(ccrId); }
+        else { quantitiesND[ccrId] = cqh.getND(ccrId); }
+    }
+    this->make_ccrId_List();
+}
+
+
+
+template<typename T>
+bool CellQuantityHolder<T>::has_ccrId(plint ccrId) {
 	plint dim = getReductionDimension(ccrId);
 	plint ret;
 	if      (dim==1)  { ret = quantities1D.count(ccrId); }

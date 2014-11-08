@@ -630,9 +630,8 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         Array<T,3> const& vertex = cell->get3D(CCR_NO_PBC_POSITION_MEAN);
         ReductionParticle3D<T,Descriptor>* rParticle = new ReductionParticle3D<T,Descriptor>(cellId, vertex);
         rParticle->get_nParticles() = particlesPerCellId[cellId];
-        rParticle->updateCQH(*cell);
-        if (keepQuantities) { cell->clearQuantities(ccrRequirements); }
-        else { cell->clearQuantities(); }
+        rParticle->updateCQH(*cell, ccrRequirements);
+        cell->clearQuantities(ccrRequirements);
         reductionParticleField.addParticle(reductionParticleField.getBoundingBox(), rParticle);
 //        std::cout << global::mpi().getRank() << " cellId " << rParticle->get_cellId()
 //         << " Cell Volume " << rParticle->getVolume()
@@ -653,8 +652,8 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
 template<typename T, template<typename U> class Descriptor>
 ComputeRequiredQuantities<T,Descriptor>::ComputeRequiredQuantities (
     std::vector<plint> ccrRequirements_, 
-    std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_, bool keepQuantities_)
-: ccrRequirements(ccrRequirements_), cellIdToCell3D(cellIdToCell3D_), keepQuantities(keepQuantities_) { }
+    std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_)
+: ccrRequirements(ccrRequirements_), cellIdToCell3D(cellIdToCell3D_) { }
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -664,7 +663,7 @@ ComputeRequiredQuantities<T,Descriptor>::~ComputeRequiredQuantities() { }
 template<typename T, template<typename U> class Descriptor>
 ComputeRequiredQuantities<T,Descriptor>::ComputeRequiredQuantities (
             ComputeRequiredQuantities<T,Descriptor> const& rhs)
-    : ccrRequirements(rhs.ccrRequirements), cellIdToCell3D(rhs.cellIdToCell3D), keepQuantities(rhs.keepQuantities) { }
+    : ccrRequirements(rhs.ccrRequirements), cellIdToCell3D(rhs.cellIdToCell3D) { }
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -765,7 +764,7 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
 //                  << " rPart "  << iter->second->getNumVertices_Local() << std::endl;
 
 
-            if ( cell.count(CCR_INERTIA) ) {
+            if ( cell.has_ccrId(CCR_INERTIA) ) {
                 std::vector<T> & cellInertia = cell.getInertia();
                 std::vector<T> ellipsoidAngles;
                 std::vector<T> ellipsoidSemiAxes;

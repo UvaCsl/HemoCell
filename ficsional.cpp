@@ -373,6 +373,7 @@ int main(int argc, char* argv[])
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
             pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
+//            pcout << "; Volume (" << RBCField[0]->getVolume() << ")";
             if (flowType==3) {
                 Array<T,3> stretch = cellStretch.measureStretch();
                 pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") ";

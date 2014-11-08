@@ -185,7 +185,7 @@ template<typename T, template<typename U> class Descriptor>
 class ComputeRequiredQuantities : public BoxProcessingFunctional3D
 {
 public:
-    ComputeRequiredQuantities (std::vector<plint> ccrRequirements_, std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_, bool keepQuantities_=false);
+    ComputeRequiredQuantities (std::vector<plint> ccrRequirements_, std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_);
     virtual ~ComputeRequiredQuantities();
     ComputeRequiredQuantities(ComputeRequiredQuantities<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -197,7 +197,6 @@ public:
 private:
     std::vector<plint> ccrRequirements;
     std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
-    bool keepQuantities;
 };
 
 
