@@ -277,9 +277,14 @@ int main(int argc, char* argv[])
     ConstitutiveModel<T,DESCRIPTOR> *cellModel;
     T persistenceLengthFine = 7.5e-9 ; // In meters
     if (rbcModel == 0) {
+    	k_rest= 0;
        cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
             persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
+    } else  if (rbcModel == 3) {
+        cellModel = new RestModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+                persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
     } else  { // if (rbcModel == 1) {
+    	k_rest= 0;
        cellModel = new CellModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
                persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
     }
@@ -300,6 +305,10 @@ int main(int argc, char* argv[])
         if (hct>0) { RBCField.grow(0); }
         else { RBCField.initialize(cellsOrigin); }
         checkpointer.save(lattice, cellFields, initIter);
+    }
+
+    if (rbcModel == 3) {
+    	(dynamic_cast<RestModel3D<T,DESCRIPTOR>*>(cellModel))->freezeVertices(RBCField);
     }
 
     plint nCells = RBCField.getNumberOfCells_Global();

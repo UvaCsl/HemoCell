@@ -1,0 +1,4 @@
+log/*
+tmp/*
+hdf5/*
+palabos/*

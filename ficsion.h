@@ -43,7 +43,7 @@ using namespace std;
 #include "shellModel3D.h"
 #include "cellModel3D.h"
 #include "shapeMemoryModel3D.h"
-
+#include "restModel3D.h"
 
 /* CASES */
 #include "cellStretching3D.h"

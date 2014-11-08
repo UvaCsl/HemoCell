@@ -68,7 +68,7 @@ public:
         SyncRequirements sr(CCR_POSITION_MIN);
         sr.insert(CCR_POSITION_MAX);
         cellField.synchronizeSyncRequirements(sr);
-        Array<T,3> stretch = cellField[0]->get3D(CCR_POSITION_MIN) - cellField[0]->get3D(CCR_POSITION_MAX);
+        Array<T,3> stretch = cellField[0]->get3D(CCR_POSITION_MAX) - cellField[0]->get3D(CCR_POSITION_MIN);
         return stretch;
     }
 

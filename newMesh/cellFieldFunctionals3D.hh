@@ -215,14 +215,13 @@ void ComputeCellForce3D<T,Descriptor>::processGenericBlocks (
     PLB_PRECONDITION( blocks.size()==1 );
     ParticleField3D<T,Descriptor>& particleField =
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
-    std::vector<Particle3D<T,Descriptor>*> particles;
-    particleField.findParticles(domain, particles);
-    for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
-        particle->get_force().resetToZero();
-    }
-
+//    std::vector<Particle3D<T,Descriptor>*> particles;
+//    particleField.findParticles(domain, particles);
+//    for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
+//        ImmersedCellParticle3D<T,Descriptor>* particle =
+//            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+//        particle->get_force().resetToZero();
+//    }
     typename std::map<plint, Cell3D<T,Descriptor>*  >::iterator iter;
     for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
         cellModel->computeCellForce(iter->second);

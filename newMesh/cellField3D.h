@@ -100,6 +100,7 @@ private:
 	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles;
 	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * reductionParticles;
 	TriangularSurfaceMesh<T> & elementaryMesh;
+    T hematocrit;
 	ConstitutiveModel<T, Descriptor> * cellModel;
 	plint ibmKernel;
 	bool coupleWithIBM;
@@ -113,7 +114,6 @@ public:
     std::vector<MultiBlock3D*> & getparticleReductionParticleArg() { return particleReductionParticleArg; }
     Box3D getBoundingBox() { return immersedParticles->getBoundingBox(); }
 private:
-    T hematocrit;
     std::vector<MultiBlock3D*> reductionParticleArg;
     std::vector<MultiBlock3D*> particleArg;
     std::vector<MultiBlock3D*> particleLatticeArg;
