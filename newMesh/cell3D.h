@@ -93,7 +93,7 @@ public:
     virtual Array<T,3> & getPosition() { return quantities3D[CCR_POSITION_MEAN];  } ;
 
     virtual Array<T,3> const& getVelocity() { return quantities3D[CCR_VELOCITY_MEAN];} ;
-    virtual Array<T,3> getForce(plint numVertices=1)    { return quantities3D[CCR_FORCE] * (1.0*numVertices) / quantities1D[CCR_SURFACE];} ;
+    virtual Array<T,3> getForce()    { return quantities3D[CCR_FORCE];} ;
     virtual std::vector<T> & getInertia()   { return quantitiesND[CCR_INERTIA];} ;
 
     virtual Array<T,3> & getTumblingAngles()     { return quantities3D[CCR_TUMBLING_ANGLES];  } ;

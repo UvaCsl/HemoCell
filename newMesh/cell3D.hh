@@ -551,9 +551,12 @@ void calculateCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D
     } else if (q==7) { reducer.gather(ccrId, cell->get_v(iVertex)) ;
     // Force
     } else if (q==16) {
-        // Normalize force with area. Force = force * Vi/Vmean;
-        Array<T,3> normForce = cell->get_force(iVertex) * cell->computeVertexArea(iVertex) * 1.0/ (cell->getSurface()*1.0/cell->getCellNumVertices()) ;
-        reducer.gather(ccrId, normForce );
+        reducer.gather(ccrId, cell->get_force(iVertex));
+	// Normalized force
+	} else if (q==26) {
+		// Normalize force with area. Force = force * Vi/Vmean;
+		Array<T,3> normForce = cell->get_force(iVertex) * cell->computeVertexArea(iVertex) * 1.0/ (cell->getSurface()*1.0/cell->getCellNumVertices()) ;
+		reducer.gather(ccrId, normForce );
 /****** ND Quantities ******/
     // INERTIA
     } else if (q==8) {
