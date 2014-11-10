@@ -56,11 +56,11 @@ void CellQuantityHolder<T>::updateCQH(CellQuantityHolder<T> const& cqh) {
 }
 
 template<typename T>
-void CellQuantityHolder<T>::updateCQH(CellQuantityHolder<T> const& cqh, std::vector<plint> const& ccrIds) {
+void CellQuantityHolder<T>::updateCQH(CellQuantityHolder<T> const& cqh, std::vector<plint> const& ccreqIds) {
     this->clearQuantities();
     particlesPerCellId = cqh.getParticlesPerCellId() ;
-    for (pluint i=0; i<ccrIds.size(); ++i) {
-        plint ccrId = ccrIds[i];
+    for (pluint i=0; i<ccreqIds.size(); ++i) {
+        plint ccrId = ccreqIds[i];
         plint d = getReductionDimension(ccrId);
         if (d==1) { quantities1D[ccrId] = cqh.get1D(ccrId); }
         else if (d==3) { quantities3D[ccrId] = cqh.get3D(ccrId); }

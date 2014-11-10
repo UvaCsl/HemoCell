@@ -61,25 +61,28 @@ private:
 /* ************************************************************************************* */
 
 /* ******************* iniLattice ***************************************** */
-void iniLatticeOutlets( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+template<typename T, template<class U> class Descriptor>
+void iniLatticeOutlets( MultiBlockLattice3D<T,Descriptor>& lattice,
                  IncomprFlowParam<T> const& parameters,
-                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition);
+                 OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition);
 
-void iniLatticeSquarePoiseuille( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+template<typename T, template<class U> class Descriptor>
+void iniLatticeSquarePoiseuille( MultiBlockLattice3D<T,Descriptor>& lattice,
                  IncomprFlowParam<T> const& parameters,
-                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition,
-                 T Re);
+                 OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T Re);
 
-void iniLatticePoiseuilleWithBodyForce(MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+template<typename T, template<class U> class Descriptor>
+void iniLatticePoiseuilleWithBodyForce(MultiBlockLattice3D<T,Descriptor>& lattice,
                  IncomprFlowParam<T> const& parameters,
-                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T poiseuilleForce);
+                 OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T poiseuilleForce);
 
 template<typename T, template<class U> class Descriptor>
 void iniLatticeFullyPeriodic(MultiBlockLattice3D<T,Descriptor>& lattice, IncomprFlowParam<T> const& parameters, Array<T,3> uInit);
 
-void iniLatticeSquareCouette( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,
+template<typename T, template<class U> class Descriptor>
+void iniLatticeSquareCouette( MultiBlockLattice3D<T,Descriptor>& lattice,
                  IncomprFlowParam<T> const& parameters,
-                 OnLatticeBoundaryCondition3D<T,DESCRIPTOR>& boundaryCondition, T shearRate);
+                 OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T shearRate);
 
 /* ******************* changeCouetteShearRate ***************************************** */
 void changeCouetteShearRate( MultiBlockLattice3D<T,DESCRIPTOR>& lattice,

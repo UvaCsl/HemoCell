@@ -247,8 +247,8 @@ void iniLatticePoiseuilleWithBodyForce(MultiBlockLattice3D<T,Descriptor>& lattic
     const plint ny = parameters.getNy();
     const plint nz = parameters.getNz();
 
-    Box3D left   = Box3D(0, nx-1, 0,    0,    1, nz-2);
-    Box3D right  = Box3D(0, nx-1, ny-1, ny-1, 1, nz-2);
+    Box3D left   = Box3D(0, nx-1, 0,    0,    0, nz-1);
+    Box3D right  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
 
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, left );
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, right );
@@ -268,10 +268,6 @@ void iniLatticePoiseuilleWithBodyForce(MultiBlockLattice3D<T,Descriptor>& lattic
 template<typename T, template<class U> class Descriptor>
 void iniLatticeFullyPeriodic(MultiBlockLattice3D<T,Descriptor>& lattice, IncomprFlowParam<T> const& parameters, Array<T,3> uInit)
 {
-    const plint nx = parameters.getNx();
-    const plint ny = parameters.getNy();
-    const plint nz = parameters.getNz();
-
     T rhoInit=1.0;
     initializeAtEquilibrium(lattice, lattice.getBoundingBox(), rhoInit, uInit);
 
@@ -343,6 +339,36 @@ void iniLatticeSquareCouetteMeasureStress( MultiBlockLattice3D<T,Descriptor>& la
             Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
 
     lattice.initialize();
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+void iniLattice_ForGalileanInvariance( MultiBlockLattice3D<T,Descriptor>& lattice,
+                 IncomprFlowParam<T> const& parameters,
+                 OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition,
+                 T velocity)
+{
+    const plint nx = parameters.getNx();
+    const plint ny = parameters.getNy();
+    const plint nz = parameters.getNz();
+
+    Box3D left   = Box3D(0, nx-1, 0,    0,    0, nz-1);
+    Box3D right  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
+
+    lattice.periodicity().toggle(0, true);
+    lattice.periodicity().toggle(2, true);
+
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, left );
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, right );
+
+    Array<T,3> vel(velocity,0.0,0.0);
+    setBoundaryVelocity(lattice, left, vel);
+    setBoundaryVelocity(lattice, right, vel);
+
+    setExternalVector( lattice, lattice.getBoundingBox(),
+                       DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
+    lattice.initialize();
+//    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), 1.0, vel);
 }
 
 

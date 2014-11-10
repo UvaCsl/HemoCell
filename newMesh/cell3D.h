@@ -48,12 +48,21 @@ public:
     std::map<plint, Array<T,3> > const& getQuantities3D() const { return quantities3D; };
     std::map<plint, std::vector<T> > const& getQuantitiesND() const { return quantitiesND; };
 
-    T const&                get1D(plint ccrId) const  { return quantities1D[ccrId]; }
-    Array<T,3> const&       get3D(plint ccrId) const  { return quantities3D[ccrId]; }
-    std::vector<T> const&   getND(plint ccrId) const  { return quantitiesND[ccrId]; }
     T &                     get1D(plint ccrId)   { return quantities1D[ccrId]; }
     Array<T,3> &            get3D(plint ccrId)   { return quantities3D[ccrId]; }
     std::vector<T> &        getND(plint ccrId)   { return quantitiesND[ccrId]; }
+    T const&                get1D(plint ccrId) const  {
+        if (quantities1D.count(ccrId) > 0) { return quantities1D.at(ccrId); }
+        else { return 0; }
+    }
+    Array<T,3> const&       get3D(plint ccrId) const  {
+        if (quantities3D.count(ccrId) > 0) { return quantities3D.at(ccrId); }
+        else { return Array<T,3>(0,0,0); }
+    }
+    std::vector<T> const&   getND(plint ccrId) const  {
+        if (quantitiesND.count(ccrId) > 0) { return quantitiesND.at(ccrId); }
+        else { return std::vector<T>() ; }
+    }
     void get(plint ccrId, T& value)              { value = get1D(ccrId); return value; }
     void get(plint ccrId, Array<T,3>& value)     { value = get3D(ccrId); return value; }
     void get(plint ccrId, std::vector<T>& value) { value = getND(ccrId); return value; }
