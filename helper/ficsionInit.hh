@@ -352,18 +352,23 @@ void iniLattice_ForGalileanInvariance( MultiBlockLattice3D<T,Descriptor>& lattic
     const plint ny = parameters.getNy();
     const plint nz = parameters.getNz();
 
-    Box3D left   = Box3D(0, nx-1, 0,    0,    0, nz-1);
-    Box3D right  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
+    Box3D left    = Box3D(0, nx-1, 0,    0,    0,    nz-1);
+    Box3D right   = Box3D(0, nx-1, ny-1, ny-1, 0,    nz-1);
+    Box3D top     = Box3D(0, nx-1, 0,    ny-1, 0,       0);
+    Box3D bottom  = Box3D(0, nx-1, 0,    ny-1, nz-1, nz-1);
 
-    lattice.periodicity().toggle(0, true);
-    lattice.periodicity().toggle(2, true);
+    lattice.periodicity().toggleAll(true);
 
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, left );
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, right );
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, top );
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, bottom );
 
     Array<T,3> vel(velocity,0.0,0.0);
     setBoundaryVelocity(lattice, left, vel);
     setBoundaryVelocity(lattice, right, vel);
+    setBoundaryVelocity(lattice, top, vel);
+    setBoundaryVelocity(lattice, bottom, vel);
 
     setExternalVector( lattice, lattice.getBoundingBox(),
                        DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(0.0,0.0,0.0));
