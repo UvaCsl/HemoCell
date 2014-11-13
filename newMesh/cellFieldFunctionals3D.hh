@@ -618,7 +618,7 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
             plint ccrId = *i;
             typename std::map<plint, Cell3D<T,Descriptor>* >::iterator iter = cellIdToCell3D.find(cellId);
             if (iter != cellIdToCell3D.end()) {
-                (iter->second)->computeCCRQuantities(ccrId, particles[iParticle]);
+                (iter->second)->computeCCRQuantities(ccrId, iVertex);
             }
         }
     }

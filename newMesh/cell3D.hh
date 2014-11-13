@@ -256,9 +256,8 @@ void Cell3D<T, Descriptor>::push_back(Particle3D<T,Descriptor>* particle3D, bool
 	    iVertexToParticle3D[vertexId] = particle3D;
 	} else {
 	    // For some reason Palabos deletes particles that are in the envelope after some functionals;
-	    Particle3D<T,Descriptor>* copyParticle3D = particle3D->clone();
-	    iVertexToParticle3D[vertexId] = copyParticle3D;
-	    particlesToDelete.push_back(copyParticle3D);
+	    iVertexToParticle3D[vertexId] = particle3D->clone();
+	    particlesToDelete.push_back(iVertexToParticle3D[vertexId]);
 	}
 }
 
