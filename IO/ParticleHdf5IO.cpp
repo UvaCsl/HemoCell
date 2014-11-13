@@ -35,7 +35,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
 
      std::map<plint, Cell3D<T,Descriptor>* > cellIdToCell3D = cellField3D.getCellIdToCell3D();
      std::vector< long int > triangles;
-     std::vector<Particle3D<T,Descriptor>* > particles;
+     std::vector<ImmersedCellParticle3D<T,Descriptor>* > particles;
      plint sumLocalVertices=0;
      plint numCells=cellIdToCell3D.size();
      long int NpBulk = 0;
@@ -68,7 +68,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          std::vector<plint> const& cellTriangles = cell3d->getTriangles();
          for (std::vector<plint>::const_iterator iVP = cellVertices.begin(); iVP != cellVertices.end(); ++iVP)
          {
-             particles.push_back( cell3d->getParticle3D(*iVP) );
+             particles.push_back( dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>(cell3d->getParticle3D(*iVP)) );
          }
          std::map<plint, plint> iv = cell3d->getInvertVertices();
          for (pluint iT=0; iT < cellTriangles.size(); iT++) {
@@ -117,7 +117,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
    /************************************************************/
      /*  Take care of Vectors    */
      if (numCells > 0 and particles.size() > 0) {
-         ImmersedCellParticle3D<T,Descriptor> * icParticle = castParticleToICP3D(particles[0]);
+         ImmersedCellParticle3D<T,Descriptor> * icParticle = particles[0];
          plint vN = icParticle->getVectorsNumber();
          double * matrixTensor = new double [3 * Np];
 
@@ -125,7 +125,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          for (plint ivN = 0; ivN < vN; ++ivN) {
              plint itr=0;
              for (plint iP = 0; iP < Np; ++iP) {
-                icParticle = castParticleToICP3D(particles[iP]);
+                icParticle = particles[iP];
                 icParticle->getVector(ivN, vector);
                 // If is pbcPosition
                 if (ivN == 0) { vector = vector + correctPBPosition[icParticle->get_cellId()] ; }
@@ -143,7 +143,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          double * scalarTensor = new double [Np];
          for (plint isN = 0; isN < sN; ++isN) {
              for (plint iP = 0; iP < Np; ++iP) {
-                castParticleToICP3D(particles[iP])->getScalar(isN, scalarTensor[iP]);
+                 particles[iP]->getScalar(isN, scalarTensor[iP]);
              }
              H5LTmake_dataset_double(file_id, icParticle->getScalarName(isN).c_str(), 1, dimVertices, scalarTensor);
          }
