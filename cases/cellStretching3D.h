@@ -16,6 +16,17 @@ bool comparePair (std::pair <plint,T> p1, std::pair <plint,T> p2) {
 }
 
 template<typename T, template<typename U> class Descriptor>
+void applyForceToCells(CellField3D<T, Descriptor> & cellField_,
+              std::vector<plint> const& cellIds_, std::vector<std::vector<plint> > iVertices_,
+              std::vector<Array<T,3> > const& forces_);
+
+
+template<typename T, template<typename U> class Descriptor>
+void applyForceToCells(CellField3D<T, Descriptor> & cellField_,
+              std::vector<plint> const& cellIds_,
+              std::vector<Array<T,3> > const& forces_);
+
+template<typename T, template<typename U> class Descriptor>
 class ApplyForce3D ;
 
 template<typename T, template<typename U> class Descriptor>
@@ -93,7 +104,10 @@ class ApplyForce3D : public BoxProcessingFunctional3D
 {
 public:
     ApplyForce3D (CellField3D<T, Descriptor> & cellField_,
-                  std::vector<plint> const& cellIds_, std::vector<std::vector<plint> > const& iVertices_,
+                  std::vector<plint> const& cellIds_, std::vector<std::vector<plint> > iVertices_,
+                  std::vector<Array<T,3> > const& forces_);
+    ApplyForce3D (CellField3D<T, Descriptor> & cellField_,
+                  std::vector<plint> const& cellIds_,
                   std::vector<Array<T,3> > const& forces_);
     ~ApplyForce3D() {
 //        std::cout <<" ~ApplyForce3D() " << global::mpi().getRank() << std::endl;
@@ -108,8 +122,9 @@ public:
 private:
     CellField3D<T, Descriptor> & cellField;
     std::vector<plint> const& cellIds;
-    std::vector<std::vector<plint> > const& iVertices;
+    std::vector<std::vector<plint> > iVertices;
     std::vector<Array<T,3> > const& forces;
+    std::vector<bool > allVerticesOfTheCell;
 };
 
 
