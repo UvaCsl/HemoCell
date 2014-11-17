@@ -259,7 +259,7 @@ int main(int argc, char* argv[])
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, ibmKernel, "RBC");
     std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
     cellFields.push_back(&RBCField);
-    CellStretch<T, DESCRIPTOR> cellStretch(RBCField, stretchForceScalar, 0.1);
+//    CellStretch<T, DESCRIPTOR> cellStretch(RBCField, stretchForceScalar, 0.1);
 
     FcnCheckpoint<T, DESCRIPTOR> checkpointer(document);
     plint initIter=0;
@@ -304,7 +304,7 @@ int main(int argc, char* argv[])
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
-       if (flowType==3) { cellStretch.stretch(); }
+//       if (flowType==3) { cellStretch.stretch(); }
         // #2# IBM Spreading
         RBCField.setFluidExternalForce(poiseuilleForce);
         RBCField.spreadForceIBM();
@@ -336,8 +336,18 @@ int main(int argc, char* argv[])
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
+
+            T nu_lb = parameters.getLatticeNu();
+            T coeff = nu_lb * nMomentumExchangeCells * shearRate; // * nMomentumExchangeCells;
+            T nu_app =  lattice.getInternalStatistics().getSum(forceIds[0]) / coeff;
+            T volumeFraction = (nu_app - 1.0)*2.0/5.0;
+            T simulationVolume = nMomentumExchangeCells * ( parameters.getNy()-2.5);
             pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
-            pcout << "; dr (LU) " << RBCField[0]->getForce()[0] / ( - 6 * 3.14159 * 1.0 * parameters.getLatticeNu() * wallVelocity) - radius << ", ";
+            pcout << "; volumeFraction " << volumeFraction << ", ";
+            if (volumeFraction > 0.0) {
+                T measureRadius = pow( (volumeFraction * simulationVolume) * 3.0 / (4.0 * 3.14159),        1.0/3.0 );
+                pcout << "; dr (LU) " << measureRadius -radius << ", ";
+            }
             pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
             pcout << RBCField[0]->getForce()[1] << ", ";
             pcout << RBCField[0]->getForce()[2] << ") ";
@@ -349,23 +359,15 @@ int main(int argc, char* argv[])
             pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
             pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
 
-            T nu_lb = parameters.getLatticeNu();
-            T coeff = nu_lb * nMomentumExchangeCells * shearRate; // * nMomentumExchangeCells;
-            T nu_app =  lattice.getInternalStatistics().getSum(forceIds[0]) / coeff;
 //                T lift =  lattice.getInternalStatistics().getSum(forceIds[1]) / coeff;
 //                T other =  lattice.getInternalStatistics().getSum(forceIds[2]) / coeff;
             pcout << "; nu_app=" << nu_app
                     << "; nMomentumExchangeCells=" << nMomentumExchangeCells
-                    << "; V=" << nMomentumExchangeCells * ( parameters.getNy()-2.5);
+                    << "; V=" << simulationVolume;
             nu_app_ConvergeX.takeValue(nu_app, true);
             if (nu_app_ConvergeX.hasConverged()) {
                 pcout << "Converged!" << std::endl;
                 exit(0);
-            }
-
-            if (flowType==3) {
-                Array<T,3> stretch = cellStretch.measureStretch();
-                pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") ";
             }
             pcout << std::endl;
         } else {
