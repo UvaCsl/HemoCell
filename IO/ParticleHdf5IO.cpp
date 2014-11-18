@@ -5,10 +5,6 @@
 #include "ficsionInit.h"
 
 
-void writeCell3D_data(hid_t & file_id) {
-
-}
-
 
 /* ******** WriteCellField3DInMultipleHDF5Files *********************************** */
 template<typename T, template<typename U> class Descriptor>
