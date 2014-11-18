@@ -199,8 +199,8 @@ const plb::plint allReductions_array[] = {CCR_NO_PBC_POSITION_MEAN, CCR_NO_PBC_P
                                      CCR_TILE_SPAN_MEAN, CCR_TILE_SPAN_MIN, CCR_TILE_SPAN_MAX,
                                      CCR_POSITION_MEAN, CCR_POSITION_MIN, CCR_POSITION_MAX,
                                      CCR_VELOCITY_MEAN, CCR_VELOCITY_MIN, CCR_VELOCITY_MAX,
-                                     /* CCR_INERTIA, */ // CellInertia cannot be calculated at once.
-                                     /* CCR_TORQUE, */  // Neither can torque.
+                                     CCR_INERTIA,
+                                     /* CCR_TORQUE, */  // Not implemented yet.
                                      CCR_ENERGY, CCR_FORCE,
                                      CCR_FORCE_NORMALIZED,
                                      CCR_CELL_CENTER_DISTANCE_MEAN, CCR_CELL_CENTER_DISTANCE_MIN, CCR_CELL_CENTER_DISTANCE_MAX

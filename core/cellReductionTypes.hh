@@ -98,7 +98,7 @@ void BlockStatisticsCCR<T>::get(plint ccrId, std::vector<T> & value) {
     value.resize(dim);
     for (int d = 0; d < dim; ++d) {
         qBin = ccrIdToBin[ccrId][d];
-        gather(ccrId, value[d], qBin);
+        get(ccrId, value[d], qBin);
     }
 }
 
