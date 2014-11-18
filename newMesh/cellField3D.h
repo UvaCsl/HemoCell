@@ -11,6 +11,8 @@
 #include "cellCellForces3D.h"
 #include <set>
 #include <string>
+#include <algorithm>    // std::sort
+
 
 using namespace std;
 using namespace plb;
@@ -94,6 +96,15 @@ public:
 	pluint getNumberOfCells_Local() { return cellIdToCell3D.size(); } ;
 	pluint getNumberOfCells() { return getNumberOfCells_Local(); } ;
     plint count(plint cellId) { return cellIdToCell3D.count(cellId); }
+    std::vector<plint> getCellIds() {
+        std::vector<plint> cellIds;
+        typename std::map<plint, Cell3D<T,Descriptor>* >::iterator itrtr;
+        for (itrtr  = cellIdToCell3D.begin(); itrtr != cellIdToCell3D.end(); ++itrtr) {
+            cellIds.push_back(itrtr->first);
+        }
+        std::sort (cellIds.begin(), cellIds.end());
+        return cellIds;
+    }
     bool has_cellId(plint cellId) { return cellIdToCell3D.count(cellId) > 0; }
 private:
 	MultiBlockLattice3D<T, Descriptor> & lattice;
