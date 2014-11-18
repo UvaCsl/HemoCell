@@ -115,7 +115,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     u = dt*1.0/dx;
     Re_p = 1.0/nu_p;
     N = int(1.0/dx);
-    flowParam = 0; flowType/10;
+    flowParam = 0; // flowType/10;
 //    flowType = flowType%10;
     if ( (flowType == 3) or (flowType == 4) or (flowType == 5) or (flowType == 8) ) { // Cell Stretching Analysis
         shearRate = 0;
@@ -330,11 +330,14 @@ int main(int argc, char* argv[])
     T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
 
-
+    /*      Sync all quantities    */
+    SyncRequirements everyCCR(allReductions);
+    RBCField.synchronizeCellQuantities(everyCCR);
     /*            I/O              */
     global::timer("HDFOutput").start();
     writeHDF5(lattice, parameters, 0);
     writeCellField3D_HDF5(RBCField, dx, dt, 0);
+    writeCell3D_HDF5(RBCField, dx, dt, 0);
     global::timer("HDFOutput").stop();
 
     SimpleFicsionProfiler simpleProfiler(tmeas);
@@ -369,6 +372,7 @@ int main(int argc, char* argv[])
             global::timer("HDFOutput").start();
             writeHDF5(lattice, parameters, iter+1);
             writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
+            writeCell3D_HDF5(RBCField, dx, dt, iter+1);
             global::timer("HDFOutput").stop();
             if ((iter+1)%(2*tmeas)==0) {
                 global::timer("Checkpoint").start();
@@ -380,11 +384,12 @@ int main(int argc, char* argv[])
             global::profiler().writeReport();
             pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
 //            pcout << "; Volume (" << RBCField[0]->getVolume() << ")";
-			pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-			pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
-			pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-			pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
-
+            if (RBCField.count(0) > 0) {
+                pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+                pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
+                pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+                pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
+            }
             if (flowType==3) {
                 Array<T,3> stretch = cellStretch.measureStretch();
                 pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") ";

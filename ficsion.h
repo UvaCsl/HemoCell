@@ -35,8 +35,11 @@ using namespace std;
 #include "computeCellForces3D.h"
 #include "immersedBoundaryMethod3D.h"
 #include "meshGeneratingFunctions.h"
+
+/* IO */
 #include "hdf5IO.h"
 #include "ParticleHdf5IO.h"
+#include "CellHdf5IO.h"
 
 
 /* MODELS */
