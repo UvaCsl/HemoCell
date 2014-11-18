@@ -83,9 +83,9 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
     // Read lx, ly, lz --or nx, ny, nz
-    lx = 40 * radius;
-    ly = 40 * radius;
-    lz = 40 * radius;
+    lx = 20 * radius;
+    ly = 20 * radius;
+    lz = 20 * radius;
 
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
@@ -347,6 +347,17 @@ int main(int argc, char* argv[])
             pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
             pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
             pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
+
+
+            if ( ( (RBCField.count(0) > 0) and
+                 (RBCField[0]->getPosition()[1] < (nx*0.5 - 5*radius) ) )
+                 or
+                 ( (RBCField.count(1) > 0) and
+                                      (RBCField[1]->getPosition()[1] > (nx*0.5 + 5*radius) ) )
+                ) {
+                cout << "Converged!" << std::endl;
+                exit(0);
+            }
 
 //            T nu_lb = parameters.getLatticeNu();
 //            T coeff = nu_lb * nMomentumExchangeCells * shearRate; // * nMomentumExchangeCells;
