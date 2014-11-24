@@ -85,9 +85,9 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
     // Read lx, ly, lz --or nx, ny, nz
-    lx = 20 * radius;
-    ly = 20 * radius;
-    lz = 20 * radius;
+    lx = 10 * radius;
+    ly = 10 * radius;
+    lz = 10 * radius;
 
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
@@ -107,8 +107,8 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     Re_p = 1.0/nu_p;
     N = int(1.0/dx);
     flowParam = 0;
-    tmax = 20.0/dt; // 20 seconds.
-    tmeas = ceil(100.0 * 9.803921568235293e-08/dt);
+    tmax = 0.03/dt; // 20 seconds.
+    tmeas = ceil(500.0 * 9.803921568235293e-08/dt);
 
     if (minNumOfTriangles <= 42) { shape = 0; minNumOfTriangles = 80; } // Min Number of Vertices
     else if (minNumOfTriangles <= 66) { shape = 5; minNumOfTriangles = 128; }
@@ -231,7 +231,7 @@ int main(int argc, char* argv[])
     iniLatticeSquareCouetteMeasureStress<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate, forceIds, nMomentumExchangeCells);
     lattice.toggleInternalStatistics(false);
 
-    util::ValueTracer<T> nu_app_ConvergeX(1, 20, 1.0e-4);
+    util::ValueTracer<T> dr_ConvergeX(1, 20, 1.0e-6);
 
 
     /*
@@ -286,7 +286,7 @@ int main(int argc, char* argv[])
     T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
 
-
+    pcout << "simulationVolume " << nMomentumExchangeCells * ( parameters.getNy()-2.5) << std::endl;
     /*            I/O              */
     global::timer("HDFOutput").start();
     writeHDF5(lattice, parameters, 0);
@@ -322,13 +322,12 @@ int main(int argc, char* argv[])
         if ((iter+1)%tmeas==0) {
             SyncRequirements everyCCR(allReductions);
             RBCField.synchronizeCellQuantities(everyCCR);
-            if ((iter+1)%(4*tmeas)==0) {
+            writeCell3D_HDF5(RBCField, dx, dt, iter+1);
+            if ((iter+1)%(100*tmeas)==0) {
                 global::timer("HDFOutput").start();
                 writeHDF5(lattice, parameters, iter+1);
                 writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
                 global::timer("HDFOutput").stop();
-            }
-            if ((iter+1)%(8*tmeas)==0) {
                 global::timer("Checkpoint").start();
                 checkpointer.save(lattice, cellFields, iter+1);
                 global::timer("Checkpoint").stop();
@@ -342,30 +341,28 @@ int main(int argc, char* argv[])
             T nu_app =  lattice.getInternalStatistics().getSum(forceIds[0]) / coeff;
             T volumeFraction = (nu_app - 1.0)*2.0/5.0;
             T simulationVolume = nMomentumExchangeCells * ( parameters.getNy()-2.5);
-            pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
-            pcout << "; volumeFraction " << volumeFraction << ", ";
+//            pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
+//            pcout << "; volumeFraction " << volumeFraction << ", ";
+//            pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
+//            pcout << RBCField[0]->getForce()[1] << ", ";
+//            pcout << RBCField[0]->getForce()[2] << ") ";
+//            pcout << "; ForceNorm (" << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[0]  << ", ";
+//            pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[1] << ", ";
+//            pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[2] << ") ";
+//            pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+//            pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
+//            pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+//            pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
+
+            pcout << "dt " << (iter+1)*dt;
+            pcout << "; nu_app " << nu_app;
+            pcout << "; volumeFraction " << volumeFraction;
             if (volumeFraction > 0.0) {
                 T measureRadius = pow( (volumeFraction * simulationVolume) * 3.0 / (4.0 * 3.14159),        1.0/3.0 );
-                pcout << "; dr (LU) " << measureRadius -radius << ", ";
+                pcout << "; dr (LU) " << measureRadius -radius;
+                dr_ConvergeX.takeValue(measureRadius -radius, true);
             }
-            pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
-            pcout << RBCField[0]->getForce()[1] << ", ";
-            pcout << RBCField[0]->getForce()[2] << ") ";
-            pcout << "; ForceNorm (" << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[0]  << ", ";
-            pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[1] << ", ";
-            pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[2] << ") ";
-            pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-            pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
-            pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-            pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
-
-//                T lift =  lattice.getInternalStatistics().getSum(forceIds[1]) / coeff;
-//                T other =  lattice.getInternalStatistics().getSum(forceIds[2]) / coeff;
-            pcout << "; nu_app=" << nu_app
-                    << "; nMomentumExchangeCells=" << nMomentumExchangeCells
-                    << "; V=" << simulationVolume;
-            nu_app_ConvergeX.takeValue(nu_app, true);
-            if (nu_app_ConvergeX.hasConverged()) {
+            if (dr_ConvergeX.hasConverged()) {
                 pcout << "Converged!" << std::endl;
                 exit(0);
             }

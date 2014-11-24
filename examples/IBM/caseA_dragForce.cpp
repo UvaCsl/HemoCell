@@ -249,7 +249,7 @@ int main(int argc, char* argv[])
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, ibmKernel, "RBC");
     std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
     cellFields.push_back(&RBCField);
-    CellStretch<T, DESCRIPTOR> cellStretch(RBCField, stretchForceScalar, 0.1);
+//    CellStretch<T, DESCRIPTOR> cellStretch(RBCField, stretchForceScalar, 0.1);
 
     FcnCheckpoint<T, DESCRIPTOR> checkpointer(document);
     plint initIter=0;
@@ -295,8 +295,6 @@ int main(int argc, char* argv[])
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
-       RBCField.applyCellCellForce(PLF, R);
-       if (flowType==3) { cellStretch.stretch(); }
         // #2# IBM Spreading
         RBCField.setFluidExternalForce(poiseuilleForce);
         RBCField.spreadForceIBM();
@@ -313,18 +311,17 @@ int main(int argc, char* argv[])
         if ((iter+1)%tmeas==0) {
             SyncRequirements everyCCR(allReductions);
             RBCField.synchronizeCellQuantities(everyCCR);
+            writeCell3D_HDF5(RBCField, dx, dt, iter+1);
             forceConvergeX.takeValue(RBCField[0]->getForce()[0], true);
             if (forceConvergeX.hasConverged()) {
                 pcout << "Converged!" << std::endl;
                 exit(0);
             }
-            if ((iter+1)%(10*tmeas)==0) {
+            if ((iter+1)%(100*tmeas)==0) {
                 global::timer("HDFOutput").start();
                 writeHDF5(lattice, parameters, iter+1);
                 writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
                 global::timer("HDFOutput").stop();
-            }
-            if ((iter+1)%(20*tmeas)==0) {
                 global::timer("Checkpoint").start();
                 checkpointer.save(lattice, cellFields, iter+1);
                 global::timer("Checkpoint").stop();
@@ -345,10 +342,6 @@ int main(int argc, char* argv[])
             pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
             pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
 
-            if (flowType==3) {
-                Array<T,3> stretch = cellStretch.measureStretch();
-                pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") ";
-            }
             pcout << std::endl;
         } else {
             RBCField.synchronizeCellQuantities();
