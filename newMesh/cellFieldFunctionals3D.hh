@@ -122,6 +122,8 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     // Access the position of the atomic-block inside the multi-block.
     Dot3D relativePosition = particleField.getLocation();
     Array<T,3> relativeCoordinate(relativePosition.x, relativePosition.y, relativePosition.z);
+    Dot3D fluidLocationDot3D = fluid.getLocation();
+    Array<T,3> fluidLocation(fluidLocationDot3D.x, fluidLocationDot3D.y, fluidLocationDot3D.z);
 
     plint nVertices = mesh->getNumVertices();
     plint cellId = 0;
@@ -134,7 +136,14 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
                     meshRandomRotation(mesh);
                     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
                         Array<T,3> vertex = Array<T,3>(iX*1.0, iY*1.0, iZ*1.0) + relativeCoordinate + mesh->getVertex(iVertex);
-                        particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId + 1000*mpiRank, iVertex) );
+                        Dot3D cellInFluidDomain = Dot3D(vertex[0], vertex[1], vertex[2]) - fluidLocationDot3D;
+                        if (fluid.get(cellInFluidDomain.x, cellInFluidDomain.y, cellInFluidDomain.z).getDynamics().isBoundary()) {
+//                            cout << global::mpi().getRank() << "vertex (" << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << ")" <<std::endl;
+                            break;
+                        } else {
+                            particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId + 1000*mpiRank, iVertex) );
+                        }
+
                     }
                     cellId+=1;
                 }
