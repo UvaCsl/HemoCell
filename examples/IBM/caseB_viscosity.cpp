@@ -85,9 +85,9 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
     // Read lx, ly, lz --or nx, ny, nz
-    lx = 10 * radius;
-    ly = 10 * radius;
-    lz = 10 * radius;
+    lx = 20 * radius;
+    ly = 20 * radius;
+    lz = 20 * radius;
 
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
@@ -108,7 +108,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     N = int(1.0/dx);
     flowParam = 0;
     tmax = 0.03/dt; // 20 seconds.
-    tmeas = ceil(500.0 * 9.803921568235293e-08/dt);
+    tmeas = ceil(10.0 * 9.803921568235293e-08/dt);
 
     if (minNumOfTriangles <= 42) { shape = 0; minNumOfTriangles = 80; } // Min Number of Vertices
     else if (minNumOfTriangles <= 66) { shape = 5; minNumOfTriangles = 128; }
@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
     /* ------------------ *
      * Initialize Lattice *
      * ------------------ */
-    plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
+    plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
         defaultMultiBlockPolicy3D().getBlockCommunicator(),
