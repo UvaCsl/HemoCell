@@ -38,7 +38,7 @@ public:
     {
         TriangularSurfaceMesh<T> & mesh = cellField.getMesh();
         plint numVertices = mesh.getNumVertices();
-        nparPerSide = ceil( percentage * numVertices *0.5);
+        nparPerSide = ceil( percentage * numVertices );
         forcePerSidePerVertex = force_ * 0.5 / nparPerSide;
         std::vector<std::pair <plint,T> > iv2X, iv2Y, iv2Z;
         for (plint iV = 0; iV < numVertices; ++iV) {
