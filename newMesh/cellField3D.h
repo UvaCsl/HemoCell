@@ -51,9 +51,10 @@ public:
 	}
 public:
 	std::map<plint, Cell3D<T,Descriptor>* > & getCellIdToCell3D() { return cellIdToCell3D; };
+	MultiBlockLattice3D<T, Descriptor> & getFluidField3D() { return lattice; };
     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & getParticleField3D() { return *immersedParticles; };
     std::string getIdentifier() { return identifier; };
-
+    T getVolumeFraction() { return hematocrit; };
     void setParticleField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles_) {
         delete immersedParticles;
         immersedParticles=immersedParticles_;

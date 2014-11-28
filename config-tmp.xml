@@ -55,15 +55,15 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1.0e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <lx> 21.0e-6 </lx> <!--Size of domain in SI. For Lattice 5nits try: nx, ny, nz -->
-    <ly> 21.0e-6 </ly> <!--ly/ny is used for the Reynolds number calculation -->
-    <lz> 21.0e-6 </lz>
+    <lx> 31.0e-6 </lx> <!--Size of domain in SI. For Lattice 5nits try: nx, ny, nz -->
+    <ly> 31.0e-6 </ly> <!--ly/ny is used for the Reynolds number calculation -->
+    <lz> 31.0e-6 </lz>
 </domain>
 
 <sim>
     <tmax> 50000 </tmax> <!-- total number of iterations -->
     <tmeas> 5 </tmeas> <!-- interval after which data is written --> 
-    <hct> 7  </hct> <!-- Hematocrit  > -->
+    <hct> 30  </hct> <!-- Hematocrit  > -->
 </sim>
 
 </ficsion>

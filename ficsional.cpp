@@ -310,6 +310,8 @@ int main(int argc, char* argv[])
         if (hct>0) { RBCField.grow(0); }
         else { RBCField.initialize(cellsOrigin); }
         checkpointer.save(lattice, cellFields, initIter);
+//        randomPositionCellFieldsForGrowth3D(cellFields);
+
     }
 
     if (rbcModel == 3) {

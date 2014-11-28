@@ -1,6 +1,8 @@
 #ifndef CELLFIELD_3D_HH
 #define CELLFIELD_3D_HH
 #include "cellField3D.h"
+#include "initializationCellField3D.h"
+
 
 template<typename T, template<typename U> class Descriptor>
 CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, 

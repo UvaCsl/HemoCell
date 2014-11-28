@@ -312,7 +312,7 @@ int main(int argc, char* argv[])
             SyncRequirements everyCCR(allReductions);
             RBCField.synchronizeCellQuantities(everyCCR);
             writeCell3D_HDF5(RBCField, dx, dt, iter+1);
-            forceConvergeX.takeValue(RBCField[0]->getForce()[0], true);
+            if (RBCField.getNumberOfCells_Global() > 0) { forceConvergeX.takeValue(RBCField[0]->getForce()[0], true);  }
             if (forceConvergeX.hasConverged()) {
                 pcout << "Converged!" << std::endl;
                 exit(0);
@@ -330,18 +330,19 @@ int main(int argc, char* argv[])
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
             pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
-            pcout << "; dr (LU) " << RBCField[0]->getForce()[0] / ( - 6 * 3.14159 * 1.0 * parameters.getLatticeNu() * wallVelocity) - radius << ", ";
-            pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
-            pcout << RBCField[0]->getForce()[1] << ", ";
-            pcout << RBCField[0]->getForce()[2] << ") ";
-            pcout << "; ForceNorm (" << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[0]  << ", ";
-            pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[1] << ", ";
-            pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[2] << ") ";
-            pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-            pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
-            pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-            pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
-
+            if (RBCField.getNumberOfCells_Global() > 0) {
+                pcout << "; dr (LU) " << RBCField[0]->getForce()[0] / ( - 6 * 3.14159 * 1.0 * parameters.getLatticeNu() * wallVelocity) - radius << ", ";
+                pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
+                pcout << RBCField[0]->getForce()[1] << ", ";
+                pcout << RBCField[0]->getForce()[2] << ") ";
+                pcout << "; ForceNorm (" << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[0]  << ", ";
+                pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[1] << ", ";
+                pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[2] << ") ";
+                pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+                pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
+                pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+                pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
+            }
             pcout << std::endl;
         } else {
             RBCField.synchronizeCellQuantities();
