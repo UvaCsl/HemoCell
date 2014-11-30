@@ -258,6 +258,8 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
             kParticle->get_E_bending() += potential;
             lParticle->get_E_bending() += potential;
 #endif
+        } else {
+            cout << global::mpi().getRank() << " angle not found " << std::endl;
         }
     }
 

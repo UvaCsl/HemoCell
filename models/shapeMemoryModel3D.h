@@ -65,8 +65,8 @@ public:
                TriangleBoundary3D<T> const& boundary,
                 plint iVertex ) { return Array<T,3>(0.0, 0.0, 0.0); }
     virtual void computeCellForce (Cell3D<T,Descriptor> * cell);
-    virtual plint getMaximumEdgeExtensionLengthLU() { return ceil(2*maxLength + 0.5); };
-    virtual plint getMaxCellDiameterLU() { return 4*cellRadiusLU; };
+    virtual plint getMaximumEdgeExtensionLengthLU() { return maximum(ceil(2*maxLength + 0.5),4); };
+    virtual plint getMaxCellDiameterLU() { return maximum(ceil(4*cellRadiusLU),4); };
     virtual T getDx() { return dx; };
     virtual T getDt() { return dt; };
     virtual T getDm() { return dm; };
