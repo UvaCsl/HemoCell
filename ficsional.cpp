@@ -215,7 +215,13 @@ int main(int argc, char* argv[])
     /* ------------------ *
      * Initialize Lattice *
      * ------------------ */
-    plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with width 2.
+    plint extendedEnvelopeWidth;
+    if (ibmKernel==2) {
+        extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with width 2.
+    }
+    else {
+        extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with width 2.
+    }
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
         defaultMultiBlockPolicy3D().getBlockCommunicator(),
