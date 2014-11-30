@@ -295,7 +295,7 @@ if __name__ == '__main__':
 		print identifier
 	except:
 		identifier = 'RBC'
-	fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
+	fluidH5files = sorted( glob(dirname + identifier + '.*p*.h5') )
 	if len(fluidH5files) == 0:
 		dirname = './tmp/hdf5/'
 		fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
