@@ -282,21 +282,36 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
 
     std::vector<Particle3D<T,Descriptor>*> found;
     particleField.findParticles(particleField.getBoundingBox(), found); // Gets the whole domain.
-    std::map<plint, pluint> cellIdToVerticesInBulk;
+    std::map<plint, pluint> cellIdToVerticesInDomain;
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
         ImmersedCellParticle3D<T,Descriptor>* particle = 
                 dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
         PLB_ASSERT(particle);
-        plint iX, iY, iZ;
-        particleField.computeGridPosition(particle->getPosition(), iX, iY, iZ);
-        Box3D finalDomain;
-        bool particleIsInBulk =  intersect(domain, particleField.getBoundingBox(), finalDomain) &&
-                                contained(iX,iY,iZ, finalDomain);
-
-
+        Dot3D pfLocation(particleField.getLocation());
+        Box3D realDomain(
+                            domain.x0 + pfLocation.x, domain.x1 + pfLocation.x,
+                            domain.y0 + pfLocation.y, domain.y1 + pfLocation.y,
+                            domain.z0 + pfLocation.z, domain.z1 + pfLocation.z );
+        bool particleIsInBulk = particleField.isContained(particle->getPosition(), realDomain);
+//        cout << global::mpi().getRank()
+//                << " pos ("
+//                << particle->getPosition()[0] << " "
+//                << particle->getPosition()[1] << " "
+//                << particle->getPosition()[2] << ") "
+//                << " rec "
+//                << particleField.getLocation().x << " "
+//                << particleField.getLocation().y << " "
+//                << particleField.getLocation().z ;
+//        cout    << " [x " << realDomain.x0 << " "<< realDomain.x1 << "] "
+//                << " [y " << realDomain.y0 << " "<< realDomain.y1 << "] "
+//                << " [z " << realDomain.z0 << " "<< realDomain.z1 << "] ";
+//        cout    << " [x " << domain.x0 << " "<< domain.x1 << "] "
+//                << " [y " << domain.y0 << " "<< domain.y1 << "] "
+//                << " [z " << domain.z0 << " "<< domain.z1 << "] ";
+//        cout  << particleIsInBulk << "\n";
         plint cellId = particle->get_cellId();
         plint iVertex = particle->getVertexId();
-        cellIdToVerticesInBulk[cellId] += particleIsInBulk;
+        cellIdToVerticesInDomain[cellId] += 1;
         if (cellIdToCell3D.count(cellId) == 0) {
             cellIdToCell3D[cellId] = new Cell3D<T,Descriptor>(mesh, cellId);
         }
@@ -313,8 +328,8 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
     }
 
     typename std::map<plint, pluint >::iterator iterVIB;
-    for (iterVIB  = cellIdToVerticesInBulk.begin(); iterVIB != cellIdToVerticesInBulk.end(); ++iterVIB) {
-        if (cellIdToVerticesInBulk[(iterVIB->first)] > 0) {
+    for (iterVIB  = cellIdToVerticesInDomain.begin(); iterVIB != cellIdToVerticesInDomain.end(); ++iterVIB) {
+        if (cellIdToVerticesInDomain[(iterVIB->first)] > 0) {
             cellIdToCell3D[iterVIB->first]->close();
         } else {
             delete cellIdToCell3D[iterVIB->first];
