@@ -147,11 +147,11 @@ void CellField3D<T, Descriptor>::spreadForceIBM() {
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::setFluidExternalForce(Array<T,3> force) {
-    global::timer("LBM").start();
+    global::timer("IBM").start();
         setExternalVector( lattice, lattice.getBoundingBox(),
                        Descriptor<T>::ExternalField::forceBeginsAt, 
                        force);
-    global::timer("LBM").stop();
+    global::timer("IBM").stop();
 }
 
 template<typename T, template<typename U> class Descriptor>
