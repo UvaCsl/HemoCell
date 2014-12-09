@@ -315,16 +315,14 @@ int main(int argc, char* argv[])
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
        // #1b# Force to cells for lubrication
-       for (plint icell = 0; icell < 2; ++icell) {
-           T DeltaYNorm = 0;
-           T DeltaZNorm = 0;
-//           if (RBCField.count(icell) > 0) {
 //               DeltaYNorm = - dx/1.0e-6 * (RBCField[icell]->getPosition()[1] - ny*0.5);
 //               DeltaZNorm = - dx/1.0e-6 * (RBCField[icell]->getPosition()[2] - nz*0.5);
-//           }
-           forcesToApply[icell].resetToZero();
-           forcesToApply[icell] =  headOnForce * pow(-1., icell) + realignForceY * DeltaYNorm + realignForceZ * DeltaZNorm;
-       }
+       T DeltaYNorm = 0;
+       T DeltaZNorm = 0;
+       forcesToApply[0].resetToZero();
+       forcesToApply[0] =  headOnForce + realignForceY * DeltaYNorm + realignForceZ * DeltaZNorm;
+       forcesToApply[1].resetToZero();
+       forcesToApply[1] =  -headOnForce + realignForceY * DeltaYNorm + realignForceZ * DeltaZNorm;
        applyForceToCells(RBCField, RBCellIds, forcesToApply);
 
 

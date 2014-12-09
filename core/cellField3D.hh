@@ -1,6 +1,8 @@
 #ifndef CELLFIELD_3D_HH
 #define CELLFIELD_3D_HH
 #include "cellField3D.h"
+#include "initializationCellField3D.h"
+
 
 template<typename T, template<typename U> class Descriptor>
 CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, 
@@ -25,7 +27,7 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
 
     immersedParticles = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(
             particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
-	immersedParticles->periodicity().toggleAll(true);
+    immersedParticles->periodicity().toggleAll(true);
     immersedParticles->toggleInternalStatistics(false);
 
     MultiBlockManagement3D reductionParticleManagement (

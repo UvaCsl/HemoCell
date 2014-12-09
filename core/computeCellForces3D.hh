@@ -259,7 +259,7 @@ Array<T,3> computeElasticRepulsiveForce(Array<T,3> const& dAdx, T triangleArea, 
  * (x1, x2, x3) and (x1,x3,x4) with the common edge (x1,x3).
  * eqAngle is expected to be between [-pi,pi].  */
 template<typename T>
-Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
+Array<T,3> computeBendingForce_before (Array<T,3> const& x1, Array<T,3> const& x2,
                                 Array<T,3> const& x3, Array<T,3> const& x4,
                                 Array<T,3> const& ni, Array<T,3> const& nj,
                                 T Ai, T Aj,
@@ -291,6 +291,60 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
     fx4 = -k*dAngle*nj;
     fx1 = -(fx2+fx4)*0.5;
     fx3 = fx1;
+    return fx1;
+}
+
+/* The most messy force! */
+/* Calculates the bending force for the triangles formed by the vertices:
+ * (x1, x2, x3) and (x1,x3,x4) with the common edge (x1,x3).
+ * eqAngle is expected to be between [-pi,pi].  */
+template<typename T>
+Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
+                                Array<T,3> const& x3, Array<T,3> const& x4,
+                                Array<T,3> const& ni, Array<T,3> const& nj,
+                                T Ai, T Aj,
+                                T eqTileSpan, T eqLength, T eqAngle, T k,
+                                Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4) {
+/* The most messy force!
+ * Triangles are:
+ *      (i, j, k) and (l, k, j). These triangles share
+ *      the common edge j-k.
+ *      (x2, x1, x3) and (x4, x3, x1). These triangles share
+ *      the common edge x1-x3.
+ *
+ *      crossProduct(jPosition - iPosition, kPosition - jPosition, nijk);
+ *      crossProduct(kPosition - lPosition, jPosition - kPosition, nlkj);
+ *      crossProduct(x1 - x2, x3 - x1, nijk);
+ *      crossProduct(x3 - x4, x1 - x3, nlkj);
+*/
+    Array<T,3> fx1, tmp;
+    T dAngle;
+    T edgeAngle = angleBetweenVectors(ni, nj);
+    plint sign = dot(x2-x1, nj) > 0?1:-1;
+    if (sign <= 0) {
+        edgeAngle = 2*pi-edgeAngle;
+    }
+    edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle;
+    eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
+    eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
+    dAngle = (edgeAngle-eqAngle);
+
+    T niDotnj = dot(ni,nj);
+    T dAngledxkFactor = -1.0/(sqrt(1.0 - niDotnj*niDotnj ) );
+
+    // f1
+    crossProduct(x2 - x3, nj - ni*niDotnj, tmp);
+    fx1 = -k * dAngle * dAngledxkFactor * (0.5/Ai) * tmp;
+    crossProduct(x3 - x4, ni - nj*niDotnj, tmp);
+    fx1 = fx1 + (-k * dAngle * dAngledxkFactor * (0.5/Aj) * tmp);
+    // f2
+    crossProduct(x3 - x1, nj - ni*niDotnj, tmp);
+    fx2 = -k * dAngle * dAngledxkFactor * (0.5/Ai) * tmp;
+    // f4
+    crossProduct(x1 - x3, ni - nj*niDotnj, tmp);
+    fx4 = -k * dAngle * dAngledxkFactor * (0.5/Aj) * tmp;
+    // f3
+    fx3 = -(fx1+fx2+fx3);
     return fx1;
 }
 

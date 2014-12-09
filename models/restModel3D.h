@@ -67,8 +67,8 @@ public:
     ~RestModel3D() { } ;
     RestModel3D(RestModel3D<T,Descriptor> const& rhs);
     virtual void computeCellForce (Cell3D<T,Descriptor> * cell);
-    virtual plint getMaximumEdgeExtensionLengthLU() { return ceil(2*maxLength + 0.5); };
-    virtual plint getMaxCellDiameterLU() { return 2*cellRadiusLU; };
+    virtual plint getMaximumEdgeExtensionLengthLU() { return maximum(ceil(2*maxLength + 0.5),4); };
+    virtual plint getMaxCellDiameterLU() { return maximum(ceil(2*cellRadiusLU),2); };
     virtual T getDx() { return dx; };
     virtual T getDt() { return dt; };
     virtual T getDm() { return dm; };

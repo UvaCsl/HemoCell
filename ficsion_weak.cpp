@@ -101,6 +101,8 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     lz = (newNxNyNz[2]-1) * dx;
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
+    tmax = 200;
+    tmeas = 100;
     try {
         plint npar;
         document["sim"]["npar"].read(npar);

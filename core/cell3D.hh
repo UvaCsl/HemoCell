@@ -252,8 +252,8 @@ template<typename T, template<typename U> class Descriptor>
 void Cell3D<T, Descriptor>::push_back(Particle3D<T,Descriptor>* particle3D, bool particleIsInBulk) {
     plint vertexId = castParticleToICP3D(particle3D)->getVertexId();
 	if (particleIsInBulk) {
-	    verticesInBulk.insert(vertexId);
 	    iVertexToParticle3D[vertexId] = particle3D;
+	    verticesInBulk.insert(vertexId);
 	} else {
 	    // For some reason Palabos deletes particles that are in the envelope after some functionals;
 	    iVertexToParticle3D[vertexId] = particle3D->clone();
@@ -267,6 +267,16 @@ void Cell3D<T, Descriptor>::close() {
     triangles.clear();
     vertices.clear();
     edges.clear();
+    triangleAreas.clear();
+    edgeLengths.clear();
+    edgeLengthVectors.clear();
+    signedAngles.clear();
+    triangleAreas.clear();
+    triangleNormals.clear();
+    vertexAreas.clear();
+    vertexNormals.clear();
+    edgeTileSpans.clear();
+
     std::map<plint, Array<plint,2> > edgeMap;
     std::set<plint> triangleSet;
     for (int iTriangle = 0; iTriangle < numTrianges; ++iTriangle)
@@ -274,7 +284,7 @@ void Cell3D<T, Descriptor>::close() {
         plint vId0 = mesh.getVertexId(iTriangle, 0);
         plint vId1 = mesh.getVertexId(iTriangle, 1);
         plint vId2 = mesh.getVertexId(iTriangle, 2);
-        plint v0inBulk = verticesInBulk.count(vId0);
+        plint v0inBulk = verticesInBulk.count(vId0); // verticesInBulk
         plint v1inBulk = verticesInBulk.count(vId1);
         plint v2inBulk = verticesInBulk.count(vId2);
         plint numVert = v0inBulk + v1inBulk + v2inBulk;

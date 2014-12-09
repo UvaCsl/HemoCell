@@ -45,6 +45,10 @@ double dNewton=0;
 const double pi = 4.*atan(1.);
 #endif  // PI__
 
+plint maximum(plint x1, plint x2) {
+    return x1>x2?x1:x2;
+}
+
 
 namespace plb {
 
@@ -129,8 +133,8 @@ public:
     ~CellModel3D() { } ;
     CellModel3D(CellModel3D<T,Descriptor> const& rhs);
     virtual void computeCellForce (Cell3D<T,Descriptor> * cell);
-    virtual plint getMaximumEdgeExtensionLengthLU() { return ceil(2*maxLength + 0.5); };
-    virtual plint getMaxCellDiameterLU() { return 4*cellRadiusLU; };
+    virtual plint getMaximumEdgeExtensionLengthLU() { return maximum(ceil(2*maxLength + 0.5),4); };
+    virtual plint getMaxCellDiameterLU() { return maximum(ceil(4*cellRadiusLU),4); };
     virtual T getDx() { return dx; };
     virtual T getDt() { return dt; };
     virtual T getDm() { return dm; };

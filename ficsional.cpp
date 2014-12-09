@@ -215,7 +215,13 @@ int main(int argc, char* argv[])
     /* ------------------ *
      * Initialize Lattice *
      * ------------------ */
-    plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with width 2.
+    plint extendedEnvelopeWidth;
+    if (ibmKernel==2) {
+        extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with width 2.
+    }
+    else {
+        extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with width 2.
+    }
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
         defaultMultiBlockPolicy3D().getBlockCommunicator(),
@@ -307,7 +313,11 @@ int main(int argc, char* argv[])
         pcout << "(main) initializing"<< std::endl;
         std::vector<Array<T,3> > cellsOrigin;
         cellsOrigin.push_back( Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
-        if (hct>0) { RBCField.grow(0); }
+        if (flowType==3) { RBCField.initialize(cellsOrigin); }
+        else if (hct>0) {
+//            RBCField.grow(0);
+            randomPositionCellFieldsForGrowth3D(cellFields);
+        }
         else { RBCField.initialize(cellsOrigin); }
         checkpointer.save(lattice, cellFields, initIter);
     }
