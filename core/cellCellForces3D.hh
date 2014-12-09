@@ -220,7 +220,7 @@ void ComputeDifferentCellForces3D<T,Descriptor>::getModificationPattern(std::vec
 
 template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT ComputeDifferentCellForces3D<T,Descriptor>::appliesTo() const {
-    return BlockDomain::bulkAndEnvelope;
+    return BlockDomain::bulk;
 }
 
 template<typename T, template<typename U> class Descriptor>
