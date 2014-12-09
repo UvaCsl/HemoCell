@@ -130,8 +130,8 @@ void MeshMetrics<T>::write(plb_ofstream & meshFile) {
 
     meshFile << "Number of vertices, Nv =  " << Nv << std::endl;
     meshFile << "Number of triangles, Nt =  " << Nt << std::endl;
-    meshFile << "Surface, S =  " << area*Nv << std::endl;
-    meshFile << "Volume, V =  " << volume << std::endl;
+    meshFile << "Surface, S =  " << getSurface() << std::endl;
+    meshFile << "Volume, V =  " << getVolume() << std::endl;
     meshFile << std::endl;
     meshFile << "Mean Area per face, A =  " << area << std::endl;
     meshFile << "Deviation of Area %, sA =  " << 100*sigmaArea/area << std::endl;
