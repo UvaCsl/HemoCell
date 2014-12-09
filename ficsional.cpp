@@ -313,11 +313,13 @@ int main(int argc, char* argv[])
         pcout << "(main) initializing"<< std::endl;
         std::vector<Array<T,3> > cellsOrigin;
         cellsOrigin.push_back( Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
-        if (hct>0) { RBCField.grow(0); }
+        if (flowType==3) { RBCField.initialize(cellsOrigin); }
+        else if (hct>0) {
+//            RBCField.grow(0);
+            randomPositionCellFieldsForGrowth3D(cellFields);
+        }
         else { RBCField.initialize(cellsOrigin); }
         checkpointer.save(lattice, cellFields, initIter);
-//        randomPositionCellFieldsForGrowth3D(cellFields);
-
     }
 
     if (rbcModel == 3) {

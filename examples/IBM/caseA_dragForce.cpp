@@ -218,6 +218,7 @@ int main(int argc, char* argv[])
 
     // Drag force specific
     T wallVelocity = Re*parameters.getLatticeNu()/(2*radius);
+    pcout << "wallVelocity [LU]: " << wallVelocity << std::endl;
     iniLattice_ForGalileanInvariance(lattice, parameters, *boundaryCondition, wallVelocity);
 
     util::ValueTracer<T> forceConvergeX(1, 20, 1.0e-4);
@@ -312,12 +313,12 @@ int main(int argc, char* argv[])
             SyncRequirements everyCCR(allReductions);
             RBCField.synchronizeCellQuantities(everyCCR);
             writeCell3D_HDF5(RBCField, dx, dt, iter+1);
-            if (RBCField.getNumberOfCells_Global() > 0) { forceConvergeX.takeValue(RBCField[0]->getForce()[0], true);  }
-            if (forceConvergeX.hasConverged()) {
-                pcout << "Converged!" << std::endl;
-                exit(0);
-            }
-            if ((iter+1)%(100*tmeas)==0) {
+//            if (RBCField.has_cellId(0) > 0) { forceConvergeX.takeValue(RBCField[0]->getForce()[0], true);  }
+//            if (forceConvergeX.hasConverged()) {
+//                pcout << "Converged!" << std::endl;
+//                exit(0);
+//            }
+            if ((iter+1)%(20*tmeas)==0) {
                 global::timer("HDFOutput").start();
                 writeHDF5(lattice, parameters, iter+1);
                 writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
@@ -330,7 +331,7 @@ int main(int argc, char* argv[])
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
             pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
-            if (RBCField.getNumberOfCells_Global() > 0) {
+            if (RBCField.has_cellId(0) > 0) {
                 pcout << "; dr (LU) " << RBCField[0]->getForce()[0] / ( - 6 * 3.14159 * 1.0 * parameters.getLatticeNu() * wallVelocity) - radius << ", ";
                 pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
                 pcout << RBCField[0]->getForce()[1] << ", ";

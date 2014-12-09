@@ -109,7 +109,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     N = int(1.0/dx);
     flowParam = 0;
     tmax = 20.0/dt; // 20 seconds.
-    tmeas = ceil(100.0 * 9.803921568235293e-08/dt);
+    tmeas = ceil(500.0 * 9.803921568235293e-08/dt);
 
 
     if (minNumOfTriangles <= 42) { shape = 0; minNumOfTriangles = 80; } // Min Number of Vertices
@@ -333,29 +333,31 @@ int main(int argc, char* argv[])
                 checkpointer.save(lattice, cellFields, iter+1);
                 global::timer("Checkpoint").stop();
             }
+            writeCell3D_HDF5(RBCField, dx, dt, iter+1);
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
             pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
-            pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
-            pcout << RBCField[0]->getForce()[1] << ", ";
-            pcout << RBCField[0]->getForce()[2] << ") ";
-            pcout << "; ForceNorm (" << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[0]  << ", ";
-            pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[1] << ", ";
-            pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[2] << ") ";
-            pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-            pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
-            pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-            pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
+            if (RBCField.has_cellId(0) > 0) {
+                pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
+                pcout << RBCField[0]->getForce()[1] << ", ";
+                pcout << RBCField[0]->getForce()[2] << ") ";
+                pcout << "; ForceNorm (" << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[0]  << ", ";
+                pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[1] << ", ";
+                pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[2] << ") ";
+                pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+                pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
+                pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+                pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
+            }
 
-
-            if ( ( (RBCField.count(0) > 0) and
-                 (RBCField[0]->getPosition()[1] < (nx*0.5 - 5*radius) ) )
+            if ( ( (RBCField.count(1) > 0) and
+                 (RBCField[1]->getPosition()[0] < (nx*0.5 - 5*radius) ) )
                  or
-                 ( (RBCField.count(1) > 0) and
-                                      (RBCField[1]->getPosition()[1] > (nx*0.5 + 5*radius) ) )
+                 ( (RBCField.count(0) > 0) and
+                                      (RBCField[0]->getPosition()[0] > (nx*0.5 + 5*radius) ) )
                 ) {
-                cout << "Converged!" << std::endl;
+                cout << "\nConverged!" << std::endl;
                 exit(0);
             }
 

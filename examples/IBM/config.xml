@@ -15,10 +15,10 @@
 <!-- Testing phase-->
 <!-- +++++ -->
     <kWLC> 5.0 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
-    <eqLengthRatio> 1.1 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
+    <eqLengthRatio> 1.5 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
     <kRep> 1.0e0 </kRep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
     <kElastic> 0.0e0 </kElastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->
-    <kRest> 1.0e-3 </kRest> <!--FOR LUBRICATION SET TO ZERO! Resting modulus (in N/m) [0.0, 1.0e-4]-->
+    <kRest> 0.0e-3 </kRest> <!--FOR LUBRICATION SET TO ZERO! Resting modulus (in N/m) [0.0, 1.0e-4]-->
     <kStretch> 0.0e-10</kStretch> <!--spring modulus (in N) [0.0]-->
 </cellModel>
 
@@ -32,7 +32,7 @@ Fast Cell Stretching release [8],
 Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType], 
  -->
     <flowType> 0 </flowType>   
-    <Re> 0.01 </Re>   <!--Reynolds number-->
+    <Re> 0.00 </Re>   <!--Reynolds number-->
     <shearRate> 1000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 50.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. When used with 2, it's the disaggregation force-->
     <eulerAngles> 0 0 0 </eulerAngles> <!-- In degrees -->

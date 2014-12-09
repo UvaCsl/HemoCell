@@ -32,6 +32,50 @@ void meshRandomRotation (TriangularSurfaceMesh<T> * mesh) {
 }
 
 
+template<typename T, template<typename U> class Descriptor>
+void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, BlockLattice3D<T,Descriptor>& fluid, TriangularSurfaceMesh<T> * mesh, Array<T,3> startingPoint, plint cellId) {
+    plint nVertices=mesh->getNumVertices();
+    for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
+        Array<T,3> vertex = startingPoint + mesh->getVertex(iVertex);
+        particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
+//        Dot3D cellInFluidDomain = Dot3D(vertex[0], vertex[1], vertex[2]) - fluidLocationDot3D;
+//        if (fluid.get(cellInFluidDomain.x, cellInFluidDomain.y, cellInFluidDomain.z).getDynamics().isBoundary()) {
+//         break;
+//        } else {
+//         particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId + 1000*mpiRank, iVertex) );
+//        }
+    }
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+plint deleteIncompleteCells(ParticleField3D<T,Descriptor>& particleField, BlockLattice3D<T,Descriptor>& fluid, Box3D domain, plint nVertices) {
+    // DELETE CELLS THAT ARE NOT WHOLE
+    std::vector<Particle3D<T,Descriptor>*> particles;
+    particleField.findParticles(domain, particles);
+    std::map<plint, plint> cellIdToNumberOfVertices;
+    for (pluint iP = 0; iP < particles.size(); ++iP) {
+        ImmersedCellParticle3D<T,Descriptor>* particle =
+            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iP]);
+        cellIdToNumberOfVertices[particle->get_cellId()]++;
+    }
+    plint cellsDeleted=0;
+    typename std::map<plint, plint >::iterator itrt;
+    for (itrt  = cellIdToNumberOfVertices.begin(); itrt != cellIdToNumberOfVertices.end(); ++itrt) {
+        if (itrt->second < nVertices) {
+            cellsDeleted++;
+            particleField.removeParticles(particleField.getBoundingBox(), itrt->first);
+        }
+    }
+    return cellsDeleted;
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+plint deleteIncompleteCells(ParticleField3D<T,Descriptor>& particleField, BlockLattice3D<T,Descriptor>& fluid, plint nVertices) {
+    return deleteIncompleteCells(particleField, fluid, particleField.getBoundingBox(), nVertices);
+}
+
 
 template<typename T, template<typename U> class Descriptor>
 class PositionCellParticles3D : public BoxProcessingFunctional3D
@@ -93,6 +137,38 @@ private:
     std::vector<CellField3D<T, Descriptor>* > & cellFields;
 };
 
+
+template<typename T, template<typename U> class Descriptor>
+class OrderedPositionCellField3D : public BoxProcessingFunctional3D
+{
+public:
+    OrderedPositionCellField3D (std::vector<CellField3D<T, Descriptor>* > & cellFields_):
+                cellFields(cellFields_) { }
+    /// Arguments: [0] Particle-field.
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual OrderedPositionCellField3D<T,Descriptor>* clone() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+private:
+    std::vector<CellField3D<T, Descriptor>* > & cellFields;
+};
+
+
+
+template<typename T, template<typename U> class Descriptor>
+class PrintParticles : public BoxProcessingFunctional3D
+{
+public:
+    PrintParticles() { }
+    /// Arguments: [0] Particle-field.
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual PrintParticles<T,Descriptor>* clone() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+private:
+};
 
 
 
