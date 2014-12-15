@@ -224,31 +224,13 @@ int main(int argc, char* argv[])
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
-    if (flowType == 0) {
-        T L_tmp = parameters.getNy();
-        T nu_tmp = parameters.getLatticeNu();
-        poiseuilleForce = 8 * (nu_tmp*nu_tmp) * Re / (L_tmp*L_tmp*L_tmp) ;
-        pcout << "(main) Using iniLatticePoiseuilleWithBodyForce. "<< flowType << std::endl;
-        iniLatticePoiseuilleWithBodyForce<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, poiseuilleForce);
-    }
-    else if (flowType == 1) {
-        pcout << "(main) Using iniLatticeSquareCouette. "<< flowType << std::endl;
-        iniLatticeSquareCouette(lattice, parameters, *boundaryCondition, shearRate);
-    }
-    else if (flowType == 2) {
-        pcout << "(main) Using iniLatticeFullyPeriodic. "<< flowType << std::endl;
-//        envelope-update
-        iniLatticeFullyPeriodic(lattice, parameters, Array<T,3>(0.02, 0.02, 0.02));
-    }
-
+    iniLatticeFullyPeriodic(lattice, parameters, Array<T,3>(0.02, 0.02, 0.02));
 
     /*
      * Initialize model *
      */
 
     /* CREATE MESH */
-//    Array<T,3> eqShapeRotationEulerAngles = eulerAngles;
-    if (flowParam == 9) { eulerAngles= Array<T,3>(0.,0.,0.); }
     // Radius in LU
     TriangleBoundary3D<T> Cells = constructMeshElement(shape, radius, cellNumTriangles, dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> meshElement = Cells.getMesh();
@@ -270,16 +252,10 @@ int main(int argc, char* argv[])
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
     ConstitutiveModel<T,DESCRIPTOR> *cellModel;
     T persistenceLengthFine = 7.5e-9 ; // In meters
-    if (rbcModel == 0) {
-       cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-            persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
-    } else  { // if (rbcModel == 1) {
-       cellModel = new CellModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-               persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
-    }
+   cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+		persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
 
 
-    /* Deflate if I say so */
 //    MorsePotential<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
 //    MorseAndPowerLawForce<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
 //    if (flowType == 2) {
@@ -291,7 +267,6 @@ int main(int argc, char* argv[])
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, ibmKernel, "RBC");
     std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
     cellFields.push_back(&RBCField);
-
 
     FcnCheckpoint<T, DESCRIPTOR> checkpointer(document);
     plint initIter=0;
