@@ -154,7 +154,7 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
                                 Array<T,3> const& x3, Array<T,3> const& x4,
                                 Array<T,3> const& ni, Array<T,3> const& nj,
                                 T Ai, T Aj,
-                                T eqTileSpan, T eqLength, T eqAngle, T k,
+                                T eqArea, T eqLength, T eqAngle, T k,
 								Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4);
 
 /*

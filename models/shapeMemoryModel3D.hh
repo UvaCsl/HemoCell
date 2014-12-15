@@ -239,7 +239,7 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
 
             /*== Compute bending force for the vertex as part of the main edge ==*/
             Array<T,3> fi, fk, fj, fl;
-            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqTileSpan, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fk, fj, fl);
+            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fk, fj, fl);
 
             iParticle->get_force() += fi;
             jParticle->get_force() += fj;

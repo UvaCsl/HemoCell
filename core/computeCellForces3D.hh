@@ -259,11 +259,11 @@ Array<T,3> computeElasticRepulsiveForce(Array<T,3> const& dAdx, T triangleArea, 
  * (x1, x2, x3) and (x1,x3,x4) with the common edge (x1,x3).
  * eqAngle is expected to be between [-pi,pi].  */
 template<typename T>
-Array<T,3> computeBendingForce_before (Array<T,3> const& x1, Array<T,3> const& x2,
+Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
                                 Array<T,3> const& x3, Array<T,3> const& x4,
                                 Array<T,3> const& ni, Array<T,3> const& nj,
                                 T Ai, T Aj,
-                                T eqTileSpan, T eqLength, T eqAngle, T k,
+                                T eqArea, T eqLength, T eqAngle, T k,
 								Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4) {
 /* The most messy force!
  * Triangles are:
@@ -287,8 +287,8 @@ Array<T,3> computeBendingForce_before (Array<T,3> const& x1, Array<T,3> const& x
 	eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
 	eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
 	dAngle = (edgeAngle-eqAngle);
-	fx2 = -k*dAngle*ni;
-    fx4 = -k*dAngle*nj;
+	fx2 = -k*dAngle*ni * (eqLength*0.5/eqArea);
+    fx4 = -k*dAngle*nj * (eqLength*0.5/eqArea);
     fx1 = -(fx2+fx4)*0.5;
     fx3 = fx1;
     return fx1;
@@ -299,11 +299,11 @@ Array<T,3> computeBendingForce_before (Array<T,3> const& x1, Array<T,3> const& x
  * (x1, x2, x3) and (x1,x3,x4) with the common edge (x1,x3).
  * eqAngle is expected to be between [-pi,pi].  */
 template<typename T>
-Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
+Array<T,3> computeBendingForce_Krueger (Array<T,3> const& x1, Array<T,3> const& x2,
                                 Array<T,3> const& x3, Array<T,3> const& x4,
                                 Array<T,3> const& ni, Array<T,3> const& nj,
                                 T Ai, T Aj,
-                                T eqTileSpan, T eqLength, T eqAngle, T k,
+                                T eqArea, T eqLength, T eqAngle, T k,
                                 Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4) {
 /* The most messy force!
  * Triangles are:
