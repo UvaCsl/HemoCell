@@ -216,8 +216,27 @@ void CellField3D<T, Descriptor>::applyDifferentCellForce(CellCellForce3D<T> & ca
        new ComputeDifferentCellForces3D<T,Descriptor> (calcForce, cutoffRadius),
        immersedParticles->getBoundingBox(), differentCellCellParticleArg );
     global::timer("CellCellForce").stop();
+}
+
+template<typename T, template<typename U> class Descriptor>
+void CellField3D<T, Descriptor>::deleteIncompleteCells() {
+    SyncRequirements ccReq;
+    ccReq.insert(CCR_NO_PBC_POSITION_MEAN);
+    applyProcessingFunctional (
+        new ComputeRequiredQuantities<T,Descriptor> (ccReq.getSyncRequirements(), cellIdToCell3D),
+        immersedParticles->getBoundingBox(), particleReductionParticleArg );
+
+    std::vector<MultiBlock3D*> reductionParticleParticleArg;
+    reductionParticleParticleArg.push_back(reductionParticles);
+    reductionParticleParticleArg.push_back(immersedParticles);
+
+    applyProcessingFunctional (
+        new DeleteIncompleteCells<T,Descriptor> (cellIdToCell3D),
+        reductionParticles->getBoundingBox(), reductionParticleParticleArg );
 
 }
+
+
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::synchronizeSyncRequirements_Local(SyncRequirements ccReq) {

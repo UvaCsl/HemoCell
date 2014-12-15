@@ -33,17 +33,22 @@ void meshRandomRotation (TriangularSurfaceMesh<T> * mesh) {
 
 
 template<typename T, template<typename U> class Descriptor>
-void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, BlockLattice3D<T,Descriptor>& fluid, TriangularSurfaceMesh<T> * mesh, Array<T,3> startingPoint, plint cellId) {
+void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, BlockLattice3D<T,Descriptor>& fluid,
+                                            TriangularSurfaceMesh<T> * mesh, Array<T,3> startingPoint, plint cellId) {
     plint nVertices=mesh->getNumVertices();
+    Dot3D relativeDisplacement = computeRelativeDisplacement(fluid, particleField);
+    Dot3D fluidLocationDot3D = fluid.getLocation();
+    plint iX, iY, iZ;
     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
         Array<T,3> vertex = startingPoint + mesh->getVertex(iVertex);
-        particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
-//        Dot3D cellInFluidDomain = Dot3D(vertex[0], vertex[1], vertex[2]) - fluidLocationDot3D;
-//        if (fluid.get(cellInFluidDomain.x, cellInFluidDomain.y, cellInFluidDomain.z).getDynamics().isBoundary()) {
-//         break;
-//        } else {
-//         particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId + 1000*mpiRank, iVertex) );
-//        }
+        particleField.computeGridPosition (vertex, iX, iY, iZ);
+        Dot3D fluidDomainCell = Dot3D(iX, iY, iZ) - relativeDisplacement;
+        if (    (fluidDomainCell.x < 0 or fluidDomainCell.y < 0 or fluidDomainCell.z < 0) or
+                fluid.get(fluidDomainCell.x, fluidDomainCell.y, fluidDomainCell.z).getDynamics().isBoundary())
+        { break; }
+        else {
+            particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
+        }
     }
 }
 

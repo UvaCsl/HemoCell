@@ -155,7 +155,7 @@ void testBending() {
             Ai = norm(ni)/2; ni = ni*1.0/(2*Ai);
             Aj = norm(nj)/2; nj = nj*1.0/(2*Aj);
 //            f1 = computeBendingForceFromPotential (x1, x2, x3, x4, 0., 0.,eqAngle*pi/180, 1.0, f2, f3, f4);
-            f1 = computeBendingForce(x1, x2, x3, x4, ni, nj, Ai, Aj, 0.0, 0.0, eqAngle*pi/180, 1.0, f2, f3, f4);
+            f1 = computeBendingForce(x1, x2, x3, x4, ni, nj, Ai, Aj, 0.5*(Ai+Aj), 2.0, eqAngle*pi/180, 1.0, f2, f3, f4);
 
             f = f1+f2+f3+f4;
             if (norm(f) < 1.e-10) {

@@ -32,6 +32,30 @@ void randomPositionCellFieldsForGrowth3D(std::vector<CellField3D<T, Descriptor>*
     global::timer("CellInit").stop();
 }
 
+template<typename T, template<typename U> class Descriptor>
+void orderedPositionCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields) {
+    global::timer("CellInit").start();
+    std::vector<MultiBlock3D*> fluidAndParticleFieldsArg;
+    fluidAndParticleFieldsArg.push_back( &(cellFields[0]->getFluidField3D()) );
+    for (pluint icf = 0; icf < cellFields.size(); ++icf) {
+        fluidAndParticleFieldsArg.push_back( &(cellFields[icf]->getParticleField3D()) );
+    }
+
+    std::vector<MultiBlock3D*> particleFieldsArg;
+    particleFieldsArg.push_back( &(cellFields[0]->getParticleField3D()) );
+
+    applyProcessingFunctional (
+        new OrderedPositionCellField3D<T,Descriptor>(cellFields),
+        cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg );
+    for (pluint icf = 0; icf < cellFields.size(); ++icf) {
+        cellFields[icf]->deleteIncompleteCells();
+        cellFields[icf]->advanceParticles();
+        cellFields[icf]->synchronizeCellQuantities();
+    }
+    pcout << "Ready to start.." << std::endl;
+    global::timer("CellInit").stop();
+}
+
 
 /* ******** PositionCellParticles3D *********************************** */
 
@@ -432,25 +456,32 @@ void RandomPositionCellFieldsForGrowth3D<T,Descriptor>::getModificationPattern(s
 
 }
 
+
 template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT RandomPositionCellFieldsForGrowth3D<T,Descriptor>::appliesTo() const {
     return BlockDomain::bulk;
 }
 
 
+template<typename T>
 void getOrderedPositionsVector(Box3D realDomain, Array<T,3> step,
-            std::vector<Array<T,3> > & positions, std::vector<Array<T,3> > & cellIds,
-            Array<T,3> initialOffset=Array<T,3>(0.2,0.2,0.2) ) {
+            std::vector<Array<T,3> > & positions, std::vector<plint> & cellIds,
+            Array<T,3> initialOffset=Array<T,3>(1.2, 1.2, 1.2) ) {
+    plint maxNumberPerSide=1290; // max long int == 2147483647^(1/3). Yields 1cm, (1200 * 8) or 2.5 mm (1200 * 2)
     for (T iX=realDomain.x0-2*step[0]; iX<realDomain.x1+2*step[0]; iX+=step[0]) {
         for (T iY=realDomain.y0-2*step[1]; iY<realDomain.y1+2*step[1]; iY+=step[1]) {
             for (T iZ=realDomain.z0-2*step[2]; iZ<realDomain.z1+2*step[2]; iZ+=step[2]) {
                 int nx = int(iX/step[0]);
                 int ny = int(iY/step[1]);
                 int nz = int(iZ/step[2]);
-                T x = nx + initialOffset[0];
-                T y = ny + initialOffset[1];
-                T z = nz + initialOffset[2];
-                positions.push_back( Array<T,3>(x,y,z) );
+                if (nx>=0 and ny>=0 and nz>=0) {
+                    T x = nx + initialOffset[0];
+                    T y = ny + initialOffset[1];
+                    T z = nz + initialOffset[2];
+                    plint cellId =  x + y*maxNumberPerSide + z*maxNumberPerSide*maxNumberPerSide;
+                    positions.push_back( Array<T,3>(x,y,z) );
+                    cellIds.push_back( cellId );
+                }
             }
         }
     }
@@ -473,11 +504,11 @@ void OrderedPositionCellField3D<T,Descriptor>::processGenericBlocks (
         *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[0]);
     ParticleField3D<T,Descriptor>* particleField = ( dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[1]) );
 
-    T hematocrit = cellFields[1]->getVolumeFraction();
-    if (hematocrit > 1.0) { hematocrit /= 100; }
+    T phi = cellFields[0]->getVolumeFraction();
+    if (phi > 1.0) { phi /= 100; }
 
     ElementsOfTriangularSurfaceMesh<T> emptyEoTSM;
-    TriangularSurfaceMesh<T>* mesh = copyTriangularSurfaceMesh(cellFields[1]->getMesh(), emptyEoTSM);;
+    TriangularSurfaceMesh<T>* mesh = copyTriangularSurfaceMesh(cellFields[0]->getMesh(), emptyEoTSM);;
     T volume = MeshMetrics<T>(*mesh).getVolume();
 
 
@@ -510,32 +541,38 @@ void OrderedPositionCellField3D<T,Descriptor>::processGenericBlocks (
 
     T phi_max = volume/(1.0*dx*dy*dz);
     T stepFactor = pow(phi_max*1.0/phi, 1.0/3.0);
+    PLB_ASSERT(stepFactor > 1.0);
+
     Array<T,3> mvp(dx, dy, dz);
     Array<T,3> step = stepFactor * mvp;
 
-    T scale = step*1.0/maxSide;
-    if (scale > 1.0) { scale = 1.0; };
-    meshes[0]->scale(scale);
-    ratio = scale;
-
-    // Access the position of the atomic-block inside the multi-block.
-    plint nVertices = meshes[0]->getNumVertices();
+    plint nVertices = mesh->getNumVertices();
     plint cellId = 0;
-    std::vector<Array<T,3> > & positions;
-    std::vector<Array<T,3> > & cellIds;
-    getOrderedPositionsVector(realDomain, step, positions, cellIds, Array<T,3>(0.2,0.2,0.2) );
-
+    std::vector<Array<T,3> > positions;
+    std::vector<plint > cellIds;
+    cout << "(OrderedPositionCellField3D) Steps: "
+            << "(" << step[0] << ", "
+             << "" << step[1] << ", "
+             << "" << step[2] << "), "
+             << " Volume " << volume
+             << " stepFactor " << stepFactor
+             << "mvp (" << mvp[0] << ", "
+              << "" << mvp[1] << ", "
+              << "" << mvp[2] << "), "
+            << std::endl;
+    getOrderedPositionsVector(realDomain, step, positions, cellIds, Array<T,3>(1.2, 1.2, 1.2) );
+    cout << "(OrderedPositionCellField3D) " << positions.size() << " particles" << std::endl;
     // Loop through the domain and place cell depending on the
     for (int iC = 0; iC < positions.size(); ++iC) {
         positionCellInParticleField(*particleField, fluid, mesh, positions[iC], cellIds[iC]);
     }
 
     std::vector<Particle3D<T,Descriptor>*> particles;
-    particleFields[0]->findParticles(particleFields[0]->getBoundingBox(),   particles);
-    cout << "(RandomPositionCellParticlesForGrowth3D) "
+    particleField->findParticles(particleField->getBoundingBox(),   particles);
+    cout << "(OrderedPositionCellField3D) "
             << mpiRank << "Number of particles/nVertices " << particles.size()*1.0/nVertices
-            << " scale " << scale << " step " << step
-            << " prob " << prob
+//            << " scale " << scale << " step " << step
+//            << " prob " << prob
             << " h " << particles.size()*1.0/nVertices * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << " (deleted:" << 0 << ")" << std::endl;
 
 }

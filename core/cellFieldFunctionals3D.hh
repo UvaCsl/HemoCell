@@ -415,6 +415,94 @@ BlockDomain::DomainT CountGlobalNumberOfCells<T,Descriptor>::appliesTo() const {
 }
 
 
+/* ******** DeleteIncompleteCells *********************************** */
+
+template<typename T, template<typename U> class Descriptor>
+DeleteIncompleteCells<T,Descriptor>::DeleteIncompleteCells (std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_)
+: cellIdToCell3D(cellIdToCell3D_) { }
+
+template<typename T, template<typename U> class Descriptor>
+DeleteIncompleteCells<T,Descriptor>::DeleteIncompleteCells (DeleteIncompleteCells<T,Descriptor> const& rhs)
+: cellIdToCell3D(rhs.cellIdToCell3D) { }
+
+
+
+template<typename T, template<typename U> class Descriptor>
+void DeleteIncompleteCells<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+        PLB_PRECONDITION( blocks.size()==2 );
+        ParticleField3D<T,Descriptor>& reductionParticleField
+            = *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+        ParticleField3D<T,Descriptor>& particleField =
+            *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[1]);
+        std::vector<Particle3D<T,Descriptor>*> reductionParticles;
+        reductionParticleField.findParticles(reductionParticleField.getBoundingBox(), reductionParticles);
+
+        std::map< plint, std::map<plint, bool> > particleInProcessorAndCellid; // processorCellIdMap[processor][cellId] = true
+        for (pluint iA = 0; iA < reductionParticles.size(); ++iA) {
+            ReductionParticle3D<T,Descriptor>* particle =
+                    dynamic_cast<ReductionParticle3D<T,Descriptor>*> (reductionParticles[iA]);
+
+            plint cellId = particle->get_cellId();
+            plint processor = particle->get_processor();
+            plint nParticles = particle->get_nParticles();
+            particleInProcessorAndCellid[processor]; // Create "processor" entry
+            if (cellIdToCell3D.count(cellId) > 0) {
+                Cell3D<T,Descriptor> * chq = cellIdToCell3D[cellId];
+                if (particleInProcessorAndCellid[processor].find(cellId) == particleInProcessorAndCellid[processor].end()) {
+                    particleInProcessorAndCellid[processor][cellId] = true;
+                    chq->getParticlesPerCellId() += nParticles;
+                }
+            }
+        }
+        reductionParticleField.removeParticles(reductionParticleField.getBoundingBox());
+        std::vector<plint> cellIdsToDelete;
+        typename std::map<plint, Cell3D<T,Descriptor>*  >::iterator iter;
+        for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
+            plint cellId = iter->first;
+            Cell3D<T,Descriptor> * cell = iter->second;
+            if (cell->getParticlesPerCellId() != cell->getNumVertices_Global()) {
+                particleField.removeParticles(particleField.getBoundingBox(), cellId);
+                cellIdsToDelete.push_back(cellId);
+            }
+        }
+        for (pluint iC = 0; iC < cellIdsToDelete.size(); ++iC) {
+            plint cellId = cellIdsToDelete[iC];
+            delete cellIdToCell3D[cellId];
+            cellIdToCell3D.erase(cellId);
+        }
+}
+
+template<typename T, template<typename U> class Descriptor>
+DeleteIncompleteCells<T,Descriptor>*
+    DeleteIncompleteCells<T,Descriptor>::clone() const
+{
+    return new DeleteIncompleteCells<T,Descriptor>(*this);
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT DeleteIncompleteCells<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulk;
+}
+
+
+template<typename T, template<typename U> class Descriptor>
+void DeleteIncompleteCells<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::allVariables; // Reduction Particle field.
+    modified[1] = modif::allVariables; // Particle field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+void DeleteIncompleteCells<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Reduction Particle field.
+    isWritten[1] = true;  // Particle field.
+}
+
+
 /* ******** ComputeRequiredQuantities *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
@@ -589,8 +677,7 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
 //                          << ", " << iter->second->getForce()[2] << ") "
 //                  << " rPart "  << iter->second->getNumVertices_Local() << std::endl;
 
-
-            if ( cell.has_ccrId(CCR_INERTIA) ) {
+            if ( cell.has_ccrId(CCR_INERTIA) and (cell.getParticlesPerCellId() != cell.getNumVertices_Global()) ) {
                 std::vector<T> & cellInertia = cell.getInertia();
                 std::vector<T> ellipsoidAngles;
                 std::vector<T> ellipsoidSemiAxes;

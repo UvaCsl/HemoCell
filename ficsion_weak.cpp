@@ -297,6 +297,8 @@ int main(int argc, char* argv[])
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
 //        RBCField.initialize();
+//        orderedPositionCellField3D(cellFields);
+//        randomPositionCellFieldsForGrowth3D(cellFields);
         RBCField.grow(0);
     }
 

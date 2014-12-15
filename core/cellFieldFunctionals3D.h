@@ -124,6 +124,25 @@ protected:
 
 /* ******** ComputeRequiredQuantities *********************************** */
 template<typename T, template<typename U> class Descriptor>
+class DeleteIncompleteCells : public BoxProcessingFunctional3D
+{
+public:
+    DeleteIncompleteCells (std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_);
+    virtual ~DeleteIncompleteCells() { };
+    DeleteIncompleteCells(DeleteIncompleteCells<T,Descriptor> const& rhs);
+    /// Arguments: [0] Particle-field
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual DeleteIncompleteCells<T,Descriptor>* clone() const;
+    virtual BlockDomain::DomainT appliesTo() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
+private:
+    std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
+};
+
+
+/* ******** ComputeRequiredQuantities *********************************** */
+template<typename T, template<typename U> class Descriptor>
 class ComputeRequiredQuantities : public BoxProcessingFunctional3D
 {
 public:

@@ -81,6 +81,7 @@ public:
     virtual void applyCellCellForce(CellCellForce3D<T> & calcForce_, T cutoffRadius_);
     virtual void applyDifferentCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
             MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * otherCellParticles);
+    virtual void deleteIncompleteCells();
 	/* Need implementation */
     virtual void synchronizeSyncRequirements_Local(SyncRequirements ccrRequirements_);
     virtual void synchronizeSyncRequirements_Global(SyncRequirements ccrRequirements_) {};
