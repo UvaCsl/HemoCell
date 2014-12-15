@@ -19,7 +19,7 @@ void randomPositionCellFieldsForGrowth3D(std::vector<CellField3D<T, Descriptor>*
     applyProcessingFunctional (
         new RandomPositionCellFieldsForGrowth3D<T,Descriptor>(cellFields),
         cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg );
-    cout << "Ready to start.." << std::endl;
+    pcout << "Ready to start.." << std::endl;
 //    applyProcessingFunctional (
 //        new PrintParticles<T,Descriptor>(),
 //        cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg );
@@ -91,7 +91,7 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
 
-    cout << "(PositionCellParticles3D) pid " << global::mpi().getRank()
+   pcout << "(PositionCellParticles3D) pid " << global::mpi().getRank()
         << " particles.size " << particles.size()
         << " nVertices " << nVertices
         << " cellOrigin.size " << cellOrigins.size() << std::endl;
@@ -423,7 +423,7 @@ void RandomPositionCellFieldsForGrowth3D<T,Descriptor>::processGenericBlocks (
     cellsDeleted = deleteIncompleteCells(*(particleFields[0]), fluid, relativeDomains[0], nVertices);
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleFields[0]->findParticles(particleFields[0]->getBoundingBox(),   particles);
-    cout << "(RandomPositionCellParticlesForGrowth3D) "
+    pcout << "(RandomPositionCellParticlesForGrowth3D) "
             << mpiRank << "Number of particles/nVertices " << particles.size()*1.0/nVertices
             << " scale " << scale << " step " << step
             << " prob " << prob

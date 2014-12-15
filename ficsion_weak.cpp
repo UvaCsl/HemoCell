@@ -80,29 +80,27 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
     // Read lx, ly, lz --or nx, ny, nz
+    T nx, ny, nz;
     try {
         document["domain"]["lx"].read(lx);
         document["domain"]["ly"].read(ly);
         document["domain"]["lz"].read(lz);
+        nx = 32; ny = 32; nz=32;
     } catch(const plb::PlbIOException & message) {
-        T nx, ny, nz;
         document["domain"]["nx"].read(nx);
         document["domain"]["ny"].read(ny);
         document["domain"]["ny"].read(nz);
-        lx = nx * dx;
-        ly = ny * dx;
-        lz = nz * dx;
     }
     flowType = 2;
     vector<int> newNxNyNz;
-    weakScaling(32, 32, 32, global::mpi().getSize(), newNxNyNz);
+    weakScaling(nx, ny, nz, global::mpi().getSize(), newNxNyNz);
     lx = (newNxNyNz[0]-1) * dx; // Palabos adds 1LU at the boundaries
     ly = (newNxNyNz[1]-1) * dx;
     lz = (newNxNyNz[2]-1) * dx;
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
-    tmax = 200;
-    tmeas = 100;
+//    tmax = 200;
+//    tmeas = 100;
     try {
         plint npar;
         document["sim"]["npar"].read(npar);
@@ -207,11 +205,6 @@ int main(int argc, char* argv[])
 //    kBT = kBT_p / ( dNewton * dx );
     shearRate = shearRate_p * dt;
     stretchForceScalar = stretchForce_p / dNewton;
-    pcout << "(main) dx = " << dx << ", " <<
-             "dt = " << dt << ", " <<
-             "dm = " << dt << ", " <<
-             "kT = " << kBT <<
-             std::endl;
 
     /* ------------------ *
      * Initialize Lattice *
@@ -259,11 +252,20 @@ int main(int argc, char* argv[])
     // Radius in LU
     TriangleBoundary3D<T> Cells = constructMeshElement(shape, radius, cellNumTriangles, dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> meshElement = Cells.getMesh();
+    T initialVolume = MeshMetrics<T>(meshElement).getVolume();
+    T volumeScaleFactor = pow(91.5077e-18 /(initialVolume * dx*dx*dx), 1.0/3.0); // Volume of an RBC
+    meshElement.scale(volumeScaleFactor);
+
     MeshMetrics<T> meshmetric(meshElement);    meshmetric.write();
     T eqVolume = meshmetric.getVolume();
     plint numVerticesPerCell = meshElement.getNumVertices();
 
-
+    pcout << "(main) dx = " << dx << ", " <<
+             "dt = " << dt << ", " <<
+             "dm = " << dt << ", " <<
+             "kT = " << kBT <<  ", " <<
+             "Nv = " << numVerticesPerCell <<
+             std::endl;
 
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
     ConstitutiveModel<T,DESCRIPTOR> *cellModel;
@@ -346,16 +348,16 @@ int main(int argc, char* argv[])
         }
     }
 
-    SyncRequirements everyCCR(allReductions);
-    RBCField.synchronizeCellQuantities(everyCCR);
-    global::timer("Checkpoint").start();
-    checkpointer.save(lattice, cellFields, tmax);
-    global::timer("Checkpoint").stop();
-
-    global::timer("HDFOutput").start();
-    writeHDF5(lattice, parameters, tmax);
-    writeCellField3D_HDF5(RBCField, dx, dt, tmax);
-    global::timer("HDFOutput").stop();
+//    SyncRequirements everyCCR(allReductions);
+//    RBCField.synchronizeCellQuantities(everyCCR);
+//    global::timer("Checkpoint").start();
+//    checkpointer.save(lattice, cellFields, tmax);
+//    global::timer("Checkpoint").stop();
+//
+//    global::timer("HDFOutput").start();
+//    writeHDF5(lattice, parameters, tmax);
+//    writeCellField3D_HDF5(RBCField, dx, dt, tmax);
+//    global::timer("HDFOutput").stop();
 
     simpleProfiler.writeIteration(tmax);
     global::profiler().writeReport();

@@ -149,11 +149,11 @@ void CellField3D<T, Descriptor>::spreadForceIBM() {
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::setFluidExternalForce(Array<T,3> force) {
-    global::timer("LBM").start();
+    global::timer("IBM").start();
         setExternalVector( lattice, lattice.getBoundingBox(),
                        Descriptor<T>::ExternalField::forceBeginsAt, 
                        force);
-    global::timer("LBM").stop();
+    global::timer("IBM").stop();
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -174,15 +174,16 @@ void CellField3D<T, Descriptor>::interpolateVelocityIBM() {
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::computeVelocity(T ratio) {
-    if (coupleWithIBM != 0) { // Force from the Cell dynamics to the Fluid
-        interpolateVelocityIBM();
-    } else {
-        global::timer("IBM").start();
-        applyProcessingFunctional ( // copy fluid velocity on particles
-            new ViscousPositionUpdate3D<T,Descriptor>(ratio),
-            immersedParticles->getBoundingBox(), particleLatticeArg);
-        global::timer("IBM").stop();
-    }
+    interpolateVelocityIBM();
+//    if (coupleWithIBM != 0) { // Force from the Cell dynamics to the Fluid
+//        interpolateVelocityIBM();
+//    } else {
+//        global::timer("IBM").start();
+//        applyProcessingFunctional ( // copy fluid velocity on particles
+//            new ViscousPositionUpdate3D<T,Descriptor>(ratio),
+//            immersedParticles->getBoundingBox(), particleLatticeArg);
+//        global::timer("IBM").stop();
+//    }
 }
 
 template<typename T, template<typename U> class Descriptor>
