@@ -17,7 +17,7 @@ double guessRandomNumber() {
 }
 
 // Rotates the mesh in a random angle.
-// Mesh is supposed to be centered in (0,0,0)
+// Mesh is supposed to start at (0,0,0)
 template<typename T>
 void meshRandomRotation (TriangularSurfaceMesh<T> * mesh) {
     const T pi = 4.*atan(1.);
@@ -151,8 +151,8 @@ template<typename T, template<typename U> class Descriptor>
 class OrderedPositionCellField3D : public BoxProcessingFunctional3D
 {
 public:
-    OrderedPositionCellField3D (std::vector<CellField3D<T, Descriptor>* > & cellFields_):
-                cellFields(cellFields_) { }
+    OrderedPositionCellField3D (std::vector<CellField3D<T, Descriptor>* > & cellFields_, Dot3D latticeSize_):
+                cellFields(cellFields_), latticeSize(latticeSize_) { }
     /// Arguments: [0] Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual OrderedPositionCellField3D<T,Descriptor>* clone() const;
@@ -161,6 +161,7 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
 private:
     std::vector<CellField3D<T, Descriptor>* > & cellFields;
+    Dot3D latticeSize;
 };
 
 

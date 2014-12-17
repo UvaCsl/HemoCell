@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
-    iniLatticeFullyPeriodic(lattice, parameters, Array<T,3>(0.02, 0.02, 0.02));
+    iniLatticeFullyPeriodic(lattice, parameters, Array<T,3>(0.035, 0.035, 0.035));
 
     /*
      * Initialize model *
@@ -275,8 +275,8 @@ int main(int argc, char* argv[])
         pcout << "(main) initializing"<< std::endl;
 //        RBCField.initialize();
 //        orderedPositionCellField3D(cellFields);
-//        randomPositionCellFieldsForGrowth3D(cellFields);
-        RBCField.grow(0);
+        randomPositionCellFieldsForGrowth3D(cellFields);
+//        RBCField.grow(0);
     }
 
     RBCField.synchronizeCellQuantities();

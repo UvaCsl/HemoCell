@@ -27,8 +27,8 @@ typedef Array<T,3> Velocity;
 void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
-        plint & forceToFluid, plint & ibmScheme, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
-        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed)
+        plint & forceToFluid, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
+        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & flowParam, bool & checkpointed)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
@@ -75,16 +75,12 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     }
     document["ibm"]["radius"].read(radius);
     document["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
-    try {
-        document["ibm"]["ibmScheme"].read(ibmScheme);
-    } catch(const plb::PlbIOException & message) {
-        ibmScheme=0;
-    }
     document["domain"]["rhoP"].read(rho_p);
     document["domain"]["nuP"].read(nu_p);
     document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
     // Read lx, ly, lz --or nx, ny, nz
+    T nx, ny, nz;
     try {
         document["domain"]["lx"].read(lx);
         document["domain"]["ly"].read(ly);
@@ -98,16 +94,19 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
         ly = ny * dx;
         lz = nz * dx;
     }
+    flowType = 2;
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
+//    tmax = 200;
+//    tmeas = 100;
     try {
+        plint npar;
         document["sim"]["npar"].read(npar);
-        hct = 0;
+        hct = npar * (90e-18) / (lx*ly*lz);
     } catch(const plb::PlbIOException & message) {
         document["sim"]["hct"].read(hct);
-        npar = 0;
     }
-    hct /= 100.0;
+    if (hct>1.0) { hct /= 100.0; }
 
     radius = radius*1.0/dx; // Transform from [m] to [LU]
     nu_lb = (tau-0.5)/3.0;
@@ -115,11 +114,10 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     u = dt*1.0/dx;
     Re_p = 1.0/nu_p;
     N = int(1.0/dx);
-    flowParam = 0; // flowType/10;
-//    flowType = flowType%10;
+    flowParam = flowType/10;
+    flowType = flowType%10;
     if ( (flowType == 3) or (flowType == 4) or (flowType == 5) or (flowType == 8) ) { // Cell Stretching Analysis
         shearRate = 0;
-        Re = 0;
     } else if (flowType == 6) { // Tumbling Tank Treading Measurements
         if (shearRate > 0) {
             tmax  = 100.0/(shearRate*dt); // Measurements for 100 Strain rates
@@ -152,14 +150,13 @@ int main(int argc, char* argv[])
     mkpath((outputDir + "/hdf5/").c_str(), 0777);
     mkpath(logOutDir.c_str(), 0777);
 
-    plint forceToFluid, shape, cellNumTriangles, ibmKernel, ibmScheme;
+    plint forceToFluid, shape, cellNumTriangles, ibmKernel;
     plint rbcModel;
     std::string caseId;
     std::string cellPath;
     pluint tmax;
     plint tmeas;
-    T hct = 0;
-    plint npar = 0;
+    T hct;
 //    T dtIteration = 0;
     T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic,  k_volume, k_surface, eta_m;
     T eqLengthRatio;
@@ -184,8 +181,8 @@ int main(int argc, char* argv[])
     pcout << "(main) reading.." <<std::endl;
     readFicsionXML(document, caseId, rbcModel, shellDensity,
             k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
-            rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, ibmScheme, shape, cellPath, radius, deflationRatio, relaxationTime,
-            cellNumTriangles, tmax, tmeas, hct, npar, flowParam, checkpointed);
+            rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, shape, cellPath, radius, deflationRatio, relaxationTime,
+            cellNumTriangles, tmax, tmeas, hct, flowParam, checkpointed);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -198,6 +195,7 @@ int main(int argc, char* argv[])
     plint nx = parameters.getNx();
     plint ny = parameters.getNy();
     plint nz = parameters.getNz();
+    Dot3D latticeSize(nx, ny, nz);
     T tau = parameters.getTau();
     T dx = parameters.getDeltaX();
     T dt = parameters.getDeltaT();
@@ -206,22 +204,11 @@ int main(int argc, char* argv[])
 //    kBT = kBT_p / ( dNewton * dx );
     shearRate = shearRate_p * dt;
     stretchForceScalar = stretchForce_p / dNewton;
-    pcout << "(main) dx = " << dx << ", " <<
-             "dt = " << dt << ", " <<
-             "dm = " << dt << ", " <<
-             "kT = " << kBT <<
-             std::endl;
 
     /* ------------------ *
      * Initialize Lattice *
      * ------------------ */
-    plint extendedEnvelopeWidth;
-    if (ibmKernel==2) {
-        extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with width 2.
-    }
-    else {
-        extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with width 2.
-    }
+    plint extendedEnvelopeWidth = 1;  // Because Guo needs 2-cell neighbor access, but we don't use Guo
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
         defaultMultiBlockPolicy3D().getBlockCommunicator(),
@@ -229,105 +216,69 @@ int main(int argc, char* argv[])
         defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
         new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(parameters.getOmega()));
     lattice.periodicity().toggleAll(true);
+    lattice.toggleInternalStatistics(false);
     /*
      * Choose case (Square Poiseuille, Couette etc) *
      */
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
-    lattice.toggleInternalStatistics(false);
-    Array<plint,3> forceIds;
-    forceIds[0] = lattice.internalStatSubscription().subscribeSum();
-    forceIds[1] = lattice.internalStatSubscription().subscribeSum();
-    forceIds[2] = lattice.internalStatSubscription().subscribeSum();
-    plint nMomentumExchangeCells=0;
-    if (flowType == 0 or flowType == 3) {
-        T L_tmp = parameters.getNy();
-        T nu_tmp = parameters.getLatticeNu();
-        poiseuilleForce = 8 * (nu_tmp*nu_tmp) * Re / (L_tmp*L_tmp*L_tmp) ;
-        pcout << "(main) Using iniLatticePoiseuilleWithBodyForce. "<< flowType << std::endl;
-        iniLatticePoiseuilleWithBodyForce<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, poiseuilleForce);
-    }
-    else if (flowType == 1) {
-        poiseuilleForce = 0;
-        pcout << "(main) Using iniLatticeSquareCouette. "<< flowType << std::endl;
-        iniLatticeSquareCouette<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate);
-    }
-    else if (flowType == 11) {
-        poiseuilleForce = 0;
-        pcout << "(main) Using iniLatticeSquareCouetteMeasureStress. "<< flowType << std::endl;
-        lattice.toggleInternalStatistics(true);
-        iniLatticeSquareCouetteMeasureStress<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate, forceIds, nMomentumExchangeCells);
-        lattice.toggleInternalStatistics(false);
-    }
-    else if (flowType == 2) {
-        poiseuilleForce = 0;
-        pcout << "(main) Using iniLatticeFullyPeriodic. "<< flowType << std::endl;
-//        envelope-update
-        iniLatticeFullyPeriodic<T, DESCRIPTOR>(lattice, parameters, Array<T,3>(0.02, 0.02, 0.02));
-    }
-
+    iniLatticeFullyPeriodic(lattice, parameters, Array<T,3>(0.035, 0.035, 0.035));
 
     /*
      * Initialize model *
      */
 
     /* CREATE MESH */
-//    Array<T,3> eqShapeRotationEulerAngles = eulerAngles;
-    if (flowParam == 9) { eulerAngles= Array<T,3>(0.,0.,0.); }
     // Radius in LU
     TriangleBoundary3D<T> Cells = constructMeshElement(shape, radius, cellNumTriangles, dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> meshElement = Cells.getMesh();
+    T initialVolume = MeshMetrics<T>(meshElement).getVolume();
+    T volumeScaleFactor = pow(91.5077e-18 /(initialVolume * dx*dx*dx), 1.0/3.0); // Volume of an RBC
+    meshElement.scale(volumeScaleFactor);
+
     MeshMetrics<T> meshmetric(meshElement);    meshmetric.write();
     T eqVolume = meshmetric.getVolume();
     plint numVerticesPerCell = meshElement.getNumVertices();
 
-
+    pcout << "(main) dx = " << dx << ", " <<
+             "dt = " << dt << ", " <<
+             "dm = " << dt << ", " <<
+             "kT = " << kBT <<  ", " <<
+             "Nv = " << numVerticesPerCell <<
+             std::endl;
 
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
     ConstitutiveModel<T,DESCRIPTOR> *cellModel;
     T persistenceLengthFine = 7.5e-9 ; // In meters
-    if (rbcModel == 0) {
-    	k_rest= 0;
-       cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-            persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
-    } else  if (rbcModel == 3) {
-        cellModel = new RestModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-                persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
-    } else  { // if (rbcModel == 1) {
-    	k_rest= 0;
-       cellModel = new CellModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-               persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
-    }
+   cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+		persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
 
+
+//    MorsePotential<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
+//    MorseAndPowerLawForce<T> interCellularForce(dx, numVerticesPerCell, kBT, true);
+//    if (flowType == 2) {
+//        applyProcessingFunctional (
+//           new ComputeCellCellForces3D<T,DESCRIPTOR> (interCellularForce, 1.1e-6/dx),
+//           immersedParticles.getBoundingBox(), particleArg );
+//    }
 
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, ibmKernel, "RBC");
     std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
     cellFields.push_back(&RBCField);
-    CellStretch<T, DESCRIPTOR> cellStretch(RBCField, stretchForceScalar, 0.1);
 
     FcnCheckpoint<T, DESCRIPTOR> checkpointer(document);
     plint initIter=0;
     checkpointer.load(document, lattice, cellFields, initIter);
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
-        std::vector<Array<T,3> > cellsOrigin;
-        cellsOrigin.push_back( Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
-        if (flowType==3) { RBCField.initialize(cellsOrigin); }
-        else if (hct>0) {
-//            RBCField.grow(0);
-//           orderedPositionCellField3D(cellFields);
-             randomPositionCellFieldsForGrowth3D(cellFields);
-        }
-        else { RBCField.initialize(cellsOrigin); }
-        checkpointer.save(lattice, cellFields, initIter);
+//        RBCField.initialize();
+        orderedPositionCellField3D(cellFields, latticeSize);
+//        randomPositionCellFieldsForGrowth3D(cellFields);
+//        RBCField.grow(0);
     }
 
-    if (rbcModel == 3) {
-        // Has a problem with checkpointing
-    	(dynamic_cast<RestModel3D<T,DESCRIPTOR>*>(cellModel))->freezeVertices(RBCField);
-    }
-
+    RBCField.synchronizeCellQuantities();
     plint nCells = RBCField.getNumberOfCells_Global();
     pcout << std::endl ;
     pcout << "(main) Hematocrit [x100%]: " << nCells*eqVolume*100.0/(nx*ny*nz) << std::endl;
@@ -340,35 +291,21 @@ int main(int argc, char* argv[])
     /* Repulsive force */
     T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
+    RBCField.applyCellCellForce(PLF, R);
 
-    /*      Sync all quantities    */
-    SyncRequirements everyCCR(allReductions);
-    RBCField.synchronizeCellQuantities(everyCCR);
-    /*            I/O              */
-    global::timer("HDFOutput").start();
-    writeHDF5(lattice, parameters, 0);
-    writeCellField3D_HDF5(RBCField, dx, dt, 0);
-    writeCell3D_HDF5(RBCField, dx, dt, 0);
-    global::timer("HDFOutput").stop();
 
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, nCells, numVerticesPerCell);
     /* --------------------------- */
     global::timer("mainLoop").start();
-    global::profiler().turnOn();
-//#ifdef PLB_DEBUG // Palabos has this bug. It's missing the "envelope-update" is the profiler.
-    if (flowType==2) { global::profiler().turnOff(); }
-//#endif
-    for (pluint iter=initIter; iter<tmax+1; ++iter) {
+    for (pluint iter=initIter; iter<tmax; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
        RBCField.applyCellCellForce(PLF, R);
-       if (flowType==3) { cellStretch.stretch(); }
         // #2# IBM Spreading
         RBCField.setFluidExternalForce(poiseuilleForce);
         RBCField.spreadForceIBM();
         // #3# LBM
-        if ((iter+1)%tmeas==0 && flowType==11) { lattice.toggleInternalStatistics(true); }
         global::timer("LBM").start();
         lattice.collideAndStream();
         global::timer("LBM").stop();
@@ -376,52 +313,24 @@ int main(int argc, char* argv[])
         RBCField.interpolateVelocityIBM();
         // #5# Position Update
         RBCField.advanceParticles();
-        // #6# Output
+        RBCField.synchronizeCellQuantities();
         if ((iter+1)%tmeas==0) {
-            SyncRequirements everyCCR(allReductions);
-            RBCField.synchronizeCellQuantities(everyCCR);
-            global::timer("HDFOutput").start();
-            writeHDF5(lattice, parameters, iter+1);
-            writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
-            writeCell3D_HDF5(RBCField, dx, dt, iter+1);
-            global::timer("HDFOutput").stop();
-            if ((iter+1)%(2*tmeas)==0) {
-                global::timer("Checkpoint").start();
-                checkpointer.save(lattice, cellFields, iter+1);
-                global::timer("Checkpoint").stop();
-            }
-            T dtIteration = global::timer("mainLoop").stop();
+            pcout << "(main) Iteration:" << iter + 1 << ", time "<< global::timer("mainLoop").stop()*1.0/tmeas << std::endl;
             simpleProfiler.writeIteration(iter+1);
-            global::profiler().writeReport();
-            pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
-//            pcout << "; Volume (" << RBCField[0]->getVolume() << ")";
-            if (RBCField.count(0) > 0) {
-                pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-                pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
-                pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-                pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
-            }
-            if (flowType==3) {
-                Array<T,3> stretch = cellStretch.measureStretch();
-                pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") ";
-            } else  if (flowType==11) {
-                T nu_lb = parameters.getLatticeNu();
-                T coeff = nu_lb * nMomentumExchangeCells * shearRate; // * nMomentumExchangeCells;
-                T drag =  lattice.getInternalStatistics().getSum(forceIds[0]) / coeff;
-                T lift =  lattice.getInternalStatistics().getSum(forceIds[1]) / coeff;
-                T other =  lattice.getInternalStatistics().getSum(forceIds[2]) / coeff;
-                pcout << "; drag=" << drag
-                      << "; lift=" << lift
-                      << "; other=" << other
-                      << "; nMomentumExchangeCells=" << nMomentumExchangeCells*1.0/(nx*nz);
-            }
-            pcout << std::endl;
-        } else {
-            RBCField.synchronizeCellQuantities();
         }
-        if ((iter+1)%tmeas==0 && flowType==11) { lattice.toggleInternalStatistics(false); }
     }
-    simpleProfiler.writeIteration(tmax+1);
-    global::profiler().writeReport();
+
+//    SyncRequirements everyCCR(allReductions);
+//    RBCField.synchronizeCellQuantities(everyCCR);
+//    global::timer("Checkpoint").start();
+//    checkpointer.save(lattice, cellFields, tmax);
+//    global::timer("Checkpoint").stop();
+//
+//    global::timer("HDFOutput").start();
+//    writeHDF5(lattice, parameters, tmax);
+//    writeCellField3D_HDF5(RBCField, dx, dt, tmax);
+//    global::timer("HDFOutput").stop();
+
+    simpleProfiler.writeIteration(tmax);
     pcout << "Simulation finished." << std::endl;
 }

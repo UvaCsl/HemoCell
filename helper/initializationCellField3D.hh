@@ -128,9 +128,9 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     MeshMetrics<T> mm(*mesh);
     T volume = mm.getVolume();
 
-    plint DeltaX = domain.x1-domain.x0 + 1;
-    plint DeltaY = domain.y1-domain.y0 + 1;
-    plint DeltaZ = domain.z1-domain.z0 + 1;
+    plint DeltaX = domain.getNx();
+    plint DeltaY = domain.getNy();
+    plint DeltaZ = domain.getNz();
 
     plint step = plint( pow(volume/hematocrit, 1.0/3.0) );
     T Vdomain = DeltaX * DeltaY * DeltaZ;
@@ -307,34 +307,6 @@ void RandomPositionCellFieldsForGrowth3D<T,Descriptor>::processGenericBlocks (
     plint DeltaY = realDomain.getNy();
     plint DeltaZ = realDomain.getNz();
 
-//
-//        cout << global::mpi().getRank()
-//            << "domain "
-//                << domain.x0 << " " << domain.x1 << ", "
-//                << domain.y0 << " " << domain.y1 << ", "
-//                << domain.z0 << " " << domain.z1 << ", "
-//                << "particle "
-//                    << particleField.getBoundingBox().x0 << " " << particleField.getBoundingBox().x1 << ", "
-//                    << particleField.getBoundingBox().y0 << " " << particleField.getBoundingBox().y1 << ", "
-//                    << particleField.getBoundingBox().z0 << " " << particleField.getBoundingBox().z1 << ", "
-//                    << "readDomain "
-//                        << realDomain.x0 << " " << realDomain.x1 << ", "
-//                        << realDomain.y0 << " " << realDomain.y1 << ", "
-//                        << realDomain.z0 << " " << realDomain.z1 << ", "
-//                << "fluidLocation "
-//                    << fLocation.x << ", "
-//                    << fLocation.y << ", "
-//                    << fLocation.z << ", "
-//                << "particlePosition "
-//                     << pLocation.x << ", "
-//                     << pLocation.y << ", "
-//                     << pLocation.z << ", "
-//                     << "corrected "
-//                         << relativeDomains[0].x0 << " " << relativeDomains[0].x1 << ", "
-//                         << relativeDomains[0].y0 << " " << relativeDomains[0].y1 << ", "
-//                         << relativeDomains[0].z0 << " " << relativeDomains[0].z1 << ", "
-//                << std::endl;
-//
 
     Array<T,2> xRange, yRange, zRange;
     meshes[0]->computeBoundingBox (xRange, yRange, zRange);
@@ -370,9 +342,13 @@ void RandomPositionCellFieldsForGrowth3D<T,Descriptor>::processGenericBlocks (
 
     // Loop through the domain and place cell depending on the
     std::vector<Array<T,3> > freeStartingPoints;
-    for (T iX=realDomain.x0; iX<realDomain.x1; iX+=step) {
-        for (T iY=realDomain.y0; iY<realDomain.y1; iY+=step) {
-            for (T iZ=realDomain.z0; iZ<realDomain.z1; iZ+=step) {
+    T smalleps = 0.01;
+    T stepX = step * (1 + fmod(DeltaX-smalleps, step)*1.0/DeltaX );
+    T stepY = step * (1 + fmod(DeltaY-smalleps, step)*1.0/DeltaY );
+    T stepZ = step * (1 + fmod(DeltaZ-smalleps, step)*1.0/DeltaZ );
+    for (T iX=realDomain.x0; iX<realDomain.x1-smalleps; iX+=stepX) {
+        for (T iY=realDomain.y0; iY<realDomain.y1-smalleps; iY+=stepY) {
+            for (T iZ=realDomain.z0; iZ<realDomain.z1-smalleps; iZ+=stepZ) {
                 T rn = guessRandomNumber();
                 Array<T,3> startingPoint(iX*1.0, iY*1.0, iZ*1.0);
                 if (rn <= prob) {
@@ -399,7 +375,7 @@ void RandomPositionCellFieldsForGrowth3D<T,Descriptor>::processGenericBlocks (
     cellsDeleted = deleteIncompleteCells(*(particleFields[0]), fluid, relativeDomains[0], nVertices);
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleFields[0]->findParticles(particleFields[0]->getBoundingBox(),   particles);
-    pcout << "(RandomPositionCellParticlesForGrowth3D) "
+    pcout << "(RandomPositionCellFieldsForGrowth3D) "
             << mpiRank << "Number of particles/nVertices " << particles.size()*1.0/nVertices
             << " scale " << scale << " step " << step
             << " prob " << prob
@@ -441,8 +417,7 @@ BlockDomain::DomainT RandomPositionCellFieldsForGrowth3D<T,Descriptor>::appliesT
 
 template<typename T>
 void getOrderedPositionsVector(Box3D realDomain, Array<T,3> step,
-            std::vector<Array<T,3> > & positions, std::vector<plint> & cellIds,
-            Array<T,3> initialOffset=Array<T,3>(1.0, 1.0, 1.0) ) {
+            std::vector<Array<T,3> > & positions, std::vector<plint> & cellIds) {
     plint maxNumberPerSide=1290; // max long int == 2147483647^(1/3). Yields 1cm, (1200 * 8) or 2.5 mm (1200 * 2)
     set<plint> uniqueCellIds;
     for (T iX=realDomain.x0-2.5*step[0]; iX<=realDomain.x1+2*step[0]; iX+=step[0]) {
@@ -452,9 +427,9 @@ void getOrderedPositionsVector(Box3D realDomain, Array<T,3> step,
                 int ny = floor(iY/step[1]);
                 int nz = floor(iZ/step[2]);
                 if (nx>=0 and ny>=0 and nz>=0) {
-                    T x = nx*step[0] + initialOffset[0];
-                    T y = ny*step[1] + initialOffset[1];
-                    T z = nz*step[2] + initialOffset[2];
+                    T x = nx*step[0];
+                    T y = ny*step[1];
+                    T z = nz*step[2];
                     plint cellId =  nx + ny*maxNumberPerSide + nz*maxNumberPerSide*maxNumberPerSide;
                     if (uniqueCellIds.count(cellId) == 0) {
                     	positions.push_back( Array<T,3>(x,y,z) );
@@ -470,7 +445,7 @@ void getOrderedPositionsVector(Box3D realDomain, Array<T,3> step,
 
 
 template<typename T, template<typename U> class Descriptor>
-void orderedPositionCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields) {
+void orderedPositionCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields, Dot3D latticeSize) {
     global::timer("CellInit").start();
     std::vector<MultiBlock3D*> fluidAndParticleFieldsArg;
     fluidAndParticleFieldsArg.push_back( &(cellFields[0]->getFluidField3D()) );
@@ -482,14 +457,14 @@ void orderedPositionCellField3D(std::vector<CellField3D<T, Descriptor>* > & cell
     particleFieldsArg.push_back( &(cellFields[0]->getParticleField3D()) );
 
     applyProcessingFunctional (
-        new OrderedPositionCellField3D<T,Descriptor>(cellFields),
+        new OrderedPositionCellField3D<T,Descriptor>(cellFields, latticeSize),
         cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg );
     for (pluint icf = 0; icf < cellFields.size(); ++icf) {
         cellFields[icf]->createCellMap();
-        writeCellField3D_HDF5(*cellFields[icf], 1., 1., 1);
+//        writeCellField3D_HDF5(*cellFields[icf], 1., 1., 1);
         cellFields[icf]->deleteIncompleteCells();
-        cellFields[icf]->createCellMap();
-        writeCellField3D_HDF5(*cellFields[icf], 1., 1., 2);
+//        cellFields[icf]->createCellMap();
+//        writeCellField3D_HDF5(*cellFields[icf], 1., 1., 2);
     }
     for (pluint icf = 0; icf < cellFields.size(); ++icf) {
 //        cout << global::mpi().getRank() << " N_cells = " << cellFields[icf]->getNumberOfCells_Global() << std::endl;
@@ -512,8 +487,6 @@ void OrderedPositionCellField3D<T,Descriptor>::processGenericBlocks (
     PLB_PRECONDITION( blocks.size()==(numberOfCellFields+1) );
     int mpiSize = global::mpi().getSize();;
     int mpiRank = global::mpi().getRank();
-    srand (mpiSize * mpiRank);
-    T ratio;
     BlockLattice3D<T,Descriptor>& fluid =
         *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[0]);
     ParticleField3D<T,Descriptor>* particleField = ( dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[1]) );
@@ -531,14 +504,6 @@ void OrderedPositionCellField3D<T,Descriptor>::processGenericBlocks (
                         domain.x0 + fLocation.x, domain.x1 + fLocation.x,
                         domain.y0 + fLocation.y, domain.y1 + fLocation.y,
                         domain.z0 + fLocation.z, domain.z1 + fLocation.z );
-//    bool particleIsInBulk = particleField.isContained(particle->getPosition(), realDomain);
-
-    Dot3D relativeDisplacement = computeRelativeDisplacement(fluid, *particleField);
-    Box3D relativeDomain = Box3D(
-                        domain.x0 + relativeDisplacement.x, domain.x1 + relativeDisplacement.x,
-                        domain.y0 + relativeDisplacement.y, domain.y1 + relativeDisplacement.y,
-                        domain.z0 + relativeDisplacement.z, domain.z1 + relativeDisplacement.z );
-
 
     plint DeltaX = realDomain.getNx();
     plint DeltaY = realDomain.getNy();
@@ -548,13 +513,13 @@ void OrderedPositionCellField3D<T,Descriptor>::processGenericBlocks (
     Array<T,2> xRange, yRange, zRange;
     mesh->computeBoundingBox (xRange, yRange, zRange);
     T dx = xRange[1] - xRange[0], dy = yRange[1] - yRange[0], dz = zRange[1] - zRange[0];
-    T maxSide = max( max(dx, dy), dz);
     // Bring mesh to the center
     Array<T,3> meshCenter = Array<T,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
     Array<T,3> mvp(dx, dy, dz);
     mesh->translate((0.5*mvp)-meshCenter);
 
     T phi_max = volume/(1.0*dx*dy*dz);
+//    pcout <<"phi " << phi_max << " " << phi << std::endl;
     T stepFactor = pow(phi_max*1.0/phi, 1.0/3.0);
     PLB_ASSERT(stepFactor > 1.0);
     if (stepFactor < 1.) {
@@ -562,20 +527,31 @@ void OrderedPositionCellField3D<T,Descriptor>::processGenericBlocks (
     }
     Array<T,3> step = stepFactor * mvp;
 
-    plint nVertices = mesh->getNumVertices();
-    plint cellId = 0;
+    T Vdomain = latticeSize.x * latticeSize.y * latticeSize.z;
+	T Vsubdomain = plint((latticeSize.x-0.5)/step[0]) * plint((latticeSize.y-0.5)/step[1]) * plint((latticeSize.z-0.5)/step[2]) * step[0]*step[1]*step[2];
+	phi = phi * Vdomain / Vsubdomain;
+	stepFactor = pow(phi_max*1.0/phi, 1.0/3.0);
+	step = stepFactor * mvp;
+
+
+    Array<T,3> offset(-0.49, -0.49, -0.49);
+    T smalleps = 0.01;
+    step[0] = step[0] * (1 + fmod(latticeSize.x-smalleps-offset[0], step[0])*1.0/latticeSize.x );
+    step[1] = step[1] * (1 + fmod(latticeSize.y-smalleps-offset[1], step[1])*1.0/latticeSize.y );
+    step[2] = step[2] * (1 + fmod(latticeSize.z-smalleps-offset[2], step[2])*1.0/latticeSize.z );
+
     std::vector<Array<T,3> > positions;
     std::vector<plint > cellIds;
-    getOrderedPositionsVector(realDomain, step, positions, cellIds, Array<T,3>(0.1, 0.1, 0.1) );
+    getOrderedPositionsVector(realDomain, step, positions, cellIds);
 //    cout << "(OrderedPositionCellField3D) " << positions.size() << " particles" << std::endl;
     // Loop through the domain and place cell depending on the
-    for (int iC = 0; iC < positions.size(); ++iC) {
+    for (pluint iC = 0; iC < positions.size(); ++iC) {
 //        cout << "(OrderedPositionCellField3D) cellId: " << cellIds[iC] << " r:" << mpiRank
 //                << " (" << positions[iC][0] << ", "
 //                 << "" << positions[iC][1] << ", "
 //                 << "" << positions[iC][2] << "), "
 //                 << std::endl;
-        positionCellInParticleField(*particleField, fluid, mesh, positions[iC], cellIds[iC]);
+        positionCellInParticleField(*particleField, fluid, mesh, positions[iC] + offset, cellIds[iC]);
     }
     pcout << "(OrderedPositionCellField3D) Steps: "
             << "(" << step[0] << ", "
@@ -589,6 +565,7 @@ void OrderedPositionCellField3D<T,Descriptor>::processGenericBlocks (
               << "" << mvp[2] << "), "
             << std::endl;
 
+//    plint nVertices = mesh->getNumVertices();
 //    std::vector<Particle3D<T,Descriptor>*> particles;
 //    particleField->findParticles(particleField->getBoundingBox(),   particles);
 //    cout << "(OrderedPositionCellField3D) "
