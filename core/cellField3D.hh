@@ -221,6 +221,7 @@ void CellField3D<T, Descriptor>::applyDifferentCellForce(CellCellForce3D<T> & ca
 
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::deleteIncompleteCells() {
+	createCellMap();
     SyncRequirements ccReq;
     ccReq.insert(CCR_NO_PBC_POSITION_MEAN);
     applyProcessingFunctional (

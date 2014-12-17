@@ -316,7 +316,8 @@ int main(int argc, char* argv[])
         if (flowType==3) { RBCField.initialize(cellsOrigin); }
         else if (hct>0) {
 //            RBCField.grow(0);
-            randomPositionCellFieldsForGrowth3D(cellFields);
+           orderedPositionCellField3D(cellFields);
+            // randomPositionCellFieldsForGrowth3D(cellFields);
         }
         else { RBCField.initialize(cellsOrigin); }
         checkpointer.save(lattice, cellFields, initIter);

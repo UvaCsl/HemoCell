@@ -311,7 +311,7 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
 //        cout  << particleIsInBulk << "\n";
         plint cellId = particle->get_cellId();
         plint iVertex = particle->getVertexId();
-        cellIdToVerticesInDomain[cellId] += 1;
+        cellIdToVerticesInDomain[cellId] += particleIsInBulk;
         if (cellIdToCell3D.count(cellId) == 0) {
             cellIdToCell3D[cellId] = new Cell3D<T,Descriptor>(mesh, cellId);
         }
@@ -431,47 +431,44 @@ template<typename T, template<typename U> class Descriptor>
 void DeleteIncompleteCells<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
-        PLB_PRECONDITION( blocks.size()==2 );
-        ParticleField3D<T,Descriptor>& reductionParticleField
-            = *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
-        ParticleField3D<T,Descriptor>& particleField =
-            *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[1]);
-        std::vector<Particle3D<T,Descriptor>*> reductionParticles;
-        reductionParticleField.findParticles(reductionParticleField.getBoundingBox(), reductionParticles);
+	PLB_PRECONDITION( blocks.size()==2 );
+	ParticleField3D<T,Descriptor>& reductionParticleField
+		= *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+	ParticleField3D<T,Descriptor>& particleField =
+		*dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[1]);
+	std::vector<Particle3D<T,Descriptor>*> reductionParticles;
+	reductionParticleField.findParticles(reductionParticleField.getBoundingBox(), reductionParticles);
 
-        std::map< plint, std::map<plint, bool> > particleInProcessorAndCellid; // processorCellIdMap[processor][cellId] = true
-        for (pluint iA = 0; iA < reductionParticles.size(); ++iA) {
-            ReductionParticle3D<T,Descriptor>* particle =
-                    dynamic_cast<ReductionParticle3D<T,Descriptor>*> (reductionParticles[iA]);
+	std::map< plint, std::map<plint, bool> > particleInProcessorAndCellid; // processorCellIdMap[processor][cellId] = true
+	std::map< plint, plint > numberOfParticlesPerCellid; // processorCellIdMap[processor][cellId] = true
+	for (pluint iA = 0; iA < reductionParticles.size(); ++iA) {
+		ReductionParticle3D<T,Descriptor>* particle =
+				dynamic_cast<ReductionParticle3D<T,Descriptor>*> (reductionParticles[iA]);
 
-            plint cellId = particle->get_cellId();
-            plint processor = particle->get_processor();
-            plint nParticles = particle->get_nParticles();
-            particleInProcessorAndCellid[processor]; // Create "processor" entry
-            if (cellIdToCell3D.count(cellId) > 0) {
-                Cell3D<T,Descriptor> * chq = cellIdToCell3D[cellId];
-                if (particleInProcessorAndCellid[processor].find(cellId) == particleInProcessorAndCellid[processor].end()) {
-                    particleInProcessorAndCellid[processor][cellId] = true;
-                    chq->getParticlesPerCellId() += nParticles;
-                }
-            }
-        }
-        reductionParticleField.removeParticles(reductionParticleField.getBoundingBox());
-        std::vector<plint> cellIdsToDelete;
-        typename std::map<plint, Cell3D<T,Descriptor>*  >::iterator iter;
-        for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
-            plint cellId = iter->first;
-            Cell3D<T,Descriptor> * cell = iter->second;
-            if (cell->getParticlesPerCellId() != cell->getNumVertices_Global()) {
-                particleField.removeParticles(particleField.getBoundingBox(), cellId);
-                cellIdsToDelete.push_back(cellId);
-            }
-        }
-        for (pluint iC = 0; iC < cellIdsToDelete.size(); ++iC) {
-            plint cellId = cellIdsToDelete[iC];
-            delete cellIdToCell3D[cellId];
-            cellIdToCell3D.erase(cellId);
-        }
+		plint cellId = particle->get_cellId();
+		plint processor = particle->get_processor();
+		plint nParticles = particle->get_nParticles();
+		particleInProcessorAndCellid[processor]; // Create "processor" entry
+		if (particleInProcessorAndCellid[processor].find(cellId) == particleInProcessorAndCellid[processor].end()) {
+			particleInProcessorAndCellid[processor][cellId] = true;
+			numberOfParticlesPerCellid[cellId] += nParticles;
+		}
+	}
+	std::vector<plint> cellIdsToDelete;
+	plint Nv = (cellIdToCell3D.begin()->second)->getNumVertices_Global();
+	typename std::map<plint, plint >::iterator iter;
+	for (iter  = numberOfParticlesPerCellid.begin(); iter != numberOfParticlesPerCellid.end(); ++iter) {
+		plint cellId = iter->first;
+		if (numberOfParticlesPerCellid[cellId] != Nv) {
+			cellIdsToDelete.push_back(cellId);
+		}
+	}
+	for (pluint iC = 0; iC < cellIdsToDelete.size(); ++iC) {
+		plint cellId = cellIdsToDelete[iC];
+		particleField.removeParticles(particleField.getBoundingBox(), cellId);
+//		cout << "(DeleteIncompleteCells) " <<cellId<< " deleted, had "<< numberOfParticlesPerCellid[cellId]  << " particles out of " <<   Nv << std::endl;
+	}
+	reductionParticleField.removeParticles(reductionParticleField.getBoundingBox());
 }
 
 template<typename T, template<typename U> class Descriptor>
