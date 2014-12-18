@@ -5,17 +5,17 @@
     <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
     <shellDensity> 1.0 </shellDensity>
 
-    <kBend> 20000e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
-    <kVolume> 6000000.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
-    <kSurface> 5900000.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <kBend> 200000e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <kVolume> 60000000.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <kSurface> 59000000.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
 <!-- 0.5e0 -->
-    <kShear> 5000.0e0 </kShear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
+    <kShear> 50000.0e0 </kShear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
     <etaM> 0.0e-6 </etaM> <!-- NOT WORKING ATM --> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
 <!-- +++++ -->
 <!-- Testing phase-->
 <!-- +++++ -->
-    <kWLC> 5.0 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
-    <eqLengthRatio> 1.5 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
+    <kWLC> 15.0 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
+    <eqLengthRatio> 1.1 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
     <kRep> 1.0e0 </kRep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
     <kElastic> 0.0e0 </kElastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->
     <kRest> 0.0e-3 </kRest> <!--FOR LUBRICATION SET TO ZERO! Resting modulus (in N/m) [0.0, 1.0e-4]-->
@@ -34,7 +34,7 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
     <flowType> 0 </flowType>   
     <Re> 0.00 </Re>   <!--Reynolds number-->
     <shearRate> 1000 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
-    <stretchForce> 50.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. When used with 2, it's the disaggregation force-->
+    <stretchForce> 200.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. When used with 2, it's the disaggregation force-->
     <eulerAngles> 0 0 0 </eulerAngles> <!-- In degrees -->
     <deflationRatio> 1.0 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
     <relaxationTime> 200 </relaxationTime> <!-- Relaxation time for deflation and stretching force [5000] -->
@@ -55,7 +55,7 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
-    <dx> 1.5e-6 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dx> 1.e-6 </dx> <!--Physical length of 1 Lattice Unit -->
     <lx> 21.0e-6 </lx> <!--Size of domain in SI. For Lattice 5nits try: nx, ny, nz -->
     <ly> 21.0e-6 </ly> <!--ly/ny is used for the Reynolds number calculation -->
     <lz> 21.0e-6 </lz>
