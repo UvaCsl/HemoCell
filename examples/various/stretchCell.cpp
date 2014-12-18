@@ -88,9 +88,9 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
     // Read lx, ly, lz --or nx, ny, nz
-    lx = 10 * radius;
-    ly = 10 * radius;
-    lz = 10 * radius;
+    lx = 20 * radius;
+    ly = 20 * radius;
+    lz = 20 * radius;
 
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
