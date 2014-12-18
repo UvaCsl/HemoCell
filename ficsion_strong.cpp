@@ -273,7 +273,7 @@ int main(int argc, char* argv[])
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
 //        RBCField.initialize();
-        orderedPositionCellField3D(cellFields, latticeSize);
+        if (hct>0) { orderedPositionCellField3D(cellFields, latticeSize); }
 //        randomPositionCellFieldsForGrowth3D(cellFields);
 //        RBCField.grow(0);
     }
