@@ -217,7 +217,7 @@ int main(int argc, char* argv[])
         defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
         new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(parameters.getOmega()));
     lattice.periodicity().toggleAll(true);
-    lattice.toggleInternalStatistics(false);
+   lattice.toggleInternalStatistics(false);
     /*
      * Choose case (Square Poiseuille, Couette etc) *
      */
@@ -275,7 +275,7 @@ int main(int argc, char* argv[])
         pcout << "(main) initializing"<< std::endl;
 //        RBCField.initialize();
 //        orderedPositionCellField3D(cellFields);
-        randomPositionCellFieldsForGrowth3D(cellFields);
+    if (hct>0) { randomPositionCellFieldsForGrowth3D(cellFields); }
 //        RBCField.grow(0);
     }
 
