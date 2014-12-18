@@ -108,8 +108,8 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     Re_p = 1.0/nu_p;
     N = int(1.0/dx);
     flowParam = 0;
-    tmax = 20.0/dt; // 20 seconds.
-    tmeas = ceil(100.0 * 9.803921568235293e-08/dt);
+    tmax = 0.05/dt; // 0.05 seconds.
+    tmeas = ceil(tmeas * 9.803921568235293e-08/dt);
 
 
     if (minNumOfTriangles <= 42) { shape = 0; minNumOfTriangles = 80; } // Min Number of Vertices
