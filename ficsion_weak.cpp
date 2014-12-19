@@ -332,6 +332,5 @@ int main(int argc, char* argv[])
 //    writeCellField3D_HDF5(RBCField, dx, dt, tmax);
 //    global::timer("HDFOutput").stop();
 
-    simpleProfiler.writeIteration(tmax);
     pcout << "Simulation finished." << std::endl;
 }
