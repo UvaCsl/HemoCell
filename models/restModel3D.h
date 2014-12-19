@@ -63,7 +63,8 @@ public:
             T k_volume_, T k_surface_, T eta_m_,
             T persistenceLengthFine, T eqLengthRatio_,
             T dx_, T dt_, T dm_,
-            TriangularSurfaceMesh<T> const& meshElement);
+            TriangularSurfaceMesh<T> const& meshElement,
+            std::map<plint, TriangularSurfaceMesh<T>* > & meshes_);
     ~RestModel3D() { } ;
     RestModel3D(RestModel3D<T,Descriptor> const& rhs);
     virtual void computeCellForce (Cell3D<T,Descriptor> * cell);
@@ -75,12 +76,6 @@ public:
 
     virtual SyncRequirements & getSyncRequirements() {return syncRequirements;} ;
     virtual SyncRequirements const& getSyncRequirements() const {return syncRequirements;} ;
-
-    void freezeVertices(CellField3D<T, Descriptor> & cellField) {
-        applyProcessingFunctional ( // compute force applied on the fluid by the particles
-                new GetCellVertexPositions<T,Descriptor> (frozenVertices),
-                cellField.getBoundingBox(), cellField.getParticleArg() );
-    };
 
     virtual RestModel3D<T, Descriptor>* clone() const;
 private:
@@ -96,7 +91,7 @@ private:
     pluint cellNumTriangles, cellNumVertices;
     plint cellRadiusLU, maxLength;
     SyncRequirements syncRequirements;
-    std::map<plint, std::map<plint,Array<T,3> > >  frozenVertices;
+    std::map<plint, TriangularSurfaceMesh<T>*> & meshes;
 public:
     /* Computes the equilibrium quantities to correspond to the an inflated cell with
      * 		eqVolume=ratio*eqVolume.

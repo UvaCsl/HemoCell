@@ -42,6 +42,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     document["cellModel"]["shellDensity"].read(shellDensity);
     document["cellModel"]["kWLC"].read(k_WLC);
     document["cellModel"]["eqLengthRatio"].read(eqLengthRatio);
+    eqLengthRatio = 1.5;
     document["cellModel"]["kRep"].read(k_rep);
     document["cellModel"]["kElastic"].read(k_elastic);
     document["cellModel"]["kBend"].read(k_bend);
@@ -82,9 +83,16 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
     // Read lx, ly, lz --or nx, ny, nz
-    lx = 20 * radius;
-    ly = 20 * radius;
-    lz = 20 * radius;
+    T nx, ny, nz;
+    try {
+        document["domain"]["lx"].read(lx);
+        nx = 20;
+    } catch(const plb::PlbIOException & message) {
+        document["domain"]["nx"].read(nx);
+    }
+    lx = nx * radius;
+    ly = nx * radius;
+    lz = nx * radius;
 
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
@@ -107,13 +115,12 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     tmax = 0.05/dt; // 0.05 seconds.
     tmeas = ceil(tmeas * 9.803921568235293e-08/dt);
 
-    if (minNumOfTriangles <= 42) { shape = 0; minNumOfTriangles = 80; } // Min Number of Vertices
-    else if (minNumOfTriangles <= 66) { shape = 5; minNumOfTriangles = 128; }
-    else if (minNumOfTriangles <= 162) { shape = 0; minNumOfTriangles = 320; }
-    else if (minNumOfTriangles <= 258) { shape = 5; minNumOfTriangles = 512; }
-    else if (minNumOfTriangles <= 642) { shape = 0; minNumOfTriangles = 1280; }
-    else if (minNumOfTriangles <= 1026) { shape = 5; minNumOfTriangles = 2048; }
-    else if (minNumOfTriangles <= 2562) { shape = 0; minNumOfTriangles = 5120; }
+    if (minNumOfTriangles <= 66) { shape = 5; minNumOfTriangles = 100; }
+    else if (minNumOfTriangles <= 162) { shape = 0; minNumOfTriangles = 100; }
+    else if (minNumOfTriangles <= 258) { shape = 5; minNumOfTriangles = 400; }
+    else if (minNumOfTriangles <= 642) { shape = 0; minNumOfTriangles = 400; }
+    else if (minNumOfTriangles <= 1026) { shape = 5; minNumOfTriangles = 800; }
+    else if (minNumOfTriangles <= 2562) { shape = 0; minNumOfTriangles = 2000; }
 }
 
 
@@ -241,10 +248,16 @@ int main(int argc, char* argv[])
 
 
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
+    ElementsOfTriangularSurfaceMesh<T> emptyEoTSM;
+    TriangularSurfaceMesh<T> * mesh = copyTriangularSurfaceMesh(meshElement, emptyEoTSM);
+    std::map<plint, TriangularSurfaceMesh<T>* > meshes;
+    mesh->translate(Array<T,3>(nx*0.5, ny*0.5, nz*0.5));
+    meshes[0] = mesh;
+
     ConstitutiveModel<T,DESCRIPTOR> *cellModel;
     T persistenceLengthFine = 7.5e-9 ; // In meters
     cellModel = new RestModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-            persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
+            persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement, meshes);
 
 
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, ibmKernel, "RBC");
@@ -263,7 +276,7 @@ int main(int argc, char* argv[])
         checkpointer.save(lattice, cellFields, initIter);
     }
 
-    (dynamic_cast<RestModel3D<T,DESCRIPTOR>*>(cellModel))->freezeVertices(RBCField);
+
 
     plint nCells = RBCField.getNumberOfCells_Global();
     pcout << std::endl ;
@@ -319,18 +332,21 @@ int main(int argc, char* argv[])
 //                exit(0);
 //            }
             if ((iter+1)%(20*tmeas)==0) {
-                global::timer("HDFOutput").start();
-                writeHDF5(lattice, parameters, iter+1);
-                writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
-                global::timer("HDFOutput").stop();
                 global::timer("Checkpoint").start();
                 checkpointer.save(lattice, cellFields, iter+1);
                 global::timer("Checkpoint").stop();
             }
+            if ((iter+1)%(70*tmeas)==0) {
+                global::timer("HDFOutput").start();
+                writeHDF5(lattice, parameters, iter+1);
+                writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
+                global::timer("HDFOutput").stop();
+            }
+
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
-            pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
+            pcout << "(main) Iteration:" << iter + 1 << " (" << iter*100.0/tmax << "%); time "<< dtIteration*1.0/tmeas ;
             if (RBCField.has_cellId(0) > 0) {
                 pcout << "; dr (LU) " << RBCField[0]->getForce()[0] / ( - 6 * 3.14159 * 1.0 * parameters.getLatticeNu() * wallVelocity) - radius << ", ";
                 pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";

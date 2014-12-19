@@ -15,7 +15,8 @@ RestModel3D<T, Descriptor>::RestModel3D(RestModel3D<T,Descriptor> const& rhs) :
         persistenceLengthCoarse(rhs.persistenceLengthCoarse),
         eqLengthRatio(rhs.eqLengthRatio), dx(rhs.dx), dt(rhs.dt), dm(rhs.dm),
         cellNumTriangles(rhs.cellNumTriangles), cellNumVertices(rhs.cellNumVertices),
-        cellRadiusLU(rhs.cellRadiusLU), maxLength(rhs.maxLength), syncRequirements(rhs.syncRequirements)
+        cellRadiusLU(rhs.cellRadiusLU), maxLength(rhs.maxLength), syncRequirements(rhs.syncRequirements),
+        meshes(rhs.meshes)
     { 	pcout << "RestModel3D<T, Descriptor>::copy" << std::endl; }
 
 
@@ -25,7 +26,8 @@ RestModel3D<T, Descriptor>::RestModel3D(T density_, T k_rest_,
             T k_volume_, T k_surface_, T eta_m_,
             T persistenceLengthFine_, T eqLengthRatio_,
             T dx_, T dt_, T dm_, 
-            TriangularSurfaceMesh<T> const& meshElement)
+            TriangularSurfaceMesh<T> const& meshElement,
+            std::map<plint, TriangularSurfaceMesh<T>* > & meshes_)
     : ConstitutiveModel<T,Descriptor>(density_),
       meshmetric(meshElement),
       k_rest(k_rest_),
@@ -39,7 +41,8 @@ RestModel3D<T, Descriptor>::RestModel3D(T density_, T k_rest_,
       eqLengthRatio(eqLengthRatio_),
       dx(dx_), dt(dt_), dm(dm_),
       persistenceLengthFine(persistenceLengthFine_),
-      syncRequirements()
+      syncRequirements(),
+      meshes(meshes_)
 {
     T dNewton = (dm*dx/(dt*dt)) ;
     T kBT = kBT_p / ( dm * dx*dx/(dt*dt) );
@@ -150,7 +153,7 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
     	iVertex = vertices[iV];
         ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
     	plint cellId = iParticle->get_cellId();
-		Array<T,3> dr = cell->getVertex(iVertex) - frozenVertices[cellId][iVertex];
+		Array<T,3> dr = cell->getVertex(iVertex) - meshes[cellId]->getVertex(iVertex);
 		iParticle->get_force() += (-k_rest*dr) + (-gamma_T*iParticle->get_v()); // Dissipative term from Dupin2007
 
     }

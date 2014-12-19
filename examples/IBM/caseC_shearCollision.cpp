@@ -83,9 +83,17 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
     // Read lx, ly, lz --or nx, ny, nz
-    lx = 20 * radius;
-    ly = 20 * radius;
-    lz = 20 * radius;
+    T nx, ny, nz;
+    try {
+        document["domain"]["lx"].read(lx);
+        nx = 20;
+    } catch(const plb::PlbIOException & message) {
+        document["domain"]["nx"].read(nx);
+    }
+    lx = nx * radius;
+    ly = nx * radius;
+    lz = nx * radius;
+
 
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
@@ -111,14 +119,12 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     tmax = 0.05/dt; // 0.05 seconds.
     tmeas = ceil(tmeas * 9.803921568235293e-08/dt);
 
-
-    if (minNumOfTriangles <= 42) { shape = 0; minNumOfTriangles = 80; } // Min Number of Vertices
-    else if (minNumOfTriangles <= 66) { shape = 5; minNumOfTriangles = 128; }
-    else if (minNumOfTriangles <= 162) { shape = 0; minNumOfTriangles = 320; }
-    else if (minNumOfTriangles <= 258) { shape = 5; minNumOfTriangles = 512; }
-    else if (minNumOfTriangles <= 642) { shape = 0; minNumOfTriangles = 1280; }
-    else if (minNumOfTriangles <= 1026) { shape = 5; minNumOfTriangles = 2048; }
-    else if (minNumOfTriangles <= 2562) { shape = 0; minNumOfTriangles = 5120; }
+    if (minNumOfTriangles <= 66) { shape = 5; minNumOfTriangles = 100; }
+    else if (minNumOfTriangles <= 162) { shape = 0; minNumOfTriangles = 100; }
+    else if (minNumOfTriangles <= 258) { shape = 5; minNumOfTriangles = 400; }
+    else if (minNumOfTriangles <= 642) { shape = 0; minNumOfTriangles = 400; }
+    else if (minNumOfTriangles <= 1026) { shape = 5; minNumOfTriangles = 800; }
+    else if (minNumOfTriangles <= 2562) { shape = 0; minNumOfTriangles = 2000; }
 }
 
 
@@ -227,9 +233,8 @@ int main(int argc, char* argv[])
     forceIds[1] = lattice.internalStatSubscription().subscribeSum();
     forceIds[2] = lattice.internalStatSubscription().subscribeSum();
 
-    pcout << "(main) Using iniLatticeSquareCouetteMeasureStress. " << std::endl;
     plint nMomentumExchangeCells=0;
-    pcout << "(main) Using iniLatticeSquareCouette. "<< flowType << std::endl;
+    pcout << "(main) Using iniLatticeSquareCouette, "<< flowType  << ", yd=" << shearRate_p << std::endl;
     iniLatticeSquareCouette<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate);
 
     util::ValueTracer<T> nu_app_ConvergeX(1, 20, 1.0e-4);
@@ -283,12 +288,7 @@ int main(int argc, char* argv[])
 
 //    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
 //                                                        createBoundaryParticleField3D(lattice);
-
     /* Repulsive force */
-    T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
-    PowerLawForce<T> PLF(k_int, DeltaX, R, k);
-
-
     /*            I/O              */
     global::timer("HDFOutput").start();
     writeHDF5(lattice, parameters, 0);
@@ -303,6 +303,7 @@ int main(int argc, char* argv[])
 //#ifdef PLB_DEBUG // Palabos has this bug. It's missing the "envelope-update" is the profiler.
     if (flowType==2) { global::profiler().turnOff(); }
 //#endif
+
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
@@ -322,16 +323,16 @@ int main(int argc, char* argv[])
         if ((iter+1)%tmeas==0) {
             SyncRequirements everyCCR(allReductions);
             RBCField.synchronizeCellQuantities(everyCCR);
-            if ((iter+1)%(4*tmeas)==0) {
+            if ((iter+1)%(20*tmeas)==0) {
+                global::timer("Checkpoint").start();
+                checkpointer.save(lattice, cellFields, iter+1);
+                global::timer("Checkpoint").stop();
+            }
+            if ((iter+1)%(50*tmeas)==0) {
                 global::timer("HDFOutput").start();
                 writeHDF5(lattice, parameters, iter+1);
                 writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
                 global::timer("HDFOutput").stop();
-            }
-            if ((iter+1)%(8*tmeas)==0) {
-                global::timer("Checkpoint").start();
-                checkpointer.save(lattice, cellFields, iter+1);
-                global::timer("Checkpoint").stop();
             }
             writeCell3D_HDF5(RBCField, dx, dt, iter+1);
             T dtIteration = global::timer("mainLoop").stop();
@@ -377,6 +378,11 @@ int main(int argc, char* argv[])
             pcout << std::endl;
         } else {
             RBCField.synchronizeCellQuantities();
+        }
+        if (RBCField.count(1) > 0)  {
+            pcout << "Volume = " << RBCField[0]->getVolume() * 1.0
+                    << ", Surface = " << RBCField[0]->getSurface() * 1.0
+                    << std::endl;
         }
     }
     simpleProfiler.writeIteration(tmax+1);
