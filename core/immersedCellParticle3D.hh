@@ -22,6 +22,9 @@
 #define IMMERSED_WALL_PARTICLE_3D_HH
 
 #include "immersedCellParticle3D.h"
+#include <limits>       // std::numeric_limits
+
+
 
 namespace plb {
 
@@ -31,7 +34,8 @@ namespace plb {
 template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D(ImmersedCellParticle3D<T,Descriptor> const& rhs)
     : Particle3D<T,Descriptor>(rhs.getTag(), rhs.getPosition()), v(rhs.v), pbcPosition(rhs.pbcPosition), a(rhs.a),
-      force(rhs.force), vPrevious(rhs.vPrevious), processor(rhs.processor), cellId(rhs.cellId), vertexId(rhs.vertexId)
+      force(rhs.force), vPrevious(rhs.vPrevious), processor(rhs.processor), cellId(rhs.cellId), vertexId(rhs.vertexId),
+      scheme(rhs.scheme)
 {
 }
 
@@ -51,7 +55,8 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()),
       E_repulsive(T()),
 #endif
-      processor(getMpiProcessor()), cellId(this->getTag()), vertexId(0)
+      processor(getMpiProcessor()), cellId(this->getTag()), vertexId(0),
+      scheme(0)
 { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -69,14 +74,14 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (Array<T,3> const& 
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
 #endif
-      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_)
+      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_), scheme(0)
 { }
 
 template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
         Array<T,3> const& position,
         Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
-        Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_, plint cellId_, plint vertexId_)
+        Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_, plint cellId_, plint vertexId_, plint scheme_)
     : Particle3D<T,Descriptor>(cellId_, position),
       v(v_),
       pbcPosition(pbcPosition_),
@@ -90,26 +95,29 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
 #endif
-      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_)
+      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_), scheme(scheme_)
 { }
 
 
 template<typename T, template<typename U> class Descriptor>
 void ImmersedCellParticle3D<T,Descriptor>::advance() {
-// No fluid interaction
-//    v += force;
-//    this->getPosition() += v + 0.5*force;
-// Velocity Verlet
-//    pbcPosition = v + (T)0.5*force;
-//    this->getPosition() += pbcPosition;
-// Adams-Bashforth update scheme
-//    this->getPosition() += 1.5*v - 0.5*vPrevious;
-//    vPrevious = v;
-// Euler update scheme
-    this->getPosition() += vPrevious;
-    pbcPosition += vPrevious;
-    vPrevious.resetToZero();
-    processor = this->getMpiProcessor();
+    if (v[0] != std::numeric_limits<T>::max()) { // This is a draft solution to a known palabos bug that might update positions twice.
+        Array<T,3> dx;
+        if (scheme==0) { // Euler update scheme
+            dx = v;
+        } else if (scheme==1) { // Adams-Bashforth update scheme
+            dx = 1.5*v - 0.5*vPrevious;
+        } else if (scheme==2) { // Velocity Verlet
+            dx = v + (T)0.5*force;
+        }
+        vPrevious = v;
+        v[0] = std::numeric_limits<T>::max();     //    v.resetToZero();
+        this->getPosition() += dx;
+        pbcPosition += dx;
+        processor = this->getMpiProcessor();
+    } else {
+//        pcout << "Double update, vertex id: " << vertexId << std::endl;
+    }
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -194,6 +202,7 @@ void ImmersedCellParticle3D<T,Descriptor>::serialize(HierarchicSerializer& seria
     serializer.addValue<plint>(processor);
     serializer.addValue<plint>(cellId);
     serializer.addValue<plint>(vertexId);
+    serializer.addValue<plint>(scheme);
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -208,6 +217,7 @@ void ImmersedCellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& u
     unserializer.readValue<plint>(processor);
     unserializer.readValue<plint>(cellId);
     unserializer.readValue<plint>(vertexId);
+    unserializer.readValue<plint>(scheme);
 }
 
 
@@ -223,18 +233,18 @@ bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,
         vector = get_pbcPosition();
         return true;
     } else if (whichVector==1) {
-        vector = get_v();
-        return true;
-    } else if (whichVector==2) {
-        vector = get_a();
-        return true;
-    } else if (whichVector==3) {
-        vector = get_force();
-        return true;
-    } else if (whichVector==4) {
         vector = get_vPrevious();
         return true;
+    } else if (whichVector==2) {
+        vector = get_force();
+        return true;
 #ifdef PLB_DEBUG // Less Calculations
+    } else if (whichVector==3) {
+        vector = get_a();
+        return true;
+    } else if (whichVector==4) {
+        vector = get_v();
+        return true;
     } else if (whichVector==5) {
         vector = get_f_wlc();
         return true;
@@ -271,12 +281,12 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getVectorName(plint whichVecto
     } else if (whichVector==1) {
         return "velocity";
     } else if (whichVector==2) {
-        return "acceleration";
-    } else if (whichVector==3) {
         return "force";
-    } else if (whichVector==4) {
-        return "vPrevious";
 #ifdef PLB_DEBUG // Less Calculations
+    } else if (whichVector==3) {
+        return "acceleration";
+    } else if (whichVector==4) {
+        return "v";
     } else if (whichVector==5) {
         return "f_wlc";
     } else if (whichVector==6) {
@@ -303,7 +313,7 @@ plint ImmersedCellParticle3D<T,Descriptor>::getVectorsNumber() const {
 #ifdef PLB_DEBUG // Less Calculations
         return 13;
 #else
-        return 5;
+        return 3;
 #endif
 }
 

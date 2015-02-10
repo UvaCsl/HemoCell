@@ -92,7 +92,7 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         std::vector<T>  & weights = particle->getIBMweights();
         if (cellPos.size() == 0) {
             interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
-            curateInterpolationCoefficients (fluid, cellPos, weights); // TODO: Check validity of curateInterpolationCoefficients
+//            curateInterpolationCoefficients (fluid, cellPos, weights); // TODO: Check validity of curateInterpolationCoefficients
         }
         particle->get_v().resetToZero();
         for (pluint iCell=0; iCell < weights.size(); ++iCell) {
@@ -102,7 +102,6 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
             fluid.get(cellPosition.x, cellPosition.y, cellPosition.z).computeVelocity(velocity);
             particle->get_v() += weights[iCell] * velocity;
         }
-        particle->get_vPrevious() = particle->get_v();
     }
 }
 
@@ -166,7 +165,7 @@ void ViscousPositionUpdate3D<T,Descriptor>::processGenericBlocks (
                                               << particle->get_force()[1] << " "
                                               << particle->get_force()[2] << std::endl;
 
-        particle->get_vPrevious() = particle->get_v() = ratio * 0.5 * particle->get_force() * dt * dt;
+        particle->get_v() = ratio * 0.5 * particle->get_force() * dt * dt;
     }
 }
 
@@ -225,7 +224,7 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
         std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
         std::vector<T> & weights = particle->getIBMweights();
         interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
-        curateInterpolationCoefficients (fluid, cellPos, weights); // TODO: Check validity of curateInterpolationCoefficients
+//        curateInterpolationCoefficients (fluid, cellPos, weights); // TODO: Check validity of curateInterpolationCoefficients
         Array<T,3> elasticForce = particle->get_force();
         // pcout << "elastic force: (" << elasticForce[0] << ", "<< elasticForce[1] << ", "<< elasticForce[2] << ")\n";
         for (pluint iCell = 0; iCell < weights.size(); ++iCell) {

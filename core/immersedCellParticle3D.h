@@ -34,12 +34,17 @@ public:
     ~ImmersedCellParticle3D() {
 //        std::cout <<" ~ImmersedCellParticle3D() " << global::mpi().getRank() << " vertexId " << this->getVertexId() << std::endl;
     };
+    /* scheme:
+     *  0: Euler
+     *  1: Adams-Bashforth
+     *  2: Velocity Verlet
+     */
     ImmersedCellParticle3D(ImmersedCellParticle3D<T,Descriptor> const& rhs);
     ImmersedCellParticle3D(Array<T,3> const& position, plint cellId_ = -1, plint vertexId_ = 0);
     ImmersedCellParticle3D(Array<T,3> const& position,
                           Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
                             Array<T,3> const& a_, Array<T,3> const& force_, Array<T,3> const& vPrevious_,
-                            plint cellId_ = -1, plint vertexId_=0);
+                            plint cellId_ = -1, plint vertexId_=0, plint scheme_=0);
     virtual ImmersedCellParticle3D<T,Descriptor>* clone() const;
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
     virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
@@ -95,6 +100,10 @@ public:
 private:
     std::vector<Dot3D> cellPos;
     std::vector<T> weights;
+private:
+    plint scheme;
+public:
+    plint & get_scheme() { return scheme; }
 public:
 #ifdef PLB_DEBUG // Less Calculations
 

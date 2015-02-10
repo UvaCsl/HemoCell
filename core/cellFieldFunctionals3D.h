@@ -17,6 +17,34 @@ using namespace plb;
 
 
 template<typename T, template<typename U> class Descriptor>
+class ChangeParticleUpdateScheme : public BoxProcessingFunctional3D
+{
+public:
+    ChangeParticleUpdateScheme (plint scheme_) : scheme(scheme_) { } ;
+    ~ChangeParticleUpdateScheme() { };
+    ChangeParticleUpdateScheme(ChangeParticleUpdateScheme<T,Descriptor> const& rhs) :
+        scheme(rhs.scheme) { } ;
+    /// Arguments: [0] Particle-field
+    virtual ChangeParticleUpdateScheme<T,Descriptor>* clone() const { return new ChangeParticleUpdateScheme<T,Descriptor>(*this); };
+    virtual BlockDomain::DomainT appliesTo() const { return BlockDomain::bulkAndEnvelope; } ;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const { modified[0] = modif::allVariables; } ;
+    void getModificationPattern(std::vector<bool>& isWritten) const { isWritten[0] = true; };
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+        PLB_PRECONDITION( blocks.size()==1 );
+        ParticleField3D<T,Descriptor>& particleField =
+            *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+        std::vector<Particle3D<T,Descriptor>*> particles;
+        particleField.findParticles(domain, particles); // Gets particle only from the bulk
+        for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
+            castParticleToICP3D(particles[iParticle])->get_scheme() = scheme;
+        }
+    };
+private:
+    plint scheme;
+};
+
+
+template<typename T, template<typename U> class Descriptor>
 class ForceToFluid3D : public BoxProcessingFunctional3D
 {
 public:
