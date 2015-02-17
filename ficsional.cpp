@@ -27,7 +27,7 @@ typedef Array<T,3> Velocity;
 void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
-        plint & forceToFluid, plint & ibmScheme, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
+        plint & forceToFluid, plint & ibmKernel, plint & ibmScheme, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
         plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed)
     {
     T nu_p, tau, dx;
@@ -292,8 +292,13 @@ int main(int argc, char* argv[])
        cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
             persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
     } else  if (rbcModel == 3) {
+        ElementsOfTriangularSurfaceMesh<T> emptyEoTSM;
+        TriangularSurfaceMesh<T> * mesh = copyTriangularSurfaceMesh(meshElement, emptyEoTSM);
+        std::map<plint, TriangularSurfaceMesh<T>* > meshes;
+        mesh->translate(Array<T,3>(nx*0.5, ny*0.5, nz*0.5));
+        meshes[0] = mesh;
         cellModel = new RestModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-                persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
+                persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement, meshes);
     } else  { // if (rbcModel == 1) {
     	k_rest= 0;
        cellModel = new CellModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
@@ -322,11 +327,11 @@ int main(int argc, char* argv[])
         else { RBCField.initialize(cellsOrigin); }
         checkpointer.save(lattice, cellFields, initIter);
     }
-
-    if (rbcModel == 3) {
-        // Has a problem with checkpointing
-    	(dynamic_cast<RestModel3D<T,DESCRIPTOR>*>(cellModel))->freezeVertices(RBCField);
-    }
+    RBCField.setParticleUpdateScheme(ibmScheme);
+//    if (rbcModel == 3) {
+//        // Has a problem with checkpointing
+//    	(dynamic_cast<RestModel3D<T,DESCRIPTOR>*>(cellModel))->freezeVertices(RBCField);
+//    }
 
     plint nCells = RBCField.getNumberOfCells_Global();
     pcout << std::endl ;
