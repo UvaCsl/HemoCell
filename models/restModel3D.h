@@ -88,6 +88,8 @@ private:
     T persistenceLengthCoarse, eqLengthRatio;
     T dx, dt, dm;
     T persistenceLengthFine;
+    vector<T> eqAreaPerTriangle;
+    map<plint,T> eqLengthPerEdge, eqAnglePerEdge;
     pluint cellNumTriangles, cellNumVertices;
     plint cellRadiusLU, maxLength;
     SyncRequirements syncRequirements;
@@ -167,6 +169,16 @@ public:
     virtual void setEquilibriumVolume(T value) { eqVolume = value; }
     virtual void setEquilibriumSurface(T value) { eqSurface = value; }
     virtual void setEquilibriumTileSpan(T value) { eqTileSpan = value; }
+    plint getEdgeId(plint iVertex, plint jVertex) {
+        iVertex = iVertex % cellNumVertices;
+        jVertex = jVertex % cellNumVertices;
+        if (iVertex > jVertex){
+            return (iVertex*(iVertex - 1))/2 + jVertex;
+        } else if (iVertex < jVertex) {
+            return (jVertex*(jVertex - 1))/2 + iVertex;
+        }
+        return -1;
+    };
     /* State parameters */
 //    T& getMaximumLinkLength() { return maxLength; }
 //    void setMaximumLinkLength(T value) { maxLength = value; }

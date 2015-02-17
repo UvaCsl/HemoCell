@@ -2,6 +2,7 @@
 #define REST_MODEL_3D_HH
 
 #include "restModel3D.h"
+#include "shapeMemoryModel3D.h"
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -51,44 +52,51 @@ RestModel3D<T, Descriptor>::RestModel3D(T density_, T k_rest_,
     k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
     eta_m /= dNewton*dt/dx;     k_stretch /= dNewton;    k_rest /= dNewton/dx;
 
-    T x0 = eqLengthRatio;
+
     syncRequirements.insert(volumeAndSurfaceReductions);
 
     cellNumVertices = meshmetric.getNumVertices();
     cellNumTriangles = meshmetric.getNumTriangles();
-    cellRadiusLU = meshmetric.getRadius();
     eqLength = meshmetric.getMeanLength();
     maxLength = meshmetric.getMaxLength()*eqLengthRatio;
-    eqArea = meshmetric.getMeanArea();
+    T eqMeanArea = eqArea = meshmetric.getMeanArea();
 //    eqAngle = meshmetric.getMeanAngle();
     eqVolume = meshmetric.getVolume();
     eqSurface = meshmetric.getSurface();
     eqTileSpan = 0.0;
 
+    getCellShapeQuantitiesFromMesh(meshElement, eqAreaPerTriangle, eqLengthPerEdge, eqAnglePerEdge, cellNumTriangles, cellNumVertices);
+
     persistenceLengthCoarse = persistenceLengthFine/dx * sqrt( (cellNumVertices-2.0) / (23867-2.0)) ;
-    /* Use dimensionless coefficients */
+
+    eqAngle=0.0;
+
+    typename map<plint,T>::reverse_iterator iter = eqAnglePerEdge.rbegin();
+    for (iter = eqAnglePerEdge.rbegin(); iter != eqAnglePerEdge.rend(); ++iter) {
+       eqAngle += iter->second;
+    }
+    eqAngle /= eqAnglePerEdge.size();
+
+
+    /* Calculate cell Radius */
+    cellRadiusLU = meshmetric.getRadius();
+
+    /* Use Mean eqLength for stiffness coefficients of:
+     *  Volume, Surface and Shear.
+     *  Shear also uses mean eqArea in the calculation.
+     *  */
     k_volume *= kBT/pow(eqLength,3);
     k_surface *= kBT/pow(eqLength,2);
     k_shear *= kBT/pow(eqLength,2);
     k_bend *= kBT;
+    /* In plane coefficient initialization */
     k_inPlane = k_WLC_ * kBT /(4.0*persistenceLengthCoarse);
-    // Calculating eqAngle and eqLength according to FedosovCaswellKarniadakis2010
-    eqAngle = acos( (sqrt(3.)*(cellNumVertices-2.0) - 5*pi)/(sqrt(3.)*(cellNumVertices-2.0) - 3*pi) );
-//    eqLength = sqrt( 2.0*eqArea*1.0/sqrt(3) );
+
     /* Dissipative term coefficients from FedosovCaswellKarniadakis2010 */
     gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
     gamma_C = (gamma_T/3.0);
-    /* The units on the paper are wrong, should have been fixed on config.xml */
-    // gamma_T *= eqLength;
-    // gamma_C *= eqLength;
 
-    T k_WLC = k_WLC_ * kBT * maxLength/(4.0*persistenceLengthCoarse);
-    /* Solving f_WLC + f_rep =0 for x=eqLength, f_rep = k_rep/L^m, m=2. */
-    T k_rep = (k_WLC*maxLength*pow(x0,3)*(6 - 9*x0 + 4*pow(x0,2)))/pow(-1 + x0,2);
-
-    Array<T,3> x1(0.,0.,0.), x3(0.,0.,0.);
-    x3[0] = eqLength;
-    T forceSum = norm(computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane));
+    T forceSum = 0; // norm(computeInPlaneExplicitForce(x1, x3, eqLengthRatio, eqLength, k_inPlane));
 //    C_elastic = k_elastic * 3.0 * sqrt(3.0)* kBT
 //             * (maxLength*maxLength*maxLength) * (x0*x0*x0*x0)
 //             / (64.0*persistenceLengthCoarse)
@@ -97,13 +105,13 @@ RestModel3D<T, Descriptor>::RestModel3D(T density_, T k_rest_,
 #ifdef PLB_DEBUG // Less Calculations
     pcout << std::endl;
     pcout << " ============================================= " << std::endl;
-    pcout << "k_WLC: " << k_WLC << ",\t eqLength: " << eqLength << std::endl;
-    pcout << "k_rep: " << k_rep << ",\t forceSum: " << forceSum << std::endl;
+    pcout << "eqLength: " << eqLength << std::endl;
+    pcout << "forceSum: " << forceSum << std::endl;
     pcout << "k_bend: " << k_bend << ",\t eqAngle (degrees): " << eqAngle*180.0/pi << std::endl;
     pcout << "k_volume: " << k_volume << ",\t eqVolume: " << eqVolume << std::endl;
     pcout << "k_surface: " << k_surface << ",\t eqSurface: " << eqSurface << std::endl;
     pcout << "k_shear: " << k_shear << ",\t eqArea: " << eqArea << std::endl;
-    pcout << "eta_m: " << eta_m << ",\t x0: " << x0 << std::endl;
+    pcout << "eta_m: " << eta_m << " ";
     pcout << "gamma_T: " << gamma_T << ",\t persistenceLengthCoarse: " << persistenceLengthCoarse << std::endl;
     pcout << "gamma_C: " << gamma_C << ",\t maxLength: " << maxLength << std::endl;
     pcout << "k_rest: " << k_rest << ",\t 0 : " << 0 << std::endl;
@@ -148,16 +156,17 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
     }
     plint iTriangle;
     plint iVertex, jVertex, kVertex=-1, lVertex=-1;
-
+//    T maxDr = 0;
     for (pluint iV = 0; iV < vertices.size(); ++iV) {
     	iVertex = vertices[iV];
         ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
     	plint cellId = iParticle->get_cellId();
 		Array<T,3> dr = cell->getVertex(iVertex) - meshes[cellId]->getVertex(iVertex);
-		iParticle->get_force() += (-k_rest*dr) + (-gamma_T*iParticle->get_v()); // Dissipative term from Dupin2007
-
+		iParticle->get_force() += (-k_rest*dr); // Dissipative term from Dupin2007
+//		maxDr = norm(dr)>maxDr?norm(dr):maxDr;
     }
-
+//    pcout << "maxDr " << maxDr << std::endl;
+//    return;
 
     /* Run through all the edges and calculate:
          x In plane (WLC and repulsive) force
@@ -169,6 +178,7 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
     T potential;
     for (pluint iE = 0; iE < edges.size(); ++iE) {
         iVertex = edges[iE][0];  jVertex = edges[iE][1];
+        plint edgeId = getEdgeId(iVertex, jVertex);
         Array<T,3> const& iX = cell->getVertex(iVertex);
         Array<T,3> const& jX = cell->getVertex(jVertex);
         ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
@@ -176,7 +186,7 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
           /* ------------------------------------*/
          /* In Plane forces (WLC and repulsive) */
         /* ------------------------------------*/
-        force1 = computeInPlaneExplicitForce(iX, jX, eqLengthRatio, eqLength, k_inPlane, potential);
+        force1 = computeInPlaneExplicitForce(iX, jX, eqLengthRatio, eqLengthPerEdge[edgeId], k_inPlane, potential);
         iParticle->get_force() += force1;
         jParticle->get_force() -= force1;
 #ifdef PLB_DEBUG // Less Calculations
@@ -207,39 +217,40 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
          /*    Bending Forces Calculations      */
         /* ------------------------------------*/
         bool angleFound;
+
         T edgeAngle = cell->computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
         if (angleFound) {
             Array<T,3> iNormal = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
             Array<T,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
             T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
             T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
-
             ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
             ImmersedCellParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
             Array<T,3> const& kX = cell->getVertex(kVertex);
             Array<T,3> const& lX = cell->getVertex(lVertex);
 
             /*== Compute bending force for the vertex as part of the main edge ==*/
-//            force1 = computeBendingForceEdge (edgeAngle, eqAngle, k_bend, iNormal, jNormal);
-
             Array<T,3> fi, fk, fj, fl;
-            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqArea, eqLength, eqAngle, k_bend, fk, fj, fl);
+            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fk, fj, fl);
 
             iParticle->get_force() += fi;
             jParticle->get_force() += fj;
             kParticle->get_force() += fk;
             lParticle->get_force() += fl;
+
 #ifdef PLB_DEBUG // Less Calculations
             iParticle->get_f_bending() += fi;
             jParticle->get_f_bending() += fj;
             kParticle->get_f_bending() += fk;
             lParticle->get_f_bending() += fl;
-            potential = computeBendingPotential (edgeAngle, eqAngle, k_bend);
+            potential = computeBendingPotential (edgeAngle, eqAnglePerEdge[edgeId], k_bend);
             iParticle->get_E_bending() += potential;
             jParticle->get_E_bending() += potential;
             kParticle->get_E_bending() += potential;
             lParticle->get_E_bending() += potential;
-#endif  // Less Calculations
+#endif
+        } else {
+            cout << global::mpi().getRank() << " angle not found " << std::endl;
         }
     }
 
@@ -271,6 +282,7 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
     std::map<plint, Array<T,3> > trianglesNormal;
     T triangleArea;
     Array<T,3> triangleNormal;
+
     for (pluint iT = 0; iT < triangles.size(); ++iT) {
         iTriangle = triangles[iT];
         triangleNormal = cell->computeTriangleNormal(iTriangle);
@@ -292,6 +304,7 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         iParticle->get_force() += force1;
         jParticle->get_force() += force2;
         kParticle->get_force() += force3;
+
 #ifdef PLB_DEBUG // Less Calculations
         iParticle->get_f_surface() += force1;
         jParticle->get_f_surface() += force2;
@@ -302,21 +315,23 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         kParticle->get_E_area() += potential;
 #endif
         /* Local area conservation forces */
-        force1 = computeLocalAreaConservationForce(dAdx1, triangleArea, eqArea, areaCoefficient);
-        force2 = computeLocalAreaConservationForce(dAdx2, triangleArea, eqArea, areaCoefficient);
-        force3 = computeLocalAreaConservationForce(dAdx3, triangleArea, eqArea, areaCoefficient);
+        force1 = computeLocalAreaConservationForce(dAdx1, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
+        force2 = computeLocalAreaConservationForce(dAdx2, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
+        force3 = computeLocalAreaConservationForce(dAdx3, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
         iParticle->get_force() += force1;
         jParticle->get_force() += force2;
         kParticle->get_force() += force3;
+
 #ifdef PLB_DEBUG // Less Calculations
         iParticle->get_f_shear() += force1;
         jParticle->get_f_shear() += force2;
         kParticle->get_f_shear() += force3;
-        potential = 0.5*areaCoefficient*pow(eqArea - triangleArea, 2)/3.0; // 3 vertices on each triangle
+        potential = 0.5*areaCoefficient*pow(eqAreaPerTriangle[iTriangle] - triangleArea, 2)/3.0; // 3 vertices on each triangle
         iParticle->get_E_area() += potential;
         jParticle->get_E_area() += potential;
         kParticle->get_E_area() += potential;
 #endif
+
         /* Volume conservation forces */
         force1  = computeVolumeConservationForce(x1, x2, x3, volumeCoefficient);
         force2  = computeVolumeConservationForce(x2, x3, x1, volumeCoefficient);
@@ -324,6 +339,7 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         iParticle->get_force() += force1;
         jParticle->get_force() += force2;
         kParticle->get_force() += force3;
+
 #ifdef PLB_DEBUG // Less Calculations
         iParticle->get_f_volume() += force1;
         jParticle->get_f_volume() += force2;
@@ -333,6 +349,7 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         jParticle->get_E_volume() += potential;
         kParticle->get_E_volume() += potential;
 #endif
+
     }
 
 }
