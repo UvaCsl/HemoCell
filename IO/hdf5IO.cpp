@@ -64,7 +64,7 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
             ScalarField3D<T>& scalarF =
                     *dynamic_cast<ScalarField3D<T>*>(blocks[i]);
             int Np = Nx*Ny*Nz;
-            double * matrixScalar = new double [Np];
+            float * matrixScalar = new float [Np];
             int iter = 0;
             for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
                 for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
@@ -73,14 +73,14 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
                     }
                 }
             }
-            H5LTmake_dataset_double(file_id, hdf5ContainerNames[i].c_str(), 3, dim, matrixScalar);
+            H5LTmake_dataset_float(file_id, hdf5ContainerNames[i].c_str(), 3, dim, matrixScalar);
             delete [] matrixScalar;
 
         } else {
             TensorField3D<T,3>& tensorF =
                     *dynamic_cast<TensorField3D<T,3>*>(blocks[i]);
             int Np = Nx*Ny*Nz*3;
-            double * matrixTensor = new double [Np];
+            float * matrixTensor = new float [Np];
             int iter = 0;
             for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
                 for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
@@ -92,7 +92,7 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
                     }
                 }
             }
-            H5LTmake_dataset_double(file_id, hdf5ContainerNames[i].c_str(), 4, dim, matrixTensor);
+            H5LTmake_dataset_float(file_id, hdf5ContainerNames[i].c_str(), 4, dim, matrixTensor);
             delete [] matrixTensor;
         }
     }

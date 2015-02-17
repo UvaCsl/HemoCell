@@ -115,7 +115,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      if (numCells > 0 and particles.size() > 0) {
          ImmersedCellParticle3D<T,Descriptor> * icParticle = particles[0];
          plint vN = icParticle->getVectorsNumber();
-         double * matrixTensor = new double [3 * Np];
+         float * matrixTensor = new float [3 * Np];
 
          Array<T,3> vector;
          for (plint ivN = 0; ivN < vN; ++ivN) {
@@ -130,18 +130,20 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
                 matrixTensor[itr++] = vector[1];
                 matrixTensor[itr++] = vector[0];
              }
-             H5LTmake_dataset_double(file_id, icParticle->getVectorName(ivN).c_str(), 2, dimVertices, matrixTensor);
+             H5LTmake_dataset_float(file_id, icParticle->getVectorName(ivN).c_str(), 2, dimVertices, matrixTensor);
          }
          delete [] matrixTensor;
 
          /*  Take care of Scalars    */
          plint sN = icParticle->getScalarsNumber();
-         double * scalarTensor = new double [Np];
+         float * scalarTensor = new float [Np];
          for (plint isN = 0; isN < sN; ++isN) {
+             double scalarValue;
              for (plint iP = 0; iP < Np; ++iP) {
-                 particles[iP]->getScalar(isN, scalarTensor[iP]);
+                 particles[iP]->getScalar(isN, scalarValue);
+                 scalarTensor[iP] = scalarValue;
              }
-             H5LTmake_dataset_double(file_id, icParticle->getScalarName(isN).c_str(), 1, dimVertices, scalarTensor);
+             H5LTmake_dataset_float(file_id, icParticle->getScalarName(isN).c_str(), 1, dimVertices, scalarTensor);
          }
          delete [] scalarTensor;
      }
