@@ -199,7 +199,8 @@ public:
     Particle3D<T,Descriptor>* operator[](plint iVertex)    { return getParticle3D(iVertex); };
     Particle3D<T,Descriptor>* getParticle3D(plint iVertex) { return iVertexToParticle3D[iVertex]; }
 
-    Array<T,3> get_v(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_v(); }
+    // Using getVelocity instead of get_v, because it's only for reading.
+    Array<T,3> get_v(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->getVelocity(); }
 
     T get_Energy(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_Energy(); }
     Array<T,3>  get_force(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_force(); }

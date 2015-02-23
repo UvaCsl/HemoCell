@@ -70,6 +70,11 @@ public:
     Array<T,3> const& get_vPrevious() const { return vPrevious; }
     Array<T,3> const& get_a() const { return a; }
     Array<T,3> const& get_force() const { return force; }
+    // Difference between getVelocity and get_v:
+    // get_v holds the actual interpolated velocity, while
+    // getVelocity holds the velocity according to the
+    // update of the position particle "method advance()".
+    Array<T,3> getVelocity() { return vProgressed; }
     Array<T,3>& get_v() { return v; }
     Array<T,3>& get_pbcPosition() { return pbcPosition; }
     Array<T,3>& get_vPrevious() { return vPrevious; }
@@ -88,7 +93,7 @@ public:
 #endif
     	return plint(myrank); }
 private:
-    Array<T,3> v, pbcPosition, a, force, vPrevious;
+    Array<T,3> v, pbcPosition, a, force, vPrevious, vProgressed;
     static int id;
 private:
     plint processor;

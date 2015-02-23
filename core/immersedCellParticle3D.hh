@@ -102,18 +102,17 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
 template<typename T, template<typename U> class Descriptor>
 void ImmersedCellParticle3D<T,Descriptor>::advance() {
     if (v[0] != std::numeric_limits<T>::max()) { // This is a draft solution to a known palabos bug that might update positions twice.
-        Array<T,3> dx;
         if (scheme==0) { // Euler update scheme
-            dx = v;
+            vProgressed = v;
         } else if (scheme==1) { // Adams-Bashforth update scheme
-            dx = 1.5*v - 0.5*vPrevious;
+            vProgressed = 1.5*v - 0.5*vPrevious;
         } else if (scheme==2) { // Velocity Verlet
-            dx = v + (T)0.5*force;
+            vProgressed = v + (T)0.5*force;
         }
         vPrevious = v;
         v[0] = std::numeric_limits<T>::max();     //    v.resetToZero();
-        this->getPosition() += dx;
-        pbcPosition += dx;
+        this->getPosition() += vProgressed;
+        pbcPosition += vProgressed;
         processor = this->getMpiProcessor();
     } else {
 //        pcout << "Double update, vertex id: " << vertexId << std::endl;
@@ -134,6 +133,7 @@ void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_, Ar
 
         v = velocity_;
         vPrevious = velocity_;
+        vProgressed = velocity_;
 
         a.resetToZero();
         force.resetToZero();
@@ -233,7 +233,7 @@ bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,
         vector = get_pbcPosition();
         return true;
     } else if (whichVector==1) {
-        vector = get_vPrevious();
+        vector = vProgressed;
         return true;
     } else if (whichVector==2) {
         vector = get_force();

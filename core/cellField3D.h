@@ -41,7 +41,7 @@ public:
 	void setIBMKernel(plint ibmKernel_) { ibmKernel = ibmKernel_; }
 	void setIBMCoupling(bool coupleWithIBM_) { coupleWithIBM = coupleWithIBM_; }
 	void setParticleUpdateScheme (plint scheme) {
-	    pcout << "Setting IBM particle update scheme to.." << scheme << std::endl;
+	    pcout << "IBM kernerl set to " << ibmKernel << " and particle update scheme to " << scheme << std::endl;
 	    applyProcessingFunctional ( // advance particles in time according to velocity
 	        new ChangeParticleUpdateScheme<T,Descriptor>(scheme),
 	        immersedParticles->getBoundingBox(), particleArg );
