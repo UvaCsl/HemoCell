@@ -77,10 +77,11 @@ void ApplyForce3D<T,Descriptor>::processGenericBlocks (
         Array<T,3> const& force = forces[i];
         if (cellField.count(cellId) > 0) {
             Cell3D<T,Descriptor> * cell = cellField[cellId];
-            for (pluint iV = 0; iV < iiVertex.size(); ++iV) {
+            pluint nVertex = iiVertex.size();
+            for (pluint iV = 0; iV < nVertex; ++iV) {
                 plint iVertex = iiVertex[iV];
                 if (cell->isInBulk(iVertex)) {
-                    castParticleToICP3D( cell->getParticle3D(iVertex) )->get_force() += force;
+                    castParticleToICP3D( cell->getParticle3D(iVertex) )->get_force() += (force*1.0/(1.0*nVertex));
                 }
             }
         }

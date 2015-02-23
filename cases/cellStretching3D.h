@@ -39,7 +39,7 @@ public:
         TriangularSurfaceMesh<T> & mesh = cellField.getMesh();
         plint numVertices = mesh.getNumVertices();
         nparPerSide = ceil( percentage * numVertices );
-        forcePerSidePerVertex = force_ * 0.5 / nparPerSide;
+        forcePerSide = force_ * 0.5 ;
         std::vector<std::pair <plint,T> > iv2X, iv2Y, iv2Z;
         for (plint iV = 0; iV < numVertices; ++iV) {
             Array<T,3> vertex = mesh.getVertex(iV);
@@ -52,7 +52,7 @@ public:
         std::sort(iv2Z.begin(), iv2Z.end(), comparePair<T>);
 
         cellIds.push_back(0); cellIds.push_back(0); // Two cellIds. One for left and one for right
-        forces.push_back(Array<T,3>(-forcePerSidePerVertex, 0, 0) ); forces.push_back(Array<T,3>(forcePerSidePerVertex, 0, 0) ); // Two forces. One for left and one for right
+        forces.push_back(Array<T,3>(-forcePerSide, 0, 0) ); forces.push_back(Array<T,3>(forcePerSide, 0, 0) ); // Two forces. One for left and one for right
         xVertices.clear();         yVertices.clear();         zVertices.clear();
         xVertices.resize(2);         yVertices.resize(2);         zVertices.resize(2);
         for (plint i = 0; i < nparPerSide; ++i) {
@@ -86,10 +86,10 @@ public:
     void setCellIds(std::vector<plint> cellIds_) { cellIds = cellIds_; } ;
     void setVertices(std::vector<std::vector<plint> > iVertices_)  { xVertices = iVertices_;} ;
     void setForces(std::vector<Array<T,3> > forces_)  { forces = forces_; } ;
-    void setForce(T force_)  { forcePerSidePerVertex = force_/nparPerSide; } ;
+    void setForce(T force_)  { forcePerSide = force_; } ;
 private:
     CellField3D<T, Descriptor> & cellField;
-    T forcePerSidePerVertex;
+    T forcePerSide;
     plint nparPerSide;
     std::vector<plint> cellIds;
     std::vector<std::vector<plint> > xVertices, yVertices, zVertices;
