@@ -32,7 +32,12 @@ TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint 
         Array<T,3> const& eulerAngles, pluint initialSphereShape=0);
 
 template<typename T>
-TriangleBoundary3D<T> constructMeshElement(plint shape, T radius, plint cellNumTriangles, T dx, std::string& cellPath, Array<T,3> const& eulerAngles) {
+TriangleSet<T> constructEllipsoidFromSphere(Array<T,3> const& center, T radius, T aspectRatio, plint minNumOfTriangles,
+        Array<T,3> const& eulerAngles, pluint initialSphereShape);
+
+
+template<typename T>
+TriangleBoundary3D<T> constructMeshElement(plint shape, T radius, plint cellNumTriangles, T dx, std::string& cellPath, Array<T,3> const& eulerAngles, T aspectRatio=0.3) {
     Array<T,3> center(0.0, 0.0, 0.0);
     std::vector<TriangleSet<T> > allTriangles;
     TriangleSet<T> wholeTriangleSet;
@@ -48,6 +53,8 @@ TriangleBoundary3D<T> constructMeshElement(plint shape, T radius, plint cellNumT
         wholeTriangleSet.append(constructRBCFromSphere<T>(center, radius, cellNumTriangles, eulerAngles, 0));
     } else if (shape == 5) {
         wholeTriangleSet.append(constructSphere<T>(center, radius, cellNumTriangles));
+    } else if (shape == 6) {
+        wholeTriangleSet.append(constructEllipsoidFromSphere<T>(center, radius, aspectRatio, cellNumTriangles, eulerAngles, 0));
     }
     /* Unknown code, was there from the beginning, let it be */
     DEFscaledMesh<T> defMesh (wholeTriangleSet);

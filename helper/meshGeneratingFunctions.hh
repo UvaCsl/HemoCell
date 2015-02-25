@@ -144,6 +144,21 @@ Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R) {
 }
 
 template<typename T>
+Array<T,3> spherePointToEllipsoidPoint(const Array<T,3> point, T R, T aspectRatio) {
+    Array<T,3> elPoint(point);
+    T r2 = elPoint[0]*elPoint[0] + elPoint[1]*elPoint[1];
+    T val = elPoint[2];
+    plint sign = (T(0) < val) - (val < T(0));
+    if (1-r2 <0) {
+        r2 =1 ;
+    }
+    elPoint[0] *= R;
+    elPoint[1] *= R;
+    elPoint[2] = sign * aspectRatio * R * sqrt(1-r2) ;
+    return elPoint;
+}
+
+template<typename T>
 Array<T,3> mapMeshAsRBC(const Array<T,3> point, const Array<T,3> center, T R) {
     Array<T,3> rbcPoint(point - center);
     rbcPoint[0] = rbcPoint[0] > R ? R : rbcPoint[0];
@@ -198,6 +213,36 @@ TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint 
             0. + eulerAngles[2]);
     rbc.translate(center);
     return rbc;
+}
+
+
+template<typename T>
+TriangleSet<T> constructEllipsoidFromSphere(Array<T,3> const& center, T radius, T aspectRatio, plint minNumOfTriangles,
+        Array<T,3> const& eulerAngles, pluint initialSphereShape)
+{
+    TriangleSet<T> sphere;
+    if (initialSphereShape == 1) {
+        sphere = constructSphereIcosahedron<T>(Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
+    } else if (initialSphereShape == 0) {
+        sphere = constructSphere<T>(Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
+    }
+    sphere.rotate(
+            pi/2.0 + eulerAngles[0],
+            pi/2.0 + eulerAngles[1],
+            0. + eulerAngles[2]);
+    std::vector<typename TriangleSet<T>::Triangle> ellipsoidTriangles = sphere.getTriangles();
+    for (pluint var = 0; var < ellipsoidTriangles.size(); ++var) {
+        ellipsoidTriangles[var][0] = spherePointToEllipsoidPoint(ellipsoidTriangles[var][0], radius, aspectRatio);
+        ellipsoidTriangles[var][1] = spherePointToEllipsoidPoint(ellipsoidTriangles[var][1], radius, aspectRatio);
+        ellipsoidTriangles[var][2] = spherePointToEllipsoidPoint(ellipsoidTriangles[var][2], radius, aspectRatio);
+    }
+    TriangleSet<T> ellipsoid(ellipsoidTriangles);
+    ellipsoid.rotate(
+            pi/2.0 + eulerAngles[0],
+            pi/2.0 + eulerAngles[1],
+            0. + eulerAngles[2]);
+    ellipsoid.translate(center);
+    return ellipsoid;
 }
 
 

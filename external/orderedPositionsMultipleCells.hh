@@ -54,7 +54,7 @@ void getOrderedPositionsMultipleCellsVector(Box3D realDomain,
 			d[indx]=zt;
 			ni++;
 		}
-		printf("sizes %d (%d,%d,%d) \n", i, xt, yt,zt);
+		printf("%d) %d with size (%d,%d,%d) \n", i, Np[i], xt, yt,zt);
 
 	}
 

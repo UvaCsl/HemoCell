@@ -282,8 +282,10 @@ int main(int argc, char* argv[])
 	k_rest= 0;
 
     std::vector<ConstitutiveModel<T, DESCRIPTOR>* > cellModels;
+    std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
+
     std::vector<T> eqVolumes;
-//    Create RBC
+//    =======================  Create RBC
     TriangleBoundary3D<T> Cells = constructMeshElement(shape, radius, cellNumTriangles, dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> meshElement = Cells.getMesh();
     MeshMetrics<T> meshmetric(meshElement);    meshmetric.write();
@@ -292,9 +294,10 @@ int main(int argc, char* argv[])
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
 	cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
 		persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement));
+    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hct * 0.3, cellModels[0], ibmKernel, "RBC"));
 
 
-//    Create SickledRBC
+//    =======================  Create SickledRBC
     cellPath = "./examples/various/sickleCell.stl";
     TriangleBoundary3D<T> SickledCells = constructMeshElement(2, radius, cellNumTriangles, dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> sickledMeshElement = SickledCells.getMesh();
@@ -305,21 +308,27 @@ int main(int argc, char* argv[])
 	cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
 		persistenceLengthFine, eqLengthRatio, dx, dt, dm,sickledMeshElement) );
 	eqVolumes[1] = cellModels[1]->getEquilibriumVolume();
-
-//    Create WBC
-    TriangleBoundary3D<T> WBCCells = constructMeshElement(0, radius * 1.25, cellNumTriangles, dx, cellPath, eulerAngles);
-    TriangularSurfaceMesh<T> wbcMeshElement = WBCCells.getMesh();
-    eqVolumes.push_back(MeshMetrics<T>(wbcMeshElement).getVolume());
-	cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-		persistenceLengthFine, eqLengthRatio, dx, dt, dm, wbcMeshElement) );
-	cellModels[2]->setEquilibriumVolume( cellModels[2]->getEquilibriumVolume()*0.5);
-
-
-
-    std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
-    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hct * 0.3, cellModels[0], ibmKernel, "RBC"));
     cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, sickledMeshElement, hct * 0.3, cellModels[1], ibmKernel, "SickledRBC"));
-    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, wbcMeshElement, hct * 0.1, cellModels[2], ibmKernel, "WBC"));
+
+//    =======================  Create Platelet
+        T pltRadius = 1e-6/dx;
+        TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, cellNumTriangles, dx, cellPath, eulerAngles);
+        TriangularSurfaceMesh<T> pltMeshElement = PLTCells.getMesh();
+        eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
+        cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+            persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement) );
+        cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.001, cellModels[cellModels.size()-1], ibmKernel, "PLT"));
+
+//    =======================  Create WBC
+        TriangleBoundary3D<T> WBCCells = constructMeshElement(0, radius * 1.25, cellNumTriangles, dx, cellPath, eulerAngles);
+        TriangularSurfaceMesh<T> wbcMeshElement = WBCCells.getMesh();
+        eqVolumes.push_back(MeshMetrics<T>(wbcMeshElement).getVolume());
+        cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume/100, k_surface, eta_m,
+            persistenceLengthFine, eqLengthRatio, dx, dt, dm, wbcMeshElement) );
+        cellModels[cellModels.size()-1]->setEquilibriumVolume( cellModels[cellModels.size()-1]->getEquilibriumVolume()*0.9);
+        cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, wbcMeshElement, hct * 0.1, cellModels[cellModels.size()-1], ibmKernel, "WBC"));
+
+
 
     CellField3D<T, DESCRIPTOR> & RBCField = *cellFields[0];
     CellStretch<T, DESCRIPTOR> cellStretch(RBCField, stretchForceScalar, 0.1);
@@ -461,6 +470,7 @@ int main(int argc, char* argv[])
     }
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
     	delete cellFields[iCell];
+    	delete cellModels[iCell];
     }
     simpleProfiler.writeIteration(tmax+1);
     global::profiler().writeReport();
