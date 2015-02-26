@@ -5,11 +5,33 @@
 
 
 template<typename T>
+Array<T,3> randomMeshRotationAngleAndBoundingBox(TriangularSurfaceMesh<T>* mesh, T & dx, T & dy, T & dz) {
+    Array<T,3> randomAngles;
+    randomAngles[0] = guessRandomNumber()* 2 * pi;
+    randomAngles[1] = guessRandomNumber()* pi;
+    randomAngles[2] = guessRandomNumber()* 2 * pi;
+
+    ElementsOfTriangularSurfaceMesh<T> emptyEoTSM;
+    TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(*mesh, emptyEoTSM);
+
+    meshRandomRotation(meshCopy, randomAngles);
+    Array<T,2> xRange, yRange, zRange;
+    meshCopy->computeBoundingBox (xRange, yRange, zRange);
+    dx = (xRange[1] - xRange[0]);
+    dy = (yRange[1] - yRange[0]);
+    dz = (zRange[1] - zRange[0]);
+
+    delete meshCopy;
+    return randomAngles;
+}
+
+template<typename T>
 void getOrderedPositionsMultipleCellsVector(Box3D realDomain, 
     std::vector<TriangularSurfaceMesh<T>* > & meshes,
     std::vector<plint> & Np,
     std::vector<std::vector<Array<T,3> > > & positions, 
-    std::vector<std::vector<plint> > & cellIds) {
+    std::vector<std::vector<plint> > & cellIds,
+    std::vector<std::vector<Array<T,3> > > & randomAngles) {
     PLB_PRECONDITION( meshes.size()==Np.size() );
 
 
@@ -30,25 +52,34 @@ void getOrderedPositionsMultipleCellsVector(Box3D realDomain,
 	for (pluint i = 0; i < n; ++i)	{ indices[i]=i;	}
 	std::random_shuffle ( indices.begin(), indices.end() );
 
+	Array<T,3> randomAngle(0.,0.,0.);
 	int w[n], h[n], d[n];
 	int x[n], y[n], z[n], bno[n];
-
+    int xt, yt,zt;
     Array<T,2> xRange, yRange, zRange;
     T dim[3];
-	plint ni=0;
+	plint indx, ni=0;
+	T dx, dy, dz;
+
+	randomAngles.clear();  randomAngles.resize(Np.size());
 	for (pluint i = 0; i < Np.size(); ++i)
-	{	
-		meshes[i]->computeBoundingBox (xRange, yRange, zRange);
-		dim[0] = (xRange[1] - xRange[0]) + dl; // Give some air to breath with dl LU
-		dim[1] = (yRange[1] - yRange[0]) + dl;
-		dim[2] = (zRange[1] - zRange[0]) + dl;
-		int xt, yt,zt;
-		xt=int(ceil(dim[0] * fac));
-		yt=int(ceil(dim[1] * fac));
-		zt=int(ceil(dim[2] * fac));
+	{
+        meshes[i]->computeBoundingBox (xRange, yRange, zRange);
+        dx = (xRange[1] - xRange[0]);
+        dy = (yRange[1] - yRange[0]);
+        dz = (zRange[1] - zRange[0]);
+        randomAngles[i].resize(Np[i]);
 		for (pluint j = 0; j < Np[i]; ++j)
 		{
-			plint indx=indices[ni];
+//	        randomAngle = randomMeshRotationAngleAndBoundingBox(meshes[i], dx, dy, dz);
+	        randomAngles[i][j] = randomAngle;
+	        dim[0] = dx + 2*dl; // Give some air to breath with dl LU
+	        dim[1] = dy + 2*dl;
+	        dim[2] = dz + 2*dl;
+	        xt=int(ceil(dim[0] * fac));
+	        yt=int(ceil(dim[1] * fac));
+	        zt=int(ceil(dim[2] * fac));
+			indx=indices[ni];
 			w[indx]=xt;
 			h[indx]=yt;
 			d[indx]=zt;
@@ -58,7 +89,7 @@ void getOrderedPositionsMultipleCellsVector(Box3D realDomain,
 
 	}
 
-	printf("n %d WHD (%d,%d,%d) \n", n, W, H, D);
+	printf("Total N=%d WHD (%d,%d,%d) \n", n, W, H, D);
 
 	binpack3d(n, W, H, D,
                w, h, d, 
@@ -67,6 +98,7 @@ void getOrderedPositionsMultipleCellsVector(Box3D realDomain,
               nodelimit, iterlimit, timelimit, 
               &nodeused, &iterused, &timeused, 
               packingtype);
+	pcout << "Packing Done." << std::endl;
 
 	positions.clear();	positions.resize(Np.size());
 	cellIds.clear();	cellIds.resize(Np.size());
@@ -80,7 +112,7 @@ void getOrderedPositionsMultipleCellsVector(Box3D realDomain,
 		for (pluint j = 0; j < Np[i]; ++j)
 		{
 			plint indx=indices[ni];
-			positions[i][j] = rdomain + Array<T,3>(x[indx]*1.0/fac, y[indx]*1.0/fac, z[indx]*1.0/fac);
+			positions[i][j] = rdomain + Array<T,3>(x[indx]*1.0/fac + dl, y[indx]*1.0/fac + dl, z[indx]*1.0/fac + dl);
 			cellIds[i][j] = ni + 1000*mpiRank;
 			ni++;
 //			printf("pack (%f,%f,%f) \n", positions[i][j][0], positions[i][j][1], positions[i][j][2]);
@@ -158,14 +190,19 @@ void OrderedPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
 
     std::vector<std::vector<Array<T,3> > > positions;
     std::vector<std::vector<plint> > cellIds;
-    getOrderedPositionsMultipleCellsVector(realDomain, meshes, Np, positions, cellIds);
+    std::vector<std::vector<Array<T,3> > > randomAngles;
+    getOrderedPositionsMultipleCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles);
 
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
     	for (pluint c = 0; c < positions[iCF].size(); ++c)
     	{
+    	    ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;
+    	    TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
+    	    meshRandomRotation(meshCopy, randomAngles[iCF][c]);
 			positionCellInParticleField(*(particleFields[iCF]), fluid, 
-				meshes[iCF], positions[iCF][c], cellIds[iCF][c]);
+			        meshCopy, positions[iCF][c], cellIds[iCF][c]);
+			delete meshCopy;
     	}
 
 	    // DELETE CELLS THAT ARE NOT WHOLE
@@ -176,6 +213,7 @@ void OrderedPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
 		pcout << "(OrderedPositionMultipleCellField3D) "
 		        << mpiRank << "Number of particles/nVertices " << particles.size()*1.0/nVertices
 		        << " (deleted:" << cellsDeleted << ")" << std::endl;
+		delete meshes[iCF];
 	}
 }
 
