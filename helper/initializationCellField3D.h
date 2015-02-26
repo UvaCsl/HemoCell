@@ -19,13 +19,19 @@ double guessRandomNumber() {
 // Rotates the mesh in a random angle.
 // Mesh is supposed to start at (0,0,0)
 template<typename T>
-void meshRandomRotation (TriangularSurfaceMesh<T> * mesh) {
+void meshRandomRotation (TriangularSurfaceMesh<T> * mesh, Array<T,3> randomAngles=Array<T,3>(-1,-1,-1) ) {
+    if (randomAngles[0]<0) {
+        randomAngles[0] = guessRandomNumber()* 2 * pi;
+        randomAngles[1] = guessRandomNumber()* pi;
+        randomAngles[2] = guessRandomNumber()* 2 * pi;
+    }
+
     const T pi = 4.*atan(1.);
     Array<T,2> xRange, yRange, zRange;
     mesh->computeBoundingBox (xRange, yRange, zRange);
     Array<T,3> meshCenter = Array<T,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
     mesh->translate(-1.0 * meshCenter);
-    mesh->rotate(guessRandomNumber() * 2 * pi, guessRandomNumber() * pi, guessRandomNumber() * 2 * pi);
+    mesh->rotate(randomAngles[0], randomAngles[1], randomAngles[2]);
 
     mesh->computeBoundingBox (xRange, yRange, zRange);
     mesh->translate(Array<T,3>(-xRange[0], -yRange[0], -zRange[0]));
