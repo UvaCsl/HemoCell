@@ -295,9 +295,11 @@ int main(int argc, char* argv[])
     T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
 
-    pcout << "simulationVolume " << nMomentumExchangeCells * ( parameters.getNy()-2.5) << std::endl;
-    ofile << "# simulationVolume " << nMomentumExchangeCells * ( parameters.getNy()-2.5) << std::endl;
     ofile << "# dt " << dt << "; dx = " << dx << std::endl;
+    ofile << "# Nx " << parameters.getNx() << "; Ny = " << parameters.getNy() -2.5 << "; Nz = " << parameters.getNz() << std::endl;
+    ofile << "# simulationVolume " << nMomentumExchangeCells * ( parameters.getNy()-2.5) << std::endl;
+    ofile << "# nMomentumExchangeCells " << nMomentumExchangeCells << std::endl;
+    pcout << "# simulationVolume " << nMomentumExchangeCells * ( parameters.getNy()-2.5) << std::endl;
     /*            I/O              */
     global::timer("HDFOutput").start();
     writeHDF5(lattice, parameters, 0);
