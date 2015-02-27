@@ -27,7 +27,7 @@ typedef Array<T,3> Velocity;
 void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
-        plint & forceToFluid, plint & ibmScheme, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
+        plint & forceToFluid, plint & ibmKernel, plint & ibmScheme, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
         plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed)
     {
     T nu_p, tau, dx;
@@ -145,6 +145,8 @@ int main(int argc, char* argv[])
     std::string logOutDir = global::directories().getLogOutDir();
     mkpath((outputDir + "/hdf5/").c_str(), 0777);
     mkpath(logOutDir.c_str(), 0777);
+    plb_ofstream ofile(  (outputDir + "viscosity.dat").c_str() );
+    ofile << setprecision(10) << endl;
 
     plint forceToFluid, shape, cellNumTriangles, ibmKernel, ibmScheme;
     plint rbcModel;
@@ -236,7 +238,7 @@ int main(int argc, char* argv[])
     plint nMomentumExchangeCells=0;
     iniLatticeSquareCouetteMeasureStress<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate, forceIds, nMomentumExchangeCells);
     lattice.toggleInternalStatistics(false);
-
+    pcout << "Re_p = " << shearRate * 4*radius*radius / parameters.getLatticeNu() << std::endl;
     util::ValueTracer<T> dr_ConvergeX(1, 20, 1.0e-7);
 
 
@@ -273,10 +275,11 @@ int main(int argc, char* argv[])
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
         std::vector<Array<T,3> > cellsOrigin;
-        cellsOrigin.push_back( Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
+        cellsOrigin.push_back( Array<T,3>(nx*0.5+1, ny*0.5+1, nz*0.5+1) );
         RBCField.initialize(cellsOrigin);
         checkpointer.save(lattice, cellFields, initIter);
     }
+    RBCField.setParticleUpdateScheme(ibmScheme);
 
 
     plint nCells = RBCField.getNumberOfCells_Global();
@@ -293,6 +296,8 @@ int main(int argc, char* argv[])
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
 
     pcout << "simulationVolume " << nMomentumExchangeCells * ( parameters.getNy()-2.5) << std::endl;
+    ofile << "# simulationVolume " << nMomentumExchangeCells * ( parameters.getNy()-2.5) << std::endl;
+    ofile << "# dt " << dt << "; dx = " << dx << std::endl;
     /*            I/O              */
     global::timer("HDFOutput").start();
     writeHDF5(lattice, parameters, 0);
@@ -304,6 +309,8 @@ int main(int argc, char* argv[])
     /* --------------------------- */
     global::timer("mainLoop").start();
     global::profiler().turnOn();
+
+
 //#ifdef PLB_DEBUG // Palabos has this bug. It's missing the "envelope-update" is the profiler.
     if (flowType==2) { global::profiler().turnOff(); }
 //#endif
@@ -361,13 +368,13 @@ int main(int argc, char* argv[])
 //            pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
 //            pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
 //            pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
-
-            pcout << "dt " << (iter+1)*dt;
-            pcout << "; nu_app " << nu_app;
-            pcout << "; volumeFraction " << volumeFraction;
+            pcout << std::scientific << std::setprecision(15);
+            pcout << "dt " << (iter+1)*dt << "; nu_app " << nu_app << "; volumeFraction " << volumeFraction;
+            ofile  << "dt " << (iter+1)*dt << "; nu_app " << nu_app << "; volumeFraction " << volumeFraction;
             if (volumeFraction > 0.0) {
                 T measureRadius = pow( (volumeFraction * simulationVolume) * 3.0 / (4.0 * 3.14159),        1.0/3.0 );
                 pcout << "; dr (LU) " << measureRadius -radius;
+                ofile << "; dr (LU) " << measureRadius -radius;
                 dr_ConvergeX.takeValue(measureRadius -radius, true);
             }
             if (dr_ConvergeX.hasConverged()) {
@@ -375,6 +382,7 @@ int main(int argc, char* argv[])
                 exit(0);
             }
             pcout << std::endl;
+            ofile << std::endl;
         } else {
             RBCField.synchronizeCellQuantities();
         }
@@ -384,3 +392,5 @@ int main(int argc, char* argv[])
     global::profiler().writeReport();
     pcout << "Simulation finished." << std::endl;
 }
+
+

@@ -27,7 +27,7 @@ typedef Array<T,3> Velocity;
 void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
-        plint & forceToFluid, plint & ibmScheme, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
+        plint & forceToFluid, plint & ibmKernel, plint & ibmScheme, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
         plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed)
     {
     T nu_p, tau, dx;
@@ -115,7 +115,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     N = int(1.0/dx);
     flowParam = 0;
 
-    tmax = 0.05/dt; // 0.05 seconds.
+    tmax = 0.1/dt; // 0.1 seconds.
     tmeas = ceil(tmeas * 9.803921568235293e-08/dt);
 
     if (minNumOfTriangles <= 66) { shape = 5; minNumOfTriangles = 100; }
@@ -275,9 +275,12 @@ int main(int argc, char* argv[])
         std::vector<Array<T,3> > cellsOrigin;
         cellsOrigin.push_back( Array<T,3>(nx*0.5 - 5*radius, ny*0.5, nz*0.5) );
         cellsOrigin.push_back( Array<T,3>(nx*0.5 + 5*radius, ny*0.5, nz*0.5) );
+//        cellsOrigin.push_back( Array<T,3>(nx*0.5 - 2*radius, ny*0.5, nz*0.5) );
+//        cellsOrigin.push_back( Array<T,3>(nx*0.5 + 2*radius, ny*0.5, nz*0.5) );
         RBCField.initialize(cellsOrigin);
         checkpointer.save(lattice, cellFields, initIter);
     }
+    RBCField.setParticleUpdateScheme(ibmScheme);
 
 
     plint nCells = RBCField.getNumberOfCells_Global();
@@ -293,11 +296,14 @@ int main(int argc, char* argv[])
     T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
 
+    SyncRequirements everyCCR(allReductions);
+    RBCField.synchronizeCellQuantities(everyCCR);
 
     /*            I/O              */
     global::timer("HDFOutput").start();
     writeHDF5(lattice, parameters, 0);
     writeCellField3D_HDF5(RBCField, dx, dt, 0);
+    writeCell3D_HDF5(RBCField, dx, dt, 0);
     global::timer("HDFOutput").stop();
 
     SimpleFicsionProfiler simpleProfiler(tmeas);
@@ -322,35 +328,38 @@ int main(int argc, char* argv[])
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
        // #1b# Force to cells for lubrication
-//               DeltaYNorm = - dx/1.0e-6 * (RBCField[icell]->getPosition()[1] - ny*0.5);
-//               DeltaZNorm = - dx/1.0e-6 * (RBCField[icell]->getPosition()[2] - nz*0.5);
        /* Forces for cell 0 */
-       if (RBCField.count(0) > 0 ) {
-//           DeltaYNorm = - dx/1.0e-6 * (RBCField[0]->get3D(CCR_POSITION_MEAN)[1] - ny*0.5);
-//           DeltaZNorm = - dx/1.0e-6 * (RBCField[0]->get3D(CCR_POSITION_MEAN)[2] - nz*0.5);
+       if (RBCField.has_cellId(0) ) {
+           DeltaYNorm = - dx/1.0e-6 * (RBCField[0]->get3D(CCR_NO_PBC_POSITION_MEAN)[1] - ny*0.5);
+           DeltaZNorm = - dx/1.0e-6 * (RBCField[0]->get3D(CCR_NO_PBC_POSITION_MEAN)[2] - nz*0.5);
+//           cout << iter << " C0 " << global::mpi().getRank() << ", " <<
+//                  RBCField[0]->get3D(CCR_NO_PBC_POSITION_MEAN)[1] << " " << ny*0.5  << ", " <<
+//                  RBCField[0]->get3D(CCR_NO_PBC_POSITION_MEAN)[2] << " " << nz*0.5  << ", " <<
+//                  DeltaYNorm << " " <<
+//                  DeltaZNorm << " " <<
+//                  RBCField[0]->getVolume() << " " <<
+//                  std::endl;
        } else {
            DeltaYNorm = 0;
            DeltaZNorm = 0;
        }
-//       pcout << "C0 " <<
-//               DeltaYNorm << " " <<
-//               DeltaZNorm << " " <<
-//               RBCField[0]->getVolume() << " " <<
-//               std::endl;
        forcesToApply[0].resetToZero();
        forcesToApply[0] =  headOnForce + realignForceY * DeltaYNorm + realignForceZ * DeltaZNorm;
        /* Forces for cell 1 */
-       if (RBCField.count(1) > 0 ) {
-//           DeltaYNorm = - dx/1.0e-6 * (RBCField[1]->get3D(CCR_POSITION_MEAN)[1] - ny*0.5);
-//           DeltaZNorm = - dx/1.0e-6 * (RBCField[1]->get3D(CCR_POSITION_MEAN)[2] - nz*0.5);
+       if (RBCField.has_cellId(1) ) {
+           DeltaYNorm = - dx/1.0e-6 * (RBCField[1]->get3D(CCR_NO_PBC_POSITION_MEAN)[1] - ny*0.5);
+           DeltaZNorm = - dx/1.0e-6 * (RBCField[1]->get3D(CCR_NO_PBC_POSITION_MEAN)[2] - nz*0.5);
+//           cout << iter << " C1 " << global::mpi().getRank() << ", " <<
+//                   RBCField[1]->get3D(CCR_NO_PBC_POSITION_MEAN)[1] << " " << ny*0.5  << ", " <<
+//                   RBCField[1]->get3D(CCR_NO_PBC_POSITION_MEAN)[2] << " " << nz*0.5  << ", " <<
+//                  DeltaYNorm << " " <<
+//                  DeltaZNorm << " " <<
+//                  RBCField[1]->getVolume() << " " <<
+//                  std::endl;
        } else {
            DeltaYNorm = 0;
            DeltaZNorm = 0;
        }
-//       pcout << "C1 " <<
-//               DeltaYNorm << " " <<
-//               DeltaZNorm << " " <<
-//               std::endl;
        forcesToApply[1].resetToZero();
        forcesToApply[1] =  -headOnForce + realignForceY * DeltaYNorm + realignForceZ * DeltaZNorm;
        applyForceToCells(RBCField, RBCellIds, forcesToApply);
@@ -390,15 +399,15 @@ int main(int argc, char* argv[])
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
             pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
-            pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
-            pcout << RBCField[0]->getForce()[1] << ", ";
-            pcout << RBCField[0]->getForce()[2] << ") ";
-            pcout << "; ForceNorm (" << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[0]  << ", ";
-            pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[1] << ", ";
-            pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[2] << ") ";
-            pcout << "; d[MAX-MIN] " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-            pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
-            pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+//            pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
+//            pcout << RBCField[0]->getForce()[1] << ", ";
+//            pcout << RBCField[0]->getForce()[2] << ") ";
+//            pcout << "; ForceNorm (" << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[0]  << ", ";
+//            pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[1] << ", ";
+//            pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[2] << ") ";
+//            pcout << "; d[MAX-MIN] " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+//            pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
+//            pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
 //            pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
 
 //            nu_app_ConvergeX.takeValue(nu_app, true);
@@ -415,3 +424,5 @@ int main(int argc, char* argv[])
     global::profiler().writeReport();
     pcout << "Simulation finished." << std::endl;
 }
+
+
