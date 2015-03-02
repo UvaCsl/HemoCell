@@ -85,14 +85,15 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
         document["domain"]["lx"].read(lx);
         document["domain"]["ly"].read(ly);
         document["domain"]["lz"].read(lz);
+        lx-=dx;ly-=dx;lz-=dx;
     } catch(const plb::PlbIOException & message) {
         T nx, ny, nz;
         document["domain"]["nx"].read(nx);
         document["domain"]["ny"].read(ny);
         document["domain"]["nz"].read(nz);
-        lx = nx * dx;
-        ly = ny * dx;
-        lz = nz * dx;
+        lx = (nx-1) * dx;
+        ly = (ny-1) * dx;
+        lz = (nz-1) * dx;
     }
     flowType = 2;
     document["sim"]["tmax"].read(tmax);
