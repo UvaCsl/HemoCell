@@ -12,7 +12,7 @@
 
 import xml.etree.ElementTree as ET
 from itertools import product
-
+import sys
 import argparse
 
 def parseArguments(config):
@@ -34,7 +34,14 @@ def calculate_dt(config):
     return dx * dx * (1/3.*(tau-0.5)) / nu_p
 
 
-tree = ET.parse('config_test.xml')
+parser = ET.XMLParser(encoding="utf-8")
+tree = ET.parse('config_test.xml', parser=parser)
+# try:
+#     tree = ET.parse(sys.argv[1], parser=parser)
+# except:
+#     tree = ET.parse('config_test.xml', parser=parser)
+
+
 config = {}
 # for i in tree.iter(): 
 for i in tree.findall('.//*'):

@@ -27,7 +27,7 @@ typedef Array<T,3> Velocity;
 void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
-        plint & forceToFluid, plint & ibmScheme, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
+        plint & forceToFluid, plint & ibmKernel, plint & ibmScheme, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
         plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed)
     {
     T nu_p, tau, dx;
@@ -116,7 +116,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     Re_p = 1.0/nu_p;
     N = int(1.0/dx);
     flowParam = 0;
-    tmax = 0.05/dt; // 0.05 seconds.
+    tmax = 0.1/dt; // 0.05 seconds.
     tmeas = ceil(tmeas * 9.803921568235293e-08/dt);
 
     if (minNumOfTriangles <= 66) { shape = 5; minNumOfTriangles = 100; }
@@ -236,6 +236,8 @@ int main(int argc, char* argv[])
     plint nMomentumExchangeCells=0;
     pcout << "(main) Using iniLatticeSquareCouette, "<< flowType  << ", yd=" << shearRate_p << std::endl;
     iniLatticeSquareCouette<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate);
+    pcout << "Re_p = " << shearRate * 4*radius*radius / parameters.getLatticeNu() << std::endl;
+    pcout << "yd = " << shearRate/dt << std::endl;
 
     util::ValueTracer<T> nu_app_ConvergeX(1, 20, 1.0e-4);
 
@@ -278,6 +280,7 @@ int main(int argc, char* argv[])
         RBCField.initialize(cellsOrigin);
         checkpointer.save(lattice, cellFields, initIter);
     }
+    RBCField.setParticleUpdateScheme(ibmScheme);
 
 
     plint nCells = RBCField.getNumberOfCells_Global();
@@ -338,25 +341,25 @@ int main(int argc, char* argv[])
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
-            pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
-            if (RBCField.has_cellId(0) > 0) {
-                pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
-                pcout << RBCField[0]->getForce()[1] << ", ";
-                pcout << RBCField[0]->getForce()[2] << ") ";
-                pcout << "; ForceNorm (" << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[0]  << ", ";
-                pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[1] << ", ";
-                pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[2] << ") ";
-                pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-                pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
-                pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-                pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
-            }
+            pcout << "(main) Iteration:" << iter + 1 << "; dt "<< dtIteration*1.0/tmeas ;
+//            if (RBCField.has_cellId(0) > 0) {
+//                pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
+//                pcout << RBCField[0]->getForce()[1] << ", ";
+//                pcout << RBCField[0]->getForce()[2] << ") ";
+//                pcout << "; ForceNorm (" << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[0]  << ", ";
+//                pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[1] << ", ";
+//                pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[2] << ") ";
+//                pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+//                pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
+//                pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+//                pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
+//            }
 
             if ( ( (RBCField.count(1) > 0) and
-                 (RBCField[1]->getPosition()[0] < (nx*0.5 - 5*radius) ) )
+                 (RBCField[1]->getPosition()[0] < (nx*0.5 - 10*radius) ) )
                  or
                  ( (RBCField.count(0) > 0) and
-                                      (RBCField[0]->getPosition()[0] > (nx*0.5 + 5*radius) ) )
+                                      (RBCField[0]->getPosition()[0] > (nx*0.5 + 10*radius) ) )
                 ) {
                 cout << "\nConverged!" << std::endl;
                 exit(0);
@@ -379,11 +382,11 @@ int main(int argc, char* argv[])
         } else {
             RBCField.synchronizeCellQuantities();
         }
-        if (RBCField.count(1) > 0)  {
-            pcout << "Volume = " << RBCField[0]->getVolume() * 1.0
-                    << ", Surface = " << RBCField[0]->getSurface() * 1.0
-                    << std::endl;
-        }
+//        if (RBCField.count(1) > 0)  {
+//            pcout << "Volume = " << RBCField[0]->getVolume() * 1.0
+//                    << ", Surface = " << RBCField[0]->getSurface() * 1.0
+//                    << std::endl;
+//        }
     }
     simpleProfiler.writeIteration(tmax+1);
     global::profiler().writeReport();

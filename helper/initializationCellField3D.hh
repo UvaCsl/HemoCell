@@ -71,6 +71,7 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
         << " particles.size " << particles.size()
         << " nVertices " << nVertices
         << " cellOrigin.size " << cellOrigins.size() << std::endl;
+   delete mesh;
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -220,6 +221,7 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
             << " scale " << scale << " step " << step
             << " prob " << prob
             << " h " << particles.size()*1.0/nVertices * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << " (deleted:" << cellsDeleted << ")" << std::endl;
+    delete mesh;
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -380,7 +382,7 @@ void RandomPositionCellFieldsForGrowth3D<T,Descriptor>::processGenericBlocks (
             << " scale " << scale << " step " << step
             << " prob " << prob
             << " h " << particles.size()*1.0/nVertices * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << " (deleted:" << cellsDeleted << ")" << std::endl;
-
+    delete meshes[0];
 }
 
 
@@ -571,7 +573,7 @@ void OrderedPositionCellField3D<T,Descriptor>::processGenericBlocks (
 //    cout << "(OrderedPositionCellField3D) "
 //            << mpiRank << "Number of particles/nVertices " << particles.size()*1.0/nVertices
 //            << " h " << particles.size()*1.0/nVertices * volume * 1.0/ (DeltaX*DeltaY*DeltaZ) << " (deleted:" << 0 << ")" << std::endl;
-
+    delete mesh;
 }
 
 

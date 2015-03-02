@@ -27,7 +27,7 @@ typedef Array<T,3> Velocity;
 void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
-        plint & forceToFluid, plint & ibmScheme, plint & ibmKernel, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
+        plint & forceToFluid, plint & ibmKernel, plint & ibmScheme, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
         plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed)
     {
     T nu_p, tau, dx;
@@ -50,6 +50,9 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     document["cellModel"]["kSurface"].read(k_surface);
     document["cellModel"]["etaM"].read(eta_m);
     document["cellModel"]["kRest"].read(k_rest);
+    if (k_rest == 0) {
+        k_rest = 1.0e-3;
+    }
     document["cellModel"]["kShear"].read(k_shear);
     document["cellModel"]["kStretch"].read(k_stretch);
     document["parameters"]["flowType"].read(flowType);
@@ -112,7 +115,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     Re_p = 1.0/nu_p;
     N = int(1.0/dx);
     flowParam = 0;
-    tmax = 0.05/dt; // 0.05 seconds.
+    tmax = 0.1/dt; // 0.05 seconds.
     tmeas = ceil(tmeas * 9.803921568235293e-08/dt);
 
     if (minNumOfTriangles <= 66) { shape = 5; minNumOfTriangles = 100; }
@@ -225,8 +228,10 @@ int main(int argc, char* argv[])
 
     // Drag force specific
     T wallVelocity = Re*parameters.getLatticeNu()/(2*radius);
-    pcout << "wallVelocity [LU]: " << wallVelocity << std::endl;
-    iniLattice_ForGalileanInvariance(lattice, parameters, *boundaryCondition, wallVelocity);
+    pcout << "Re " << Re << std::endl;
+    pcout << "wallVelocity[LU] " << wallVelocity << std::endl;
+    iniLattice_ForGalileanInvariance(lattice, parameters, *boundaryCondition, wallVelocity*0.0);
+//    iniLatticeFullyPeriodic(lattice, parameters, Array<T,3>(0., 0., 0.));
 
     util::ValueTracer<T> forceConvergeX(1, 20, 1.0e-4);
 
@@ -256,9 +261,17 @@ int main(int argc, char* argv[])
 
     ConstitutiveModel<T,DESCRIPTOR> *cellModel;
     T persistenceLengthFine = 7.5e-9 ; // In meters
-    cellModel = new RestModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-            persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement, meshes);
+//    cellModel = new RestModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+//            persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement, meshes);
+    cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+         persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
+    std::vector<plint> RBCellIds(1);    RBCellIds[0] = 0;
+    const Array<T,3> headOnForce(-6*3.14159*parameters.getLatticeNu()*wallVelocity*radius, 0.0, 0.0);
+//    stretchForceScalar
+    std::vector<Array<T,3> > forcesToApply(1); forcesToApply[0] = headOnForce;
 
+    pcout << std::scientific << std::setprecision(15);
+    pcout << "F_D " << headOnForce[0] << std::endl;
 
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, ibmKernel, "RBC");
     std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
@@ -275,6 +288,7 @@ int main(int argc, char* argv[])
         RBCField.initialize(cellsOrigin);
         checkpointer.save(lattice, cellFields, initIter);
     }
+    RBCField.setParticleUpdateScheme(ibmScheme);
 
 
 
@@ -309,6 +323,7 @@ int main(int argc, char* argv[])
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
+       applyForceToCells(RBCField, RBCellIds, forcesToApply);
         // #2# IBM Spreading
         RBCField.setFluidExternalForce(poiseuilleForce);
         RBCField.spreadForceIBM();
@@ -326,6 +341,7 @@ int main(int argc, char* argv[])
             SyncRequirements everyCCR(allReductions);
             RBCField.synchronizeCellQuantities(everyCCR);
             writeCell3D_HDF5(RBCField, dx, dt, iter+1);
+
 //            if (RBCField.has_cellId(0) > 0) { forceConvergeX.takeValue(RBCField[0]->getForce()[0], true);  }
 //            if (forceConvergeX.hasConverged()) {
 //                pcout << "Converged!" << std::endl;
@@ -346,19 +362,24 @@ int main(int argc, char* argv[])
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter+1);
             global::profiler().writeReport();
-            pcout << "(main) Iteration:" << iter + 1 << " (" << iter*100.0/tmax << "%); time "<< dtIteration*1.0/tmeas ;
+            pcout << "(main) t " << (iter + 1)*dt << " ; " << iter*100.0/tmax << "%; dt "<< dtIteration*1.0/tmeas << " ; ";
             if (RBCField.has_cellId(0) > 0) {
-                pcout << "; dr (LU) " << RBCField[0]->getForce()[0] / ( - 6 * 3.14159 * 1.0 * parameters.getLatticeNu() * wallVelocity) - radius << ", ";
-                pcout << "; Force (" << RBCField[0]->getForce()[0]  << ", ";
+//                pcout << "; dr (LU) " << RBCField[0]->getForce()[0] / ( - 6 * 3.14159 * 1.0 * parameters.getLatticeNu() * wallVelocity) - radius << ", ";
+                pcout << "Force (" << RBCField[0]->getForce()[0]  << ", ";
                 pcout << RBCField[0]->getForce()[1] << ", ";
-                pcout << RBCField[0]->getForce()[2] << ") ";
-                pcout << "; ForceNorm (" << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[0]  << ", ";
-                pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[1] << ", ";
-                pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[2] << ") ";
-                pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-                pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
-                pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
-                pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
+                pcout << RBCField[0]->getForce()[2] << ") ; ";
+
+                pcout << "Velocity (" << RBCField[0]->getVelocity()[0]  << ", ";
+                pcout << RBCField[0]->getVelocity()[1] << ", ";
+                pcout << RBCField[0]->getVelocity()[2] << ") ; ";
+                pcout << "v/v_w " << -RBCField[0]->getVelocity()[0]/wallVelocity  << "; ";
+//                pcout << "; ForceNorm (" << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[0]  << ", ";
+//                pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[1] << ", ";
+//                pcout << RBCField[0]->get3D(CCR_FORCE_NORMALIZED)[2] << ") ";
+//                pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+//                pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
+//                pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
+//                pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
             }
             pcout << std::endl;
         } else {
