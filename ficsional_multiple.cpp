@@ -93,7 +93,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
         T nx, ny, nz;
         document["domain"]["nx"].read(nx);
         document["domain"]["ny"].read(ny);
-        document["domain"]["ny"].read(nz);
+        document["domain"]["nz"].read(nz);
         lx = nx * dx;
         ly = ny * dx;
         lz = nz * dx;
