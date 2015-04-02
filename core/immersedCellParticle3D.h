@@ -32,7 +32,8 @@ class ImmersedCellParticle3D : public Particle3D<T,Descriptor> {
 public:
     ImmersedCellParticle3D();
     ~ImmersedCellParticle3D() {
-//        std::cout <<" ~ImmersedCellParticle3D() " << global::mpi().getRank() << " vertexId " << this->getVertexId() << std::endl;
+//        std::cout <<" ~ImmersedCellParticle3D() " << global::mpi().getRank() << " vertexId " << this->getVertexId() ;
+//        std::cout << " pos (" << this->getPosition()[0] << ", "<< this->getPosition()[1] << ", "<< this->getPosition()[2] << ") " << std::endl;
     };
     /* scheme:
      *  0: Euler

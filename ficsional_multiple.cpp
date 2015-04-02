@@ -294,7 +294,7 @@ int main(int argc, char* argv[])
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
 	cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
 		persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement));
-    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hct * 0.3, cellModels[0], ibmKernel, "RBC"));
+    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hct * 0.6, cellModels[0], ibmKernel, "RBC"));
 
 
 //    =======================  Create SickledRBC
@@ -315,7 +315,7 @@ int main(int argc, char* argv[])
         TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, cellNumTriangles, dx, cellPath, eulerAngles);
         TriangularSurfaceMesh<T> pltMeshElement = PLTCells.getMesh();
         eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
-        cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+        cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend*5, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
             persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement) );
         cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.001, cellModels[cellModels.size()-1], ibmKernel, "PLT"));
 
@@ -323,7 +323,7 @@ int main(int argc, char* argv[])
         TriangleBoundary3D<T> WBCCells = constructMeshElement(0, radius * 1.25, cellNumTriangles, dx, cellPath, eulerAngles);
         TriangularSurfaceMesh<T> wbcMeshElement = WBCCells.getMesh();
         eqVolumes.push_back(MeshMetrics<T>(wbcMeshElement).getVolume());
-        cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume/100, k_surface, eta_m,
+        cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume/5, k_surface, eta_m,
             persistenceLengthFine, eqLengthRatio, dx, dt, dm, wbcMeshElement) );
         cellModels[cellModels.size()-1]->setEquilibriumVolume( cellModels[cellModels.size()-1]->getEquilibriumVolume()*0.9);
         cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, wbcMeshElement, hct * 0.1, cellModels[cellModels.size()-1], ibmKernel, "WBC"));

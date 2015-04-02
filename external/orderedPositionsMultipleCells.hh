@@ -172,12 +172,7 @@ void OrderedPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
         meshes[iCF] = mesh;
         volumes[iCF] = MeshMetrics<T>(*mesh).getVolume();
 
-        Np[iCF] = 0 ; volumeFractions[iCF] * Vdomain/volumes[iCF];
-        int availPositions = Vdomain/volumes[iCF];
-        for (int iap = 0; iap < availPositions; ++iap)
-        {
-        	Np[iCF] += (guessRandomNumber()<volumeFractions[iCF]);
-        }
+        Np[iCF] = (1 + 0.05*(guessRandomNumber() -0.5)) * (Vdomain/volumes[iCF] * volumeFractions[iCF]) ;
         totalVolumeFraction += volumes[iCF];
         particleFields[iCF] = ( dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[iCF+1]) );
         particleFields[iCF]->removeParticles(particleFields[iCF]->getBoundingBox());
@@ -195,24 +190,25 @@ void OrderedPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
 
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
+        cout << "(OrderedPositionMultipleCellField3D) ";
     	for (pluint c = 0; c < positions[iCF].size(); ++c)
     	{
-    	    ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;
-    	    TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
-    	    meshRandomRotation(meshCopy, randomAngles[iCF][c]);
+//    	    ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;
+//    	    TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
+//    	    meshRandomRotation(meshCopy, randomAngles[iCF][c]);
 			positionCellInParticleField(*(particleFields[iCF]), fluid, 
-			        meshCopy, positions[iCF][c], cellIds[iCF][c]);
-			delete meshCopy;
+			        meshes[iCF], positions[iCF][c]-0.5, cellIds[iCF][c]);
+//			delete meshCopy;
     	}
 
 	    // DELETE CELLS THAT ARE NOT WHOLE
     	plint nVertices=meshes[iCF]->getNumVertices();
+        cout << mpiRank;
 	    plint cellsDeleted = deleteIncompleteCells(*(particleFields[iCF]), fluid, relativeDomains[iCF], nVertices);
 	    std::vector<Particle3D<T,Descriptor>*> particles;
 	    particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(),   particles);
-		pcout << "(OrderedPositionMultipleCellField3D) "
-		        << mpiRank << "Number of particles/nVertices " << particles.size()*1.0/nVertices
-		        << " (deleted:" << cellsDeleted << ")" << std::endl;
+		cout    << ", number of particles/nVertices " << particles.size()*1.0/nVertices
+		        << " (deleted:" << cellsDeleted << ") for particleId:" << iCF << std::endl;
 		delete meshes[iCF];
 	}
 }
