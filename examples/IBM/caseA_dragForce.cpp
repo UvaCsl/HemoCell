@@ -230,8 +230,8 @@ int main(int argc, char* argv[])
     T wallVelocity = Re*parameters.getLatticeNu()/(2*radius);
     pcout << "Re " << Re << std::endl;
     pcout << "wallVelocity[LU] " << wallVelocity << std::endl;
-    iniLattice_ForGalileanInvariance(lattice, parameters, *boundaryCondition, wallVelocity*0.0);
-//    iniLatticeFullyPeriodic(lattice, parameters, Array<T,3>(0., 0., 0.));
+//    iniLattice_ForGalileanInvariance(lattice, parameters, *boundaryCondition, wallVelocity*0.0);
+    iniLatticeFullyPeriodic(lattice, parameters, Array<T,3>(0., 0., 0.));
 
     util::ValueTracer<T> forceConvergeX(1, 20, 1.0e-4);
 
@@ -261,14 +261,14 @@ int main(int argc, char* argv[])
 
     ConstitutiveModel<T,DESCRIPTOR> *cellModel;
     T persistenceLengthFine = 7.5e-9 ; // In meters
-//    cellModel = new RestModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-//            persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement, meshes);
-    cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-         persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
-    std::vector<plint> RBCellIds(1);    RBCellIds[0] = 0;
+    cellModel = new RestModel3D<T,DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+            persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement, meshes);
+//    cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+//         persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
+//    std::vector<plint> RBCellIds(1);    RBCellIds[0] = 0;
     const Array<T,3> headOnForce(-6*3.14159*parameters.getLatticeNu()*wallVelocity*radius, 0.0, 0.0);
 //    stretchForceScalar
-    std::vector<Array<T,3> > forcesToApply(1); forcesToApply[0] = headOnForce;
+//    std::vector<Array<T,3> > forcesToApply(1); forcesToApply[0] = headOnForce;
 
     pcout << std::scientific << std::setprecision(15);
     pcout << "F_D " << headOnForce[0] << std::endl;
@@ -323,9 +323,9 @@ int main(int argc, char* argv[])
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
        RBCField.applyConstitutiveModel();
-       applyForceToCells(RBCField, RBCellIds, forcesToApply);
+//       applyForceToCells(RBCField, RBCellIds, forcesToApply);
         // #2# IBM Spreading
-        RBCField.setFluidExternalForce(poiseuilleForce);
+        RBCField.setFluidExternalForce(headOnForce * 0.00001);
         RBCField.spreadForceIBM();
         // #3# LBM
         global::timer("LBM").start();
