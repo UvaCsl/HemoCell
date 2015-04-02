@@ -125,6 +125,49 @@ T poiseuilleVelocity(plint iY, plint iZ, IncomprFlowParam<T> const& parameters, 
     return sum;
 }
 
+
+/************************ COUETTE INIT *****************************/
+T couetteVelocity(plint iY, T shearRateLU, T zeroCoordinate)
+{
+    return shearRateLU*(iY - zeroCoordinate);
+}
+template <typename T>
+CouetteDensityAndVelocity<T>::CouetteDensityAndVelocity(T shearRateLU_, T zeroCoordinate_)
+: shearRateLU(shearRateLU_), zeroCoordinate(zeroCoordinate_)
+{ }
+
+template <typename T>
+void CouetteDensityAndVelocity<T>::operator()(plint iX, plint iY, plint iZ, T &rho, Array<T,3>& u) const {
+        rho = (T)1;
+        u[0] = couetteVelocity(iY, shearRateLU, zeroCoordinate);
+        u[1] = T();
+        u[2] = T();
+}
+
+
+/************************ Poiseuille INIT *****************************/
+T poiseuilleVelocity(plint iY, T UmaxLU, T diameter)
+{
+    T y = iY*1.0/diameter;
+    return UmaxLU*4*(y - y*y);
+}
+
+template <typename T>
+PoiseuilleDensityAndVelocity<T>::PoiseuilleDensityAndVelocity(T UmaxLU_, T diameter_)
+: UmaxLU(UmaxLU_), diameter(diameter_)
+{ }
+
+template <typename T>
+void PoiseuilleDensityAndVelocity<T>::operator()(plint iX, plint iY, plint iZ, T &rho, Array<T,3>& u) const {
+        rho = (T)1;
+        u[0] = poiseuilleVelocity(iY, UmaxLU, diameter);
+        u[1] = T();
+        u[2] = T();
+}
+
+
+
+
 template <typename T>
 SquarePoiseuilleDensityAndVelocity<T>::SquarePoiseuilleDensityAndVelocity(IncomprFlowParam<T> const& parameters_, plint maxN_, T Re_)
 : parameters(parameters_), maxN(maxN_), Re(Re_)
@@ -256,7 +299,10 @@ void iniLatticePoiseuilleWithBodyForce(MultiBlockLattice3D<T,Descriptor>& lattic
     setBoundaryVelocity(lattice, right, Array<T,3>(0.0,0.0,0.0));
 
     T rhoInit=1.0; Array<T,3> uInit(0.0,0.0,0.0);
-    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), rhoInit, uInit);
+//    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), rhoInit, uInit);
+
+    T Umax = poiseuilleForce * (ny-1) * (ny-1) / (8*parameters.getLatticeNu());
+    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), PoiseuilleDensityAndVelocity<T>(Umax, ny-1));
 
     setExternalVector( lattice, lattice.getBoundingBox(),
             Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(poiseuilleForce, 0.0, 0.0));
@@ -287,20 +333,22 @@ void iniLatticeSquareCouette( MultiBlockLattice3D<T,Descriptor>& lattice,
     const plint ny = parameters.getNy();
     const plint nz = parameters.getNz();
 
-    Box3D left   = Box3D(0, nx-1, 0,    0,    0, nz-1);
-    Box3D right  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
+    Box3D top   = Box3D(0, nx-1, 0,    0,    0, nz-1);
+    Box3D bottom  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
 
     lattice.periodicity().toggleAll(true);
 
-    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, left );
-    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, right );
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, top );
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, bottom );
 
     T vHalf = (ny-1)*shearRate*0.5;
-    setBoundaryVelocity(lattice, left, Array<T,3>(vHalf,0.0,0.0));
-    setBoundaryVelocity(lattice, right, Array<T,3>(-vHalf,0.0,0.0));
+    setBoundaryVelocity(lattice, top, Array<T,3>(-vHalf,0.0,0.0));
+    setBoundaryVelocity(lattice, bottom, Array<T,3>(vHalf,0.0,0.0));
 
     setExternalVector( lattice, lattice.getBoundingBox(),
             Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
+
+    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), CouetteDensityAndVelocity<T>(shearRate, (ny-1)*0.5 ));
 
     lattice.initialize();
 }
@@ -337,6 +385,8 @@ void iniLatticeSquareCouetteMeasureStress( MultiBlockLattice3D<T,Descriptor>& la
     nMomentumExchangeCells = bottom.nCells();
     setExternalVector( lattice, lattice.getBoundingBox(),
             Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
+
+    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), CouetteDensityAndVelocity<T>(-shearRate, (ny-2) ));
 
     lattice.initialize();
 }

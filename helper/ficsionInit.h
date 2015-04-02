@@ -48,6 +48,26 @@ private:
 };
 
 template <typename T>
+class CouetteDensityAndVelocity {
+public:
+    CouetteDensityAndVelocity(T shearRateLU_, T zeroCoordinate_);
+    void operator()(plint iX, plint iY, plint iZ, T &rho, Array<T,3>& u) const ;
+private:
+    T shearRateLU;
+    T zeroCoordinate;
+};
+
+template <typename T>
+class PoiseuilleDensityAndVelocity {
+public:
+    PoiseuilleDensityAndVelocity(T UmaxLU_, T diameter_);
+    void operator()(plint iX, plint iY, plint iZ, T &rho, Array<T,3>& u) const ;
+private:
+    T UmaxLU;
+    T diameter;
+};
+
+template <typename T>
 class SquarePoiseuilleVelocity {
 public:
     SquarePoiseuilleVelocity(IncomprFlowParam<T> const& parameters_, plint maxN_, T Re_);

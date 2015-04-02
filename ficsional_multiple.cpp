@@ -215,13 +215,13 @@ int main(int argc, char* argv[])
     /* ------------------ *
      * Initialize Lattice *
      * ------------------ */
-    plint extendedEnvelopeWidth;
-    if (ibmKernel==2) {
-        extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with width 2.
-    }
-    else {
-        extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with width 2.
-    }
+    plint extendedEnvelopeWidth=4;
+//    if (ibmKernel==2) {
+//        extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with width 2.
+//    }
+//    else {
+//        extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with width 2.
+//    }
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
         defaultMultiBlockPolicy3D().getBlockCommunicator(),
@@ -312,7 +312,7 @@ int main(int argc, char* argv[])
 
 //    =======================  Create Platelet
         T pltRadius = 1e-6/dx;
-        TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, cellNumTriangles, dx, cellPath, eulerAngles);
+        TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, cellNumTriangles/2, dx, cellPath, eulerAngles);
         TriangularSurfaceMesh<T> pltMeshElement = PLTCells.getMesh();
         eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
         cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend*5, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
