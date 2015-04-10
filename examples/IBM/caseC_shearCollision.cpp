@@ -211,7 +211,7 @@ int main(int argc, char* argv[])
     /* ------------------ *
      * Initialize Lattice *
      * ------------------ */
-    plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
+    plint extendedEnvelopeWidth = 4;  // Because we might use ibmKernel with with 2.
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
         defaultMultiBlockPolicy3D().getBlockCommunicator(),
@@ -275,8 +275,8 @@ int main(int argc, char* argv[])
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
         std::vector<Array<T,3> > cellsOrigin;
-        cellsOrigin.push_back( Array<T,3>(nx*0.5 - 5*radius, ny*0.5 - 0.75*radius, nz*0.5) );
-        cellsOrigin.push_back( Array<T,3>(nx*0.5 + 5*radius, ny*0.5 + 0.75*radius, nz*0.5) );
+        cellsOrigin.push_back( Array<T,3>(nx*0.5 - 5*radius, ny*0.5 + 0.75*radius, nz*0.5) );
+        cellsOrigin.push_back( Array<T,3>(nx*0.5 + 5*radius, ny*0.5 - 0.75*radius, nz*0.5) );
         RBCField.initialize(cellsOrigin);
         checkpointer.save(lattice, cellFields, initIter);
     }
