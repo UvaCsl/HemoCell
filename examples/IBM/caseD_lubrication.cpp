@@ -115,7 +115,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     N = int(1.0/dx);
     flowParam = 0;
 
-    tmax = 0.1/dt; // 0.1 seconds.
+    tmax = 0.2/dt; // 0.2 seconds.
     tmeas = ceil(tmeas * 9.803921568235293e-08/dt);
 
     if (minNumOfTriangles <= 66) { shape = 5; minNumOfTriangles = 100; }

@@ -196,7 +196,7 @@ void ImmersedCellParticle3D<T,Descriptor>::serialize(HierarchicSerializer& seria
     Particle3D<T,Descriptor>::serialize(serializer);
     serializer.addValues<T,3>(v);
     serializer.addValues<T,3>(pbcPosition);
-    serializer.addValues<T,3>(a);
+    serializer.addValues<T,3>(vProgressed);
     serializer.addValues<T,3>(force);
     serializer.addValues<T,3>(vPrevious);
     serializer.addValue<plint>(processor);
@@ -211,7 +211,7 @@ void ImmersedCellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& u
     Particle3D<T,Descriptor>::unserialize(unserializer);
     unserializer.readValues<T,3>(v);
     unserializer.readValues<T,3>(pbcPosition);
-    unserializer.readValues<T,3>(a);
+    unserializer.readValues<T,3>(vProgressed);
     unserializer.readValues<T,3>(force);
     unserializer.readValues<T,3>(vPrevious);
     unserializer.readValue<plint>(processor);
