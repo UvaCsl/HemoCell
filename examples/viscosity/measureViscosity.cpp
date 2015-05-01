@@ -1,7 +1,7 @@
 /* This file is part of the Palabos library.
  * Copyright (C) 2009, 2010 Jonas Latt
  * E-mail contact: jonas@lbmethod.org
- * The most recent release of Palabos can be downloaded at 
+ * The most recent release of Palabos can be downloaded at
  * <http://www.lbmethod.org/palabos/>
  *
  * The library Palabos is free software: you can redistribute it and/or
@@ -115,7 +115,11 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     u = dt*1.0/dx;
     Re_p = 1.0/nu_p;
     N = int(1.0/dx);
-    flowParam = 0; // flowType/10;
+
+    /* HARDCODED PARAMETERS */
+    flowType = 11;
+
+    flowParam = 1; // flowType/10;
 //    flowType = flowType%10;
     if ( (flowType == 3) or (flowType == 4) or (flowType == 5) or (flowType == 8) ) { // Cell Stretching Analysis
         shearRate = 0;
@@ -198,6 +202,7 @@ int main(int argc, char* argv[])
     plint nx = parameters.getNx();
     plint ny = parameters.getNy();
     plint nz = parameters.getNz();
+    Dot3D latticeSize(nx, ny, nz);
     T tau = parameters.getTau();
     T dx = parameters.getDeltaX();
     T dt = parameters.getDeltaT();
@@ -241,31 +246,11 @@ int main(int argc, char* argv[])
     forceIds[1] = lattice.internalStatSubscription().subscribeSum();
     forceIds[2] = lattice.internalStatSubscription().subscribeSum();
     plint nMomentumExchangeCells=0;
-    if (flowType == 0 or flowType == 3) {
-        T L_tmp = parameters.getNy();
-        T nu_tmp = parameters.getLatticeNu();
-        poiseuilleForce = 8 * (nu_tmp*nu_tmp) * Re / (L_tmp*L_tmp*L_tmp) ;
-        pcout << "(main) Using iniLatticePoiseuilleWithBodyForce. "<< flowType << std::endl;
-        iniLatticePoiseuilleWithBodyForce<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, poiseuilleForce);
-    }
-    else if (flowType == 1) {
-        poiseuilleForce = 0;
-        pcout << "(main) Using iniLatticeSquareCouette. "<< flowType << std::endl;
-        iniLatticeSquareCouette<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate);
-    }
-    else if (flowType == 11) {
-        poiseuilleForce = 0;
-        pcout << "(main) Using iniLatticeSquareCouetteMeasureStress. "<< flowType << std::endl;
-        lattice.toggleInternalStatistics(true);
-        iniLatticeSquareCouetteMeasureStress<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate, forceIds, nMomentumExchangeCells);
-        lattice.toggleInternalStatistics(false);
-    }
-    else if (flowType == 2) {
-        poiseuilleForce = 0;
-        pcout << "(main) Using iniLatticeFullyPeriodic. "<< flowType << std::endl;
-//        envelope-update
-        iniLatticeFullyPeriodic<T, DESCRIPTOR>(lattice, parameters, Array<T,3>(0.02, 0.02, 0.02));
-    }
+    poiseuilleForce = 0;
+    pcout << "(main) Using iniLatticeSquareCouetteMeasureStress. "<< flowType << std::endl;
+    lattice.toggleInternalStatistics(true);
+    iniLatticeSquareCouetteMeasureStress<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate, forceIds, nMomentumExchangeCells);
+    lattice.toggleInternalStatistics(false);
 
 
     /*
@@ -315,13 +300,14 @@ int main(int argc, char* argv[])
     plint initIter=0;
     checkpointer.load(document, lattice, cellFields, initIter);
     if (not checkpointer.wasCheckpointed()) {
-        pcout << "(main) initializing"<< std::endl;
+        pcout << "(main) initializing, tmeas = " << tmeas << std::endl;
         std::vector<Array<T,3> > cellsOrigin;
         cellsOrigin.push_back( Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
         if (flowType==3) { RBCField.initialize(cellsOrigin); }
         else if (hct>0) {
 //            RBCField.grow(0);
-            orderedPositionMultipleCellField3D(cellFields);
+           orderedPositionCellField3D(cellFields, latticeSize);
+//           orderedPositionMultipleCellField3D(cellFields);
 //             randomPositionCellFieldsForGrowth3D(cellFields);
         }
         else { RBCField.initialize(cellsOrigin); }
@@ -412,19 +398,19 @@ int main(int argc, char* argv[])
             } else  if (flowType==11) {
                 T nu_lb = parameters.getLatticeNu();
                 T coeff = nu_lb * nMomentumExchangeCells * shearRate; // * nMomentumExchangeCells;
-                T drag =  lattice.getInternalStatistics().getSum(forceIds[0]) / coeff;
+                T nu_app =  lattice.getInternalStatistics().getSum(forceIds[0]) / coeff;
                 T lift =  lattice.getInternalStatistics().getSum(forceIds[1]) / coeff;
                 T other =  lattice.getInternalStatistics().getSum(forceIds[2]) / coeff;
-                pcout << "; drag=" << drag
+                pcout << "; nu_app=" << nu_app
                       << "; lift=" << lift
                       << "; other=" << other
                       << "; nMomentumExchangeCells=" << nMomentumExchangeCells*1.0/(nx*nz);
+                lattice.toggleInternalStatistics(false);
             }
             pcout << std::endl;
         } else {
             RBCField.synchronizeCellQuantities();
         }
-        if ((iter+1)%tmeas==0 && flowType==11) { lattice.toggleInternalStatistics(false); }
     }
     simpleProfiler.writeIteration(tmax+1);
     global::profiler().writeReport();
