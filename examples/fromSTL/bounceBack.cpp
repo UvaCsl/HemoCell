@@ -132,6 +132,110 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     }
 }
 
+//VoxelizedDomain3D(TriangleBoundary3D<T> const& boundary_,
+//                  int flowType_, plint extraLayer_, plint borderWidth_,
+//                  plint envelopeWidth_, plint blockSize_,
+//                  plint gridLevel_=0, bool dynamicMesh_ = false);
+
+
+
+
+template<typename Tp>
+class CopyFromNeighbor : public BoxProcessingFunctional3D_S<Tp>
+{
+public:
+    CopyFromNeighbor(Array<plint,3> offset_) : offset(offset_) { } ;
+    virtual void process(Box3D domain, ScalarField3D<Tp>& field1);
+    virtual CopyFromNeighbor<Tp>* clone() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+private:
+    Array<plint,3> offset;
+};
+
+
+/* *************** Data Functionals for scalar-fields **************** */
+
+template<typename Tp>
+void CopyFromNeighbor<Tp>::process (
+        Box3D domain, ScalarField3D<Tp>& field1)
+{
+    for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
+        for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
+            for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+                field1.get(iX,iY,iZ) = field1.get(iX+offset[0],iY+offset[1],iZ+offset[2]);
+            }
+        }
+    }
+}
+
+template<typename Tp>
+CopyFromNeighbor<Tp>* CopyFromNeighbor<Tp>::clone() const
+{
+    return new CopyFromNeighbor<Tp>(*this);
+}
+
+template<typename Tp>
+void CopyFromNeighbor<Tp>::getTypeOfModification(std::vector<modif::ModifT>& modified) const {
+    modified[1] = modif::allVariables;
+}
+
+template<typename Tp>
+BlockDomain::DomainT CopyFromNeighbor<Tp>::appliesTo() const {
+    return BlockDomain::bulk;
+}
+
+
+
+
+
+
+void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint nyRef, VoxelizedDomain3D<T> *& voxelizedDomain, MultiScalarField3D<int> *& flagMatrix) {
+    plint yDirection = 1; // Reference direction for stl resolution
+    plint extraLayer  = 0;  // Make the bounding box larger; for visualization purposes
+                            //   only. For the simulation, it is OK to have extraLayer=0.
+    plint blockSize = -1; // Zero means: no sparse representation.
+    plint borderWidth = 1;  // Because the Guo boundary condition acts in a one-cell layer.
+                            // Requirement: margin>=borderWidth.
+    plint margin      = 1;  // Extra margin of allocated cells around the obstacle.
+
+    TriangleSet<T>* triangleSet =  new TriangleSet<T>(meshFileName, DBL);
+
+    DEFscaledMesh<T>* defMesh =
+        new DEFscaledMesh<T>(*triangleSet, nyRef, yDirection, margin, extraLayer);
+    TriangleBoundary3D<T> boundary(*defMesh);
+    delete defMesh;
+    boundary.getMesh().inflate();
+
+    voxelizedDomain = new VoxelizedDomain3D<T> (
+            boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, blockSize );
+    pcout << getMultiBlockInfo(voxelizedDomain->getVoxelMatrix()) << std::endl;
+
+
+    flagMatrix = new MultiScalarField3D<int> ((MultiBlock3D&)voxelizedDomain->getVoxelMatrix());
+    setToConstant(*flagMatrix, voxelizedDomain->getVoxelMatrix(),
+                  voxelFlag::inside, flagMatrix->getBoundingBox(), 1);
+    setToConstant(*flagMatrix, voxelizedDomain->getVoxelMatrix(),
+                  voxelFlag::innerBorder, flagMatrix->getBoundingBox(), 1);
+
+
+    Box3D domainBox = flagMatrix->getBoundingBox();
+    plint nx = domainBox.getNx();
+    plint ny = domainBox.getNy();
+    plint nz = domainBox.getNz();
+
+    Box3D domain(0,1, 0,ny-1,0,nz-1);
+    applyProcessingFunctional (new CopyFromNeighbor<int>(Array<plint,3>(1,0,0) ), domain, *flagMatrix);
+
+    domain = Box3D(nx-2,nx-1, 0, ny-1,0,nz-1);
+    applyProcessingFunctional (new CopyFromNeighbor<int>(Array<plint,3>(-1,0,0) ), domain, *flagMatrix);
+
+
+
+    VtkImageOutput3D<T> vtkOut("test.vtk");
+    vtkOut.writeData<float>(*copyConvert<int,double>(*extractSubDomain(*flagMatrix, flagMatrix->getBoundingBox())), "flag", 1.);
+
+}
 
 
 int main(int argc, char* argv[])
@@ -223,51 +327,36 @@ int main(int argc, char* argv[])
 //    else {
 //        extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with width 2.
 //    }
+    std::string meshFileName="tube.stl";
+    plb::MultiScalarField3D<int> * flagMatrix=0;
+    VoxelizedDomain3D<T> * voxelizedDomain=0;
+    getFlagMatrixFromSTL(meshFileName, extendedEnvelopeWidth, ny, voxelizedDomain, flagMatrix);
+    Box3D domainBox = flagMatrix->getBoundingBox();
+    nx = domainBox.getNx();
+    ny = domainBox.getNy();
+    nz = domainBox.getNz();
+
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
-        defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
+//            defaultMultiBlockPolicy3D().getMultiBlockManagement(flagMatrix->getBoundingBox(), extendedEnvelopeWidth),
+            defaultMultiBlockPolicy3D().getMultiBlockManagement(nx,ny,nz, extendedEnvelopeWidth),
         defaultMultiBlockPolicy3D().getBlockCommunicator(),
         defaultMultiBlockPolicy3D().getCombinedStatistics(),
         defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
         new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(parameters.getOmega()));
-    lattice.periodicity().toggleAll(true);
-    /*
-     * Choose case (Square Poiseuille, Couette etc) *
-     */
-    OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
-        = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
-    pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
-    lattice.toggleInternalStatistics(false);
-    Array<plint,3> forceIds;
-    forceIds[0] = lattice.internalStatSubscription().subscribeSum();
-    forceIds[1] = lattice.internalStatSubscription().subscribeSum();
-    forceIds[2] = lattice.internalStatSubscription().subscribeSum();
-    plint nMomentumExchangeCells=0;
-    if (flowType == 0 or flowType == 3) {
-        T L_tmp = parameters.getNy();
-        T nu_tmp = parameters.getLatticeNu();
-        poiseuilleForce = 8 * (nu_tmp*nu_tmp) * Re / (L_tmp*L_tmp*L_tmp) ;
-        pcout << "(main) Using iniLatticePoiseuilleWithBodyForce. "<< flowType << std::endl;
-        iniLatticePoiseuilleWithBodyForce<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, poiseuilleForce);
-    }
-    else if (flowType == 1) {
-        poiseuilleForce = 0;
-        pcout << "(main) Using iniLatticeSquareCouette. "<< flowType << std::endl;
-        iniLatticeSquareCouette<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate);
-    }
-    else if (flowType == 11) {
-        poiseuilleForce = 0;
-        pcout << "(main) Using iniLatticeSquareCouetteMeasureStress. "<< flowType << std::endl;
-        lattice.toggleInternalStatistics(true);
-        iniLatticeSquareCouetteMeasureStress<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate, forceIds, nMomentumExchangeCells);
-        lattice.toggleInternalStatistics(false);
-    }
-    else if (flowType == 2) {
-        poiseuilleForce = 0;
-        pcout << "(main) Using iniLatticeFullyPeriodic. "<< flowType << std::endl;
-//        envelope-update
-        iniLatticeFullyPeriodic<T, DESCRIPTOR>(lattice, parameters, Array<T,3>(0.02, 0.02, 0.02));
-    }
 
+//    MultiBlockLattice3D<T,DESCRIPTOR> lattice = *generateMultiBlockLattice<T,DESCRIPTOR> (
+//                voxelizedDomain->getVoxelMatrix(), extendedEnvelopeWidth, new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(parameters.getOmega()));
+
+    defineDynamics(lattice, *flagMatrix, lattice.getBoundingBox(), new BounceBack<T,DESCRIPTOR>(1.), 0);
+
+    lattice.periodicity().toggleAll(true);
+    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), 1., Array<T,3>(0.,0.,0.));
+
+    T nu_tmp = parameters.getLatticeNu();
+    poiseuilleForce = 8 * (nu_tmp*nu_tmp) * Re / (ny*ny*ny) ;
+    setExternalVector(lattice, lattice.getBoundingBox(),
+            DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+    lattice.initialize();
 
     /*
      * Initialize model *
@@ -280,7 +369,7 @@ int main(int argc, char* argv[])
 
 
     T persistenceLengthFine = 7.5e-9 ; // In meters
-	k_rest= 0;
+    k_rest= 0;
 
     std::vector<ConstitutiveModel<T, DESCRIPTOR>* > cellModels;
     std::vector<CellField3D<T, DESCRIPTOR>* > cellFields;
@@ -293,8 +382,8 @@ int main(int argc, char* argv[])
     eqVolumes.push_back(meshmetric.getVolume());
     plint numVerticesPerCell = meshElement.getNumVertices();
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
-	cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-		persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement));
+    cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+        persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement));
     cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hct, cellModels[0], ibmKernel, "RBC"));
 
 //    =======================  Create Platelet
@@ -305,7 +394,7 @@ int main(int argc, char* argv[])
         eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
         cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend*5, k_stretch, k_WLC*5.0, k_elastic, k_volume, k_surface, eta_m,
             persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement) );
-        cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.005, cellModels[cellModels.size()-1], ibmKernel, "PLT"));
+        cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.001, cellModels[cellModels.size()-1], ibmKernel, "PLT"));
 
 
 
@@ -330,21 +419,24 @@ int main(int argc, char* argv[])
         checkpointer.save(lattice, cellFields, initIter);
     }
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
-    	cellFields[iCell]->setParticleUpdateScheme(ibmScheme);
+        cellFields[iCell]->setParticleUpdateScheme(ibmScheme);
     }
 
 //    if (rbcModel == 3) {
 //        // Has a problem with checkpointing
-//    	(dynamic_cast<RestModel3D<T,DESCRIPTOR>*>(cellModel))->freezeVertices(RBCField);
+//      (dynamic_cast<RestModel3D<T,DESCRIPTOR>*>(cellModel))->freezeVertices(RBCField);
 //    }
-	pcout << std::endl ;
+    pcout << std::endl ;
+    plint domainVol = computeSum(*flagMatrix);
+    pcout << "Number of fluid cells: " << domainVol << std::endl;
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
-		plint nCells = cellFields[iCell]->getNumberOfCells_Global();
-		pcout << "(main) Hematocrit [x100%]: " << nCells*eqVolumes[iCell]*100.0/(nx*ny*nz) << std::endl;
-		pcout << "(main) nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() ;
-		pcout << ", Volume = " << eqVolumes[iCell] << std::endl;
+        plint nCells = cellFields[iCell]->getNumberOfCells_Global();
+        pcout << "(main) Hematocrit [x100%]: " << nCells*eqVolumes[iCell]*100.0/(domainVol) << std::endl;
+        pcout << "(main) nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() ;
+        pcout << ", Volume = " << eqVolumes[iCell] << std::endl;
     }
-	pcout << std::endl << "(main) Starting simulation i=" << initIter << std::endl;
+    pcout << std::endl << "(main) Starting simulation i=" << initIter << std::endl;
+    for (plint itrt=0; itrt<200; ++itrt) { lattice.collideAndStream(); }
 
 //    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
 //                                                        createBoundaryParticleField3D(lattice);
@@ -356,7 +448,7 @@ int main(int argc, char* argv[])
     /*      Sync all quantities    */
     SyncRequirements everyCCR(allReductions);
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
-    	cellFields[iCell]->synchronizeCellQuantities(everyCCR);
+        cellFields[iCell]->synchronizeCellQuantities(everyCCR);
     }
     /*            I/O              */
     global::timer("HDFOutput").start();
@@ -381,14 +473,14 @@ int main(int argc, char* argv[])
 //       RBCField.applyConstitutiveModel();
 //       RBCField.applyCellCellForce(PLF, R);
         for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
-     	   cellFields[iCell]->applyConstitutiveModel();
+           cellFields[iCell]->applyConstitutiveModel();
         }
 
        if (flowType==3) { cellStretch.stretch(); }
         // #2# IBM Spreading
        cellFields[0]->setFluidExternalForce(poiseuilleForce);
        for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
-    	   cellFields[iCell]->spreadForceIBM();
+           cellFields[iCell]->spreadForceIBM();
        }
         // #3# LBM
         if ((iter+1)%tmeas==0 && flowType==11) { lattice.toggleInternalStatistics(true); }
@@ -396,23 +488,23 @@ int main(int argc, char* argv[])
         lattice.collideAndStream();
         global::timer("LBM").stop();
         for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
-			// #4# IBM Interpolation
-        	cellFields[iCell]->interpolateVelocityIBM();
-			// #5# Position Update
-        	cellFields[iCell]->advanceParticles();
+            // #4# IBM Interpolation
+            cellFields[iCell]->interpolateVelocityIBM();
+            // #5# Position Update
+            cellFields[iCell]->advanceParticles();
         }
 
         // #6# Output
         if ((iter+1)%tmeas==0) {
             SyncRequirements everyCCR(allReductions);
             for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
-            	cellFields[iCell]->synchronizeCellQuantities(everyCCR);
+                cellFields[iCell]->synchronizeCellQuantities(everyCCR);
             }
             global::timer("HDFOutput").start();
             writeHDF5(lattice, parameters, iter+1);
             for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
-            	writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
-            	writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
+                writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
+                writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
             }
             global::timer("HDFOutput").stop();
             if ((iter+1)%(2*tmeas)==0) {
@@ -425,31 +517,17 @@ int main(int argc, char* argv[])
             global::profiler().writeReport();
             pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
 //            pcout << "; Volume (" << RBCField[0]->getVolume() << ")";
-            if (flowType==3) {
-                Array<T,3> stretch = cellStretch.measureStretch();
-                pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") ";
-            } else  if (flowType==11) {
-                T nu_lb = parameters.getLatticeNu();
-                T coeff = nu_lb * nMomentumExchangeCells * shearRate; // * nMomentumExchangeCells;
-                T drag =  lattice.getInternalStatistics().getSum(forceIds[0]) / coeff;
-                T lift =  lattice.getInternalStatistics().getSum(forceIds[1]) / coeff;
-                T other =  lattice.getInternalStatistics().getSum(forceIds[2]) / coeff;
-                pcout << "; drag=" << drag
-                      << "; lift=" << lift
-                      << "; other=" << other
-                      << "; nMomentumExchangeCells=" << nMomentumExchangeCells*1.0/(nx*nz);
-            }
             pcout << std::endl;
         } else {
             for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
-            	cellFields[iCell]->synchronizeCellQuantities();
+                cellFields[iCell]->synchronizeCellQuantities();
             }
         }
         if ((iter+1)%tmeas==0 && flowType==11) { lattice.toggleInternalStatistics(false); }
     }
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
-    	delete cellFields[iCell];
-    	delete cellModels[iCell];
+        delete cellFields[iCell];
+        delete cellModels[iCell];
     }
     simpleProfiler.writeIteration(tmax+1);
     global::profiler().writeReport();
