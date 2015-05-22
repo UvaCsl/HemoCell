@@ -41,7 +41,7 @@ void getOrderedPositionsMultipleCellsVector(Box3D realDomain,
 	int W=realDomain.getNx() * fac,
 		H=realDomain.getNy() * fac,
 		D=realDomain.getNz() * fac;
-	int nodelimit=0, iterlimit=0, timelimit=0;
+	int nodelimit=0, iterlimit=0, timelimit=10;
 	int packingtype=0;
 	int ub, lb;
 	int nodeused, iterused, timeused;
