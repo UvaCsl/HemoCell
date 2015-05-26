@@ -143,6 +143,22 @@ private:
 };
 
 
+template<typename T, template<typename U> class Descriptor>
+void applyWallCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
+        MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & wallParticles,
+        CellField3D<T, Descriptor> & cellField) {
+
+    std::vector<MultiBlock3D*> wallParticleSurfaceParticleArg;
+    wallParticleSurfaceParticleArg.push_back(&wallParticles);
+    wallParticleSurfaceParticleArg.push_back(   cellField.getParticleArg()[0]   );
+    global::timer("CellCellForce").start();
+    applyProcessingFunctional (
+       new ComputeWallCellForces3D<T,Descriptor> (calcForce, cutoffRadius),
+       wallParticles.getBoundingBox(), wallParticleSurfaceParticleArg );
+    global::timer("CellCellForce").stop();
+}
+
+
 #include "cellField3D.hh"
 #endif
 

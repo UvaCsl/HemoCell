@@ -418,8 +418,8 @@ BlockDomain::DomainT CountGlobalNumberOfCells<T,Descriptor>::appliesTo() const {
 /* ******** DeleteIncompleteCells *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
-DeleteIncompleteCells<T,Descriptor>::DeleteIncompleteCells (std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_)
-: cellIdToCell3D(cellIdToCell3D_) { }
+DeleteIncompleteCells<T,Descriptor>::DeleteIncompleteCells (std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_, plint numberOfVertices_)
+: cellIdToCell3D(cellIdToCell3D_), numberOfVertices(numberOfVertices_) { }
 
 template<typename T, template<typename U> class Descriptor>
 DeleteIncompleteCells<T,Descriptor>::DeleteIncompleteCells (DeleteIncompleteCells<T,Descriptor> const& rhs)
@@ -455,7 +455,9 @@ void DeleteIncompleteCells<T,Descriptor>::processGenericBlocks (
 		}
 	}
 	std::vector<plint> cellIdsToDelete;
-	plint Nv = (cellIdToCell3D.begin()->second)->getNumVertices_Global();
+	plint Nv;
+	if (numberOfVertices==0)  { Nv = (cellIdToCell3D.begin()->second)->getNumVertices_Global(); }
+	else { Nv = numberOfVertices; }
 	typename std::map<plint, plint >::iterator iter;
 	for (iter  = numberOfParticlesPerCellid.begin(); iter != numberOfParticlesPerCellid.end(); ++iter) {
 		plint cellId = iter->first;

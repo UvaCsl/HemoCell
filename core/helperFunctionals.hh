@@ -35,18 +35,29 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
     for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
         for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
             for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+
+// TODO: Next snippet to allocate only nodes that have a fluid node.
+//                int neighboringBoundaries=0;
+//                try {
+//                    for (int px = iX-1; px <= iX+1; ++px) {  for (int py = iY-1; py <= iY+1; ++py) { for (int pz = iZ-1; pz <= iZ+1; ++pz) {
+//                        neighboringBoundaries += fluid.get(px, py, pz).getDynamics().isBoundary();
+//                    }  }  }
+//                    neighboringBoundaries -= fluid.get(iX, iY, iZ).getDynamics().isBoundary();
+//                } catch (int e) { neighboringBoundaries=0; }
+//                if (fluid.get(iX, iY, iZ).getDynamics().isBoundary() and neighboringBoundaries<27) {
+
             	if (fluid.get(iX, iY, iZ).getDynamics().isBoundary()) {
             		Array<T,3> vertex = Array<T,3>(iX,iY,iZ) + relativePosition;
 //            		std::cout << "(" << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << ") " << id << std::endl;
             		std::vector<Array<T,3> > vertices;
-					vertices.push_back(Array<T,3>(0.25, 0.25, 0.25) + vertex);
-					vertices.push_back(Array<T,3>(0.25, 0.25, 0.50) + vertex);
-					vertices.push_back(Array<T,3>(0.25, 0.50, 0.50) + vertex);
-					vertices.push_back(Array<T,3>(0.25, 0.50, 0.25) + vertex);
-					vertices.push_back(Array<T,3>(0.50, 0.50, 0.25) + vertex);
-					vertices.push_back(Array<T,3>(0.50, 0.25, 0.25) + vertex);
-					vertices.push_back(Array<T,3>(0.50, 0.25, 0.50) + vertex);
-					vertices.push_back(Array<T,3>(0.50, 0.50, 0.50) + vertex);
+                    vertices.push_back(Array<T,3>(0.25, 0.25, 0.25) + vertex);
+                    vertices.push_back(Array<T,3>(0.25, 0.25, 0.50) + vertex);
+                    vertices.push_back(Array<T,3>(0.25, 0.50, 0.50) + vertex);
+                    vertices.push_back(Array<T,3>(0.25, 0.50, 0.25) + vertex);
+                    vertices.push_back(Array<T,3>(0.50, 0.50, 0.25) + vertex);
+                    vertices.push_back(Array<T,3>(0.50, 0.25, 0.25) + vertex);
+                    vertices.push_back(Array<T,3>(0.50, 0.25, 0.50) + vertex);
+                    vertices.push_back(Array<T,3>(0.50, 0.50, 0.50) + vertex);
             	    for (plint indx=0; indx<8; ++indx) {
             	    	boundaryParticleField.addParticle(
             	    			boundaryParticleField.getBoundingBox(),
@@ -58,7 +69,7 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
     }
     std::vector<Particle3D<T,Descriptor>*> particles;
     boundaryParticleField.findParticles(domain, particles);
-	std::cout << id << " Number of Particles " << particles.size() << std::endl;
+//	std::cout << "(PositionBoundaryParticles) pid:" << id << " Number of Particles " << particles.size() << std::endl;
 
 }
 

@@ -155,7 +155,7 @@ template<typename T, template<typename U> class Descriptor>
 class DeleteIncompleteCells : public BoxProcessingFunctional3D
 {
 public:
-    DeleteIncompleteCells (std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_);
+    DeleteIncompleteCells (std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_, plint numberOfVertices_=0);
     virtual ~DeleteIncompleteCells() { };
     DeleteIncompleteCells(DeleteIncompleteCells<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -166,6 +166,7 @@ public:
     void getModificationPattern(std::vector<bool>& isWritten) const;
 private:
     std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
+    plint numberOfVertices;
 };
 
 

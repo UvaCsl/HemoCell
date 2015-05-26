@@ -70,6 +70,32 @@ private:
 
 
 
+template<typename T, template<typename U> class Descriptor>
+class ComputeWallCellForces3D : public BoxProcessingFunctional3D
+{
+public:
+    ComputeWallCellForces3D (CellCellForce3D<T> & calcForce_, T cutoffRadius_);
+    virtual ~ComputeWallCellForces3D();
+    ComputeWallCellForces3D(ComputeWallCellForces3D<T,Descriptor> const& rhs);
+    /// Arguments: [0] Particle-field
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual ComputeWallCellForces3D<T,Descriptor>* clone() const;
+    virtual void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+public:
+    bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T& r, Array<T,3>& eij);
+    void applyForce(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij);
+private:
+    CellCellForce3D<T> & calcForce;
+    T cutoffRadius;
+};
+
+
+
+
+
+
 
 
 template<typename T>
