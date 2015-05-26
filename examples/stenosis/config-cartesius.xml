@@ -5,7 +5,7 @@
     <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
     <shellDensity> 1.0 </shellDensity>
 
-    <kBend> 1000e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <kBend> 3000e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
     <kVolume> 60000.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
     <kSurface> 59000.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
 <!-- 0.5e0 -->
@@ -32,7 +32,7 @@ Fast Cell Stretching release [8],
 Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType], 
  -->
     <flowType> 0 </flowType>   
-    <Re> 5 </Re>   <!--Reynolds number-->
+    <Re> 10.0 </Re>   <!--Reynolds number-->
     <shearRate> 500 </shearRate>   <!--Shear Rate for Couette flow, Physical units [1/s]. Using ny-->
     <stretchForce> 150.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. When used with 2, it's the disaggregation force-->
     <eulerAngles> 0 0 0 </eulerAngles> <!-- In degrees -->
@@ -56,18 +56,19 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1.00e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <lx> 32.0e-6 </lx> <!--Size of domain in SI. For Lattice 5nits try: nx, ny, nz -->
-    <ly> 32.0e-6 </ly> <!--ly/ny is used for the Reynolds number calculation -->
-    <lz> 16.0e-6 </lz>
+    <lx> 767.0e-6 </lx> <!--Size of domain in SI. For Lattice 5nits try: nx, ny, nz -->
+    <ly> 255.0e-6 </ly> <!--ly/ny is used for the Reynolds number calculation -->
+    <lz> 63.0e-6 </lz>
     <!-- Re refers to the stenosis -->
     <stenosisHeightFraction> 0.5 </stenosisHeightFraction>    <!-- Opening of stenosis in units of ly. If ly=30 and stenosisHeightFraction=0.8, then the opening is 24 -->
     <stenosisLengthFraction> 0.25 </stenosisLengthFraction>    <!-- Length of stenosis in units of lx. If lx=400 and stenosisLengthFraction=0.25, then the length is 100 -->
 </domain>
 
 <sim>
-    <tmax> 5000000 </tmax> <!-- total number of iterations -->
+    <tmax> 200000 </tmax> <!-- total number of iterations -->
     <tmeas> 0 </tmeas> <!-- IGNORED: tmeas=L/Umax . Interval after which data is written --> 
     <hct> 40.</hct> <!-- Hematocrit  > -->
 </sim>
 
 </ficsion>
+

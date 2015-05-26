@@ -19,7 +19,7 @@
 */
 
 #include "ficsion.h"
-#include "initRBCsAndPLTs.hh"
+// #include "initRBCsAndPLTs.hh"
 typedef double T;
 typedef Array<T,3> Velocity;
 #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor
