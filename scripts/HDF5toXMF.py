@@ -275,6 +275,8 @@ def createXDMF(fnameString, processorStrings):
 	"""
 	fnameToSave =  ( (fnameString%(""))[:-6] + '.xmf' )
 	fnameToSave = fnameToSave.replace('/hdf5/','/')
+        if os.path.isfile(fnameToSave):
+                  return fnameToSave + " (existed)"
 	xdmfFile = HDF5toXDMF_Fluid(fnameToSave)
 	xdmfFile.openCollection("Domain")
 	processorStrings = sorted(processorStrings)
