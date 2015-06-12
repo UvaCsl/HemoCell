@@ -54,6 +54,7 @@ useHDF5 = true
 libraryPaths = 
 # Path to inlude directories (other than Palabos)
 includePaths = $(ficsionRoot) $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/ $(ficsionRoot)/IO/ $(ficsionRoot)/newMesh/
+includePaths += ${HDF5_INC}
 # Path to inlude directories (other than Palabos)
 # ficsionPaths = $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/
 # Dynamic and static libraries (other than Palabos)
@@ -67,28 +68,29 @@ ifeq ($(UNAME),Darwin)
 # Compiler to use with MPI parallelism
 	parallelCXX  = /usr/local/bin/mpicxx
 # General compiler flags (e.g. -Wall to turn on all warnings on g++)
-	compileFlags = -DPLB_MAC_OS_X -Wall -fpermissive
+	compileFlags = -DPLB_MAC_OS_X
 else
 # Compiler to use with MPI parallelism
     ifeq ($(HOSTNAME), kolmogorov) # WorkMachine needs special treatment!
         parallelCXX  = mpicxx.openmpi
     else
-        parallelCXX = mpicxx
+        parallelCXX = mpixlcxx
     endif
 # General compiler flags (e.g. -Wall to turn on all warnings on g++)
-    compileFlags = -Wall 
+    compileFlags = -DPLB_BGP
 endif
 
 ifeq ($(useHDF5), true)
-    compileFlags  += -lhdf5_cpp -lhdf5 -lhdf5_hl_cpp -lhdf5_hl -DFCN_USE_HDF5
-    libraries     += -lhdf5 -lhdf5_hl
+    compileFlags  += -lhdf5_hl -lhdf5 -lsz -lz  -DFCN_USE_HDF5
+    libraries     += -lhdf5_hl -lhdf5 -lsz -lz
+    libraryPaths  += ${HDF5_LIB} ${SZIP_LIB} ${ZLIB_LIB}
 endif
 
-compileFlags += -Wreorder -Wsign-compare
+compileFlags += 
 # General linker flags (don't put library includes into this flag)
-linkFlags    = -Wreorder -Wsign-compare
+linkFlags    =
 # Compiler flags to use when optimization mode is on
-optimFlags   = -O3 -finline-functions
+optimFlags   = -O3 
 # Compiler flags to use when debug mode is on
 debugFlags   = -g
 # Compiler flags to use when profile mode is on
