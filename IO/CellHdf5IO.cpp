@@ -31,10 +31,11 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
   /************************************************************/
 
      std::map<plint, Cell3D<T,Descriptor>* > cellIdToCell3D = cellField3D.getCellIdToCell3D();
-     plint Nc = cellField3D.getNumberOfCells();
-     std::vector<plint> cellIds = cellField3D.getCellIds();
+     long int Nc = cellField3D.getNumberOfCells();
+     std::vector<long int> cellIds(cellField3D.getCellIds().begin(), cellField3D.getCellIds().end());
+
      if (Nc == 0) { return; }
-     plint firstCell = cellIds[0];
+     long int firstCell = cellIds[0];
      std::vector<plint> const& scalarCcrIds = cellIdToCell3D[firstCell]->getScalarCcrIds();
      std::vector<plint> const& vectorCcrIds = cellIdToCell3D[firstCell]->getVectorCcrIds();
      std::vector<plint> const& tensorCcrIds = cellIdToCell3D[firstCell]->getTensorCcrIds();
