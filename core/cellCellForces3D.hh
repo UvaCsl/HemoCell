@@ -4,6 +4,98 @@
 #include "cellCellForces3D.h"
 
 
+/* ******** ApplyProximityDynamics3D *********************************** */
+
+template<typename T, template<typename U> class Descriptor, class DomainFunctional>
+ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::ApplyProximityDynamics3D (DomainFunctional proximityDynamics_, T cutoffRadius_)
+: proximityDynamics(proximityDynamics_), cutoffRadius(cutoffRadius_) { }
+
+template<typename T, template<typename U> class Descriptor, class DomainFunctional>
+ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::~ApplyProximityDynamics3D() { }
+
+template<typename T, template<typename U> class Descriptor, class DomainFunctional>
+ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::ApplyProximityDynamics3D (ApplyProximityDynamics3D<T,Descriptor,DomainFunctional> const& rhs)
+: proximityDynamics(rhs.proximityDynamics), cutoffRadius(rhs.cutoffRadius) { }
+
+template<typename T, template<typename U> class Descriptor, class DomainFunctional>
+bool ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::checkDistance (
+        Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
+{
+    eij = p1->getPosition() - p2->getPosition();
+    r = norm(eij);
+    if (r > cutoffRadius) { return false; }
+    eij = eij * (1.0/r);
+    return true;
+}
+
+template<typename T, template<typename U> class Descriptor, class DomainFunctional>
+void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    PLB_PRECONDITION( blocks.size()==2 );
+    ParticleField3D<T,Descriptor>& particleField1 =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    ParticleField3D<T,Descriptor>& particleField2 =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[1]);
+    Dot3D offset = computeRelativeDisplacement(particleField1, particleField2);
+
+    T r;
+    Array<T,3> eij;
+    plint dR = ceil(cutoffRadius);
+
+    std::vector<Particle3D<T,Descriptor>*> currentParticles, neighboringParticles;
+    for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
+        for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
+            for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+                currentParticles.clear(); neighboringParticles.clear();
+
+                Box3D currentBox(iX,iX,iY,iY,iZ,iZ);
+                Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
+                particleField1.findParticles(currentBox, currentParticles);
+                if (currentParticles.size() == 0) { break; }
+                particleField2.findParticles(neighboringBoxes, neighboringParticles);
+                if (neighboringParticles.size() == 0) { break; }
+
+                for (pluint cP=0; cP<currentParticles.size(); ++cP) {
+                    for (pluint nP=0; nP<neighboringParticles.size(); ++nP) {
+                        if (checkDistance(currentParticles[cP], neighboringParticles[nP], r, eij)) {
+                            proximityDynamics(currentParticles[cP], neighboringParticles[nP], r, eij);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    proximityDynamics.close();
+}
+
+template<typename T, template<typename U> class Descriptor, class DomainFunctional>
+ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>*
+    ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::clone() const
+{
+    return new ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor, class DomainFunctional>
+void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::getModificationPattern(std::vector<bool>& isWritten) const {
+    for (int i = 0; i < isWritten.size(); ++i)
+        { isWritten[i] = true; }
+}
+
+template<typename T, template<typename U> class Descriptor, class DomainFunctional>
+BlockDomain::DomainT ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::appliesTo() const {
+    return BlockDomain::bulkAndEnvelope;
+}
+
+template<typename T, template<typename U> class Descriptor, class DomainFunctional>
+void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    for (int i = 0; i < modified.size(); ++i)
+        { modified[i] = modif::dynamicVariables; }
+}
+
+
 
 /* ******** ComputeCellCellForces3D *********************************** */
 

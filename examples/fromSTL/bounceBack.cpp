@@ -177,7 +177,7 @@ CopyFromNeighbor<Tp>* CopyFromNeighbor<Tp>::clone() const
 
 template<typename Tp>
 void CopyFromNeighbor<Tp>::getTypeOfModification(std::vector<modif::ModifT>& modified) const {
-    modified[1] = modif::allVariables;
+    modified[0] = modif::allVariables;
 }
 
 template<typename Tp>
