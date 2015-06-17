@@ -11,6 +11,21 @@ template<typename T>
 class CellCellForce3D;
 
 
+// This function object defines the force between two LSPs of different CellField3D, once their LSPs are in proximity.
+// It it to be used as an argument to ApplyProximityDynamics3D
+template<typename T, template<typename U> class Descriptor>
+class ProximityDynamics3D {
+public:
+    ProximityDynamics3D () { };
+    ProximityDynamics3D (ProximityDynamics3D<T,Descriptor> const& rhs) { }
+    virtual ~ProximityDynamics3D ();
+    virtual bool operator()(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) =0;
+    virtual void close() = 0;
+    virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) =0;
+private:
+};
+
+
 /* ******** ApplyProximityDynamics3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor, class DomainFunctional>
@@ -57,7 +72,7 @@ public:
         : forceType(forceType_), cutoffRadius(cutoffRadius_) { }
     ProximityCellCellForce3D (ProximityCellCellForce3D<T,Descriptor> const& rhs)
         : forceType(rhs.forceType), cutoffRadius(rhs.cutoffRadius) { }
-    virtual ~ProximityCellCellForce3D ();
+    virtual ~ProximityCellCellForce3D () { } ;
     virtual bool operator()(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) {
         bool conditionsMet = conditionsAreMet(p1,p2,r,eij);
         if (conditionsMet) {
@@ -86,7 +101,7 @@ public:
         : forceType(forceType_), cutoffRadius(cutoffRadius_) { }
     ProximitySameCellForce3D (ProximitySameCellForce3D<T,Descriptor> const& rhs)
         : forceType(rhs.forceType), cutoffRadius(rhs.cutoffRadius) { }
-    virtual ~ProximitySameCellForce3D ();
+    virtual ~ProximitySameCellForce3D () { };
     virtual bool operator()(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) {
         bool conditionsMet = conditionsAreMet(p1,p2,r,eij);
         if (conditionsMet) {
