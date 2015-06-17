@@ -4,6 +4,22 @@
 #include "cellCellForces3D.h"
 
 
+
+
+template<typename T, template<typename U> class Descriptor>
+void applySameCellFieldForces(CellField3D<T, Descriptor> & cellField, CellCellForce3D<T> & forceType, T cutoffRadius) {
+    ProximitySameCellFieldForce3D<T, Descriptor> pscf(forceType, cutoffRadius);
+    std::vector<MultiBlock3D*> particleFieldArg;
+    particleFieldArg.push_back(cellField.getParticleArg()[0]);
+    particleFieldArg.push_back(cellField.getParticleArg()[0]);
+    applyProcessingFunctional (
+        new ApplyProximityDynamics3D<T,Descriptor, ProximitySameCellFieldForce3D<T, Descriptor> >(pscf, cutoffRadius),
+        particleFieldArg[0]->getBoundingBox(), particleFieldArg );
+}
+
+
+
+
 /* ******** ApplyProximityDynamics3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor, class DomainFunctional>
@@ -32,11 +48,14 @@ template<typename T, template<typename U> class Descriptor, class DomainFunction
 void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
-    PLB_PRECONDITION( blocks.size()==2 );
+    PLB_PRECONDITION( blocks.size()>=2 );
     ParticleField3D<T,Descriptor>& particleField1 =
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
     ParticleField3D<T,Descriptor>& particleField2 =
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[1]);
+    Box3D extendedDomain1 = particleField1.getBoundingBox();
+    Box3D extendedDomain2 = particleField2.getBoundingBox();
+
     Dot3D offset = computeRelativeDisplacement(particleField1, particleField2);
 
     T r;
@@ -44,17 +63,26 @@ void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::processGenericBloc
     plint dR = ceil(cutoffRadius);
 
     std::vector<Particle3D<T,Descriptor>*> currentParticles, neighboringParticles;
-    for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
-        for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
-            for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+
+    for (plint iX=extendedDomain1.x0; iX<=extendedDomain1.x1; ++iX) {
+        for (plint iY=extendedDomain1.y0; iY<=extendedDomain1.y1; ++iY) {
+            for (plint iZ=extendedDomain1.z0; iZ<=extendedDomain1.z1; ++iZ) {
                 currentParticles.clear(); neighboringParticles.clear();
 
+                plint x0,x1,y0,y1,z0,z1;
+                plint iXo=iX-offset.x, iYo=iY-offset.y, iZo=iZ-offset.z;
+                x0 = max(extendedDomain2.x0, iXo-dR); x1 = min(extendedDomain2.x1, iXo+dR);
+                y0 = max(extendedDomain2.y0, iYo-dR); y1 = min(extendedDomain2.y1, iYo+dR);
+                z0 = max(extendedDomain2.z0, iZo-dR); z1 = min(extendedDomain2.z1, iZo+dR);
+
                 Box3D currentBox(iX,iX,iY,iY,iZ,iZ);
-                Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
+                Box3D neighboringBoxes(x0, x1, y0, y1, z0, z1);
+
                 particleField1.findParticles(currentBox, currentParticles);
-                if (currentParticles.size() == 0) { break; }
+                if (currentParticles.size() == 0) { continue; }
+
                 particleField2.findParticles(neighboringBoxes, neighboringParticles);
-                if (neighboringParticles.size() == 0) { break; }
+                if (neighboringParticles.size() == 0) { continue; }
 
                 for (pluint cP=0; cP<currentParticles.size(); ++cP) {
                     for (pluint nP=0; nP<neighboringParticles.size(); ++nP) {
@@ -84,7 +112,7 @@ void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::getModificationPat
 
 template<typename T, template<typename U> class Descriptor, class DomainFunctional>
 BlockDomain::DomainT ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::appliesTo() const {
-    return BlockDomain::bulkAndEnvelope;
+    return BlockDomain::bulk; // Takes the whole domain in the processGenericBlocks
 }
 
 template<typename T, template<typename U> class Descriptor, class DomainFunctional>
@@ -92,7 +120,7 @@ void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::getTypeOfModificat
         std::vector<modif::ModifT>& modified ) const
 {
     for (int i = 0; i < modified.size(); ++i)
-        { modified[i] = modif::dynamicVariables; }
+        { modified[i] = modif::allVariables; }
 }
 
 
@@ -174,7 +202,7 @@ void ComputeCellCellForces3D<T,Descriptor>::processGenericBlocks (
 
                 Box3D neighboringBoxes(x0, x1, y0, y1, z0, z1);
                 particleField.findParticles(currentBox, currentParticles);
-                if (currentParticles.size() == 0) { break; }
+                if (currentParticles.size() == 0) { continue; }
                 particleField.findParticles(neighboringBoxes, neighboringParticles);
                 for (pluint cP=0; cP<currentParticles.size(); ++cP) {
                     for (pluint nP=0; nP<neighboringParticles.size(); ++nP) {
@@ -247,8 +275,8 @@ void ComputeDifferentCellForces3D<T,Descriptor>::applyForce (
         ImmersedCellParticle3D<T,Descriptor>* cParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p1);
         ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
         Array<T,3> force = calcForce(r, eij);
-        cParticle->get_force() -= force;
-        nParticle->get_force() += force;
+        cParticle->get_force() += force;
+        nParticle->get_force() -= force;
 #ifdef PLB_DEBUG // Less Calculations
         cParticle->get_f_repulsive() -= force;
         nParticle->get_f_repulsive() += force;
@@ -282,9 +310,9 @@ void ComputeDifferentCellForces3D<T,Descriptor>::processGenericBlocks (
                 Box3D currentBox(iX,iX,iY,iY,iZ,iZ);
                 Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
                 particleField1.findParticles(currentBox, currentParticles);
-                if (currentParticles.size() == 0) { break; }
+                if (currentParticles.size() == 0) { continue; }
                 particleField2.findParticles(neighboringBoxes, neighboringParticles);
-                if (neighboringParticles.size() == 0) { break; }
+                if (neighboringParticles.size() == 0) { continue; }
 
                 for (pluint cP=0; cP<currentParticles.size(); ++cP) {
                     for (pluint nP=0; nP<neighboringParticles.size(); ++nP) {
@@ -387,9 +415,9 @@ void ComputeWallCellForces3D<T,Descriptor>::processGenericBlocks (
                 Box3D currentBox(iX,iX,iY,iY,iZ,iZ);
                 Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
                 wallParticleField.findParticles(currentBox, currentWallParticles);
-                if (currentWallParticles.size() == 0) { break; }
+                if (currentWallParticles.size() == 0) { continue; }
                 particleField.findParticles(neighboringBoxes, neighboringCellParticles);
-                if (neighboringCellParticles.size() == 0) { break; }
+                if (neighboringCellParticles.size() == 0) { continue; }
 
                 for (pluint cP=0; cP<currentWallParticles.size(); ++cP) {
                     for (pluint nP=0; nP<neighboringCellParticles.size(); ++nP) {

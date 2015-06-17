@@ -3,6 +3,7 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+
 #include <math.h>
 using namespace std;
 using namespace plb;
@@ -10,6 +11,12 @@ using namespace plb;
 template<typename T>
 class CellCellForce3D;
 
+template<typename T, template<typename U> class Descriptor>
+class CellField3D;
+
+
+template<typename T, template<typename U> class Descriptor>
+void applySameCellFieldForces(CellField3D<T, Descriptor> & cellField, CellCellForce3D<T> & forceType, T cutoffRadius);
 
 // This function object defines the force between two LSPs of different CellField3D, once their LSPs are in proximity.
 // It it to be used as an argument to ApplyProximityDynamics3D
@@ -77,8 +84,8 @@ public:
         bool conditionsMet = conditionsAreMet(p1,p2,r,eij);
         if (conditionsMet) {
             Array<T,3> force = forceType(r, eij);
-            castParticleToICP3D(p1)->get_force() -= force;
-            castParticleToICP3D(p2)->get_force() += force;
+            castParticleToICP3D(p1)->get_force() += force;
+            castParticleToICP3D(p2)->get_force() -= force;
         }
         return conditionsMet;
     }
@@ -95,19 +102,19 @@ private:
 // This function object defines the force between two LSPs of the same CellField3D, once the LSPs of two different cells are in proximity.
 // It it to be used as an argument to ApplyProximityDynamics3D
 template<typename T, template<typename U> class Descriptor>
-class ProximitySameCellForce3D {
+class ProximitySameCellFieldForce3D {
 public:
-    ProximitySameCellForce3D (CellCellForce3D<T> & forceType_, T cutoffRadius_)
+    ProximitySameCellFieldForce3D (CellCellForce3D<T> & forceType_, T cutoffRadius_)
         : forceType(forceType_), cutoffRadius(cutoffRadius_) { }
-    ProximitySameCellForce3D (ProximitySameCellForce3D<T,Descriptor> const& rhs)
+    ProximitySameCellFieldForce3D (ProximitySameCellFieldForce3D<T,Descriptor> const& rhs)
         : forceType(rhs.forceType), cutoffRadius(rhs.cutoffRadius) { }
-    virtual ~ProximitySameCellForce3D () { };
+    virtual ~ProximitySameCellFieldForce3D () { };
     virtual bool operator()(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) {
         bool conditionsMet = conditionsAreMet(p1,p2,r,eij);
         if (conditionsMet) {
             Array<T,3> force = forceType(r, eij);
-            castParticleToICP3D(p1)->get_force() -= force;
-            castParticleToICP3D(p2)->get_force() += force;
+            castParticleToICP3D(p1)->get_force() += force;
+            castParticleToICP3D(p2)->get_force() -= force;
         }
         return conditionsMet;
     }
@@ -255,7 +262,7 @@ public:
 public:
     virtual T calculatePotential (T r) { return 0; }
     virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
-        return k_int * (pow((DeltaX*1.0/r),k) - DeltaXoverRink)*eij;
+        return - k_int * (pow((DeltaX*1.0/r),k) - DeltaXoverRink)*eij;
     }
 private:
     T k_int, DeltaX, R, k;
