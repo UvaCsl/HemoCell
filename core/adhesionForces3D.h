@@ -77,7 +77,7 @@ private:
 template<typename T>
 class AdhesiveFENEForce: public CellCellForce3D<T> {
 // FENE potential is:
-//    phi = -0.5 * H* el_max * ln(1-((r-r0)*1.0/el_max)*((r-r0)*1.0/el_max) )  +
+//    phi = -0.5 * H* el_max * log(1-((r-r0)*1.0/el_max)*((r-r0)*1.0/el_max) )  +
 //           + 4*epsilonLJ*(pow(sigmaLJ*1.0/r, 12.0) - pow(sigmaLJ*1.0/r, 6.0)) + epsilonLJ;
 // FENE force is:
 //    f  =  H*el_max*1.0/(1.0 - ((r-r0)*1.0/el_max)*((r-r0)*1.0/el_max) ) + f_LJ    
@@ -110,7 +110,7 @@ public:
     virtual AdhesiveFENEForce<T>* clone() const { return new AdhesiveFENEForce<T>(H, Lmax, r0, r_cut, flag_rep, epsilonLJ, sigmaLJ); } ;
 public:
     virtual T calculatePotential (T r) { // Only the attractive contribution is accounted for the potential.
-        return -0.5* H* el_max * ln(1-((r-r0)*1.0/el_max)*((r-r0)*1.0/el_max) ) ;
+        return -0.5* H* el_max * log(1-((r-r0)*1.0/el_max)*((r-r0)*1.0/el_max) ) ;
     }
     virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
             Array<T,3> force = 0.0 * eij;
