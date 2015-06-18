@@ -344,7 +344,7 @@ int main(int argc, char* argv[])
 //                                                        createBoundaryParticleField3D(lattice);
 
     /* Repulsive force */
-    T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
+    T k_int = 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
 
     /*      Sync all quantities    */
@@ -387,7 +387,9 @@ int main(int argc, char* argv[])
         }
         // Pull force
         // applyForceToCells(PLTField, PLTCellIds, forcesToApply);
-        applyForceToCells(PLTField, PLTCellIds, verticesToStretch, forcesToApply);
+        // applySameCellFieldForces(PLTField, PLF, R*2);
+        // applyForceToCells(PLTField, PLTCellIds, verticesToStretch, forcesToApply);
+        // PLTField.applyCellCellForce(PLF, R*2);
 
         // #2# IBM Spreading
        cellFields[0]->setFluidExternalForce(poiseuilleForce);
