@@ -464,10 +464,6 @@ int main(int argc, char* argv[])
     simpleProfiler.writeInitial(nx, ny, nz, -1, numVerticesPerCell);
     /* --------------------------- */
     global::timer("mainLoop").start();
-    global::profiler().turnOn();
-//#ifdef PLB_DEBUG // Palabos has this bug. It's missing the "envelope-update" is the profiler.
-    if (flowType==2) { global::profiler().turnOff(); }
-//#endif
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
 //       RBCField.applyConstitutiveModel();
@@ -514,7 +510,6 @@ int main(int argc, char* argv[])
             }
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter+1);
-            global::profiler().writeReport();
             pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
 //            pcout << "; Volume (" << RBCField[0]->getVolume() << ")";
             pcout << std::endl;
@@ -530,6 +525,5 @@ int main(int argc, char* argv[])
         delete cellModels[iCell];
     }
     simpleProfiler.writeIteration(tmax+1);
-    global::profiler().writeReport();
     pcout << "Simulation finished." << std::endl;
 }
