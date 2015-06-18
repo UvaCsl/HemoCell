@@ -114,7 +114,7 @@ public:
     }
     virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
             Array<T,3> force = 0.0 * eij;
-            if (r>r0 && r<r_cut) {force+= H*el_max*1.0/(1.0 - ((r-r0)*1.0/el_max)*((r-r0)*1.0/el_max) ) * eij};
+            if (r>r0 && r<r_cut) {force+= -H*(r-r0)*1.0/(1.0 - ((r-r0)*1.0/el_max)*((r-r0)*1.0/el_max) ) * eij};
             if (flag_rep && r<r_cut ){
                             T x = pow(sigmaLJ*1.0/r, 6.0);
                             force+= (24.0/r) * epsilonLJ * (2*x*x - x) * eij;
