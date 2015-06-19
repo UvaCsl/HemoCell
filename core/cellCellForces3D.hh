@@ -63,7 +63,7 @@ void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::processGenericBloc
     plint dR = ceil(cutoffRadius);
 
     std::vector<Particle3D<T,Descriptor>*> currentParticles, neighboringParticles;
-
+    proximityDynamics.open(domain, blocks);
     for (plint iX=extendedDomain1.x0; iX<=extendedDomain1.x1; ++iX) {
         for (plint iY=extendedDomain1.y0; iY<=extendedDomain1.y1; ++iY) {
             for (plint iZ=extendedDomain1.z0; iZ<=extendedDomain1.z1; ++iZ) {
@@ -94,7 +94,7 @@ void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::processGenericBloc
             }
         }
     }
-    proximityDynamics.close();
+    proximityDynamics.close(domain, blocks);
 }
 
 template<typename T, template<typename U> class Descriptor, class DomainFunctional>

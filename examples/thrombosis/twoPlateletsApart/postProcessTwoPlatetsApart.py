@@ -66,12 +66,12 @@ ra['Force'] *= df
 
 for i in range(len(ra)):
     print ra['t'][i,0][0],
-    print ";", ra['Position'][i,0][2],
-    print ";", ra['Position'][i,1][2], 
-    print ";", (ra['Max positions'][i,0] - ra['Min positions'][i,1])[2],
-    print ";", ra['Force'][i,1][2],
+    print ";", ra['Position'][i,0][0],
+    print ";", ra['Position'][i,1][0], 
+    print ";", (ra['Max positions'][i,0] - ra['Min positions'][i,1])[0],
+    print ";", ra['Force'][i,1][0],
     print ";", ra['Force'][i,1][1],
-    print ";", ra['Force'][i,1][0]
+    print ";", ra['Force'][i,1][2]
 
 # np.save(saveFile, ra)
 

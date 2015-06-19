@@ -19,6 +19,7 @@
 */
 
 #include "ficsion.h"
+// #include "trombosit/trombocit.h"
 
 typedef double T;
 typedef Array<T,3> Velocity;
@@ -52,7 +53,6 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     document["cellModel"]["kShear"].read(k_shear);
     document["cellModel"]["kStretch"].read(k_stretch);
     document["parameters"]["flowType"].read(flowType);
-    flowType = 0;
     document["parameters"]["Re"].read(Re);
     document["parameters"]["shearRate"].read(shearRate);
     document["parameters"]["stretchForce"].read(stretchForce); // In picoNewton
@@ -145,6 +145,11 @@ int main(int argc, char* argv[])
 
     global::IOpolicy().activateParallelIO(true);
     global::IOpolicy().setStlFilesHaveLowerBound(false);
+/*
+    Use trombocit module
+*/
+    // trombocit::useTrombosit = true;
+
 //    global::IOpolicy().setLowerBoundForStlFiles(-1.);
 //    testInPlane(); PLB_ASSERT(false);
     std::string outputDir = global::directories().getOutputDir();
@@ -256,7 +261,7 @@ int main(int argc, char* argv[])
     }
     else if (flowType == 11) {
         poiseuilleForce = 0;
-        pcout << "(main) Using iniLatticeSquareCouetteMeasureStress. "<< flowType << std::endl;
+        pcout << "(main) Using iniLatticeSquareCouetteMeasureStress. "<< flowType << " yd=" << shearRate/dt << std::endl;
         lattice.toggleInternalStatistics(true);
         iniLatticeSquareCouetteMeasureStress<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate, forceIds, nMomentumExchangeCells);
         lattice.toggleInternalStatistics(false);
@@ -290,7 +295,7 @@ int main(int argc, char* argv[])
     TriangleBoundary3D<T> Cells = constructMeshElement(shape, radius, cellNumTriangles, dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> meshElement = Cells.getMesh();
     MeshMetrics<T> meshmetric(meshElement);    meshmetric.write();
-    eqVolumes.push_back(meshmetric.getVolume());
+    // eqVolumes.push_back(meshmetric.getVolume());
     plint numVerticesPerCell = meshElement.getNumVertices();
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
 	// cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
@@ -365,7 +370,7 @@ int main(int argc, char* argv[])
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, -1, numVerticesPerCell);
     /* --------------------------- */
-    const Array<T,3> headOnForce(stretchForceScalar*0.5, 0.0, 0.0);
+    const Array<T,3> headOnForce(stretchForceScalar, 0.0, 0.0);
     std::vector<Array<T,3> > forcesToApply(2);
     std::vector<plint> PLTCellIds(2);
     forcesToApply[0] = -headOnForce;

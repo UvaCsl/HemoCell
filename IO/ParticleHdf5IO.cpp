@@ -126,9 +126,9 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
                 // If is pbcPosition
                 if (ivN == 0) { vector = vector + correctPBPosition[icParticle->get_cellId()] ; }
                 // TODO: Change in XDMF file.
-                matrixTensor[itr++] = vector[2];
-                matrixTensor[itr++] = vector[1];
                 matrixTensor[itr++] = vector[0];
+                matrixTensor[itr++] = vector[1];
+                matrixTensor[itr++] = vector[2];
              }
              H5LTmake_dataset_float(file_id, icParticle->getVectorName(ivN).c_str(), 2, dimVertices, matrixTensor);
          }
