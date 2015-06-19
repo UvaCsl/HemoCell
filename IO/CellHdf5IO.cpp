@@ -73,9 +73,9 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
             plint cellId = cellIds[iC];
             array = cellIdToCell3D[cellId]->get3D(ccrId);
             // TODO: Change in XDMF file.
-            matrixTensor[itr++] = array[2];
-            matrixTensor[itr++] = array[1];
             matrixTensor[itr++] = array[0];
+            matrixTensor[itr++] = array[1];
+            matrixTensor[itr++] = array[2];
          }
          H5LTmake_dataset_double(file_id, ccrNames[ccrId].c_str(), 2, dimVertices, matrixTensor);
      }

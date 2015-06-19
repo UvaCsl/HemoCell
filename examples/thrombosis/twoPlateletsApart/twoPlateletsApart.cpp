@@ -19,7 +19,7 @@
 */
 
 #include "ficsion.h"
-#include "thrombosis/trombocit.h"
+// #include "trombosit/trombocit.h"
 
 typedef double T;
 typedef Array<T,3> Velocity;
@@ -148,7 +148,7 @@ int main(int argc, char* argv[])
 /*
     Use trombocit module
 */
-    trombocit::useTrombosit = true;
+    // trombocit::useTrombosit = true;
 
 //    global::IOpolicy().setLowerBoundForStlFiles(-1.);
 //    testInPlane(); PLB_ASSERT(false);
@@ -370,7 +370,7 @@ int main(int argc, char* argv[])
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, -1, numVerticesPerCell);
     /* --------------------------- */
-    const Array<T,3> headOnForce(stretchForceScalar*0.5, 0.0, 0.0);
+    const Array<T,3> headOnForce(stretchForceScalar, 0.0, 0.0);
     std::vector<Array<T,3> > forcesToApply(2);
     std::vector<plint> PLTCellIds(2);
     forcesToApply[0] = -headOnForce;
