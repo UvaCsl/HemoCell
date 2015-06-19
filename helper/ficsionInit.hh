@@ -364,9 +364,9 @@ void iniLatticeSquareCouetteMeasureStress( MultiBlockLattice3D<T,Descriptor>& la
     const plint ny = parameters.getNy();
     const plint nz = parameters.getNz();
 
-    Box3D bottom = Box3D(0, nx-1,    0,    0,   0, nz-1);
-    Box3D top    = Box3D(0, nx-1, ny-2, ny-2,   0, nz-1);
-    Box3D lid    = Box3D(0, nx-1, ny-1, ny-1,   0, nz-1);
+    Box3D top     = Box3D(0, nx-1,    0,    0,   0, nz-1);
+    Box3D bottom  = Box3D(0, nx-1, ny-2, ny-2,   0, nz-1);
+    Box3D lid     = Box3D(0, nx-1, ny-1, ny-1,   0, nz-1);
 
     lattice.periodicity().toggleAll(true);
 
@@ -387,6 +387,42 @@ void iniLatticeSquareCouetteMeasureStress( MultiBlockLattice3D<T,Descriptor>& la
             Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
 
     initializeAtEquilibrium(lattice, lattice.getBoundingBox(), CouetteDensityAndVelocity<T>(-shearRate, (ny-2) ));
+
+    lattice.initialize();
+}
+
+
+/* ************* iniLatticeSquareCouetteNearWall ******************* */
+template<typename T, template<class U> class Descriptor>
+void iniLatticeSquareCouetteNearWall( MultiBlockLattice3D<T,Descriptor>& lattice,
+                 IncomprFlowParam<T> const& parameters,
+                 OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T shearRate)
+{
+    const plint nx = parameters.getNx();
+    const plint ny = parameters.getNy();
+    const plint nz = parameters.getNz();
+
+    Box3D bottom     = Box3D(0, nx-1,    0,    0,   0, nz-1);
+    Box3D top        = Box3D(0, nx-1, ny-1, ny-1,   0, nz-1);
+
+    lattice.periodicity().toggleAll(true);
+
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, top );
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, bottom );
+
+    T v = (ny-1)*shearRate;
+    setBoundaryVelocity(lattice, top, Array<T,3>(v, 0.0, 0.0));
+    setBoundaryVelocity(lattice, bottom, Array<T,3>(0.0, 0.0,0.0));
+
+  //  defineDynamics(lattice, bottom, new BounceBack<T,Descriptor>);
+  //  defineDynamics(lattice, top, new BounceBack<T,Descriptor>);
+
+//    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), SquarePoiseuilleDensityAndVelocity<T>(parameters, NMAX, Re));
+   // nMomentumExchangeCells = bottom.nCells();
+    setExternalVector( lattice, lattice.getBoundingBox(),
+            Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
+
+    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), CouetteDensityAndVelocity<T>(shearRate, 0 ));
 
     lattice.initialize();
 }
