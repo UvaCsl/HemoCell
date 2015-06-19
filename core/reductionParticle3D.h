@@ -26,6 +26,7 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include "particleHelperFunctions.h"
 #include "cellReductionTypes.h"
 #include "cell3D.h"
 using namespace plb;

@@ -27,7 +27,8 @@ public:
     ProximityDynamics3D (ProximityDynamics3D<T,Descriptor> const& rhs) { }
     virtual ~ProximityDynamics3D ();
     virtual bool operator()(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) =0;
-    virtual void close() = 0;
+    virtual void open(Box3D domain, std::vector<AtomicBlock3D*> fields) = 0;
+    virtual void close(Box3D domain, std::vector<AtomicBlock3D*> fields) = 0;
     virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) =0;
 private:
 };
@@ -44,8 +45,10 @@ public:
         * should have the following methods:
             * actually performing the proximityDynamics. The checking of additional criteria should be made there.
                 bool operator()(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij);
+            * opening the dynamics, in case it is necessary.
+                bool open(Box3D domain, std::vector<AtomicBlock3D*> fields);
             * closing the dynamics, in case it is necessary.
-                bool close();
+                bool close(Box3D domain, std::vector<AtomicBlock3D*> fields);
     */
     ApplyProximityDynamics3D (DomainFunctional proximityDynamics_, T cutoffRadius_);
     virtual ~ApplyProximityDynamics3D();
@@ -89,7 +92,8 @@ public:
         }
         return conditionsMet;
     }
-    virtual void close() { };
+    virtual void open(Box3D domain, std::vector<AtomicBlock3D*> fields) { };
+    virtual void close(Box3D domain, std::vector<AtomicBlock3D*> fields) { };
     virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) {
         return r < cutoffRadius;
     };
@@ -118,7 +122,8 @@ public:
         }
         return conditionsMet;
     }
-    virtual void close() { };
+    virtual void open(Box3D domain, std::vector<AtomicBlock3D*> fields) { };
+    virtual void close(Box3D domain, std::vector<AtomicBlock3D*> fields) { };
     virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) {
         if (r > cutoffRadius) { return false; }
         ImmersedCellParticle3D<T,Descriptor>* cParticle = castParticleToICP3D(p1);
