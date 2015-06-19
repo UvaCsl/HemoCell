@@ -364,8 +364,8 @@ void iniLatticeSquareCouetteMeasureStress( MultiBlockLattice3D<T,Descriptor>& la
     const plint ny = parameters.getNy();
     const plint nz = parameters.getNz();
 
-    Box3D top    = Box3D(0, nx-1,    0,    0,   0, nz-1);
-    Box3D bottom = Box3D(0, nx-1, ny-2, ny-2,   0, nz-1);
+    Box3D bottom = Box3D(0, nx-1,    0,    0,   0, nz-1);
+    Box3D top    = Box3D(0, nx-1, ny-2, ny-2,   0, nz-1);
     Box3D lid    = Box3D(0, nx-1, ny-1, ny-1,   0, nz-1);
 
     lattice.periodicity().toggleAll(true);

@@ -4,7 +4,6 @@ import os
 from glob import glob
 import errno
 import numpy as np
-import pylab as pl
 import h5py as h5
 
 

@@ -385,7 +385,7 @@ private:
     T DeltaXoverRink;
 };
 
-
+#include "adhesionForces3D.h"
 #include "cellCellForces3D.hh"
 
 #endif  // CELL_CELL_FORCES_3D_H
