@@ -30,6 +30,39 @@ std::vector<T> unserializeVector(HierarchicUnserializer& unserializer)
     return vec;
 }
 
+
+
+
+template<typename T1, typename T2>
+void serializeMap(HierarchicSerializer& serializer, std::map<T1,T2> const& dict)
+{
+    typename std::map<T1,T2>::const_iterator iter;
+    serializer.addValue<plint>(dict.size());
+    for (iter  = dict.begin(); iter != dict.end(); ++iter) {
+        serializer.addValue<T1>(iter->first);
+        serializer.addValue<T2>(iter->second);
+    }
+
+
+}
+
+
+template<typename T1, typename T2>
+std::map<T1,T2> unserializeMap(HierarchicUnserializer& unserializer)
+{
+    std::map<T1,T2> dict;
+    plint n;
+    unserializer.readValue<plint>(n);
+    for (int i = 0; i < n; ++i) {
+        T1 key;
+        unserializer.readValue<T1>(key);
+        T2 value;
+        unserializer.readValue<T2>(value);
+        dict[key] = value;
+    }
+    return dict;
+}
+
 } //namespace plb
 
 
