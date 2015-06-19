@@ -22,9 +22,9 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
     PLB_PRECONDITION( blocks.size() > 0 );
     int p = global::mpi().getSize();
     int id = global::mpi().getRank();
-    plint Nx = cellField3D.getParticleArg()[0]->getNx();
-    plint Ny = cellField3D.getParticleArg()[0]->getNy();
-    plint Nz = cellField3D.getParticleArg()[0]->getNz();
+    // plint Nx = cellField3D.getParticleArg()[0]->getNx();
+    // plint Ny = cellField3D.getParticleArg()[0]->getNy();
+    // plint Nz = cellField3D.getParticleArg()[0]->getNz();
 
     /************************************************************/
    /**            Fill triangle and particle lists            **/

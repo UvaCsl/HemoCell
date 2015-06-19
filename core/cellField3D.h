@@ -35,7 +35,7 @@ public:
 	*/
 	CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, TriangularSurfaceMesh<T> & elementaryMesh_,
 			T hematocrit_, ConstitutiveModel<T, Descriptor> * cellModel_, plint ibmKernel_, std::string identifier_);
-	~CellField3D();
+	virtual ~CellField3D();
 public:
 	/* Set or change parameters */
 	void setIBMKernel(plint ibmKernel_) { ibmKernel = ibmKernel_; }

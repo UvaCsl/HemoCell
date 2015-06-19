@@ -298,7 +298,7 @@ void iniLatticePoiseuilleWithBodyForce(MultiBlockLattice3D<T,Descriptor>& lattic
     setBoundaryVelocity(lattice, left, Array<T,3>(0.0,0.0,0.0));
     setBoundaryVelocity(lattice, right, Array<T,3>(0.0,0.0,0.0));
 
-    T rhoInit=1.0; Array<T,3> uInit(0.0,0.0,0.0);
+    // T rhoInit=1.0; Array<T,3> uInit(0.0,0.0,0.0);
 //    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), rhoInit, uInit);
 
     T Umax = poiseuilleForce * (ny-1) * (ny-1) / (8*parameters.getLatticeNu());
