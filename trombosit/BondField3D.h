@@ -77,6 +77,7 @@ public:
 private:
     MultiParticleField3D<DenseParticleField3D<T,Descriptor> >* BondParticles3D;
     std::vector<MultiBlock3D*> particleParticleBondArg;
+    std::vector<BondType<T,Descriptor> &> bondTypes;
 };
 
 
@@ -120,7 +121,6 @@ public:
     SameCellFieldBondField3D(CellField3D<T, Descriptor> & cellField1) ;
     SameCellFieldBondField3D(SameCellFieldBondField3D<T, Descriptor> & rhs) ;
     virtual ~SameCellFieldBondField3D() { } ;
-
 
 public:
     // Bond doesn't exist, particle is not saturated and for SameCellFields, cellId is not the same.

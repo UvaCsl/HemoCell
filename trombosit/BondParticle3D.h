@@ -4,6 +4,7 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "immersedCellParticle3D.h"
+#include "particleHelperFunctions.h"
 #include <string>
 
 using namespace plb;
@@ -104,18 +105,33 @@ public:
         this->update(p0,p1);
         this->update(r,eij);
     }
+    bool applyForce(Array<T,3> force, plint pid) {
+        if (particles[pid] == NULL) { return false; }
+        castParticleToICP3D(particles[pid])->get_force() += force;
+        return true;
+    };
+    bool increaseSaturation(T dSaturation, plint pid, plint bondTypeId) {
+        if (particles[pid] == NULL) { return false; }
+        castParticleToICP3D(particles[pid])->getBondTypeSaturation(bondTypeId) += dSaturation;
+        return true;
+    };
+    bool increaseSaturation(T dSaturation, plint pid) {
+        return this->increaseSaturation(dSaturation, pid, bondType);
+    };
+    T & get_r() { return r; }
+    Array<T,3> & get_eij() { return eij; }
+    Array<T,3> & get_rVector() { return r*eij; }
 private:
     static int id;
     plint processor;
     plint bondType;
-
 private:
-    T r;
+    T r, bondTime;
     Array<T,3> eij;
     Array<T,3> positions[2];
     Array<T,3> velocities[2];
     plint processors[2];
-    std::map<plint, T> bondTypeMaps[2];
+    std::map<plint, T> bondTypesSaturation[2];
     Particle3D<T,Descriptor>* particles[2];
 };
 

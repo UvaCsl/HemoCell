@@ -19,11 +19,13 @@
 */
 
 #include "ficsion.h"
-// #include "trombosit/trombocit.h"
+#include "trombosit/trombocit.h"
 
 typedef double T;
 typedef Array<T,3> Velocity;
 #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor
+using namespace trombocit;
+
 
 void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
@@ -351,6 +353,9 @@ int main(int argc, char* argv[])
     /* Repulsive force */
     T k_int = 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
+
+    trombocit::SimpleSaturatedBond<T,DESCRIPTOR> P1(PLF, 1, 1, 1, 1);
+    trombocit::SimpleSaturatedBond<T,DESCRIPTOR> P2(PLF, 2, 1, 1, 1);
 
     /*      Sync all quantities    */
     SyncRequirements everyCCR(allReductions);

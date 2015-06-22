@@ -23,7 +23,9 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include "particleHelperFunctions.h"
 #include <vector>
+
 
 namespace plb {
 
@@ -152,8 +154,12 @@ private:
     Array<T,3> stress;
     T E_other, E_inPlane, E_bending, E_area,  E_volume, E_repulsive;
 #endif
-
-
+// TROMBOSIT related variables
+public:
+    T & getBondTypeSaturation(plint bondType) { return (bondTypeSaturation[bondType]); }
+    std::map<plint, T> & getBondTypeSaturation() { return bondTypeSaturation; };
+private:
+    std::map<plint, T> bondTypeSaturation;
 };
 
 template<typename T, template<typename U> class Descriptor>

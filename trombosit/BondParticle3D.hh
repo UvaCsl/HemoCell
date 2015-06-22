@@ -29,7 +29,8 @@ void trombocit::BondParticle3D<T,Descriptor>::serialize(HierarchicSerializer& se
         serializer.addValues<T,3>(positions[var]);
         serializer.addValues<T,3>(velocities[var]);
         serializer.addValue<plint>(processors[var]);
-//        particles[var] = NULL;
+        //        particles[var] = NULL;
+        serializeMap<plint, T>(serializer, bondTypesSaturation[var]);
     }
 }
 
@@ -46,6 +47,7 @@ void trombocit::BondParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer
         unserializer.readValues<T,3>(velocities[var]);
         unserializer.readValue<plint>(processors[var]);
         particles[var] = NULL;
+        bondTypesSaturation[var] = unserializeMap<plint, T>(unserializer);
     }
 }
 
