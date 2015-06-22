@@ -397,7 +397,7 @@ int main(int argc, char* argv[])
      	   cellFields[iCell]->applyConstitutiveModel();
         }
         // Pull force
-        applyForceToCells(PLTField, PLTCellIds, forcesToApply);
+        // applyForceToCells(PLTField, PLTCellIds, forcesToApply);
         // applySameCellFieldForces(PLTField, PLF, R*2);
         // applyForceToCells(PLTField, PLTCellIds, verticesToStretch, forcesToApply);
         // PLTField.applyCellCellForce(PLF, R*2);
