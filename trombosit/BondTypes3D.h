@@ -29,12 +29,16 @@ public:
     virtual bool createBond(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
         return r < this->getCreateDistance();
     }
+    // Force will be applied via the bondParticle.
     virtual void applyForce(Particle3D<T,Descriptor> * bondParticle)=0;
     // Break bond can also perform other function in bondParticle, like change the type of bond (break, change etc.)
     virtual bool breakBond(Particle3D<T,Descriptor> * bondParticle) {
         return castParticle3DToBondParticle3D(bondParticle)->get_r() > this->getBreakDistance();
     }
-
+    // UID should be unique and it is suggested to include the bondTypeId.
+    virtual std::string getUID() {
+        return "";
+    };
 private:
     T r_create, r_break;
     static plint globalBondTypeId;
@@ -45,9 +49,13 @@ template<typename T, template<typename U> class Descriptor>
 plint BondType<T,Descriptor>::globalBondTypeId=0;
 
 
+
 template<typename T, template<typename U> class Descriptor>
 class SimpleUnsaturatedBond: public BondType<T,Descriptor> {
 public:
+    /*
+     * Example class, applying force to the attached particles.
+     */
     SimpleUnsaturatedBond(CellCellForce3D<T> & forceType_, T r_create_, T r_break_)
        : forceType(forceType_), BondType<T,Descriptor>(r_create_, r_break_)  {
         pcout << "SimpleUnsaturatedBond, typeId " << this->getBondTypeId() << std::endl;
@@ -58,9 +66,7 @@ public:
         BondParticle3D<T,Descriptor> * bondP=castParticle3DToBondParticle3D(bondParticle);
         T r = bondP->get_r();
         Array<T,3> eij = bondP->get_eij();
-        Array<T,3> force = forceType(r, eij);
-        bondP->applyForce(force, 0);
-        bondP->applyForce(-force, 1);
+        bondP->applyForce( forceType(r, eij) );
     }
 private:
     CellCellForce3D<T> & forceType;
@@ -68,28 +74,26 @@ private:
 
 
 template<typename T, template<typename U> class Descriptor>
-class SimpleDirectionalSaturatedBond: public BondType<T,Descriptor> {
+class SimpleAsymmetricSaturatedBond: public BondType<T,Descriptor> {
 public:
     /*
      * This is to be used when there are two species (eg. platelet-ECM) with different receptor strengths
      */
-    SimpleDirectionalSaturatedBond(CellCellForce3D<T> & forceType_, T r_create_, T r_break_, T deltaSaturation0_, T deltaSaturation1_, T maxSaturation0_, T maxSaturation1_)
+    SimpleAsymmetricSaturatedBond(CellCellForce3D<T> & forceType_, T r_create_, T r_break_, T deltaSaturation0_, T deltaSaturation1_, T maxSaturation0_, T maxSaturation1_)
        : forceType(forceType_), BondType<T,Descriptor>(r_create_, r_break_) {
         deltaSaturation.push_back(deltaSaturation0_);
         deltaSaturation.push_back(deltaSaturation1_);
         maxSaturation.push_back(maxSaturation0_);
         maxSaturation.push_back(maxSaturation1_);
-        pcout << "SimpleDirectionalSaturatedBond, typeId " << this->getBondTypeId() << std::endl;
+        pcout << "SimpleAsymmetricSaturatedBond, typeId " << this->getBondTypeId() << std::endl;
     };
-    virtual ~SimpleDirectionalSaturatedBond() {};
+    virtual ~SimpleAsymmetricSaturatedBond() {};
 public:
     virtual void applyForce(Particle3D<T,Descriptor> * bondParticle) {
         BondParticle3D<T,Descriptor> * bondP=castParticle3DToBondParticle3D(bondParticle);
         T r = bondP->get_r();
         Array<T,3> eij = bondP->get_eij();
-        Array<T,3> force = forceType(r, eij);
-        bondP->applyForce(force, 0);
-        bondP->applyForce(-force, 1);
+        bondP->applyForce( forceType(r, eij) );
     }
     virtual bool createBond(Particle3D<T,Descriptor> * pp0, Particle3D<T,Descriptor> * pp1, T r, Array<T,3> eij) {
         bool distanceSmaller = r < this->getCreateDistance();
@@ -118,11 +122,15 @@ private:
 };
 
 
+
 template<typename T, template<typename U> class Descriptor>
-class SimpleSaturatedBond: public SimpleDirectionalSaturatedBond<T,Descriptor> {
+class SimpleSaturatedBond: public SimpleAsymmetricSaturatedBond<T,Descriptor> {
 public:
+    /*
+     * SimpleSaturatedBond is basically the symmetric case of SimpleAsymmetricSaturatedBond
+     */
     SimpleSaturatedBond(CellCellForce3D<T> & forceType_, T r_create_, T r_break_, T deltaSaturation_, T maxSaturation_)
-       : SimpleDirectionalSaturatedBond<T,Descriptor>(forceType_, r_create_, r_break_, deltaSaturation_, deltaSaturation_, maxSaturation_, maxSaturation_)
+       : SimpleAsymmetricSaturatedBond<T,Descriptor>(forceType_, r_create_, r_break_, deltaSaturation_, deltaSaturation_, maxSaturation_, maxSaturation_)
      {
         pcout << "SimpleSaturatedBond, typeId " << this->getBondTypeId() << std::endl;
     };

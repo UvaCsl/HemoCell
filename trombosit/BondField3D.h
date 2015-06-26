@@ -74,10 +74,13 @@ public:
 public:
     std::vector<MultiBlock3D*> & getParticleParticleBondArg()  { return particleParticleBondArg; }
     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & getBondParticles3D()  { return *BondParticles3D; }
+    std::map<plint, BondType<T,Descriptor> &> & getBondTypes() { return bondTypes; } ;
+
 private:
     MultiParticleField3D<DenseParticleField3D<T,Descriptor> >* BondParticles3D;
     std::vector<MultiBlock3D*> particleParticleBondArg;
-    std::vector<BondType<T,Descriptor> &> bondTypes;
+    std::map<plint, BondType<T,Descriptor> &> bondTypes;
+    std::map<plint, std::string > bondTypeUIDs;
 };
 
 

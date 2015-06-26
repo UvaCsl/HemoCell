@@ -6,6 +6,7 @@
 #include "immersedCellParticle3D.h"
 #include "particleHelperFunctions.h"
 #include <string>
+#include <map>
 
 using namespace plb;
 
@@ -89,6 +90,11 @@ public:
 
 
 public:
+    void update(Particle3D<T,Descriptor> * p, plint pid) {
+        if (p == particles[pid]) { return ; }
+        else if (p==NULL) { particles[pid] = NULL; }
+    }
+
     void update(T r, Array<T,3> eij) {
         this->r=r;
         this->eij=eij;
@@ -110,6 +116,11 @@ public:
         castParticleToICP3D(particles[pid])->get_force() += force;
         return true;
     };
+    bool applyForce(Array<T,3> force) {
+        if (particles[0] != NULL) {  castParticleToICP3D(particles[0])->get_force() += force; };
+        if (particles[1] != NULL) {  castParticleToICP3D(particles[1])->get_force() -= force; };
+        return true;
+    };
     bool increaseSaturation(T dSaturation, plint pid, plint bondTypeId) {
         if (particles[pid] == NULL) { return false; }
         castParticleToICP3D(particles[pid])->getBondTypeSaturation(bondTypeId) += dSaturation;
@@ -118,6 +129,10 @@ public:
     bool increaseSaturation(T dSaturation, plint pid) {
         return this->increaseSaturation(dSaturation, pid, bondType);
     };
+
+    std::pair<plint,plint> getCellIdVertexIdPair(plint pid) {
+        return std::make_pair<plint,plint>(cellId[pid], vertexId[pid]);
+    }
     T & get_r() { return r; }
     Array<T,3> & get_eij() { return eij; }
     Array<T,3> & get_rVector() { return r*eij; }
@@ -127,6 +142,7 @@ private:
     plint bondType;
 private:
     T r, bondTime;
+    plint cellId[2],vertexId[2];
     Array<T,3> eij;
     Array<T,3> positions[2];
     Array<T,3> velocities[2];
