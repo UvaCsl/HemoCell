@@ -290,22 +290,22 @@ def createXDMF(fnameString, processorStrings):
 
 
 if __name__ == '__main__':
-	dirname = './hdf5/'
-	try:
-		identifier = sys.argv[1]
-		print identifier
-	except:
-		identifier = 'RBC'
-	fluidH5files = sorted( glob(dirname + identifier + '.*p*.h5') )
-	if len(fluidH5files) == 0:
-		dirname = './tmp/hdf5/'
-		fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
-	fluidIDs = map(lambda x: x[:-3], fluidH5files)
-	iterationStrings, processorStrings  = zip(*map(lambda f: [f.split('.')[-3], f.split('.')[-1]], fluidIDs))
-	iterationStrings, processorStrings = map(lambda l: sorted(set(l)), (iterationStrings, processorStrings))
-	for iterString in iterationStrings:
-		fnameString = dirname + identifier + "." + iterString + ".p.%s.h5"
-		print "Created file:", createXDMF(fnameString, processorStrings)
-		
+	if len(sys.argv) == 1:
+		sys.argv += ['RBC']
+	for identifier in sys.argv[1:]:
+		dirname = './hdf5/'
+		try:
+			fluidH5files = sorted( glob(dirname + identifier + '.*p*.h5') )
+			if len(fluidH5files) == 0:
+				dirname = './tmp/hdf5/'
+				fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
+			fluidIDs = map(lambda x: x[:-3], fluidH5files)
+			iterationStrings, processorStrings  = zip(*map(lambda f: [f.split('.')[-3], f.split('.')[-1]], fluidIDs))
+			iterationStrings, processorStrings = map(lambda l: sorted(set(l)), (iterationStrings, processorStrings))
+			for iterString in iterationStrings:
+				fnameString = dirname + identifier + "." + iterString + ".p.%s.h5"
+				print "Created file:", createXDMF(fnameString, processorStrings)
+		except (ValueError, TypeError, NameError) as e:
+			print '## ERROR ## Missing type:', identifier, e
 
 
