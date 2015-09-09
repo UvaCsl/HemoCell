@@ -269,13 +269,14 @@ def createXDMF(fnameString, processorStrings):
 		Important: reads as many files as number of processors in the first file
 	"""
 	fnameToSave =  ( (fnameString%(""))[:-6] + '.xmf' )
-	fnameToSave = fnameToSave.replace('/hdf5/','/')
+	fnameToSave = fnameToSave.replace('/hdf5/','/').replace(".p.",".").replace(".pgz.",".")
         if os.path.isfile(fnameToSave):
                   return fnameToSave + " (existed)"
 	xdmfFile = HDF5toXDMF_Cell(fnameToSave)
 	xdmfFile.openCollection("Domain")
 	processorStrings = sorted(processorStrings)
 	p = processorStrings[0]
+	if not os.path.isfile(fnameString%(p,)) : fnameString = fnameString.replace('.p.','.pgz.')
 	h5dict = readH5FileToDictionary(fnameString%(p,))
 	xdmfFile.writeSubDomain(h5dict)
 	numberOfProcessors = h5dict['numberOfProcessors']
