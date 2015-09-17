@@ -40,9 +40,6 @@ private:
     T dt;
 };
 
-template<typename T, template<typename U> class Descriptor>
-void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
-              IncomprFlowParam<T> const& parameters, plint iter);
 
 
 
