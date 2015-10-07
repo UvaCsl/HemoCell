@@ -322,7 +322,7 @@ int main(int argc, char* argv[])
             SyncRequirements everyCCR(allReductions);
             RBCField.synchronizeCellQuantities(everyCCR);
             global::timer("HDFOutput").start();
-            writeHDF5(lattice, parameters, iter+1);
+            // writeHDF5(lattice, parameters, iter+1);
             writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
             writeCell3D_HDF5(RBCField, dx, dt, iter+1);
             global::timer("HDFOutput").stop();
