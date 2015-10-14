@@ -13,7 +13,7 @@ void applySameCellFieldForces(CellField3D<T, Descriptor> & cellField, CellCellFo
     particleFieldArg.push_back(cellField.getParticleArg()[0]);
     particleFieldArg.push_back(cellField.getParticleArg()[0]);
     applyProcessingFunctional (
-        new ApplyProximityDynamics3D<T,Descriptor, ProximitySameCellFieldForce3D<T, Descriptor> >(pscf, cutoffRadius),
+        new ApplyProximityDynamics3D<T,Descriptor>(pscf, cutoffRadius),
         particleFieldArg[0]->getBoundingBox(), particleFieldArg );
 }
 
@@ -22,19 +22,19 @@ void applySameCellFieldForces(CellField3D<T, Descriptor> & cellField, CellCellFo
 
 /* ******** ApplyProximityDynamics3D *********************************** */
 
-template<typename T, template<typename U> class Descriptor, class DomainFunctional>
-ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::ApplyProximityDynamics3D (DomainFunctional proximityDynamics_, T cutoffRadius_)
+template<typename T, template<typename U> class Descriptor>
+ApplyProximityDynamics3D<T,Descriptor>::ApplyProximityDynamics3D (ProximityDynamics3D<T,Descriptor> proximityDynamics_, T cutoffRadius_)
 : proximityDynamics(proximityDynamics_), cutoffRadius(cutoffRadius_) { }
 
-template<typename T, template<typename U> class Descriptor, class DomainFunctional>
-ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::~ApplyProximityDynamics3D() { }
+template<typename T, template<typename U> class Descriptor>
+ApplyProximityDynamics3D<T,Descriptor>::~ApplyProximityDynamics3D() { }
 
-template<typename T, template<typename U> class Descriptor, class DomainFunctional>
-ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::ApplyProximityDynamics3D (ApplyProximityDynamics3D<T,Descriptor,DomainFunctional> const& rhs)
+template<typename T, template<typename U> class Descriptor>
+ApplyProximityDynamics3D<T,Descriptor>::ApplyProximityDynamics3D (ApplyProximityDynamics3D<T,Descriptor> const& rhs)
 : proximityDynamics(rhs.proximityDynamics), cutoffRadius(rhs.cutoffRadius) { }
 
-template<typename T, template<typename U> class Descriptor, class DomainFunctional>
-bool ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::checkDistance (
+template<typename T, template<typename U> class Descriptor>
+bool ApplyProximityDynamics3D<T,Descriptor>::checkDistance (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
     eij = p1->getPosition() - p2->getPosition();
@@ -44,8 +44,8 @@ bool ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::checkDistance (
     return true;
 }
 
-template<typename T, template<typename U> class Descriptor, class DomainFunctional>
-void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::processGenericBlocks (
+template<typename T, template<typename U> class Descriptor>
+void ApplyProximityDynamics3D<T,Descriptor>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
     PLB_PRECONDITION( blocks.size()>=2 );
@@ -97,26 +97,26 @@ void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::processGenericBloc
     proximityDynamics.close(domain, blocks);
 }
 
-template<typename T, template<typename U> class Descriptor, class DomainFunctional>
-ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>*
-    ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::clone() const
+template<typename T, template<typename U> class Descriptor>
+ApplyProximityDynamics3D<T,Descriptor>*
+    ApplyProximityDynamics3D<T,Descriptor>::clone() const
 {
-    return new ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>(*this);
+    return new ApplyProximityDynamics3D<T,Descriptor>(*this);
 }
 
-template<typename T, template<typename U> class Descriptor, class DomainFunctional>
-void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::getModificationPattern(std::vector<bool>& isWritten) const {
+template<typename T, template<typename U> class Descriptor>
+void ApplyProximityDynamics3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
     for (int i = 0; i < isWritten.size(); ++i)
         { isWritten[i] = true; }
 }
 
-template<typename T, template<typename U> class Descriptor, class DomainFunctional>
-BlockDomain::DomainT ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::appliesTo() const {
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT ApplyProximityDynamics3D<T,Descriptor>::appliesTo() const {
     return BlockDomain::bulk; // Takes the whole domain in the processGenericBlocks
 }
 
-template<typename T, template<typename U> class Descriptor, class DomainFunctional>
-void ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>::getTypeOfModification (
+template<typename T, template<typename U> class Descriptor>
+void ApplyProximityDynamics3D<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     for (int i = 0; i < modified.size(); ++i)

@@ -36,7 +36,7 @@ private:
 
 /* ******** ApplyProximityDynamics3D *********************************** */
 
-template<typename T, template<typename U> class Descriptor, class DomainFunctional>
+template<typename T, template<typename U> class Descriptor>
 /* This class changes and syncs every field it receives */
 class ApplyProximityDynamics3D : public BoxProcessingFunctional3D
 {
@@ -50,12 +50,12 @@ public:
             * closing the dynamics, in case it is necessary.
                 bool close(Box3D domain, std::vector<AtomicBlock3D*> fields);
     */
-    ApplyProximityDynamics3D (DomainFunctional proximityDynamics_, T cutoffRadius_);
+    ApplyProximityDynamics3D (ProximityDynamics3D<T,Descriptor> proximityDynamics_, T cutoffRadius_);
     virtual ~ApplyProximityDynamics3D();
-    ApplyProximityDynamics3D(ApplyProximityDynamics3D<T,Descriptor,DomainFunctional> const& rhs);
+    ApplyProximityDynamics3D(ApplyProximityDynamics3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
-    virtual ApplyProximityDynamics3D<T,Descriptor,DomainFunctional>* clone() const;
+    virtual ApplyProximityDynamics3D<T,Descriptor>* clone() const;
     virtual void getModificationPattern(std::vector<bool>& isWritten) const;
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
@@ -66,7 +66,7 @@ public:
      */
     bool checkDistance(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T& r, Array<T,3>& eij);
 private:
-    DomainFunctional proximityDynamics;
+    ProximityDynamics3D<T,Descriptor> proximityDynamics;
     T cutoffRadius;
 };
 
@@ -76,7 +76,7 @@ private:
 // This function object defines the force between two LSPs of different CellField3D, once their LSPs are in proximity.
 // It it to be used as an argument to ApplyProximityDynamics3D
 template<typename T, template<typename U> class Descriptor>
-class ProximityCellCellForce3D {
+class ProximityCellCellForce3D : public ProximityDynamics3D<T,Descriptor> {
 public:
     ProximityCellCellForce3D (CellCellForce3D<T> & forceType_, T cutoffRadius_)
         : forceType(forceType_), cutoffRadius(cutoffRadius_) { }
@@ -106,7 +106,7 @@ private:
 // This function object defines the force between two LSPs of the same CellField3D, once the LSPs of two different cells are in proximity.
 // It it to be used as an argument to ApplyProximityDynamics3D
 template<typename T, template<typename U> class Descriptor>
-class ProximitySameCellFieldForce3D {
+class ProximitySameCellFieldForce3D : public ProximityDynamics3D<T,Descriptor>  {
 public:
     ProximitySameCellFieldForce3D (CellCellForce3D<T> & forceType_, T cutoffRadius_)
         : forceType(forceType_), cutoffRadius(cutoffRadius_) { }
