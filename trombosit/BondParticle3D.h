@@ -12,56 +12,68 @@ using namespace plb;
 
 namespace trombocit {
 
-std::string createBondId(plint cellId0, plint cellId1, plint vertexId0, plint vertexId1) {
-    std::string ret;
-    std::ostringstream stm0, stm1;
-    stm0 << cellId0 << "-" << vertexId0;
-    stm1 << cellId1 << "-" << vertexId1;
-    if (cellId0 < cellId1) { ret = stm0.str() + "_" + stm1.str(); }
-    else { ret = stm1.str() + "_" + stm0.str();  }
-    return ret;
-}
-
-
-template<typename T, template<typename U> class Descriptor>
-std::string createBondId(Particle3D<T,Descriptor>* particle0, Particle3D<T,Descriptor>* particle1) {
-    ImmersedCellParticle3D<T,Descriptor>* p0 = castParticleToICP3D(particle0);
-    ImmersedCellParticle3D<T,Descriptor>* p1 = castParticleToICP3D(particle1);
-
-    return createBondId(p0->get_cellId(), p1->get_cellId(),  p0->getVertexId(), p1->getVertexId());
-}
-
-
 
 
 template<typename T, template<typename U> class Descriptor>
 class BondParticle3D : public Particle3D<T,Descriptor> {
 public:
     BondParticle3D() :
-        processor(getMpiProcessor()), bondType(0),
-              r(0), eij(Array<T,3>(0,0,0))
+        processor(getMpiProcessor()),
+              r(0), eij(Array<T,3>(0,0,0)), bondTime(0)
         {
             for (int var = 0; var < 2; ++var) {
                 positions[var] = Array<T,3>(0,0,0);
                 velocities[var] = Array<T,3>(0,0,0);
                 processors[var] = getMpiProcessor();
                 particles[var] = NULL;
+                cellId[var] = 0;
+                vertexId[var] = 0;
             }
         } ;
+
+
+    BondParticle3D(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r_, Array<T,3> eij_, std::string uid_) :
+        processor(getMpiProcessor()), bondTime(0),
+    	r(r_), eij(eij_), uid(uid_)
+    {
+    	if (p0 != NULL) {
+    		particles[0] = p0;
+            positions[0] = p0->getPosition();
+            velocities[0] = castParticleToICP3D(p0)->get_v();
+            processors[0] = castParticleToICP3D(p0)->getMpiProcessor();
+            cellId[0] = castParticleToICP3D(p0)->get_cellId();
+            vertexId[0] = castParticleToICP3D(p0)->getVertexId();
+
+    	}
+    	if (p1 != NULL) {
+    		particles[1] = p1;
+            positions[1] = p1->getPosition();
+            velocities[1] = castParticleToICP3D(p1)->get_v();
+            processors[1] = castParticleToICP3D(p1)->getMpiProcessor();
+            cellId[1] = castParticleToICP3D(p1)->get_cellId();
+            vertexId[1] = castParticleToICP3D(p1)->getVertexId();
+    	}
+
+    };
+
+
     virtual ~BondParticle3D() {     };
 
     BondParticle3D(BondParticle3D<T,Descriptor> const& rhs)
-    : processor(rhs.processor), bondType(rhs.bondType),
-      r(rhs.r), eij(rhs.eij)
+    : processor(rhs.processor),
+      r(rhs.r), eij(rhs.eij), bondTime(rhs.bondTime), uid(rhs.uid)
       {
         for (int var = 0; var < 2; ++var) {
             positions[var] = rhs.positions[var];
             velocities[var] = rhs.velocities[var];
             processors[var] = rhs.processors[var];
             particles[var] = rhs.particles[var];
+            cellId[var] = rhs.cellId[var];
+            vertexId[var] = rhs.vertexId[var];
         }
       };
     virtual BondParticle3D<T,Descriptor>* clone() const;
+
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
     virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
     virtual void fluidToParticle(BlockLattice3D<T,Descriptor>& fluid, T scaling=1.) { }
@@ -90,64 +102,61 @@ public:
 
 
 public:
-    void update(Particle3D<T,Descriptor> * p, plint pid) {
-        if (p == particles[pid]) { return ; }
-        else if (p==NULL) { particles[pid] = NULL; }
+
+    void update(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1) {
+    	if (p0 != NULL) {
+    		particles[0] = p0;
+            positions[0] = p0->getPosition();
+            velocities[0] = castParticleToICP3D(p0)->get_v();
+            processors[0] = castParticleToICP3D(p0)->getMpiProcessor();
+            cellId[0] = castParticleToICP3D(p0)->get_cellId();
+            vertexId[0] = castParticleToICP3D(p0)->getVertexId();
+
+    	}
+    	if (p1 != NULL) {
+    		particles[1] = p1;
+            positions[1] = p1->getPosition();
+            velocities[1] = castParticleToICP3D(p1)->get_v();
+            processors[1] = castParticleToICP3D(p1)->getMpiProcessor();
+            cellId[1] = castParticleToICP3D(p1)->get_cellId();
+            vertexId[1] = castParticleToICP3D(p1)->getVertexId();
+    	}
+        eij = p0->getPosition() - p1->getPosition();
+        r = norm(eij);
+        eij = eij * (1.0/r);
     }
 
-    void update(T r, Array<T,3> eij) {
-        this->r=r;
-        this->eij=eij;
-    }
-    void update(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, bool updateDistance=true) {
-        processors[0] = castParticleToICP3D(p0)->get_processor();
-        processors[1] = castParticleToICP3D(p1)->get_processor();
-        if ( isInTheSameDomain(p0) ) { particles[0] = p0; }
-        else { particles[0] = NULL; }
-        if ( isInTheSameDomain(p1) ) { particles[1] = p1; }
-        else { particles[1] = NULL; }
-    }
-    void update(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
-        this->update(p0,p1);
-        this->update(r,eij);
-    }
-    bool applyForce(Array<T,3> force, plint pid) {
-        if (particles[pid] == NULL) { return false; }
-        castParticleToICP3D(particles[pid])->get_force() += force;
-        return true;
-    };
     bool applyForce(Array<T,3> force) {
         if (particles[0] != NULL) {  castParticleToICP3D(particles[0])->get_force() += force; };
         if (particles[1] != NULL) {  castParticleToICP3D(particles[1])->get_force() -= force; };
         return true;
     };
-    bool increaseSaturation(T dSaturation, plint pid, plint bondTypeId) {
-        if (particles[pid] == NULL) { return false; }
-        castParticleToICP3D(particles[pid])->getBondTypeSaturation(bondTypeId) += dSaturation;
-        return true;
-    };
-    bool increaseSaturation(T dSaturation, plint pid) {
-        return this->increaseSaturation(dSaturation, pid, bondType);
-    };
 
     std::pair<plint,plint> getCellIdVertexIdPair(plint pid) {
+    	PLB_ASSERT(pid<2);
         return std::make_pair<plint,plint>(cellId[pid], vertexId[pid]);
     }
+
     T & get_r() { return r; }
     Array<T,3> & get_eij() { return eij; }
-    Array<T,3> & get_rVector() { return r*eij; }
+    Array<T,3> get_rVector() { return r*eij; }
+    Particle3D<T,Descriptor>* getParticle(plint pid) {
+    	PLB_ASSERT(pid<2);
+    	return particles[pid];
+    } ;
+
+    std::string getUID() { return uid; }
 private:
     static int id;
     plint processor;
-    plint bondType;
 private:
     T r, bondTime;
     plint cellId[2],vertexId[2];
     Array<T,3> eij;
     Array<T,3> positions[2];
     Array<T,3> velocities[2];
+    std::string uid;
     plint processors[2];
-    std::map<plint, T> bondTypesSaturation[2];
     Particle3D<T,Descriptor>* particles[2];
 };
 

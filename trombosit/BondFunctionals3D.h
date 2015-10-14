@@ -16,24 +16,27 @@ template<typename T, template<typename U> class Descriptor>
 class UpdateBondParticles3D : public BoxProcessingFunctional3D
 {
 public:
-    UpdateBondParticles3D () { } ;
+    UpdateBondParticles3D (BondField3D<T, Descriptor> & bondField_) : bondField(bondField_) { } ;
     ~UpdateBondParticles3D() { };
-    UpdateBondParticles3D(UpdateBondParticles3D<T,Descriptor> const& rhs) { } ;
+    UpdateBondParticles3D(UpdateBondParticles3D<T,Descriptor> const& rhs) : bondField(rhs.bondField) { } ;
     /// Arguments: [0] Particle-field 0
     /// Arguments: [1] Particle-field 1
     /// Arguments: [2] BondParticle-field
     virtual UpdateBondParticles3D<T,Descriptor>* clone() const { return new UpdateBondParticles3D<T,Descriptor>(*this); };
     virtual BlockDomain::DomainT appliesTo() const { return BlockDomain::bulkAndEnvelope; } ;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const {
-        modified[0] = modif::nothing; // ParticleField 0
-        modified[1] = modif::nothing; // ParticleField 1
+        modified[0] = modif::allVariables; // ParticleField 0
+        modified[1] = modif::allVariables; // ParticleField 1
         modified[2] = modif::allVariables; // BondParticles
     } ;
     void getModificationPattern(std::vector<bool>& isWritten) const {
-        isWritten[0] = false;
-        isWritten[1] = false;
+        isWritten[0] = true;
+        isWritten[1] = true;
         isWritten[2] = true;
     };
+private:
+    BondField3D<T, Descriptor> & bondField;
+public:
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
         PLB_PRECONDITION( blocks.size()>3 );
         ParticleField3D<T,Descriptor>& particleField0 =
@@ -73,17 +76,20 @@ public:
         // Scan all bondParticles and update their edges.
         bondParticleField.findParticles(bondParticleField.getBoundingBox(), bondParticles);
         for (pluint iParticle=0; iParticle<bondParticles.size(); ++iParticle) {
+        	// TODO: TAKE CARE for multiple copies from envelopes
             BondParticle3D<T,Descriptor>* bondParticle = castParticle3DToBondParticle3D(bondParticles[iParticle]);
             std::pair<plint,plint> pair0 = bondParticle->getCellIdVertexIdPair(0);
             std::pair<plint,plint> pair1 = bondParticle->getCellIdVertexIdPair(1);
-            if ( particle0Map.find(pair0) != particle0Map.end() ) { bondParticle->update(particle0Map[pair0], 0); }
-            else { bondParticle->update(NULL, 0); }
-            if ( particle1Map.find(pair1) != particle1Map.end() ) { bondParticle->update(particle1Map[pair1], 1); }
-            else { bondParticle->update(NULL, 1); }
+            Particle3D<T,Descriptor>* p0=NULL, p1=NULL;
+            if ( particle0Map.find(pair0) != particle0Map.end() ) { p0 = particle0Map[pair0]; }
+            if ( particle1Map.find(pair1) != particle1Map.end() ) { p1 = particle1Map[pair1]; }
+            bondParticle->update(p0, p1);
+            if (not bondField.getBondyType().breakBond(bondParticle)) { // if breakBond is true, it breaks the bond as well: bondParticle->getTag()=-1
+            	bondField.getBondyType().applyForce(bondParticle);
+            }
         }
-
-
-
+        bondParticleField.removeParticles(bondParticleField.getBoundingBox(), -1);
+        bondParticleField.advanceParticles(bondParticleField.getBoundingBox(), -1);
     };
 private:
 };

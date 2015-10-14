@@ -12,9 +12,9 @@ using namespace plb;
 
 template<typename T, template<typename U> class Descriptor>
 void trombocit::BondParticle3D<T,Descriptor>::advance() {
-    // Euler update scheme
-        this->getPosition() = (positions[0] + positions[1]) * 0.5;
-        processor = this->getMpiProcessor();
+	this->getPosition() = (positions[0] + positions[1]) * 0.5;
+	processor = this->getMpiProcessor();
+	bondTime += 1;
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -22,17 +22,25 @@ void trombocit::BondParticle3D<T,Descriptor>::serialize(HierarchicSerializer& se
 {
     Particle3D<T,Descriptor>::serialize(serializer);
     serializer.addValue<plint>(processor);
-    serializer.addValue<plint>(bondType);
     serializer.addValue<T>(r);
+    serializer.addValue<T>(bondTime);
     serializer.addValues<T,3>(eij);
+	serializeString(serializer, uid);
+
     for (int var = 0; var < 2; ++var) {
+    	if (particles[var] != NULL) { // Update positions etc
+    		Particle3D<T,Descriptor> * pv = particles[var];
+            positions[var] = pv->getPosition();
+            velocities[var] = castParticleToICP3D(pv)->get_v();
+            processors[var] = castParticleToICP3D(pv)->getMpiProcessor();
+            cellId[var] = castParticleToICP3D(pv)->get_cellId();
+            vertexId[var] = castParticleToICP3D(pv)->getVertexId();
+    	}
         serializer.addValues<T,3>(positions[var]);
         serializer.addValues<T,3>(velocities[var]);
         serializer.addValue<plint>(processors[var]);
         serializer.addValue<plint>(cellId[var]);
         serializer.addValue<plint>(vertexId[var]);
-        //        particles[var] = NULL;
-        serializeMap<plint, T>(serializer, bondTypesSaturation[var]);
     }
 }
 
@@ -41,9 +49,10 @@ void trombocit::BondParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer
 {
     Particle3D<T,Descriptor>::unserialize(unserializer);
     unserializer.readValue<plint>(processor);
-    unserializer.readValue<plint>(bondType);
     unserializer.readValue<T>(r);
+    unserializer.readValue<T>(bondTime);
     unserializer.readValues<T,3>(eij);
+    uid =  unserializeString(unserializer);
     for (int var = 0; var < 2; ++var) {
         unserializer.readValues<T,3>(positions[var]);
         unserializer.readValues<T,3>(velocities[var]);
@@ -51,7 +60,6 @@ void trombocit::BondParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer
         unserializer.readValue<plint>(cellId[var]);
         unserializer.readValue<plint>(vertexId[var]);
         particles[var] = NULL;
-        bondTypesSaturation[var] = unserializeMap<plint, T>(unserializer);
     }
 }
 
