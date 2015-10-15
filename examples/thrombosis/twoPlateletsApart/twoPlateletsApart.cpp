@@ -186,6 +186,14 @@ int main(int argc, char* argv[])
     plint flowParam;
     bool checkpointed=0;
 
+// change output folder name if desired--
+    string outputFolderName;
+    global::argv(2).read(outputFolderName);
+    if (sizeof(outputFolderName)>0) { 
+        global::directories().setOutputDir(outputFolderName);
+    }
+//---------------------------------------
+
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
