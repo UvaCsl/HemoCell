@@ -127,8 +127,8 @@ public:
     }
 
     bool applyForce(Array<T,3> force) {
-        if (particles[0] != NULL) {  castParticleToICP3D(particles[0])->get_force() += force; };
-        if (particles[1] != NULL) {  castParticleToICP3D(particles[1])->get_force() -= force; };
+        if (particles[0] != NULL) {  castParticleToICP3D(particles[0])->get_force() -= force; };
+        if (particles[1] != NULL) {  castParticleToICP3D(particles[1])->get_force() += force; };
         return true;
     };
 
@@ -151,7 +151,8 @@ private:
     plint processor;
 private:
     T r, bondTime;
-    plint cellId[2],vertexId[2];
+    plint cellId[2];
+    plint vertexId[2];
     Array<T,3> eij;
     Array<T,3> positions[2];
     Array<T,3> velocities[2];

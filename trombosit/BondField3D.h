@@ -4,6 +4,7 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "cellCellForces3D.h"
+#include "BondFunctionals3D.h"
 #include <map>
 #include <set>
 #include <string>
@@ -18,6 +19,20 @@ namespace trombocit {
 template<typename T, template<typename U> class Descriptor>
 class BondField3D {
 public:
+	// Single CellField
+    BondField3D(CellField3D<T, Descriptor> & cellField, BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
+        MultiBlockManagement3D const& particleManagement(cellField.getParticleField3D().getMultiBlockManagement());
+        BondParticles3D = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(
+                particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
+        BondParticles3D->periodicity().toggleAll(true);
+        BondParticles3D->toggleInternalStatistics(false);
+
+        particleParticleBondArg.push_back( &(cellField.getParticleField3D()) );
+        particleParticleBondArg.push_back( &(cellField.getParticleField3D()) );
+        particleParticleBondArg.push_back( BondParticles3D );
+    } ;
+
+    // Two CellFields
     BondField3D(CellField3D<T, Descriptor> & cellField1, CellField3D<T, Descriptor> & cellField2, BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
         MultiBlockManagement3D const& particleManagement(cellField1.getParticleField3D().getMultiBlockManagement());
         BondParticles3D = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(
@@ -30,6 +45,7 @@ public:
         particleParticleBondArg.push_back( BondParticles3D );
     } ;
 
+    // CellField and ParticleField
     BondField3D(CellField3D<T, Descriptor> & cellField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
     		BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
         MultiBlockManagement3D const& particleManagement(cellField1.getParticleField3D().getMultiBlockManagement());
@@ -43,6 +59,7 @@ public:
         particleParticleBondArg.push_back( BondParticles3D );
     } ;
 
+    // Two ParticleFields
     BondField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
     		BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
         MultiBlockManagement3D const& particleManagement(particleField1.getMultiBlockManagement());
@@ -81,6 +98,7 @@ public:
     }
 public:
     std::vector<MultiBlock3D*> & getParticleParticleBondArg()  { return particleParticleBondArg; }
+    Box3D getBoundingBox()  { return BondParticles3D->getBoundingBox(); }
     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & getBondParticles3D()  { return *BondParticles3D; }
     std::set<std::string> & getBondUIDs() { return bondUIDs; } ;
     BondType<T,Descriptor> & getBondType() { return bondType; } ;
@@ -99,38 +117,82 @@ private:
 template<typename T, template<typename U> class Descriptor>
 class BondProximityDynamics3D : public ProximityDynamics3D<T,Descriptor>  {
 public:
-    BondProximityDynamics3D (BondField3D<T, Descriptor> & bondField_) : bondField(bondField_), bondParticleField(NULL) { };
+    BondProximityDynamics3D (BondField3D<T, Descriptor> & bondField_) : bondField(bondField_), bondParticleField(0) { };
     BondProximityDynamics3D (BondProximityDynamics3D<T,Descriptor> const& rhs)  : bondField(rhs.bondField), bondParticleField(rhs.bondParticleField)  { };
     virtual ~BondProximityDynamics3D () {};
     virtual bool operator()(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
         bool conditionsMet = bondField.isBondPossible(p0, p1, r, eij);
         if (conditionsMet) {
         	BondParticle3D<T,Descriptor> * bp = bondField.createBondParticle(p0, p1, r, eij);
-        	bondParticleField.addParticle(bondParticleField.getBoundingBox(), bp);
+        	bondParticleField->addParticle(bondParticleField->getBoundingBox(), bp);
         }
         return conditionsMet;
     }
 
     virtual void open(Box3D domain, std::vector<AtomicBlock3D*> fields) {
-        bondParticleField = *dynamic_cast<ParticleField3D<T,Descriptor>*>(fields[2]);
+        bondParticleField = dynamic_cast<ParticleField3D<T,Descriptor>*>(fields[2]);
         std::vector<Particle3D<T,Descriptor>*> bondParticles;
-        bondParticleField.findParticles(bondParticleField.getBoundingBox(), bondParticles);
-        bondField->getBondUIDs().clear();
+        bondParticleField->findParticles(bondParticleField->getBoundingBox(), bondParticles);
+        bondField.getBondUIDs().clear();
         for (pluint iParticle=0; iParticle<bondParticles.size(); ++iParticle) {
             std::string uid = castParticle3DToBondParticle3D(bondParticles[iParticle])->getUID() ;
-            bondField->getBondUIDs().insert(uid);
+            bondField.getBondUIDs().insert(uid);
         }
     };
 
     virtual void close(Box3D domain, std::vector<AtomicBlock3D*> fields) {
     };
     // conditionsAreMet is not necessary here.
-    virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) { return true; }
+    virtual int conditionsAreMet(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) { return bondField.isBondPossible(p0, p1, r, eij); }
 private:
     BondField3D<T, Descriptor> & bondField;
-    ParticleField3D<T,Descriptor>& bondParticleField;
+    ParticleField3D<T,Descriptor> * bondParticleField;
 };
 
+
+
+template<typename T, template<typename U> class Descriptor>
+class BondFieldWrapper3D {
+public:
+	BondFieldWrapper3D(CellField3D<T, Descriptor> & cellField, BondType<T,Descriptor> & bondType_) :
+		bondField(cellField, bondType_) {    } ;
+
+    // Two CellFields
+	BondFieldWrapper3D(CellField3D<T, Descriptor> & cellField1, CellField3D<T, Descriptor> & cellField2, BondType<T,Descriptor> & bondType_) :
+		bondField(cellField1, cellField2, bondType_) {    } ;
+
+    // CellField and ParticleField
+	BondFieldWrapper3D(CellField3D<T, Descriptor> & cellField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
+    		BondType<T,Descriptor> & bondType_) :
+		bondField(cellField1, particleField2, bondType_) {    } ;
+
+    // Two ParticleFields
+	BondFieldWrapper3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
+    		BondType<T,Descriptor> & bondType_) :
+		bondField(particleField1, particleField2, bondType_) {    } ;
+
+
+	BondFieldWrapper3D(BondField3D<T, Descriptor> & bondField_)
+        : bondField(bondField_) {} ;
+
+	BondFieldWrapper3D(BondFieldWrapper3D<T, Descriptor> & rhs)
+        : bondField(rhs.bondField) {} ;
+
+    virtual ~BondFieldWrapper3D() { } ;
+
+    void update() {
+        BondProximityDynamics3D<T, Descriptor> bpd(bondField);
+        T breakDistance = bondField.getBondType().getBreakDistance();
+        applyProcessingFunctional (
+            new ApplyProximityDynamics3D<T,Descriptor>(bpd, breakDistance),
+            bondField.getBoundingBox(), bondField.getParticleParticleBondArg() );
+        applyProcessingFunctional (
+            new UpdateBondParticles3D<T,Descriptor>(bondField),
+            bondField.getBoundingBox(), bondField.getParticleParticleBondArg() );
+    }
+private:
+    BondField3D<T, Descriptor> & bondField;
+};
 
 } // namespace trombocit
 

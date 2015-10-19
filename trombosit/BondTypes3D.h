@@ -36,6 +36,7 @@ public:
     bool isBondPossible(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
     	if (r > this->getCreateDistance() ) { return false;}
     	if (areSameCellType and (castParticleToICP3D(p0)->get_cellId() == castParticleToICP3D(p1)->get_cellId())) { return false; }
+//    	if ((castParticleToICP3D(p0)->getVertexId() == castParticleToICP3D(p1)->getVertexId())) { return false; }
     	return true;
     }
     // Create bond can also perform other function in bondParticle, like change saturation etc.

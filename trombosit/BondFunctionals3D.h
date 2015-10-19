@@ -13,6 +13,9 @@ using namespace plb;
 namespace trombocit {
 
 template<typename T, template<typename U> class Descriptor>
+class BondField3D ;
+
+template<typename T, template<typename U> class Descriptor>
 class UpdateBondParticles3D : public BoxProcessingFunctional3D
 {
 public:
@@ -23,7 +26,7 @@ public:
     /// Arguments: [1] Particle-field 1
     /// Arguments: [2] BondParticle-field
     virtual UpdateBondParticles3D<T,Descriptor>* clone() const { return new UpdateBondParticles3D<T,Descriptor>(*this); };
-    virtual BlockDomain::DomainT appliesTo() const { return BlockDomain::bulkAndEnvelope; } ;
+    virtual BlockDomain::DomainT appliesTo() const { return BlockDomain::bulk; } ;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const {
         modified[0] = modif::allVariables; // ParticleField 0
         modified[1] = modif::allVariables; // ParticleField 1
@@ -38,7 +41,7 @@ private:
     BondField3D<T, Descriptor> & bondField;
 public:
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-        PLB_PRECONDITION( blocks.size()>3 );
+        PLB_PRECONDITION( blocks.size()==3 );
         ParticleField3D<T,Descriptor>& particleField0 =
             *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
         ParticleField3D<T,Descriptor>& particleField1 =
@@ -50,7 +53,7 @@ public:
         std::map<std::pair<plint,plint>, Particle3D<T,Descriptor>*> particle0Map, particle1Map;
         bondParticleField.findParticles(bondParticleField.getBoundingBox(), bondParticles);
         // Don't perform unnecessary calculations
-        bool particleFieldsAreTheSame= particleField0 == particleField1;
+        bool particleFieldsAreTheSame= (&particleField0) == (&particleField1);
 
 
 
@@ -80,12 +83,13 @@ public:
             BondParticle3D<T,Descriptor>* bondParticle = castParticle3DToBondParticle3D(bondParticles[iParticle]);
             std::pair<plint,plint> pair0 = bondParticle->getCellIdVertexIdPair(0);
             std::pair<plint,plint> pair1 = bondParticle->getCellIdVertexIdPair(1);
-            Particle3D<T,Descriptor>* p0=NULL, p1=NULL;
+            Particle3D<T,Descriptor>* p0=0;
+            Particle3D<T,Descriptor>* p1=0;
             if ( particle0Map.find(pair0) != particle0Map.end() ) { p0 = particle0Map[pair0]; }
             if ( particle1Map.find(pair1) != particle1Map.end() ) { p1 = particle1Map[pair1]; }
             bondParticle->update(p0, p1);
-            if (not bondField.getBondyType().breakBond(bondParticle)) { // if breakBond is true, it breaks the bond as well: bondParticle->getTag()=-1
-            	bondField.getBondyType().applyForce(bondParticle);
+            if (not bondField.getBondType().breakBond(bondParticle)) { // if breakBond is true, it breaks the bond as well: bondParticle->getTag()=-1
+            	bondField.getBondType().applyForce(bondParticle);
             }
         }
         bondParticleField.removeParticles(bondParticleField.getBoundingBox(), -1);

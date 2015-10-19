@@ -30,6 +30,7 @@ using namespace std;
 
 
 #include "cellCellForces3D.h"
+#include "proximityDynamics3D.h"
 #include "cellForceChecking3D.h"
 #include "cellReductionTypes.h"
 #include "computeCellForces3D.h"
