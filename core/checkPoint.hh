@@ -33,6 +33,7 @@ void FcnCheckpoint<T, Descriptor>::load(XMLreader & documentXML, MultiBlockLatti
         parallelIO::load(outDir + "lattice", lattice, true);
         for (int icf= 0; icf < cellFields.size(); ++icf) {
             parallelIO::load(outDir + cellFields[icf]->getIdentifier(), cellFields[icf]->getParticleField3D(), true);
+            cellFields[icf]->deleteIncompleteCells();
             cellFields[icf]->createCellMap();
             cellFields[icf]->synchronizeCellQuantities();
         }
