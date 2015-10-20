@@ -35,8 +35,8 @@ public:
     //    Hence p0 and p1 always exist and the envelopes should be large enough (>r_create) for this assumption to hold.
     bool isBondPossible(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
     	if (r > this->getCreateDistance() ) { return false;}
-    	if (areSameCellType and (castParticleToICP3D(p0)->get_cellId() == castParticleToICP3D(p1)->get_cellId())) { return false; }
-//    	if ((castParticleToICP3D(p0)->getVertexId() == castParticleToICP3D(p1)->getVertexId())) { return false; }
+    	// If they are the same type they should: (1) have different cellId (2) be considered only once, hence only when cId1>cId2;
+    	if (areSameCellType and (castParticleToICP3D(p0)->get_cellId() <= castParticleToICP3D(p1)->get_cellId())) { return false; }
     	return true;
     }
     // Create bond can also perform other function in bondParticle, like change saturation etc.
@@ -155,6 +155,11 @@ private:
     bool increaseSaturation(Particle3D<T,Descriptor> * pp0, T dSaturation) {
         if (pp0 == NULL) { return false; }
         castParticleToICP3D(pp0)->getBondTypeSaturation( this->getBondTypeId() ) += dSaturation;
+        return true;
+    };
+    bool resetSaturation(Particle3D<T,Descriptor> * pp0) {
+        if (pp0 == NULL) { return false; }
+        castParticleToICP3D(pp0)->getBondTypeSaturation( this->getBondTypeId() ) = 0;
         return true;
     };
     CellCellForce3D<T> & forceType;
