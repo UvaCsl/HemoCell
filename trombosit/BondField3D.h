@@ -21,48 +21,41 @@ class BondField3D {
 public:
 	// Single CellField
     BondField3D(CellField3D<T, Descriptor> & cellField, BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
-        MultiBlockManagement3D const& particleManagement(cellField.getParticleField3D().getMultiBlockManagement());
-        BondParticles3D = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(
-                particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
-        BondParticles3D->periodicity().toggleAll(true);
-        BondParticles3D->toggleInternalStatistics(false);
-
-        particleParticleBondArg.push_back( &(cellField.getParticleField3D()) );
-        particleParticleBondArg.push_back( &(cellField.getParticleField3D()) );
-        particleParticleBondArg.push_back( BondParticles3D );
+    	initializeBondField3D( &(cellField.getParticleField3D()), &(cellField.getParticleField3D()) );
     } ;
 
     // Two CellFields
     BondField3D(CellField3D<T, Descriptor> & cellField1, CellField3D<T, Descriptor> & cellField2, BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
-        MultiBlockManagement3D const& particleManagement(cellField1.getParticleField3D().getMultiBlockManagement());
-        BondParticles3D = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(
-                particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
-        BondParticles3D->periodicity().toggleAll(true);
-        BondParticles3D->toggleInternalStatistics(false);
-
-        particleParticleBondArg.push_back( &(cellField1.getParticleField3D()) );
-        particleParticleBondArg.push_back( &(cellField2.getParticleField3D()) );
-        particleParticleBondArg.push_back( BondParticles3D );
+    	initializeBondField3D( &(cellField1.getParticleField3D()), &(cellField2.getParticleField3D()) );
     } ;
 
     // CellField and ParticleField
     BondField3D(CellField3D<T, Descriptor> & cellField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
     		BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
-        MultiBlockManagement3D const& particleManagement(cellField1.getParticleField3D().getMultiBlockManagement());
-        BondParticles3D = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(
-                particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
-        BondParticles3D->periodicity().toggleAll(true);
-        BondParticles3D->toggleInternalStatistics(false);
-
-        particleParticleBondArg.push_back( &(cellField1.getParticleField3D()) );
-        particleParticleBondArg.push_back( &particleField2 );
-        particleParticleBondArg.push_back( BondParticles3D );
+    	initializeBondField3D( &(cellField1.getParticleField3D()), &particleField2 );
     } ;
 
     // Two ParticleFields
-    BondField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
+    BondField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField1,
+    			MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
     		BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
+    	initializeBondField3D(&particleField1, &particleField2 );
+    } ;
+
+    BondField3D(BondField3D<T, Descriptor> & rhs)
+        : BondParticles3D(rhs.BondParticles3D),
+          particleParticleBondArg(rhs.particleParticleBondArg),
+          bondType(rhs.bondType){} ;
+
+    virtual ~BondField3D() { delete BondParticles3D; } ;
+
+    // Common initializer for the above constructors
+    void initializeBondField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField1,
+    						   MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2) {
         MultiBlockManagement3D const& particleManagement(particleField1.getMultiBlockManagement());
+
+        PLT_ASSERT( int(bondType.getBreakDistance()+0.5) < particleManagement.getEnvelopeWidth() );
+
         BondParticles3D = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(
                 particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
         BondParticles3D->periodicity().toggleAll(true);
@@ -73,13 +66,6 @@ public:
         particleParticleBondArg.push_back( BondParticles3D );
     } ;
 
-
-
-    BondField3D(BondField3D<T, Descriptor> & rhs)
-        : BondParticles3D(rhs.particleParticleBondArg),
-          particleParticleBondArg(rhs.particleParticleBondArg),
-          bondType(rhs.bondType){} ;
-    virtual ~BondField3D() { delete BondParticles3D; } ;
 
 
 public:
@@ -143,7 +129,7 @@ public:
     virtual void close(Box3D domain, std::vector<AtomicBlock3D*> fields) {
     };
     // conditionsAreMet is not necessary here.
-    virtual int conditionsAreMet(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) { return bondField.isBondPossible(p0, p1, r, eij); }
+    virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) { return bondField.isBondPossible(p0, p1, r, eij); }
 private:
     BondField3D<T, Descriptor> & bondField;
     ParticleField3D<T,Descriptor> * bondParticleField;
