@@ -31,7 +31,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & ibmScheme, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
-        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed)
+        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed, T & Delta)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
@@ -70,6 +70,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     eulerAngles[2] *= pi/180.;
     document["parameters"]["deflationRatio"].read(deflationRatio);
     document["parameters"]["relaxationTime"].read(relaxationTime);
+    document["parameters"]["Delta"].read(Delta);
     document["ibm"]["forceToFluid"].read(forceToFluid);
     document["ibm"]["ibmKernel"].read(ibmKernel);
     document["ibm"]["shape"].read(shape);
@@ -172,6 +173,7 @@ int main(int argc, char* argv[])
     T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic,  k_volume, k_surface, eta_m;
     T eqLengthRatio;
     T u, Re, Re_p, N, lx, ly, lz;
+    T Delta;
     T poiseuilleForce=0;
     T rho_p;
     T radius;
@@ -186,6 +188,14 @@ int main(int argc, char* argv[])
     plint flowParam;
     bool checkpointed=0;
 
+// change output folder name if desired--
+    string outputFolderName;
+    global::argv(2).read(outputFolderName);
+    if (sizeof(outputFolderName)>0) { 
+        global::directories().setOutputDir(outputFolderName);
+    }
+//---------------------------------------
+
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
@@ -193,7 +203,8 @@ int main(int argc, char* argv[])
     readFicsionXML(document, caseId, rbcModel, shellDensity,
             k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, ibmScheme, shape, cellPath, radius, deflationRatio, relaxationTime,
-            cellNumTriangles, tmax, tmeas, hct, npar, flowParam, checkpointed);
+            cellNumTriangles, tmax, tmeas, hct, npar, flowParam, checkpointed,
+            Delta);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -325,7 +336,8 @@ int main(int argc, char* argv[])
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
         std::vector<Array<T,3> > cellsOrigin;
-        cellsOrigin.push_back( Array<T,3>(nx*0.5-pltRadius*aspectRatio-0.6, ny*0.5, nz*0.5) );
+//        cellsOrigin.push_back( Array<T,3>(nx*0.5-pltRadius*aspectRatio-0.6, ny*0.5, nz*0.5) );
+        cellsOrigin.push_back( Array<T,3>(nx*0.5-pltRadius*aspectRatio-Delta-0.5, ny*0.5, nz*0.5) );
         cellsOrigin.push_back( Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
         PLTField.initialize(cellsOrigin);
         checkpointer.save(lattice, cellFields, initIter);
