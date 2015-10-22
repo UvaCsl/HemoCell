@@ -22,8 +22,6 @@
 #define INTERMEDIATE_MODEL_3D_H
 
 #include "cellModel3D.h"
-#include "IntermediateModel3D.h"
-
 
 #ifndef KBT__
 #define KBT__
