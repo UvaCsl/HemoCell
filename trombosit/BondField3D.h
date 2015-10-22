@@ -4,7 +4,6 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "cellCellForces3D.h"
-#include "BondFunctionals3D.h"
 #include <map>
 #include <set>
 #include <string>

@@ -60,7 +60,7 @@ public:
         ss << bondTypeId ;
         stm0 << cellId0 << "-" << vertexId0;
         stm1 << cellId1 << "-" << vertexId1;
-        if (areSameCellType and cellId0 < cellId1) { ret = ss.str() + "-" + stm1.str() + "_" + stm0.str(); }
+        if (areSameCellType and cellId0 > cellId1) { ret = ss.str() + "-" + stm1.str() + "_" + stm0.str(); }
         else { ret = ss.str() + "-" + stm0.str() + "_" + stm1.str();  }
     	return ret;
     } ;
@@ -107,6 +107,7 @@ public:
     /*
      * This is to be used when there are two species (eg. platelet-ECM) with different receptor strengths.
      * This class takes care of the Saturation, as well.
+     * TODO: Scaling force w/ Saturation
      */
     SimpleAsymmetricSaturatedBond(CellCellForce3D<T> & forceType_, T r_create_, T r_break_,
     		T deltaSaturation0_, T deltaSaturation1_,
