@@ -36,7 +36,7 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
         for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
             for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
 
-// TODO: Next snippet to allocate only nodes that have a fluid node.
+// TODO: Next snippet to allocate only nodes that have a fluid node. // DONE
                 bool neighboringBoundariesEverywhere=true;
                 try {
                     for (int px = iX-1; px <= iX+1; ++px) {  for (int py = iY-1; py <= iY+1; ++py) { for (int pz = iZ-1; pz <= iZ+1; ++pz) {
@@ -57,10 +57,11 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
                     vertices.push_back(Array<T,3>(step*3, step, step) + vertex);
                     vertices.push_back(Array<T,3>(step*3, step, step*3) + vertex);
                     vertices.push_back(Array<T,3>(step*3, step*3, step*3) + vertex);
+                    cellId +=1;
             	    for (plint indx=0; indx<8; ++indx) {
             	    	boundaryParticleField.addParticle(
             	    			boundaryParticleField.getBoundingBox(),
-            	    			new ImmersedCellParticle3D<T,Descriptor>(vertices[indx], cellId, vertexId));
+            	    			new ImmersedCellParticle3D<T,Descriptor>(vertices[indx], cellId, indx));
             	    }
             	}
             }

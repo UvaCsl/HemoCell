@@ -29,6 +29,7 @@ public:
                 cellId[var] = 0;
                 vertexId[var] = 0;
             }
+//            pcout << "(BondParticle3D) empty;" << std::endl;
         } ;
 
 
@@ -53,7 +54,7 @@ public:
             cellId[1] = castParticleToICP3D(p1)->get_cellId();
             vertexId[1] = castParticleToICP3D(p1)->getVertexId();
     	}
-
+        pcout << "(BondParticle3D) normal;" << std::endl;
     };
 
 
@@ -71,6 +72,7 @@ public:
             cellId[var] = rhs.cellId[var];
             vertexId[var] = rhs.vertexId[var];
         }
+        pcout << "(BondParticle3D) rhs;" << std::endl;
       };
     virtual BondParticle3D<T,Descriptor>* clone() const;
 
@@ -103,6 +105,12 @@ public:
 
 public:
 
+    void updateFromBondParticle(Particle3D<T,Descriptor> * p0) {
+    	BondParticle3D<T,Descriptor> * bp = dynamic_cast<BondParticle3D<T,Descriptor>*>(p0);
+    	this->update(bp->particles[0], bp->particles[1]);
+    }
+
+
     void update(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1) {
     	if (p0 != NULL) {
     		particles[0] = p0;
@@ -121,7 +129,7 @@ public:
             cellId[1] = castParticleToICP3D(p1)->get_cellId();
             vertexId[1] = castParticleToICP3D(p1)->getVertexId();
     	}
-        eij = p0->getPosition() - p1->getPosition();
+        eij = positions[0] - positions[1];
         r = norm(eij);
         eij = eij * (1.0/r);
     }
@@ -140,6 +148,13 @@ public:
     T & get_r() { return r; }
     Array<T,3> & get_eij() { return eij; }
     Array<T,3> get_rVector() { return r*eij; }
+
+    Array<T,3> getPositions(plint pid) { PLB_ASSERT(pid<2); return positions[pid]; };
+    Array<T,3> getVelocities(plint pid) { PLB_ASSERT(pid<2); return velocities[pid]; };
+    plint getProcessors(plint pid) { PLB_ASSERT(pid<2); return processors[pid]; };
+    plint getCellIds(plint pid) { PLB_ASSERT(pid<2); return cellId[pid]; };
+    int getBondTime() { return bondTime; }
+
     Particle3D<T,Descriptor>* getParticle(plint pid) {
     	PLB_ASSERT(pid<2);
     	return particles[pid];

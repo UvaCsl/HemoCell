@@ -26,7 +26,7 @@ public:
     virtual bool operator()(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) =0;
     virtual void open(Box3D domain, std::vector<AtomicBlock3D*> fields) = 0;
     virtual void close(Box3D domain, std::vector<AtomicBlock3D*> fields) = 0;
-    virtual int conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) =0;
+    virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) =0;
 private:
 };
 
@@ -82,8 +82,8 @@ public:
         : forceType(rhs.forceType), cutoffRadius(rhs.cutoffRadius) { }
     virtual ~ProximityCellCellForce3D () { } ;
     virtual bool operator()(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) {
-        int conditionsMet = conditionsAreMet(p1,p2,r,eij);
-        if (conditionsMet>0) {
+        bool conditionsMet = conditionsAreMet(p1,p2,r,eij);
+        if (conditionsMet) {
             Array<T,3> force = forceType(r, eij);
             castParticleToICP3D(p1)->get_force() += force;
             castParticleToICP3D(p2)->get_force() -= force;
@@ -112,26 +112,23 @@ public:
         : forceType(rhs.forceType), cutoffRadius(rhs.cutoffRadius) { }
     virtual ~ProximitySameCellFieldForce3D () { };
     virtual bool operator()(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) {
-        int conditionsMet = conditionsAreMet(p1,p2,r,eij);
+        bool conditionsMet = conditionsAreMet(p1,p2,r,eij);
         if (conditionsMet) {
             Array<T,3> force = forceType(r, eij);
-            castParticleToICP3D(p1)->get_force() += force * (1.0/conditionsMet) ;
-            castParticleToICP3D(p2)->get_force() -= force * (1.0/conditionsMet) ;
+            castParticleToICP3D(p1)->get_force() += force;
+            castParticleToICP3D(p2)->get_force() -= force;
         }
         return conditionsMet>0;
     }
     virtual void open(Box3D domain, std::vector<AtomicBlock3D*> fields) { };
     virtual void close(Box3D domain, std::vector<AtomicBlock3D*> fields) {};
-    virtual int conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) {
+    virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) {
         if (r > cutoffRadius) { return false; }
         ImmersedCellParticle3D<T,Descriptor>* cParticle = castParticleToICP3D(p1);
         ImmersedCellParticle3D<T,Descriptor>* nParticle = castParticleToICP3D(p2);
         // If they belong to the same cell, don't do anything;
-        if (cParticle->get_cellId() == nParticle->get_cellId()) { return 0; }
-        // If they do not belong to the same cell, don't add the force twice.
-        if (cParticle->getVertexId() < nParticle->getVertexId()) { return 0; }
-        if (cParticle->getVertexId() == nParticle->getVertexId()) { return 2; }
-        return 1;
+        if (cParticle->get_cellId() <= nParticle->get_cellId()) { return false; }
+        return true;
     };
 private:
     CellCellForce3D<T> & forceType;

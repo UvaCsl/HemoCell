@@ -349,7 +349,7 @@ int main(int argc, char* argv[])
 //                                                        createBoundaryParticleField3D(lattice);
 
     /* Repulsive force */
-    T k_int = 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
+    T k_int = 2 * 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
 //    SimpleUnsaturatedBond(CellCellForce3D<T> & forceType_, T r_create_, T r_break_, bool areSameCellType_=false)
 
@@ -360,6 +360,8 @@ int main(int argc, char* argv[])
     trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF, R, 2*R, true);
     BondField3D<T,DESCRIPTOR> bondField(PLTField, bondType);
     BondFieldWrapper3D<T,DESCRIPTOR> bondDynamics(bondField);
+    bondDynamics.update();
+    writeBondParticleField3D_HDF5(bondField.getBondParticles3D(), dx, dt, initIter, "BondFieldParticles");
 
 
     /* ****************************************************/
@@ -405,7 +407,7 @@ int main(int argc, char* argv[])
         }
         // Pull force
 //        applyForceToCells(PLTField, PLTCellIds, forcesToApply);
-        applySameCellFieldForces(PLTField, PLF, R*2);
+//        applySameCellFieldForces(PLTField, PLF, R*2);
         bondDynamics.update();
         // applyForceToCells(PLTField, PLTCellIds, verticesToStretch, forcesToApply);
         // PLTField.applyCellCellForce(PLF, R*2);
@@ -438,7 +440,7 @@ int main(int argc, char* argv[])
             for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
             	writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
             	writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
-                writeParticleField3D_HDF5(bondField.getBondParticles3D(), dx, dt, iter+1, "BondFieldParticles");
+                writeBondParticleField3D_HDF5(bondField.getBondParticles3D(), dx, dt, iter+1, "BondFieldParticles");
             }
             global::timer("HDFOutput").stop();
             if ((iter+1)%(2*tmeas)==0) {

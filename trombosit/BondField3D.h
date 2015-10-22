@@ -4,7 +4,6 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "cellCellForces3D.h"
-#include "BondFunctionals3D.h"
 #include <map>
 #include <set>
 #include <string>
@@ -50,47 +49,78 @@ public:
     virtual ~BondField3D() { delete BondParticles3D; } ;
 
     // Common initializer for the above constructors
-    void initializeBondField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField1,
-    						   MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2) {
-        MultiBlockManagement3D const& particleManagement(particleField1.getMultiBlockManagement());
+    void initializeBondField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * particleField1,
+    						   MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * particleField2) {
+        MultiBlockManagement3D const& particleManagement(particleField1->getMultiBlockManagement());
 
-        PLT_ASSERT( int(bondType.getBreakDistance()+0.5) < particleManagement.getEnvelopeWidth() );
+        PLB_ASSERT( int(bondType.getBreakDistance()+0.5) < particleManagement.getEnvelopeWidth() );
 
         BondParticles3D = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(
                 particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
         BondParticles3D->periodicity().toggleAll(true);
         BondParticles3D->toggleInternalStatistics(false);
 
-        particleParticleBondArg.push_back( &particleField1 );
-        particleParticleBondArg.push_back( &particleField2 );
+        particleParticleBondArg.push_back( particleField1 );
+        particleParticleBondArg.push_back( particleField2 );
         particleParticleBondArg.push_back( BondParticles3D );
     } ;
 
 
 
 public:
+    virtual bool bondExists(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1) {
+    	std::string uid = bondType.getUID(p0, p1) ;
+    	return (bondParticleMap.count(uid) > 0);
+    };
+
     // Bond doesn't exist, particle is not saturated and for SameCellFields, cellId is not the same.
     virtual bool isBondPossible(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
-    	std::string uid = bondType.getUID(p0, p1) ;
-    	return (bondUIDs.count(uid) == 0) and bondType.isBondPossible(p0, p1, r, eij);
+    	return bondType.isBondPossible(p0, p1, r, eij);
     }
     // Insert BondParticle, update data structures
     virtual BondParticle3D<T,Descriptor> * createBondParticle(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
     	bool created = bondType.createBond(p0, p1, r, eij);
     	PLB_ASSERT(created);
 		std::string uid = bondType.getUID(p0, p1) ;
+		pcout << "Bond created: " << uid << std::endl;
 		BondParticle3D<T,Descriptor> * bp = new BondParticle3D<T,Descriptor>(p0, p1, r, eij, uid);
 		return bp;
     }
+
+    virtual std::string getUID(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1) {
+    	return bondType.getUID(p0, p1);
+    };
+
+    virtual bool updateBondParticleMap(AtomicBlock3D* atomicBondParticleField) {
+    	ParticleField3D<T,Descriptor>* bondParticleField = dynamic_cast<ParticleField3D<T,Descriptor>*>(atomicBondParticleField);
+        std::vector<Particle3D<T,Descriptor>*> bondParticles;
+        bondParticleField->findParticles(bondParticleField->getBoundingBox(), bondParticles);
+        bondParticleMap.clear();
+        for (pluint iParticle=0; iParticle<bondParticles.size(); ++iParticle) {
+        	BondParticle3D<T,Descriptor>* bondParticle = castParticle3DToBondParticle3D(bondParticles[iParticle]);
+            std::string uid = bondParticle->getUID() ;
+            if (bondParticleMap.count(uid) == 0) { bondParticleMap[uid] = bondParticle; }
+            else { castParticle3DToBondParticle3D(bondParticleMap[uid])->updateFromBondParticle(bondParticles[iParticle]); }
+        }
+    }
 public:
     std::vector<MultiBlock3D*> & getParticleParticleBondArg()  { return particleParticleBondArg; }
+    std::vector<MultiBlock3D*> getBondParticleArg()  {
+    	std::vector<MultiBlock3D*> bondParticleArg;
+    	bondParticleArg.push_back( BondParticles3D );
+    	return bondParticleArg;
+    }
     Box3D getBoundingBox()  { return BondParticles3D->getBoundingBox(); }
     MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & getBondParticles3D()  { return *BondParticles3D; }
     std::set<std::string> & getBondUIDs() { return bondUIDs; } ;
     BondType<T,Descriptor> & getBondType() { return bondType; } ;
 
+	std::map<std::string, Particle3D<T,Descriptor>* > & getBondParticleMap() { return bondParticleMap; }
+
+
 private:
     MultiParticleField3D<DenseParticleField3D<T,Descriptor> >* BondParticles3D;
+	std::map<std::string, Particle3D<T,Descriptor>* > bondParticleMap;
     std::vector<MultiBlock3D*> particleParticleBondArg;
     BondType<T,Descriptor> & bondType;
     std::set<std::string> bondUIDs;
@@ -106,30 +136,43 @@ public:
     BondProximityDynamics3D (BondField3D<T, Descriptor> & bondField_) : bondField(bondField_), bondParticleField(0) { };
     BondProximityDynamics3D (BondProximityDynamics3D<T,Descriptor> const& rhs)  : bondField(rhs.bondField), bondParticleField(rhs.bondParticleField)  { };
     virtual ~BondProximityDynamics3D () {};
-    virtual bool operator()(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
-        bool conditionsMet = bondField.isBondPossible(p0, p1, r, eij);
-        if (conditionsMet) {
-        	BondParticle3D<T,Descriptor> * bp = bondField.createBondParticle(p0, p1, r, eij);
-        	bondParticleField->addParticle(bondParticleField->getBoundingBox(), bp);
-        }
-        return conditionsMet;
-    }
 
     virtual void open(Box3D domain, std::vector<AtomicBlock3D*> fields) {
-        bondParticleField = dynamic_cast<ParticleField3D<T,Descriptor>*>(fields[2]);
-        std::vector<Particle3D<T,Descriptor>*> bondParticles;
-        bondParticleField->findParticles(bondParticleField->getBoundingBox(), bondParticles);
-        bondField.getBondUIDs().clear();
-        for (pluint iParticle=0; iParticle<bondParticles.size(); ++iParticle) {
-            std::string uid = castParticle3DToBondParticle3D(bondParticles[iParticle])->getUID() ;
-            bondField.getBondUIDs().insert(uid);
-        }
+    	bondParticleField = dynamic_cast<ParticleField3D<T,Descriptor>*>(fields[2]);
+    	bondField.updateBondParticleMap(fields[2]);
     };
 
+    virtual bool operator()(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
+        std::map<std::string, Particle3D<T,Descriptor>* > & bondParticleMap = bondField.getBondParticleMap();
+        std::string uid = bondField.getUID(p0, p1);
+        if (bondParticleMap.count(uid) > 0) {
+        	castParticle3DToBondParticle3D(bondParticleMap[uid])->update(p0, p1);
+        	return true;
+        } else if (bondField.isBondPossible(p0, p1, r, eij)) {
+        	BondParticle3D<T,Descriptor> * bp = bondField.createBondParticle(p0, p1, r, eij);
+        	bondParticleField->addParticle(bondParticleField->getBoundingBox(), bp);
+        	return true;
+        }
+        return false;
+    }
+
     virtual void close(Box3D domain, std::vector<AtomicBlock3D*> fields) {
+    	bondField.updateBondParticleMap(fields[2]);
+        std::map<std::string, Particle3D<T,Descriptor>* > & bondParticleMap = bondField.getBondParticleMap();
+//        typedef  sp_iter;
+        typename std::map<std::string, Particle3D<T,Descriptor>* >::iterator iterator;
+        for(iterator = bondParticleMap.begin(); iterator != bondParticleMap.end(); iterator++) {
+            BondParticle3D<T,Descriptor>* bondParticle = castParticle3DToBondParticle3D(iterator->second);
+            if (not bondField.getBondType().breakBond(bondParticle)) { // if breakBond is true, it breaks the bond as well: bondParticle->getTag()=-1
+            	bondField.getBondType().applyForce(bondParticle);
+            }
+        }
+        bondParticleField->removeParticles(bondParticleField->getBoundingBox(), -1);
+        bondParticleField->advanceParticles(bondParticleField->getBoundingBox(), -1);
     };
-    // conditionsAreMet is not necessary here.
-    virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) { return bondField.isBondPossible(p0, p1, r, eij); }
+    // conditionsAreMet is not necessary here, all the checks and actions will be performed in open(*).
+    virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) { return true; }
+
 private:
     BondField3D<T, Descriptor> & bondField;
     ParticleField3D<T,Descriptor> * bondParticleField;
@@ -172,9 +215,14 @@ public:
         applyProcessingFunctional (
             new ApplyProximityDynamics3D<T,Descriptor>(bpd, breakDistance),
             bondField.getBoundingBox(), bondField.getParticleParticleBondArg() );
-        applyProcessingFunctional (
-            new UpdateBondParticles3D<T,Descriptor>(bondField),
-            bondField.getBoundingBox(), bondField.getParticleParticleBondArg() );
+
+//        applyProcessingFunctional ( // advance particles in time according to velocity
+//            new AdvanceParticlesEveryWhereFunctional3D<T,Descriptor>,
+//            bondField.getBoundingBox(), bondField.getBondParticleArg() );
+
+//        applyProcessingFunctional (
+//            new UpdateBondParticles3D<T,Descriptor>(bondField),
+//            bondField.getBoundingBox(), bondField.getParticleParticleBondArg() );
     }
 private:
     BondField3D<T, Descriptor> & bondField;
