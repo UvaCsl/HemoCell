@@ -42,13 +42,14 @@ def dtypeFromH5(h5file):
     dtype = np.dtype({'names':dtypeNames, 'formats':dtypeSize} )
     return dtype
 
-def readFicsionCellResults(hdf5_dir, cellType='RBC', progressBar=False):
+def readFicsionCellResults(hdf5_dir, cellType='RBC', progressBar=False, step=1):
     """ Reads all the CellType h5 files inside a dir. 
 
     Keyword arguments:
         hdf5_dir -- string containing the output of a ficsion run.
         cellType -- The CellType to convert to a numpy type (eg. RBC, PLT, WBC). 
             Reads {cellType}_Cell3D.* files.
+        step -- read every 'step' timestep.
 
     Returns:
         numpy array containing all the data from all the timesteps.
@@ -66,7 +67,7 @@ def readFicsionCellResults(hdf5_dir, cellType='RBC', progressBar=False):
     hdf5_files = glob(identifier)
 
     # Extract the sorted list of timesteps in strings. Sorted strings can be different than integers.
-    timesteps = sorted(set(map(lambda x: x.split('.')[-4], hdf5_files)))
+    timesteps = sorted(set(map(lambda x: x.split('.')[-4], hdf5_files)))[::step]
     timesteps_int = map(int, timesteps)
     timesteps = zip( *sorted(zip(timesteps_int,timesteps)) )[1]
 
@@ -126,13 +127,15 @@ def main():
                        help='Path to save the numpy file [default:./ficsion_hdf5.npy].')
     parser.add_argument('-t', '--cellType', dest='cellType', default='RBC',
                        help='CellType [default:RBC]')
+    parser.add_argument('-s', '--step', dest='step', default=1,
+                       help='Step [default:1]')
 
     args = parser.parse_args()
 
     if not os.path.exists(args.inputDir):
         print 'ERROR: \n\t "', args.inputDir, '" does not exist.'
         sys.exit(1)
-    numpy_array = readFicsionCellResults(args.inputDir, args.cellType, True)
+    numpy_array = readFicsionCellResults(args.inputDir, args.cellType, True, step=int(args.step))
     np.save(args.outputFile, numpy_array)
     return
 
