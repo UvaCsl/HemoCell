@@ -30,6 +30,7 @@ using namespace std;
 
 
 #include "cellCellForces3D.h"
+#include "proximityDynamics3D.h"
 #include "cellForceChecking3D.h"
 #include "cellReductionTypes.h"
 #include "computeCellForces3D.h"
@@ -40,6 +41,7 @@ using namespace std;
 #include "hdf5IO.h"
 #include "ParticleHdf5IO.h"
 #include "CellHdf5IO.h"
+#include "ParticleField3DHdf5IO.h"
 
 
 /* MODELS */
@@ -47,6 +49,7 @@ using namespace std;
 #include "cellModel3D.h"
 #include "shapeMemoryModel3D.h"
 #include "restModel3D.h"
+#include "intermediateModel3D.h"
 
 /* CASES */
 #include "cellStretching3D.h"

@@ -18,11 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SHAPE_MEMORY_MODEL_3D_H
-#define SHAPE_MEMORY_MODEL_3D_H
+#ifndef INTERMEDIATE_MODEL_3D_H
+#define INTERMEDIATE_MODEL_3D_H
 
 #include "cellModel3D.h"
-
 
 #ifndef KBT__
 #define KBT__
@@ -41,26 +40,19 @@ const double pi = 4.*atan(1.);
 namespace plb {
 
 
-template<typename T>
-void getCellShapeQuantitiesFromMesh(TriangularSurfaceMesh<T> const& dynMesh,
-                            vector<T> & eqAreaPerTriangle, map<plint,T> & eqLengthPerEdge, map<plint,T> & eqAnglePerEdge,
-                            plint cellNumTriangles, plint cellNumPartsPerCell);
-
-
-
 template<typename T, template<typename U> class Descriptor>
-class ShapeMemoryModel3D :  public ConstitutiveModel<T,Descriptor>
+class IntermediateModel3D :  public ConstitutiveModel<T,Descriptor>
 {
 public:
     /* All input should be in dimensionless units */
-    ShapeMemoryModel3D(T density_, T k_rest_,
+    IntermediateModel3D(T density_, T k_rest_,
             T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
             T k_volume_, T k_surface_, T eta_m_,
             T persistenceLengthFine, T eqLengthRatio_,
             T dx_, T dt_, T dm_,
             TriangularSurfaceMesh<T> const& meshElement);
-    ShapeMemoryModel3D(ShapeMemoryModel3D<T,Descriptor> const& rhs);
-    ~ShapeMemoryModel3D() { } ;
+    IntermediateModel3D(IntermediateModel3D<T,Descriptor> const& rhs);
+    ~IntermediateModel3D() { } ;
     Array<T,3> computeElasticForce (
                TriangleBoundary3D<T> const& boundary,
                 plint iVertex ) { return Array<T,3>(0.0, 0.0, 0.0); }
@@ -74,7 +66,7 @@ public:
     virtual SyncRequirements & getSyncRequirements() {return syncRequirements;} ;
     virtual SyncRequirements const& getSyncRequirements() const {return syncRequirements;} ;
 
-    virtual ShapeMemoryModel3D<T,Descriptor>* clone() const;
+    virtual IntermediateModel3D<T,Descriptor>* clone() const;
 private:
     plint getTriangleId(plint iTriangle);
     plint getEdgeId(plint iVertex, plint jVertex);
@@ -130,20 +122,9 @@ public:
     virtual T getMembraneShearModulus() {
         T Lmax = eqLength*eqLengthRatio;
         T x0 = 1.0/eqLengthRatio;
-        // k_inPlane = k_WLC_ * kBT /(4.0*persistenceLengthCoarse);
+        // T kP =  kBT /(4.0*persistenceLengthCoarse);
         T kP =  k_inPlane;
-        T k_rep = -1.0*((eqLength*eqLength)* kP * x0 * (-6 + (9 - 4*x0)*x0)/( (x0-1)*(x0-1) ));
-        T oneMinusX0 = 1-x0;
-        T oneMinusX0Square = oneMinusX0*oneMinusX0;
-        T oneMinusX0Cube = oneMinusX0*oneMinusX0*oneMinusX0;
-        // Fedosov et al.  doi:10.1016/j.bpj.2010.02.002
-        // A Multiscale Red Blood Cell Model with Accurate Mechanics, Rheology, and Dynamics  
-        T ansFedosov = kP * sqrt(3) / (Lmax*x0) * (x0/(2.0*oneMinusX0Cube) - 1.0/(4.0*oneMinusX0Square) + 1.0/4.0) + 
-                3 * sqrt(3) * k_rep/(4*eqLength*eqLength*eqLength);
-        // Reasor et al. doi:10.1002/fld.2534
-        // Coupling the lattice-Boltzmann and spectrin-link methods for the direct numerical simulation of cellular blood flow
-        T ansReasor = sqrt(3) * kP / (Lmax*x0)*( 3.0/( 4*(1-x0)*(1-x0) ) - 3.0/4.0 +4*x0 + x0/(2.0 * (1-x0)*(1-x0)*(1-x0)));
-        return ansFedosov;
+        return sqrt(3) * kP / (Lmax*x0)*( 3.0/( 4*(1-x0)*(1-x0) ) - 3.0/4.0 +4*x0 + x0/(2.0 * (1-x0)*(1-x0)*(1-x0)));
     }
     // Units are N/m
     virtual T getMembraneElasticAreaCompressionModulus() {
@@ -188,9 +169,9 @@ public:
     virtual T& getEquilibriumVolume() { return eqVolume; }
     virtual T& getEquilibriumSurface() { return eqSurface; }
     virtual T& getEquilibriumTileSpan() { return eqTileSpan; }
-    virtual void setEquilibriumLinkLength(T value) { pcout << "setEquilibriumLinkLength not available for ShapeMemoryModel3D."; }
-    virtual void setEquilibriumTriangleArea(T value) { pcout << "setEquilibriumTriangleArea not available for ShapeMemoryModel3D."; }
-    virtual void setEquilibriumAngle(T value) { pcout << "setEquilibriumAngle not available for ShapeMemoryModel3D."; }
+    virtual void setEquilibriumLinkLength(T value) { pcout << "setEquilibriumLinkLength not available for IntermediateModel3D."; }
+    virtual void setEquilibriumTriangleArea(T value) { pcout << "setEquilibriumTriangleArea not available for IntermediateModel3D."; }
+    virtual void setEquilibriumAngle(T value) { pcout << "setEquilibriumAngle not available for IntermediateModel3D."; }
     virtual void setEquilibriumVolume(T value) { eqVolume = value; }
     virtual void setEquilibriumSurface(T value) { eqSurface = value; }
     virtual void setEquilibriumTileSpan(T value) { eqTileSpan = value; }
@@ -201,5 +182,5 @@ public:
 
 }
 
-#include "shapeMemoryModel3D.hh"
-#endif  // SHAPE_MEMORY_MODEL_3D_H
+#include "intermediateModel3D.hh"
+#endif  // INTERMEDIATE_MODEL_3D_H

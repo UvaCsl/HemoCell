@@ -1,9 +1,10 @@
-#ifndef FICSION_PARTICLE_HDF5IO_H
-#define FICSION_PARTICLE_HDF5IO_H
+#ifndef FICSION_BONDPARTICLEFIELD3D_HDF5IO_H
+#define FICSION_BONDPARTICLEFIELD3D_HDF5IO_H
 
 #include <limits>
 // #include "ficsion.h"
 #include "palabos3D.h"
+#include "BondParticle3D.h"
 #include "immersedCellParticle3D.h"
 #include "cellField3D.h"
 
@@ -15,25 +16,25 @@
 using namespace plb;
 using namespace std;
 
+namespace trombocit {
+
 template<typename T, template<typename U> class Descriptor>
-void writeCellField3D_HDF5(CellField3D<T, Descriptor>& cellField3D, T dx, T dt, plint iter, std::string preString="");
+void writeBondParticleField3D_HDF5(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField, T dx, T dt, plint iter, std::string identifier);
 
 
 template<typename T, template<typename U> class Descriptor>
-class WriteCellField3DInMultipleHDF5Files : public BoxProcessingFunctional3D
+class WriteBondParticleField3D : public BoxProcessingFunctional3D
 {
 public:
-    WriteCellField3DInMultipleHDF5Files (
-            CellField3D<T, Descriptor>& cellField3D_,
+	WriteBondParticleField3D (
             plint iter_, std::string identifier_,
             T dx_, T dt_);
     /// Arguments: [0] Particle-field. [1] Lattice.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
-    virtual WriteCellField3DInMultipleHDF5Files<T,Descriptor>* clone() const;
+    virtual WriteBondParticleField3D<T,Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
     virtual BlockDomain::DomainT appliesTo() const;
 private:
-    CellField3D<T, Descriptor>& cellField3D;
     plint iter;
     std::string identifier;
     T dx;
@@ -41,7 +42,7 @@ private:
 };
 
 
+}
 
-
-#include "ParticleHdf5IO.cpp"
-#endif  // FICSION_PARTICLE_HDF5IO_H
+#include "BondParticleField3DHdf5IO.cpp"
+#endif  // FICSION_BONDPARTICLEFIELD3D_HDF5IO_H

@@ -1,5 +1,5 @@
-#ifndef CELL_CELL_FORCES_3D_H
-#define CELL_CELL_FORCES_3D_H
+#ifndef CELL_ADHESION_FORCES_3D_H
+#define CELL_ADHESION_FORCES_3D_H
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
@@ -129,5 +129,5 @@ private:
 
 //#include "cellCellForces3D.hh"
 
-#endif  // CELL_CELL_FORCES_3D_H
+#endif  // CELL_ADHESION_FORCES_3D_H
 

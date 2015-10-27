@@ -4,10 +4,10 @@
 #include "BondParticle3D.h"
 #include "BondTypes3D.h"
 #include "BondField3D.h"
-#include "BondFunctionals3D.h"
-
+#include "BondParticleField3DHdf5IO.h"
 
 namespace trombocit {
+static bool useTrombosit = false;
 
 
 

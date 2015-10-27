@@ -19,11 +19,13 @@
 */
 
 #include "ficsion.h"
-// #include "trombosit/trombocit.h"
+#include "trombosit/trombocit.h"
 
 typedef double T;
 typedef Array<T,3> Velocity;
 #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor
+using namespace trombocit;
+
 
 void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
@@ -355,14 +357,26 @@ int main(int argc, char* argv[])
 		pcout << "(main) nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() ;
 		pcout << ", Volume = " << eqVolumes[iCell] << std::endl;
     }
-	pcout << std::endl << "(main) Starting simulation i=" << initIter << std::endl;
-
 //    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
 //                                                        createBoundaryParticleField3D(lattice);
 
     /* Repulsive force */
-    T k_int = 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
+    T k_int = 2 * 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
+//    SimpleUnsaturatedBond(CellCellForce3D<T> & forceType_, T r_create_, T r_break_, bool areSameCellType_=false)
+
+
+    /* ************* BOND DYNAMICS ************************/
+
+
+    trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF, R, 2*R, true);
+    BondField3D<T,DESCRIPTOR> bondField(PLTField, bondType);
+    BondFieldWrapper3D<T,DESCRIPTOR> bondDynamics(bondField);
+    bondDynamics.update();
+    writeBondParticleField3D_HDF5(bondField.getBondParticles3D(), dx, dt, initIter, "BondFieldParticles");
+
+
+    /* ****************************************************/
 
     /*      Sync all quantities    */
     SyncRequirements everyCCR(allReductions);
@@ -395,6 +409,7 @@ int main(int argc, char* argv[])
     verticesToStretch[1] = meshVerticesFromDirection(PLTField.getMesh(), 0, -1, 0.2);
 
     global::timer("mainLoop").start();
+	pcout << std::endl << "(main) Starting simulation i=" << initIter << std::endl;
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
 //       RBCField.applyConstitutiveModel();
@@ -403,8 +418,9 @@ int main(int argc, char* argv[])
      	   cellFields[iCell]->applyConstitutiveModel();
         }
         // Pull force
-        applyForceToCells(PLTField, PLTCellIds, forcesToApply);
-        // applySameCellFieldForces(PLTField, PLF, R*2);
+//        applyForceToCells(PLTField, PLTCellIds, forcesToApply);
+//        applySameCellFieldForces(PLTField, PLF, R*2);
+        bondDynamics.update();
         // applyForceToCells(PLTField, PLTCellIds, verticesToStretch, forcesToApply);
         // PLTField.applyCellCellForce(PLF, R*2);
 
@@ -436,6 +452,7 @@ int main(int argc, char* argv[])
             for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
             	writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
             	writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
+                writeBondParticleField3D_HDF5(bondField.getBondParticles3D(), dx, dt, iter+1, "BondFieldParticles");
             }
             global::timer("HDFOutput").stop();
             if ((iter+1)%(2*tmeas)==0) {

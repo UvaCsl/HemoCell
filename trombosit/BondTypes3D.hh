@@ -5,7 +5,6 @@
 
 
 namespace trombocit {
-static bool useTrombosit = false;
 
 
 } // namespace trombocit

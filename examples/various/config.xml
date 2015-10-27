@@ -2,7 +2,7 @@
 <ficsion>
 <caseId> caseId </caseId>
 <cellModel>
-    <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
+    <rbcModel> 2 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
     <shellDensity> 1.0 </shellDensity>
 
     <kBend> 100e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
@@ -14,7 +14,7 @@
 <!-- +++++ -->
 <!-- Testing phase-->
 <!-- +++++ -->
-    <kWLC> 0.5 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
+    <kWLC> 1.0 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
     <eqLengthRatio> 2.5 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
     <kRep> 1.0e0 </kRep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
     <kElastic> 0.0e0 </kElastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->

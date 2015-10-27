@@ -35,7 +35,7 @@ template<typename T, template<typename U> class Descriptor>
 ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D(ImmersedCellParticle3D<T,Descriptor> const& rhs)
     : Particle3D<T,Descriptor>(rhs.getTag(), rhs.getPosition()), v(rhs.v), pbcPosition(rhs.pbcPosition), a(rhs.a),
       force(rhs.force), vPrevious(rhs.vPrevious), processor(rhs.processor), cellId(rhs.cellId), vertexId(rhs.vertexId),
-      scheme(rhs.scheme)
+      scheme(rhs.scheme), bondTypeSaturation(rhs.bondTypeSaturation)
 {
 }
 
@@ -56,7 +56,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
       E_repulsive(T()),
 #endif
       processor(getMpiProcessor()), cellId(this->getTag()), vertexId(0),
-      scheme(0)
+      scheme(0), bondTypeSaturation()
 { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -74,7 +74,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (Array<T,3> const& 
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
 #endif
-      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_), scheme(0)
+      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_), scheme(0), bondTypeSaturation()
 { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -95,7 +95,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
 #endif
-      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_), scheme(scheme_)
+      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_), scheme(scheme_), bondTypeSaturation()
 { }
 
 
@@ -201,6 +201,8 @@ void ImmersedCellParticle3D<T,Descriptor>::serialize(HierarchicSerializer& seria
     serializer.addValue<plint>(cellId);
     serializer.addValue<plint>(vertexId);
     serializer.addValue<plint>(scheme);
+//    if (trombosit::useTrombosit) {     }
+    serializeMap<plint, T>(serializer, bondTypeSaturation);
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -216,6 +218,9 @@ void ImmersedCellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& u
     unserializer.readValue<plint>(cellId);
     unserializer.readValue<plint>(vertexId);
     unserializer.readValue<plint>(scheme);
+    //    if (trombosit::useTrombosit) {     }
+    bondTypeSaturation = unserializeMap<plint, T>(unserializer);
+
 }
 
 

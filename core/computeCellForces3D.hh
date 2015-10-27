@@ -269,7 +269,7 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
  * Triangles are:
  *      (i, j, k) and (l, k, j). These triangles share
  *      (x2, x1, x3) and (x4, x3, x1). These triangles share
- *      the common edge j-k.
+ *      the common edge j-k or 1-3.
  *
  *      crossProduct(jPosition - iPosition, kPosition - jPosition, nijk);
  *      crossProduct(kPosition - lPosition, jPosition - kPosition, nlkj);
@@ -286,7 +286,11 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
 	edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle;
 	eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
 	eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
+
 	dAngle = (edgeAngle-eqAngle);
+//	dAngle = (edgeAngle);
+//	dAngle = pow(dAngle, 3);
+//	dAngle = dAngle + pow(dAngle, 3) + tan(edgeAngle/2)/50;
 	fx2 = -k*dAngle*ni * (eqLength*0.5/eqArea);
     fx4 = -k*dAngle*nj * (eqLength*0.5/eqArea);
     fx1 = -(fx2+fx4)*0.5;
