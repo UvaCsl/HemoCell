@@ -39,7 +39,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
 
     XMLreaderProxy document = checkpointed?documentXML["Checkpoint"]["ficsion"]:documentXML["ficsion"];
     document["caseId"].read(caseId);
-    rbcModel = 3; // Rest Model
+    document["cellModel"]["rbcModel"].read(rbcModel);
     document["cellModel"]["shellDensity"].read(shellDensity);
     document["cellModel"]["kWLC"].read(k_WLC);
     document["cellModel"]["eqLengthRatio"].read(eqLengthRatio);
@@ -240,8 +240,21 @@ int main(int argc, char* argv[])
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
     ConstitutiveModel<T,DESCRIPTOR> *cellModel;
     T persistenceLengthFine = 7.5e-9 ; // In meters
-    cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+    if (rbcModel == 0) {
+        pcout << "(main) Using ShapeMemoryModel3D. " << std::endl;
+        cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+        persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
+    } else if (rbcModel==1) {
+        pcout << "(main) Using CellModel3D. " << std::endl;
+        cellModel = new CellModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
          persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
+    } else {
+        pcout << "(main) Using IntermediateModel3D. " << std::endl;
+        cellModel = new IntermediateModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+             persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
+    }
+
+
 
 
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, hct, cellModel, ibmKernel, "RBC");
@@ -309,7 +322,7 @@ int main(int argc, char* argv[])
             SyncRequirements everyCCR(allReductions);
             RBCField.synchronizeCellQuantities(everyCCR);
             global::timer("HDFOutput").start();
-            writeHDF5(lattice, parameters, iter+1);
+            // writeHDF5(lattice, parameters, iter+1);
             writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
             writeCell3D_HDF5(RBCField, dx, dt, iter+1);
             global::timer("HDFOutput").stop();

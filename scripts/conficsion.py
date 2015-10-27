@@ -33,13 +33,15 @@ def calculate_dt(config):
     tau =  float(config['tau'].text)
     return dx * dx * (1/3.*(tau-0.5)) / nu_p
 
-
+xmlFile = 'config_test.xml'
 parser = ET.XMLParser(encoding="utf-8")
-tree = ET.parse('config_test.xml', parser=parser)
-# try:
-#     tree = ET.parse(sys.argv[1], parser=parser)
-# except:
-#     tree = ET.parse('config_test.xml', parser=parser)
+# tree = ET.parse('config_test.xml', parser=parser)
+try:
+    tree = ET.parse(sys.argv[1], parser=parser)
+    xmlFile = sys.argv[1]
+    sys.argv.pop(1)
+except:
+    tree = ET.parse('config_test.xml', parser=parser)
 
 
 config = {}
@@ -66,7 +68,7 @@ for ic, comb in enumerate( product(*param_val) ):
         caseId += [key +'-'+ str(value)]
 #    print
     config['caseId'].text = "_".join(caseId)
-    tree.write(config['caseId'].text+'-output.xml')
+    tree.write(xmlFile[:-4] + '_' + config['caseId'].text+'-output.xml')
 
 
 

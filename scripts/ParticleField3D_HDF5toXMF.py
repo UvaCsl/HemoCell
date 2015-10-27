@@ -47,9 +47,9 @@ class XMLIndentation(object):
 
 
 
-def createH5TopologyAndGeometryFluid(xmlInt=XMLIndentation()):
+def createH5TopologyAndGeometryCell(xmlInt=XMLIndentation()):
 	"""
-		String to be used for Topology and geometry tags of the XMF file related to the Fluid field.
+		String to be used for Topology and geometry tags of the XMF file related to the Cell field.
 	Output:
 	---------
 		Returns string with substitutable field.
@@ -58,22 +58,22 @@ def createH5TopologyAndGeometryFluid(xmlInt=XMLIndentation()):
 			relativePositionX, relativePositionY, relativePositionZ
 			dx (not used)
 	"""
-	h5TopologyAndGeometry  = xmlInt.cur() + '<Topology TopologyType="3DCoRectMesh" NumberOfElements="%(subDomainNx)d %(subDomainNy)d %(subDomainNz)d"/>\n'
-	h5TopologyAndGeometry += xmlInt.inc() + '<Geometry GeometryType="Origin_DxDyDz">\n'
-	h5TopologyAndGeometry += xmlInt.inc() + '<DataItem Dimensions="3" NumberType="Float" Precision="4" Format="XML">\n'
-	h5TopologyAndGeometry += xmlInt.cur() + '%(relativePositionX)d %(relativePositionY)d %(relativePositionZ)d\n'
-	h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
-	h5TopologyAndGeometry += xmlInt.inc() + '<DataItem Dimensions="3" NumberType="Float" Precision="4" Format="XML">\n'
-# Use for SI units #	h5TopologyAndGeometry += xmlInt.inc() + '%(dx)f %(dx)f %(dx)f\n'
-	h5TopologyAndGeometry += xmlInt.cur() + '1 1 1 \n'
+	h5TopologyAndGeometry  = xmlInt.cur() + '<Topology TopologyType="Polyvertex" NumberOfElements="%(numberOfParticles)d">\n'
+	# h5TopologyAndGeometry += xmlInt.inc() + ' <DataItem Dimensions="%(numberOfTriangles)d 3" NumberType="Int" Precision="8" Format="HDF">\n'
+	# h5TopologyAndGeometry += xmlInt.cur() + '%(pathToHDF5)s:/triangles\n'
+	# h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
+	h5TopologyAndGeometry += xmlInt.dec() + '</Topology>\n'
+	h5TopologyAndGeometry += xmlInt.inc() + '<Geometry GeometryType="XYZ">\n'
+	h5TopologyAndGeometry += xmlInt.inc() + ' <DataItem Dimensions="%(numberOfParticles)d 3" NumberType="Float" Precision="4" Format="HDF">\n'
+	h5TopologyAndGeometry += xmlInt.cur() + '%(pathToHDF5)s:/position\n'
 	h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
 	h5TopologyAndGeometry += xmlInt.dec() + '</Geometry>\n'
 	return h5TopologyAndGeometry
 
 
-def createH5AttibuteFluid(xmlInt=XMLIndentation()):
+def createH5AttibuteCell(xmlInt=XMLIndentation()):
 	"""
-		String to be used for the Attribute field of the XMF file related to the Fluid field.
+		String to be used for the Attribute field of the XMF file related to the Cell field.
 	Output:
 	---------
 		Returns string with substitutable field.
@@ -81,8 +81,8 @@ def createH5AttibuteFluid(xmlInt=XMLIndentation()):
 			attributeName, AttributeType
 			subDomainNx, subDomainNy, subDomainNz
 	"""
-	h5Attribute  = xmlInt.inc() + '<Attribute Name="%(attributeName)s" AttributeType="%(AttributeType)s" Center="Cell">\n'
-	h5Attribute += xmlInt.inc() + '<DataItem Dimensions="%(subDomainNx)d %(subDomainNy)d %(subDomainNz)d %(rankString)s" Format="HDF">\n'
+	h5Attribute  = xmlInt.inc() + '<Attribute Name="%(attributeName)s" AttributeType="%(AttributeType)s">\n'
+	h5Attribute += xmlInt.inc() + '<DataItem Dimensions="%(numberOfParticles)d %(rankString)s" Format="HDF">\n'
 	h5Attribute += xmlInt.cur() + '%(pathToHDF5)s:/%(attributeName)s\n'
 	h5Attribute += xmlInt.dec() + '</DataItem>\n'
 	h5Attribute += xmlInt.dec() + '</Attribute>\n'
@@ -90,7 +90,7 @@ def createH5AttibuteFluid(xmlInt=XMLIndentation()):
 
 
 
-def updateDictForXDMFStrings(h5File, h5dict):
+def updateDictForXDMFStringsCell(h5File, h5dict):
 	"""
 		Updates the h5dict in order to be used with the above strings.
 		Works in combination with:
@@ -100,7 +100,7 @@ def updateDictForXDMFStrings(h5File, h5dict):
 
 	Usage:
 	--------
-		h5dict = updateDictForXDMFStrings(h5File, h5dict)
+		h5dict = updateDictForXDMFStringsCell(h5File, h5dict)
 
 	Input
 	---------
@@ -111,34 +111,30 @@ def updateDictForXDMFStrings(h5File, h5dict):
 	---------
 		h5dict: Dictionary with the meta-information of the HDF5 file (no data contained)
 	"""
-	h5dict['subDomainNx'] = h5dict["subdomainSize"][0]
-	h5dict['subDomainNy'] = h5dict["subdomainSize"][1]
-	h5dict['subDomainNz'] = h5dict["subdomainSize"][2]
-	h5dict['relativePositionX'] = h5dict["relativePosition"][0]
-	h5dict['relativePositionY'] = h5dict["relativePosition"][1]
-	h5dict['relativePositionZ'] = h5dict["relativePosition"][2]
 	def getAttributeTypeAndRankStringFromObjectsShape(obj_shape):
 		dimObjShape = len(obj_shape)
-		if dimObjShape==3:
+		if dimObjShape==1:
 			attributeType, rankString = "Scalar", ""
-		elif dimObjShape==4 and obj_shape[-1] == 3:
+		elif dimObjShape==2 and obj_shape[-1] == 3:
 			attributeType, rankString = "Vector", "3"
-		elif dimObjShape==4 and obj_shape[-1] == 6:
+		elif dimObjShape==2 and obj_shape[-1] == 6:
 			attributeType, rankString = "Tensor6", "6"
-		elif dimObjShape==4 and obj_shape[-1] == 9:
+		elif dimObjShape==2 and obj_shape[-1] == 9:
 			attributeType, rankString = "Tensor", "9"
 		else:
-			attributeType, rankString = "Matrix", " ".join(obj_shape[3:])
+			attributeType, rankString = "Matrix", " ".join(obj_shape[1:])
 		return attributeType, rankString 
 	def dictFromObject(obj):
 		d = {
 		"attributeName": obj[0], 
-		"objectSubdomainSize": obj[1],
+		"objectSubdomainSize": obj[1].shape,
 		"AttributeType": getAttributeTypeAndRankStringFromObjectsShape(obj[1].shape)[0],
 		"rankString":getAttributeTypeAndRankStringFromObjectsShape(obj[1].shape)[1],
 		}
 		return d
-	h5dict['DataSets'] =  map(dictFromObject,  h5File.items())
+	#if key not in ('triangles',):
+	h5ListObjects = filter(lambda x: x[0] not in ('triangles',), h5File.items())
+	h5dict['DataSets'] =  map(dictFromObject,  h5ListObjects)
 	return h5dict
 
 
@@ -166,7 +162,7 @@ def readH5FileToDictionary(h5fname, close=True):
 	h5dict['pathToHDF5'] = h5fname
 	for key, val in h5File.attrs.iteritems():
 		h5dict[key] = val[0] if len(val) == 1 else val
-	updateDictForXDMFStrings(h5File, h5dict)
+	updateDictForXDMFStringsCell(h5File, h5dict)
 	if close:
 		h5File.close()
 		ret = h5dict
@@ -188,21 +184,21 @@ def iteratePossibleDataSetsDict(h5dict):
 
 
 
-class HDF5toXDMF_Fluid(object):
+class HDF5toXDMF_Cell(object):
 	"""
 		Class converting constructing an XMF file from HDF5 information (h5dict values)
 
 			Makes use of the functions 
-					createH5TopologyAndGeometryFluid and createH5AttibuteFluid
+					createH5TopologyAndGeometryCell and createH5AttibuteCell
 
 	Examples
 	---------
 		# Just from one file:
-			xmfFile = HDF5toXDMF_Fluid('./test.xmf')
+			xmfFile = HDF5toXDMF_Cell('./test.xmf')
 			xmfFile.writeSubDomain(h5dict, gridName="Plasma")
 			xmfFile.close()
 		# Just from one file:
-			xmfFile = HDF5toXDMF_Fluid('./test.xmf')
+			xmfFile = HDF5toXDMF_Cell('./test.xmf')
 			xmfFile.openCollection("Domain")
 			xmfFile.writeSubDomain(h5dictProc0)
 			xmfFile.writeSubDomain(h5dictProc1)
@@ -210,7 +206,7 @@ class HDF5toXDMF_Fluid(object):
 			xmfFile.close()
 	"""
 	def __init__(self, fname=None):
-		super(HDF5toXDMF_Fluid, self).__init__()
+		super(HDF5toXDMF_Cell, self).__init__()
 		self.xmlInt = XMLIndentation()
 		if fname != None:
 			self.open(fname)
@@ -220,7 +216,7 @@ class HDF5toXDMF_Fluid(object):
 		self.xdmfFile  = open(fname, 'w')
 		stringToWrite  = self.xmlInt.cur() + '<?xml version="1.0" ?>\n'
 		stringToWrite += self.xmlInt.cur() + '<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>\n'
-		stringToWrite += self.xmlInt.inc() + '<Xdmf Version="2.0">\n'
+		stringToWrite += self.xmlInt.inc() + '<Xdmf xmlns:xi="http://www.w3.org/2003/XInclude" Version="2.2">\n'
 		stringToWrite += self.xmlInt.inc() + '<Domain>\n'
 		self.xdmfFile.write(stringToWrite)
 		return -1
@@ -245,9 +241,9 @@ class HDF5toXDMF_Fluid(object):
 	def writeSubDomain(self, h5dict, gridName="Subdomain "):
 		pId = (" " + str(h5dict['processorId'])) if 'processorId' in h5dict else ""
 		self.openGrid(gridName + pId)
-		stringToWrite = createH5TopologyAndGeometryFluid(self.xmlInt)%(h5dict)
+		stringToWrite = createH5TopologyAndGeometryCell(self.xmlInt)%(h5dict)
 		for datasetDict in iteratePossibleDataSetsDict(h5dict):
-			stringToWrite += createH5AttibuteFluid(self.xmlInt)%(datasetDict)
+			stringToWrite += createH5AttibuteCell(self.xmlInt)%(datasetDict)
 		self.xdmfFile.write(stringToWrite)
 		self.closeGrid()
 		return -1
@@ -266,7 +262,7 @@ def createXDMF(fnameString, processorStrings):
 	"""
 	Reads file fitting the patters and saves an XMF file to the directory of the HDF5s.
 	
-		fnameString = './Fluid_00000000_%s.h5'
+		fnameString = './Cell_00000000_%s.h5'
 		processorStrings = ['p000', 'p001', 'p002']
 		createXDMF(fnameString, processorStrings)
 
@@ -276,7 +272,7 @@ def createXDMF(fnameString, processorStrings):
 	fnameToSave = fnameToSave.replace('/hdf5/','/').replace(".p.",".").replace(".pgz.",".")
         if os.path.isfile(fnameToSave):
                   return fnameToSave + " (existed)"
-	xdmfFile = HDF5toXDMF_Fluid(fnameToSave)
+	xdmfFile = HDF5toXDMF_Cell(fnameToSave)
 	xdmfFile.openCollection("Domain")
 	processorStrings = sorted(processorStrings)
 	p = processorStrings[0]
@@ -296,8 +292,12 @@ def createXDMF(fnameString, processorStrings):
 
 if __name__ == '__main__':
 	dirname = './hdf5/'
-	identifier = 'Fluid'
-	fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
+	try:
+		identifier = sys.argv[1]
+		print identifier
+	except:
+		identifier = 'BoundaryParticles'
+	fluidH5files = sorted( glob(dirname + identifier + '.*p*.h5') )
 	if len(fluidH5files) == 0:
 		dirname = './tmp/hdf5/'
 		fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
@@ -307,6 +307,6 @@ if __name__ == '__main__':
 	for iterString in iterationStrings:
 		fnameString = dirname + identifier + "." + iterString + ".p.%s.h5"
 		print "Created file:", createXDMF(fnameString, processorStrings)
-
+		
 
 

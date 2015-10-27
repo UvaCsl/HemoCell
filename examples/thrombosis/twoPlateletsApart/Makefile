@@ -25,11 +25,11 @@ palabosRoot   = $(ficsionRoot)/palabos
 projectFiles = twoPlateletsApart.cpp
  
 # Choose between generic and precompiled mode
-precompiled  = false
+precompiled  = true
 # Set optimization flags on/off
 optimize     = true
 # Set debug mode and debug flags on/off
-debug        = false
+debug        = true
 # Set profiling flags on/off
 #profile      = false
 profile      = false

@@ -63,6 +63,31 @@ std::map<T1,T2> unserializeMap(HierarchicUnserializer& unserializer)
     return dict;
 }
 
+
+
+void serializeString(HierarchicSerializer& serializer, std::string const& s)
+{
+	plint n = s.length();
+    serializer.addValue<plint>(n);
+	for (int i = 0; i < s.length(); ++i)
+        serializer.addValue<int>( int(s[i]) );
+}
+
+
+std::string unserializeString(HierarchicUnserializer& unserializer)
+{
+    plint n;
+    int c;
+    unserializer.readValue<plint>(n);
+    std::string s(n, ' ');
+	for (int i = 0; i < n; ++i) {
+        unserializer.readValue<int>(c);
+        s[i] = char(c);
+	}
+    return s;
+}
+
+
 } //namespace plb
 
 
