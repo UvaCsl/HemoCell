@@ -357,7 +357,7 @@ int main(int argc, char* argv[])
     /* ************* BOND DYNAMICS ************************/
 
 
-    trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF, R, 2*R, true);
+    trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF, 0.5, 1, true);
     BondField3D<T,DESCRIPTOR> bondField(PLTField, bondType);
     BondFieldWrapper3D<T,DESCRIPTOR> bondDynamics(bondField);
     bondDynamics.update();

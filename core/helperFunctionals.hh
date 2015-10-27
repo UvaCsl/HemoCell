@@ -67,8 +67,8 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
             }
         }
     }
-    std::vector<Particle3D<T,Descriptor>*> particles;
-    boundaryParticleField.findParticles(domain, particles);
+//    std::vector<Particle3D<T,Descriptor>*> particles;
+//    boundaryParticleField.findParticles(domain, particles);
 //	std::cout << "(PositionBoundaryParticles) pid:" << id << " Number of Particles " << particles.size() << std::endl;
 
 }

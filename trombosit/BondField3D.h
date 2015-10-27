@@ -82,8 +82,8 @@ public:
     	bool created = bondType.createBond(p0, p1, r, eij);
     	PLB_ASSERT(created);
 		std::string uid = bondType.getUID(p0, p1) ;
-		pcout << "Bond created: " << uid << std::endl;
-		BondParticle3D<T,Descriptor> * bp = new BondParticle3D<T,Descriptor>(p0, p1, r, eij, uid);
+//		pcout << "Bond created: " << uid << std::endl;
+		BondParticle3D<T,Descriptor> * bp = new BondParticle3D<T,Descriptor>(p0, p1, r, eij, bondType.getBondTypeId(),  uid);
 		return bp;
     }
 
@@ -166,6 +166,7 @@ public:
             if (not bondField.getBondType().breakBond(bondParticle)) { // if breakBond is true, it breaks the bond as well: bondParticle->getTag()=-1
             	bondField.getBondType().applyForce(bondParticle);
             }
+            else { pcout << bondParticle->getUID() << "broken" << std::endl; }
         }
         bondParticleField->removeParticles(bondParticleField->getBoundingBox(), -1);
         bondParticleField->advanceParticles(bondParticleField->getBoundingBox(), -1);

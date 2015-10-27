@@ -18,12 +18,13 @@ template<typename T, template<typename U> class Descriptor>
 class BondParticle3D : public Particle3D<T,Descriptor> {
 public:
     BondParticle3D() :
+        Particle3D<T,Descriptor>(),
         processor(getMpiProcessor()),
               r(0), eij(Array<T,3>(0,0,0)), bondTime(0)
         {
             for (int var = 0; var < 2; ++var) {
                 positions[var] = Array<T,3>(0,0,0);
-                velocities[var] = Array<T,3>(0,0,0);
+//                velocities[var] = Array<T,3>(0,0,0);
                 processors[var] = getMpiProcessor();
                 particles[var] = NULL;
                 cellId[var] = 0;
@@ -33,14 +34,15 @@ public:
         } ;
 
 
-    BondParticle3D(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r_, Array<T,3> eij_, std::string uid_) :
+    BondParticle3D(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r_, Array<T,3> eij_, plint tag_, std::string uid_) :
         processor(getMpiProcessor()), bondTime(0),
     	r(r_), eij(eij_), uid(uid_)
     {
+        positions[0] = positions[1] = Array<T,3>(0,0,0);
     	if (p0 != NULL) {
     		particles[0] = p0;
             positions[0] = p0->getPosition();
-            velocities[0] = castParticleToICP3D(p0)->get_v();
+//            velocities[0] = castParticleToICP3D(p0)->get_v();
             processors[0] = castParticleToICP3D(p0)->getMpiProcessor();
             cellId[0] = castParticleToICP3D(p0)->get_cellId();
             vertexId[0] = castParticleToICP3D(p0)->getVertexId();
@@ -49,24 +51,30 @@ public:
     	if (p1 != NULL) {
     		particles[1] = p1;
             positions[1] = p1->getPosition();
-            velocities[1] = castParticleToICP3D(p1)->get_v();
+//            velocities[1] = castParticleToICP3D(p1)->get_v();
             processors[1] = castParticleToICP3D(p1)->getMpiProcessor();
             cellId[1] = castParticleToICP3D(p1)->get_cellId();
             vertexId[1] = castParticleToICP3D(p1)->getVertexId();
     	}
-        pcout << "(BondParticle3D) normal;" << std::endl;
+        this->setTag(tag_);
+        this->getPosition() = (positions[0] + positions[1]) * 0.5;
+
+//        pcout << "(BondParticle3D) normal " << uid << std::endl;
     };
 
 
-    virtual ~BondParticle3D() {     };
+    virtual ~BondParticle3D() {
+//        pcout << "BondParticle " << uid << " deleted." << std::endl;
+    };
 
     BondParticle3D(BondParticle3D<T,Descriptor> const& rhs)
-    : processor(rhs.processor),
+    : Particle3D<T,Descriptor>(rhs.getTag(), rhs.getPosition()),
+      processor(rhs.processor),
       r(rhs.r), eij(rhs.eij), bondTime(rhs.bondTime), uid(rhs.uid)
       {
         for (int var = 0; var < 2; ++var) {
             positions[var] = rhs.positions[var];
-            velocities[var] = rhs.velocities[var];
+//            velocities[var] = rhs.velocities[var];
             processors[var] = rhs.processors[var];
             particles[var] = rhs.particles[var];
             cellId[var] = rhs.cellId[var];
@@ -115,7 +123,7 @@ public:
     	if (p0 != NULL) {
     		particles[0] = p0;
             positions[0] = p0->getPosition();
-            velocities[0] = castParticleToICP3D(p0)->get_v();
+//            velocities[0] = castParticleToICP3D(p0)->get_v();
             processors[0] = castParticleToICP3D(p0)->getMpiProcessor();
             cellId[0] = castParticleToICP3D(p0)->get_cellId();
             vertexId[0] = castParticleToICP3D(p0)->getVertexId();
@@ -124,7 +132,7 @@ public:
     	if (p1 != NULL) {
     		particles[1] = p1;
             positions[1] = p1->getPosition();
-            velocities[1] = castParticleToICP3D(p1)->get_v();
+//            velocities[1] = castParticleToICP3D(p1)->get_v();
             processors[1] = castParticleToICP3D(p1)->getMpiProcessor();
             cellId[1] = castParticleToICP3D(p1)->get_cellId();
             vertexId[1] = castParticleToICP3D(p1)->getVertexId();
@@ -150,7 +158,7 @@ public:
     Array<T,3> get_rVector() { return r*eij; }
 
     Array<T,3> getPositions(plint pid) { PLB_ASSERT(pid<2); return positions[pid]; };
-    Array<T,3> getVelocities(plint pid) { PLB_ASSERT(pid<2); return velocities[pid]; };
+//    Array<T,3> getVelocities(plint pid) { PLB_ASSERT(pid<2); return velocities[pid]; };
     plint getProcessors(plint pid) { PLB_ASSERT(pid<2); return processors[pid]; };
     plint getCellIds(plint pid) { PLB_ASSERT(pid<2); return cellId[pid]; };
     int getBondTime() { return bondTime; }
@@ -170,7 +178,7 @@ private:
     plint vertexId[2];
     Array<T,3> eij;
     Array<T,3> positions[2];
-    Array<T,3> velocities[2];
+//    Array<T,3> velocities[2];
     std::string uid;
     plint processors[2];
     Particle3D<T,Descriptor>* particles[2];
