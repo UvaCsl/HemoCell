@@ -272,7 +272,7 @@ int main(int argc, char* argv[])
         poiseuilleForce = 0;
         pcout << "(main) Using iniLatticeFullyPeriodic. "<< flowType << std::endl;
 //        envelope-update
-        iniLatticeFullyPeriodic<T, DESCRIPTOR>(lattice, parameters, Array<T,3>(0.02, 0.02, 0.02));
+        iniLatticeFullyPeriodic<T, DESCRIPTOR>(lattice, parameters, Array<T,3>(0.02, 0.00, 0.00));
     }
 
 
@@ -373,7 +373,8 @@ int main(int argc, char* argv[])
     }
     /*            I/O              */
     global::timer("HDFOutput").start();
-    writeHDF5(lattice, parameters, initIter);
+    bool invertXZ_for_XDMF=true;
+    writeHDF5(lattice, parameters, initIter, invertXZ_for_XDMF);
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
         writeCellField3D_HDF5(*cellFields[iCell], dx, dt, initIter);
         writeCell3D_HDF5(*cellFields[iCell], dx, dt, initIter);
@@ -436,7 +437,7 @@ int main(int argc, char* argv[])
             	cellFields[iCell]->synchronizeCellQuantities(everyCCR);
             }
             global::timer("HDFOutput").start();
-            writeHDF5(lattice, parameters, iter+1);
+            writeHDF5(lattice, parameters, iter+1, invertXZ_for_XDMF);
             for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
             	writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
             	writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
