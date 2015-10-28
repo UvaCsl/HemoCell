@@ -82,7 +82,7 @@ public:
     	bool created = bondType.createBond(p0, p1, r, eij);
     	PLB_ASSERT(created);
 		std::string uid = bondType.getUID(p0, p1) ;
-//		pcout << "Bond created: " << uid << std::endl;
+		pcout << "Bond created: " << uid << std::endl;
 		BondParticle3D<T,Descriptor> * bp = new BondParticle3D<T,Descriptor>(p0, p1, r, eij, bondType.getBondTypeId(),  uid);
 		return bp;
     }
@@ -100,7 +100,6 @@ public:
         	BondParticle3D<T,Descriptor>* bondParticle = castParticle3DToBondParticle3D(bondParticles[iParticle]);
             std::string uid = bondParticle->getUID() ;
             if (bondParticleMap.count(uid) == 0) { bondParticleMap[uid] = bondParticle; }
-            else { castParticle3DToBondParticle3D(bondParticleMap[uid])->updateFromBondParticle(bondParticles[iParticle]); }
         }
     }
 public:
@@ -146,7 +145,7 @@ public:
         std::map<std::string, Particle3D<T,Descriptor>* > & bondParticleMap = bondField.getBondParticleMap();
         std::string uid = bondField.getUID(p0, p1);
         if (bondParticleMap.count(uid) > 0) {
-        	castParticle3DToBondParticle3D(bondParticleMap[uid])->update(p0, p1);
+        	castParticle3DToBondParticle3D(bondParticleMap[uid])->update(p0, p1, r, eij);
         	return true;
         } else if (bondField.isBondPossible(p0, p1, r, eij)) {
         	BondParticle3D<T,Descriptor> * bp = bondField.createBondParticle(p0, p1, r, eij);
@@ -159,17 +158,31 @@ public:
     virtual void close(Box3D domain, std::vector<AtomicBlock3D*> fields) {
     	bondField.updateBondParticleMap(fields[2]);
         std::map<std::string, Particle3D<T,Descriptor>* > & bondParticleMap = bondField.getBondParticleMap();
-//        typedef  sp_iter;
-        typename std::map<std::string, Particle3D<T,Descriptor>* >::iterator iterator;
-        for(iterator = bondParticleMap.begin(); iterator != bondParticleMap.end(); iterator++) {
-            BondParticle3D<T,Descriptor>* bondParticle = castParticle3DToBondParticle3D(iterator->second);
+
+        std::vector<Particle3D<T,Descriptor>*> bondParticles;
+
+        bondParticleField->findParticles(bondParticleField->getBoundingBox(), bondParticles);
+        for (pluint iParticle=0; iParticle<bondParticles.size(); ++iParticle) {
+            BondParticle3D<T,Descriptor>* bondParticle = castParticle3DToBondParticle3D(bondParticles[iParticle]);
             if (not bondField.getBondType().breakBond(bondParticle)) { // if breakBond is true, it breaks the bond as well: bondParticle->getTag()=-1
             	bondField.getBondType().applyForce(bondParticle);
             }
             else { pcout << bondParticle->getUID() << "broken" << std::endl; }
         }
-        bondParticleField->removeParticles(bondParticleField->getBoundingBox(), -1);
+
+//        typename std::map<std::string, Particle3D<T,Descriptor>* >::iterator iterator;
+//        for(iterator = bondParticleMap.begin(); iterator != bondParticleMap.end(); iterator++) {
+//            BondParticle3D<T,Descriptor>* bondParticle = castParticle3DToBondParticle3D(iterator->second);
+//            if (not bondField.getBondType().breakBond(bondParticle)) { // if breakBond is true, it breaks the bond as well: bondParticle->getTag()=-1
+//            	bondField.getBondType().applyForce(bondParticle);
+//            }
+//            else { pcout << bondParticle->getUID() << "broken" << std::endl; }
+//        }
+//
+//
+
         bondParticleField->advanceParticles(bondParticleField->getBoundingBox(), -1);
+        bondParticleField->removeParticles(bondParticleField->getBoundingBox(), -1);
     };
     // conditionsAreMet is not necessary here, all the checks and actions will be performed in open(*).
     virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) { return true; }

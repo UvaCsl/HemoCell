@@ -349,7 +349,7 @@ int main(int argc, char* argv[])
 //                                                        createBoundaryParticleField3D(lattice);
 
     /* Repulsive force */
-    T k_int = 2 * 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
+    T k_int = 0 * 2 * 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
 //    SimpleUnsaturatedBond(CellCellForce3D<T> & forceType_, T r_create_, T r_break_, bool areSameCellType_=false)
 
@@ -357,7 +357,7 @@ int main(int argc, char* argv[])
     /* ************* BOND DYNAMICS ************************/
 
 
-    trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF, 0.5, 1, true);
+    trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF, 0.3, 1, true);
     BondField3D<T,DESCRIPTOR> bondField(PLTField, bondType);
     BondFieldWrapper3D<T,DESCRIPTOR> bondDynamics(bondField);
     bondDynamics.update();
