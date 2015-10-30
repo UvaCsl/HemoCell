@@ -19,6 +19,7 @@ void trombocit::BondParticle3D<T,Descriptor>::advance() {
 	} else {
 		this->getPosition() += dx; //		this->setTag(-1);
 	}
+    if (particles[0] == NULL and particles[1] == NULL) { this->setTag(-1); }
 	processor = this->getMpiProcessor();
 	particles[0] = particles[1] = NULL;
 //	pcout << uid << " advanced" << std::endl;

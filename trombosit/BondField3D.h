@@ -82,7 +82,7 @@ public:
     	bool created = bondType.createBond(p0, p1, r, eij);
     	PLB_ASSERT(created);
 		std::string uid = bondType.getUID(p0, p1) ;
-		pcout << "Bond created: " << uid << std::endl;
+		// pcout << "Bond created: " << uid << std::endl;
 		BondParticle3D<T,Descriptor> * bp = new BondParticle3D<T,Descriptor>(p0, p1, r, eij, bondType.getBondTypeId(),  uid);
 		return bp;
     }
@@ -151,6 +151,8 @@ public:
         	BondParticle3D<T,Descriptor> * bp = bondField.createBondParticle(p0, p1, r, eij);
         	bondParticleField->addParticle(bondParticleField->getBoundingBox(), bp);
         	return true;
+        } else {
+            // pcout << "FAILED:" << uid << " " << r << std::endl;
         }
         return false;
     }
@@ -166,8 +168,10 @@ public:
             BondParticle3D<T,Descriptor>* bondParticle = castParticle3DToBondParticle3D(bondParticles[iParticle]);
             if (not bondField.getBondType().breakBond(bondParticle)) { // if breakBond is true, it breaks the bond as well: bondParticle->getTag()=-1
             	bondField.getBondType().applyForce(bondParticle);
+            } else {
+                bondParticle->setTag(-1);
+                pcout << bondParticle->getUID() << "broken" << std::endl; 
             }
-            else { pcout << bondParticle->getUID() << "broken" << std::endl; }
         }
 
 //        typename std::map<std::string, Particle3D<T,Descriptor>* >::iterator iterator;
@@ -180,7 +184,6 @@ public:
 //        }
 //
 //
-
         bondParticleField->advanceParticles(bondParticleField->getBoundingBox(), -1);
         bondParticleField->removeParticles(bondParticleField->getBoundingBox(), -1);
     };
