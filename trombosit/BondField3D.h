@@ -83,7 +83,7 @@ public:
     	BondParticle3D<T,Descriptor> * bp = NULL;
     	if (created) {
     		std::string uid = bondType.getUID(p0, p1) ;
-    		pcout << "Bond created: " << uid << std::endl;
+//    		pcout << "Bond created: " << uid << std::endl;
     		bp = new BondParticle3D<T,Descriptor>(p0, p1, r, eij, bondType.getBondTypeId(),  uid);
     	}
 		return bp;

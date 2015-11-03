@@ -465,7 +465,8 @@ int main(int argc, char* argv[])
     /* Repulsive force */
     PowerLawForce<T> PLF2(0, 1, 1, 1);
 
-    trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF2, 2, 4, false);
+//    trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF2, 2, 4, false);
+    trombocit::SimpleSaturatedBond<T,DESCRIPTOR> bondType(PLF2, 2, 4, 1.2, 2.5, false);
     BondField3D<T,DESCRIPTOR> bondField(PLTField, *boundaryParticleField3D, bondType);
     // trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF2, 3, 4, true);
     // BondField3D<T,DESCRIPTOR> bondField(PLTField, bondType);

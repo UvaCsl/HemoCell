@@ -61,14 +61,14 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
     <lz> 16.0e-6 </lz>
 </domain>
 
-<dld>
+<Obstacle>
     <lambda> 32.0e-6 </lambda>  <!-- Distance between two spheres [m] -->
     <Dp> 8.0e-6 </Dp>  <!-- Radius sphere obstacles -->
     <theta> 00.0 </theta> <!-- Angle of body force [angles] -->
-</dld>
+</Obstacle>
 
 <sim>
-    <tmax> 200000 </tmax> <!-- total number of iterations -->
+    <tmax> 7000 </tmax> <!-- total number of iterations -->
     <tmeas> 0 </tmeas> <!-- IGNORED: tmeas=L/Umax . Interval after which data is written --> 
     <hct> 0.</hct> <!-- Hematocrit  > -->
 </sim>
