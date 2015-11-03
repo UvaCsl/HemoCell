@@ -80,10 +80,12 @@ public:
     // Insert BondParticle, update data structures
     virtual BondParticle3D<T,Descriptor> * createBondParticle(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
     	bool created = bondType.createBond(p0, p1, r, eij);
-    	PLB_ASSERT(created);
-		std::string uid = bondType.getUID(p0, p1) ;
-		// pcout << "Bond created: " << uid << std::endl;
-		BondParticle3D<T,Descriptor> * bp = new BondParticle3D<T,Descriptor>(p0, p1, r, eij, bondType.getBondTypeId(),  uid);
+    	BondParticle3D<T,Descriptor> * bp = NULL;
+    	if (created) {
+    		std::string uid = bondType.getUID(p0, p1) ;
+    		pcout << "Bond created: " << uid << std::endl;
+    		bp = new BondParticle3D<T,Descriptor>(p0, p1, r, eij, bondType.getBondTypeId(),  uid);
+    	}
 		return bp;
     }
 
@@ -149,7 +151,7 @@ public:
         	return true;
         } else if (bondField.isBondPossible(p0, p1, r, eij)) {
         	BondParticle3D<T,Descriptor> * bp = bondField.createBondParticle(p0, p1, r, eij);
-        	bondParticleField->addParticle(bondParticleField->getBoundingBox(), bp);
+        	if (bp != NULL) bondParticleField->addParticle(bondParticleField->getBoundingBox(), bp);
         	return true;
         } else {
             // pcout << "FAILED:" << uid << " " << r << std::endl;
@@ -170,7 +172,7 @@ public:
             	bondField.getBondType().applyForce(bondParticle);
             } else {
                 bondParticle->setTag(-1);
-                pcout << bondParticle->getUID() << "broken" << std::endl; 
+//                pcout << bondParticle->getUID() << "broken" << std::endl;
             }
         }
 
@@ -230,7 +232,7 @@ public:
         BondProximityDynamics3D<T, Descriptor> bpd(bondField);
         T breakDistance = bondField.getBondType().getBreakDistance();
         applyProcessingFunctional (
-            new ApplyProximityDynamics3D<T,Descriptor>(bpd, breakDistance),
+            new ApplyProximityDynamics3D<T,Descriptor>(bpd, breakDistance+0.1), // Add 0.1 for neighbourhood searching.
             bondField.getBoundingBox(), bondField.getParticleParticleBondArg() );
 
 //        applyProcessingFunctional ( // advance particles in time according to velocity

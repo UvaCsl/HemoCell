@@ -25,8 +25,8 @@ public:
           {} ;
     virtual ~BondType() {} ;
 public:
-    T & getBreakDistance() { return r_create; } ;
-    T & getCreateDistance() { return r_break; } ;
+    T & getBreakDistance() { return r_break; } ;
+    T & getCreateDistance() { return r_create; } ;
     plint getBondTypeId() { return bondTypeId; }
     void setBondTypeId(plint bondTypeId_) { bondTypeId = bondTypeId_; }
     bool getAreSameCellType() { return areSameCellType; }
@@ -60,8 +60,8 @@ public:
         ss << bondTypeId ;
         stm0 << cellId0 << "-" << vertexId0;
         stm1 << cellId1 << "-" << vertexId1;
-        if (areSameCellType and cellId0 > cellId1) { ret = ss.str() + "-" + stm1.str() + "_" + stm0.str(); }
-        else { ret = ss.str() + "-" + stm0.str() + "_" + stm1.str();  }
+        if (areSameCellType and cellId0 > cellId1) { ret = ss.str() + "_" + stm1.str() + "_" + stm0.str(); }
+        else { ret = ss.str() + "_" + stm0.str() + "_" + stm1.str();  }
     	return ret;
     } ;
     // Force will be applied via the bondParticle.
@@ -134,28 +134,30 @@ public:
         if ( p0Saturated ) { return false; }
         bool p1Saturated = castParticleToICP3D(p1)->getBondTypeSaturation(this->getBondTypeId())+deltaSaturation[1] > maxSaturation[1];
         if ( p1Saturated ) { return false; }
-        else {
-        	increaseSaturation(p0, deltaSaturation[0]);
-        	increaseSaturation(p1, deltaSaturation[1]);
-        }
+		increaseSaturation(p0, deltaSaturation[0]);
+		increaseSaturation(p1, deltaSaturation[1]);
         return true;
 
     }
     virtual bool breakBond(Particle3D<T,Descriptor> * bondParticle) {
-        bool distanceLarger = castParticle3DToBondParticle3D(bondParticle)->get_r() > this->getBreakDistance();
+    	T r = castParticle3DToBondParticle3D(bondParticle)->get_r();
+        bool distanceLarger = r > this->getBreakDistance();
         if (distanceLarger) {
         	Particle3D<T,Descriptor> * p0 = castParticle3DToBondParticle3D(bondParticle)->getParticle(0);
         	Particle3D<T,Descriptor> * p1 = castParticle3DToBondParticle3D(bondParticle)->getParticle(1);
-            increaseSaturation(p0, -deltaSaturation[0]);
-            increaseSaturation(p1, -deltaSaturation[1]);
+            increaseSaturation(p0, -1.0 * deltaSaturation[0]);
+            increaseSaturation(p1, -1.0 * deltaSaturation[1]);
             bondParticle->setTag(-1); // Prepare bondParticle for deletion
         }
         return distanceLarger;
     }
 private:
     bool increaseSaturation(Particle3D<T,Descriptor> * pp0, T dSaturation) {
-        if (pp0 == NULL) { return false; }
-        castParticleToICP3D(pp0)->getBondTypeSaturation( this->getBondTypeId() ) += dSaturation;
+        if (pp0 == NULL) {
+        	pcout << "pp0 failure;" << std::endl;
+        	return false;
+        }
+        castParticleToICP3D(pp0)->getBondTypeSaturation( this->getBondTypeId() ) = castParticleToICP3D(pp0)->getBondTypeSaturation( this->getBondTypeId() ) + dSaturation;
         return true;
     };
     bool resetSaturation(Particle3D<T,Descriptor> * pp0) {
