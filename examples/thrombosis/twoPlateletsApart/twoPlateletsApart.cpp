@@ -363,13 +363,18 @@ int main(int argc, char* argv[])
     /* Repulsive force */
     T k_int = 0 * 2 * 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
+
+    T De_adh = 0* 2 * 2.5e-7, beta_adh =1.0, r0_adh=1.0, rcut_adh=5.0;
+    AdhesiveMorsePotential<T> AM(De_adh, beta_adh, r0_adh, rcut_adh);
+
 //    SimpleUnsaturatedBond(CellCellForce3D<T> & forceType_, T r_create_, T r_break_, bool areSameCellType_=false)
 
 
     /* ************* BOND DYNAMICS ************************/
 
 
-    trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF, 0.3, 1, true);
+  //  trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF, 0.3, 1, true);
+    trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(AM, 0.3, 1, true);
     BondField3D<T,DESCRIPTOR> bondField(PLTField, bondType);
     BondFieldWrapper3D<T,DESCRIPTOR> bondDynamics(bondField);
     bondDynamics.update();
