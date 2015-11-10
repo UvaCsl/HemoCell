@@ -6,6 +6,9 @@
 #include "BondField3D.h"
 #include "BondParticleField3DHdf5IO.h"
 
+//#include "core/adhesionForces3D.h"
+#include "adhesionForces3D.h"
+
 namespace trombocit {
 static bool useTrombosit = false;
 
