@@ -35,7 +35,9 @@ public:
     virtual ~AdhesiveLennardJonesPotential() { }
     virtual AdhesiveLennardJonesPotential<T>* clone() const { return new AdhesiveLennardJonesPotential<T>(epsilonLJ, sigmaLJ, r_cut); } ;
 public:
-  // virtual T calculatePotential (T r) { T x = pow(sigmaLJ*1.0/r, 6.0); return 4*epsilonLJ*(x*x - x); };
+    virtual T calculatePotential (T r) { 
+        T x = pow(sigmaLJ*1.0/r, 6.0); return 4*epsilonLJ*(x*x - x); 
+    };
     virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
         T x = pow(sigmaLJ*1.0/r, 6.0);
         T force=0.0;
@@ -43,7 +45,7 @@ public:
            force +=  (24.0/r) * epsilonLJ * (2*x*x - x);
         }
         return   force*eij;
-    }
+    };
 private:
     T epsilonLJ, sigmaLJ, r_cut;
 };
@@ -68,7 +70,9 @@ public:
     virtual ~AdhesiveMorsePotential() { }
     virtual AdhesiveMorsePotential<T>* clone() const { return new AdhesiveMorsePotential<T>(De, beta, r0, r_cut); } ;
 public:
-  //  virtual T calculatePotential (T r) { return De*( exp(2*beta*(r0 - r)) - 2*exp(beta*(r0 - r))); };
+    virtual T calculatePotential (T r) { 
+         return De*( exp(2*beta*(r0 - r)) - 2*exp(beta*(r0 - r))); 
+    };
     virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
             T x = exp( beta * (-r + r0) );
             T force=0.0;
@@ -76,7 +80,7 @@ public:
                 force=2.0*beta*De*(x*x  - x); 
             }
             return force* eij;
-    }
+    };
 private:
     T De, beta, r0, r_cut;
 };
@@ -117,9 +121,9 @@ public:
     virtual ~AdhesiveFENEForce() { }
     virtual AdhesiveFENEForce<T>* clone() const { return new AdhesiveFENEForce<T>(H, el_max, r0, r_cut, flag_rep, epsilonLJ, sigmaLJ); } ;
 public:
-  //  virtual T calculatePotential (T r) { // Only the attractive contribution is accounted for the potential.
-  //      return -0.5* H* el_max * log(1-((r-r0)*1.0/el_max)*((r-r0)*1.0/el_max) ) ;
-  //  }
+    virtual T calculatePotential (T r) { // Only the attractive contribution is accounted for the potential.
+        return -0.5* H* el_max * log(1-((r-r0)*1.0/el_max)*((r-r0)*1.0/el_max) ) ;
+    };
     virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
             T force = 0.0;
             if ( (r>r0) && (r<r_cut) && ((r-r0)<el_max) ) {
@@ -130,7 +134,7 @@ public:
                             force+= (24.0/r) * epsilonLJ * (2*x*x - x);
             } 
             return force * eij;
-    }
+    };
 private:
     T H, el_max, r0, r_cut;
     T epsilonLJ, sigmaLJ;

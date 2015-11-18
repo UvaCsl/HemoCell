@@ -19,19 +19,19 @@
 */
 
 #include "ficsion.h"
-#include "trombosit/trombocit.h"
+#include "../external/orderedPositionsMultipleCellsWithSpace.h"
+
+#include <math.h>
 
 typedef double T;
 typedef Array<T,3> Velocity;
 #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor
-using namespace trombocit;
-
 
 void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & ibmScheme, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
-        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed, T & Delta)
+        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
@@ -70,7 +70,6 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     eulerAngles[2] *= pi/180.;
     document["parameters"]["deflationRatio"].read(deflationRatio);
     document["parameters"]["relaxationTime"].read(relaxationTime);
-    document["parameters"]["Delta"].read(Delta);
     document["ibm"]["forceToFluid"].read(forceToFluid);
     document["ibm"]["ibmKernel"].read(ibmKernel);
     document["ibm"]["shape"].read(shape);
@@ -148,11 +147,6 @@ int main(int argc, char* argv[])
 
     global::IOpolicy().activateParallelIO(true);
     global::IOpolicy().setStlFilesHaveLowerBound(false);
-/*
-    Use trombocit module
-*/
-    // trombocit::useTrombosit = true;
-
 //    global::IOpolicy().setLowerBoundForStlFiles(-1.);
 //    testInPlane(); PLB_ASSERT(false);
     std::string outputDir = global::directories().getOutputDir();
@@ -167,13 +161,12 @@ int main(int argc, char* argv[])
     std::string cellPath;
     pluint tmax;
     plint tmeas;
-    T hct = 0;
+    T hct = 10;
     plint npar = 0;
 //    T dtIteration = 0;
     T shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_rep, k_elastic,  k_volume, k_surface, eta_m;
     T eqLengthRatio;
     T u, Re, Re_p, N, lx, ly, lz;
-    T Delta;
     T poiseuilleForce=0;
     T rho_p;
     T radius;
@@ -188,14 +181,6 @@ int main(int argc, char* argv[])
     plint flowParam;
     bool checkpointed=0;
 
-// change output folder name if desired--
-    string outputFolderName;
-    global::argv(2).read(outputFolderName);
-    if (sizeof(outputFolderName)>0) { 
-        global::directories().setOutputDir(outputFolderName);
-    }
-//---------------------------------------
-
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
     XMLreader document(paramXmlFileName);
@@ -203,8 +188,7 @@ int main(int argc, char* argv[])
     readFicsionXML(document, caseId, rbcModel, shellDensity,
             k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, ibmScheme, shape, cellPath, radius, deflationRatio, relaxationTime,
-            cellNumTriangles, tmax, tmeas, hct, npar, flowParam, checkpointed,
-            Delta);
+            cellNumTriangles, tmax, tmeas, hct, npar, flowParam, checkpointed);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -274,16 +258,23 @@ int main(int argc, char* argv[])
     }
     else if (flowType == 11) {
         poiseuilleForce = 0;
-        pcout << "(main) Using iniLatticeSquareCouetteMeasureStress. "<< flowType << " yd=" << shearRate/dt << std::endl;
+        pcout << "(main) Using iniLatticeSquareCouetteMeasureStress. "<< flowType << std::endl;
         lattice.toggleInternalStatistics(true);
         iniLatticeSquareCouetteMeasureStress<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate, forceIds, nMomentumExchangeCells);
+        lattice.toggleInternalStatistics(false);
+    }
+    else if (flowType == 12) {
+        poiseuilleForce = 0;
+        pcout << "(main) Using iniLatticeSquareCouetteNearWall. "<< flowType << std::endl;
+        lattice.toggleInternalStatistics(true);
+        iniLatticeSquareCouetteNearWall<T, DESCRIPTOR>(lattice, parameters, *boundaryCondition, shearRate);
         lattice.toggleInternalStatistics(false);
     }
     else if (flowType == 2) {
         poiseuilleForce = 0;
         pcout << "(main) Using iniLatticeFullyPeriodic. "<< flowType << std::endl;
 //        envelope-update
-        iniLatticeFullyPeriodic<T, DESCRIPTOR>(lattice, parameters, Array<T,3>(0.02, 0.00, 0.00));
+        iniLatticeFullyPeriodic<T, DESCRIPTOR>(lattice, parameters, Array<T,3>(0.02, 0.02, 0.02));
     }
 
 
@@ -308,12 +299,12 @@ int main(int argc, char* argv[])
     TriangleBoundary3D<T> Cells = constructMeshElement(shape, radius, cellNumTriangles, dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> meshElement = Cells.getMesh();
     MeshMetrics<T> meshmetric(meshElement);    meshmetric.write();
-    // eqVolumes.push_back(meshmetric.getVolume());
+    eqVolumes.push_back(meshmetric.getVolume());
     plint numVerticesPerCell = meshElement.getNumVertices();
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
-	// cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-	// 	persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement));
- //    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hct*0, cellModels[0], ibmKernel, "RBC"));
+    cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
+	 	persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement));
+    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hct, cellModels[0], ibmKernel, "RBC"));
 
 //    =======================  Create Platelet
         T pltRadius = 1.15e-6/dx;
@@ -323,33 +314,52 @@ int main(int argc, char* argv[])
         eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
         cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC,
             k_elastic, k_volume, k_surface, eta_m, persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement) );
-        cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.005, cellModels[cellModels.size()-1], ibmKernel, "PLT"));
+        cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.000, cellModels[cellModels.size()-1], ibmKernel, "PLT"));
 
 
 
-    // CellField3D<T, DESCRIPTOR> & RBCField = *cellFields[0];
-    CellField3D<T, DESCRIPTOR> & PLTField = *cellFields[0];
+    CellField3D<T, DESCRIPTOR> & RBCField = *cellFields[0];
+    CellField3D<T, DESCRIPTOR> & PLTField = *cellFields[1];
 
     FcnCheckpoint<T, DESCRIPTOR> checkpointer(document);
     plint initIter=0;
     checkpointer.load(document, lattice, cellFields, initIter);
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
-        std::vector<Array<T,3> > cellsOrigin;
-//        cellsOrigin.push_back( Array<T,3>(nx*0.5-pltRadius*aspectRatio-0.6, ny*0.5, nz*0.5) );
-        cellsOrigin.push_back( Array<T,3>(nx*0.5-pltRadius*aspectRatio-Delta-0.5, ny*0.5, nz*0.5) );
-        cellsOrigin.push_back( Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
-        PLTField.initialize(cellsOrigin);
+
+    
+
+     // Setting the space for a platelet   
+        T gapSize = 0.2;
+        T pltX = nx*0.5;
+        T pltY = 0.5+pltRadius*aspectRatio+gapSize;
+        T pltZ = nz*0.5;
+       
+        Box3D space = Box3D(pltX-pltRadius, pltX+pltRadius, pltY-pltRadius*aspectRatio, pltY+pltRadius*aspectRatio , pltZ-pltRadius, pltZ+pltRadius);
+       // Array<T, 3> spacesize = Array<T,3>(pltRadius, pltRadius*aspectRatio, pltRadius);
+
+      // Positioning of RBC field with the gap for a platelet
+        if (hct>0) {
+           // orderedPositionWithSpaceCellField3D(RBCField, space);
+            orderedPositionMultipleCellField3DWithSpace<T, DESCRIPTOR>(cellFields, space);
+           // orderedPositionMultipleCellField3DWithSpace(RBCField, space); //ARGUMENT WAS A VECTOR OF CELLFIELDS.
+        }
+
+
+        // Positioning of a platelet   
+        std::vector<Array<T,3> > PLTcellsOrigin;
+        PLTcellsOrigin.push_back( Array<T,3>(pltX, pltY, pltZ) );
+        PLTField.initialize(PLTcellsOrigin); 
+
+        
+      // save the initial configuration to checkpoint 
         checkpointer.save(lattice, cellFields, initIter);
     }
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
     	cellFields[iCell]->setParticleUpdateScheme(ibmScheme);
     }
 
-//    if (rbcModel == 3) {
-//        // Has a problem with checkpointing
-//    	(dynamic_cast<RestModel3D<T,DESCRIPTOR>*>(cellModel))->freezeVertices(RBCField);
-//    }
+
 	pcout << std::endl ;
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
 		plint nCells = cellFields[iCell]->getNumberOfCells_Global();
@@ -357,31 +367,14 @@ int main(int argc, char* argv[])
 		pcout << "(main) nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() ;
 		pcout << ", Volume = " << eqVolumes[iCell] << std::endl;
     }
+	pcout << std::endl << "(main) Starting simulation i=" << initIter << std::endl;
+
 //    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
 //                                                        createBoundaryParticleField3D(lattice);
 
     /* Repulsive force */
-    T k_int = 0 * 2 * 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
+    T k_int = 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
-
-    T De_adh = 0* 2 * 2.5e-7, beta_adh =1.0, r0_adh=1.0, rcut_adh=5.0;
-    AdhesiveMorsePotential<T> AM(De_adh, beta_adh, r0_adh, rcut_adh);
-
-//    SimpleUnsaturatedBond(CellCellForce3D<T> & forceType_, T r_create_, T r_break_, bool areSameCellType_=false)
-
-
-    /* ************* BOND DYNAMICS ************************/
-
-
-  //  trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF, 0.3, 1, true);
-    trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(AM, 0.3, 1, true);
-    BondField3D<T,DESCRIPTOR> bondField(PLTField, bondType);
-    BondFieldWrapper3D<T,DESCRIPTOR> bondDynamics(bondField);
-    bondDynamics.update();
-    writeBondParticleField3D_HDF5(bondField.getBondParticles3D(), dx, dt, initIter, "BondFieldParticles");
-
-
-    /* ****************************************************/
 
     /*      Sync all quantities    */
     SyncRequirements everyCCR(allReductions);
@@ -390,8 +383,7 @@ int main(int argc, char* argv[])
     }
     /*            I/O              */
     global::timer("HDFOutput").start();
-    bool invertXZ_for_XDMF=true;
-    writeHDF5(lattice, parameters, initIter, invertXZ_for_XDMF);
+    writeHDF5(lattice, parameters, initIter);
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
         writeCellField3D_HDF5(*cellFields[iCell], dx, dt, initIter);
         writeCell3D_HDF5(*cellFields[iCell], dx, dt, initIter);
@@ -402,20 +394,19 @@ int main(int argc, char* argv[])
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, -1, numVerticesPerCell);
     /* --------------------------- */
-    const Array<T,3> headOnForce(stretchForceScalar, 0.0, 0.0);
-    std::vector<Array<T,3> > forcesToApply(2);
-    std::vector<plint> PLTCellIds(2);
-    forcesToApply[0] = -headOnForce;
-    forcesToApply[1] =  headOnForce;
-    PLTCellIds[0] = 0; 
-    PLTCellIds[1] = 1;
-    std::vector<std::vector<plint> > verticesToStretch(2);
+    //const Array<T,3> headOnForce(stretchForceScalar*0.5, 0.0, 0.0);
+    //std::vector<Array<T,3> > forcesToApply(2);
+    //std::vector<plint> PLTCellIds(2);
+    //forcesToApply[0] = -headOnForce;
+    //forcesToApply[1] =  headOnForce;
+    //PLTCellIds[0] = 0; 
+    //PLTCellIds[1] = 1;
+    //std::vector<std::vector<plint> > verticesToStretch(2);
 
-    verticesToStretch[0] = meshVerticesFromDirection(PLTField.getMesh(), 0,  1, 0.2);
-    verticesToStretch[1] = meshVerticesFromDirection(PLTField.getMesh(), 0, -1, 0.2);
+    //verticesToStretch[0] = meshVerticesFromDirection(PLTField.getMesh(), 0,  1, 0.2);
+    //verticesToStretch[1] = meshVerticesFromDirection(PLTField.getMesh(), 0, -1, 0.2);
 
     global::timer("mainLoop").start();
-	pcout << std::endl << "(main) Starting simulation i=" << initIter << std::endl;
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
 //       RBCField.applyConstitutiveModel();
@@ -423,12 +414,6 @@ int main(int argc, char* argv[])
         for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
      	   cellFields[iCell]->applyConstitutiveModel();
         }
-        // Pull force
-//        applyForceToCells(PLTField, PLTCellIds, forcesToApply);
-//        applySameCellFieldForces(PLTField, PLF, R*2);
-        bondDynamics.update();
-        // applyForceToCells(PLTField, PLTCellIds, verticesToStretch, forcesToApply);
-        // PLTField.applyCellCellForce(PLF, R*2);
 
         // #2# IBM Spreading
        cellFields[0]->setFluidExternalForce(poiseuilleForce);
@@ -436,7 +421,7 @@ int main(int argc, char* argv[])
     	   cellFields[iCell]->spreadForceIBM();
        }
         // #3# LBM
-        if ((iter+1)%tmeas==0 && flowType==11) { lattice.toggleInternalStatistics(true); }
+        if ((iter+1)%tmeas==0 && (flowType==11 || flowType==12)) { lattice.toggleInternalStatistics(true); }
         global::timer("LBM").start();
         lattice.collideAndStream();
         global::timer("LBM").stop();
@@ -454,11 +439,10 @@ int main(int argc, char* argv[])
             	cellFields[iCell]->synchronizeCellQuantities(everyCCR);
             }
             global::timer("HDFOutput").start();
-            writeHDF5(lattice, parameters, iter+1, invertXZ_for_XDMF);
+            writeHDF5(lattice, parameters, iter+1);
             for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
             	writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
             	writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
-                writeBondParticleField3D_HDF5(bondField.getBondParticles3D(), dx, dt, iter+1, "BondFieldParticles");
             }
             global::timer("HDFOutput").stop();
             if ((iter+1)%(2*tmeas)==0) {
@@ -487,7 +471,7 @@ int main(int argc, char* argv[])
             	cellFields[iCell]->synchronizeCellQuantities();
             }
         }
-        if ((iter+1)%tmeas==0 && flowType==11) { lattice.toggleInternalStatistics(false); }
+        if ((iter+1)%tmeas==0 && (flowType==11 || flowType==12)) { lattice.toggleInternalStatistics(false); }
     }
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
     	delete cellFields[iCell];
