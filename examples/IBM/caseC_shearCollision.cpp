@@ -116,7 +116,9 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     Re_p = 1.0/nu_p;
     N = int(1.0/dx);
     flowParam = 0;
-    tmax = 0.1/dt; // 0.05 seconds.
+    // tmax = 0.1/dt; // 0.05 seconds.
+    tmax = int(20. / dt / shearRate); 
+    pcout << "shear rate" << shearRate << std::endl;
     tmeas = ceil(tmeas * 9.803921568235293e-08/dt);
 
     if (minNumOfTriangles <= 66) { shape = 5; minNumOfTriangles = 100; }
@@ -287,7 +289,8 @@ int main(int argc, char* argv[])
     pcout << std::endl ;
     pcout << "(main) Hematocrit [x100%]: " << nCells*eqVolume*100.0/(nx*ny*nz) << std::endl;
     pcout << "(main) nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() << std::endl;
-    pcout << std::endl << "(main) Starting simulation i=" << initIter  << ", tmeas = " << tmeas << std::endl;
+    pcout << std::endl << "(main) Starting simulation i=" << initIter  << ", tmeas = " << tmeas ;
+    pcout <<  ", tmax = " << tmax << std::endl;
 
 //    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
 //                                                        createBoundaryParticleField3D(lattice);
