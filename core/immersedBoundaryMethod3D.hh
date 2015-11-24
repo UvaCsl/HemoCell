@@ -254,6 +254,7 @@ void curateInterpolationCoefficients (BlockLattice3D<T,Descriptor>& fluid,
         }
     }
     plint nRemaining = weights.size();
+    if (nRemaining==0) { return ; }
     for (plint iCell = 0; iCell < nRemaining; ++iCell) {
         weights[iCell] += percentageInBoundaries*1.0/nRemaining;
     }
