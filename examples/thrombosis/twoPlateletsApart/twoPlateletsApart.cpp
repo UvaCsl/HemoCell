@@ -222,7 +222,7 @@ int main(int argc, char* argv[])
     T dt = parameters.getDeltaT();
     T dm = rho_p * (dx*dx*dx);
     dNewton = (dm*dx/(dt*dt)) ;
-//    kBT = kBT_p / ( dNewton * dx );
+     kBT = kBT_p / ( dNewton * dx );
     shearRate = shearRate_p * dt;
     stretchForceScalar = stretchForce_p / dNewton;
     pcout << "(main) dx = " << dx << ", " <<
@@ -364,17 +364,16 @@ int main(int argc, char* argv[])
     T k_int = 0 * 2 * 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
     PowerLawForce<T> PLF(k_int, DeltaX, R, k);
 
-    T De_adh = 0* 2 * 2.5e-7, beta_adh =1.0, r0_adh=1.0, rcut_adh=5.0;
-    AdhesiveMorsePotential<T> AM(De_adh, beta_adh, r0_adh, rcut_adh);
-
-//    SimpleUnsaturatedBond(CellCellForce3D<T> & forceType_, T r_create_, T r_break_, bool areSameCellType_=false)
-
 
     /* ************* BOND DYNAMICS ************************/
 
+   T De_adh =  1 * 0.3 * 4.14e-21, beta_adh = 3.0, r0_adh=0.3, rcut_adh=0.9;
+   AdhesiveMorsePotential<T> AdhForce(De_adh, beta_adh, r0_adh, rcut_adh);
+   T R_attach = 0.3, R_break = 0.9;
+   trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(AdhForce, R_attach, R_break, true);
+//   trombocit::SimpleSaturatedBond<T,DESCRIPTOR> bondType(AdhForce, R_attach, R_break, 1, 5, true);
+//   trombocit::SimpleAsymmetricSaturatedBond<T,DESCRIPTOR> bondType(AdhForce, R_attach, R_break, 1, 5, 1, 5, true);
 
-  //  trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF, 0.3, 1, true);
-    trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(AM, 0.3, 1, true);
     BondField3D<T,DESCRIPTOR> bondField(PLTField, bondType);
     BondFieldWrapper3D<T,DESCRIPTOR> bondDynamics(bondField);
     bondDynamics.update();
@@ -427,8 +426,8 @@ int main(int argc, char* argv[])
 //        applyForceToCells(PLTField, PLTCellIds, forcesToApply);
 //        applySameCellFieldForces(PLTField, PLF, R*2);
         bondDynamics.update();
-        // applyForceToCells(PLTField, PLTCellIds, verticesToStretch, forcesToApply);
-        // PLTField.applyCellCellForce(PLF, R*2);
+        applyForceToCells(PLTField, PLTCellIds, verticesToStretch, forcesToApply);
+       // PLTField.applyCellCellForce(PLF, R*2);
 
         // #2# IBM Spreading
        cellFields[0]->setFluidExternalForce(poiseuilleForce);

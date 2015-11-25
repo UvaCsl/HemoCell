@@ -38,7 +38,7 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
     <eulerAngles> 0 0 90 </eulerAngles> <!-- In degrees -->
     <deflationRatio> 1.0 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
     <relaxationTime> 200 </relaxationTime> <!-- Relaxation time for deflation and stretching force [5000] -->
-    <Delta> 0.5 </Delta> <!-- Initial distance between platelets -->
+    <Delta> 0.2 </Delta> <!-- Initial distance between platelets -->
 </parameters>
 
 
