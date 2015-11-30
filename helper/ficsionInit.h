@@ -6,7 +6,7 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 #include "immersedCellParticleFunctional3D.h"
 #include "shellModel3D.h"
 #include "cellModel3D.h"

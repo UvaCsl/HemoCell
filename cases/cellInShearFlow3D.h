@@ -4,9 +4,9 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 #include "immersedCellsReductions.h"
-#include "immersedCellParticleVtk3D.hh"
+#include "IO/immersedCellParticleVtk3D.hh"
 #include "cellStretchingForces3D.h"
 #include <map>
 #include <algorithm>

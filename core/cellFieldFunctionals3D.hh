@@ -83,8 +83,8 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+        SurfaceParticle3D<T,Descriptor>* particle =
+            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
         Array<T,3> velocity; velocity.resetToZero();
@@ -157,8 +157,8 @@ void ViscousPositionUpdate3D<T,Descriptor>::processGenericBlocks (
     particleField.findParticles(particleField.getBoundingBox(), particles);
 
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+        SurfaceParticle3D<T,Descriptor>* particle =
+            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
         PLB_ASSERT( particle );
         T dt = 1.0;
         if ((particle->get_force()[0]!=0) || (particle->get_force()[1]!=0) || (particle->get_force()[2]!=0))
@@ -218,8 +218,8 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
     std::vector<Dot3D> cellPos;
     Cell<T,Descriptor>* cell;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+        SurfaceParticle3D<T,Descriptor>* particle =
+            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
         std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
@@ -289,8 +289,8 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
                         domain.y0 + pfLocation.y, domain.y1 + pfLocation.y,
                         domain.z0 + pfLocation.z, domain.z1 + pfLocation.z );
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
-        ImmersedCellParticle3D<T,Descriptor>* particle = 
-                dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (found[iParticle]);
+        SurfaceParticle3D<T,Descriptor>* particle = 
+                dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (found[iParticle]);
         PLB_ASSERT(particle);
         bool particleIsInBulk = particleField.isContained(particle->getPosition(), realDomain);
 //        cout << global::mpi().getRank()

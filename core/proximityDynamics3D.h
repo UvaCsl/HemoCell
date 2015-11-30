@@ -124,8 +124,8 @@ public:
     virtual void close(Box3D domain, std::vector<AtomicBlock3D*> fields) {};
     virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> eij) {
         if (r > cutoffRadius) { return false; }
-        ImmersedCellParticle3D<T,Descriptor>* cParticle = castParticleToICP3D(p1);
-        ImmersedCellParticle3D<T,Descriptor>* nParticle = castParticleToICP3D(p2);
+        SurfaceParticle3D<T,Descriptor>* cParticle = castParticleToICP3D(p1);
+        SurfaceParticle3D<T,Descriptor>* nParticle = castParticleToICP3D(p2);
         // If they belong to the same cell, don't do anything;
         if (cParticle->get_cellId() <= nParticle->get_cellId()) { return false; }
         return true;

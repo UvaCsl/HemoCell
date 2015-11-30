@@ -3,7 +3,7 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "immersedBoundaryMethod3D.h"
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 #include "cellParticle3D.h"
 #include "cell3D.h"
 #include "meshMetrics.h"

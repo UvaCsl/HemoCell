@@ -25,7 +25,7 @@
 #include "palabos3D.hh"
 #include <map>
 
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 #include "cellField3D.h"
 #include "cellModel3D.h"
 #include "immersedBoundaryMethod3D.h"

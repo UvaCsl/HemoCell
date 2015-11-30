@@ -2,7 +2,7 @@
 #define RBC_DISAGGREGATION_H
 
 #include "cellStretchingForces3D.h"
-#include "immersedCellParticleVtk3D.h"
+#include "IO/immersedCellParticleVtk3D.h"
 
 
 template< typename T, template<typename U> class Descriptor,

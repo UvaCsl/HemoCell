@@ -18,10 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef IMMERSED_WALL_PARTICLE_3D_HH
-#define IMMERSED_WALL_PARTICLE_3D_HH
+#ifndef SURFACE_PARTICLE_3D_HH
+#define SURFACE_PARTICLE_3D_HH
 
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 #include <limits>       // std::numeric_limits
 
 
@@ -32,7 +32,7 @@ namespace plb {
 
 
 template<typename T, template<typename U> class Descriptor>
-ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D(ImmersedCellParticle3D<T,Descriptor> const& rhs)
+SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D(SurfaceParticle3D<T,Descriptor> const& rhs)
     : Particle3D<T,Descriptor>(rhs.getTag(), rhs.getPosition()), v(rhs.v), pbcPosition(rhs.pbcPosition), a(rhs.a),
       force(rhs.force), vPrevious(rhs.vPrevious), processor(rhs.processor), cellId(rhs.cellId), vertexId(rhs.vertexId),
       scheme(rhs.scheme), bondTypeSaturation(rhs.bondTypeSaturation)
@@ -41,7 +41,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D(ImmersedCellParticl
 
 
 template<typename T, template<typename U> class Descriptor>
-ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
+SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D()
     : Particle3D<T,Descriptor>(),
       v(T(),T(),T()),
       pbcPosition(this->getPosition()),
@@ -60,7 +60,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D()
 { }
 
 template<typename T, template<typename U> class Descriptor>
-ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (Array<T,3> const& position, plint cellId_, plint vertexId_ )
+SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D (Array<T,3> const& position, plint cellId_, plint vertexId_ )
     : Particle3D<T,Descriptor>(cellId_, position),
       v(T(),T(),T()),
       pbcPosition(position),
@@ -78,7 +78,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (Array<T,3> const& 
 { }
 
 template<typename T, template<typename U> class Descriptor>
-ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
+SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D (
         Array<T,3> const& position,
         Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
         Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_, plint cellId_, plint vertexId_, plint scheme_)
@@ -100,7 +100,7 @@ ImmersedCellParticle3D<T,Descriptor>::ImmersedCellParticle3D (
 
 
 template<typename T, template<typename U> class Descriptor>
-void ImmersedCellParticle3D<T,Descriptor>::advance() {
+void SurfaceParticle3D<T,Descriptor>::advance() {
     // No fluid interaction
     //    v += force;
     //    this->getPosition() += v + 0.5*force;
@@ -118,12 +118,12 @@ void ImmersedCellParticle3D<T,Descriptor>::advance() {
 }
 
 template<typename T, template<typename U> class Descriptor>
-int ImmersedCellParticle3D<T,Descriptor>::getId() const {
+int SurfaceParticle3D<T,Descriptor>::getId() const {
     return id;
 }
 
 template<typename T, template<typename U> class Descriptor>
-void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_, Array<T,3> const& velocity_, bool allVariables) {
+void SurfaceParticle3D<T,Descriptor>::reset(Array<T,3> const& position_, Array<T,3> const& velocity_, bool allVariables) {
         Particle3D<T,Descriptor>::reset(position_);
         if (allVariables) {
             pbcPosition = position_;
@@ -158,7 +158,7 @@ void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_, Ar
 
 
 template<typename T, template<typename U> class Descriptor>
-void ImmersedCellParticle3D<T,Descriptor>::resetForces() {
+void SurfaceParticle3D<T,Descriptor>::resetForces() {
         a.resetToZero();
         force.resetToZero();
 #ifdef PLB_DEBUG // Less Calculations
@@ -183,13 +183,13 @@ void ImmersedCellParticle3D<T,Descriptor>::resetForces() {
 
 
 template<typename T, template<typename U> class Descriptor>
-void ImmersedCellParticle3D<T,Descriptor>::reset(Array<T,3> const& position_)
+void SurfaceParticle3D<T,Descriptor>::reset(Array<T,3> const& position_)
 {
         reset(position_, Array<T,3>(0.,0.,0.));
 }
 
 template<typename T, template<typename U> class Descriptor>
-void ImmersedCellParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializer) const
+void SurfaceParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializer) const
 {
     Particle3D<T,Descriptor>::serialize(serializer);
     serializer.addValues<T,3>(v);
@@ -206,7 +206,7 @@ void ImmersedCellParticle3D<T,Descriptor>::serialize(HierarchicSerializer& seria
 }
 
 template<typename T, template<typename U> class Descriptor>
-void ImmersedCellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& unserializer)
+void SurfaceParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& unserializer)
 {
     Particle3D<T,Descriptor>::unserialize(unserializer);
     unserializer.readValues<T,3>(v);
@@ -225,13 +225,13 @@ void ImmersedCellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& u
 
 
 template<typename T, template<typename U> class Descriptor>
-ImmersedCellParticle3D<T,Descriptor>* ImmersedCellParticle3D<T,Descriptor>::clone() const {
-    return new ImmersedCellParticle3D<T,Descriptor>(*this);
+SurfaceParticle3D<T,Descriptor>* SurfaceParticle3D<T,Descriptor>::clone() const {
+    return new SurfaceParticle3D<T,Descriptor>(*this);
 }
 
 
 template<typename T, template<typename U> class Descriptor>
-bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,3>& vector) const {
+bool SurfaceParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,3>& vector) const {
     if (whichVector==0) {
         vector = get_pbcPosition();
         return true;
@@ -278,7 +278,7 @@ bool ImmersedCellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,
 }
 
 template<typename T, template<typename U> class Descriptor>
-std::string ImmersedCellParticle3D<T,Descriptor>::getVectorName(plint whichVector) const {
+std::string SurfaceParticle3D<T,Descriptor>::getVectorName(plint whichVector) const {
     if (whichVector==0) {
         return "pbcPosition";
     } else if (whichVector==1) {
@@ -312,7 +312,7 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getVectorName(plint whichVecto
 }
 
 template<typename T, template<typename U> class Descriptor>
-plint ImmersedCellParticle3D<T,Descriptor>::getVectorsNumber() const {
+plint SurfaceParticle3D<T,Descriptor>::getVectorsNumber() const {
 #ifdef PLB_DEBUG // Less Calculations
         return 13;
 #else
@@ -322,7 +322,7 @@ plint ImmersedCellParticle3D<T,Descriptor>::getVectorsNumber() const {
 
 /* Same for scalars */
 template<typename T, template<typename U> class Descriptor>
-bool ImmersedCellParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) const {
+bool SurfaceParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) const {
     if (whichScalar==0) {
     	scalar = T(this->getVertexId());
         return true;
@@ -361,7 +361,7 @@ bool ImmersedCellParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scala
 
 
 template<typename T, template<typename U> class Descriptor>
-std::string ImmersedCellParticle3D<T,Descriptor>::getScalarName(plint whichScalar) const {
+std::string SurfaceParticle3D<T,Descriptor>::getScalarName(plint whichScalar) const {
     if (whichScalar==0) {
         return "VertexId";
     } else if (whichScalar==1) {
@@ -390,7 +390,7 @@ std::string ImmersedCellParticle3D<T,Descriptor>::getScalarName(plint whichScala
 
 
 template<typename T, template<typename U> class Descriptor>
-plint ImmersedCellParticle3D<T,Descriptor>::getScalarsNumber() const {
+plint SurfaceParticle3D<T,Descriptor>::getScalarsNumber() const {
 #ifdef PLB_DEBUG // Less Calculations
         return 10;
 #else
@@ -400,4 +400,4 @@ plint ImmersedCellParticle3D<T,Descriptor>::getScalarsNumber() const {
 
 }  // namespace plb
 
-#endif  // IMMERSED_WALL_PARTICLE_3D_HH
+#endif  // SURFACE_PARTICLE_3D_HH

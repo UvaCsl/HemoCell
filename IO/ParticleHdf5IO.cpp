@@ -31,7 +31,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
 
      std::map<plint, Cell3D<T,Descriptor>* > cellIdToCell3D = cellField3D.getCellIdToCell3D();
      std::vector< long int > triangles;
-     std::vector<ImmersedCellParticle3D<T,Descriptor>* > particles;
+     std::vector<SurfaceParticle3D<T,Descriptor>* > particles;
      plint sumLocalVertices=0;
      plint numCells=cellIdToCell3D.size();
      long int NpBulk = 0;
@@ -64,7 +64,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          std::vector<plint> const& cellTriangles = cell3d->getTriangles();
          for (std::vector<plint>::const_iterator iVP = cellVertices.begin(); iVP != cellVertices.end(); ++iVP)
          {
-             particles.push_back( dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>(cell3d->getParticle3D(*iVP)) );
+             particles.push_back( dynamic_cast<SurfaceParticle3D<T,Descriptor>*>(cell3d->getParticle3D(*iVP)) );
          }
          std::map<plint, plint> iv = cell3d->getInvertVertices();
          for (pluint iT=0; iT < cellTriangles.size(); iT++) {
@@ -113,7 +113,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
    /************************************************************/
      /*  Take care of Vectors    */
      if (numCells > 0 and particles.size() > 0) {
-         ImmersedCellParticle3D<T,Descriptor> * icParticle = particles[0];
+         SurfaceParticle3D<T,Descriptor> * icParticle = particles[0];
          plint vN = icParticle->getVectorsNumber();
          float * matrixTensor = new float [3 * Np];
 

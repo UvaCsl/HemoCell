@@ -18,8 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef IMMERSED_WALL_PARTICLE_3D_H
-#define IMMERSED_WALL_PARTICLE_3D_H
+#ifndef SURFACE_PARTICLE_3D_H
+#define SURFACE_PARTICLE_3D_H
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
@@ -30,10 +30,10 @@
 namespace plb {
 
 template<typename T, template<typename U> class Descriptor>
-class ImmersedCellParticle3D : public Particle3D<T,Descriptor> {
+class SurfaceParticle3D : public Particle3D<T,Descriptor> {
 public:
-    ImmersedCellParticle3D();
-    ~ImmersedCellParticle3D() {
+    SurfaceParticle3D();
+    ~SurfaceParticle3D() {
 //        std::cout <<" ~ImmersedCellParticle3D() " << global::mpi().getRank() << " vertexId " << this->getVertexId() ;
 //        std::cout << " pos (" << this->getPosition()[0] << ", "<< this->getPosition()[1] << ", "<< this->getPosition()[2] << ") " << std::endl;
     };
@@ -42,13 +42,13 @@ public:
      *  1: Adams-Bashforth
      *  2: Velocity Verlet
      */
-    ImmersedCellParticle3D(ImmersedCellParticle3D<T,Descriptor> const& rhs);
-    ImmersedCellParticle3D(Array<T,3> const& position, plint cellId_ = -1, plint vertexId_ = 0);
-    ImmersedCellParticle3D(Array<T,3> const& position,
+    SurfaceParticle3D(SurfaceParticle3D<T,Descriptor> const& rhs);
+    SurfaceParticle3D(Array<T,3> const& position, plint cellId_ = -1, plint vertexId_ = 0);
+    SurfaceParticle3D(Array<T,3> const& position,
                           Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
                             Array<T,3> const& a_, Array<T,3> const& force_, Array<T,3> const& vPrevious_,
                             plint cellId_ = -1, plint vertexId_=0, plint scheme_=0);
-    virtual ImmersedCellParticle3D<T,Descriptor>* clone() const;
+    virtual SurfaceParticle3D<T,Descriptor>* clone() const;
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
     virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
     virtual void fluidToParticle(BlockLattice3D<T,Descriptor>& fluid, T scaling=1.) { }
@@ -163,17 +163,22 @@ private:
 };
 
 template<typename T, template<typename U> class Descriptor>
-int ImmersedCellParticle3D<T,Descriptor>::id = meta::registerGenericParticle3D<T,Descriptor,ImmersedCellParticle3D<T,Descriptor> >("ImmersedCellParticle3D");
+int SurfaceParticle3D<T,Descriptor>::id = meta::registerGenericParticle3D<T,Descriptor,SurfaceParticle3D<T,Descriptor> >("ImmersedCellParticle3D");
 
 template<typename T, template<typename U> class Descriptor>
-ImmersedCellParticle3D<T,Descriptor>* castParticleToICP3D(Particle3D<T,Descriptor>* particle) {
-    return  dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particle);
+SurfaceParticle3D<T,Descriptor>* castParticleToICP3D(Particle3D<T,Descriptor>* particle) {
+    return  dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particle);
+}
+
+template<typename T, template<typename U> class Descriptor>
+SurfaceParticle3D<T,Descriptor>* castParticleToSurfaceParticle3D(Particle3D<T,Descriptor>* particle) {
+    return  dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particle);
 }
 
 
 }  // namespace plb
 
-#include "immersedCellParticle3D.hh"
+#include "surfaceParticle3D.hh"
 
-#endif  // IMMERSED_WALL_PARTICLE_3D_H
+#endif  // SURFACE_PARTICLE_3D_H
 

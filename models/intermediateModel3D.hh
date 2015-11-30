@@ -190,8 +190,8 @@ void IntermediateModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> 
         plint edgeId = getEdgeId(iVertex, jVertex);
         Array<T,3> const& iX = cell->getVertex(iVertex);
         Array<T,3> const& jX = cell->getVertex(jVertex);
-        ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
-        ImmersedCellParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+        SurfaceParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        SurfaceParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
           /* ------------------------------------*/
          /* In Plane forces (WLC and repulsive) */
         /* ------------------------------------*/
@@ -233,8 +233,8 @@ void IntermediateModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> 
             Array<T,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
             T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
             T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
-            ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
-            ImmersedCellParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
+            SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+            SurfaceParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
             Array<T,3> const& kX = cell->getVertex(kVertex);
             Array<T,3> const& lX = cell->getVertex(lVertex);
 
@@ -302,9 +302,9 @@ void IntermediateModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> 
         Array<T,3> const& x1 = cell->getVertex(iVertex);
         Array<T,3> const& x2 = cell->getVertex(jVertex);
         Array<T,3> const& x3 = cell->getVertex(kVertex);
-        ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
-        ImmersedCellParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
-        ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+        SurfaceParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        SurfaceParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+        SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
 
         /* Surface conservation forces */
         force1  = computeSurfaceConservationForce(x1, x2, x3, triangleNormal, surfaceCoefficient, dAdx1);

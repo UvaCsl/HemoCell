@@ -7,7 +7,7 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 #include "cellReductionTypes.h"
 #include <vector>
 #include <map>

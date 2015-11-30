@@ -24,7 +24,7 @@ using namespace std;
 /* CORE libs */
 #include "cellField3D.h"
 #include "cellParticle3D.h"
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 #include "helperFunctionals.h"
 #include "checkPoint.h"
 

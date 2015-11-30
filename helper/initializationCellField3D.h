@@ -50,7 +50,7 @@ void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, B
         Array<T,3> vertex = startingPoint + mesh->getVertex(iVertex);
         particleField.computeGridPosition (vertex, iX, iY, iZ);
         Dot3D fluidDomainCell = Dot3D(iX, iY, iZ) - relativeDisplacement;
-        particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
+        particleField.addParticle(particleField.getBoundingBox(), new SurfaceParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
         bool isInsideFluidDomain = (fluidDomainCell.x >= 0 and fluidDomainCell.y >= 0 and fluidDomainCell.z >= 0) and
         		(fluidDomainCell.x < maxNx and fluidDomainCell.y < maxNy and fluidDomainCell.z < maxNz);
         if (isInsideFluidDomain and fluid.get(fluidDomainCell.x, fluidDomainCell.y, fluidDomainCell.z).getDynamics().isBoundary()) {
@@ -70,8 +70,8 @@ plint deleteIncompleteCells(ParticleField3D<T,Descriptor>& particleField, BlockL
     particleField.findParticles(domain, particles);
     std::map<plint, plint> cellIdToNumberOfVertices;
     for (pluint iP = 0; iP < particles.size(); ++iP) {
-        ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iP]);
+        SurfaceParticle3D<T,Descriptor>* particle =
+            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iP]);
         cellIdToNumberOfVertices[particle->get_cellId()]++;
     }
     plint cellsDeleted=0;

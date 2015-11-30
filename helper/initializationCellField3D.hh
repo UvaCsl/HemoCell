@@ -61,7 +61,7 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
         plint cellId = iCO;
         for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
             Array<T,3> vertex = cellOrigin + mesh->getVertex(iVertex);
-            particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
+            particleField.addParticle(domain, new SurfaceParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
         }
     }
     std::vector<Particle3D<T,Descriptor>*> particles;
@@ -188,7 +188,7 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
 //                            cout << global::mpi().getRank() << "vertex (" << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << ")" <<std::endl;
                             break;
                         } else {
-                            particleField.addParticle(domain, new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId + 1000*mpiRank, iVertex) );
+                            particleField.addParticle(domain, new SurfaceParticle3D<T,Descriptor>(vertex, cellId + 1000*mpiRank, iVertex) );
                         }
 
                     }
@@ -203,8 +203,8 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     particleField.findParticles(domain, particles);
     std::map<plint, plint> cellIdToNumberOfVertices;
     for (pluint iP = 0; iP < particles.size(); ++iP) {
-        ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iP]);
+        SurfaceParticle3D<T,Descriptor>* particle =
+            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iP]);
         cellIdToNumberOfVertices[particle->get_cellId()]++;
     }
     plint cellsDeleted=0;

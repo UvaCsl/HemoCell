@@ -24,8 +24,8 @@ template<typename T, template<typename U> class Descriptor>
 bool ComputeCellCellForces3D<T,Descriptor>::conditionsAreMet (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
-    ImmersedCellParticle3D<T,Descriptor>* cParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p1);
-    ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
+    SurfaceParticle3D<T,Descriptor>* cParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p1);
+    SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
     if (cParticle->get_cellId() == nParticle->get_cellId()) { return false; }
     if (cParticle->getTag() < nParticle->getTag()) { return false; }
     eij = cParticle->getPosition() - nParticle->getPosition();
@@ -40,8 +40,8 @@ template<typename T, template<typename U> class Descriptor>
 void ComputeCellCellForces3D<T,Descriptor>::applyForce (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> & eij)
 {
-        ImmersedCellParticle3D<T,Descriptor>* cParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p1);
-        ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
+        SurfaceParticle3D<T,Descriptor>* cParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p1);
+        SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
         Array<T,3> force = calcForce(r, eij);
         cParticle->get_force() += force;
         nParticle->get_force() -= force;
@@ -152,8 +152,8 @@ template<typename T, template<typename U> class Descriptor>
 void ComputeDifferentCellForces3D<T,Descriptor>::applyForce (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
-        ImmersedCellParticle3D<T,Descriptor>* cParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p1);
-        ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
+        SurfaceParticle3D<T,Descriptor>* cParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p1);
+        SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
         Array<T,3> force = calcForce(r, eij);
         cParticle->get_force() += force;
         nParticle->get_force() -= force;
@@ -260,7 +260,7 @@ template<typename T, template<typename U> class Descriptor>
 void ComputeWallCellForces3D<T,Descriptor>::applyForce (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
-        ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
+        SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
         Array<T,3> force = calcForce(r, eij);
         nParticle->get_force() += force;
 //        cout << "(ComputeWallCellForces3D) r=" << r << ", norm-force=" << norm(force) << std::endl;

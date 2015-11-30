@@ -24,10 +24,10 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 #include "immersedCellsReductions.h"
 #include "immersedCellParticleFunctional3D.h"
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 
 
 #include <map>    // std::map

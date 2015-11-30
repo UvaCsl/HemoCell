@@ -4,7 +4,7 @@
 #include <limits>
 // #include "ficsion.h"
 #include "palabos3D.h"
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 #include "cellField3D.h"
 
 #include <vector>

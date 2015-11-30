@@ -61,7 +61,7 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
             	    for (plint indx=0; indx<8; ++indx) {
             	    	boundaryParticleField.addParticle(
             	    			boundaryParticleField.getBoundingBox(),
-            	    			new ImmersedCellParticle3D<T,Descriptor>(vertices[indx], cellId, indx));
+            	    			new SurfaceParticle3D<T,Descriptor>(vertices[indx], cellId, indx));
             	    }
             	}
             }

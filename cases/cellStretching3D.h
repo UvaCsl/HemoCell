@@ -3,7 +3,7 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 #include <math.h>
 using namespace std;
 using namespace plb;
