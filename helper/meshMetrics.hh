@@ -41,9 +41,9 @@ void MeshMetrics<T>::init()    {
 
     Nn=0; Nn6=0; Nn5=0; Nn7=0;
     area=0; length=0; angle=0;
-    sigmaArea=0; sigmaLength=0; sigmaAngle=0; sigmaNn=0;
+    T varArea=0, varLength=0, varAngle=0, varNn=0;
     T tmp;
-    // Compute Mean Values
+    // Vertices
     pluint NEdges = 0;
     volume = 0.0;
     for (int iV = 0; iV < Nv; ++iV) {
@@ -84,40 +84,41 @@ void MeshMetrics<T>::init()    {
             volume += triangleVolumeT6/6.0/3.0; // every volume is evaluated 3 times
         }
     }
+    Nn /= Nv; length /= NEdges; angle /= NEdges;
+    meanVertexPosition /= Nv;
+
+// Compute vars
+    for (int iV = 0; iV < Nv; ++iV) {
+        std::vector<plint> nvid = mesh.getNeighborVertexIds(iV);
+        T NumNeighbors = nvid.size();
+        tmp = nvid.size()-Nn;
+        varNn += tmp*tmp;
+        for (int ijV = 0; ijV < NumNeighbors; ++ijV) {
+            int jV = nvid[ijV];
+            tmp=(mesh.computeEdgeLength(iV, jV)-length);
+            varLength += tmp*tmp;
+            tmp = (calculateSignedAngle(mesh, iV, jV) - angle);
+            varAngle += tmp*tmp;
+        }
+    }
+// Triangles
+    area=0;
     for (int iT = 0; iT < Nt; ++iT) {
         tmp = mesh.computeTriangleArea(iT);
         minArea = minArea>tmp?tmp:minArea;
         maxArea = maxArea<tmp?tmp:maxArea;
         area += tmp;
     }
-    Nn /= Nv; area /= Nt; length /= NEdges; angle /= NEdges;
-    meanVertexPosition /= Nv;
-    // Compute Sigmas
-    for (int iV = 0; iV < Nv; ++iV) {
-        tmp = mesh.computeVertexArea(iV) - area;
-        sigmaArea += tmp*tmp;
-        std::vector<plint> nvid = mesh.getNeighborVertexIds(iV);
-        T NumNeighbors = nvid.size();
-        tmp = nvid.size()-Nn;
-        sigmaNn += tmp*tmp;
-        for (int ijV = 0; ijV < NumNeighbors; ++ijV) {
-            int jV = nvid[ijV];
-            tmp=(mesh.computeEdgeLength(iV, jV)-length);
-            sigmaLength += tmp*tmp;
-            tmp = (calculateSignedAngle(mesh, iV, jV) - angle);
-            sigmaAngle += tmp*tmp;
-        }
-    }
+    area /= Nt; 
     for (int iT = 0; iT < Nt; ++iT) {
         tmp = mesh.computeTriangleArea(iT) - area;
-        sigmaArea += tmp*tmp;
+        varArea += tmp*tmp;
     }
-    sigmaNn = sqrt(sigmaNn/Nv);
-    sigmaArea = sqrt(sigmaArea/Nt);
-    sigmaLength = sqrt(sigmaLength/NEdges);
-    sigmaAngle = sqrt(sigmaAngle/NEdges);
+    sigmaNn = sqrt(varNn/Nv);
+    sigmaArea = sqrt(varArea/Nt);
+    sigmaLength = sqrt(varLength/NEdges);
+    sigmaAngle = sqrt(varAngle/NEdges);
 }
-
 
 template<typename T>
 MeshMetrics<T>::~MeshMetrics() {
