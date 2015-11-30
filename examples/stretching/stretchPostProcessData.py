@@ -1,6 +1,14 @@
-# coding: utf-8
-
-# In[ ]:
+#!/usr/bin/env python
+# encoding: utf-8
+#====================================================================
+# Name        :
+# Version    :
+# Author      :  Lampros Mountrakis (L.Mountrakis@uva.nl)
+# Date        :
+# Description :
+#
+#
+#====================================================================
 
 import numpy as np
 import pylab as pl

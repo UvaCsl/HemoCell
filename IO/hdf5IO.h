@@ -18,7 +18,7 @@ void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
               IncomprFlowParam<T> const& parameters, plint iter, bool invertXZ_for_XDMF=false);
 
 
-template<typename T, template<typename U> class Descriptor>
+template<typename T>
 class WriteInMultipleHDF5Files : public BoxProcessingFunctional3D
 {
 public:
@@ -29,7 +29,7 @@ public:
             plint envelopeWidth_=0, bool invertXZ_for_XDMF_=false);
     /// Arguments: [0] Particle-field. [1] Lattice.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
-    virtual WriteInMultipleHDF5Files<T,Descriptor>* clone() const;
+    virtual WriteInMultipleHDF5Files<T>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
     virtual BlockDomain::DomainT appliesTo() const;
 private:

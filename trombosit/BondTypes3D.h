@@ -33,7 +33,7 @@ public:
     void getAreSameCellType(bool aSCT) { areSameCellType = aSCT; }
     // Particle p0 and p1 should exist in the same domain (even in envelopes) for a bond to be created.
     //    Hence p0 and p1 always exist and the envelopes should be large enough (>r_create) for this assumption to hold.
-    bool isBondPossible(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
+    virtual bool isBondPossible(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
     	if (r > this->getCreateDistance() ) { return false;}
     	// If they are the same type they should: (1) have different cellId (2) be considered only once, hence only when cId1>cId2;
     	if (areSameCellType and (castParticleToICP3D(p0)->get_cellId() <= castParticleToICP3D(p1)->get_cellId())) { return false; }

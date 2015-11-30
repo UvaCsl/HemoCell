@@ -7,8 +7,8 @@
 
 
 /* ******** WriteInMultipleHDF5Files *********************************** */
-template<typename T, template<typename U> class Descriptor>
-WriteInMultipleHDF5Files<T,Descriptor>::WriteInMultipleHDF5Files (
+template<typename T>
+WriteInMultipleHDF5Files<T>::WriteInMultipleHDF5Files (
         std::vector<std::string> & hdf5ContainerNames_,
         std::vector<plint> & hdf5ContainerDimensions_,
         plint iter_, T dx_, T dt_,
@@ -18,8 +18,8 @@ WriteInMultipleHDF5Files<T,Descriptor>::WriteInMultipleHDF5Files (
             iter(iter_), dx(dx_), dt(dt_),
             envelopeWidth(envelopeWidth_), invertXZ_for_XDMF(invertXZ_for_XDMF_) {};
 
-template<typename T, template<typename U> class Descriptor>
-void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
+template<typename T>
+void WriteInMultipleHDF5Files<T>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
     PLB_PRECONDITION( blocks.size() == hdf5ContainerNames.size() );
@@ -131,13 +131,13 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
     H5Fclose(file_id);
 }
 
-template<typename T, template<typename U> class Descriptor>
-WriteInMultipleHDF5Files<T,Descriptor>* WriteInMultipleHDF5Files<T,Descriptor>::clone() const {
-    return new WriteInMultipleHDF5Files<T,Descriptor>(*this);
+template<typename T>
+WriteInMultipleHDF5Files<T>* WriteInMultipleHDF5Files<T>::clone() const {
+    return new WriteInMultipleHDF5Files<T>(*this);
 }
 
-template<typename T, template<typename U> class Descriptor>
-void WriteInMultipleHDF5Files<T,Descriptor>::getTypeOfModification (
+template<typename T>
+void WriteInMultipleHDF5Files<T>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     for (pluint i = 0; i < hdf5ContainerNames.size(); ++i) {
@@ -145,8 +145,8 @@ void WriteInMultipleHDF5Files<T,Descriptor>::getTypeOfModification (
     }
 }
 
-template<typename T, template<typename U> class Descriptor>
-BlockDomain::DomainT WriteInMultipleHDF5Files<T,Descriptor>::appliesTo () const {
+template<typename T>
+BlockDomain::DomainT WriteInMultipleHDF5Files<T>::appliesTo () const {
     return BlockDomain::bulk;
 }
 
@@ -184,7 +184,7 @@ void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
 
 
     applyProcessingFunctional ( // compute force applied on the fluid by the particles
-            new WriteInMultipleHDF5Files<T,Descriptor> (hdf5ContainerNames, hdf5ContainerDimensions, iter, dx, dt, envelopeWidth, invertXZ_for_XDMF),
+            new WriteInMultipleHDF5Files<T> (hdf5ContainerNames, hdf5ContainerDimensions, iter, dx, dt, envelopeWidth, invertXZ_for_XDMF),
             lattice.getBoundingBox(), hdf5ContainerArg );
 
 }
