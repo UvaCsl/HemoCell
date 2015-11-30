@@ -18,7 +18,7 @@
 # palabosRoot   = ./palabos/	
 #palabosRoot   = /home/lmount/devel/palabos/
 #palabosRoot   = $(PALABOS_ROOT)
-ficsionRoot   = ../../
+ficsionRoot   = $(FICSION)
 palabosRoot   = $(ficsionRoot)/palabos
 # Name of source files in current directory to compile and link with Palabos
 # projectFiles = losglobulos.cpp
