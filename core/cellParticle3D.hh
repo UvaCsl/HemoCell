@@ -18,39 +18,39 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef REDUCTION_PARTICLE_3D_HH
-#define REDUCTION_PARTICLE_3D_HH
+#ifndef CELL_PARTICLE_3D_HH
+#define CELL_PARTICLE_3D_HH
 
-#include "reductionParticle3D.h"
+#include "cellParticle3D.h"
 
 namespace plb {
 
 
-/* *************** class ReductionParticle3D ************************************ */
+/* *************** class CellParticle3D ************************************ */
 
 template<typename T, template<typename U> class Descriptor>
-ReductionParticle3D<T,Descriptor>::ReductionParticle3D()
+CellParticle3D<T,Descriptor>::CellParticle3D()
     : Particle3D<T,Descriptor>(), cellId(-1), processor(-1)
 { }
 
 template<typename T, template<typename U> class Descriptor>
-ReductionParticle3D<T,Descriptor>::ReductionParticle3D(plint tag_, Array<T,3> const& position)
+CellParticle3D<T,Descriptor>::CellParticle3D(plint tag_, Array<T,3> const& position)
     :  Particle3D<T,Descriptor>(tag_, position), cellId(tag_), processor(this->getMpiProcessor())
 { }
 
 template<typename T, template<typename U> class Descriptor>
-void ReductionParticle3D<T,Descriptor>::advance() {
+void CellParticle3D<T,Descriptor>::advance() {
 //    this->getPosition() = quantities3D[13]; // 13 = CCR_NO_PBC_POSITION_MEAN, but it is unnecessary, since these particles are temporary
 }
 
 template<typename T, template<typename U> class Descriptor>
-int ReductionParticle3D<T,Descriptor>::getId() const {
+int CellParticle3D<T,Descriptor>::getId() const {
     return id;
 }
 
 
 template<typename T, template<typename U> class Descriptor>
-void ReductionParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializer) const
+void CellParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializer) const
 {
     Particle3D<T,Descriptor>::serialize(serializer);
     serializer.addValue<plint>(cellId);
@@ -81,7 +81,7 @@ void ReductionParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializ
 }
 
 template<typename T, template<typename U> class Descriptor>
-void ReductionParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& unserializer)
+void CellParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& unserializer)
 {
 //    unserializer.readValues<T,3>(force);
 //    unserializer.readValue<T>(E_repulsive);
@@ -117,12 +117,12 @@ void ReductionParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& unse
 
 
 template<typename T, template<typename U> class Descriptor>
-ReductionParticle3D<T,Descriptor>* ReductionParticle3D<T,Descriptor>::clone() const {
-    return new ReductionParticle3D<T,Descriptor>(*this);
+CellParticle3D<T,Descriptor>* CellParticle3D<T,Descriptor>::clone() const {
+    return new CellParticle3D<T,Descriptor>(*this);
 }
 
 template<typename T, template<typename U> class Descriptor>
-bool ReductionParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,3>& vector) {
+bool CellParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,3>& vector) {
     if (whichVector < getVectorsNumber()) {
         vector = this->get3D(this->getVectorCcrIds()[whichVector]);
         return true;
@@ -131,7 +131,7 @@ bool ReductionParticle3D<T,Descriptor>::getVector(plint whichVector, Array<T,3>&
 }
 
 template<typename T, template<typename U> class Descriptor>
-std::string ReductionParticle3D<T,Descriptor>::getVectorName(plint whichVector) {
+std::string CellParticle3D<T,Descriptor>::getVectorName(plint whichVector) {
     if (whichVector < getVectorsNumber()) {
         return ccrNames[this->getVectorCcrIds()[whichVector]];
     }
@@ -139,14 +139,14 @@ std::string ReductionParticle3D<T,Descriptor>::getVectorName(plint whichVector) 
 }
 
 template<typename T, template<typename U> class Descriptor>
-plint ReductionParticle3D<T,Descriptor>::getVectorsNumber() {
+plint CellParticle3D<T,Descriptor>::getVectorsNumber() {
     this->make_ccrId_List();
     return this->getVectorCcrIds().size();
 }
 
 /* Same for scalars */
 template<typename T, template<typename U> class Descriptor>
-bool ReductionParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) {
+bool CellParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) {
     if (whichScalar < getScalarsNumber()) {
         scalar = this->get1D(this->getScalarCcrIds()[whichScalar]);
         return true;
@@ -156,7 +156,7 @@ bool ReductionParticle3D<T,Descriptor>::getScalar(plint whichScalar, T& scalar) 
 
 
 template<typename T, template<typename U> class Descriptor>
-std::string ReductionParticle3D<T,Descriptor>::getScalarName(plint whichScalar) {
+std::string CellParticle3D<T,Descriptor>::getScalarName(plint whichScalar) {
     if (whichScalar < getScalarsNumber()) {
         return ccrNames[this->getScalarCcrIds()[whichScalar]];
     }
@@ -165,14 +165,14 @@ std::string ReductionParticle3D<T,Descriptor>::getScalarName(plint whichScalar) 
 
 
 template<typename T, template<typename U> class Descriptor>
-plint ReductionParticle3D<T,Descriptor>::getScalarsNumber() {
+plint CellParticle3D<T,Descriptor>::getScalarsNumber() {
     this->make_ccrId_List();
     return this->getScalarCcrIds().size();
 }
 
 /* Same for Tensors */
 template<typename T, template<typename U> class Descriptor>
-bool ReductionParticle3D<T,Descriptor>::getTensor(plint whichTensor, std::vector<T>& tensor) {
+bool CellParticle3D<T,Descriptor>::getTensor(plint whichTensor, std::vector<T>& tensor) {
     if (whichTensor < getTensorsNumber()) {
         tensor = this->getND(this->getTensorCcrIds()[whichTensor]);
         return true;
@@ -183,7 +183,7 @@ bool ReductionParticle3D<T,Descriptor>::getTensor(plint whichTensor, std::vector
 
 
 template<typename T, template<typename U> class Descriptor>
-std::string ReductionParticle3D<T,Descriptor>::getTensorName(plint whichTensor) {
+std::string CellParticle3D<T,Descriptor>::getTensorName(plint whichTensor) {
     if (whichTensor < getTensorsNumber()) {
         return ccrNames[this->getTensorCcrIds()[whichTensor]];
     }
@@ -192,11 +192,11 @@ std::string ReductionParticle3D<T,Descriptor>::getTensorName(plint whichTensor) 
 
 
 template<typename T, template<typename U> class Descriptor>
-plint ReductionParticle3D<T,Descriptor>::getTensorsNumber() {
+plint CellParticle3D<T,Descriptor>::getTensorsNumber() {
     this->make_ccrId_List();
     return this->getTensorCcrIds().size();
 }
 
 }  // namespace plb
 
-#endif  // REDUCTION_PARTICLE_3D_HH
+#endif  // CELL_PARTICLE_3D_HH

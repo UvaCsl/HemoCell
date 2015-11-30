@@ -442,8 +442,8 @@ void DeleteIncompleteCells<T,Descriptor>::processGenericBlocks (
 	std::map< plint, std::map<plint, bool> > particleInProcessorAndCellid; // processorCellIdMap[processor][cellId] = true
 	std::map< plint, plint > numberOfParticlesPerCellid; // processorCellIdMap[processor][cellId] = true
 	for (pluint iA = 0; iA < reductionParticles.size(); ++iA) {
-		ReductionParticle3D<T,Descriptor>* particle =
-				dynamic_cast<ReductionParticle3D<T,Descriptor>*> (reductionParticles[iA]);
+		CellParticle3D<T,Descriptor>* particle =
+				dynamic_cast<CellParticle3D<T,Descriptor>*> (reductionParticles[iA]);
 
 		plint cellId = particle->get_cellId();
 		plint processor = particle->get_processor();
@@ -541,7 +541,7 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
         Cell3D<T,Descriptor> * cell = iter->second;
         cell->closeCCRQuantities();
         Array<T,3> const& vertex = cell->get3D(CCR_NO_PBC_POSITION_MEAN);
-        ReductionParticle3D<T,Descriptor>* rParticle = new ReductionParticle3D<T,Descriptor>(cellId, vertex);
+        CellParticle3D<T,Descriptor>* rParticle = new CellParticle3D<T,Descriptor>(cellId, vertex);
         rParticle->get_nParticles() = particlesPerCellId[cellId];
         rParticle->updateCQH(*cell, ccrRequirements);
         cell->clearQuantities(ccrRequirements);
@@ -629,8 +629,8 @@ void SyncCellQuantities<T,Descriptor>::processGenericBlocks (
 
         std::map< plint, std::map<plint, bool> > particleInProcessorAndCellid; // processorCellIdMap[processor][cellId] = true
         for (pluint iA = 0; iA < reductionParticles.size(); ++iA) {
-            ReductionParticle3D<T,Descriptor>* particle =
-                    dynamic_cast<ReductionParticle3D<T,Descriptor>*> (reductionParticles[iA]);
+            CellParticle3D<T,Descriptor>* particle =
+                    dynamic_cast<CellParticle3D<T,Descriptor>*> (reductionParticles[iA]);
 
             plint cellId = particle->get_cellId();
             plint processor = particle->get_processor();

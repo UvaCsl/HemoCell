@@ -4,7 +4,7 @@
 #include "palabos3D.hh"
 #include "immersedBoundaryMethod3D.h"
 #include "immersedCellParticle3D.h"
-#include "reductionParticle3D.h"
+#include "cellParticle3D.h"
 #include "cell3D.h"
 #include "meshMetrics.h"
 #include "diagonalize.hpp"

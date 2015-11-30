@@ -18,8 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef REDUCTION_PARTICLE_3D_H
-#define REDUCTION_PARTICLE_3D_H
+#ifndef CELL_PARTICLE_3D_H
+#define CELL_PARTICLE_3D_H
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
@@ -35,10 +35,10 @@ using namespace std;
 namespace plb {
 
 template<typename T, template<typename U> class Descriptor>
-class ReductionParticle3D : public Particle3D<T,Descriptor>, public CellQuantityHolder<T> {
+class CellParticle3D : public Particle3D<T,Descriptor>, public CellQuantityHolder<T> {
 public:
-    ReductionParticle3D();
-    ReductionParticle3D(plint tag_, Array<T,3> const& position);
+    CellParticle3D();
+    CellParticle3D(plint tag_, Array<T,3> const& position);
 
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
     virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
@@ -47,7 +47,7 @@ public:
     virtual void advance();
     virtual void serialize(HierarchicSerializer& serializer) const;
     virtual void unserialize(HierarchicUnserializer& unserializer);
-    virtual ReductionParticle3D<T,Descriptor>* clone() const;
+    virtual CellParticle3D<T,Descriptor>* clone() const;
 
     plint const getMpiProcessor() const {
     	int myrank = 0;
@@ -90,7 +90,7 @@ public:
 
 
 template<typename T, template<typename U> class Descriptor>
-int ReductionParticle3D<T,Descriptor>::id = meta::registerGenericParticle3D<T,Descriptor,ReductionParticle3D<T,Descriptor> >("ReductionParticle3D");
+int CellParticle3D<T,Descriptor>::id = meta::registerGenericParticle3D<T,Descriptor,CellParticle3D<T,Descriptor> >("CellParticle3D");
 
 template<typename T>
 void serializeVector(HierarchicSerializer& serializer, std::vector<T> const& vec);
@@ -116,13 +116,13 @@ void writeCellPointsVTK(
     std::map<std::string, std::map<plint, T> > scalarData; // scalars["Position"][cellId] = value
     std::map<std::string, std::map<plint, Array<T,3> > > vectorData; // scalars["Position"][cellId] = vectorValues
 
-    ReductionParticle3D<T,Descriptor>* p0 =
-        dynamic_cast<ReductionParticle3D<T,Descriptor>*> (particles[0]);
+    CellParticle3D<T,Descriptor>* p0 =
+        dynamic_cast<CellParticle3D<T,Descriptor>*> (particles[0]);
     for (plint iVector = 0; iVector < p0->getVectorsNumber(); ++iVector) { vectorNames.push_back(p0->getVectorName(iVector)); }
     for (plint iScalar = 0; iScalar < p0->getScalarsNumber(); ++iScalar) { scalarNames.push_back(p0->getScalarName(iScalar)); }
     cellIds.push_back(p0->get_cellId());
     for (pluint i = 1; i < nParticles; ++i) {
-        p0 = dynamic_cast<ReductionParticle3D<T,Descriptor>*> (particles[i]);
+        p0 = dynamic_cast<CellParticle3D<T,Descriptor>*> (particles[i]);
         plint cellId = p0->get_cellId();
         cellIds.push_back(cellId);
         for (plint iVector = 0; iVector < p0->getVectorsNumber(); ++iVector) { p0->getVector(iVector, vectorData[p0->getVectorName(iVector)][cellId]); }
@@ -175,7 +175,7 @@ void writeCellPointsVTK(
 
 }  // namespace plb
 
-#include "reductionParticle3D.hh"
+#include "cellParticle3D.hh"
 
-#endif  // REDUCTION_PARTICLE_3D_H
+#endif  // CELL_PARTICLE_3D_H
 
