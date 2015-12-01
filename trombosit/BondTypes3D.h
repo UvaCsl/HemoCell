@@ -129,7 +129,7 @@ public:
         bondP->applyForce( forceType(r, eij) );
     }
     virtual bool createBond(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
-    	if (not isBondPossible(p0, p1, r, eij)) { return false; }
+    	if (not this->isBondPossible(p0, p1, r, eij)) { return false; }
         bool p0Saturated = castParticleToICP3D(p0)->getBondTypeSaturation(this->getBondTypeId())+deltaSaturation[0] > maxSaturation[0];
         if ( p0Saturated ) { return false; }
         bool p1Saturated = castParticleToICP3D(p1)->getBondTypeSaturation(this->getBondTypeId())+deltaSaturation[1] > maxSaturation[1];
