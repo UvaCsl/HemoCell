@@ -423,7 +423,7 @@ DeleteIncompleteCells<T,Descriptor>::DeleteIncompleteCells (std::map<plint, Cell
 
 template<typename T, template<typename U> class Descriptor>
 DeleteIncompleteCells<T,Descriptor>::DeleteIncompleteCells (DeleteIncompleteCells<T,Descriptor> const& rhs)
-: cellIdToCell3D(rhs.cellIdToCell3D) { }
+: cellIdToCell3D(rhs.cellIdToCell3D), numberOfVertices(rhs.numberOfVertices) { }
 
 
 

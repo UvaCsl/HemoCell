@@ -231,9 +231,9 @@ void CellField3D<T, Descriptor>::deleteIncompleteCells() {
     std::vector<MultiBlock3D*> reductionParticleParticleArg;
     reductionParticleParticleArg.push_back(reductionParticles);
     reductionParticleParticleArg.push_back(immersedParticles);
-
+	plint Nv = getMesh().getNumVertices() ;
     applyProcessingFunctional (
-        new DeleteIncompleteCells<T,Descriptor> (cellIdToCell3D),
+        new DeleteIncompleteCells<T,Descriptor> (cellIdToCell3D, Nv ),
         reductionParticles->getBoundingBox(), reductionParticleParticleArg );
 
 }
