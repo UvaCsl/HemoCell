@@ -323,10 +323,10 @@ int main(int argc, char* argv[])
     FcnCheckpoint<T, DESCRIPTOR> checkpointer(document);
     plint initIter=0;
     checkpointer.load(document, lattice, cellFields, initIter);
+    T gapSize = 0.2;
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
         std::vector<Array<T,3> > cellsOrigin;
-        T gapSize = 0.2;
      //   cellsOrigin.push_back( Array<T,3>(pltRadius*sin(eulerAngles[2]) +gapSize, ny*0.5, nz*0.5) );
         cellsOrigin.push_back( Array<T,3>(nx*0.5, 0.5+pltRadius*aspectRatio+gapSize, nz*0.5) );
 //        cellsOrigin.push_back( Array<T,3>(nx*0.5-pltRadius*aspectRatio-0.6, ny*0.5, nz*0.5) );
@@ -351,8 +351,17 @@ int main(int argc, char* argv[])
     }
 	pcout << std::endl << "(main) Starting simulation i=" << initIter << std::endl;
 
-//    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
-//                                                        createBoundaryParticleField3D(lattice);
+    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
+                                                        createBoundaryParticleField3D(lattice);
+
+    Box3D activatedRegion(nx*0.4, nx*0.6, 0, 0.5+pltRadius*aspectRatio+gapSize, nz*0.4, nz*0.6);
+    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * activatedBoundaryParticleField3D =
+                                                        createBoundaryParticleField3D(lattice, activatedRegion);
+
+    writeParticleField3D_HDF5(*boundaryParticleField3D, dx, dt, 0, "BoundaryParticles");
+    writeParticleField3D_HDF5(*activatedBoundaryParticleField3D, dx, dt, 0, "ActivatedBoundaryParticles");
+
+
 
     /* Repulsive force */
     T k_int = 2.5e-7, DeltaX=1.0, R=0.2, k=2.;
@@ -391,16 +400,10 @@ int main(int argc, char* argv[])
     global::timer("mainLoop").start();
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
-//       RBCField.applyConstitutiveModel();
-//       RBCField.applyCellCellForce(PLF, R);
         for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
      	   cellFields[iCell]->applyConstitutiveModel();
+//           applyWallCellForce<T, DESCRIPTOR>(PLF, R, *activatedBoundaryParticleField3D, *cellFields[iCell]);
         }
-        // Pull force
-        // applyForceToCells(PLTField, PLTCellIds, forcesToApply);
-        // applySameCellFieldForces(PLTField, PLF, R*2);
-        // applyForceToCells(PLTField, PLTCellIds, verticesToStretch, forcesToApply);
-        // PLTField.applyCellCellForce(PLF, R*2);
 
         // #2# IBM Spreading
        cellFields[0]->setFluidExternalForce(poiseuilleForce);

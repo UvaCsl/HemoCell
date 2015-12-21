@@ -44,7 +44,26 @@ MultiParticleField3D<DenseParticleField3D<T,Descriptor> > *
 }
 
 
+template<typename T, template<typename U> class Descriptor>
+MultiParticleField3D<DenseParticleField3D<T,Descriptor> > *
+		createBoundaryParticleField3D(MultiBlockLattice3D<T, Descriptor> & lattice, Box3D domain) {
 
+	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * boundaryParticleField3D
+				= new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(lattice);
+	boundaryParticleField3D->periodicity().toggleAll(true);
+	boundaryParticleField3D->toggleInternalStatistics(false);
+
+	std::vector<MultiBlock3D*> particleLatticeArg;
+    particleLatticeArg.push_back(boundaryParticleField3D);
+    particleLatticeArg.push_back(&lattice);
+
+
+    applyProcessingFunctional ( // compute force applied on the fluid by the particles
+            new PositionBoundaryParticles<T,Descriptor> (),
+            domain, particleLatticeArg );
+
+	return boundaryParticleField3D;
+}
 
 
 
