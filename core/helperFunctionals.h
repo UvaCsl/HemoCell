@@ -20,27 +20,18 @@ public:
 private:
 };
 
-
-
 template<typename T, template<typename U> class Descriptor>
-MultiParticleField3D<DenseParticleField3D<T,Descriptor> > *
-		createBoundaryParticleField3D(MultiBlockLattice3D<T, Descriptor> & lattice) {
-
-	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * boundaryParticleField3D
-				= new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(lattice);
-	boundaryParticleField3D->periodicity().toggleAll(true);
-	boundaryParticleField3D->toggleInternalStatistics(false);
-
+void addParticleToBoundaryParticleField3D(
+				MultiBlockLattice3D<T, Descriptor> & lattice,
+				MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & boundaryParticleField3D,
+				Box3D domain) {
 	std::vector<MultiBlock3D*> particleLatticeArg;
-    particleLatticeArg.push_back(boundaryParticleField3D);
+    particleLatticeArg.push_back(&boundaryParticleField3D);
     particleLatticeArg.push_back(&lattice);
-
 
     applyProcessingFunctional ( // compute force applied on the fluid by the particles
             new PositionBoundaryParticles<T,Descriptor> (),
-            boundaryParticleField3D->getBoundingBox(), particleLatticeArg );
-
-	return boundaryParticleField3D;
+            domain, particleLatticeArg );
 }
 
 
@@ -52,19 +43,16 @@ MultiParticleField3D<DenseParticleField3D<T,Descriptor> > *
 				= new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(lattice);
 	boundaryParticleField3D->periodicity().toggleAll(true);
 	boundaryParticleField3D->toggleInternalStatistics(false);
-
-	std::vector<MultiBlock3D*> particleLatticeArg;
-    particleLatticeArg.push_back(boundaryParticleField3D);
-    particleLatticeArg.push_back(&lattice);
-
-
-    applyProcessingFunctional ( // compute force applied on the fluid by the particles
-            new PositionBoundaryParticles<T,Descriptor> (),
-            domain, particleLatticeArg );
-
+    addParticleToBoundaryParticleField3D(lattice, *boundaryParticleField3D, domain);
 	return boundaryParticleField3D;
 }
 
+
+template<typename T, template<typename U> class Descriptor>
+MultiParticleField3D<DenseParticleField3D<T,Descriptor> > *
+		createBoundaryParticleField3D(MultiBlockLattice3D<T, Descriptor> & lattice) {
+	return createBoundaryParticleField3D(lattice, lattice.getBoundingBox() );
+}
 
 
 
