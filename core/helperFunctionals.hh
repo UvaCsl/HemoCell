@@ -94,5 +94,38 @@ BlockDomain::DomainT PositionBoundaryParticles<T,Descriptor>::appliesTo () const
 
 
 
+/* ******** DeleteParticles3D *********************************** */
+template<typename T, template<typename U> class Descriptor>
+DeleteParticles3D<T,Descriptor>::DeleteParticles3D () { };
+
+template<typename T, template<typename U> class Descriptor>
+void DeleteParticles3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    PLB_PRECONDITION( blocks.size()>0 );
+    ParticleField3D<T,Descriptor>& boundaryParticleField
+        = *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    boundaryParticleField.removeParticles(domain); // CAUTION: Domains might not overlap-- palabos deletes by what is contained in the cell-list and not by coordinate.
+}
+
+template<typename T, template<typename U> class Descriptor>
+DeleteParticles3D<T,Descriptor>* DeleteParticles3D<T,Descriptor>::clone() const {
+    return new DeleteParticles3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void DeleteParticles3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::allVariables; // Particle field
+    modified[1] = modif::nothing; // Fluid field
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT DeleteParticles3D<T,Descriptor>::appliesTo () const {
+    return BlockDomain::bulk;
+}
+
+
 #endif  // FICSION_HELPER_FUNCTIONALS_HH
 

@@ -358,7 +358,8 @@ int main(int argc, char* argv[])
     MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * activatedBoundaryParticleField3D =
                                                         createBoundaryParticleField3D(lattice, activatedRegion);
 
-    addParticleToBoundaryParticleField3D(lattice, *boundaryParticleField3D, lattice.getBoundingBox()); // Double the density
+    addParticlesToBoundaryParticleField3D(lattice, *boundaryParticleField3D, lattice.getBoundingBox()); // Double the density
+    removeParticlesFromBoundaryParticleField3D(lattice, *boundaryParticleField3D, activatedRegion); // Empty activatedRegion from other BP3D
     writeParticleField3D_HDF5(*boundaryParticleField3D, dx, dt, 0, "BoundaryParticles");
     writeParticleField3D_HDF5(*activatedBoundaryParticleField3D, dx, dt, 0, "ActivatedBoundaryParticles");
 
