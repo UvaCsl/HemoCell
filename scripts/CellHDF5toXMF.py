@@ -307,6 +307,6 @@ if __name__ == '__main__':
 				fnameString = dirname + identifier + "." + iterString + ".p.%s.h5"
 				print "Created file:", createXDMF(fnameString, processorStrings)
 		except (ValueError, TypeError, NameError) as e:
-			print '## ERROR ## Missing type:', identifier, e
+			print '## WARNING ## There are no', identifier, 'to unpack. ', e
 
 
