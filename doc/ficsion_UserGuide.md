@@ -281,12 +281,9 @@ The workflow is as follows:
 ![Scheme of the simulation workflow. Boxes with the same color are grouped together and have the same time apportionment in `fcnPerformance.log`. Red is for the constitutive model, blue for LBM, yellow for IBM and brown for the bookkeeping of cells. At the end of each routine a synchronization step is performed.](images/workflow.png "Simulation workflow for `ficsion`")
 
 
-
-<!-- # Useful modules
-TBD
--->
-
-
+# Useful modules
+* Should the user wants to apply force to the cells, he/she can utilize the module `applyForceToCells(RBCField, RBCellIds, forcesToApply)`, as used in `caseD_lubrication.cpp`. It is also possible to apply force in only a subset of the vertices of the cells, like `sickleCell.cpp` or `stretchCell.cpp`. The latter two cases use wrapper functions to achieve this, however an overloaded function `applyForceToCells(cellField, cellIds, iVertices, forces)` is available along the aforementioned.
+* Class `ProximityDynamics3D` can be overloaded and used with `ApplyProximityDynamics3D` to apply forces (repulsion, attraction, from Morse potential etc) between cells and particles, based on a cutoff distance between them.  Examples on how this can be used can be found in `./trombosit/BondField3D.h`.
 
 # Performance suggestions
 
