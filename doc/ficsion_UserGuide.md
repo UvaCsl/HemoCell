@@ -215,7 +215,9 @@ Same setup as with the `examples/IBM/caseB_viscosity.cpp`, only with a suspensio
 * All boundary nodes, bounce-back and velocity, are recognized as boundary nodes when creating boundary particles with `createBoundaryParticleField3D(lattice)`.
 * In case an external STL file is necessary, it should always be available in the expected path (e.g for `tube.stl` or `sickledCell.stl`).
 * Loading an `xmf` file which is not up to date with the `h5` files will cause the immediate and unforeseen collapse of Paraview.
+* Paraview version v4.0.X has cannot produce time depended visualizations for XDMF files. Please try v4.4 if applicable.
 * For more bugs and features, please visit the [bug tracker](https://bitbucket.org/lmountrakis/ficsion/issues) :-) 
+* `trombosit` module cannot work with periodic boundary positions and fails as soon as the bond particles approach the boundaries.
 
 
 # A few words on the implementation
@@ -310,4 +312,4 @@ TBA
 
 
 # License
-No known license
+Without explicit permission from the authors or the University of Amsterdam, you are not allowed to change, use or distribute this software.
