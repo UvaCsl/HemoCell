@@ -47,6 +47,23 @@ make
 ```
 and it will produce an executable with the name `ficsional`. Should you want to change debugging or profiling options, please alter the `Makefile`. Follow a similar approach to compile the examples.
 
+Alternative building instructions (for CMake)
+=============================================
+
+E.g., to build ficsional, issue the following from the root folder of ficsion
+
+```shell
+mkdir build
+cd build
+cmake ..
+make -j 4
+```
+
+The cmake tries to make use of the system libraries instead of building them, thus you might also want to install
+development packages for Eigen and TinyXML (Palabos 1.5+).
+The cmake files are also suitable to use in IDE-s supporting cmake projects. 
+Both ficsion and palabos is handled as an external library in the cmake project structure.
+
 
 Documentation
 =============
