@@ -22,7 +22,7 @@ ficsionRoot   = ../../
 palabosRoot   = $(ficsionRoot)/palabos
 # Name of source files in current directory to compile and link with Palabos
 # projectFiles = losglobulos.cpp
-projectFiles = ficsional.cpp
+projectFiles = stretchCell.cpp
  
 # Choose between generic and precompiled mode
 precompiled  = false
