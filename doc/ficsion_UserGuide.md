@@ -37,7 +37,6 @@ sudo apt-get install h5utils hdf5-tools libhdf5-serial-dev
 sudo apt-get install python python-numpy python-matplotlib python-h5py
 ```
 
-
 ## Instructions
 
 Ensure that the above packages are downloaded and installed on your system. Assuming that ficsion lies in the directory `${FICSION}`,  e.g. 
@@ -49,6 +48,23 @@ download `palabos` v1.4 from its [website](http://www.palabos.org/images/palabos
 make
 ```
 and it will produce an executable with the name `ficsional`. Should you want to change debugging or profiling options, please alter the `Makefile`. Follow a similar approach to compile the examples.
+
+### Alternatively, the code can be built using the provided CMake files
+
+E.g., to build ficsional, issue the following from the root folder of ficsion
+
+```shell
+mkdir build
+cd build
+cmake ..
+make -j 4
+```
+
+The cmake tries to make use of the system libraries instead of building them, thus you might also want to install
+development packages for Eigen and TinyXML (Palabos 1.5+).
+
+The cmake files are also suitable to use in IDE-s supporting cmake projects. 
+Both ficsion and palabos is handled as an external library in the project structure.
 
 ## Known issues 
 * `palabos` version 1.5rX has an issue with particle initialization and produces segmentation faults.
