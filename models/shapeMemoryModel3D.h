@@ -130,9 +130,20 @@ public:
     virtual T getMembraneShearModulus() {
         T Lmax = eqLength*eqLengthRatio;
         T x0 = 1.0/eqLengthRatio;
-        // T kP =  kBT /(4.0*persistenceLengthCoarse);
+        // k_inPlane = k_WLC_ * kBT /(4.0*persistenceLengthCoarse);
         T kP =  k_inPlane;
-        return sqrt(3) * kP / (Lmax*x0)*( 3.0/( 4*(1-x0)*(1-x0) ) - 3.0/4.0 +4*x0 + x0/(2.0 * (1-x0)*(1-x0)*(1-x0)));
+        T k_rep = -1.0*((eqLength*eqLength)* kP * x0 * (-6 + (9 - 4*x0)*x0)/( (x0-1)*(x0-1) ));
+        T oneMinusX0 = 1-x0;
+        T oneMinusX0Square = oneMinusX0*oneMinusX0;
+        T oneMinusX0Cube = oneMinusX0*oneMinusX0*oneMinusX0;
+        // Fedosov et al.  doi:10.1016/j.bpj.2010.02.002
+        // A Multiscale Red Blood Cell Model with Accurate Mechanics, Rheology, and Dynamics  
+        T ansFedosov = kP * sqrt(3) / (Lmax*x0) * (x0/(2.0*oneMinusX0Cube) - 1.0/(4.0*oneMinusX0Square) + 1.0/4.0) + 
+                3 * sqrt(3) * k_rep/(4*eqLength*eqLength*eqLength);
+        // Reasor et al. doi:10.1002/fld.2534
+        // Coupling the lattice-Boltzmann and spectrin-link methods for the direct numerical simulation of cellular blood flow
+        T ansReasor = sqrt(3) * kP / (Lmax*x0)*( 3.0/( 4*(1-x0)*(1-x0) ) - 3.0/4.0 +4*x0 + x0/(2.0 * (1-x0)*(1-x0)*(1-x0)));
+        return ansFedosov;
     }
     // Units are N/m
     virtual T getMembraneElasticAreaCompressionModulus() {

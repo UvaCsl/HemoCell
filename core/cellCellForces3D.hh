@@ -24,8 +24,8 @@ template<typename T, template<typename U> class Descriptor>
 bool ComputeCellCellForces3D<T,Descriptor>::conditionsAreMet (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
-    ImmersedCellParticle3D<T,Descriptor>* cParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p1);
-    ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
+    SurfaceParticle3D<T,Descriptor>* cParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p1);
+    SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
     if (cParticle->get_cellId() == nParticle->get_cellId()) { return false; }
     if (cParticle->getTag() < nParticle->getTag()) { return false; }
     eij = cParticle->getPosition() - nParticle->getPosition();
@@ -40,8 +40,8 @@ template<typename T, template<typename U> class Descriptor>
 void ComputeCellCellForces3D<T,Descriptor>::applyForce (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> & eij)
 {
-        ImmersedCellParticle3D<T,Descriptor>* cParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p1);
-        ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
+        SurfaceParticle3D<T,Descriptor>* cParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p1);
+        SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
         Array<T,3> force = calcForce(r, eij);
         cParticle->get_force() += force;
         nParticle->get_force() -= force;
@@ -82,7 +82,7 @@ void ComputeCellCellForces3D<T,Descriptor>::processGenericBlocks (
 
                 Box3D neighboringBoxes(x0, x1, y0, y1, z0, z1);
                 particleField.findParticles(currentBox, currentParticles);
-                if (currentParticles.size() == 0) { break; }
+                if (currentParticles.size() == 0) { continue; }
                 particleField.findParticles(neighboringBoxes, neighboringParticles);
                 for (pluint cP=0; cP<currentParticles.size(); ++cP) {
                     for (pluint nP=0; nP<neighboringParticles.size(); ++nP) {
@@ -152,11 +152,11 @@ template<typename T, template<typename U> class Descriptor>
 void ComputeDifferentCellForces3D<T,Descriptor>::applyForce (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
-        ImmersedCellParticle3D<T,Descriptor>* cParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p1);
-        ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
+        SurfaceParticle3D<T,Descriptor>* cParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p1);
+        SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
         Array<T,3> force = calcForce(r, eij);
-        cParticle->get_force() -= force;
-        nParticle->get_force() += force;
+        cParticle->get_force() += force;
+        nParticle->get_force() -= force;
 #ifdef PLB_DEBUG // Less Calculations
         cParticle->get_f_repulsive() -= force;
         nParticle->get_f_repulsive() += force;
@@ -190,9 +190,9 @@ void ComputeDifferentCellForces3D<T,Descriptor>::processGenericBlocks (
                 Box3D currentBox(iX,iX,iY,iY,iZ,iZ);
                 Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
                 particleField1.findParticles(currentBox, currentParticles);
-                if (currentParticles.size() == 0) { break; }
+                if (currentParticles.size() == 0) { continue; }
                 particleField2.findParticles(neighboringBoxes, neighboringParticles);
-                if (neighboringParticles.size() == 0) { break; }
+                if (neighboringParticles.size() == 0) { continue; }
 
                 for (pluint cP=0; cP<currentParticles.size(); ++cP) {
                     for (pluint nP=0; nP<neighboringParticles.size(); ++nP) {
@@ -260,7 +260,7 @@ template<typename T, template<typename U> class Descriptor>
 void ComputeWallCellForces3D<T,Descriptor>::applyForce (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
-        ImmersedCellParticle3D<T,Descriptor>* nParticle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (p2);
+        SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
         Array<T,3> force = calcForce(r, eij);
         nParticle->get_force() += force;
 //        cout << "(ComputeWallCellForces3D) r=" << r << ", norm-force=" << norm(force) << std::endl;
@@ -295,9 +295,9 @@ void ComputeWallCellForces3D<T,Descriptor>::processGenericBlocks (
                 Box3D currentBox(iX,iX,iY,iY,iZ,iZ);
                 Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
                 wallParticleField.findParticles(currentBox, currentWallParticles);
-                if (currentWallParticles.size() == 0) { break; }
+                if (currentWallParticles.size() == 0) { continue; }
                 particleField.findParticles(neighboringBoxes, neighboringCellParticles);
-                if (neighboringCellParticles.size() == 0) { break; }
+                if (neighboringCellParticles.size() == 0) { continue; }
 
                 for (pluint cP=0; cP<currentWallParticles.size(); ++cP) {
                     for (pluint nP=0; nP<neighboringCellParticles.size(); ++nP) {

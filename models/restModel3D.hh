@@ -159,7 +159,7 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
 //    T maxDr = 0;
     for (pluint iV = 0; iV < vertices.size(); ++iV) {
     	iVertex = vertices[iV];
-        ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        SurfaceParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
     	plint cellId = iParticle->get_cellId();
 		Array<T,3> dr = cell->getVertex(iVertex) - meshes[cellId]->getVertex(iVertex);
 		iParticle->get_force() += (-k_rest*dr); // Dissipative term from Dupin2007
@@ -181,8 +181,8 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         plint edgeId = getEdgeId(iVertex, jVertex);
         Array<T,3> const& iX = cell->getVertex(iVertex);
         Array<T,3> const& jX = cell->getVertex(jVertex);
-        ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
-        ImmersedCellParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+        SurfaceParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        SurfaceParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
           /* ------------------------------------*/
          /* In Plane forces (WLC and repulsive) */
         /* ------------------------------------*/
@@ -224,8 +224,8 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
             Array<T,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
             T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
             T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
-            ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
-            ImmersedCellParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
+            SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+            SurfaceParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
             Array<T,3> const& kX = cell->getVertex(kVertex);
             Array<T,3> const& lX = cell->getVertex(lVertex);
 
@@ -293,9 +293,9 @@ void RestModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         Array<T,3> const& x1 = cell->getVertex(iVertex);
         Array<T,3> const& x2 = cell->getVertex(jVertex);
         Array<T,3> const& x3 = cell->getVertex(kVertex);
-        ImmersedCellParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
-        ImmersedCellParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
-        ImmersedCellParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+        SurfaceParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        SurfaceParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+        SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
 
         /* Surface conservation forces */
         force1  = computeSurfaceConservationForce(x1, x2, x3, triangleNormal, surfaceCoefficient, dAdx1);
@@ -388,8 +388,8 @@ void GetCellVertexPositions<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles);
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        ImmersedCellParticle3D<T,Descriptor>* particle =
-            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (particles[iParticle]);
+        SurfaceParticle3D<T,Descriptor>* particle =
+            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
         plint iVertex = particle->getVertexId();
         plint cellId = particle->get_cellId();
         vertexToPosition[cellId][iVertex] = particle->getPosition();

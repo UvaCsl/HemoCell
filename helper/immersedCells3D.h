@@ -29,9 +29,9 @@
 
 #include "meshGeneratingFunctions.h"
 #include "immersedCells3D.h"
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 #include "immersedCellParticleFunctional3D.h"
-#include "immersedCellParticleVtk3D.h"
+//#include "immersedCellParticleVtk3D.h"
 #include "shellModel3D.h"
 
 

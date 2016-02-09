@@ -21,8 +21,12 @@
 #ifndef COMPUTE_CELL_FORCES3D_H
 #define COMPUTE_CELL_FORCES3D_H
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
+//#include "palabos3D.h"
+//#include "palabos3D.hh"
+#include "core/array.h"
+#include "latticeBoltzmann/geometricOperationTemplates.h"
+#include "offLattice/triangularSurfaceMesh.h"
+
 #include <cmath>
 #include <map>
 

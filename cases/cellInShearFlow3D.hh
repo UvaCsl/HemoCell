@@ -172,8 +172,8 @@ void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::write(bool writeOutput)
             for (pluint iTag = 0; iTag < lateralCellParticleTags.size(); ++iTag) {
                 std::vector<plint>* const pTags = lateralCellParticleTags[iTag];
                 for (pluint iVertex = 0; iVertex < pTags->size(); ++iVertex) {
-                    ImmersedCellParticle3D<T,Descriptor>* particle =
-                            dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (tagToParticle3D[ (*pTags)[iVertex]]);
+                    SurfaceParticle3D<T,Descriptor>* particle =
+                            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (tagToParticle3D[ (*pTags)[iVertex]]);
 
                     positions.push_back(particle->get_pbcPosition());
                     tags.push_back(iTag);
@@ -251,8 +251,8 @@ void InertiaTensorCellReduceFunctional3D<T,Descriptor>::calculateQuantity(Triang
     T Izx, Izy, Izz;
     for (pluint iA = 0; iA < particles.size(); ++iA) {
         Particle3D<T,Descriptor>* nonTypedParticle = particles[iA];
-        ImmersedCellParticle3D<T,Descriptor>* particle =
-                dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (nonTypedParticle);
+        SurfaceParticle3D<T,Descriptor>* particle =
+                dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (nonTypedParticle);
         plint iVertex = particle->getTag();
         plint cellId = particle->get_cellId();
         Array<T,3> r0 = cellCenters[cellId];

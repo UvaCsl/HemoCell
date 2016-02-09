@@ -1,0 +1,3 @@
+#!/bin/bash
+echo h5repacking $1
+h5repack -i $1 -o ${1}.tmp  -f GZIP=6 && mv ${1}.tmp  ${1//.p./.pgz.} && rm $1

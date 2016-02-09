@@ -14,7 +14,7 @@
 <!-- +++++ -->
 <!-- Testing phase-->
 <!-- +++++ -->
-    <kWLC> 0.5 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
+    <kWLC> 1.0 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
     <eqLengthRatio> 2.5 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
     <kRep> 1.0e0 </kRep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
     <kElastic> 0.0e0 </kElastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->
@@ -64,7 +64,7 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
 <sim>
     <tmax> 5000000 </tmax> <!-- total number of iterations -->
     <tmeas> 10 </tmeas> <!-- interval after which data is written --> 
-    <hct> 40.</hct> <!-- Hematocrit  > -->
+    <hct> 15.</hct> <!-- Hematocrit  > -->
 </sim>
 
 </ficsion>

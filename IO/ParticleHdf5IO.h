@@ -4,7 +4,7 @@
 #include <limits>
 // #include "ficsion.h"
 #include "palabos3D.h"
-#include "immersedCellParticle3D.h"
+#include "surfaceParticle3D.h"
 #include "cellField3D.h"
 
 #include <vector>
@@ -40,9 +40,6 @@ private:
     T dt;
 };
 
-template<typename T, template<typename U> class Descriptor>
-void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
-              IncomprFlowParam<T> const& parameters, plint iter);
 
 
 

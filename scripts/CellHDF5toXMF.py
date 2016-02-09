@@ -4,7 +4,6 @@ import os
 from glob import glob
 import errno
 import numpy as np
-import pylab as pl
 import h5py as h5
 
 
@@ -270,13 +269,14 @@ def createXDMF(fnameString, processorStrings):
 		Important: reads as many files as number of processors in the first file
 	"""
 	fnameToSave =  ( (fnameString%(""))[:-6] + '.xmf' )
-	fnameToSave = fnameToSave.replace('/hdf5/','/')
+	fnameToSave = fnameToSave.replace('/hdf5/','/').replace(".p.",".").replace(".pgz.",".")
         if os.path.isfile(fnameToSave):
                   return fnameToSave + " (existed)"
 	xdmfFile = HDF5toXDMF_Cell(fnameToSave)
 	xdmfFile.openCollection("Domain")
 	processorStrings = sorted(processorStrings)
 	p = processorStrings[0]
+	if not os.path.isfile(fnameString%(p,)) : fnameString = fnameString.replace('.p.','.pgz.')
 	h5dict = readH5FileToDictionary(fnameString%(p,))
 	xdmfFile.writeSubDomain(h5dict)
 	numberOfProcessors = h5dict['numberOfProcessors']
@@ -291,22 +291,22 @@ def createXDMF(fnameString, processorStrings):
 
 
 if __name__ == '__main__':
-	dirname = './hdf5/'
-	try:
-		identifier = sys.argv[1]
-		print identifier
-	except:
-		identifier = 'RBC'
-	fluidH5files = sorted( glob(dirname + identifier + '.*p*.h5') )
-	if len(fluidH5files) == 0:
-		dirname = './tmp/hdf5/'
-		fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
-	fluidIDs = map(lambda x: x[:-3], fluidH5files)
-	iterationStrings, processorStrings  = zip(*map(lambda f: [f.split('.')[-3], f.split('.')[-1]], fluidIDs))
-	iterationStrings, processorStrings = map(lambda l: sorted(set(l)), (iterationStrings, processorStrings))
-	for iterString in iterationStrings:
-		fnameString = dirname + identifier + "." + iterString + ".p.%s.h5"
-		print "Created file:", createXDMF(fnameString, processorStrings)
-		
+	if len(sys.argv) == 1:
+		sys.argv += ['RBC']
+	for identifier in sys.argv[1:]:
+		dirname = './hdf5/'
+		try:
+			fluidH5files = sorted( glob(dirname + identifier + '.*p*.h5') )
+			if len(fluidH5files) == 0:
+				dirname = './tmp/hdf5/'
+				fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
+			fluidIDs = map(lambda x: x[:-3], fluidH5files)
+			iterationStrings, processorStrings  = zip(*map(lambda f: [f.split('.')[-3], f.split('.')[-1]], fluidIDs))
+			iterationStrings, processorStrings = map(lambda l: sorted(set(l)), (iterationStrings, processorStrings))
+			for iterString in iterationStrings:
+				fnameString = dirname + identifier + "." + iterString + ".p.%s.h5"
+				print "Created file:", createXDMF(fnameString, processorStrings)
+		except (ValueError, TypeError, NameError) as e:
+			print '## WARNING ## There are no', identifier, 'to unpack. ', e
 
 

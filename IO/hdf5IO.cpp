@@ -3,20 +3,23 @@
 
 #include "hdf5IO.h"
 #include "ficsionInit.h"
+#include <algorithm>    // std::swap
 
 
 /* ******** WriteInMultipleHDF5Files *********************************** */
-template<typename T, template<typename U> class Descriptor>
-WriteInMultipleHDF5Files<T,Descriptor>::WriteInMultipleHDF5Files (
+template<typename T>
+WriteInMultipleHDF5Files<T>::WriteInMultipleHDF5Files (
         std::vector<std::string> & hdf5ContainerNames_,
         std::vector<plint> & hdf5ContainerDimensions_,
-        plint iter_, T dx_, T dt_) :
+        plint iter_, T dx_, T dt_,
+        plint envelopeWidth_, bool invertXZ_for_XDMF_) :
             hdf5ContainerNames(hdf5ContainerNames_),
             hdf5ContainerDimensions(hdf5ContainerDimensions_),
-            iter(iter_), dx(dx_), dt(dt_) {};
+            iter(iter_), dx(dx_), dt(dt_),
+            envelopeWidth(envelopeWidth_), invertXZ_for_XDMF(invertXZ_for_XDMF_) {};
 
-template<typename T, template<typename U> class Descriptor>
-void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
+template<typename T>
+void WriteInMultipleHDF5Files<T>::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
     PLB_PRECONDITION( blocks.size() == hdf5ContainerNames.size() );
@@ -40,7 +43,11 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      Ny = domain.y1 - domain.y0 + 1;
      Nz = domain.z1 - domain.z0 + 1;
      Dot3D relativePositionDot3D = blocks[0]->getLocation();
-     long int relativePosition[] = {relativePositionDot3D.x, relativePositionDot3D.y, relativePositionDot3D.z};
+     if (invertXZ_for_XDMF)  {
+    	 std::swap(Nx, Nz);
+    	 std::swap(relativePositionDot3D.x, relativePositionDot3D.z);
+     }
+     long int relativePosition[] = {relativePositionDot3D.x + envelopeWidth, relativePositionDot3D.y + envelopeWidth, relativePositionDot3D.z + envelopeWidth};
      long int subdomainSize[] = {Nx+1, Ny+1, Nz+1};
 //     long int domainSize[] = {blocks[0]->getNx(), blocks[0]->getNy(), blocks[0]->getNz()};
 
@@ -51,7 +58,9 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
      H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
      long int itrtHDF5=iter;
+     long int XZ_inverted_for_XDMF=invertXZ_for_XDMF;
      H5LTset_attribute_long (file_id, "/", "iteration", &itrtHDF5, 1);
+     H5LTset_attribute_long (file_id, "/", "XZ_inverted_for_XDMF", &XZ_inverted_for_XDMF, 1);
      H5LTset_attribute_int (file_id, "/", "numberOfProcessors", &p, 1);
      H5LTset_attribute_int (file_id, "/", "processorId", &id, 1);
 
@@ -66,12 +75,22 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
             int Np = Nx*Ny*Nz;
             float * matrixScalar = new float [Np];
             int iter = 0;
-            for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
-                for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
-                    for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
-                        matrixScalar[iter++] = scalarF.get(iX,iY,iZ);
-                    }
-                }
+            if (not invertXZ_for_XDMF)  {
+				for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
+					for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
+						for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+							matrixScalar[iter++] = scalarF.get(iX,iY,iZ);
+						}
+					}
+				}
+            } else {
+				for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+					for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
+						for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
+							matrixScalar[iter++] = scalarF.get(iX,iY,iZ);
+						}
+					}
+				}
             }
             H5LTmake_dataset_float(file_id, hdf5ContainerNames[i].c_str(), 3, dim, matrixScalar);
             delete [] matrixScalar;
@@ -82,16 +101,29 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
             int Np = Nx*Ny*Nz*3;
             float * matrixTensor = new float [Np];
             int iter = 0;
-            for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
-                for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
-                    for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
-                        Array<T,3> vector =  tensorF.get(iX,iY,iZ);
-                        matrixTensor[iter++] = vector[0];
-                        matrixTensor[iter++] = vector[1];
-                        matrixTensor[iter++] = vector[2];
-                    }
-                }
-            }
+            if (not invertXZ_for_XDMF)  {
+				for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
+					for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
+						for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+							Array<T,3> vector = tensorF.get(iX,iY,iZ);
+							matrixTensor[iter++] = vector[0];
+							matrixTensor[iter++] = vector[1];
+							matrixTensor[iter++] = vector[2];
+						}
+					}
+				}
+            } else {
+				for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+					for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
+						for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
+							Array<T,3> vector = tensorF.get(iX,iY,iZ);
+							matrixTensor[iter++] = vector[0];
+							matrixTensor[iter++] = vector[1];
+							matrixTensor[iter++] = vector[2];
+						}
+					}
+				}
+			}
             H5LTmake_dataset_float(file_id, hdf5ContainerNames[i].c_str(), 4, dim, matrixTensor);
             delete [] matrixTensor;
         }
@@ -99,13 +131,13 @@ void WriteInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
     H5Fclose(file_id);
 }
 
-template<typename T, template<typename U> class Descriptor>
-WriteInMultipleHDF5Files<T,Descriptor>* WriteInMultipleHDF5Files<T,Descriptor>::clone() const {
-    return new WriteInMultipleHDF5Files<T,Descriptor>(*this);
+template<typename T>
+WriteInMultipleHDF5Files<T>* WriteInMultipleHDF5Files<T>::clone() const {
+    return new WriteInMultipleHDF5Files<T>(*this);
 }
 
-template<typename T, template<typename U> class Descriptor>
-void WriteInMultipleHDF5Files<T,Descriptor>::getTypeOfModification (
+template<typename T>
+void WriteInMultipleHDF5Files<T>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     for (pluint i = 0; i < hdf5ContainerNames.size(); ++i) {
@@ -113,8 +145,8 @@ void WriteInMultipleHDF5Files<T,Descriptor>::getTypeOfModification (
     }
 }
 
-template<typename T, template<typename U> class Descriptor>
-BlockDomain::DomainT WriteInMultipleHDF5Files<T,Descriptor>::appliesTo () const {
+template<typename T>
+BlockDomain::DomainT WriteInMultipleHDF5Files<T>::appliesTo () const {
     return BlockDomain::bulk;
 }
 
@@ -123,12 +155,13 @@ BlockDomain::DomainT WriteInMultipleHDF5Files<T,Descriptor>::appliesTo () const 
 
 template<typename T, template<typename U> class Descriptor>
 void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
-              IncomprFlowParam<T> const& parameters, plint iter)
+              IncomprFlowParam<T> const& parameters, plint iter, bool invertXZ_for_XDMF)
 {
     T dx = parameters.getDeltaX();
     T dt = parameters.getDeltaT();
 
-
+    plint envelopeWidth = lattice.getMultiBlockManagement().getEnvelopeWidth();
+//    cout << "env " << envelopeWidth << std::endl;
     MultiTensorField3D<T,3> vel = *computeVelocity(lattice);
     MultiTensorField3D<T,3> vorticity = *computeVorticity(vel);
     MultiTensorField3D<T,3> force(lattice);
@@ -151,7 +184,7 @@ void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
 
 
     applyProcessingFunctional ( // compute force applied on the fluid by the particles
-            new WriteInMultipleHDF5Files<T,Descriptor> (hdf5ContainerNames, hdf5ContainerDimensions, iter, dx, dt),
+            new WriteInMultipleHDF5Files<T> (hdf5ContainerNames, hdf5ContainerDimensions, iter, dx, dt, envelopeWidth, invertXZ_for_XDMF),
             lattice.getBoundingBox(), hdf5ContainerArg );
 
 }

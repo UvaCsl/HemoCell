@@ -3,6 +3,9 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+// To be added soon
+//#include "adhesionForces3D.h"
+
 #include <math.h>
 using namespace std;
 using namespace plb;
@@ -10,6 +13,8 @@ using namespace plb;
 template<typename T>
 class CellCellForce3D;
 
+template<typename T, template<typename U> class Descriptor>
+class CellField3D;
 
 
 template<typename T, template<typename U> class Descriptor>
@@ -57,8 +62,6 @@ public:
 public:
     /*
      All of the following conditions have to be met, in order for the force to be applied:
-           * Particles have to belong to different cells
-           * Particle 1 has to have larger tagId that particle 2
            * Their distance has to be less that the cutoffRadius.
      */
     bool conditionsAreMet(Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T& r, Array<T,3>& eij);
@@ -133,7 +136,7 @@ public:
 public:
     virtual T calculatePotential (T r) { return 0; }
     virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
-        return k_int * (pow((DeltaX*1.0/r),k) - DeltaXoverRink)*eij;
+        return - k_int * (pow((DeltaX*1.0/r),k) - DeltaXoverRink)*eij;
     }
 private:
     T k_int, DeltaX, R, k;
@@ -253,6 +256,7 @@ private:
 
 
 #include "cellCellForces3D.hh"
+
 
 #endif  // CELL_CELL_FORCES_3D_H
 

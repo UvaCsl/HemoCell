@@ -36,39 +36,39 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
         for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
             for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
 
-// TODO: Next snippet to allocate only nodes that have a fluid node.
-//                int neighboringBoundaries=0;
-//                try {
-//                    for (int px = iX-1; px <= iX+1; ++px) {  for (int py = iY-1; py <= iY+1; ++py) { for (int pz = iZ-1; pz <= iZ+1; ++pz) {
-//                        neighboringBoundaries += fluid.get(px, py, pz).getDynamics().isBoundary();
-//                    }  }  }
-//                    neighboringBoundaries -= fluid.get(iX, iY, iZ).getDynamics().isBoundary();
-//                } catch (int e) { neighboringBoundaries=0; }
-//                if (fluid.get(iX, iY, iZ).getDynamics().isBoundary() and neighboringBoundaries<27) {
-
-            	if (fluid.get(iX, iY, iZ).getDynamics().isBoundary()) {
+// TODO: Next snippet to allocate only nodes that have a fluid node. // DONE
+                bool neighboringBoundariesEverywhere=true;
+                try {
+                    for (int px = iX-1; px <= iX+1; ++px) {  for (int py = iY-1; py <= iY+1; ++py) { for (int pz = iZ-1; pz <= iZ+1; ++pz) {
+                    	neighboringBoundariesEverywhere = neighboringBoundariesEverywhere and fluid.get(px, py, pz).getDynamics().isBoundary();
+                    }  }  }
+                } catch (int e) { neighboringBoundariesEverywhere=false; }
+                if (fluid.get(iX, iY, iZ).getDynamics().isBoundary() and (not neighboringBoundariesEverywhere) ) {
+//            	if (fluid.get(iX, iY, iZ).getDynamics().isBoundary()) {
             		Array<T,3> vertex = Array<T,3>(iX,iY,iZ) + relativePosition;
 //            		std::cout << "(" << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << ") " << id << std::endl;
             		std::vector<Array<T,3> > vertices;
-                    vertices.push_back(Array<T,3>(0.25, 0.25, 0.25) + vertex);
-                    vertices.push_back(Array<T,3>(0.25, 0.25, 0.50) + vertex);
-                    vertices.push_back(Array<T,3>(0.25, 0.50, 0.50) + vertex);
-                    vertices.push_back(Array<T,3>(0.25, 0.50, 0.25) + vertex);
-                    vertices.push_back(Array<T,3>(0.50, 0.50, 0.25) + vertex);
-                    vertices.push_back(Array<T,3>(0.50, 0.25, 0.25) + vertex);
-                    vertices.push_back(Array<T,3>(0.50, 0.25, 0.50) + vertex);
-                    vertices.push_back(Array<T,3>(0.50, 0.50, 0.50) + vertex);
+            		T step= 0.25;
+                    vertices.push_back(Array<T,3>(step, step, step) + vertex);
+                    vertices.push_back(Array<T,3>(step, step, step*3) + vertex);
+                    vertices.push_back(Array<T,3>(step, step*3, step*3) + vertex);
+                    vertices.push_back(Array<T,3>(step, step*3, step) + vertex);
+                    vertices.push_back(Array<T,3>(step*3, step*3, step) + vertex);
+                    vertices.push_back(Array<T,3>(step*3, step, step) + vertex);
+                    vertices.push_back(Array<T,3>(step*3, step, step*3) + vertex);
+                    vertices.push_back(Array<T,3>(step*3, step*3, step*3) + vertex);
+                    cellId +=1;
             	    for (plint indx=0; indx<8; ++indx) {
             	    	boundaryParticleField.addParticle(
             	    			boundaryParticleField.getBoundingBox(),
-            	    			new ImmersedCellParticle3D<T,Descriptor>(vertices[indx], cellId, vertexId));
+            	    			new SurfaceParticle3D<T,Descriptor>(vertices[indx], cellId, indx));
             	    }
             	}
             }
         }
     }
-    std::vector<Particle3D<T,Descriptor>*> particles;
-    boundaryParticleField.findParticles(domain, particles);
+//    std::vector<Particle3D<T,Descriptor>*> particles;
+//    boundaryParticleField.findParticles(domain, particles);
 //	std::cout << "(PositionBoundaryParticles) pid:" << id << " Number of Particles " << particles.size() << std::endl;
 
 }
@@ -92,6 +92,39 @@ BlockDomain::DomainT PositionBoundaryParticles<T,Descriptor>::appliesTo () const
 }
 
 
+
+
+/* ******** DeleteParticles3D *********************************** */
+template<typename T, template<typename U> class Descriptor>
+DeleteParticles3D<T,Descriptor>::DeleteParticles3D () { };
+
+template<typename T, template<typename U> class Descriptor>
+void DeleteParticles3D<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    PLB_PRECONDITION( blocks.size()>0 );
+    ParticleField3D<T,Descriptor>& boundaryParticleField
+        = *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    boundaryParticleField.removeParticles(domain); // CAUTION: Domains might not overlap-- palabos deletes by what is contained in the cell-list and not by coordinate.
+}
+
+template<typename T, template<typename U> class Descriptor>
+DeleteParticles3D<T,Descriptor>* DeleteParticles3D<T,Descriptor>::clone() const {
+    return new DeleteParticles3D<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+void DeleteParticles3D<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::allVariables; // Particle field
+    modified[1] = modif::nothing; // Fluid field
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT DeleteParticles3D<T,Descriptor>::appliesTo () const {
+    return BlockDomain::bulk;
+}
 
 
 #endif  // FICSION_HELPER_FUNCTIONALS_HH

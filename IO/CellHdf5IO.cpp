@@ -22,19 +22,24 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
     PLB_PRECONDITION( blocks.size() > 0 );
     int p = global::mpi().getSize();
     int id = global::mpi().getRank();
-    plint Nx = cellField3D.getParticleArg()[0]->getNx();
-    plint Ny = cellField3D.getParticleArg()[0]->getNy();
-    plint Nz = cellField3D.getParticleArg()[0]->getNz();
+    // plint Nx = cellField3D.getParticleArg()[0]->getNx();
+    // plint Ny = cellField3D.getParticleArg()[0]->getNy();
+    // plint Nz = cellField3D.getParticleArg()[0]->getNz();
 
     /************************************************************/
    /**            Fill triangle and particle lists            **/
   /************************************************************/
 
      std::map<plint, Cell3D<T,Descriptor>* > cellIdToCell3D = cellField3D.getCellIdToCell3D();
-     plint Nc = cellField3D.getNumberOfCells();
-     std::vector<plint> cellIds = cellField3D.getCellIds();
+     long int Nc = cellField3D.getNumberOfCells();
+     std::vector<long int> cellIds;
+     for (int i = 0; i < cellField3D.getCellIds().size(); ++i)
+     {
+        cellIds.push_back(cellField3D.getCellIds()[i]);
+     }
+
      if (Nc == 0) { return; }
-     plint firstCell = cellIds[0];
+     long int firstCell = cellIds[0];
      std::vector<plint> const& scalarCcrIds = cellIdToCell3D[firstCell]->getScalarCcrIds();
      std::vector<plint> const& vectorCcrIds = cellIdToCell3D[firstCell]->getVectorCcrIds();
      std::vector<plint> const& tensorCcrIds = cellIdToCell3D[firstCell]->getTensorCcrIds();
@@ -73,9 +78,9 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
             plint cellId = cellIds[iC];
             array = cellIdToCell3D[cellId]->get3D(ccrId);
             // TODO: Change in XDMF file.
-            matrixTensor[itr++] = array[2];
-            matrixTensor[itr++] = array[1];
             matrixTensor[itr++] = array[0];
+            matrixTensor[itr++] = array[1];
+            matrixTensor[itr++] = array[2];
          }
          H5LTmake_dataset_double(file_id, ccrNames[ccrId].c_str(), 2, dimVertices, matrixTensor);
      }

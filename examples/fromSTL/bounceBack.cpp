@@ -177,7 +177,7 @@ CopyFromNeighbor<Tp>* CopyFromNeighbor<Tp>::clone() const
 
 template<typename Tp>
 void CopyFromNeighbor<Tp>::getTypeOfModification(std::vector<modif::ModifT>& modified) const {
-    modified[1] = modif::allVariables;
+    modified[0] = modif::allVariables;
 }
 
 template<typename Tp>
@@ -354,6 +354,10 @@ int main(int argc, char* argv[])
 
     T nu_tmp = parameters.getLatticeNu();
     poiseuilleForce = 8 * (nu_tmp*nu_tmp) * Re / (ny*ny*ny) ;
+    if (tmeas==0) {
+        tmeas = plint(ny*ny*1.0/ (4*nu_tmp*Re) )/40;
+    }
+
     setExternalVector(lattice, lattice.getBoundingBox(),
             DESCRIPTOR<T>::ExternalField::forceBeginsAt, Array<T,DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
     lattice.initialize();
@@ -394,7 +398,7 @@ int main(int argc, char* argv[])
         eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
         cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend*5, k_stretch, k_WLC*5.0, k_elastic, k_volume, k_surface, eta_m,
             persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement) );
-        cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.001, cellModels[cellModels.size()-1], ibmKernel, "PLT"));
+        cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.005* hct/0.5, cellModels[cellModels.size()-1], ibmKernel, "PLT"));
 
 
 
@@ -435,11 +439,6 @@ int main(int argc, char* argv[])
         pcout << "(main) nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() ;
         pcout << ", Volume = " << eqVolumes[iCell] << std::endl;
     }
-    pcout << std::endl << "(main) Starting simulation i=" << initIter << std::endl;
-    for (plint itrt=0; itrt<200; ++itrt) { lattice.collideAndStream(); }
-
-//    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
-//                                                        createBoundaryParticleField3D(lattice);
 
     /* Repulsive force */
     T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
@@ -452,22 +451,30 @@ int main(int argc, char* argv[])
     }
     /*            I/O              */
     global::timer("HDFOutput").start();
-    writeHDF5(lattice, parameters, initIter);
+    bool invertXZ_for_XDMF=true;
+    writeHDF5(lattice, parameters, initIter, invertXZ_for_XDMF);
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
         writeCellField3D_HDF5(*cellFields[iCell], dx, dt, initIter);
         writeCell3D_HDF5(*cellFields[iCell], dx, dt, initIter);
     }
-
     global::timer("HDFOutput").stop();
+
+
+
+    pcout << std::endl << "(main) Starting simulation i=" << initIter << ", tmeas=" << tmeas << std::endl;
+    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
+                                                        createBoundaryParticleField3D(lattice);
+    writeParticleField3D_HDF5(*boundaryParticleField3D, dx, dt, 0, "BoundaryParticles");
+
+    for (plint itrt=0; itrt<200; ++itrt) { lattice.collideAndStream(); }
+
+//    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
+//                                                        createBoundaryParticleField3D(lattice);
 
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, -1, numVerticesPerCell);
     /* --------------------------- */
     global::timer("mainLoop").start();
-    global::profiler().turnOn();
-//#ifdef PLB_DEBUG // Palabos has this bug. It's missing the "envelope-update" is the profiler.
-    if (flowType==2) { global::profiler().turnOff(); }
-//#endif
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
 //       RBCField.applyConstitutiveModel();
@@ -501,7 +508,8 @@ int main(int argc, char* argv[])
                 cellFields[iCell]->synchronizeCellQuantities(everyCCR);
             }
             global::timer("HDFOutput").start();
-            writeHDF5(lattice, parameters, iter+1);
+            bool invertXZ_for_XDMF=true;
+            writeHDF5(lattice, parameters, iter+1, invertXZ_for_XDMF);
             for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
                 writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
                 writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter+1);
@@ -514,7 +522,6 @@ int main(int argc, char* argv[])
             }
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter+1);
-            global::profiler().writeReport();
             pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
 //            pcout << "; Volume (" << RBCField[0]->getVolume() << ")";
             pcout << std::endl;
@@ -527,9 +534,7 @@ int main(int argc, char* argv[])
     }
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
         delete cellFields[iCell];
-        delete cellModels[iCell];
     }
     simpleProfiler.writeIteration(tmax+1);
-    global::profiler().writeReport();
     pcout << "Simulation finished." << std::endl;
 }

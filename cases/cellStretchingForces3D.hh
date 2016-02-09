@@ -78,7 +78,7 @@ void ApplyStretchingForce3D<T,Descriptor>::processGenericBlocks (
         for (pluint iT = 0; iT < nParts; ++iT) {
             plint tag = pTags[iT];
             if (tagToParticle3D.count(tag) > 0) {
-                ImmersedCellParticle3D<T,Descriptor> * particle = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*>(tagToParticle3D[tag]);
+                SurfaceParticle3D<T,Descriptor> * particle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*>(tagToParticle3D[tag]);
                 particle->get_force() += forces[var] * (1.0/nParts);
             } else pcout << "ImmerseCellParticle3D not found! Something is wrong here!" << std::endl;
         }
@@ -148,8 +148,8 @@ void MeasureCellStretchDeformation3D<T,Descriptor>::processGenericBlocks (
         for (pluint j = 0; j < vec->size(); ++j) {
             plint tag = (*vec)[j];
             if (tagToParticle3D.count(tag) > 0) {
-                ImmersedCellParticle3D<T,Descriptor>* particle =
-                        dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (tagToParticle3D[tag]);
+                SurfaceParticle3D<T,Descriptor>* particle =
+                        dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (tagToParticle3D[tag]);
 
                 meanPositions[i] += particle->get_pbcPosition();
             }
@@ -299,24 +299,24 @@ bool compareParticlesInZ (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Desc
 
 template<typename T, template<typename U> class Descriptor>
 bool compareParticlesInX_PBC (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) {
-    T iX = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iParticle)->get_pbcPosition()[0];
-    T jX = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (jParticle)->get_pbcPosition()[0];
+    T iX = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (iParticle)->get_pbcPosition()[0];
+    T jX = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (jParticle)->get_pbcPosition()[0];
     return (iX<jX);
 }
 
 
 template<typename T, template<typename U> class Descriptor>
 bool compareParticlesInY_PBC (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) {
-    T iY = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iParticle)->get_pbcPosition()[1];
-    T jY = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (jParticle)->get_pbcPosition()[1];
+    T iY = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (iParticle)->get_pbcPosition()[1];
+    T jY = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (jParticle)->get_pbcPosition()[1];
     return (iY<jY);
 }
 
 
 template<typename T, template<typename U> class Descriptor>
 bool compareParticlesInZ_PBC (Particle3D<T,Descriptor>* iParticle, Particle3D<T,Descriptor>* jParticle) {
-    T iZ = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (iParticle)->get_pbcPosition()[2];
-    T jZ = dynamic_cast<ImmersedCellParticle3D<T,Descriptor>*> (jParticle)->get_pbcPosition()[2];
+    T iZ = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (iParticle)->get_pbcPosition()[2];
+    T jZ = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (jParticle)->get_pbcPosition()[2];
     return (iZ<jZ);
 }
 
