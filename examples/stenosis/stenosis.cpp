@@ -520,7 +520,6 @@ int main(int argc, char* argv[])
     }
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
         delete cellFields[iCell];
-        delete cellModels[iCell];
     }
     simpleProfiler.writeIteration(tmax+1);
     global::profiler().writeReport();
