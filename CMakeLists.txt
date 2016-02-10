@@ -21,16 +21,17 @@ SET(SMP_PARALLEL 1)
 SET(BUILD_TYPE Release)  # Debug or Release
 
 # Required additional external libraries
-SET(NEEDHDF5 1) # For highlevel HDF5 routines
-SET(NEEDVTK 0)  # For VTK
-SET(NEEDTXML 0) # Set to 1 to enable external TinyXml libs (Palabos 1.5.0+)
+SET(NEEDHDF5 1)  # For highlevel HDF5 routines
+SET(NEEDVTK 0)   # For VTK
+SET(NEEDTXML 0)  # Set to 1 to enable external TinyXml libs (Palabos 1.5.0+)
+SET(NEEDEIGEN 0) # Set to 1 to use external Eigen3 libraries
 
 MESSAGE( STATUS "PALABOS_DIR:         " ${PALABOS_DIR} )
 MESSAGE( STATUS "FICSION_BASE_DIR:         " ${FICSION_BASE_DIR} )
 
-### Workaround for building with external cmake:
+### Workaround for building with external cmake (e.g., when using an IDE with built in cmake):
 # Access system wide libraries in ubuntu 14.04 in case one uses an external cmake ditribution (e.g., CLion)
-#SET(CMAKE_MODULE_PATH /usr/share/cmake-2.8/Modules)  # Needed to find installed libraries on th system with the bundled cmake
+#SET(CMAKE_MODULE_PATH /usr/share/cmake-2.8/Modules)  # Needed to find installed libraries on the system with the bundled cmake
 
 #=======================================
 ##### Beginning of build script
@@ -53,8 +54,10 @@ IF(NEEDTXML)
   INCLUDE_DIRECTORIES(${TINYXML_INCLUDE_DIR})
 ENDIF(NEEDTXML)
 
-FIND_PACKAGE(Eigen3 REQUIRED)
-INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
+IF(NEEDEIGEN)
+  FIND_PACKAGE(Eigen3 REQUIRED)
+  INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
+ENDIF(NEEDEIGEN)
 
 FIND_PACKAGE(MPI REQUIRED)
 INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
@@ -128,16 +131,18 @@ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/external)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/helper)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/models)
 
+IF(NOT NEEDEIGEN)
+  #INCLUDE(${PALABOS_DIR}/externalLibraries/Eigen/CMakeLists.txt)
+  INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/Eigen3)
+ENDIF(NOT NEEDEIGEN)
+
 FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/src/*.cpp")
 
 IF(NOT NEEDTXML)
-### This line is only needed for Palabos <= 1.4. Later versions can use external TinyXML, so it is safe to comment it out,
-### and use the provided cmake files in ficsion/cmake.
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries)
-LIST(APPEND SRC_FILES_SRC ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxml.cpp)
-LIST(APPEND SRC_FILES_SRC ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlerror.cpp)
-LIST(APPEND SRC_FILES_SRC ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlparser.cpp)
-###
+  INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries)
+  LIST(APPEND SRC_FILES_SRC ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxml.cpp)
+  LIST(APPEND SRC_FILES_SRC ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlerror.cpp)
+  LIST(APPEND SRC_FILES_SRC ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlparser.cpp)
 ENDIF(NOT NEEDTXML)
 
 LIST(APPEND SRC_FILES_SRC ${PROJECT_SRC})
