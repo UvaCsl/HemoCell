@@ -2,6 +2,8 @@ log/*
 tmp/*
 hdf5/*
 palabos/*
+examples/*
+build/*
 *sconsign.dblite
 *.o
 *.DS_Store
