@@ -283,16 +283,12 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> found;
     particleField.findParticles(particleField.getBoundingBox(), found); // Gets the whole domain.
     std::map<plint, pluint> cellIdToVerticesInDomain;
-    Dot3D pfLocation(particleField.getLocation());
-    Box3D realDomain(
-                        domain.x0 + pfLocation.x, domain.x1 + pfLocation.x,
-                        domain.y0 + pfLocation.y, domain.y1 + pfLocation.y,
-                        domain.z0 + pfLocation.z, domain.z1 + pfLocation.z );
+
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
         SurfaceParticle3D<T,Descriptor>* particle = 
                 dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (found[iParticle]);
         PLB_ASSERT(particle);
-        bool particleIsInBulk = particleField.isContained(particle->getPosition(), realDomain);
+        bool particleIsInBulk = particleField.isContained(particle->getPosition(), domain);
 //        cout << global::mpi().getRank()
 //                << " pos ("
 //                << particle->getPosition()[0] << " "

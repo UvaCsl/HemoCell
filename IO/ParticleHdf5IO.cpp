@@ -133,17 +133,22 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
              H5LTmake_dataset_float(file_id, icParticle->getVectorName(ivN).c_str(), 2, dimVertices, matrixTensor);
          }
          /*  Take care of Vertex Normals */
+         /*
          plint itr=0;
          for (plint iP = 0; iP < Np; ++iP) {
             icParticle = particles[iP];
+
+            //TODO: This fails when a particle moves to an other core!
             Cell3D<T,Descriptor> * cell3d = cellIdToCell3D[icParticle->get_cellId()];
             vector = cell3d->computeVertexNormal(icParticle->getVertexId());
+
             // TODO: Change in XDMF file.
             matrixTensor[itr++] = vector[0];
             matrixTensor[itr++] = vector[1];
             matrixTensor[itr++] = vector[2];
          }
          H5LTmake_dataset_float(file_id, "normal", 2, dimVertices, matrixTensor);
+        */
 
          delete [] matrixTensor;
 

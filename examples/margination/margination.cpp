@@ -344,6 +344,10 @@ int main(int argc, char* argv[])
 		pcout << "(main) nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() ;
 		pcout << ", Volume = " << eqVolumes[iCell] << std::endl;
     }
+
+    pcout << std::endl << "Lattice structure:" <<endl;
+    pcout << getMultiBlockInfo(lattice) << endl;
+
 	pcout << std::endl << "(main) Starting simulation i=" << initIter << std::endl;
 
 //    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
@@ -380,6 +384,9 @@ int main(int argc, char* argv[])
         // #1# Membrane Model
 //       RBCField.applyConstitutiveModel();
 //       RBCField.applyCellCellForce(PLF, R);
+        
+        pcout << "(main) Iteration:" << iter + 1 << endl ;
+
         for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
      	   cellFields[iCell]->applyConstitutiveModel();
         }
