@@ -288,13 +288,19 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
 	eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
 
 	dAngle = (edgeAngle-eqAngle);
-//	dAngle = (edgeAngle);
-//	dAngle = pow(dAngle, 3);
-//	dAngle = dAngle + pow(dAngle, 3) + tan(edgeAngle/2)/50;
-	fx2 = -k*dAngle*ni * (eqLength*0.5/eqArea);
-    fx4 = -k*dAngle*nj * (eqLength*0.5/eqArea);
+
+    //Linear force
+    // T force = -k*(dAngle) * (eqLength*0.5/eqArea);
+
+    // Non-linear force, that has linear behaviour at low dAngles but stiffens up at higher dAngles
+    // It prevents crumpled geometries, while retains previous behavior
+    T force = -k*(dAngle + 1e5*pow(dAngle, 3)) * (eqLength*0.5/eqArea);
+
+    fx2 = force * ni;
+    fx4 = force * nj;
     fx1 = -(fx2+fx4)*0.5;
     fx3 = fx1;
+
     return fx1;
 }
 
