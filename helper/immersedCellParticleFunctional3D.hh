@@ -392,12 +392,12 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::getTypeOfModification (
 
 
 template<typename T, template<typename U> class Descriptor>
-std::auto_ptr<MultiParticleField3D<DenseParticleField3D<T,Descriptor> > >
+std::auto_ptr<MultiParticleField3D<LightParticleField3D<T,Descriptor> > >
     getParticlePosAndVelocity (
-            MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& originalParticles, plint tag )
+            MultiParticleField3D<LightParticleField3D<T,Descriptor> >& originalParticles, plint tag )
 {
-    std::auto_ptr<MultiParticleField3D<DenseParticleField3D<T,Descriptor> > >
-        particles( new MultiParticleField3D<DenseParticleField3D<T,Descriptor> > (
+    std::auto_ptr<MultiParticleField3D<LightParticleField3D<T,Descriptor> > >
+        particles( new MultiParticleField3D<LightParticleField3D<T,Descriptor> > (
                        originalParticles.getMultiBlockManagement(),
                        defaultMultiBlockPolicy3D().getCombinedStatistics() ) );
 

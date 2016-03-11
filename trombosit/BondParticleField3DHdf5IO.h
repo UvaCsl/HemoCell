@@ -19,7 +19,7 @@ using namespace std;
 namespace trombocit {
 
 template<typename T, template<typename U> class Descriptor>
-void writeBondParticleField3D_HDF5(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField, T dx, T dt, plint iter, std::string identifier);
+void writeBondParticleField3D_HDF5(MultiParticleField3D<LightParticleField3D<T,Descriptor> > & particleField, T dx, T dt, plint iter, std::string identifier);
 
 
 template<typename T, template<typename U> class Descriptor>

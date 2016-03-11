@@ -36,7 +36,7 @@ namespace plb {
 
 template<typename T, template<typename U> class Descriptor>
 void writeImmersedSurfaceVTK( TriangleBoundary3D<T> const& boundary,
-                      MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particles,
+                      MultiParticleField3D<LightParticleField3D<T,Descriptor> >& particles,
                       std::string const& fName);
 
 template<typename T, template<typename U> class Descriptor>

@@ -128,9 +128,9 @@ private:
 
 /// Requirement: particles must be of type point-particle.
 template<typename T, template<typename U> class Descriptor>
-std::auto_ptr<MultiParticleField3D<DenseParticleField3D<T,Descriptor> > >
+std::auto_ptr<MultiParticleField3D<LightParticleField3D<T,Descriptor> > >
     getParticlePosAndVelocity (
-            MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& originalParticles, plint tag );
+            MultiParticleField3D<LightParticleField3D<T,Descriptor> >& originalParticles, plint tag );
 
 
 

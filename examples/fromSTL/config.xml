@@ -64,7 +64,7 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
 <sim>
     <tmax> 5000000 </tmax> <!-- total number of iterations -->
     <tmeas> 10 </tmeas> <!-- interval after which data is written --> 
-    <hct> 15.</hct> <!-- Hematocrit  > -->
+    <hct> 40 </hct> <!-- Hematocrit  > -->
 </sim>
 
 </ficsion>

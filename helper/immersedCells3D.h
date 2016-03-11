@@ -41,19 +41,19 @@ using namespace std;
 
 template<typename T, template<typename U> class Descriptor>
 void createImmersedCellParticles (
-        MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
+        MultiParticleField3D<LightParticleField3D<T,Descriptor> >& particleField,
         TriangleBoundary3D<T>& boundary, plint tag, plint numPartsPerCell );
 
 
 template<typename T, template<typename U> class Descriptor>
-void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
+void deleteCell(MultiParticleField3D<LightParticleField3D<T,Descriptor> >& particleField,
                    const Box3D &outlet, std::vector<plint> &numParts,
                    std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
                    std::vector<Array<T,3> > &centers, std::vector<T > &radii );
 
 
 template<typename T, template<typename U> class Descriptor>
-bool generateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
+bool generateCells(MultiParticleField3D<LightParticleField3D<T,Descriptor> >& particleField,
                       const Box3D &inlet, std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
                       plint numPartsPerCell, plint numOfCellsPerInlet, plint &slice );
 
@@ -62,7 +62,7 @@ template<typename T, template<typename U> class Descriptor>
 void createCells(TriangleBoundary3D<T> &Cells,
                     const std::vector<plint> &cellIds,
                     plint numPartsPerCell,
-                    MultiParticleField3D<DenseParticleField3D<T,Descriptor> > &immersedParticles);
+                    MultiParticleField3D<LightParticleField3D<T,Descriptor> > &immersedParticles);
 
 
 template<typename T>

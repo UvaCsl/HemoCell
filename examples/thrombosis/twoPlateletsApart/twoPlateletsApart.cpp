@@ -357,7 +357,7 @@ int main(int argc, char* argv[])
 		pcout << "(main) nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() ;
 		pcout << ", Volume = " << eqVolumes[iCell] << std::endl;
     }
-//    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
+//    MultiParticleField3D<LightParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
 //                                                        createBoundaryParticleField3D(lattice);
 
     /* Repulsive force */

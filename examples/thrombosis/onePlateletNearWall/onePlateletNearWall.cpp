@@ -351,11 +351,11 @@ int main(int argc, char* argv[])
     }
 	pcout << std::endl << "(main) Starting simulation i=" << initIter << std::endl;
 
-    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
+    MultiParticleField3D<LightParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
                                                         createBoundaryParticleField3D(lattice);
 
     Box3D activatedRegion(nx*0.4, nx*0.6, 0, 0.5+pltRadius*aspectRatio+gapSize, nz*0.4, nz*0.6);
-    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * activatedBoundaryParticleField3D =
+    MultiParticleField3D<LightParticleField3D<T,DESCRIPTOR> > * activatedBoundaryParticleField3D =
                                                         createBoundaryParticleField3D(lattice, activatedRegion);
 
     addParticlesToBoundaryParticleField3D(lattice, *boundaryParticleField3D, lattice.getBoundingBox()); // Double the density

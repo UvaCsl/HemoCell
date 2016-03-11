@@ -46,7 +46,7 @@ plint margin          = 3;  // Extra margin of allocated cells around the obstac
 
 
 template<typename T, template<typename U> class Descriptor>
-void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
+void deleteCell(MultiParticleField3D<LightParticleField3D<T,Descriptor> >& particleField,
                    const Box3D &outlet, std::vector<plint> &numParts,
                    std::vector<plint> &cellIds,
                    std::vector<Array<T,3> > &centers, std::vector<T> &radii )
@@ -88,7 +88,7 @@ void deleteCell(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& parti
 }
 
 template<typename T, template<typename U> class Descriptor>
-bool generateCells(MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particleField,
+bool generateCells(MultiParticleField3D<LightParticleField3D<T,Descriptor> >& particleField,
                       const Box3D &inlet, std::vector<plint> &cellIds, TriangleBoundary3D<T> &Cells,
                       plint numPartsPerCell, plint numOfCellsPerInlet, plint &slice )
 {

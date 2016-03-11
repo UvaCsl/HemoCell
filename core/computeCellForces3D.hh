@@ -294,7 +294,7 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
 
     // Non-linear force, that has linear behaviour at low dAngles but stiffens up at higher dAngles
     // It prevents crumpled geometries, while retains previous behavior
-    T force = -k*(dAngle + 1e5*pow(dAngle, 3)) * (eqLength*0.5/eqArea);
+    T force = -k*(dAngle + 1e4*pow(dAngle, 3)) * (eqLength*0.5/eqArea);
 
     fx2 = force * ni;
     fx4 = force * nj;

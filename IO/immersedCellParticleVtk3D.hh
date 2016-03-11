@@ -31,7 +31,7 @@ namespace plb {
 
 template<typename T, template<typename U> class Descriptor>
 void writeImmersedSurfaceVTK( TriangleBoundary3D<T> const& boundary,
-                      MultiParticleField3D<DenseParticleField3D<T,Descriptor> >& particles,
+                      MultiParticleField3D<LightParticleField3D<T,Descriptor> >& particles,
                       std::string const& fName)
 {
     SparseBlockStructure3D blockStructure(particles.getBoundingBox());
@@ -43,7 +43,7 @@ void writeImmersedSurfaceVTK( TriangleBoundary3D<T> const& boundary,
     nx = particles.getNx();
     ny = particles.getNy();
     nz = particles.getNz();
-    MultiParticleField3D<DenseParticleField3D<T,Descriptor> > multiSerialParticles (
+    MultiParticleField3D<LightParticleField3D<T,Descriptor> > multiSerialParticles (
             serialMultiBlockManagement,
             defaultMultiBlockPolicy3D().getCombinedStatistics() );
 
