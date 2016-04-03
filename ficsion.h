@@ -51,7 +51,7 @@ using namespace std;
 #include "restModel3D.h"
 #include "intermediateModel3D.h"
 
-/* CASES */
+/* EXTENSIONS */
 #include "cellStretching3D.h"
 //#include "cellInShearFlow3D.h"
 //#include "cellStretchingForces3D.h"
