@@ -6,7 +6,7 @@ SET(PROJECT_NAME ficsional)
 SET(PROJECT_SRC "ficsional.cpp")
 
 # Ficsion location relative to CMakelists.txt
-SET(FICSION_BASE_DIR ".")
+SET(FICSION_BASE_DIR "../../.")
 
 # Palabos setup
 SET(PALABOS_DIR "${FICSION_BASE_DIR}/palabos")
