@@ -2,8 +2,8 @@
 # Build settings. Set these.
 
 # Project setup
-SET(PROJECT_NAME stlMargination)
-SET(PROJECT_SRC "bounceBack.cpp")
+SET(PROJECT_NAME fromSTL)
+SET(PROJECT_SRC "fromSTL.cpp")
 
 # Ficsion location relative to CMakelists.txt
 SET(FICSION_BASE_DIR "./../..")

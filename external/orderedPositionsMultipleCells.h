@@ -4,7 +4,7 @@
 #include "palabos3D.hh"
 #include "initializationCellField3D.h"
 #include "initializationCellField3D.hh"
-#include "3dbpp.cpp"
+#include "binpacking/3dbpp.cpp"
 #include <vector>
 
 using namespace std;

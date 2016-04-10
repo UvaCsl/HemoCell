@@ -64,7 +64,7 @@ using namespace std;
 
 /* EXTERNALS */
 #include "diagonalize.hpp"
-#include "external/binpacking/orderedPositionsMultipleCells.h"
+#include "external/orderedPositionsMultipleCells.h"
 
 
 
