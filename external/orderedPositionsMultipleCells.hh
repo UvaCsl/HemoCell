@@ -257,8 +257,8 @@ void orderedPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor>* 
         fluidAndParticleFieldsArg.push_back( &(cellFields[icf]->getParticleField3D()) );
     }
 
-    std::vector<MultiBlock3D*> particleFieldsArg;
-    particleFieldsArg.push_back( &(cellFields[0]->getParticleField3D()) );
+    //std::vector<MultiBlock3D*> particleFieldsArg;
+    //particleFieldsArg.push_back( &(cellFields[0]->getParticleField3D()) );
 
     applyProcessingFunctional (
         new OrderedPositionMultipleCellField3D<T,Descriptor>(cellFields),

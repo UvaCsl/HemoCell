@@ -14,6 +14,7 @@ using namespace std;
 #include <stdio.h>
 #include <string>
 #include <vector>
+//#include <array>
 #include <limits>
 #include <map>
 #include "fcnGenericFunctions.h"
@@ -64,7 +65,8 @@ using namespace std;
 
 /* EXTERNALS */
 #include "diagonalize.hpp"
-#include "external/orderedPositionsMultipleCells.h"
+//#include "external/orderedPositionsMultipleCells.h"
+#include "external/randomPositionsMultipleCells.h"
 
 
 

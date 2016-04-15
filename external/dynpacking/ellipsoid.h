@@ -1,48 +1,48 @@
 using namespace std;
 
-class vector {
+class vector3 {
 	double vec[3];
 public:
-	vector() {
+	vector3() {
 		vec[0] = 0;
 		vec[1] = 0;
 		vec[2] = 0;
 	}
-	vector(double* v) {
+	vector3(double* v) {
 		vec[0] = v[0];
 		vec[1] = v[1];
 		vec[2] = v[2];
 	}
-	vector(double v0, double v1, double v2) {
+	vector3(double v0, double v1, double v2) {
 		vec[0] = v0;
 		vec[1] = v1;
 		vec[2] = v2;
 	}
-	vector& random() {
+	vector3& random() {
 		vec[0] = Random::ran();
 		vec[1] = Random::ran();
 		vec[2] = Random::ran();
 		return *this;
 	}
-	vector& scale(const vector& v) {
+	vector3& scale(const vector3& v) {
 		vec[0] *= v[0];
 		vec[1] *= v[1];
 		vec[2] *= v[2];
 		return *this;
 	}
-	vector& operator+= (const vector& v) {
+	vector3& operator+= (const vector3& v) {
 		vec[0] += v[0];
 		vec[1] += v[1];
 		vec[2] += v[2];
 		return *this;
 	}
-	vector& operator-= (const vector& v) {
+	vector3& operator-= (const vector3& v) {
 		vec[0] -= v[0];
 		vec[1] -= v[1];
 		vec[2] -= v[2];
 		return *this;
 	}
-	vector& operator*= (double d) {
+	vector3& operator*= (double d) {
 		vec[0] *= d;
 		vec[1] *= d;
 		vec[2] *= d;
@@ -54,19 +54,19 @@ public:
 	double operator[] (int i) const {
 		return vec[i];
 	}
-	vector pbc_x(double x) {
+	vector3 pbc_x(double x) {
 		vec[0] += x;
 		return *this;
 	}
-	vector pbc_y(double y) {
+	vector3 pbc_y(double y) {
 		vec[1] += y;
 		return *this;
 	}
-	vector pbc_z(double z) {
+	vector3 pbc_z(double z) {
 		vec[2] += z;
 		return *this;
 	}
-	vector& pbc(const vector& v) {
+	vector3& pbc(const vector3& v) {
 		if (vec[0] < 0) vec[0] += v[0];
 		else if (vec[0] > v[0]) vec[0] -= v[0];
 		if (vec[1] < 0) vec[1] += v[1];
@@ -75,7 +75,7 @@ public:
 		else if (vec[2] > v[2]) vec[2] -= v[2];
 		return *this;
 	}
-	vector& pbc_diff(const vector& v1, const vector& v2) {
+	vector3& pbc_diff(const vector3& v1, const vector3& v2) {
 		if (vec[0] < -v1[0]) vec[0] += v2[0];
 		else if (vec[0] > v1[0]) vec[0] -= v2[0];
 		if (vec[1] < -v1[1]) vec[1] += v2[1];
@@ -84,7 +84,7 @@ public:
 		else if (vec[2] > v1[2]) vec[2] -= v2[2];
 		return *this;
 	}
-	friend ostream& operator<< (ostream& out, const vector& v) {
+	friend ostream& operator<< (ostream& out, const vector3& v) {
 		out << setprecision(4) << "<" << 
 			setw(8) << v[0] << ", " <<
 			setw(8) << v[1] << ", " <<
@@ -93,48 +93,48 @@ public:
 	}
 };
 
-inline vector operator+(const vector& v1, const vector& v2) {
-	vector v(v1);
+inline vector3 operator+(const vector3& v1, const vector3& v2) {
+	vector3 v(v1);
 	v += v2;
 	return v;
 }
-inline vector operator-(const vector& v1, const vector& v2) {
-	vector v(v1);
+inline vector3 operator-(const vector3& v1, const vector3& v2) {
+	vector3 v(v1);
 	v -= v2;
 	return v;
 }
-inline double operator*(const vector& v1, const vector& v2) {
+inline double operator*(const vector3& v1, const vector3& v2) {
 	return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
 }
-inline vector operator*(const vector& v1, double d) {
-	vector v(v1);
+inline vector3 operator*(const vector3& v1, double d) {
+	vector3 v(v1);
 	v *= d;
 	return v;
 }
-inline vector operator*(double d, const vector& v1) {
-	vector v(v1);
+inline vector3 operator*(double d, const vector3& v1) {
+	vector3 v(v1);
 	v *= d;
 	return v;
 }
-inline vector prod(const vector& v1, const vector& v2) {
-	return vector(v1[1]*v2[2] - v1[2]*v2[1], v1[2]*v2[0] - v1[0]*v2[2], v1[0]*v2[1] - v1[1]*v2[0]);
+inline vector3 prod(const vector3& v1, const vector3& v2) {
+	return vector3(v1[1]*v2[2] - v1[2]*v2[1], v1[2]*v2[0] - v1[0]*v2[2], v1[0]*v2[1] - v1[1]*v2[0]);
 }
-inline vector norm(const vector& vec) {
+inline vector3 norm(const vector3& vec) {
 	double sp = vec*vec;
 	if (fabs(sp - 1) < 1e-10) return vec;
 	return vec * (1 / sqrt(sp));
 }
 
-class matrix {
+class matrix33 {
 	double mat[3][3];
 public:
-	matrix() {
+	matrix33() {
 		memset((void*) mat, 0, 9*sizeof(double));
 	}
-	matrix(double val[3][3]) {
+	matrix33(double val[3][3]) {
 		memcpy((void*) mat, (void*) val, 9*sizeof(double));
 	}
-	matrix& random() {
+	matrix33& random() {
 		mat[0][0] = Random::ran();
 		mat[0][1] = Random::ran();
 		mat[0][2] = Random::ran();
@@ -146,8 +146,8 @@ public:
 		mat[2][2] = Random::ran();
 		return *this;
 	}
-	matrix& operator*=(const matrix& m) {
-		matrix t(*this);
+	matrix33& operator*=(const matrix33& m) {
+		matrix33 t(*this);
 		mat[0][0] = t(0,0)*m(0,0) + t(0,1)*m(1,0) + t(0,2)*m(2,0);
 		mat[0][1] = t(0,0)*m(0,1) + t(0,1)*m(1,1) + t(0,2)*m(2,1);
 		mat[0][2] = t(0,0)*m(0,2) + t(0,1)*m(1,2) + t(0,2)*m(2,2);
@@ -159,7 +159,7 @@ public:
 		mat[2][2] = t(2,0)*m(0,2) + t(2,1)*m(1,2) + t(2,2)*m(2,2);
 		return *this;
 	}
-	matrix& operator*=(double d) {
+	matrix33& operator*=(double d) {
 		mat[0][0] *= d;
 		mat[0][1] *= d;
 		mat[0][2] *= d;
@@ -171,7 +171,7 @@ public:
 		mat[2][2] *= d;
 		return *this;
 	}
-	matrix& operator+= (const matrix& m) {
+	matrix33& operator+= (const matrix33& m) {
 		mat[0][0] += m(0,0);
 		mat[0][1] += m(0,1);
 		mat[0][2] += m(0,2);
@@ -183,7 +183,7 @@ public:
 		mat[2][2] += m(2,2);
 		return *this;
 	}
-	matrix& operator-= (const matrix& m) {
+	matrix33& operator-= (const matrix33& m) {
 		mat[0][0] -= m(0,0);
 		mat[0][1] -= m(0,1);
 		mat[0][2] -= m(0,2);
@@ -207,7 +207,7 @@ public:
 		if (fabs(mat[1][2] - mat[2][1]) > 1e-5) return true;
 		return false;
 	}
-	friend ostream& operator<< (ostream& out, const matrix& m) {
+	friend ostream& operator<< (ostream& out, const matrix33& m) {
 		out << setprecision(4);
 		out << setw(10) << m(0,0);
 		out << setw(10) << m(0,1);
@@ -224,8 +224,8 @@ public:
 	}
 };
 
-inline matrix vvt(const vector& v1, const vector& v2) {
-	matrix m;
+inline matrix33 vvt(const vector3& v1, const vector3& v2) {
+	matrix33 m;
 	m(0,0) = v1[0]*v2[0];
 	m(0,1) = v1[0]*v2[1];
 	m(0,2) = v1[0]*v2[2];
@@ -237,52 +237,52 @@ inline matrix vvt(const vector& v1, const vector& v2) {
 	m(2,2) = v1[2]*v2[2];
 	return m;
 }
-inline matrix operator+ (const matrix& m1, const matrix& m2) {
-	matrix sum = m1;
+inline matrix33 operator+ (const matrix33& m1, const matrix33& m2) {
+	matrix33 sum = m1;
 	sum += m2;
 	return sum;
 }
-inline matrix operator- (const matrix& m1, const matrix& m2) {
-	matrix sum = m1;
+inline matrix33 operator- (const matrix33& m1, const matrix33& m2) {
+	matrix33 sum = m1;
 	sum -= m2;
 	return sum;
 }
-inline matrix operator* (const matrix& m1, const matrix& m2) {
-	matrix m = m1;
+inline matrix33 operator* (const matrix33& m1, const matrix33& m2) {
+	matrix33 m = m1;
 	m *= m2;
 	return m;
 }
-inline matrix operator* (const matrix& m1, double d) {
-	matrix m = m1;
+inline matrix33 operator* (const matrix33& m1, double d) {
+	matrix33 m = m1;
 	m *= d;
 	return m;
 }
-inline matrix operator* (double d, const matrix& m1) {
-	matrix m = m1;
+inline matrix33 operator* (double d, const matrix33& m1) {
+	matrix33 m = m1;
 	m *= d;
 	return m;
 }
-inline vector operator* (const matrix& m, const vector& v) {
-	vector vv;
+inline vector3 operator* (const matrix33& m, const vector3& v) {
+	vector3 vv;
 	vv[0] = m(0,0)*v[0] + m(0,1)*v[1] + m(0,2)*v[2];
 	vv[1] = m(1,0)*v[0] + m(1,1)*v[1] + m(1,2)*v[2];
 	vv[2] = m(2,0)*v[0] + m(2,1)*v[1] + m(2,2)*v[2];
 	return vv;
 }
-inline vector operator* (const vector& v, const matrix& m) {
-	vector vv;
+inline vector3 operator* (const vector3& v, const matrix33& m) {
+	vector3 vv;
 	vv[0] = m(0,0)*v[0] + m(1,0)*v[1] + m(2,0)*v[2];
 	vv[1] = m(0,1)*v[0] + m(1,1)*v[1] + m(2,1)*v[2];
 	vv[2] = m(0,2)*v[0] + m(1,2)*v[1] + m(2,2)*v[2];
 	return vv;
 }
-inline matrix eye() {
-	matrix m;
+inline matrix33 eye() {
+	matrix33 m;
 	m(0,0) = m(1,1) = m(2,2) = 1;
 	return m;
 }
-inline matrix adj(const matrix& m) {
-	matrix m1;
+inline matrix33 adj(const matrix33& m) {
+	matrix33 m1;
 	m1(0,0) = m(1,1)*m(2,2) - m(1,2)*m(2,1);
 	m1(0,1) = m(1,2)*m(2,0) - m(1,0)*m(2,2);
 	m1(0,2) = m(1,0)*m(2,1) - m(1,1)*m(2,0);
@@ -294,15 +294,15 @@ inline matrix adj(const matrix& m) {
 	m1(2,2) = m(1,1)*m(0,0) - m(1,0)*m(0,1);
 	return m1;
 }
-inline double det(const matrix& m) {
+inline double det(const matrix33& m) {
 	return m(0,0)*m(1,1)*m(2,2) + m(1,0)*m(2,1)*m(0,2) + m(2,0)*m(0,1)*m(1,2) -
 		   m(0,2)*m(1,1)*m(2,0) - m(0,0)*m(1,2)*m(2,1) - m(0,1)*m(1,0)*m(2,2);
 }
-inline matrix inverse(const matrix& m) {
+inline matrix33 inverse(const matrix33& m) {
 	return (1. / det(m)) * adj(m);
 }
-inline matrix skew(const vector& v) {
-	matrix m;
+inline matrix33 skew(const vector3& v) {
+	matrix33 m;
 	m(0,1) = -v[2];
 	m(0,2) =  v[1];
 	m(1,0) =  v[2];
@@ -311,7 +311,7 @@ inline matrix skew(const vector& v) {
 	m(2,1) =  v[0];
 	return m;
 }
-inline double vmv(const matrix& m, const vector& v) {
+inline double vmv(const matrix33& m, const vector3& v) {
 	double w = m(0,0)*v[0]*v[0] + m(1,1)*v[1]*v[1] + m(2,2)*v[2]*v[2];
 	w += m(0,1)*v[0]*v[1];
 	w += m(0,2)*v[0]*v[2];
@@ -322,8 +322,8 @@ inline double vmv(const matrix& m, const vector& v) {
 	return w;
 }
 
-inline matrix transp(const matrix& m) {
-	matrix mt;
+inline matrix33 transp(const matrix33& m) {
+	matrix33 mt;
 	mt(0,0) = m(0,0);
 	mt(0,1) = m(1,0);
 	mt(0,2) = m(2,0);
@@ -341,7 +341,7 @@ Quaternion operator* (const Quaternion&, const Quaternion&);
 
 class Quaternion {
 	double s;
-	vector p;
+	vector3 p;
 public:
 	Quaternion() {
 		double phi = Random::ran1(0, M_PI);
@@ -350,11 +350,11 @@ public:
 		p *= sin(phi);
 		norm();
 	}
-	Quaternion(double ss, vector pp) : s(ss), p(pp) { norm(); }
-	Quaternion(vector euler_angles) {
-		vector px(sin(0.5*euler_angles[0]), 0, 0);
-		vector py(0, sin(0.5*euler_angles[1]), 0);
-		vector pz(0, 0, sin( 0.5*euler_angles[2]));
+	Quaternion(double ss, vector3 pp) : s(ss), p(pp) { norm(); }
+	Quaternion(vector3 euler_angles) {
+		vector3 px(sin(0.5*euler_angles[0]), 0, 0);
+		vector3 py(0, sin(0.5*euler_angles[1]), 0);
+		vector3 pz(0, 0, sin( 0.5*euler_angles[2]));
 		double sx = cos(0.5*euler_angles[0]);
 		double sy = cos(0.5*euler_angles[1]);
 		double sz = cos(0.5*euler_angles[2]);
@@ -379,8 +379,8 @@ public:
 		}
 		return *this;
 	}
-	matrix countQ() const {
-		matrix Q;
+	matrix33 countQ() const {
+		matrix33 Q;
 		Q = vvt(p, p) - s * skew(p) + (s*s - 0.5) * eye();
 		return 2*Q;
 	}
@@ -399,15 +399,15 @@ Quaternion operator* (const Quaternion& q1, const Quaternion& q2) {
 
 class Species {
 	int number;
-	vector rad;
+	vector3 rad;
 	bool sph;
 public:
-	Species () : number(0), rad(vector()), sph(0) {}
-	Species (int n, vector r) : number(n), rad(r) {
+	Species () : number(0), rad(vector3()), sph(0) {}
+	Species (int n, vector3 r) : number(n), rad(r) {
 		sph = (fabs(rad[0] - rad[2]) < 1e-5) ? 1 : 0;
 	}
 	int getn() { return number; }
-	vector getr() { return rad; }
+	vector3 getr() { return rad; }
 	bool gets() { return sph; }
 	friend ostream& operator<< (ostream& o, const Species& s) {
 		o << s.number << endl;
@@ -420,33 +420,33 @@ public:
 class Ellipsoid_basic {
 protected:
 	Species* kind;
-	vector pos;
+	vector3 pos;
 	Quaternion q;
 public:
 	Ellipsoid_basic() {}
-	Ellipsoid_basic(Species* k, vector box) : kind(k), q() { pos.random().scale(box); }
-	Ellipsoid_basic(Species* k, const vector& ps, const Quaternion& qq) : kind(k), pos(ps), q(qq) {}
-	matrix countX() const {
-		vector r(kind->getr());
-		matrix Q, O;
+	Ellipsoid_basic(Species* k, vector3 box) : kind(k), q() { pos.random().scale(box); }
+	Ellipsoid_basic(Species* k, const vector3& ps, const Quaternion& qq) : kind(k), pos(ps), q(qq) {}
+	matrix33 countX() const {
+		vector3 r(kind->getr());
+		matrix33 Q, O;
 		O(0,0) = 1 / (r[0]*r[0]);
 		O(1,1) = 1 / (r[1]*r[1]);
 		O(2,2) = 1 / (r[2]*r[2]);
 		Q = q.countQ();
 		return transp(Q) * O * Q;
 	}
-	matrix countX_12() const {
-		vector r(kind->getr());
-		matrix Q, O;
+	matrix33 countX_12() const {
+		vector3 r(kind->getr());
+		matrix33 Q, O;
 		O(0,0) = 1 / r[0];
 		O(1,1) = 1 / r[1];
 		O(2,2) = 1 / r[2];
 		Q = q.countQ();
 		return transp(Q) * O * Q;
 	}
-	matrix countX_m1() const {
-		vector r(kind->getr());
-		matrix Q, O;
+	matrix33 countX_m1() const {
+		vector3 r(kind->getr());
+		matrix33 Q, O;
 		O(0,0) = r[0]*r[0];
 		O(1,1) = r[1]*r[1];
 		O(2,2) = r[2]*r[2];
@@ -457,10 +457,10 @@ public:
 		q *= qr;
 		return *this;
 	}
-	vector& get_pos() {
+	vector3& get_pos() {
 		return pos;
 	}
-	const vector& get_pos() const {
+	const vector3& get_pos() const {
 		return pos;
 	}
 	Species* get_k() const { return kind; }
@@ -686,19 +686,19 @@ public:
 };
 
 class Ellipsoid_2 {
-	matrix XA_m1, XB_m1, XB_12;
-	vector r_AB, n, r_AC, r_BC;
-	matrix A_AB;
-	vector a_AB;
+	matrix33 XA_m1, XB_m1, XB_12;
+	vector3 r_AB, n, r_AC, r_BC;
+	matrix33 A_AB;
+	vector3 a_AB;
 	double lambda, lam0;
 	Poly4 p;
 	Poly3 q;
 	Poly6 h;
-	matrix countY(double lambda) const {
+	matrix33 countY(double lambda) const {
 		return lambda * XB_m1 + (1-lambda) * XA_m1;
 	}
 public:
-	Ellipsoid_2(const Ellipsoid_basic& a, const Ellipsoid_basic& b, const vector rij) :
+	Ellipsoid_2(const Ellipsoid_basic& a, const Ellipsoid_basic& b, const vector3 rij) :
 		XA_m1(a.countX_m1()), XB_m1(b.countX_m1()),
 		XB_12(b.countX_12()),
 		r_AB(rij), n(0, 0, 0),
@@ -712,8 +712,8 @@ public:
 		}
 */
 		double detA = det(A_AB);
-		matrix Z = adj(A_AB);
-		matrix C0(Z), C1(Z), C2(Z);
+		matrix33 Z = adj(A_AB);
+		matrix33 C0(Z), C1(Z), C2(Z);
 		C1 *= -2;
 		C1(0,0) += A_AB(1,1) + A_AB(2,2);
 		C1(1,1) += A_AB(0,0) + A_AB(2,2);
@@ -777,18 +777,18 @@ public:
 		}
 		return lambda = x;
 	}
-	vector get_r() { return r_AB; }
-	vector count_n() {
+	vector3 get_r() { return r_AB; }
+	vector3 count_n() {
 		return n = inverse(countY(lambda)) * r_AB;
 	}
-	vector count_rac() { 
+	vector3 count_rac() {
 		return r_AC = (1-lambda) * XA_m1 * n;
 	}
-	vector count_rbc() { 
+	vector3 count_rbc() {
 		return r_BC = -lambda * XB_m1 * n;
 	}
-	vector get_n() { return n; }
-	vector& get_rab() { return r_AB; }
+	vector3 get_n() { return n; }
+	vector3& get_rab() { return r_AB; }
 	double& get_lambda() { return lambda; }
 	friend ostream& operator <<(ostream& o, const Ellipsoid_2& e) {
 		o << "rab:" << endl;

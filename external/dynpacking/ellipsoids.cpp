@@ -7,28 +7,35 @@
 #include <cstring>
 #include <cstdlib>
 #include <iomanip>
+#include <vector>
+//#include <array>
 
 using namespace std;
 
 #include "random.h"
 #include "util.h"
 #include "ellipsoid.h"
-#include "omp.h"
+//#include "omp.h"
+
+//#define DEBUG_OUTPUT
 
 class Ellipsoid : public Ellipsoid_basic {
-	vector f, fu;
+	vector3 f, fu;
 public:
-	Ellipsoid (Species* k, vector box) : Ellipsoid_basic(k, box) {}
-	void set_force(vector ff = vector()) { f = ff; }
-	void set_forceu(vector ffu = vector()) { fu = ffu; }
-	vector& get_f() { return f; }
-	vector& get_fu() { return fu; }
+	Ellipsoid (Species* k, vector3 box) : Ellipsoid_basic(k, box) {}
+	void set_force(vector3 ff = vector3()) { f = ff; }
+	void set_forceu(vector3 ffu = vector3()) { fu = ffu; }
+	vector3& get_f() { return f; }
+	vector3& get_fu() { return fu; }
 };
 
 class Packing {
 	bool Lend;
 	ifstream pDatin;
+
+#ifdef DEBUG_OUTPUT
 	ofstream pOutput;
+#endif
 
 	int No_parts, No_species;
 	double Epsilon, Epsilon_scl, Eps_rot;
@@ -45,7 +52,7 @@ class Packing {
 	double Power, Sphere_vol, Diam_dens;
 	double Rc_max, Rcut, Rcut2, Relax;
 	double Diam_incr;
-	vector Box, Half;
+	vector3 Box, Half;
 
 	int *Link_head, *Link_list;
 	int *Ncell_bound_x, *Ncell_bound_y, *Ncell_bound_z;
@@ -84,7 +91,7 @@ class Packing {
 		}
 		double f_AB_scl = 4 * e.f_AB(lambda);
 		double f_AB = f_AB_scl / Dout2;
-		vector n = e.count_n();
+		vector3 n = e.count_n();
 		if (f_AB >= 1) return f_AB;
 		if (f_AB <= 0) {
 			cout << "fab " << f_AB << endl;
@@ -95,7 +102,7 @@ class Packing {
 		}
 //	shift
 		if (f_AB_scl < Din) Din = f_AB_scl;
-		vector f = (1 - f_AB) * norm(n);
+		vector3 f = (1 - f_AB) * norm(n);
 		ei.get_f() -= f;
 		ej.get_f() += f;
 
@@ -114,9 +121,11 @@ public:
 	void execute();
     void init(const char* inputFile);  // For initialising a general case from input file
     // Initialise blood suspension with RBCs and platelets
-    void initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ);
-    void initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ);
+    void initBloodSI(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ);
+    void initBloodSI(float hematocrit, float sizeX, float sizeY, float sizeZ);
+	void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity);
     void savePov(const char * fileName);
+    void getOutput(vector<vector<vector3> > &positions, vector<vector<vector3> > &angles);
 };
 
 Packing::Packing () {
@@ -133,10 +142,12 @@ Packing::Packing () {
 	Sphere_vol = M_PI / 6.;
 	Random::init();
 
+#ifdef DEBUG_OUTPUT
     // opening log file
     pOutput.open ("output.log");
     if (!pOutput) open_failure(cerr, "output.log");
     pOutput.setf (ios::fixed, ios::floatfield);
+#endif
 }
 
 Packing::~Packing() {
@@ -153,7 +164,9 @@ Packing::~Packing() {
 	delete[] parts;
 	delete[] species;
 
+#ifdef DEBUG_OUTPUT
 	pOutput.close ();
+#endif
 }
 
 void Packing::execute() {
@@ -162,15 +175,15 @@ void Packing::execute() {
 	//cout << "aux end" << endl;
 	forces();
 	//cout << "forces end" << endl;
-	double start = omp_get_wtime( );
+//	double start = omp_get_wtime( );
 	Pactual = Din*Din*Din / Diam_dens;
 	output(1);
 	for (Nstep=0; Nstep < Max_steps && !Lend; Nstep++) {
 		stepon();
 		if (Nstep % Nprint_step == 0) output(2);
 	}
-	double end = omp_get_wtime( );
-	cout << "run-time " << end - start << endl;
+//	double end = omp_get_wtime( );
+//	cout << "run-time " << end - start << endl;
 	output(3);
 }
 
@@ -203,7 +216,7 @@ void Packing::init(const char* inputFile)
         double r0 = get_double(pDatin);
         double r1 = get_double(pDatin);
         double r2 = get_double(pDatin);
-        species[i] = new Species (n, vector(r0, r1, r2));
+        species[i] = new Species (n, vector3(r0, r1, r2));
         np += n;
     }
     if (np != No_parts) error (cerr, "Wrong input data -2-");
@@ -219,7 +232,7 @@ void Packing::init(const char* inputFile)
 
 }
 
-void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ)
+void Packing::initBloodSI(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ)
 {
 
     No_parts = nRBC + nPlatelet;
@@ -237,8 +250,8 @@ void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float
 
     // Set up species
     species = new Species*[No_species];
-    species[0] = new Species (nRBC, vector(rbcA, rbcB, rbcC)); // RBCs (# of cells, diameters)
-    species[1] = new Species (nPlatelet, vector(plateletA, plateletB, plateletC)); // Plateletss (# of cells, diameters)
+    species[0] = new Species (nRBC, vector3(rbcA, rbcB, rbcC)); // RBCs (# of cells, diameters)
+    species[1] = new Species (nPlatelet, vector3(plateletA, plateletB, plateletC)); // Plateletss (# of cells, diameters)
 
     // Calc nominal packing density
     double domainVol = sizeX * sizeY * sizeZ;
@@ -255,12 +268,12 @@ void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float
     Nrot_step = 1;
 
     cout << "Number of cells:  " << nRBC << " RBCs,  " << nPlatelet << " platelets." << endl;
-    cout << "Domain size: " << sizeX << " x " << sizeY << " x " << sizeZ << endl;
+    cout << "Domain size (um): " << sizeX << " x " << sizeY << " x " << sizeZ << endl;
     cout << "RBC volume: " << rbcVol << endl;
     cout << "Platelet volume: " << plateletVol << endl;
 }
 
-void Packing::initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ)
+void Packing::initBloodSI(float hematocrit, float sizeX, float sizeY, float sizeZ)
 {
     // Calc. volumes
     double domainVol = sizeX * sizeY * sizeZ;
@@ -269,7 +282,47 @@ void Packing::initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ)
     int nRBC = round( hematocrit * domainVol / rbcVol );
     int nPlatelets = round(nRBC * 0.055); // the typical platelet count is about 5.5% of the RBC count
 
-    initBlood(nRBC, nPlatelets, sizeX, sizeY, sizeZ);
+    initBloodSI(nRBC, nPlatelets, sizeX, sizeY, sizeZ);
+
+}
+
+void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity)
+{
+    No_parts = 0;
+    for(int i = 0; i < nPartsPerComponent.size(); i++)
+        No_parts += nPartsPerComponent[i];
+
+    No_species = nPartsPerComponent.size();
+    Epsilon = 0.1;
+    Eps_rot = 3.0;
+    Diam_incr = 0.01;
+    No_cells_x = domainSize[0]; // in the same quantity as cell diameters
+    No_cells_y = domainSize[1];
+    No_cells_z = domainSize[2];
+    Ntau = 102400;
+
+    Max_steps = 50000; // if force-free configuration is not possible, still stop calculation at some point
+    Leq_vol = true;
+
+    // Set up species
+    species = new Species*[No_species];
+    for(int i = 0; i < nPartsPerComponent.size(); i++)
+        species[i] = new Species(nPartsPerComponent[i], diametersPerComponent[i]);
+
+    // Get nominal volume ratio
+    Pnom0 = nominalPackingDensity;
+
+    // Output properties
+    Npage_len = 56;
+    Nprint_step = 100;
+    Nrslt_step = 500;
+    Nrot_step = 1;
+
+    cout << "Number of cells to pack:  " << endl;
+    for(int i = 0; i < nPartsPerComponent.size(); i++)
+        cout << "    Type: " << i << " - " << nPartsPerComponent[i] << endl;
+
+    cout << "Domain size (um): " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
 
 }
 
@@ -279,11 +332,11 @@ void Packing::auxiliary_val() {
 	No_cells = No_cells_x * No_cells_y * No_cells_z;
 	Ncell_min = (No_cells_x < No_cells_y) ?  No_cells_x : No_cells_y;
 	Ncell_min = (No_cells_z < Ncell_min) ? No_cells_z : Ncell_min;
-	Box = vector(No_cells_x, No_cells_y, No_cells_z);
+	Box = vector3(No_cells_x, No_cells_y, No_cells_z);
 	Half = 0.5 * Box;
 	Diam_dens = No_cells / Sphere_vol;
 	double corr = 0;
-	vector r;
+	vector3 r;
 	Rc_max = 0;
 	for (int is = 0; is < No_species; is++) {
 		r = species[is]->getr();
@@ -379,7 +432,9 @@ void Packing::stepon() {
 	if (iprec >= Nsf) {
 		Relax *= 0.5;
 		Lprec_chan = true;
+#ifdef DEBUG_OUTPUT
 		blines (pOutput);
+#endif
 		Nlines++;
 		if (++Nsf >= Nfig) Lkill = true;
 	}
@@ -387,22 +442,22 @@ void Packing::stepon() {
 
 void Packing::forces() {
 //	cout << "forces" << endl;
-	Din = Dout * Dout; 
+	Din = Dout * Dout;
 	int i;
 	// 3 pragma gave nothing
-	#pragma omp parallel  for private(i) 
-	for (i = 0; i < No_cells; i++) 
+	#pragma omp parallel  for private(i)
+	for (i = 0; i < No_cells; i++)
 		Link_head[i] = -1;
-	// 2 pragma gave nothing	
-	#pragma omp parallel  for private(i) 
+	// 2 pragma gave nothing
+	#pragma omp parallel  for private(i)
 	for (i = 0; i < No_parts; i++) {
 		parts[i]->set_force();
 		parts[i]->set_forceu();
 	}
 	// 1 pragma gave 3 min 38 sec
 	int ipart;
-	
-	#pragma omp parallel  for private(ipart) schedule(static) 
+
+	#pragma omp parallel  for private(ipart) schedule(static)
 	for (ipart = 0; ipart < No_parts; ipart++) {
 		Species* k = parts[ipart]->get_k();
 		Rcut = 0.55 * Dout * ((k->getr())[0] + Rc_max);
@@ -416,12 +471,12 @@ void Packing::forces() {
 
 void Packing::motion() {
 //	cout << "motion" << endl;
-	vector buff;
+	vector3 buff;
 	Force_step = 0;
 	Epsilon_scl = Epsilon * Dout0;
 	int i;
 	//4 pragma gave 3 min 24 sec
-	#pragma omp parallel for private(i,buff)   
+	#pragma omp parallel for private(i,buff)
 	for (i = 0; i < No_parts; i++) {
 		Ellipsoid *p = parts[i];
 		Force_step += sqrt(p->get_f()*p->get_f());
@@ -453,8 +508,8 @@ void Packing::force_part(int ipart_p) {
 	int	icell_x, icell_xy, icell_y, icell_z, icell;
 	int leap_x, leap_y, leap_z;
 	Ellipsoid *pi = parts[ipart_p], *pj;
-	vector rij;
-	vector pos = pi->get_pos();
+	vector3 rij;
+	vector3 pos = pi->get_pos();
 
 	int low_cell_x = (int) (pos[0] + No_cells_x - Rcut);
 	int low_cell_y = (int) (pos[1] + No_cells_y - Rcut);
@@ -468,7 +523,7 @@ void Packing::force_part(int ipart_p) {
 	int idif = idif_x + idif_y + idif_z;
 	switch (idif) {
 	case 0:
-	#pragma omp  parallel 
+	#pragma omp  parallel
 		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
 			icell_x = Ncell_bound_x[leap_x];
 			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
@@ -489,7 +544,7 @@ void Packing::force_part(int ipart_p) {
 		}
 		break;
 	case 1:
-	#pragma omp parallel 
+	#pragma omp parallel
 		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
 			icell_x = Ncell_bound_x[leap_x];
 			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
@@ -511,7 +566,7 @@ void Packing::force_part(int ipart_p) {
 		}
 		break;
 	case 2:
-	#pragma omp parallel 
+	#pragma omp parallel
 		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
 			icell_x = Ncell_bound_x[leap_x];
 			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
@@ -533,7 +588,7 @@ void Packing::force_part(int ipart_p) {
 		}
 		break;
 	case 3:
-	#pragma omp parallel 
+	#pragma omp parallel
 		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
 			icell_x = Ncell_bound_x[leap_x];
 			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
@@ -578,7 +633,7 @@ void Packing::force_part(int ipart_p) {
 		}
 		break;
 	case 5:
-	#pragma omp parallel 
+	#pragma omp parallel
 		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
 			icell_x = Ncell_bound_x[leap_x];
 			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
@@ -600,7 +655,7 @@ void Packing::force_part(int ipart_p) {
 			}
 		}
 		break;
-	case 6: 
+	case 6:
 	#pragma omp parallel
 		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
 			icell_x = Ncell_bound_x[leap_x];
@@ -624,7 +679,7 @@ void Packing::force_part(int ipart_p) {
 		}
 		break;
 	case 7:
-	#pragma omp parallel 
+	#pragma omp parallel
 		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
 			icell_x = Ncell_bound_x[leap_x];
 			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
@@ -659,12 +714,12 @@ void Packing::force_part(int ipart_p) {
 
 void Packing::force_all(int ipart_p) {
 	Ellipsoid *pi = parts[ipart_p], *pj;
-	vector pos = pi->get_pos();
-	vector rij;
+	vector3 pos = pi->get_pos();
+	vector3 rij;
 	int jpart;
 	// pragma 5 gave 3 min 13 sek
 
-	#pragma omp parallel for private(jpart) 
+	#pragma omp parallel for private(jpart)
 	for (jpart = 0; jpart < ipart_p; jpart++) {
 		pj = parts[jpart];
 		rij = pj->get_pos() - pi->get_pos();
@@ -683,6 +738,7 @@ void Packing::force_all(int ipart_p) {
 
 void Packing::output(int kind_p) {
 	if (kind_p == 1) {
+#ifdef DEBUG_OUTPUT
 		page(pOutput);
 		pOutput << "--------------------- SYSTEM SPECIFICATI";
 		pOutput << "ON -------------------------------------";
@@ -721,6 +777,7 @@ void Packing::output(int kind_p) {
 		date_time(pOutput);
 		out_char (pOutput, '-', 80);
 		blines (pOutput);
+#endif
 
 		//date_time(cout);
 		cout << endl;
@@ -745,9 +802,11 @@ void Packing::output(int kind_p) {
 		if (Lprec_chan) {
 			Lprec_chan = false;
 			Nlines += 3;
+#ifdef DEBUG_OUTPUT
 			blines (pOutput);
 			out_char (pOutput, '-',79);
 			blines (pOutput, 2);
+#endif
 		}
 		Nlines++;
 		if (Nlines > No_end_page) {
@@ -762,6 +821,7 @@ void Packing::output(int kind_p) {
 			cout << setw(14) << Dout;
 			cout << setw(14) << Force_step;
 			cout << endl;
+#ifdef DEBUG_OUTPUT
 			page (pOutput);
 			date_time(pOutput);
 			pOutput << "V SEP/1986	MB	 ";
@@ -781,7 +841,9 @@ void Packing::output(int kind_p) {
 			pOutput << "      DIAMETER";
 			pOutput << "  PER PARTICLE";
 			blines (pOutput, 2);
+#endif
 		}
+#ifdef DEBUG_OUTPUT
 		if (Nsf <= 1) pOutput.precision(4);
 		else if (Nsf <= 6) pOutput.precision(Nsf+3);
 		else pOutput.precision(10);
@@ -792,9 +854,11 @@ void Packing::output(int kind_p) {
 		pOutput << setw(14) << Dout;
 		pOutput << setw(14) << Force_step;
 		blines (pOutput);
+#endif
 		return;
 	}
 	if (kind_p == 3) {
+#ifdef DEBUG_OUTPUT
 		blines (pOutput);
 		Nlines += 7;
 		out_char (pOutput, '-', 80);
@@ -824,6 +888,7 @@ void Packing::output(int kind_p) {
 		out_char (pOutput, '-', 29);
 		blines (pOutput, 2);
 		date_time (pOutput);
+#endif
 		blines	(cout, 2);
 		out_char (cout, '-', 29);
 		if (Lend) cout << " PACKING DONE ";
@@ -840,6 +905,36 @@ void Packing::output(int kind_p) {
 	}
 }
 
+void Packing::getOutput(vector<vector<vector3> > &positions, vector<vector<vector3> > &angles)
+{
+    positions.resize(No_species);
+    angles.resize(No_species);
+
+    int counter = 0;
+    for(int ns = 0; ns < No_species; ns++){
+        int numCells = species[ns]->getn();
+
+        positions[ns].resize(numCells);
+        angles[ns].resize(numCells);
+
+        for(int nc = 0; nc < numCells; nc++)
+        {
+            Ellipsoid *pi = parts[counter];
+
+            vector3 pos = pi->get_pos();
+            matrix33 Q = pi->get_q().countQ();
+            vector3 euler(atan2(Q(1,2),Q(2,2)), -asin(Q(0,2)), atan2(Q(0,1),Q(0,0)));
+            //euler *= 180 / M_PI; //Rad to Deg
+
+            positions[ns][nc] = vector3(pos[0], pos[1], pos[2]);
+            angles[ns][nc] = vector3(euler[0], euler[1], euler[2]);  // Euler angles
+
+            counter++;
+        }
+
+    }
+}
+
 void Packing::savePov(const char *fileName)
 {
     ofstream povf (fileName);
@@ -847,9 +942,9 @@ void Packing::savePov(const char *fileName)
     povf.precision (6);
     for (int i = 0; i < No_parts; i++) {
         Ellipsoid *pi = parts[i];
-        vector pos = pi->get_pos();
+        vector3 pos = pi->get_pos();
         Species* k = pi->get_k();
-        vector rad = 0.5 * Din * k->getr();
+        vector3 rad = 0.5 * Din * k->getr();
         bool sph = k->gets();
         povf << "sphere {<0, 0, 0>, 1" << endl;
         povf << "scale <" <<
@@ -857,8 +952,8 @@ void Packing::savePov(const char *fileName)
         setw(12) << rad[1] << ", " <<
         setw(12) << rad[2] << "> " << endl;
         if (!sph) {	//	sphere
-            matrix Q = pi->get_q().countQ();
-            vector euler(atan2(Q(1,2),Q(2,2)), -asin(Q(0,2)), atan2(Q(0,1),Q(0,0)));
+            matrix33 Q = pi->get_q().countQ();
+            vector3 euler(atan2(Q(1,2),Q(2,2)), -asin(Q(0,2)), atan2(Q(0,1),Q(0,0)));
             euler *= 180 / M_PI;
             povf << "rotate " << setw(12) << euler[0] << "*x" << endl;
             povf << "rotate " << setw(12) << euler[1] << "*y" << endl;
@@ -1008,15 +1103,15 @@ double Packing::zeroin(Ellipsoid_2& ell, double ax, double bx) {
 	}
 }
 
-
-int main(int argc, char *argv[]) {
 /*
-    if (argc < 3) {
-        cout << "Usage: " << argv[0] << " input output.pov";
-        cout << endl;
-        exit(1);
-    }
-*/
+int main(int argc, char *argv[]) {
+
+//    if (argc < 3) {
+//        cout << "Usage: " << argv[0] << " input output.pov";
+//        cout << endl;
+//        exit(1);
+//    }
+
 
     if (argc < 5) {
         cout << "Usage: " << argv[0] << " hematocrit sX sY sZ";
@@ -1031,7 +1126,7 @@ int main(int argc, char *argv[]) {
 
     //pack.init(argv[1]);
 
-    pack.initBlood(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
+    pack.initBloodSI(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
 
 	pack.execute();
 
@@ -1039,4 +1134,4 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
+*/
