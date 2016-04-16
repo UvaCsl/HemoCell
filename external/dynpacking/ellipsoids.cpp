@@ -182,6 +182,8 @@ void Packing::execute() {
 		stepon();
 		if (Nstep % Nprint_step == 0) output(2);
 	}
+	if(Nstep == Max_steps-1)
+        cout << "WARNING: Force-free packing was NOT achieved!" << endl;
 //	double end = omp_get_wtime( );
 //	cout << "run-time " << end - start << endl;
 	output(3);
@@ -245,7 +247,7 @@ void Packing::initBloodSI(int nRBC, int nPlatelet, float sizeX, float sizeY, flo
     No_cells_z = ceil(sizeZ);
     Ntau = 102400;
 
-    Max_steps = 50000; // if force-free configuration is not possible, still stop calculation at some point
+    Max_steps = 100000; // if force-free configuration is not possible, still stop calculation at some point
     Leq_vol = true;
 
     // Set up species
@@ -293,13 +295,13 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
         No_parts += nPartsPerComponent[i];
 
     No_species = nPartsPerComponent.size();
-    Epsilon = 0.1;
+    Epsilon = 0.15;//0.1;
     Eps_rot = 3.0;
-    Diam_incr = 0.01;
+    Diam_incr = 0.005; //0.01;
     No_cells_x = domainSize[0]; // in the same quantity as cell diameters
     No_cells_y = domainSize[1];
     No_cells_z = domainSize[2];
-    Ntau = 102400;
+    Ntau = 50000;//102400;
 
     Max_steps = 50000; // if force-free configuration is not possible, still stop calculation at some point
     Leq_vol = true;
