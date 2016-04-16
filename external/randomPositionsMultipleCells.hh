@@ -72,9 +72,13 @@ void getRandomPositionsMultipleCellsVector(Box3D realDomain,
 
         for (pluint j = 0; j < Np[i]; ++j)
         {
+            // Store mesh positions and rotations
             randomAngles[i][j] = Array<T, 3>(packAngles[i][j][0], packAngles[i][j][1], packAngles[i][j][2]);
             positions[i][j] = rdomain + Array<T,3>(packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]);
             cellIds[i][j] = ni + 1000*mpiRank;
+
+            // Rotate mesh
+
             ni++;
         }
     }
@@ -150,12 +154,15 @@ void RandomPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
         cout << "(RandomPositionMultipleCellField3D) ";
         for (pluint c = 0; c < positions[iCF].size(); ++c)
         {
-//    	    ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;
-//    	    TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
+            ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;
+    	    TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
 //    	    meshRandomRotation(meshCopy, randomAngles[iCF][c]);
+            meshRotation (meshCopy, randomAngles[iCF][c]);
+            //positionCellInParticleField(*(particleFields[iCF]), fluid,
+            //                            meshes[iCF], positions[iCF][c]-0.5, cellIds[iCF][c]);
             positionCellInParticleField(*(particleFields[iCF]), fluid,
-                                        meshes[iCF], positions[iCF][c]-0.5, cellIds[iCF][c]);
-//			delete meshCopy;
+                                         meshCopy, positions[iCF][c]-0.5, cellIds[iCF][c]);
+			delete meshCopy;
         }
 
         // DELETE CELLS THAT ARE NOT WHOLE

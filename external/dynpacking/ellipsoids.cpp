@@ -927,7 +927,7 @@ void Packing::getOutput(vector<vector<vector3> > &positions, vector<vector<vecto
             //euler *= 180 / M_PI; //Rad to Deg
 
             positions[ns][nc] = vector3(pos[0], pos[1], pos[2]);
-            angles[ns][nc] = vector3(euler[0], euler[1], euler[2]);  // Euler angles
+            angles[ns][nc] = vector3(euler[0], euler[1], euler[2]);  // Euler angles in RAD
 
             counter++;
         }

@@ -37,6 +37,19 @@ void meshRandomRotation (TriangularSurfaceMesh<T> * mesh, Array<T,3> randomAngle
     mesh->translate(Array<T,3>(-xRange[0], -yRange[0], -zRange[0]));
 }
 
+// Rotates the mesh in a random angle.
+// Mesh is supposed to start at (0,0,0)
+template<typename T>
+void meshRotation (TriangularSurfaceMesh<T> * mesh, Array<T,3> rotationAngles) {
+    Array<T,2> xRange, yRange, zRange;
+    mesh->computeBoundingBox (xRange, yRange, zRange);
+    Array<T,3> meshCenter = Array<T,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
+    mesh->translate(-1.0 * meshCenter);
+    mesh->rotate(rotationAngles[0], rotationAngles[1], rotationAngles[2]);
+
+    mesh->computeBoundingBox (xRange, yRange, zRange);
+    mesh->translate(Array<T,3>(-xRange[0], -yRange[0], -zRange[0]));
+}
 
 template<typename T, template<typename U> class Descriptor>
 void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, BlockLattice3D<T,Descriptor>& fluid,
