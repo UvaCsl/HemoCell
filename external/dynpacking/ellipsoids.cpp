@@ -133,7 +133,7 @@ Packing::Packing () {
 	Lend = 0;
 	Lkill = 0;
 	Lprec_chan = 0;
-	Nfig = 8;
+	Nfig = 16;//8;
 	Nlines = 0;
 	No_end_page = 0;
 	No_page = 0;
@@ -178,6 +178,8 @@ void Packing::execute() {
 //	double start = omp_get_wtime( );
 	Pactual = Din*Din*Din / Diam_dens;
 	output(1);
+
+	
 	for (Nstep=0; Nstep < Max_steps && !Lend; Nstep++) {
 		stepon();
 		if (Nstep % Nprint_step == 0) output(2);
@@ -241,7 +243,7 @@ void Packing::initBloodSI(int nRBC, int nPlatelet, float sizeX, float sizeY, flo
     No_species = 2;
     Epsilon = 0.1;
     Eps_rot = 3.0;
-    Diam_incr = 0.01;
+    Diam_incr = 0.01; // UNUSED!
     No_cells_x = ceil(sizeX); // in the same quantity as cell diameters (umeter)
     No_cells_y = ceil(sizeY);
     No_cells_z = ceil(sizeZ);
@@ -295,34 +297,34 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
         No_parts += nPartsPerComponent[i];
 
     No_species = nPartsPerComponent.size();
-    Epsilon = 0.15;//0.1;
-    Eps_rot = 3.0;
+    Epsilon = 0.1;//0.1;
+    Eps_rot = 2.0;
     Diam_incr = 0.005; //0.01;
     No_cells_x = domainSize[0]; // in the same quantity as cell diameters
     No_cells_y = domainSize[1];
     No_cells_z = domainSize[2];
-    Ntau = 50000;//102400;
+    Ntau = 100000000;//102400;
 
-    Max_steps = 50000; // if force-free configuration is not possible, still stop calculation at some point
+    Max_steps = 5000; // if force-free configuration is not possible, still stop calculation at some point
     Leq_vol = true;
 
     // Set up species
     species = new Species*[No_species];
     for(int i = 0; i < nPartsPerComponent.size(); i++)
-        species[i] = new Species(nPartsPerComponent[i], diametersPerComponent[i]);
+        species[i] = new Species(nPartsPerComponent[i], diametersPerComponent[i]*1.1);
 
     // Get nominal volume ratio
-    Pnom0 = nominalPackingDensity;
+    Pnom0 = nominalPackingDensity+0.15;
 
     // Output properties
     Npage_len = 56;
-    Nprint_step = 100;
-    Nrslt_step = 500;
+    Nprint_step = 10;
+    Nrslt_step = 10; //UNUSED
     Nrot_step = 1;
 
     cout << "Number of cells to pack:  " << endl;
     for(int i = 0; i < nPartsPerComponent.size(); i++)
-        cout << "    Type: " << i << " - " << nPartsPerComponent[i] << endl;
+        cout << "    Type: " << i << " - number: " << nPartsPerComponent[i] << endl;
 
     cout << "Domain size (um): " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
 
@@ -417,6 +419,7 @@ void Packing::stepon() {
 	Pnomin = Dout * Dout * Dout / Diam_dens;
 	Pactual = Din * Din * Din / Diam_dens;
 	Lend = (Dout <= Din);
+	//Lend = 0;
 	if (Lend) {
 		double dsave = Dout;
 		Dout = 1.1 * Din;
@@ -429,6 +432,7 @@ void Packing::stepon() {
 		output(2);
 		return;
 	}
+	
 	if (Lkill) return;
 	iprec = (int) (-log10 (Pnomin - Pactual));
 	if (iprec >= Nsf) {
@@ -440,6 +444,7 @@ void Packing::stepon() {
 		Nlines++;
 		if (++Nsf >= Nfig) Lkill = true;
 	}
+	
 }
 
 void Packing::forces() {

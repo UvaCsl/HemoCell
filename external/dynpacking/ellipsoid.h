@@ -348,7 +348,6 @@ public:
 		s = cos(phi);
 		p.random();
 		p *= sin(phi);
-		norm();
 	}
 	Quaternion(double ss, vector3 pp) : s(ss), p(pp) { norm(); }
 	Quaternion(vector3 euler_angles) {
@@ -424,7 +423,7 @@ protected:
 	Quaternion q;
 public:
 	Ellipsoid_basic() {}
-	Ellipsoid_basic(Species* k, vector3 box) : kind(k), q() { pos.random().scale(box); }
+	Ellipsoid_basic(Species* k, vector3 box) : kind(k), q(vector3(0,0,0)) { pos.random().scale(box); }
 	Ellipsoid_basic(Species* k, const vector3& ps, const Quaternion& qq) : kind(k), pos(ps), q(qq) {}
 	matrix33 countX() const {
 		vector3 r(kind->getr());
