@@ -29,7 +29,7 @@ void getRandomPositionsMultipleCellsVector(Box3D realDomain,
 
     for(int i = 0; i < Np.size(); i++)
     {
-        int dx, dy, dz;
+        T dx, dy, dz;
         Array<T,2> xRange, yRange, zRange;
         meshes[i]->computeBoundingBox (xRange, yRange, zRange);
         dx = (xRange[1] - xRange[0]);
@@ -51,6 +51,7 @@ void getRandomPositionsMultipleCellsVector(Box3D realDomain,
     vector<vector<vector3> > packAngles;
 
     pack.getOutput(packPositions, packAngles);
+    pack.testOutput();
 
     pcout << "Packing Done." << std::endl;
 

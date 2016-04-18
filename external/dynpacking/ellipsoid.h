@@ -403,7 +403,7 @@ class Species {
 public:
 	Species () : number(0), rad(vector3()), sph(0) {}
 	Species (int n, vector3 r) : number(n), rad(r) {
-		sph = (fabs(rad[0] - rad[2]) < 1e-5) ? 1 : 0;
+		sph = ((fabs(rad[0] - rad[2]) < 1e-5) && (fabs(rad[0] - rad[1]) < 1e-5) ) ? 1 : 0;
 	}
 	int getn() { return number; }
 	vector3 getr() { return rad; }
@@ -423,7 +423,7 @@ protected:
 	Quaternion q;
 public:
 	Ellipsoid_basic() {}
-	Ellipsoid_basic(Species* k, vector3 box) : kind(k), q(vector3(0,0,0)) { pos.random().scale(box); }
+	Ellipsoid_basic(Species* k, vector3 box) : kind(k), q(vector3(0.0,0.0,0.0)) { pos.random().scale(box); }
 	Ellipsoid_basic(Species* k, const vector3& ps, const Quaternion& qq) : kind(k), pos(ps), q(qq) {}
 	matrix33 countX() const {
 		vector3 r(kind->getr());

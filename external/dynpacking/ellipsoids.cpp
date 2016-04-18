@@ -126,6 +126,7 @@ public:
 	void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity);
     void savePov(const char * fileName);
     void getOutput(vector<vector<vector3> > &positions, vector<vector<vector3> > &angles);
+    void testOutput();
 };
 
 Packing::Packing () {
@@ -249,7 +250,7 @@ void Packing::initBloodSI(int nRBC, int nPlatelet, float sizeX, float sizeY, flo
     No_cells_z = ceil(sizeZ);
     Ntau = 102400;
 
-    Max_steps = 100000; // if force-free configuration is not possible, still stop calculation at some point
+    Max_steps = 5000; // if force-free configuration is not possible, still stop calculation at some point
     Leq_vol = true;
 
     // Set up species
@@ -267,14 +268,16 @@ void Packing::initBloodSI(int nRBC, int nPlatelet, float sizeX, float sizeY, flo
 
     // Output properties
     Npage_len = 56;
-    Nprint_step = 100;
-    Nrslt_step = 500;
+    Nprint_step = 10;
+    Nrslt_step = 10;
     Nrot_step = 1;
 
-    cout << "Number of cells:  " << nRBC << " RBCs,  " << nPlatelet << " platelets." << endl;
-    cout << "Domain size (um): " << sizeX << " x " << sizeY << " x " << sizeZ << endl;
-    cout << "RBC volume: " << rbcVol << endl;
-    cout << "Platelet volume: " << plateletVol << endl;
+    cout << "Number of maximal iterations: " << Max_steps << endl;
+    cout << "Domain size (um): " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
+    cout << "Number of cells to pack:  " << endl;
+    
+    cout << "    RBC volume: " << rbcVol << " Dimensions: " << rbcA << "x" << rbcB << "x"<< rbcC << endl;
+    cout << "    Platelet volume: " << plateletVol << endl;
 }
 
 void Packing::initBloodSI(float hematocrit, float sizeX, float sizeY, float sizeZ)
@@ -298,20 +301,20 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
 
     No_species = nPartsPerComponent.size();
     Epsilon = 0.1;//0.1;
-    Eps_rot = 2.0;
-    Diam_incr = 0.005; //0.01;
+    Eps_rot = 3.0;
+    Diam_incr = 0.005; //0.01; // UNUSED
     No_cells_x = domainSize[0]; // in the same quantity as cell diameters
     No_cells_y = domainSize[1];
     No_cells_z = domainSize[2];
     Ntau = 100000000;//102400;
 
-    Max_steps = 5000; // if force-free configuration is not possible, still stop calculation at some point
+    Max_steps = 50000; // if force-free configuration is not possible, still stop calculation at some point
     Leq_vol = true;
 
     // Set up species
     species = new Species*[No_species];
-    for(int i = 0; i < nPartsPerComponent.size(); i++)
-        species[i] = new Species(nPartsPerComponent[i], diametersPerComponent[i]*1.1);
+    for(int i = 0; i < No_species; i++)
+        species[i] = new Species(nPartsPerComponent[i], diametersPerComponent[i]*1.1); // Inflate by 10% TODO: check if it is necessary
 
     // Get nominal volume ratio
     Pnom0 = nominalPackingDensity+0.15;
@@ -322,11 +325,13 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
     Nrslt_step = 10; //UNUSED
     Nrot_step = 1;
 
-    cout << "Number of cells to pack:  " << endl;
-    for(int i = 0; i < nPartsPerComponent.size(); i++)
-        cout << "    Type: " << i << " - number: " << nPartsPerComponent[i] << endl;
-
+    cout << "Number of maximal iterations: " << Max_steps << endl;
     cout << "Domain size (um): " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
+    cout << "Number of cells to pack:  " << endl;
+    for(int i = 0; i < No_species; i++)
+        cout << "    Type: " << i << " - number: " << nPartsPerComponent[i] << " - diameters: " << 	diametersPerComponent[i][0] << "x" << diametersPerComponent[i][1] << "x" << diametersPerComponent[i][2] << endl;
+
+    
 
 }
 
@@ -987,6 +992,27 @@ void Packing::savePov(const char *fileName)
     povf.close();
 }
 
+void Packing::testOutput()
+{
+	vector<vector<vector3> > positions; 
+    vector<vector<vector3> > angles;
+
+    getOutput(positions, angles);
+
+    ofstream of;
+    of.open("test_coord.txt");
+
+    for(int i = 0; i < positions.size(); i++)
+    {
+    	for(int j = 0; j < positions[i].size(); j++)
+    	{
+    		of << positions[i][j][0] << " " << positions[i][j][1] << " " << positions[i][j][2] << " " << angles[i][j][0] << " " << angles[i][j][1] << " " << angles[i][j][2] << endl;
+    	}	
+    }
+
+    of.close();
+}
+
 void copy(Ellipsoid_basic &eb, const Ellipsoid& e) {
 	eb.set_k(e.get_k());
 	eb.get_pos() = e.get_pos();
@@ -1131,14 +1157,32 @@ int main(int argc, char *argv[]) {
 
     Packing pack;
 
+    vector<int> nPartsPerComponent;
+    nPartsPerComponent.push_back(109);
+    nPartsPerComponent.push_back(30);
+    vector<vector3> diametersPerComponent;
+
+    diametersPerComponent.push_back(vector3(7.7,7.7, 2.5));
+    diametersPerComponent.push_back(vector3(2.3,1.0,2.3));
+
+	vector<int> domainSize;
+	domainSize.push_back(69);
+	domainSize.push_back(36);
+	domainSize.push_back(36);    
+
+	pack.initSuspension(nPartsPerComponent, diametersPerComponent, domainSize, 0.4);
+
+
     //pack.init(argv[1]);
 
-    pack.initBloodSI(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
+    //pack.initBloodSI(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
 
 	pack.execute();
 
     pack.savePov("ellipsoids.pov");
 
+    pack.testOutput();
+
     return 0;
 }
-*/
+//*/
