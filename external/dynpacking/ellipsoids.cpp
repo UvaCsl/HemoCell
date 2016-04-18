@@ -301,7 +301,7 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
 
     No_species = nPartsPerComponent.size();
     Epsilon = 0.1;//0.1;
-    Eps_rot = 3.0;
+    Eps_rot = 2.0;
     Diam_incr = 0.005; //0.01; // UNUSED
     No_cells_x = domainSize[0]; // in the same quantity as cell diameters
     No_cells_y = domainSize[1];
@@ -317,7 +317,7 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
         species[i] = new Species(nPartsPerComponent[i], diametersPerComponent[i]*1.1); // Inflate by 10% TODO: check if it is necessary
 
     // Get nominal volume ratio
-    Pnom0 = nominalPackingDensity+0.15;
+    Pnom0 = nominalPackingDensity;
 
     // Output properties
     Npage_len = 56;
