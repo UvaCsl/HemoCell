@@ -301,20 +301,21 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
 
     No_species = nPartsPerComponent.size();
     Epsilon = 0.1;//0.1;
-    Eps_rot = 2.0;
+    Eps_rot = 3.0;
     Diam_incr = 0.005; //0.01; // UNUSED
     No_cells_x = domainSize[0]; // in the same quantity as cell diameters
     No_cells_y = domainSize[1];
     No_cells_z = domainSize[2];
-    Ntau = 100000000;//102400;
+    Ntau = 150000000;//102400;
 
     Max_steps = 50000; // if force-free configuration is not possible, still stop calculation at some point
     Leq_vol = true;
 
     // Set up species
+    const double OVERSIZE = 1.1;	// This helps to avoid too close membranes -> problematic overlaps for IBM
     species = new Species*[No_species];
     for(int i = 0; i < No_species; i++)
-        species[i] = new Species(nPartsPerComponent[i], diametersPerComponent[i]*1.1); // Inflate by 10% TODO: check if it is necessary
+        species[i] = new Species(nPartsPerComponent[i], diametersPerComponent[i]*OVERSIZE); // Inflate by 10% TODO: check if it is necessary
 
     // Get nominal volume ratio
     Pnom0 = nominalPackingDensity;

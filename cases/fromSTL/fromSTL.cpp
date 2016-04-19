@@ -388,7 +388,7 @@ int main(int argc, char *argv[]) {
             new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend * 5, k_stretch, k_WLC * 5.0,
                                                   k_elastic, k_volume, k_surface, eta_m,
                                                   persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement));
-    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.005 * hct / 0.5,
+    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.0025 * hct,
                                                         cellModels[cellModels.size() - 1], ibmKernel, "PLT"));
 
 

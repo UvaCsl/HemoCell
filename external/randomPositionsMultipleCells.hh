@@ -51,7 +51,9 @@ void getRandomPositionsMultipleCellsVector(Box3D realDomain,
     vector<vector<vector3> > packAngles;
 
     pack.getOutput(packPositions, packAngles);
-    pack.testOutput();
+    
+    //Debug
+    //pack.testOutput(); pack.savePov("ellipsoids.pov");
 
     pcout << "Packing Done." << std::endl;
 
@@ -74,6 +76,7 @@ void getRandomPositionsMultipleCellsVector(Box3D realDomain,
         for (pluint j = 0; j < Np[i]; ++j)
         {
             // Store mesh positions and rotations
+            //randomAngles[i][j] = Array<T, 3>(1.0,0.0,0.0);
             randomAngles[i][j] = Array<T, 3>(packAngles[i][j][0], packAngles[i][j][1], packAngles[i][j][2]);
             positions[i][j] = rdomain + Array<T,3>(packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]);
             cellIds[i][j] = ni + 1000*mpiRank;
