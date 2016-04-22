@@ -139,6 +139,7 @@ int main(int argc, char *argv[]) {
     // ------------------------ Variable declarations here -----------------------------------------
 
     bool checkpointed = 0;
+    plint initIter = 0;
     T Re;
     T dx, dt, dm, dNewton;
     T tau, nu_lbm, u_lbm_max;
@@ -340,7 +341,6 @@ int main(int argc, char *argv[]) {
     // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
 
     FcnCheckpoint<T, DESCRIPTOR> checkpointer(documentXML);
-    plint initIter = 0;
     checkpointer.load(documentXML, lattice, cellFields, initIter);
 
     if (not checkpointer.wasCheckpointed()) {
@@ -401,19 +401,22 @@ int main(int argc, char *argv[]) {
 
 	// ------------------------- Warming up fluid domain ------------------    
 
-    plint warmup = 200;
-    pcout << "(main) warming up fluid domain for "  << warmup << " terations..." << std::endl;
-    for (plint itrt = 0; itrt < 200; ++itrt) { lattice.collideAndStream(); }
+    if (initIter == 0)
+    {
+        plint warmup = 200;
+        pcout << "(main) fresh start: warming up fluid domain for "  << warmup << " terations..." << std::endl;
+        for (plint itrt = 0; itrt < 200; ++itrt) { lattice.collideAndStream(); }
+    }
 
 
 	// ------------------------ Starting main loop --------------------------
-	pcout << std::endl << "(main) starting simulation for tmax=" << tmax << " iterations..." << std::endl;
+	pcout << std::endl << "(main) starting simulation at " << initIter << " of tmax=" << tmax << " iterations..." << std::endl;
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, -1, numVerticesPerCell);
 
     
     global::timer("mainLoop").start();
-    for (pluint iter = 0; iter < tmax + 1; ++iter) {
+    for (pluint iter = 0 + initIter; iter < tmax + 1; ++iter) {
 
         // #1# Membrane Model
         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
