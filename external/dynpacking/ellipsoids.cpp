@@ -19,6 +19,9 @@ using namespace std;
 
 //#define DEBUG_OUTPUT
 
+// Oversize ellipsoids by 10%
+const double OVERSIZE = 1.1;	// This helps to avoid too close membranes -> problematic overlaps for IBM
+
 class Ellipsoid : public Ellipsoid_basic {
 	vector3 f, fu;
 public:
@@ -32,10 +35,6 @@ public:
 class Packing {
 	bool Lend;
 	ifstream pDatin;
-
-#ifdef DEBUG_OUTPUT
-	ofstream pOutput;
-#endif
 
 	int No_parts, No_species;
 	double Epsilon, Epsilon_scl, Eps_rot;
@@ -142,13 +141,8 @@ Packing::Packing () {
 	Power = 1./3.;
 	Sphere_vol = M_PI / 6.;
 	Random::init();
+	cout.setf (ios::fixed, ios::floatfield);
 
-#ifdef DEBUG_OUTPUT
-    // opening log file
-    pOutput.open ("output.log");
-    if (!pOutput) open_failure(cerr, "output.log");
-    pOutput.setf (ios::fixed, ios::floatfield);
-#endif
 }
 
 Packing::~Packing() {
@@ -165,9 +159,6 @@ Packing::~Packing() {
 	delete[] parts;
 	delete[] species;
 
-#ifdef DEBUG_OUTPUT
-	pOutput.close ();
-#endif
 }
 
 void Packing::execute() {
@@ -307,32 +298,27 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
     No_cells_y = domainSize[1];
     No_cells_z = domainSize[2];
     Ntau = 150000000;//102400;
-
+    Nrot_step = 1;	// Execute rotation every n-th step
     Max_steps = 50000; // if force-free configuration is not possible, still stop calculation at some point
     Leq_vol = true;
 
     // Set up species
-    const double OVERSIZE = 1.1;	// This helps to avoid too close membranes -> problematic overlaps for IBM
     species = new Species*[No_species];
     for(int i = 0; i < No_species; i++)
         species[i] = new Species(nPartsPerComponent[i], diametersPerComponent[i]*OVERSIZE); // Inflate by 10% TODO: check if it is necessary
 
     // Get nominal volume ratio
-    Pnom0 = nominalPackingDensity;
+    Pnom0 = nominalPackingDensity * OVERSIZE;
 
     // Output properties
-    Npage_len = 56;
-    Nprint_step = 10;
+    Nprint_step = 500;
     Nrslt_step = 10; //UNUSED
-    Nrot_step = 1;
 
     cout << "Number of maximal iterations: " << Max_steps << endl;
     cout << "Domain size (um): " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
     cout << "Number of cells to pack:  " << endl;
     for(int i = 0; i < No_species; i++)
-        cout << "    Type: " << i << " - number: " << nPartsPerComponent[i] << " - diameters: " << 	diametersPerComponent[i][0] << "x" << diametersPerComponent[i][1] << "x" << diametersPerComponent[i][2] << endl;
-
-    
+        cout << "    Type: " << i << " - number: " << nPartsPerComponent[i] << " - diameters: " << 	diametersPerComponent[i][0] << "x" << diametersPerComponent[i][1] << "x" << diametersPerComponent[i][2] << endl;    
 
 }
 
@@ -443,11 +429,6 @@ void Packing::stepon() {
 	iprec = (int) (-log10 (Pnomin - Pactual));
 	if (iprec >= Nsf) {
 		Relax *= 0.5;
-		Lprec_chan = true;
-#ifdef DEBUG_OUTPUT
-		blines (pOutput);
-#endif
-		Nlines++;
 		if (++Nsf >= Nfig) Lkill = true;
 	}
 	
@@ -751,47 +732,6 @@ void Packing::force_all(int ipart_p) {
 
 void Packing::output(int kind_p) {
 	if (kind_p == 1) {
-#ifdef DEBUG_OUTPUT
-		page(pOutput);
-		pOutput << "--------------------- SYSTEM SPECIFICATI";
-		pOutput << "ON -------------------------------------";
-		blines (pOutput, 2);
-		ivar (pOutput, "No_parts", No_parts, "NUMBER OF SPHERES");
-		ivar (pOutput, "No_species", No_species, "NUMBER OF SPECIES");
-		rvar (pOutput, "Epsilon", Epsilon, "COEFFICIENT FOR POTENTIAL CALCULATION");
-		rvar (pOutput, "Eps_rot", Eps_rot, "COEFFICIENT FOR ROTATION");
-		rvar (pOutput, "Din", Din, "INNER DIAMETER");
-		rvar (pOutput, "Dout0", Dout0, "INITIAL VALUE OF OUTER DIAMETER");
-		rvar (pOutput, "Dout", Dout, "OUTER DIAMETER");
-		rvar (pOutput, "Pactual", Pactual, "ACTUAL PACKING DENSITY");
-		rvar (pOutput, "Pnom0", Pnom0, "INITIAL VALUE OF NOMINAL PACKING DENSITY");
-		rvar (pOutput, "Pnomin", Pnomin, "NOMINAL PACKING DENSITY");
-		ivar (pOutput, "No_cells_x", No_cells_x, "NUMBER OF CELLS IN X DIRECTION");
-		ivar (pOutput, "No_cells_y", No_cells_y, "NUMBER OF CELLS IN Y DIRECTION");
-		ivar (pOutput, "No_cells_z", No_cells_z, "NUMBER OF CELLS IN Z DIRECTION");
-		lvar (pOutput, "Max_steps", Max_steps, "MAXIMAL NUMBER OF STEPS");
-		lvar (pOutput, "Ntau", Ntau, "OUTER DIAMETER CONTRACTION RATE");
-		for (int is = 0; is < No_species; is++) {
-			pOutput << "SPECIES " << is << endl;
-			ivar (pOutput, "Number", species[is]->getn(), "NUMBER OF PARTICLES");
-			rvar (pOutput, "Diameter 1", (species[is]->getr())[0], "DIAMETER OF PARTICLES");
-			rvar (pOutput, "Diameter 2", (species[is]->getr())[1], "DIAMETER OF PARTICLES");
-			rvar (pOutput, "Diameter 3", (species[is]->getr())[2], "DIAMETER OF PARTICLES");
-		}
-		blines (pOutput);
-		pOutput << "--------------------- I/O SPECIFICATION ";
-		pOutput << "----------------------------------------";
-		blines (pOutput, 2);
-		ivar (pOutput, "Npage_len", Npage_len, "NUMBER OF LINES PER PAGE");
-		ivar (pOutput, "Nprint_step", Nprint_step, "NUMBER OF STEPS BETWEEN DATA PRINTOUT");
-		ivar (pOutput, "Nrot_step", Nrot_step, "NUMBER OF STEPS BETWEEN ROTATIONS");
-		lvar (pOutput, "Nrslt_step", Nrslt_step, "NUMBER OF STEPS BETWEEN DATA STORAGE");
-		blines (pOutput);
-		date_time(pOutput);
-		out_char (pOutput, '-', 80);
-		blines (pOutput);
-#endif
-
 		//date_time(cout);
 		cout << endl;
 		cout << "     STEP";
@@ -812,20 +752,6 @@ void Packing::output(int kind_p) {
 		return;
 	}
 	if (kind_p == 2) {
-		if (Lprec_chan) {
-			Lprec_chan = false;
-			Nlines += 3;
-#ifdef DEBUG_OUTPUT
-			blines (pOutput);
-			out_char (pOutput, '-',79);
-			blines (pOutput, 2);
-#endif
-		}
-		Nlines++;
-		if (Nlines > No_end_page) {
-			No_end_page += Npage_len;
-			No_page++;
-			Nlines += 7;
 			cout.precision(10);
 			cout << setw(9) << Nstep;
 			cout << setw(14) << Pactual;
@@ -834,81 +760,13 @@ void Packing::output(int kind_p) {
 			cout << setw(14) << Dout;
 			cout << setw(14) << Force_step;
 			cout << endl;
-#ifdef DEBUG_OUTPUT
-			page (pOutput);
-			date_time(pOutput);
-			pOutput << "V SEP/1986	MB	 ";
-			out_char (pOutput, '-', 60);
-			blines (pOutput);
-			pOutput << "     STEP";
-			pOutput << "        ACTUAL";
-			pOutput << "       NOMINAL";
-			pOutput << "         INNER";
-			pOutput << "         OUTER";
-			pOutput << "  FORCE MODULE";
-			blines (pOutput);
-			pOutput << "         ";
-			pOutput << "       DENSITY";
-			pOutput << "       DENSITY";
-			pOutput << "      DIAMETER";
-			pOutput << "      DIAMETER";
-			pOutput << "  PER PARTICLE";
-			blines (pOutput, 2);
-#endif
-		}
-#ifdef DEBUG_OUTPUT
-		if (Nsf <= 1) pOutput.precision(4);
-		else if (Nsf <= 6) pOutput.precision(Nsf+3);
-		else pOutput.precision(10);
-		pOutput << setw(9) << Nstep;
-		pOutput << setw(14) << Pactual;
-		pOutput << setw(14) << Pnomin;
-		pOutput << setw(14) << Din;
-		pOutput << setw(14) << Dout;
-		pOutput << setw(14) << Force_step;
-		blines (pOutput);
-#endif
-		return;
 	}
 	if (kind_p == 3) {
-#ifdef DEBUG_OUTPUT
-		blines (pOutput);
-		Nlines += 7;
-		out_char (pOutput, '-', 80);
-		blines (pOutput);
-		pOutput.precision(13);
-		pOutput << setw(35) << Pactual;
-		pOutput << setw(19) << Din;
-		pOutput << setw(26) << Nstep;
-		blines (pOutput);
-		pOutput << "    SIMULATION  ";
-		out_char (pOutput, ' ',  5);
-		out_char (pOutput, ':',  1);
-		out_char (pOutput, ' ', 18);
-		out_char (pOutput, ':',  1);
-		out_char (pOutput, ' ', 38);
-		out_char (pOutput, ':',  1);
-		blines (pOutput);
-		pOutput << "    STATUS    >>>>   : STATIC DENSITY";
-		pOutput << "   : SPHERE DIAMETER           ";
-		pOutput << "ITERATIONS :";
-		blines (pOutput);
-		out_char (pOutput, '-', 80);
-		blines (pOutput, 3);
-		out_char (pOutput, '-', 29);
-		if (Lend) pOutput << " PACKING DONE ";
-		else pOutput << " PACKING -- TERMINATED ";
-		out_char (pOutput, '-', 29);
-		blines (pOutput, 2);
-		date_time (pOutput);
-#endif
 		blines	(cout, 2);
 		out_char (cout, '-', 29);
-		if (Lend) cout << " PACKING DONE ";
-		else cout << " PACKING -- TERMINATED ";
+		if (Lend) cout << " PACKING DONE ";		// A configuration close to equilibrium found
+		else cout << " PACKING TERMINATED(!) ";	// No equilibrium yet, but used up maximal iterations, or there is no better configuration
 		out_char (cout, '-', 29);
-		blines	(cout, 2);
-		//date_time(cout);
 		blines	(cout, 2);
 
 		return;

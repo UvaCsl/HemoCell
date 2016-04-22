@@ -64,6 +64,7 @@ void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, B
         particleField.computeGridPosition (vertex, iX, iY, iZ);
         Dot3D fluidDomainCell = Dot3D(iX, iY, iZ) - relativeDisplacement;
         particleField.addParticle(particleField.getBoundingBox(), new SurfaceParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
+	//*
         bool isInsideFluidDomain = (fluidDomainCell.x >= 0 and fluidDomainCell.y >= 0 and fluidDomainCell.z >= 0) and
         		(fluidDomainCell.x < maxNx and fluidDomainCell.y < maxNy and fluidDomainCell.z < maxNz);
         if (isInsideFluidDomain and fluid.get(fluidDomainCell.x, fluidDomainCell.y, fluidDomainCell.z).getDynamics().isBoundary()) {
@@ -72,6 +73,7 @@ void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, B
         else {
 //            particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
         }
+	//*/
     }
 }
 

@@ -134,7 +134,7 @@ public:
     CellModel3D(CellModel3D<T,Descriptor> const& rhs);
     virtual void computeCellForce (Cell3D<T,Descriptor> * cell);
     virtual plint getMaximumEdgeExtensionLengthLU() { return maximum(ceil(2*maxLength + 0.5),4); };
-    virtual plint getMaxCellDiameterLU() { return maximum(ceil(4*cellRadiusLU),4); };
+    virtual plint getMaxCellDiameterLU() { return maximum(ceil(4*cellRadiusLU),4); };   // TODO: optimise this
     virtual T getDx() { return dx; };
     virtual T getDt() { return dt; };
     virtual T getDm() { return dm; };
