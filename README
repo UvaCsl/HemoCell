@@ -8,10 +8,10 @@ ficsion
 Building Prerequisites
 ====================
 
-`ficsion` is built on top of `palabos` and it should be possible to be build on any GNU/Linux system with at least the GNU GCC compiler suite and OpenMPI. Make and SCONS are used as the build automation tools. GCC versions 4.7.2 and ... as well as OpenMPI version 1.4.5 and 1.6.5 have been successfully tested. It is very likely that other compilers will also produce favorable results. `ficsion` has been successfully built and ran on x64 and IBM BG/Q systems. 
+`ficsion` is built on top of `palabos` and it should be possible to be build on any GNU/Linux system with at least the GNU GCC compiler suite and OpenMPI. Make and SCONS or CMake are used as the build automation tools. GCC versions 4.7.2 and 4.8.1 as well as OpenMPI version 1.4.5 and 1.6.5 have been successfully tested. It is very likely that other compilers will also produce favorable results. `ficsion` has been successfully built and ran on x64 and IBM BG/Q systems. 
 
 ## `palabos`
-The working version of `palabos` is [v1.4r1](http://www.palabos.org/images/palabos_releases/palabos-v1.4r1.zip). Later versions are known to break the initialization of particles and until this issue has been resolved, it is suggested to stick with v1.4r1.
+The working version of `palabos` is [v1.5r1](http://www.palabos.org/images/palabos_releases/palabos-v1.5r1.zip). Earlier versions of palabos are no longer supported duo to strong dependency on sparse particle classes.
 
 ## HDF5
 `ficsion` uses the `hdf5` library for the output and post-processing of the results. Debian packeges `h5utils hdf5-tools libhdf5-serial-dev` are known to work for the I/O.
@@ -22,7 +22,7 @@ Almost all the post-processing is performed by python scripts. The necessary lib
 ## Debian packages
 
 ```bash
-sudo apt-get install gcc g++ gdb make scons
+sudo apt-get install gcc g++ gdb make scons cmake
 sudo apt-get install openmpi-bin openmpi-checkpoint openmpi-common libopenmpi-dev
 sudo apt-get install h5utils hdf5-tools libhdf5-serial-dev
 sudo apt-get install python python-numpy python-matplotlib python-h5py
@@ -30,7 +30,6 @@ sudo apt-get install python python-numpy python-matplotlib python-h5py
 
 
 ## Known issues
-* `palabos` version 1.5rX has an issue with particle initialization and produces segmentation faults.
 * `ficsion` compiles just fine on MacOSX v10.11 (El Capitain), yet it break when a case is initiated.
 * Ordinary `Makefile`s do not work for IBM BG/Q systems. Instead use the `Makefile.cineca` as a template, found in the parent directory.
 
@@ -41,16 +40,17 @@ Ensure that the above packages are downloaded and installed on your system. Assu
 ```shell
 export FICSION=${HOME}/ficsion
 ```
-download `palabos` v1.4 from its [website](http://www.palabos.org/images/palabos_releases/palabos-v1.4r1.zip) and extract it to the path `${FICSION}/palabos`. Now to build `ficsion` just run:
+download `palabos` v1.5r1 from its [website](http://www.palabos.org/images/palabos_releases/palabos-v1.5r1.zip) and extract it to the path `${FICSION}/palabos`. Now navigate into one of the `case` subfolders and build the corresponding case:
+
 ``` shell
 make
 ```
-and it will produce an executable with the name `ficsional`. Should you want to change debugging or profiling options, please alter the `Makefile`. Follow a similar approach to compile the examples.
+and it will produce an executable with the name of the case. Should you want to change debugging or profiling options, please alter the `Makefile`. Follow a similar approach to compile the examples.
 
-Alternative building instructions (for CMake)
-=============================================
+Alternative building instructions for CMake (preferred)
+=======================================================
 
-E.g., to build ficsional, issue the following from the root folder of ficsion
+To build a case, issue the following from its folder:
 
 ```shell
 mkdir build
@@ -62,7 +62,7 @@ make -j 4
 The cmake tries to make use of the system libraries instead of building them, thus you might also want to install
 development packages for Eigen and TinyXML (Palabos 1.5+).
 The cmake files are also suitable to use in IDE-s supporting cmake projects. 
-Both ficsion and palabos is handled as an external library in the cmake project structure.
+Both ficsion and palabos is handled as an external library relative to the case in the cmake project structure.
 
 
 Documentation
