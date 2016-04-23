@@ -16,8 +16,9 @@
 </cellModel>
 
 <parameters>
-    <Re> 2.0 </Re>   <!--Reynolds number-->
-    <u_lbm_max>0.03</u_lbm_max> <!-- Maximum possible lattice velocity. -->
+    <Re> 1.0 </Re>   <!--Reynolds number-->
+    <warmup> 100 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <maxPackIter> 1000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
 </parameters>
 
 
@@ -35,6 +36,7 @@
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <dx> 1.00e-6 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dt> 2.0e-7 </dt>
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
     <refDirN> 32 </refDirN>  <!-- Number of numerical cell in the reference direction -->
 </domain>
@@ -42,7 +44,7 @@
 <sim>
     <tmax> 500000 </tmax> <!-- total number of iterations -->
     <tmeas> 50 </tmeas> <!-- interval after which data is written --> 
-    <hematocrit> 45 </hematocrit> <!-- Hematocrit  > -->
+    <hematocrit> 40 </hematocrit> <!-- Hematocrit  > -->
 </sim>
 
 </ficsion>

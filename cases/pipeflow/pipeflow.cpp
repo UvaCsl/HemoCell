@@ -152,6 +152,8 @@ int main(int argc, char *argv[]) {
     plint tmax, tmeas;
     plint refDir, refDirN;
     std::string meshFileName;
+    plint warmup;
+    plint maxPackIter;
 
 
     // ------------------------- Read in config file ------------------------------------------------
@@ -172,7 +174,8 @@ int main(int argc, char *argv[]) {
 
     // ---- Particle material properties
   	document["parameters"]["Re"].read(Re);
-  	document["parameters"]["u_lbm_max"].read(u_lbm_max);
+    document["parameters"]["warmup"].read(warmup);
+    document["parameters"]["maxPackIter"].read(maxPackIter);
 
     document["cellModel"]["shellDensity"].read(shellDensity);
     document["cellModel"]["kWLC"].read(k_WLC);
@@ -196,6 +199,7 @@ int main(int argc, char *argv[]) {
     document["domain"]["rhoP"].read(rho_p);
     document["domain"]["nuP"].read(nu_p);
     document["domain"]["dx"].read(dx);
+    document["domain"]["dt"].read(dt);
     document["domain"]["refDir"].read(refDir);
     document["domain"]["refDirN"].read(refDirN);
 
@@ -220,11 +224,10 @@ int main(int argc, char *argv[]) {
     ny = domainBox.getNy();
     nz = domainBox.getNz();
 
+    nu_lbm = nu_p * dt / (dx*dx); 
+    u_lbm_max = Re * nu_lbm / ny;
 
-    nu_lbm = u_lbm_max*ny/Re; 
     tau = 3.0 * nu_lbm + 0.5;
-    dt = (nu_lbm / nu_p) * dx * dx;
-
     dm = rho_p * (dx * dx * dx);
     dNewton = (dm * dx / (dt * dt));
 	//kBT = kBT_p / ( dNewton * dx );
@@ -348,7 +351,7 @@ int main(int argc, char *argv[]) {
         std::vector<Array<T, 3> > cellsOrigin;
         cellsOrigin.push_back(Array<T, 3>(nx * 0.5, ny * 0.5, nz * 0.5));
 
-        randomPositionMultipleCellField3D(cellFields, hematocrit);
+        randomPositionMultipleCellField3D(cellFields, hematocrit, maxPackIter);
        
         checkpointer.save(lattice, cellFields, initIter);
     }
@@ -403,9 +406,8 @@ int main(int argc, char *argv[]) {
 
     if (initIter == 0)
     {
-        plint warmup = 200;
         pcout << "(main) fresh start: warming up fluid domain for "  << warmup << " terations..." << std::endl;
-        for (plint itrt = 0; itrt < 200; ++itrt) { lattice.collideAndStream(); }
+        for (plint itrt = 0; itrt < warmup; ++itrt) { lattice.collideAndStream(); }
     }
 
 

@@ -11,7 +11,7 @@ void getRandomPositionsMultipleCellsVector(Box3D realDomain,
                                             std::vector<std::vector<Array<T,3> > > & positions,
                                             std::vector<std::vector<plint> > & cellIds,
                                             std::vector<std::vector<Array<T,3> > > & randomAngles,
-                                            T packingDensity)
+                                            T packingDensity, plint maxPackIter)
 {
     PLB_PRECONDITION( meshes.size()==Np.size() );
 
@@ -44,7 +44,7 @@ void getRandomPositionsMultipleCellsVector(Box3D realDomain,
 
     Packing pack;
 
-    pack.initSuspension(nPartsPerComponent, diameters, domainSize, packingDensity);
+    pack.initSuspension(nPartsPerComponent, diameters, domainSize, packingDensity, maxPackIter);
     pack.execute();
 
     vector<vector<vector3> > packPositions;
@@ -151,7 +151,7 @@ void RandomPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
     std::vector<std::vector<plint> > cellIds;
     std::vector<std::vector<Array<T,3> > > randomAngles;
 
-    getRandomPositionsMultipleCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, packingDensity);
+    getRandomPositionsMultipleCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, packingDensity, maxPackIter);
 
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
@@ -215,7 +215,7 @@ BlockDomain::DomainT RandomPositionMultipleCellField3D<T,Descriptor>::appliesTo(
 
 
 template<typename T, template<typename U> class Descriptor>
-void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor> *> &cellFields, T packingDensity) {
+void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor> *> &cellFields, T packingDensity, plint maxPackIter = 25000) {
     global::timer("CellInit").start();
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
@@ -229,7 +229,7 @@ void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor> *>
     //particleFieldsArg.push_back(&(cellFields[0]->getParticleField3D()));
 
     applyProcessingFunctional(
-            new RandomPositionMultipleCellField3D<T, Descriptor>(cellFields, packingDensity),
+            new RandomPositionMultipleCellField3D<T, Descriptor>(cellFields, packingDensity, maxPackIter),
             cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg);
 
     pcout << "Ready to start.." << std::endl;

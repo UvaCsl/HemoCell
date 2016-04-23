@@ -122,7 +122,7 @@ public:
     // Initialise blood suspension with RBCs and platelets
     void initBloodSI(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ);
     void initBloodSI(float hematocrit, float sizeX, float sizeY, float sizeZ);
-	void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity);
+	void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps);
     void savePov(const char * fileName);
     void getOutput(vector<vector<vector3> > &positions, vector<vector<vector3> > &angles);
     void testOutput();
@@ -284,7 +284,7 @@ void Packing::initBloodSI(float hematocrit, float sizeX, float sizeY, float size
 
 }
 
-void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity)
+void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps = 25000)
 {
     No_parts = 0;
     for(int i = 0; i < nPartsPerComponent.size(); i++)
@@ -299,7 +299,7 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
     No_cells_z = domainSize[2];
     Ntau = 150000000;//102400;
     Nrot_step = 1;	// Execute rotation every n-th step
-    Max_steps = 50000; // if force-free configuration is not possible, still stop calculation at some point
+    Max_steps = maxSteps; // if force-free configuration is not possible, still stop calculation at some point
     Leq_vol = true;
 
     // Set up species
