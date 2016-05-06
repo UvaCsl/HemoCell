@@ -412,7 +412,7 @@ int main(int argc, char *argv[]) {
 
 
 	// ------------------------ Starting main loop --------------------------
-	pcout << std::endl << "(main) starting simulation at " << initIter << " of tmax=" << tmax << " iterations..." << std::endl;
+	pcout << std::endl << "(main) starting simulation at " << initIter << " of tmax=" << tmax << " iterations (" << tmax * dt << " s)..." << std::endl;
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, -1, numVerticesPerCell);
 
@@ -464,7 +464,7 @@ int main(int argc, char *argv[]) {
             }
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter + 1);
-            pcout << "(main) Iteration:" << iter + 1 << "; time / it = " << dtIteration / tmeas;
+            pcout << "(main) Iteration:" << iter + 1 << "(" << iter * dt << " s)" <<"; time / it = " << dtIteration / tmeas;
             pcout << std::endl;
         } else {
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
