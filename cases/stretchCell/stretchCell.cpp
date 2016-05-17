@@ -136,18 +136,6 @@ int main(int argc, char* argv[])
 
 
     // Because structures use it. Kind of nonsense. TODO: To be changed later.
-    /*
-    IncomprFlowParam<T> parameters(
-            (Re * nu_p)/(ny*dx),
-            u_lbm_max,
-            Re,//1.0/nu_lbm,
-            dx,
-            1,
-            nx*dx,
-            ny*dx,
-            nz*dx
-    );
-    */
     plint resolution = (int)(1.0/dx);
     IncomprFlowParam<T> parameters(
             u_lbm_max,
@@ -158,7 +146,8 @@ int main(int argc, char* argv[])
             lz
     );
 
-    pcout << "(main) tau = " << parameters.getTau() << " Re = " << parameters.getRe() << " u_lb = " << u_lbm_max << " nu_lb = " << parameters.getLatticeNu() << endl;
+    // Debug line
+    // pcout << "(main) tau = " << parameters.getTau() << " Re = " << parameters.getRe() << " u_lb = " << u_lbm_max << " nu_lb = " << parameters.getLatticeNu() << endl;
 
     // ------------------------ Init lattice --------------------------------
 
@@ -181,14 +170,14 @@ int main(int argc, char* argv[])
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
     lattice.toggleInternalStatistics(false);
 
+    lattice.initialize();
+
     // Drag force specific
     //T wallVelocity =  0.0; //Re*parameters.getLatticeNu()/( 2 * (radius/dx));
     //pcout << "(main)  wall velocity: " << wallVelocity << endl;
     //iniLattice_ForGalileanInvariance(lattice, parameters, *boundaryCondition, wallVelocity);
 
-    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), 1.0, Array<T, 3>(0.0,0.0,0.0));
-    
-    util::ValueTracer<T> forceConvergeX(1, 20, 1.0e-4);
+    //util::ValueTracer<T> forceConvergeX(1, 20, 1.0e-4);
 
 
     // ----------------------- Init cell models --------------------------
@@ -231,12 +220,11 @@ int main(int argc, char* argv[])
              persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
     }
 
-    // Giving artificial hematocrit of 0.01
+    // Giving artificial hematocrit of 0.01, since it does not matter here
     CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.01, cellModel, ibmKernel, "RBC");
     cellFields.push_back(&RBCField);
 
     // Define stretch force
-    //    Array<T,3> forceRight(0.0, 44.0, 54.0), forceLeft(0.0, -44.0, 54.0);
     CellStretch<T, DESCRIPTOR> stretchedCell(RBCField, stretchForceScalar, 0.1);
 
 // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
@@ -280,7 +268,7 @@ int main(int argc, char* argv[])
     // ------------------------ Starting main loop --------------------------
     
     global::timer("mainLoop").start();
-    global::profiler().turnOn();
+    //global::profiler().turnOn();
 
     for (pluint iter=initIter; iter<tmax+1; ++iter) {
         // #1# Membrane Model
@@ -321,9 +309,9 @@ int main(int argc, char* argv[])
 
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter+1);
-            global::profiler().writeReport();
+            //global::profiler().writeReport();
             pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
-//            pcout << "; Volume (" << RBCField[0]->getVolume() << ")";
+            //pcout << "; Volume (" << RBCField[0]->getVolume() << ")";
 
             if (RBCField.count(0) > 0) {
                 pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
@@ -342,6 +330,6 @@ int main(int argc, char* argv[])
     }
     RBCField[0]->saveMesh("stretchedCell.stl");
     simpleProfiler.writeIteration(tmax+1);
-    global::profiler().writeReport();
+    //global::profiler().writeReport();
     pcout << "(main) Simulation finished." << std::endl;
 }

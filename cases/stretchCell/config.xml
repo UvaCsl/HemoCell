@@ -36,7 +36,7 @@
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1.00e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <dt> 9.8e-8 </dt>
+    <dt> 3.0e-7 </dt>
 </domain>
 
 <sim>
