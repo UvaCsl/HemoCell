@@ -215,7 +215,7 @@ BlockDomain::DomainT RandomPositionMultipleCellField3D<T,Descriptor>::appliesTo(
 
 
 template<typename T, template<typename U> class Descriptor>
-void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor> *> &cellFields, T packingDensity, plint maxPackIter = 25000) {
+void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor> *> &cellFields, T packingDensity, plint maxPackIter) {
     global::timer("CellInit").start();
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 

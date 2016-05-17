@@ -12,7 +12,7 @@ using namespace std;
 using namespace plb;
 
 template<typename T, template<typename U> class Descriptor>
-void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields, T packingDensity, plint maxPackIter);
+void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields, T packingDensity, plint maxPackIter = 25000);
 
 template<typename T>
 void getRandomPositionsMultipleCellsVector(Box3D realDomain,

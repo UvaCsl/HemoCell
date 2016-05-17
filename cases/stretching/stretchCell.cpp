@@ -189,11 +189,14 @@ int main(int argc, char* argv[])
 //    kBT = kBT_p / ( dNewton * dx );
     shearRate = shearRate_p * dt;
     stretchForceScalar = stretchForce_p / dNewton;
+
     pcout << "(main) dx = " << dx << ", " <<
-             "dt = " << dt << ", " <<
-             "dm = " << dt << ", " <<
-             "kT = " << kBT <<
-             std::endl;
+        "dt = " << dt << ", " <<
+        "dm = " << dm << ", " <<
+        "dN = " << dNewton << ", " <<
+        "stretchF = " << stretchForceScalar <<
+        //"kT = " << kBT <<
+        std::endl;
 
     /* ------------------ *
      * Initialize Lattice *

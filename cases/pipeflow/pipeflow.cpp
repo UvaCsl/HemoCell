@@ -236,7 +236,7 @@ int main(int argc, char *argv[]) {
     
     pcout << "(main) dx = " << dx << ", " <<
     "dt = " << dt << ", " <<
-    "dm = " << dt << //", " <<
+    "dm = " << dm << //", " <<
     //"kT = " << kBT <<
     std::endl;
 
