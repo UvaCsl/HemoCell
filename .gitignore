@@ -1,9 +1,17 @@
-log/*
-tmp/*
-hdf5/*
-palabos/*
-examples/*
-build/*
+# Ignore build, result, and log directories
+log/
+tmp/
+palabos/
+build/
+
+# Ignore IDE, buildsystem and OS specific cache directories and object files
+.idea/
 *sconsign.dblite
 *.o
 *.DS_Store
+
+# Ignore the default case binary names
+fromSTL
+stretchCell
+stretching
+pipeflow
