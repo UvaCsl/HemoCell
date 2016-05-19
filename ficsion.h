@@ -19,6 +19,7 @@ using namespace std;
 #include <map>
 #include "fcnGenericFunctions.h"
 #include "simpleProfiler.cpp"
+#include "genericTools.h"
 
 #include "ficsionInit.h"
 #include "ficsionInit.hh"
@@ -65,6 +66,8 @@ using namespace std;
 
 /* EXTERNALS */
 #include "diagonalize.hpp"
+
+/* Particle position initialisation method */
 //#include "external/orderedPositionsMultipleCells.h"
 #include "external/randomPositionsMultipleCells.h"
 

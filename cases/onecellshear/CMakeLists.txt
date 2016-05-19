@@ -2,8 +2,8 @@
 # Build settings. Set these.
 
 # Project setup
-SET(PROJECT_NAME stretchCell)
-SET(PROJECT_SRC "stretchCell.cpp")
+SET(PROJECT_NAME onecellshear)
+SET(PROJECT_SRC "onecellshear.cpp")
 
 # Ficsion location relative to CMakelists.txt
 SET(FICSION_BASE_DIR "./../..")

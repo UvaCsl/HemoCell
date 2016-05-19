@@ -254,6 +254,9 @@ int main(int argc, char *argv[]) {
             ny*dx,        
             nz*dx        
     );
+
+    checkParameterSanity(parameters);
+    
     //pcout << "(main) dx = " << parameters.getDeltaX() << " dt = " << parameters.getDeltaT() << endl;
     //pcout << "(main) tau = " << parameters.getTau() << " Re = " << parameters.getRe() << " u_lb = " << parameters.getLatticeU() << " nu_lb = " << parameters.getLatticeNu() << endl;
     //cout << "(main) Re corresponds to u_max = " << parameters.getPhysicalU() << " [m/s]" << endl;
