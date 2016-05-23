@@ -252,7 +252,6 @@ int main(int argc, char* argv[])
     pcout << std::endl ;
     pcout << "(main) Volume ratio [x100%]: " << nCells*eqVolume*100.0/(nx*ny*nz) << std::endl;
     pcout << "(main) nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() << std::endl;
-    pcout << std::endl << "(main) Starting simulation i=" << initIter  << ", tmeas = " << tmeas << std::endl;
 
 //    MultiParticleField3D<LightParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
 //                                                        createBoundaryParticleField3D(lattice);
@@ -271,6 +270,8 @@ int main(int argc, char* argv[])
     }
 
     // -------------------------- Initial output --------------------------
+
+    pcout << std::endl << "(main) Starting simulation i=" << initIter  << ", tmeas = " << tmeas << std::endl;
 
     global::timer("HDFOutput").start();
     writeHDF5(lattice, parameters, 0);
