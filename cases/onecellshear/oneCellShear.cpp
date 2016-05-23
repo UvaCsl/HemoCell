@@ -282,7 +282,7 @@ int main(int argc, char* argv[])
         RBCField.applyConstitutiveModel();
         
         // #2# IBM Spreading
-        RBCField.setFluidExternalForce(0); // TODO: Can this line be omitted?
+        //RBCField.setFluidExternalForce(0); // TODO: Can this line be omitted?
         RBCField.spreadForceIBM();
         
         // #3# LBM

@@ -3,10 +3,8 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+
 using namespace plb;
-using namespace std;
-
-
 
 #include <algorithm>
 #include <cmath>
@@ -17,9 +15,11 @@ using namespace std;
 //#include <array>
 #include <limits>
 #include <map>
+
+using namespace std;
+
 #include "fcnGenericFunctions.h"
 #include "simpleProfiler.cpp"
-#include "genericTools.h"
 
 #include "ficsionInit.h"
 #include "ficsionInit.hh"
@@ -29,7 +29,7 @@ using namespace std;
 #include "surfaceParticle3D.h"
 #include "helperFunctionals.h"
 #include "checkPoint.h"
-
+#include "genericTools.h"
 
 #include "cellCellForces3D.h"
 #include "proximityDynamics3D.h"

@@ -507,10 +507,11 @@ void OrderedPositionCellField3D<T,Descriptor>::processGenericBlocks (
                         domain.y0 + fLocation.y, domain.y1 + fLocation.y,
                         domain.z0 + fLocation.z, domain.z1 + fLocation.z );
 
+    /*
     plint DeltaX = realDomain.getNx();
     plint DeltaY = realDomain.getNy();
     plint DeltaZ = realDomain.getNz();
-
+    */
 
     Array<T,2> xRange, yRange, zRange;
     mesh->computeBoundingBox (xRange, yRange, zRange);

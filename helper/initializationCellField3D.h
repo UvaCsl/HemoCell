@@ -56,7 +56,7 @@ void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, B
                                             TriangularSurfaceMesh<T> * mesh, Array<T,3> startingPoint, plint cellId) {
     plint nVertices=mesh->getNumVertices();
     Dot3D relativeDisplacement = computeRelativeDisplacement(fluid, particleField);
-    Dot3D fluidLocationDot3D = fluid.getLocation();
+    //Dot3D fluidLocationDot3D = fluid.getLocation();
     plint iX, iY, iZ;
     plint maxNx = fluid.getNx(), maxNy = fluid.getNy(), maxNz = fluid.getNz();
     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {

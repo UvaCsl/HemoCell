@@ -2,6 +2,9 @@
 #ifndef GENERIC_TOOLS_H
 #define GENERIC_TOOLS_H
 
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
 void checkParameterSanity(IncomprFlowParam<T> param)
 {
 	// Check lattice viscosity [0.01, 0.45]
