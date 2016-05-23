@@ -35,6 +35,7 @@ int main(int argc, char* argv[])
 
     bool checkpointed = 0;
     plint initIter = 0;
+    plint warmup = 0;
     T Re;
     T dx, dt, dm, dNewton;
     T tau, nu_lbm, u_lbm_max;
@@ -69,6 +70,7 @@ int main(int argc, char* argv[])
     XMLreaderProxy document = checkpointed ? documentXML["Checkpoint"]["ficsion"] : documentXML["ficsion"];
    
     document["parameters"]["shearrate"].read(shearRate_p);
+    document["parameters"]["warmup"].read(warmup);
 
     document["cellModel"]["rbcModel"].read(rbcModel);
     document["cellModel"]["shellDensity"].read(shellDensity);
@@ -162,7 +164,6 @@ int main(int argc, char* argv[])
         defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
         new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(parameters.getOmega()));
 
-    
 
     // -------------------------- Define initial conditions ---------------------
 
@@ -261,6 +262,14 @@ int main(int argc, char* argv[])
     //PowerLawForce<T> PLF(k_int, DeltaX, R, k);
 
 
+    // --------------------- Warming up the fluid field ---------------------
+
+    if (initIter == 0)
+    {
+        pcout << "(main) fresh start: warming up fluid domain for "  << warmup << " terations..." << std::endl;
+        for (plint itrt = 0; itrt < warmup; ++itrt) { lattice.collideAndStream(); }
+    }
+
     // -------------------------- Initial output --------------------------
 
     global::timer("HDFOutput").start();
@@ -270,8 +279,8 @@ int main(int argc, char* argv[])
 
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, nCells, numVerticesPerCell);
-    
-    
+
+
     // ------------------------ Starting main loop --------------------------
     
     global::timer("mainLoop").start();

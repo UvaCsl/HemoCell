@@ -21,6 +21,7 @@
 
 <parameters>
     <shearrate> 25.0 </shearrate>   <!--Shear rate for the fluid domain. [s^-1] [25]. -->
+    <warmup> 5000 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
 </parameters>
 
 
