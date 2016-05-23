@@ -1,0 +1,82 @@
+43c43
+<         T iX, T iY, T iZ, Box3D box ) const
+---
+>         Array<T,3> const& particlePos, Box3D box ) const
+46,48c46,48
+<     T x = iX-location.x;
+<     T y = iY-location.y;
+<     T z = iZ-location.z;
+---
+>     T x = particlePos[0]-location.x;
+>     T y = particlePos[1]-location.y;
+>     T z = particlePos[2]-location.z;
+664,665d663
+<     Array<T,3> pos; 
+<     pos = particle->getPosition();
+667c665
+<         this->isContained(pos[0],pos[1],pos[2], finalDomain) )
+---
+>         this->isContained(particle->getPosition(), finalDomain) )
+680d677
+<     Array<T,3> pos; 
+684,685c681
+<             pos = particles[i]->getPosition();
+<             if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
+---
+>             if (this->isContained(particles[i]->getPosition(),finalDomain)) {
+702d697
+<         Array<T,3> pos; 
+704,705c699
+<             pos = particles[i]->getPosition();
+<             if (this->isContained(pos[0],pos[1],pos[2],finalDomain) &&
+---
+>             if (this->isContained(particles[i]->getPosition(),finalDomain) &&
+724d717
+<     Array<T,3> pos; 
+726,727c719
+<         pos = particles[i]->getPosition();
+<         if (this->isContained(pos[0],pos[1],pos[2],domain)) {
+---
+>         if (this->isContained(particles[i]->getPosition(),domain)) {
+739,740d730
+<     Array<T,3> pos; 
+<         
+742,743c732
+<         pos = particles[i]->getPosition();
+<         if (this->isContained(pos[0],pos[1],pos[2],domain)) {
+---
+>         if (this->isContained(particles[i]->getPosition(),domain)) {
+756d744
+<       Array<T,3> pos;
+758,759c746
+< 	  pos = particles[i]->getPosition();
+< 	  if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
+---
+>             if (this->isContained(particles[i]->getPosition(),finalDomain)) {
+773d759
+<       Array<T,3> pos;
+775,776c761
+< 	  pos = particles[i]->getPosition();
+< 	  if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
+---
+>             if (this->isContained(particles[i]->getPosition(),finalDomain)) {
+790d774
+<         Array<T,3> pos;
+792,793c776
+<             pos = particles[i]->getPosition();
+<             if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
+---
+>             if (this->isContained(particles[i]->getPosition(),finalDomain)) {
+806d788
+<         Array<T,3> pos; 
+809,810c791
+<             pos = particle->getPosition();
+<             if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
+---
+>             if (this->isContained(particle->getPosition(),finalDomain)) {
+813d793
+<                 pos = particle->getPosition();
+815c795
+<                      (!this->isContained(pos[0],pos[1],pos[2],this->getBoundingBox()))  )
+---
+>                      (!this->isContained(particle->getPosition(),this->getBoundingBox()))  )
