@@ -5,11 +5,11 @@
     <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
     <shellDensity> 1.0 </shellDensity>
 
-    <kBend> 2000e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <kBend> 20000e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
     <kVolume> 60000.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
     <kSurface> 59000.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
 <!-- 0.5e0 -->
-    <kShear> 59000.0e0 </kShear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
+    <kShear> 590000.0e0 </kShear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
     <etaM> 0.0e-6 </etaM> <!-- NOT WORKING ATM --> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
 <!-- +++++ -->
 <!-- Testing phase-->
@@ -38,7 +38,13 @@ Fischer2004 [70 + flowType], Couette flow with Fischer2004 [90 + flowType],
     <eulerAngles> 0 0 90 </eulerAngles> <!-- In degrees -->
     <deflationRatio> 1.0 </deflationRatio> <!-- Ratio of Final to Initial ratio [0.65] -->
     <relaxationTime> 200 </relaxationTime> <!-- Relaxation time for deflation and stretching force [5000] -->
-    <Delta> 0.2 </Delta> <!-- Initial distance between platelets -->
+    <Delta> 0.1 </Delta> <!-- Initial distance between platelets (in microns) -->
+    <ChooseBondType> 1 </ChooseBondType> <!-- Bond Type: 0= SimpleUnsaturatedBond, 1= SimpleSaturatedBond, 2=SimpleAsymmetricSaturatedBond (Doesn't work ATM) -->
+    <ChooseBondPotential> 0 </ChooseBondPotential> <!-- Bond Potential (parameters are predefined): 0= Morse, 1= LennardJones, 2= FENE  (Doesn't work ATM) -->
+    <K_scale> 1.0 </K_scale> <!-- Scaling coefficient for individual bond (multiplicator to bond potential) -->
+    <R_attach> 0.3 </R_attach> <!-- Radius of bond creation (in microns) -->
+    <R_break> 0.9 </R_break> <!-- Radius of bond breakage (in microns) -->
+    <max_sat> 1 </max_sat>  <!-- Max saturation number of bonds per LSP (for saturating bonds only) -->
 </parameters>
 
 

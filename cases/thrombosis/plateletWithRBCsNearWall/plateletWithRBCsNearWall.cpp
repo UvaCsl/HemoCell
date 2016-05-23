@@ -308,8 +308,11 @@ int main(int argc, char* argv[])
 
 //    =======================  Create Platelet
         T pltRadius = 1.15e-6/dx;
-        T aspectRatio = 1.0 / (2*pltRadius);
-        TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, cellNumTriangles, dx, cellPath, eulerAngles, aspectRatio);
+          // T aspectRatio = 1.0 / (2*pltRadius);
+       // This means that thickness of platelet is two times smaller than its diameter (oblate)
+       // Prolate spheroid would have aspectRatio > 1.0
+        T aspectRatio = 0.5 ;
+        TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, cellNumTriangles, dx, cellPath, eulerAngles, aspectRatio*pltRadius);
         TriangularSurfaceMesh<T> pltMeshElement = PLTCells.getMesh();
         eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
         cellModels.push_back(new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC,
@@ -330,20 +333,24 @@ int main(int argc, char* argv[])
     
 
      // Setting the space for a platelet   
-        T gapSize = 0.2;
+        T gapSize = 3.0*pltRadius;
         T pltX = nx*0.5;
-        T pltY = 0.5+pltRadius*aspectRatio+gapSize;
+        T pltY = 0.5+aspectRatio*pltRadius+gapSize;
         T pltZ = nz*0.5;
        
-        Box3D space = Box3D(pltX-pltRadius, pltX+pltRadius, pltY-pltRadius*aspectRatio, pltY+pltRadius*aspectRatio , pltZ-pltRadius, pltZ+pltRadius);
+
+    //    Box3D space = Box3D(pltX-2.0*pltRadius, pltX+2.0*pltRadius*aspectRatio, pltY-2.0*pltRadius*aspectRatio, pltY+2.0*pltRadius , pltZ-2.0*pltRadius, pltZ+2.0*pltRadius);
+	Box3D space = Box3D(pltX-pltRadius, pltX+pltRadius, pltY-pltRadius, pltY+pltRadius, pltZ-pltRadius, pltZ+pltRadius);
        // Array<T, 3> spacesize = Array<T,3>(pltRadius, pltRadius*aspectRatio, pltRadius);
 
       // Positioning of RBC field with the gap for a platelet
         if (hct>0) {
-           // orderedPositionWithSpaceCellField3D(RBCField, space);
+           // orderedPositionMultipleCellField3D(cellFields);
             orderedPositionMultipleCellField3DWithSpace<T, DESCRIPTOR>(cellFields, space);
            // orderedPositionMultipleCellField3DWithSpace(RBCField, space); //ARGUMENT WAS A VECTOR OF CELLFIELDS.
+      //     orderedPositionCellField3D(RBCField);
         }
+ 
 
 
         // Positioning of a platelet   
@@ -369,7 +376,7 @@ int main(int argc, char* argv[])
     }
 	pcout << std::endl << "(main) Starting simulation i=" << initIter << std::endl;
 
-//    MultiParticleField3D<LightParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
+//    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
 //                                                        createBoundaryParticleField3D(lattice);
 
     /* Repulsive force */
@@ -475,6 +482,7 @@ int main(int argc, char* argv[])
     }
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
     	delete cellFields[iCell];
+    	delete cellModels[iCell];
     }
     simpleProfiler.writeIteration(tmax+1);
     pcout << "Simulation finished." << std::endl;

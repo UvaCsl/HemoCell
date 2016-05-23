@@ -53,9 +53,9 @@ useHDF5 = true
 # Path to external libraries (other than Palabos)
 libraryPaths = 
 # Path to inlude directories (other than Palabos)
-includePaths = $(ficsionRoot) $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/extensions/ $(ficsionRoot)/external/ $(ficsionRoot)/IO/ $(ficsionRoot)/newMesh/
+includePaths = $(ficsionRoot) $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/ $(ficsionRoot)/IO/ $(ficsionRoot)/newMesh/
 # Path to inlude directories (other than Palabos)
-# ficsionPaths = $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/extensions/ $(ficsionRoot)/external/
+# ficsionPaths = $(ficsionRoot)/core/ $(ficsionRoot)/helper/ $(ficsionRoot)/models/ $(ficsionRoot)/cases/ $(ficsionRoot)/external/
 # Dynamic and static libraries (other than Palabos)
 libraries    = 
 

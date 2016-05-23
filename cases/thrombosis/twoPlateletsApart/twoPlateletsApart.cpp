@@ -31,7 +31,8 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
         T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & ibmScheme, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
-        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed, T & Delta)
+        plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed, T & Delta,
+        plint & ChooseBondType, plint & ChooseBondPotential, T & K_scale, T & R_attach, T & R_break)
     {
     T nu_p, tau, dx;
     T dt, nu_lb;
@@ -71,6 +72,11 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     document["parameters"]["deflationRatio"].read(deflationRatio);
     document["parameters"]["relaxationTime"].read(relaxationTime);
     document["parameters"]["Delta"].read(Delta);
+    document["parameters"]["ChooseBondType"].read(ChooseBondType);
+    document["parameters"]["ChooseBondPotential"].read(ChooseBondPotential);
+    document["parameters"]["K_scale"].read(K_scale);
+    document["parameters"]["R_attach"].read(R_attach);
+    document["parameters"]["R_break"].read(R_break);
     document["ibm"]["forceToFluid"].read(forceToFluid);
     document["ibm"]["ibmKernel"].read(ibmKernel);
     document["ibm"]["shape"].read(shape);
@@ -174,6 +180,11 @@ int main(int argc, char* argv[])
     T eqLengthRatio;
     T u, Re, Re_p, N, lx, ly, lz;
     T Delta;
+    plint ChooseBondType;
+    plint ChooseBondPotential;
+    T K_scale;
+    T R_attach;
+    T R_break;
     T poiseuilleForce=0;
     T rho_p;
     T radius;
@@ -204,7 +215,8 @@ int main(int argc, char* argv[])
             k_rest, k_shear, k_bend, k_stretch, k_WLC, eqLengthRatio, k_rep, k_elastic, k_volume, k_surface, eta_m,
             rho_p, u, flowType, Re, shearRate_p, stretchForce_p, eulerAngles, Re_p, N, lx, ly, lz,  forceToFluid, ibmKernel, ibmScheme, shape, cellPath, radius, deflationRatio, relaxationTime,
             cellNumTriangles, tmax, tmeas, hct, npar, flowParam, checkpointed,
-            Delta);
+            Delta,
+            ChooseBondType, ChooseBondPotential, K_scale, R_attach, R_break);
     IncomprFlowParam<T> parameters(
             u, // u
             Re_p, // Inverse viscosity (1/nu_p)
@@ -357,7 +369,7 @@ int main(int argc, char* argv[])
 		pcout << "(main) nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() ;
 		pcout << ", Volume = " << eqVolumes[iCell] << std::endl;
     }
-//    MultiParticleField3D<LightParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
+//    MultiParticleField3D<DenseParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
 //                                                        createBoundaryParticleField3D(lattice);
 
     /* Repulsive force */
@@ -366,14 +378,74 @@ int main(int argc, char* argv[])
 
 
     /* ************* BOND DYNAMICS ************************/
+      
+    /* Default */
+    T De_adh =  2 * 2.5e-7, beta_adh =1.0, r0_adh=0.2, rcut_adh=5.0;
+    AdhesiveMorsePotential<T> AdhForce(De_adh, beta_adh, r0_adh, rcut_adh);
 
-   T De_adh =  1 * 0.3 * 4.14e-21, beta_adh = 3.0, r0_adh=0.3, rcut_adh=0.9;
-   AdhesiveMorsePotential<T> AdhForce(De_adh, beta_adh, r0_adh, rcut_adh);
-   T R_attach = 0.3, R_break = 0.9;
+   /*Define BondPotential From config */
+   if (ChooseBondPotential == 0) {
+      T De_adh, beta_adh, r0_adh, rcut_adh;
+      De_adh= K_scale * 0.3 * kBT; 
+      beta_adh =3.0;
+      r0_adh=R_attach;
+      rcut_adh=R_break;
+      AdhesiveMorsePotential<T> AdhForce(De_adh, beta_adh, r0_adh, rcut_adh); 
+      pcout << std::endl << "(main) Using AdhesiveMorsePotential " << std::endl;
+   }
+   else if (ChooseBondPotential == 1) {
+      T epsilonLJ_adh, sigmaLJ_adh, rcut_adh;
+      epsilonLJ_adh = K_scale * 550 * kBT;
+      sigmaLJ_adh = 1.5 * R_attach;
+      rcut_adh=R_break;
+      AdhesiveLennardJonesPotential<T> AdhForce(epsilonLJ_adh, sigmaLJ_adh, rcut_adh); 
+            pcout << std::endl << "(main) Using AdhesiveLennardJonesPotential " << std::endl;
+   }
+   else if (ChooseBondPotential == 2) {
+      T H_adh, el_max_adh, r0_adh, rcut_adh;
+      H_adh = K_scale * 1000/dx * kBT; 
+      el_max_adh =10.0; 
+      r0_adh=R_attach; 
+      rcut_adh=R_break;
+      AdhesiveFENEForce<T> AdhForce(H_adh, el_max_adh, r0_adh, rcut_adh, false, 0.0, 0.0); 
+      pcout << std::endl << "(main) Using  AdhesiveFENEForce " << std::endl;
+   }
+   else {
+      /* Default */
+       T De_adh =  2 * 2.5e-7, beta_adh =1.0, r0_adh=0.2, rcut_adh=5.0;
+       AdhesiveMorsePotential<T> AdhForce(De_adh, beta_adh, r0_adh, rcut_adh);
+           pcout << std::endl << "(main) Using DEFAULT AdhesiveMorsePotential " << std::endl;
+   }
+
+
+
+   /* Default */
    trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(AdhForce, R_attach, R_break, true);
-//   trombocit::SimpleSaturatedBond<T,DESCRIPTOR> bondType(AdhForce, R_attach, R_break, 1, 5, true);
-//   trombocit::SimpleAsymmetricSaturatedBond<T,DESCRIPTOR> bondType(AdhForce, R_attach, R_break, 1, 5, 1, 5, true);
 
+   /* Define BondType from config */
+   if (ChooseBondType == 0) {
+        trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(AdhForce, R_attach, R_break, true);
+        pcout << std::endl << "(main) Using SimpleUnsaturatedBond " << std::endl;
+   } 
+   else if (ChooseBondType == 1) {
+        T delta_saturation = 1, max_saturation = 5;
+        trombocit::SimpleSaturatedBond<T,DESCRIPTOR> bondType(AdhForce, R_attach, R_break, delta_saturation, max_saturation,  true);
+        pcout << std::endl << "(main) Using SimpleSaturatedBond " << std::endl;
+   }
+   else if (ChooseBondType == 2) {
+        T delta_saturation0 = 1, max_saturation0 = 5, delta_saturation1 = 1, max_saturation1 = 5;
+        trombocit::SimpleAsymmetricSaturatedBond<T,DESCRIPTOR> bondType(AdhForce, R_attach, R_break, delta_saturation0, max_saturation0, delta_saturation1, max_saturation1, true);
+        pcout << std::endl << "(main) Using SimpleAsymmetricSaturatedBond " << std::endl;
+   }
+   else {
+        /* Default */
+        trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(AdhForce, R_attach, R_break, true);
+        pcout << std::endl << "(main) Using DEFAULT SimpleUnsaturatedBond " << initIter << std::endl;
+   }
+
+
+  //  trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(PLF, 0.3, 1, true);
+  //  trombocit::SimpleUnsaturatedBond<T,DESCRIPTOR> bondType(AM, 0.5, 2.0, true);
     BondField3D<T,DESCRIPTOR> bondField(PLTField, bondType);
     BondFieldWrapper3D<T,DESCRIPTOR> bondDynamics(bondField);
     bondDynamics.update();
@@ -490,6 +562,7 @@ int main(int argc, char* argv[])
     }
     for (pluint iCell=0; iCell<cellFields.size(); ++iCell) {
     	delete cellFields[iCell];
+    	delete cellModels[iCell];
     }
     simpleProfiler.writeIteration(tmax+1);
     pcout << "Simulation finished." << std::endl;
