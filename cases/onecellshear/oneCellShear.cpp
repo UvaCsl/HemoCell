@@ -45,10 +45,10 @@ int main(int argc, char* argv[])
     T shearRate_p, shearRate;
     T shellDensity, eqLengthRatio, radius;
     T k_WLC, k_rep, k_rest, k_elastic, k_bend, k_volume, k_surface, k_shear, k_stretch, eta_m;
-    T velocity;
     plint minNumOfTriangles;
     plint rbcModel;
     plint ibmKernel, ibmScheme;
+    Array<T, 3> eulerAngles;
     plint tmax, tmeas;
     std::string meshFileName;
 
@@ -71,6 +71,13 @@ int main(int argc, char* argv[])
    
     document["parameters"]["shearrate"].read(shearRate_p);
     document["parameters"]["warmup"].read(warmup);
+
+    std::vector<T> ea;
+    document["parameters"]["eulerAngles"].read(ea);
+    if (ea.size() != 3) { ea.resize(3, 0.0); }
+    eulerAngles = Array<T,3>(ea[0], ea[1], ea[2]);
+    for(int i =0; i < 3; i++)
+        eulerAngles[i] *= pi/180.;
 
     document["cellModel"]["rbcModel"].read(rbcModel);
     document["cellModel"]["shellDensity"].read(shellDensity);
@@ -107,7 +114,7 @@ int main(int argc, char* argv[])
 
 // ---------------------------- Read in geometry (STL) ------------------------------------------------
 
-    Re = 1;
+    Re = (ly * (shearRate_p * (lx*0.5)) ) / nu_p;
     nx = (int)(lx / dx);
     ny = (int)(ly / dx);
     nz = (int)(lz / dx);
@@ -120,9 +127,6 @@ int main(int argc, char* argv[])
     dNewton = (dm * dx / (dt * dt));
     //kBT = kBT_p / ( dNewton * dx );
     shearRate = shearRate_p * dt;
-
-    // Lid velocity
-    velocity = shearRate * ny / 2.0;
     
     
     pcout << "(main) dx = " << dx << ", " <<
@@ -130,7 +134,6 @@ int main(int argc, char* argv[])
         "dm = " << dm << ", " <<
         "dN = " << dNewton << ", " <<
         "shear rate = " << shearRate << ", " <<
-        "lid velocity = " << velocity <<
         //"kT = " << kBT <<
         std::endl;
 
@@ -156,6 +159,8 @@ int main(int argc, char* argv[])
 
     // ------------------------ Init lattice --------------------------------
 
+    pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
+
     plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
     MultiBlockLattice3D<T, DESCRIPTOR> lattice(
         defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
@@ -165,29 +170,14 @@ int main(int argc, char* argv[])
         new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(parameters.getOmega()));
 
 
-    // -------------------------- Define initial conditions ---------------------
+    // -------------------------- Define boundary conditions ---------------------
 
     OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
         = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
 
-    pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
-
     lattice.toggleInternalStatistics(false);
 
-    Box3D bottom = Box3D(0, nx-1,    0,    1,  0, nz-1);
-    Box3D top    = Box3D(0, nx-1, ny-2, ny-1,  0, nz-1);
-
-    lattice.periodicity().toggle(0, true);
-    lattice.periodicity().toggle(2, true);
-
-    boundaryCondition->setVelocityConditionOnBlockBoundaries ( lattice, bottom );
-    boundaryCondition->setVelocityConditionOnBlockBoundaries ( lattice, top );
-
-    Array<T,3> vel(velocity,0.0,0.0);
-    setBoundaryVelocity(lattice, bottom, vel);
-    setBoundaryVelocity(lattice, top, -vel);
-
-    lattice.initialize();
+    iniLatticeSquareCouette(lattice, parameters, *boundaryCondition, shearRate);
 
 
     // ----------------------- Init cell models --------------------------
@@ -197,7 +187,6 @@ int main(int argc, char* argv[])
     T persistenceLengthFine = 7.5e-9; // In meters
     T eqVolume = 0;
     plint shape = 1;    // shape: Sphere[0], RBC from sphere[1], Cell(defined)[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5]
-    Array<T,3> eulerAngles(0., 0., 0.);
     std::string cellPath = " "; // If particle is loaded from stl file.
 
     ConstitutiveModel<T, DESCRIPTOR> *cellModel;
