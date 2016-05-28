@@ -112,9 +112,9 @@ int main(int argc, char* argv[])
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
 
-// ---------------------------- Read in geometry (STL) ------------------------------------------------
+// ---------------------------- Define geometry ------------------------------------------------
 
-    Re = (ly * (shearRate_p * (lx*0.5)) ) / nu_p;
+    Re = (ly * (shearRate_p * (ly*0.5)) ) / nu_p;
     nx = (int)(lx / dx);
     ny = (int)(ly / dx);
     nz = (int)(lz / dx);
@@ -147,9 +147,9 @@ int main(int argc, char* argv[])
             u_lbm_max,
             Re*(resolution/nx),     // Because Palabos calculates Re in a uniform way (which is not a good thing for CFD)
             resolution,
-            lx,
-            ly,
-            lz
+            lx-dx,
+            ly-dx,
+            lz-dx
     );
 
     checkParameterSanity(parameters);
@@ -254,7 +254,7 @@ int main(int argc, char* argv[])
 
     if (initIter == 0)
     {
-        pcout << "(main) fresh start: warming up fluid domain for "  << warmup << " terations..." << std::endl;
+        pcout << "(main) fresh start: warming up fluid domain for "  << warmup << " iterations..." << std::endl;
         for (plint itrt = 0; itrt < warmup; ++itrt) { lattice.collideAndStream(); }
     }
 
