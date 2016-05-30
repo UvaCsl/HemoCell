@@ -21,6 +21,8 @@
 
 <parameters>
     <shearrate> 25.0 </shearrate>   <!--Shear rate for the fluid domain. [s^-1] [25]. -->
+    <warmup> 500 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <eulerAngles> 0 0 0 </eulerAngles> <!-- In degrees -->
 </parameters>
 
 
@@ -36,7 +38,7 @@
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1.00e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <dt> 3.0e-7 </dt>
+    <dt> 2.0e-7 </dt>
 </domain>
 
 <sim>

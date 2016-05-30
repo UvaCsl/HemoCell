@@ -336,7 +336,10 @@ void iniLatticeSquareCouette( MultiBlockLattice3D<T,Descriptor>& lattice,
     Box3D top   = Box3D(0, nx-1, 0,    0,    0, nz-1);
     Box3D bottom  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
 
-    lattice.periodicity().toggleAll(true);
+    //lattice.periodicity().toggleAll(true);
+    lattice.periodicity().toggle(0, true);
+    lattice.periodicity().toggle(1, false);
+    lattice.periodicity().toggle(2, true);
 
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, top );
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, bottom );

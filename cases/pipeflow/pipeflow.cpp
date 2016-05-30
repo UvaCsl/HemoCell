@@ -328,7 +328,7 @@ int main(int argc, char *argv[]) {
 
     
     // ----------------------- Init platelets ----------------------------
-    // TODO - Collect material properties, dont just derive them from RBC
+    // TODO - Collect material properties, don't just derive them from RBC
 
     pcout << "(main)   init PLT structures..."  << std::endl;
     T pltRadius = 1.15e-6 / dx;

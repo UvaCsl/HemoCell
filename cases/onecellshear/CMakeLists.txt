@@ -3,7 +3,7 @@
 
 # Project setup
 SET(PROJECT_NAME onecellshear)
-SET(PROJECT_SRC "onecellshear.cpp")
+SET(PROJECT_SRC "oneCellShear.cpp")
 
 # Ficsion location relative to CMakelists.txt
 SET(FICSION_BASE_DIR "./../..")

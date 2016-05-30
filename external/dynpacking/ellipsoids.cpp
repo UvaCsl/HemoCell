@@ -1,14 +1,14 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <cmath>
-#include <ctime>
 #include <string>
 #include <cstring>
-#include <cstdlib>
+#include <cmath>
 #include <iomanip>
 #include <vector>
-//#include <array>
+
+// Uncomment this to build as a standalone application
+//#define STANDALONE
 
 using namespace std;
 
@@ -16,8 +16,6 @@ using namespace std;
 #include "util.h"
 #include "ellipsoid.h"
 //#include "omp.h"
-
-//#define DEBUG_OUTPUT
 
 // Oversize ellipsoids by 10%
 const double OVERSIZE = 1.1;	// This helps to avoid too close membranes -> problematic overlaps for IBM
@@ -64,9 +62,11 @@ class Packing {
 	int Nrslt_step;
 	int Nrot_step;
 
-    // Standard diameters for bounding ellipsoids of RBCs and platelets
+    // Standard diameters for bounding ellipsoids of RBCs and platelets in um [= 1e-6 m]
     double rbcA = 8.0, rbcB = 8.0, rbcC = 2.4;
     double plateletA = 2.5 , plateletB = 2.5, plateletC = 0.75;
+
+    double Sizing = 1.0;
 
 
 	void auxiliary_val();
@@ -120,10 +120,11 @@ public:
 	void execute();
     void init(const char* inputFile);  // For initialising a general case from input file
     // Initialise blood suspension with RBCs and platelets
-    void initBloodSI(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ);
-    void initBloodSI(float hematocrit, float sizeX, float sizeY, float sizeZ);
-	void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps);
+    void initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing);
+    void initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing );
+	void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps, double sizing);
     void savePov(const char * fileName);
+    void saveBloodCellPositions(const char* rbcFileName, const char * pltFileName);
     void getOutput(vector<vector<vector3> > &positions, vector<vector<vector3> > &angles);
     void testOutput();
 };
@@ -228,7 +229,8 @@ void Packing::init(const char* inputFile)
 
 }
 
-void Packing::initBloodSI(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ)
+// Takes dimensions in um!
+void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing = 1.0)
 {
 
     No_parts = nRBC + nPlatelet;
@@ -236,12 +238,27 @@ void Packing::initBloodSI(int nRBC, int nPlatelet, float sizeX, float sizeY, flo
     Epsilon = 0.1;
     Eps_rot = 3.0;
     Diam_incr = 0.01; // UNUSED!
+
+    Sizing = sizing;
+
+    sizeX *= Sizing;
+    sizeY *= Sizing;
+    sizeZ *= Sizing;
+    rbcA *= Sizing;
+    rbcB *= Sizing;
+    rbcC *= Sizing;
+    plateletA *= Sizing;
+    plateletB *= Sizing;
+    plateletC *= Sizing;
+
     No_cells_x = ceil(sizeX); // in the same quantity as cell diameters (umeter)
     No_cells_y = ceil(sizeY);
     No_cells_z = ceil(sizeZ);
+
+
     Ntau = 102400;
 
-    Max_steps = 5000; // if force-free configuration is not possible, still stop calculation at some point
+    Max_steps = maxSteps; // if force-free configuration is not possible, still stop calculation at some point
     Leq_vol = true;
 
     // Set up species
@@ -267,24 +284,25 @@ void Packing::initBloodSI(int nRBC, int nPlatelet, float sizeX, float sizeY, flo
     cout << "Domain size (um): " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
     cout << "Number of cells to pack:  " << endl;
     
-    cout << "    RBC volume: " << rbcVol << " Dimensions: " << rbcA << "x" << rbcB << "x"<< rbcC << endl;
-    cout << "    Platelet volume: " << plateletVol << endl;
+    cout << "    RBCs: " << nRBC << " Volume: " << rbcVol << " Dimensions: " << rbcA << "x" << rbcB << "x"<< rbcC << endl;
+    cout << "    Platelets: " << nPlatelet << " Volume: "<< plateletVol << endl;
 }
 
-void Packing::initBloodSI(float hematocrit, float sizeX, float sizeY, float sizeZ)
+// Takes dimensions in um!
+void Packing::initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ, int maxSteps = 25000, double sizing = 1.0)
 {
     // Calc. volumes
     double domainVol = sizeX * sizeY * sizeZ;
-    double rbcVol = 4./3. * M_PI * rbcA/2. * rbcB/2. * rbcC/2.;
+    double rbcVol = 88.7; // This is set to match the model in ficsion //4./3. * M_PI * rbcA/2. * rbcB/2. * rbcC/2.;
 
-    int nRBC = round( hematocrit * domainVol / rbcVol );
-    int nPlatelets = round(nRBC * 0.055); // the typical platelet count is about 5.5% of the RBC count
+    int nRBC = (int)round( hematocrit * domainVol / rbcVol );
+    int nPlatelets = (int)round(nRBC * 0.07); // the typical platelet count is about 5-8% of the RBC count
 
-    initBloodSI(nRBC, nPlatelets, sizeX, sizeY, sizeZ);
+    initBlood(nRBC, nPlatelets, sizeX, sizeY, sizeZ, maxSteps, sizing);
 
 }
 
-void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps = 25000)
+void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps = 25000, double sizing = 1.0)
 {
     No_parts = 0;
     for(int i = 0; i < nPartsPerComponent.size(); i++)
@@ -294,10 +312,13 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
     Epsilon = 0.1;//0.1;
     Eps_rot = 3.0;
     Diam_incr = 0.005; //0.01; // UNUSED
-    No_cells_x = domainSize[0]; // in the same quantity as cell diameters
-    No_cells_y = domainSize[1];
-    No_cells_z = domainSize[2];
-    Ntau = 150000000;//102400;
+
+    Sizing = sizing;
+
+    No_cells_x = ceil(domainSize[0] * Sizing); // in the same quantity as cell diameters
+    No_cells_y = ceil(domainSize[1] * Sizing);
+    No_cells_z = ceil(domainSize[2] * Sizing);
+    Ntau = 102400;//150000000;//102400;
     Nrot_step = 1;	// Execute rotation every n-th step
     Max_steps = maxSteps; // if force-free configuration is not possible, still stop calculation at some point
     Leq_vol = true;
@@ -305,17 +326,18 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
     // Set up species
     species = new Species*[No_species];
     for(int i = 0; i < No_species; i++)
-        species[i] = new Species(nPartsPerComponent[i], diametersPerComponent[i]*OVERSIZE); // Inflate by 10% TODO: check if it is necessary
+        species[i] = new Species(nPartsPerComponent[i],
+                                 diametersPerComponent[i] * OVERSIZE * Sizing); // Inflate by 10% TODO: check if it is necessary
 
     // Get nominal volume ratio
     Pnom0 = nominalPackingDensity * OVERSIZE;
 
     // Output properties
-    Nprint_step = 500;
+    Nprint_step = 250;
     Nrslt_step = 10; //UNUSED
 
     cout << "Number of maximal iterations: " << Max_steps << endl;
-    cout << "Domain size (um): " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
+    cout << "Packing domain size (um * sizing): " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
     cout << "Number of cells to pack:  " << endl;
     for(int i = 0; i < No_species; i++)
         cout << "    Type: " << i << " - number: " << nPartsPerComponent[i] << " - diameters: " << 	diametersPerComponent[i][0] << "x" << diametersPerComponent[i][1] << "x" << diametersPerComponent[i][2] << endl;    
@@ -734,19 +756,19 @@ void Packing::output(int kind_p) {
 	if (kind_p == 1) {
 		//date_time(cout);
 		cout << endl;
-		cout << "     STEP";
-		cout << "        ACTUAL";
-		cout << "       NOMINAL";
-		cout << "         INNER";
-		cout << "         OUTER";
-		cout << "  FORCE MODULE";
+		cout << "     Steps";
+		cout << "  Ellipsoid";
+//		cout << "       NOMINAL";
+//		cout << "         INNER";
+//		cout << "         OUTER";
+		cout << "      Force";
 		cout << endl;
 		cout << "         ";
-		cout << "       DENSITY";
-		cout << "       DENSITY";
-		cout << "      DIAMETER";
-		cout << "      DIAMETER";
-		cout << "  PER PARTICLE";
+		cout << "  volume ratio";
+//		cout << "       DENSITY";
+//		cout << "      DIAMETER";
+//		cout << "      DIAMETER";
+		cout << "  per particle";
 		cout << endl;
 		cout << endl;
 		return;
@@ -755,9 +777,9 @@ void Packing::output(int kind_p) {
 			cout.precision(10);
 			cout << setw(9) << Nstep;
 			cout << setw(14) << Pactual;
-			cout << setw(14) << Pnomin;
-			cout << setw(14) << Din;
-			cout << setw(14) << Dout;
+//			cout << setw(14) << Pnomin;
+//			cout << setw(14) << Din;
+//			cout << setw(14) << Dout;
 			cout << setw(14) << Force_step;
 			cout << endl;
 	}
@@ -797,7 +819,7 @@ void Packing::getOutput(vector<vector<vector3> > &positions, vector<vector<vecto
             vector3 euler(atan2(Q(1,2),Q(2,2)), -asin(Q(0,2)), atan2(Q(0,1),Q(0,0)));
             //euler *= 180 / M_PI; //Rad to Deg
 
-            positions[ns][nc] = vector3(pos[0], pos[1], pos[2]);
+            positions[ns][nc] = vector3(pos[0], pos[1], pos[2]) * (1./Sizing);
             angles[ns][nc] = vector3(euler[0], euler[1], euler[2]);  // Euler angles in RAD
 
             counter++;
@@ -813,9 +835,9 @@ void Packing::savePov(const char *fileName)
     povf.precision (6);
     for (int i = 0; i < No_parts; i++) {
         Ellipsoid *pi = parts[i];
-        vector3 pos = pi->get_pos();
+        vector3 pos = pi->get_pos() * (1./Sizing);
         Species* k = pi->get_k();
-        vector3 rad = 0.5 * Din * k->getr();
+        vector3 rad = 0.5 * Din * k->getr()* (1./Sizing);
         bool sph = k->gets();
         povf << "sphere {<0, 0, 0>, 1" << endl;
         povf << "scale <" <<
@@ -849,6 +871,31 @@ void Packing::savePov(const char *fileName)
 
     }
     povf.close();
+}
+
+void Packing::saveBloodCellPositions(const char* rbcFileName, const char * pltFileName)
+{
+
+    ofstream rbcFile (rbcFileName);
+    ofstream pltFile (pltFileName);
+
+    for(int i = 0; i < No_parts; i++)
+    {
+        Ellipsoid *pi = parts[i];
+
+        vector3 pos = pi->get_pos() * (1./Sizing);
+        matrix33 Q = pi->get_q().countQ();
+        vector3 euler(atan2(Q(1,2),Q(2,2)), -asin(Q(0,2)), atan2(Q(0,1),Q(0,0)));
+        euler *= 180 / M_PI; //Rad to Deg
+
+        if(i < species[0]->getn())
+            rbcFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2] << endl;
+        else
+            pltFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2] << endl;
+    }
+
+    rbcFile.close();
+    pltFile.close();
 }
 
 void Packing::testOutput()
@@ -995,53 +1042,43 @@ double Packing::zeroin(Ellipsoid_2& ell, double ax, double bx) {
 	}
 }
 
-/*
-int main(int argc, char *argv[]) {
-
-//    if (argc < 3) {
-//        cout << "Usage: " << argv[0] << " input output.pov";
-//        cout << endl;
-//        exit(1);
-//    }
-
-
-    if (argc < 5) {
-        cout << "Usage: " << argv[0] << " hematocrit sX sY sZ";
-        cout << endl;
+#ifdef STANDALONE
+int main(int argc, char *argv[]) 
+{
+    if (argc < 6) {
+        cout << "Usage: " << argv[0] << " hematocrit sX sY sZ maxIter [scale]" << endl;
+        cout << "Output: PLTs.pos, RBCs.pos and cells.pov" << endl;
         exit(1);
     }
 
+	string rbcFileName = "RBCs.pos";
+    string pltFileName = "PLTs.pos";
+    string povFileName = "ellipsoids.pov";
+
+    double scale = 0.3;
 
     cout.setf (ios::fixed, ios::floatfield);
 
+    float hematocrit = atof(argv[1]);
+    float sX = atof(argv[2]);
+    float sY = atof(argv[3]);
+    float sZ = atof(argv[4]);
+
+    int maxIter = atoi(argv[5]);
+
+    if(argc > 6)
+        scale = atof(argv[6]);
+
     Packing pack;
 
-    vector<int> nPartsPerComponent;
-    nPartsPerComponent.push_back(109);
-    nPartsPerComponent.push_back(30);
-    vector<vector3> diametersPerComponent;
-
-    diametersPerComponent.push_back(vector3(7.7,7.7, 2.5));
-    diametersPerComponent.push_back(vector3(2.3,1.0,2.3));
-
-	vector<int> domainSize;
-	domainSize.push_back(69);
-	domainSize.push_back(36);
-	domainSize.push_back(36);    
-
-	pack.initSuspension(nPartsPerComponent, diametersPerComponent, domainSize, 0.4);
-
-
-    //pack.init(argv[1]);
-
-    //pack.initBloodSI(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]));
+        // Default scale for blood is 0.3
+    pack.initBlood(hematocrit, sX, sY, sZ, maxIter, scale);
 
 	pack.execute();
 
-    pack.savePov("ellipsoids.pov");
-
-    pack.testOutput();
+    pack.saveBloodCellPositions(rbcFileName.c_str(), pltFileName.c_str());
+    pack.savePov(povFileName.c_str());
 
     return 0;
 }
-//*/
+#endif

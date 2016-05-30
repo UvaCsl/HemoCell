@@ -9,6 +9,7 @@ build/
 *sconsign.dblite
 *.o
 *.DS_Store
+*.plist
 
 # Ignore the default case binary names
 fromSTL
