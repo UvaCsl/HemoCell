@@ -1,3 +1,6 @@
+#ifndef ELLIPSOIDS_H
+#define ELLIPSOIDS_H
+
 using namespace std;
 
 class vector3 {
@@ -805,3 +808,4 @@ public:
 	}
 };
 
+#endif

@@ -1,9 +1,13 @@
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <cstring>
+
+#define _USE_MATH_DEFINES
 #include <cmath>
+
 #include <iomanip>
 #include <vector>
 
