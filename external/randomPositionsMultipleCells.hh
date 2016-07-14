@@ -102,7 +102,6 @@ void RandomPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
     int mpiSize = global::mpi().getSize();;
     int mpiRank = global::mpi().getRank();
     srand (mpiSize * mpiRank);
-    T ratio;
     BlockLattice3D<T,Descriptor>& fluid =
             *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[0]);
 

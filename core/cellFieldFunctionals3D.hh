@@ -22,8 +22,8 @@ void ComputeCellForce3D<T,Descriptor>::processGenericBlocks (
 {
 
     PLB_PRECONDITION( blocks.size()==1 );
-    ParticleField3D<T,Descriptor>& particleField =
-        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+//    ParticleField3D<T,Descriptor>& particleField =
+//        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
 //    std::vector<Particle3D<T,Descriptor>*> particles;
 //    particleField.findParticles(domain, particles);
 //    for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
