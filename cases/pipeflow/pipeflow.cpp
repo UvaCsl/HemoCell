@@ -146,8 +146,9 @@ int main(int argc, char *argv[]) {
     T nu_p, rho_p;
     plint nx, ny, nz;
     T hematocrit;
-    T shellDensity, eqLengthRatio, radius, minNumOfTriangles; 
+    T shellDensity, eqLengthRatio, radius;
     T k_WLC, k_rep, k_rest, k_elastic, k_bend, k_volume, k_surface, k_shear, k_stretch, eta_m;
+    plint minNumOfTriangles;
     plint ibmKernel, ibmScheme;
     plint tmax, tmeas;
     plint refDir, refDirN;
@@ -255,6 +256,7 @@ int main(int argc, char *argv[]) {
             nz*dx        
     );
 
+    // Do a general check for suspiciosly off values.
     checkParameterSanity(parameters);
     
     //pcout << "(main) dx = " << parameters.getDeltaX() << " dt = " << parameters.getDeltaT() << endl;
@@ -333,7 +335,7 @@ int main(int argc, char *argv[]) {
     pcout << "(main)   init PLT structures..."  << std::endl;
     T pltRadius = 1.15e-6 / dx;
     T aspectRatio = 1.0 / (2 * pltRadius);
-    TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, ceil(minNumOfTriangles/3.0), dx, cellPath, eulerAngles, aspectRatio);
+    TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, (plint)ceil(minNumOfTriangles/3.0), dx, cellPath, eulerAngles, aspectRatio);
     TriangularSurfaceMesh<T> pltMeshElement = PLTCells.getMesh();
     eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
     cellModels.push_back(
@@ -421,7 +423,7 @@ int main(int argc, char *argv[]) {
 
     
     global::timer("mainLoop").start();
-    for (pluint iter = 0 + initIter; iter < tmax + 1; ++iter) {
+    for (plint iter = 0 + initIter; iter < tmax + 1; ++iter) {
 
         // #1# Membrane Model
         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
