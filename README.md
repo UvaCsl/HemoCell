@@ -16,10 +16,10 @@ Remarks:
 - The code should work on Windows as well, however, this is completeley untested. The suggested compiler suite is `TDM-gcc`.
 
 ## `palabos`
-The working version of `palabos` is [v1.5r1](http://www.palabos.org/images/palabos_releases/palabos-v1.5r1.zip). Earlier versions of palabos are no longer supported due to strong dependency on the sparse particle classes present from this version.
+The working version of `palabos` is [v1.5r1](http://www.palabos.org/images/palabos_releases/palabos-v1.5r1.zip). Some modification of the source code is necessary for seamless and performant interoperation with `ficsion`; see know-issues. Earlier versions of `palabos` are no longer supported due to strong dependency on the sparse particle classes present from this version.
 
 ## HDF5
-`ficsion` uses the `hdf5` library with the high-level extensions for the output and post-processing of the results. Debian packeges `h5utils hdf5-tools libhdf5-serial-dev` are known to work for the I/O.
+`ficsion` uses the `hdf5` library with the high-level extensions for the output and post-processing of the results. Debian packages `h5utils hdf5-tools libhdf5-serial-dev` are known to work for the I/O.
 
 ## Post-processing
 Almost all the post-processing is performed by python scripts. The necessary libraries are `numpy`, `matplotlib` and `h5py`. These are parts of most wide-spread python distributions (e.g., Anaconda, Canopy).
@@ -37,6 +37,7 @@ sudo apt-get install python python-numpy python-matplotlib python-h5py
 ## Known issues
 * The membrane model of the particles might blow up the simulation under too large deformations.
 * Ordinary `Makefile`s do not work for IBM BG/Q systems. Instead use the `Makefile.cineca` as a template, found in the parent directory.
+* Due to some changes required in the `Palabos` source code, patch files are provided for version 1.5r1 under the `patch` directory. See the bash script `patchPLB.sh` for info on how to apply them.
 
 
 
