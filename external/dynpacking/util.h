@@ -1,85 +1,9 @@
+#ifndef UTIL_H
+#define UTIL_H
 
-const int data_pos = 60;
+const double PI = 3.141592653589793;
 
-inline void date_time(ostream &o) {
-	long t = time(0);
-	o << ctime(&t) << endl;
-}
-inline void out_char (ostream &o, char ch, int count) {
-	o << string (count, ch);
-}
-inline bool get_bool (istream &i, int pos = data_pos) {
-	string line;
-	getline (i, line);
-	bool b;
-	string data (line, pos);
-	istringstream(data) >> b;
-	return b;
-}
-inline int get_int (istream &i, int pos = data_pos) {
-	string line;
-	getline (i, line);
-	int n;
-	string data (line, pos);
-	istringstream(data) >> n;
-	return n;
-}
-inline double get_double (istream &i, int pos = data_pos) {
-	string line;
-	getline (i, line);
-	double d;
-	string data (line, pos);
-	istringstream(data) >> d;
-	return d;
-}
-inline void omit_line (istream &i) {
-	string line;
-	getline (i, line);
-}
-inline void ivar(ostream &o, string sname_p, int kvalue_p, string smean_p) {
-	o.setf(ios::left, ios::adjustfield);
-	o << setw (12) << sname_p;
-	o.setf(ios::right, ios::adjustfield);
-	o << setw (13) << kvalue_p;
-	o.fill ('.');
-	o << setw (45) << smean_p;
-	o.fill (' ');
-	o << endl;
-}
-inline void lvar(ostream &o, string sname_p, long kvalue_p, string smean_p) {
-	o.setf(ios::left, ios::adjustfield);
-	o << setw (12) << sname_p;
-	o.setf(ios::right, ios::adjustfield);
-	o << setw (13) << kvalue_p;
-	o.fill ('.');
-	o << setw (45) << smean_p;
-	o.fill (' ');
-	o << endl;
-}
-inline void rvar(ostream &o, string sname_p, double dvalue_p, string smean_p) {
-	o.setf(ios::left, ios::adjustfield);
-	o << setw (12) << sname_p;
-	o.setf(ios::right, ios::adjustfield);
-	o << setw (13) << dvalue_p;
-	o.fill ('.');
-	o << setw (45) << smean_p;
-	o.fill (' ');
-	o << endl;
-}
-inline void open_failure (ostream &o, const char *s) {
-	o << "Cannot open " << s << " file" << endl;
-	exit(1);
-}
-inline void error (ostream &o, const char *s) {
-	o << "Error: " << s << endl;
-	exit(1);
-}
-inline void blines (ostream &o, int n = 1) {
-	for (int i = 0; i < n; i++) o << endl;
-}
-inline void page (ostream &o) {
-	o << endl << (char) 12 << endl;	
-}
+// Misc utils ---------------------------
 
 inline double max (double a, double b) {
 	return (a >= b) ? a : b;
@@ -93,3 +17,54 @@ inline double sign (double a, double b) {
 	return (b >= 0) ? fabs(a) : -fabs(a);
 }
 
+// Random number generator -----------------
+
+class Random {
+	static bool flag;
+	static double r1, r2;
+public:
+	static void init () {
+		long seed = 0;
+		time(&seed);
+		srand48(seed);
+		flag = false;
+	}
+	static double ran() {
+		return drand48();
+	}
+	static double ran1(double xl, double xu) {
+		return ran() * (xu-xl) + xl;
+	}
+	static double rand_normal() {
+		if (flag) {
+			flag = false;
+			return r2;
+		}
+		double rbase = sqrt(-2.0 * log(ran()));
+		double rt = 2 * PI * ran();
+		r1 = rbase * cos (rt);
+		r2 = rbase * sin (rt);
+		flag = true;
+		return r1;
+	}
+	static double randiam () {
+		double dmin = 0.5, dmax = 1;
+		double x, y, c2 = dmax * dmin / (dmax - dmin);
+		do {
+			x = ran1(dmin, dmax);
+			y = ran1(0.0, c2 / (dmin * dmin));
+		} while (y > c2 / (x * x));
+		return  x;
+	}
+/*
+	static double ran3 (double z) {
+		return (Diam_max - Diam_min)*z*z / (Box_z * Box_z) + Diam_min;
+	}
+*/
+};
+
+bool Random::flag;
+double Random::r1;
+double Random::r2;
+
+#endif
