@@ -219,11 +219,11 @@ void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float
     Nrot_step = 1;
 
     cout << "Number of maximal iterations: " << Max_steps << endl;
-    cout << "Domain size (um): " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
+    cout << "Number of bins: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
     cout << "Number of cells to pack:  " << endl;
     
-    cout << "    RBCs: " << nRBC << " Volume(for ellipsoids): " << rbcVol << " Dimensions: " << rbcA << "x" << rbcB << "x"<< rbcC << endl;
-    cout << "    Platelets: " << nPlatelet << " Volume(for ellipsoids): "<< plateletVol << endl;
+    cout << "    RBCs: " << nRBC << " Resizd volume(for ellipsoids): " << rbcVol << " Dimensions: " << rbcA << "x" << rbcB << "x"<< rbcC << endl;
+    cout << "    Platelets: " << nPlatelet << " Resized volume(for ellipsoids): "<< plateletVol << endl;
 }
 
 // Takes dimensions in um!
@@ -978,9 +978,9 @@ double Packing::zeroin(Ellipsoid_2& ell, double ax, double bx) {
 int main(int argc, char *argv[]) 
 {
     if (argc < 6) {
-        cout << "Usage: " << argv[0] << " hematocrit sX[um] sY[um] sZ[um] maxIter <scale_for_binning>" << endl;
+        cout << "Usage: " << argv[0] << " hematocrit sX[um] sY[um] sZ[um] maxIter <scale_for_binning=0.3>" << endl;
         cout << "Output: PLTs.pos, RBCs.pos and cells.pov for visualisation." << endl;
-        cout << "Note, the unity in the unit of domain will be used as bin size withouth scaling. Bin-size heavily influences cutoff distance and thus performance." << endl;
+        cout << "Note that the unity in the unit of domain will be used as bin size withouth scaling. Bin-size heavily influences cutoff distance and thus performance." << endl;
         return 1;
     }
 
