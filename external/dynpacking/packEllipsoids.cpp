@@ -16,7 +16,6 @@ using namespace std;
 
 #include "geometry.h"
 #include "ellipsoid.h"
-//#include "omp.h"
 
 // Oversize ellipsoids by 10%
 const double OVERSIZE = 1.1;	// This helps to avoid too close membranes -> problematic overlaps for IBM
@@ -37,7 +36,7 @@ class Packing {
 	int No_cells_x, No_cells_y, No_cells_z;
 	int No_cells, Ncell_min;
 	int Max_steps, Nstep, Ntau;
-	double Power, Sphere_vol, Diam_dens;
+	double Sphere_vol, Diam_dens;
 	double Rc_max, Rcut, Rcut2, Relax;
 	vector3 Box, Half;
 
@@ -57,7 +56,7 @@ class Packing {
     double Sizing = 1.0;
 
 
-	void auxiliary_val();
+	void setup();
 	void stepon();
 	void forces();
 	void motion();
@@ -113,7 +112,7 @@ public:
     void initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing);
     void initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing, double rPlatelet);
 	void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps, double sizing);
-    void savePov(const char * fileName);
+    void savePov(const char * fileName, int sx, int sy, int sz);
     void saveBloodCellPositions(const char* rbcFileName, const char * pltFileName);
     void getOutput(vector<vector<vector3> > &positions, vector<vector<vector3> > &angles);
     void testOutput();
@@ -125,7 +124,6 @@ Packing::Packing () {
 	Lkill = 0;
 	Nfig = 16;//8;
 	Nsf = 1;
-	Power = 1./3.;
 	Sphere_vol = PI / 6.;
 	Random::init();
 	cout.setf (ios::fixed, ios::floatfield);
@@ -150,11 +148,11 @@ Packing::~Packing() {
 
 void Packing::execute() {
 	//cout << "execute begin" << endl;
-	auxiliary_val();
-	//cout << "aux end" << endl;
+	setup();
+	//cout << "setup end" << endl;
 	forces();
 	//cout << "forces end" << endl;
-//	double start = omp_get_wtime( );
+
 	Pactual = Din*Din*Din / Diam_dens;
 	output(1);
 
@@ -165,9 +163,9 @@ void Packing::execute() {
 	}
 	if(Nstep == Max_steps-1)
         cout << "WARNING: Force-free packing was NOT achieved! Potential overlaps might still exist." << endl;
-//	double end = omp_get_wtime( );
-//	cout << "run-time " << end - start << endl;
-	output(3);
+	
+	if (Lend) cout << " PACKING DONE " << endl;		// A configuration close to equilibrium found
+	else cout << " PACKING TERMINATED(!) " << endl;	// No equilibrium yet, but used up maximal iterations, or there is no better configuration
 }
 
 
@@ -279,7 +277,7 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
 
 }
 
-void Packing::auxiliary_val() {
+void Packing::setup() {
 	int imult;
 	int ndim_x, ndim_y, ndim_z;
 	No_cells = No_cells_x * No_cells_y * No_cells_z;
@@ -298,7 +296,7 @@ void Packing::auxiliary_val() {
 	}
 	Diam_dens /= corr;
 	Pnomin = Pnom0;
-	Dout0 = pow (Diam_dens * Pnom0 , Power);
+	Dout0 = pow (Diam_dens * Pnom0 , 1./3.);
 	Dout = Dout0;
 	Relax = 0.5 * Dout / Ntau;
 	Dout2 = Dout * Dout;
@@ -364,20 +362,15 @@ void Packing::stepon() {
 	Dout -= Relax;
 	Dout2 = Dout * Dout;
 	motion();
-	forces();
+	forces(); 
 	Pnomin = Dout * Dout * Dout / Diam_dens;
 	Pactual = Din * Din * Din / Diam_dens;
-	Lend = (Dout <= Din);
-	//Lend = 0;
+	
+	// Stop criterion
+	//Lend = (Dout <= Din);
+	Lend = (Force_step < 1e-15);
+
 	if (Lend) {
-		double dsave = Dout;
-		Dout = 1.1 * Din;
-		Dout2 = Dout*Dout;
-		output(2);
-		forces();
-		Pactual = Din * Din * Din / Diam_dens;
-		Dout = dsave;
-		Dout2 = Dout*Dout;
 		output(2);
 		return;
 	}
@@ -388,24 +381,23 @@ void Packing::stepon() {
 		Relax *= 0.5;
 		if (++Nsf >= Nfig) Lkill = true;
 	}
-	
 }
 
 void Packing::forces() {
-//	cout << "forces" << endl;
-	Din = Dout * Dout;
+
+	Din = Dout*Dout;
 	int i;
-	// 3 pragma gave nothing
+	
 	#pragma omp parallel  for private(i)
 	for (i = 0; i < No_cells; i++)
 		Link_head[i] = -1;
-	// 2 pragma gave nothing
+	
 	#pragma omp parallel  for private(i)
 	for (i = 0; i < No_parts; i++) {
 		parts[i]->set_force();
 		parts[i]->set_forceu();
 	}
-	// 1 pragma gave 3 min 38 sec
+	
 	int ipart;
 
 	#pragma omp parallel  for private(ipart) schedule(static)
@@ -451,7 +443,8 @@ void Packing::motion() {
 		p->rotate(q);
 	}
 //	cout << *parts[0] << endl;
-	Force_step *= Epsilon_scl / (Dout0 * No_parts);
+	//Force_step *= Epsilon_scl / (Dout0 * No_parts);
+	Force_step /= No_parts;
 }
 
 void Packing::force_part(int ipart_p) {
@@ -689,21 +682,20 @@ void Packing::force_all(int ipart_p) {
 
 void Packing::output(int kind_p) {
 	if (kind_p == 1) {
-		//date_time(cout);
 		cout << endl;
 		cout << "     Steps";
-		cout << "  Ellipsoid";
-//		cout << "       NOMINAL";
-//		cout << "         INNER";
-//		cout << "         OUTER";
-		cout << "      Force";
+		cout << "     Actual";
+		cout << "       Nominal";
+		cout << "        Inner";
+		cout << "         Outer";
+		cout << "             Force";
 		cout << endl;
 		cout << "         ";
-		cout << "  volume ratio";
-//		cout << "       DENSITY";
-//		cout << "      DIAMETER";
-//		cout << "      DIAMETER";
-		cout << "  per particle";
+		cout << "     density";
+		cout << "       density";
+		cout << "       diameter";
+		cout << "      diameter";
+		cout << "       per particle";
 		cout << endl;
 		cout << endl;
 		return;
@@ -712,21 +704,12 @@ void Packing::output(int kind_p) {
 			cout.precision(10);
 			cout << setw(9) << Nstep;
 			cout << setw(14) << Pactual;
-//			cout << setw(14) << Pnomin;
-//			cout << setw(14) << Din;
-//			cout << setw(14) << Dout;
-			cout << setw(14) << Force_step;
+			cout << setw(14) << Pnomin;
+			cout << setw(14) << Din;
+			cout << setw(14) << Dout;
+			cout.precision(15);
+			cout << setw(19) << Force_step;
 			cout << endl;
-	}
-	if (kind_p == 3) {
-
-		if (Lend) cout << " PACKING DONE ";		// A configuration close to equilibrium found
-		else cout << " PACKING TERMINATED(!) ";	// No equilibrium yet, but used up maximal iterations, or there is no better configuration
-
-		return;
-	}
-	if (kind_p == 4) {
-		return;
 	}
 }
 
@@ -760,11 +743,31 @@ void Packing::getOutput(vector<vector<vector3> > &positions, vector<vector<vecto
     }
 }
 
-void Packing::savePov(const char *fileName)
+void Packing::savePov(const char *fileName, int sx, int sy, int sz)
 {
     ofstream povf (fileName);
     povf.setf (ios::fixed, ios::floatfield);
     povf.precision (6);
+    
+    // Povray header
+    povf << "#version  3.7;" << endl;
+    povf << "#include \"colors.inc\"" << endl;
+    povf << "global_settings{assumed_gamma 1.0}" << endl;
+    povf << "#default{ finish{ ambient 0.1 diffuse 0.9 }}" << endl;
+    povf << "#default{ pigment { color Red }}" << endl << endl;
+    povf << " background { color MediumBlue }" << endl;
+    povf << " camera {" << endl;
+    povf << "    location <" << 2*sx <<", " << 2*sy << ", " << sz <<">" << endl;
+    povf << "    look_at  <" << sx/2.0 <<", " << sy/2.0 << ", " << sz/2.0 << ">" << endl;
+    povf << "  }" << endl << endl;
+    povf << "light_source { <1500, 0, 0> color White}" << endl;
+    povf << "light_source { <-100, 0, 0> color White}" << endl;
+    povf << "light_source { <0, 1500, 0> color White}" << endl;
+    povf << "light_source { <0, -100, 0> color White}" << endl;
+    povf << "light_source { <0, 0, 1500> color White}" << endl;
+    povf << "light_source { <0, 0, -100> color White}" << endl << endl;
+
+    // Write out ellipsoids
     for (int i = 0; i < No_parts; i++) {
         Ellipsoid *pi = parts[i];
         vector3 pos = pi->get_pos() * (1./Sizing);
@@ -1011,7 +1014,7 @@ int main(int argc, char *argv[])
 	pack.execute();
 
     pack.saveBloodCellPositions(rbcFileName.c_str(), pltFileName.c_str());
-    pack.savePov(povFileName.c_str());
+    pack.savePov(povFileName.c_str(), sX, sY, sZ);
 
     return 0;
 }
