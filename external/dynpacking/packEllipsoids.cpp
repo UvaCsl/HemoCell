@@ -4,39 +4,25 @@
 #include <sstream>
 #include <string>
 #include <cstring>
-
-#define _USE_MATH_DEFINES
 #include <cmath>
 
 #include <iomanip>
 #include <vector>
+#include <math.h>
+#include <stdlib.h>
 
-// Uncomment this to build as a standalone application
-//#define STANDALONE
 
 using namespace std;
 
-#include "random.h"
-#include "util.h"
+#include "geometry.h"
 #include "ellipsoid.h"
-//#include "omp.h"
 
 // Oversize ellipsoids by 10%
 const double OVERSIZE = 1.1;	// This helps to avoid too close membranes -> problematic overlaps for IBM
 
-class Ellipsoid : public Ellipsoid_basic {
-	vector3 f, fu;
-public:
-	Ellipsoid (Species* k, vector3 box) : Ellipsoid_basic(k, box) {}
-	void set_force(vector3 ff = vector3()) { f = ff; }
-	void set_forceu(vector3 ffu = vector3()) { fu = ffu; }
-	vector3& get_f() { return f; }
-	vector3& get_fu() { return fu; }
-};
 
 class Packing {
 	bool Lend;
-	ifstream pDatin;
 
 	int No_parts, No_species;
 	double Epsilon, Epsilon_scl, Eps_rot;
@@ -50,20 +36,17 @@ class Packing {
 	int No_cells_x, No_cells_y, No_cells_z;
 	int No_cells, Ncell_min;
 	int Max_steps, Nstep, Ntau;
-	double Power, Sphere_vol, Diam_dens;
+	double Sphere_vol, Diam_dens;
 	double Rc_max, Rcut, Rcut2, Relax;
-	double Diam_incr;
 	vector3 Box, Half;
 
 	int *Link_head, *Link_list;
 	int *Ncell_bound_x, *Ncell_bound_y, *Ncell_bound_z;
 	double *Pbc_x, *Pbc_y, *Pbc_z;
 
-	bool Lkill, Lprec_chan, Leq_vol;
+	bool Lkill;
 	int Nfig, Nsf;
-	int Nlines, No_end_page, No_page, Npage_len;
 	int Nprint_step;
-	int Nrslt_step;
 	int Nrot_step;
 
     // Standard diameters for bounding ellipsoids of RBCs and platelets in um [= 1e-6 m]
@@ -73,7 +56,7 @@ class Packing {
     double Sizing = 1.0;
 
 
-	void auxiliary_val();
+	void setup();
 	void stepon();
 	void forces();
 	void motion();
@@ -90,7 +73,9 @@ class Packing {
 		if (fabs(lambda) < 1e-10) {
 			cout << "e1" << endl << ei << endl;
 			cout << "e2" << endl << ej << endl;
-			exit(1);
+            cout << "Houston, we have a problem!"<<endl;
+			return 0;
+            //exit(1);
 		}
 		double f_AB_scl = 4 * e.f_AB(lambda);
 		double f_AB = f_AB_scl / Dout2;
@@ -122,12 +107,12 @@ public:
 	Packing ();
 	~Packing();
 	void execute();
-    void init(const char* inputFile);  // For initialising a general case from input file
+
     // Initialise blood suspension with RBCs and platelets
     void initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing);
-    void initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing );
+    void initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing, double rPlatelet);
 	void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps, double sizing);
-    void savePov(const char * fileName);
+    void savePov(const char * fileName, int sx, int sy, int sz);
     void saveBloodCellPositions(const char* rbcFileName, const char * pltFileName);
     void getOutput(vector<vector<vector3> > &positions, vector<vector<vector3> > &angles);
     void testOutput();
@@ -137,14 +122,9 @@ Packing::Packing () {
 	Din = 0;
 	Lend = 0;
 	Lkill = 0;
-	Lprec_chan = 0;
 	Nfig = 16;//8;
-	Nlines = 0;
-	No_end_page = 0;
-	No_page = 0;
 	Nsf = 1;
-	Power = 1./3.;
-	Sphere_vol = M_PI / 6.;
+	Sphere_vol = PI / 6.;
 	Random::init();
 	cout.setf (ios::fixed, ios::floatfield);
 
@@ -168,11 +148,11 @@ Packing::~Packing() {
 
 void Packing::execute() {
 	//cout << "execute begin" << endl;
-	auxiliary_val();
-	//cout << "aux end" << endl;
+	setup();
+	//cout << "setup end" << endl;
 	forces();
 	//cout << "forces end" << endl;
-//	double start = omp_get_wtime( );
+
 	Pactual = Din*Din*Din / Diam_dens;
 	output(1);
 
@@ -182,56 +162,12 @@ void Packing::execute() {
 		if (Nstep % Nprint_step == 0) output(2);
 	}
 	if(Nstep == Max_steps-1)
-        cout << "WARNING: Force-free packing was NOT achieved!" << endl;
-//	double end = omp_get_wtime( );
-//	cout << "run-time " << end - start << endl;
-	output(3);
+        cout << "WARNING: Force-free packing was NOT achieved! Potential overlaps might still exist." << endl;
+	
+	if (Lend) cout << " PACKING DONE " << endl;		// A configuration close to equilibrium found
+	else cout << " PACKING TERMINATED(!) " << endl;	// No equilibrium yet, but used up maximal iterations, or there is no better configuration
 }
 
-void Packing::init(const char* inputFile)
-{
-
-    pDatin.open(inputFile);
-    if (!pDatin) open_failure(cerr, inputFile);
-
-    omit_line(pDatin);
-    No_parts = get_int(pDatin);
-    No_species = get_int(pDatin);
-    Epsilon = get_double(pDatin);
-    Eps_rot = get_double(pDatin);
-    Diam_incr = get_double(pDatin);
-    No_cells_x = get_int(pDatin);
-    No_cells_y = get_int(pDatin);
-    No_cells_z = get_int(pDatin);
-    Ntau = get_int(pDatin);
-    Pnom0 = get_double(pDatin);
-    Max_steps = get_int(pDatin);
-    Leq_vol = get_bool(pDatin);
-    if (No_parts <= 0 || No_cells_x < 0 ||
-        No_cells_y < 0 || No_cells_z < 0 ||
-        Max_steps < 0) error(cerr, "Wrong input data -1-");
-    species = new Species*[No_species];
-    int np = 0;
-    for (int i = 0; i < No_species; i++) {
-        int n = get_int(pDatin);
-        double r0 = get_double(pDatin);
-        double r1 = get_double(pDatin);
-        double r2 = get_double(pDatin);
-        species[i] = new Species (n, vector3(r0, r1, r2));
-        np += n;
-    }
-    if (np != No_parts) error (cerr, "Wrong input data -2-");
-    omit_line(pDatin);
-    Npage_len = get_int(pDatin);
-    Nprint_step = get_int(pDatin);
-    Nrslt_step = get_int(pDatin);
-    Nrot_step = get_int(pDatin);
-    if (Npage_len <= 0 || Nprint_step <= 0 ||
-        Nrslt_step <= 0) error(cerr, "Wrong input data -3-");
-    pDatin.close();
-
-
-}
 
 // Takes dimensions in um!
 void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing = 1.0)
@@ -241,7 +177,6 @@ void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float
     No_species = 2;
     Epsilon = 0.1;
     Eps_rot = 3.0;
-    Diam_incr = 0.01; // UNUSED!
 
     Sizing = sizing;
 
@@ -263,7 +198,6 @@ void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float
     Ntau = 102400;
 
     Max_steps = maxSteps; // if force-free configuration is not possible, still stop calculation at some point
-    Leq_vol = true;
 
     // Set up species
     species = new Species*[No_species];
@@ -272,35 +206,33 @@ void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float
 
     // Calc nominal packing density
     double domainVol = sizeX * sizeY * sizeZ;
-    double rbcVol = 4./3. * M_PI * rbcA/2. * rbcB/2. * rbcC/2.;
-    double plateletVol = 4./3. * M_PI * plateletA/2. * plateletB/2. * plateletC/2.;
+    double rbcVol = 4./3. * PI * rbcA/2. * rbcB/2. * rbcC/2.;
+    double plateletVol = 4./3. * PI * plateletA/2. * plateletB/2. * plateletC/2.;
 
     // Get nominal volume ratio
     Pnom0 = (rbcVol * nRBC + plateletVol * nPlatelet) / domainVol;
 
     // Output properties
-    Npage_len = 56;
     Nprint_step = 10;
-    Nrslt_step = 10;
     Nrot_step = 1;
 
     cout << "Number of maximal iterations: " << Max_steps << endl;
-    cout << "Domain size (um): " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
+    cout << "Number of bins: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
     cout << "Number of cells to pack:  " << endl;
     
-    cout << "    RBCs: " << nRBC << " Volume: " << rbcVol << " Dimensions: " << rbcA << "x" << rbcB << "x"<< rbcC << endl;
-    cout << "    Platelets: " << nPlatelet << " Volume: "<< plateletVol << endl;
+    cout << "    RBCs: " << nRBC << " Resizd volume(for ellipsoids): " << rbcVol << " Dimensions: " << rbcA << "x" << rbcB << "x"<< rbcC << endl;
+    cout << "    Platelets: " << nPlatelet << " Resized volume(for ellipsoids): "<< plateletVol << endl;
 }
 
 // Takes dimensions in um!
-void Packing::initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ, int maxSteps = 25000, double sizing = 1.0)
+void Packing::initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ, int maxSteps = 25000, double sizing = 1.0, double rPlatelet = 0.07)
 {
     // Calc. volumes
     double domainVol = sizeX * sizeY * sizeZ;
-    double rbcVol = 88.7; // This is set to match the model in ficsion //4./3. * M_PI * rbcA/2. * rbcB/2. * rbcC/2.;
+    double rbcVol = 88.7; // This is set to match the model used in ficsion! //4./3. * PI * rbcA/2. * rbcB/2. * rbcC/2.;
 
     int nRBC = (int)round( hematocrit * domainVol / rbcVol );
-    int nPlatelets = (int)round(nRBC * 0.07); // the typical platelet count is about 5-8% of the RBC count
+    int nPlatelets = (int)round(nRBC * rPlatelet); // the typical platelet count is about 5-8% of the RBC count
 
     initBlood(nRBC, nPlatelets, sizeX, sizeY, sizeZ, maxSteps, sizing);
 
@@ -315,7 +247,6 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
     No_species = nPartsPerComponent.size();
     Epsilon = 0.1;//0.1;
     Eps_rot = 3.0;
-    Diam_incr = 0.005; //0.01; // UNUSED
 
     Sizing = sizing;
 
@@ -325,7 +256,6 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
     Ntau = 102400;//150000000;//102400;
     Nrot_step = 1;	// Execute rotation every n-th step
     Max_steps = maxSteps; // if force-free configuration is not possible, still stop calculation at some point
-    Leq_vol = true;
 
     // Set up species
     species = new Species*[No_species];
@@ -338,7 +268,6 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
 
     // Output properties
     Nprint_step = 250;
-    Nrslt_step = 10; //UNUSED
 
     cout << "Number of maximal iterations: " << Max_steps << endl;
     cout << "Packing domain size (um * sizing): " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
@@ -348,7 +277,7 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
 
 }
 
-void Packing::auxiliary_val() {
+void Packing::setup() {
 	int imult;
 	int ndim_x, ndim_y, ndim_z;
 	No_cells = No_cells_x * No_cells_y * No_cells_z;
@@ -367,7 +296,7 @@ void Packing::auxiliary_val() {
 	}
 	Diam_dens /= corr;
 	Pnomin = Pnom0;
-	Dout0 = pow (Diam_dens * Pnom0 , Power);
+	Dout0 = pow (Diam_dens * Pnom0 , 1./3.);
 	Dout = Dout0;
 	Relax = 0.5 * Dout / Ntau;
 	Dout2 = Dout * Dout;
@@ -433,20 +362,15 @@ void Packing::stepon() {
 	Dout -= Relax;
 	Dout2 = Dout * Dout;
 	motion();
-	forces();
+	forces(); 
 	Pnomin = Dout * Dout * Dout / Diam_dens;
 	Pactual = Din * Din * Din / Diam_dens;
-	Lend = (Dout <= Din);
-	//Lend = 0;
+	
+	// Stop criterion
+	//Lend = (Dout <= Din);
+	Lend = (Force_step < 1e-15);
+
 	if (Lend) {
-		double dsave = Dout;
-		Dout = 1.1 * Din;
-		Dout2 = Dout*Dout;
-		output(2);
-		forces();
-		Pactual = Din * Din * Din / Diam_dens;
-		Dout = dsave;
-		Dout2 = Dout*Dout;
 		output(2);
 		return;
 	}
@@ -457,24 +381,23 @@ void Packing::stepon() {
 		Relax *= 0.5;
 		if (++Nsf >= Nfig) Lkill = true;
 	}
-	
 }
 
 void Packing::forces() {
-//	cout << "forces" << endl;
-	Din = Dout * Dout;
+
+	Din = Dout*Dout;
 	int i;
-	// 3 pragma gave nothing
+	
 	#pragma omp parallel  for private(i)
 	for (i = 0; i < No_cells; i++)
 		Link_head[i] = -1;
-	// 2 pragma gave nothing
+	
 	#pragma omp parallel  for private(i)
 	for (i = 0; i < No_parts; i++) {
 		parts[i]->set_force();
 		parts[i]->set_forceu();
 	}
-	// 1 pragma gave 3 min 38 sec
+	
 	int ipart;
 
 	#pragma omp parallel  for private(ipart) schedule(static)
@@ -520,7 +443,8 @@ void Packing::motion() {
 		p->rotate(q);
 	}
 //	cout << *parts[0] << endl;
-	Force_step *= Epsilon_scl / (Dout0 * No_parts);
+	//Force_step *= Epsilon_scl / (Dout0 * No_parts);
+	Force_step /= No_parts;
 }
 
 void Packing::force_part(int ipart_p) {
@@ -758,21 +682,20 @@ void Packing::force_all(int ipart_p) {
 
 void Packing::output(int kind_p) {
 	if (kind_p == 1) {
-		//date_time(cout);
 		cout << endl;
 		cout << "     Steps";
-		cout << "  Ellipsoid";
-//		cout << "       NOMINAL";
-//		cout << "         INNER";
-//		cout << "         OUTER";
-		cout << "      Force";
+		cout << "     Actual";
+		cout << "       Nominal";
+		cout << "        Inner";
+		cout << "         Outer";
+		cout << "             Force";
 		cout << endl;
 		cout << "         ";
-		cout << "  volume ratio";
-//		cout << "       DENSITY";
-//		cout << "      DIAMETER";
-//		cout << "      DIAMETER";
-		cout << "  per particle";
+		cout << "     density";
+		cout << "       density";
+		cout << "       diameter";
+		cout << "      diameter";
+		cout << "       per particle";
 		cout << endl;
 		cout << endl;
 		return;
@@ -781,24 +704,12 @@ void Packing::output(int kind_p) {
 			cout.precision(10);
 			cout << setw(9) << Nstep;
 			cout << setw(14) << Pactual;
-//			cout << setw(14) << Pnomin;
-//			cout << setw(14) << Din;
-//			cout << setw(14) << Dout;
-			cout << setw(14) << Force_step;
+			cout << setw(14) << Pnomin;
+			cout << setw(14) << Din;
+			cout << setw(14) << Dout;
+			cout.precision(15);
+			cout << setw(19) << Force_step;
 			cout << endl;
-	}
-	if (kind_p == 3) {
-		blines	(cout, 2);
-		out_char (cout, '-', 29);
-		if (Lend) cout << " PACKING DONE ";		// A configuration close to equilibrium found
-		else cout << " PACKING TERMINATED(!) ";	// No equilibrium yet, but used up maximal iterations, or there is no better configuration
-		out_char (cout, '-', 29);
-		blines	(cout, 2);
-
-		return;
-	}
-	if (kind_p == 4) {
-		return;
 	}
 }
 
@@ -821,7 +732,7 @@ void Packing::getOutput(vector<vector<vector3> > &positions, vector<vector<vecto
             vector3 pos = pi->get_pos();
             matrix33 Q = pi->get_q().countQ();
             vector3 euler(atan2(Q(1,2),Q(2,2)), -asin(Q(0,2)), atan2(Q(0,1),Q(0,0)));
-            //euler *= 180 / M_PI; //Rad to Deg
+            //euler *= 180 / PI; //Rad to Deg
 
             positions[ns][nc] = vector3(pos[0], pos[1], pos[2]) * (1./Sizing);
             angles[ns][nc] = vector3(euler[0], euler[1], euler[2]);  // Euler angles in RAD
@@ -832,11 +743,31 @@ void Packing::getOutput(vector<vector<vector3> > &positions, vector<vector<vecto
     }
 }
 
-void Packing::savePov(const char *fileName)
+void Packing::savePov(const char *fileName, int sx, int sy, int sz)
 {
     ofstream povf (fileName);
     povf.setf (ios::fixed, ios::floatfield);
     povf.precision (6);
+    
+    // Povray header
+    povf << "#version  3.7;" << endl;
+    povf << "#include \"colors.inc\"" << endl;
+    povf << "global_settings{assumed_gamma 1.0}" << endl;
+    povf << "#default{ finish{ ambient 0.1 diffuse 0.9 }}" << endl;
+    povf << "#default{ pigment { color Red }}" << endl << endl;
+    povf << " background { color MediumBlue }" << endl;
+    povf << " camera {" << endl;
+    povf << "    location <" << 2*sx <<", " << 2*sy << ", " << sz <<">" << endl;
+    povf << "    look_at  <" << sx/2.0 <<", " << sy/2.0 << ", " << sz/2.0 << ">" << endl;
+    povf << "  }" << endl << endl;
+    povf << "light_source { <1500, 0, 0> color White}" << endl;
+    povf << "light_source { <-100, 0, 0> color White}" << endl;
+    povf << "light_source { <0, 1500, 0> color White}" << endl;
+    povf << "light_source { <0, -100, 0> color White}" << endl;
+    povf << "light_source { <0, 0, 1500> color White}" << endl;
+    povf << "light_source { <0, 0, -100> color White}" << endl << endl;
+
+    // Write out ellipsoids
     for (int i = 0; i < No_parts; i++) {
         Ellipsoid *pi = parts[i];
         vector3 pos = pi->get_pos() * (1./Sizing);
@@ -851,7 +782,7 @@ void Packing::savePov(const char *fileName)
         if (!sph) {	//	sphere
             matrix33 Q = pi->get_q().countQ();
             vector3 euler(atan2(Q(1,2),Q(2,2)), -asin(Q(0,2)), atan2(Q(0,1),Q(0,0)));
-            euler *= 180 / M_PI;
+            euler *= 180 / PI;
             povf << "rotate " << setw(12) << euler[0] << "*x" << endl;
             povf << "rotate " << setw(12) << euler[1] << "*y" << endl;
             povf << "rotate " << setw(12) << euler[2] << "*z" << endl;
@@ -890,7 +821,7 @@ void Packing::saveBloodCellPositions(const char* rbcFileName, const char * pltFi
         vector3 pos = pi->get_pos() * (1./Sizing);
         matrix33 Q = pi->get_q().countQ();
         vector3 euler(atan2(Q(1,2),Q(2,2)), -asin(Q(0,2)), atan2(Q(0,1),Q(0,0)));
-        euler *= 180 / M_PI; //Rad to Deg
+        euler *= 180 / PI; //Rad to Deg
 
         if(i < species[0]->getn())
             rbcFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2] << endl;
@@ -1050,16 +981,18 @@ double Packing::zeroin(Ellipsoid_2& ell, double ax, double bx) {
 int main(int argc, char *argv[]) 
 {
     if (argc < 6) {
-        cout << "Usage: " << argv[0] << " hematocrit sX sY sZ maxIter [scale]" << endl;
-        cout << "Output: PLTs.pos, RBCs.pos and cells.pov" << endl;
-        exit(1);
+        cout << "Usage: " << argv[0] << " hematocrit sX[um] sY[um] sZ[um] maxIter <scale_for_binning=0.3>" << endl;
+        cout << "Output: PLTs.pos, RBCs.pos and cells.pov for visualisation." << endl;
+        cout << "Note that the unity in the unit of domain will be used as bin size withouth scaling. Bin-size heavily influences cutoff distance and thus performance." << endl;
+        return 1;
     }
 
 	string rbcFileName = "RBCs.pos";
     string pltFileName = "PLTs.pos";
     string povFileName = "ellipsoids.pov";
 
-    double scale = 0.3;
+    double scale = 0.3; // Default scale for blood is 0.3
+    double plt_ratio = 0.07;
 
     cout.setf (ios::fixed, ios::floatfield);
 
@@ -1075,13 +1008,13 @@ int main(int argc, char *argv[])
 
     Packing pack;
 
-        // Default scale for blood is 0.3
-    pack.initBlood(hematocrit, sX, sY, sZ, maxIter, scale);
+
+    pack.initBlood(hematocrit, sX, sY, sZ, maxIter, scale, plt_ratio);
 
 	pack.execute();
 
     pack.saveBloodCellPositions(rbcFileName.c_str(), pltFileName.c_str());
-    pack.savePov(povFileName.c_str());
+    pack.savePov(povFileName.c_str(), sX, sY, sZ);
 
     return 0;
 }
