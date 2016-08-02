@@ -430,8 +430,18 @@ T Cell3D<T, Descriptor>::computeTriangleArea(plint iTriangle) {
     return triangleAreas[iTriangle];
 }
 
+inline void fic_swap(plint& a, plint& b)
+{
+    plint temp = a;
+    a = b;
+    b = temp;
+}
+
 template<typename T, template<typename U> class Descriptor>
-plint Cell3D<T, Descriptor>::findTriangleId(plint iVertex, plint jVertex, plint kVertex) { 
+plint Cell3D<T, Descriptor>::findTriangleId(plint iVertex, plint jVertex, plint kVertex) 
+{ 
+    #if 0
+   
     std::vector<plint> ati1 = getAdjacentTriangleIds(iVertex, jVertex); 
     std::vector<plint> ati2 = getAdjacentTriangleIds(iVertex, kVertex); 
     if (ati1[0] == ati2[0]) return ati1[0];
@@ -439,6 +449,29 @@ plint Cell3D<T, Descriptor>::findTriangleId(plint iVertex, plint jVertex, plint 
     if (ati1[1] == ati2[0]) return ati1[1];
     if (ati1[1] == ati2[1]) return ati1[1];
     return -1;
+    #else
+
+    plint v[] = {iVertex,jVertex,kVertex};
+
+    if(v[0] > v[1]) fic_swap(v[0], v[1]);
+    if(v[1] > v[2]) fic_swap(v[1], v[2]);
+    if(v[0] > v[1]) fic_swap(v[0], v[1]);
+
+    plint key = (v[0]<<20) | (v[1]<<10) | v[2];
+
+    if(triangleIDs.count(key) == 0)
+    {   
+        std::vector<plint> ati1 = getAdjacentTriangleIds(iVertex, jVertex); 
+        std::vector<plint> ati2 = getAdjacentTriangleIds(iVertex, kVertex); 
+        if (ati1[0] == ati2[0]) triangleIDs[key] = ati1[0];
+        else if (ati1[0] == ati2[1]) triangleIDs[key] = ati1[0];
+        else if (ati1[1] == ati2[0]) triangleIDs[key] = ati1[1];
+        else if (ati1[1] == ati2[1]) triangleIDs[key] = ati1[1];
+        else triangleIDs[key] = -1;
+    }
+    return triangleIDs[key];
+
+    #endif
 } ;
 
 
