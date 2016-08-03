@@ -1,82 +1,85 @@
-43c43
-<         Array<T,3> const& particlePos, Box3D box ) const
----
+42a43,56
 >         T iX, T iY, T iZ, Box3D box ) const
-46,48c46,48
-<     T x = particlePos[0]-location.x;
-<     T y = particlePos[1]-location.y;
-<     T z = particlePos[2]-location.z;
----
+> {
+>     Dot3D const& location = this->getLocation();
 >     T x = iX-location.x;
 >     T y = iY-location.y;
 >     T z = iZ-location.z;
-663a664,665
+> 
+>     return (x > (T)box.x0-(T)0.5) && (x <= (T)box.x1+(T)0.5) &&
+>            (y > (T)box.y0-(T)0.5) && (y <= (T)box.y1+(T)0.5) &&
+>            (z > (T)box.z0-(T)0.5) && (z <= (T)box.z1+(T)0.5);
+> }
+> 
+> template<typename T, template<typename U> class Descriptor>
+> bool ParticleField3D<T,Descriptor>::isContained (
+663a678,679
 >     Array<T,3> pos; 
 >     pos = particle->getPosition();
-665c667
+665c681
 <         this->isContained(particle->getPosition(), finalDomain) )
 ---
 >         this->isContained(pos[0],pos[1],pos[2], finalDomain) )
-677a680
+677a694
 >     Array<T,3> pos; 
-681c684,685
+681c698,699
 <             if (this->isContained(particles[i]->getPosition(),finalDomain)) {
 ---
 >             pos = particles[i]->getPosition();
 >             if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
-697a702
+697a716
 >         Array<T,3> pos; 
-699c704,705
+699c718,719
 <             if (this->isContained(particles[i]->getPosition(),finalDomain) &&
 ---
 >             pos = particles[i]->getPosition();
 >             if (this->isContained(pos[0],pos[1],pos[2],finalDomain) &&
-717a724
+717a738
 >     Array<T,3> pos; 
-719c726,727
+719c740,741
 <         if (this->isContained(particles[i]->getPosition(),domain)) {
 ---
 >         pos = particles[i]->getPosition();
 >         if (this->isContained(pos[0],pos[1],pos[2],domain)) {
-730a739,740
+730a753,754
 >     Array<T,3> pos; 
 >         
-732c742,743
+732c756,757
 <         if (this->isContained(particles[i]->getPosition(),domain)) {
 ---
 >         pos = particles[i]->getPosition();
 >         if (this->isContained(pos[0],pos[1],pos[2],domain)) {
-744a756
+744a770
 >       Array<T,3> pos;
-746c758,759
+746c772,773
 <             if (this->isContained(particles[i]->getPosition(),finalDomain)) {
 ---
 > 	  pos = particles[i]->getPosition();
 > 	  if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
-759a773
+759a787
 >       Array<T,3> pos;
-761c775,776
+761c789,790
 <             if (this->isContained(particles[i]->getPosition(),finalDomain)) {
 ---
 > 	  pos = particles[i]->getPosition();
 > 	  if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
-774a790
+774a804
 >         Array<T,3> pos;
-776c792,793
+776c806,807
 <             if (this->isContained(particles[i]->getPosition(),finalDomain)) {
 ---
 >             pos = particles[i]->getPosition();
 >             if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
-788a806
+788a820
 >         Array<T,3> pos; 
-791c809,810
+791c823,824
 <             if (this->isContained(particle->getPosition(),finalDomain)) {
 ---
 >             pos = particle->getPosition();
 >             if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
-793a813
+793a827
 >                 pos = particle->getPosition();
-795c815
+795c829
 <                      (!this->isContained(particle->getPosition(),this->getBoundingBox()))  )
 ---
 >                      (!this->isContained(pos[0],pos[1],pos[2],this->getBoundingBox()))  )
