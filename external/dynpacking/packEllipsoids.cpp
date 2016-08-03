@@ -11,15 +11,14 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include "geometry.h"
+#include "ellipsoid.h"
+#include "rnd_utils.h"
 
 using namespace std;
 
-#include "geometry.h"
-#include "ellipsoid.h"
-
 // Oversize ellipsoids by 10%
 const double OVERSIZE = 1.1;	// This helps to avoid too close membranes -> problematic overlaps for IBM
-
 
 class Packing {
 	bool Lend;

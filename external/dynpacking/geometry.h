@@ -6,9 +6,7 @@
 #include <cmath>
 #include <cstring>
 
-#include "util.h"
-
-using namespace std;
+#include "rnd_utils.h"
 
 
 // Vector class --------------------

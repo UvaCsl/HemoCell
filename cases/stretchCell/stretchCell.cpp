@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
 
-// ---------------------------- Read in geometry (STL) ------------------------------------------------
+// ---------------------------- Calculate parameters  ------------------------------------------------
 
     Re = 1;
     nx = (int)(lx / dx);
@@ -260,6 +260,8 @@ int main(int argc, char* argv[])
     writeHDF5(lattice, parameters, 0);
     writeCellField3D_HDF5(RBCField, dx, dt, 0);
     global::timer("HDFOutput").stop();
+
+    RBCField[0]->saveMesh("initialCell.stl");
 
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, nCells, numVerticesPerCell);

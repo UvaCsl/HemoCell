@@ -1,5 +1,5 @@
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef RND_UTILS_H
+#define RND_UTILS_H
 
 const double PI = 3.141592653589793;
 
