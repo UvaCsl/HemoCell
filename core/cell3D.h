@@ -247,6 +247,8 @@ private:
     std::map<plint, Array<T,3> > edgeLengthVectors;
     std::map<plint, T> signedAngles;
 
+    std::map<plint, plint> triangleIDs;
+    
     std::map<plint, T> triangleAreas;
     std::map<plint, Array<T,3> > triangleNormals;
     std::map<plint, T> vertexAreas;
