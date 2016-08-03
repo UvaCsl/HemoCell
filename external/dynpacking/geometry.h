@@ -95,11 +95,11 @@ public:
         else if (vec[2] > v1[2]) vec[2] -= v2[2];
         return *this;
     }
-    friend ostream& operator<< (ostream& out, const vector3& v) {
-        out << setprecision(4) << "<" <<
-            setw(8) << v[0] << ", " <<
-            setw(8) << v[1] << ", " <<
-            setw(8) << v[2] << ">";
+    friend std::ostream& operator<< (std::ostream& out, const vector3& v) {
+        out << std::setprecision(4) << "<" <<
+            std::setw(8) << v[0] << ", " <<
+            std::setw(8) << v[1] << ", " <<
+            std::setw(8) << v[2] << ">";
         return out;
     }
 };
@@ -220,20 +220,20 @@ public:
         if (fabs(mat[1][2] - mat[2][1]) > 1e-5) return true;
         return false;
     }
-    friend ostream& operator<< (ostream& out, const matrix33& m) {
-        out << setprecision(4);
-        out << setw(10) << m(0,0);
-        out << setw(10) << m(0,1);
-        out << setw(10) << m(0,2);
-        out << endl;
-        out << setw(10) << m(1,0);
-        out << setw(10) << m(1,1);
-        out << setw(10) << m(1,2);
-        out << endl;
-        out << setw(10) << m(2,0);
-        out << setw(10) << m(2,1);
-        out << setw(10) << m(2,2);
-        return out << endl;
+    friend std::ostream& operator<< (std::ostream& out, const matrix33& m) {
+        out << std::setprecision(4);
+        out << std::setw(10) << m(0,0);
+        out << std::setw(10) << m(0,1);
+        out << std::setw(10) << m(0,2);
+        out << std::endl;
+        out << std::setw(10) << m(1,0);
+        out << std::setw(10) << m(1,1);
+        out << std::setw(10) << m(1,2);
+        out << std::endl;
+        out << std::setw(10) << m(2,0);
+        out << std::setw(10) << m(2,1);
+        out << std::setw(10) << m(2,2);
+        return out << std::endl;
     }
 };
 
@@ -399,8 +399,8 @@ public:
         return 2*Q;
     }
     friend class Ellipsoid_basic;
-    friend ostream& operator<< (ostream& o, const Quaternion& q) {
-        o << "s: " << q.s << " p: " << q.p << endl;
+    friend std::ostream& operator<< (std::ostream& o, const Quaternion& q) {
+        o << "s: " << q.s << " p: " << q.p << std::endl;
         return o;
     }
 };

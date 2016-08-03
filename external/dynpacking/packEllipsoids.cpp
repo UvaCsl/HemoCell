@@ -752,7 +752,7 @@ void Packing::savePov(const char *fileName, int sx, int sy, int sz)
     povf << "#version  3.7;" << endl;
     povf << "#include \"colors.inc\"" << endl;
     povf << "global_settings{assumed_gamma 1.0}" << endl;
-    povf << "#default{ finish{ ambient 0.1 diffuse 0.9 }}" << endl;
+    povf << "#default{ finish{ ambient 0.1 diffuse 0.65 phong 0.05 phong_size 50 roughness 0.1 }}" << endl;
     povf << "#default{ pigment { color Red }}" << endl << endl;
     povf << " background { color MediumBlue }" << endl;
     povf << " camera {" << endl;
@@ -766,6 +766,11 @@ void Packing::savePov(const char *fileName, int sx, int sy, int sz)
     povf << "light_source { <0, 0, 1500> color White}" << endl;
     povf << "light_source { <0, 0, -100> color White}" << endl << endl;
 
+    povf << "// Use RBC.pov for biconcave shape" << endl;
+    povf << "//#include \"RBC.pov\"" << endl;
+    povf << "#declare RBC = sphere {<0, 0, 0>, 1}" << endl;
+    povf << "#declare PLT = sphere {<0, 0, 0>, 1}" << endl << endl;
+
     // Write out ellipsoids
     for (int i = 0; i < No_parts; i++) {
         Ellipsoid *pi = parts[i];
@@ -773,7 +778,12 @@ void Packing::savePov(const char *fileName, int sx, int sy, int sz)
         Species* k = pi->get_k();
         vector3 rad = 0.5 * Din * k->getr()* (1./Sizing);
         bool sph = k->gets();
-        povf << "sphere {<0, 0, 0>, 1" << endl;
+
+        if(i < k->getn())
+        	povf << "object { RBC" << endl;
+        else
+            povf << "object { PLT" << endl;
+
         povf << "scale <" <<
         setw(12) << rad[0] << ", " <<
         setw(12) << rad[1] << ", " <<
