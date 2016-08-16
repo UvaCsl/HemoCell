@@ -399,7 +399,7 @@ T Cell3D<T, Descriptor>::computeSignedAngle(plint iVertex, plint jVertex, plint 
 	    Array<T,3> V2 = computeTriangleNormal(jTriangle);
 	    T angle = angleBetweenVectors(V1, V2);
 		plint sign = dot(x2-x1, V2) >= 0?1:-1;
-        const double pi = 4.*atan(1.);
+
 		if (sign <= 0) {
 			angle = 2*pi-angle;
 		}

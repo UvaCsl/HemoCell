@@ -26,6 +26,7 @@
 
 namespace plb {
 
+const double pio2 = 1.57079632679489661923;
 
 template<typename T>
 Array<T,3> computeInPlaneForce(Array<T,3> const& x1, Array<T,3> const& x2, T maxLength, T k_WLC, T k_rep, T & potential) {
@@ -73,55 +74,36 @@ Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x
 
 */
     T Lmax = eqLength*eqLengthRatio;
-    Array<T,3> dL = (x1 - x2)*1.0;
+    Array<T,3> dL = (x1 - x2);
     T L = norm(dL);
     T r = L/Lmax, r0=1.0/eqLengthRatio; // T Lmax = eqLength*eqLengthRatio;
     Array<T,3> eij = dL/L;
+
     /* In Plane Force (WLC) and Repulsive Force */
-    Array<T,3> tmpForce =  eij * k_inPlane * r * (-6 + (9 - 4*r)*r)/( (r-1)*(r-1) );
-    T k_rep = (eqLength*eqLength)* k_inPlane * r0 * (-6 + (9 - 4*r0)*r0)/( (r0-1)*(r0-1) );
-    tmpForce +=  - eij * k_rep / (L*L) ;
+    T F_WLC =  k_inPlane * r * (-6 + (9 - 4*r)*r)/( (r-1)*(r-1) );
+    T F_rep = - (eqLength*eqLength) / (L*L) * k_inPlane * r0 * (-6 + (9 - 4*r0)*r0)/( (r0-1)*(r0-1) );
+
+    Array<T,3> force = eij * (F_WLC + F_rep);
+
 //    Array<T,3> tmpForce =  eij * k_inPlane *
 //                    (1 - (4*L*eqLengthRatio)/eqLength +
 //                            pow(eqLength,2)*((-1 + pow(-1 + eqLengthRatio,-2) + 4*eqLengthRatio)/pow(L,2) - pow(eqLength - L*eqLengthRatio,-2)));
+#ifdef PLB_DEBUG
     potential = k_inPlane * Lmax * ( 3.0*pow(r, 2) - 2.0*pow(r, 3) ) * 1.0 / (1.0 - r);
     potential +=  k_rep * 1.0 / L;
     potential -= k_inPlane * Lmax * ( 3.0*pow(r0, 2) - 2.0*pow(r0, 3) ) * 1.0 / (1.0 - r0) + k_rep * 1.0 / eqLength; // Energy residual from potential calculation (potential at rest state)
-    return tmpForce;
+#endif
+    return force;
 }
 
 template<typename T>
 Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLengthRatio, T eqLength, T k_inPlane) {
-    /*
-     *  Computes In-Plane forces based on Worm-like chain forces and a repulsive potential.
-     *  Has the same function as computeInPlaneForce but with different arguments.
-     *
-     *    eqLengthRatio = eqLength/maxLength ; // Used to be x0
-     *    k_inPlane = kBT /(4.0*persistenceLengthCoarse);
-     *
-     *  Related publications: [FedosovCaswellKarniadakis2010, FedosovCaswell2010b, Pivkin2008]
-
-    */
-        T Lmax = eqLength*eqLengthRatio;
-        Array<T,3> dL = (x1 - x2)*1.0;
-        T L = norm(dL);
-        T r = L/Lmax, r0=1.0/eqLengthRatio; // T Lmax = eqLength*eqLengthRatio;
-        Array<T,3> eij = dL/L;
-        /* In Plane Force (WLC) and Repulsive Force */
-        Array<T,3> tmpForce =  eij * k_inPlane * r * (-6 + (9 - 4*r)*r)/( (r-1)*(r-1) );
-        T k_rep = (eqLength*eqLength)* k_inPlane * r0 * (-6 + (9 - 4*r0)*r0)/( (r0-1)*(r0-1) );
-        tmpForce +=  - eij * k_rep / (L*L) ;
-    return tmpForce;
-}
-
-template<typename T>
-Array<T,3> computeInPlaneForce(Array<T,3> const& x1, Array<T,3> const& x2, T maxLength, T k_WLC, T k_rep) {
 /*
  *  Wrapper when calling without potential
 
 */
     T potential = 0.0;
-    return computeInPlaneExplicitForce(x1,x2, maxLength, k_WLC, k_rep, potential);
+    return computeInPlaneExplicitForce(x1, x2, eqLengthRatio, eqLength, k_inPlane, potential);
 }
 
 
@@ -186,7 +168,7 @@ Array<T,3> computeSurfaceConservationForce(
     crossProduct(triangleNormal,
                 x3 - x2,
                 tmp);
-    dAdx = 0.5 *tmp; tmp.resetToZero();
+    dAdx = 0.5 * tmp; tmp.resetToZero();
     return -cSurface * dAdx;
 }
 
@@ -276,9 +258,10 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
  *      crossProduct(x1 - x2, x3 - x1, nijk);
  *      crossProduct(x3 - x4, x1 - x3, nlkj);
 */
-	Array<T,3> fx1, tmp;
+	Array<T,3> fx1;
 	T dAngle;
 	T edgeAngle = angleBetweenVectors(ni, nj);
+        cout << edgeAngle << " " << eqAngle << endl;
 	plint sign = dot(x2-x1, nj) > 0?1:-1;
 	if (sign <= 0) {
 		edgeAngle = 2*pi-edgeAngle;
@@ -293,8 +276,12 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
     // T force = -k*(dAngle) * (eqLength*0.5/eqArea);
 
     // Non-linear force, that has linear behaviour at low dAngles but stiffens up at higher dAngles
-    // It prevents crumpled geometries, while retains previous behavior
-    T force = -k*(dAngle + 1e4*pow(dAngle, 3)) * (eqLength*0.5/eqArea);
+    // It prevents crumpled geometries, while retains previous behavior at small deformations
+    //T force = -k*(dAngle + 1e4*pow(dAngle, 3));
+    T force = -k*( dAngle / (1-pow(dAngle/pio2, 2)) );
+
+    // Linear force with no size scaling
+    //T force = -k * dAngle;
 
     fx2 = force * ni;
     fx4 = force * nj;

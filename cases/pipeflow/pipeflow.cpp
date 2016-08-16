@@ -379,7 +379,7 @@ int main(int argc, char *argv[]) {
 
     // ------------------------- Sync all quantities ----------------------
 
-    pcout << "(main) synchronosing quantities..."  << std::endl;
+    pcout << "(main) synchronising quantities..."  << std::endl;
     SyncRequirements everyCCR(allReductions);
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
         cellFields[iCell]->synchronizeCellQuantities(everyCCR);

@@ -183,6 +183,8 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
          o Stretch force
      */
     Array<T,3> force1, force2, force3;
+
+    // Potential only gets computed in debug mode
     T potential;
     for (pluint iE = 0; iE < edges.size(); ++iE) {
         iVertex = edges[iE][0];  jVertex = edges[iE][1];
@@ -258,7 +260,7 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
             lParticle->get_E_bending() += potential;
 #endif
         } else {
-            cout << global::mpi().getRank() << " angle not found " << std::endl;
+            cout << global::mpi().getRank() << " WARNING: angle not found between neighbouring triangles -> surface is not closed and smooth!" << std::endl;
         }
     }
 

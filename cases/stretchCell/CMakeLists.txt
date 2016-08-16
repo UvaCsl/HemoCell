@@ -65,7 +65,7 @@ INCLUDE_DIRECTORIES(AFTER ${MPI_INCLUDE_PATH})
 IF(NEEDHDF5)
   # This is needed since stupid Lisa has a bug in 3.5.1
   IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.0)
-    FIND_PACKAGE(HDF5 COMPONENTS C HL REQUIRED)
+    FIND_PACKAGE(HDF5 COMPONENTS CXX HL REQUIRED)
   ELSE (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.0)
     FIND_PACKAGE(HDF5 REQUIRED)
   ENDIF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.0)
@@ -83,7 +83,8 @@ ENDIF(NEEDVTK)
 IF (NOT CMAKE_CXX_FLAGS)
   #If flags are not set, add default flags
   SET(CMAKE_BUILD_TYPE ${BUILD_TYPE})
-  SET(CMAKE_CXX_FLAGS  " -Wall -g -fstack-protector --param=ssp-buffer-size=4 -Wformat -Wformat-security -Werror=format-security")
+  # GNU C++98 feature set must be forced on new compilers because of Palabos and its dependencies.
+  SET(CMAKE_CXX_FLAGS  " -std=gnu++98 -Wall -g -fstack-protector --param=ssp-buffer-size=4 -Wformat -Wformat-security -Werror=format-security")
 ENDIF (NOT CMAKE_CXX_FLAGS)
 
 #=======================================
