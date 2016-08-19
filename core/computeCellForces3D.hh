@@ -261,7 +261,7 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
 	Array<T,3> fx1;
 	T dAngle;
 	T edgeAngle = angleBetweenVectors(ni, nj);
-        cout << edgeAngle << " " << eqAngle << endl;
+        
 	plint sign = dot(x2-x1, nj) > 0?1:-1;
 	if (sign <= 0) {
 		edgeAngle = 2*pi-edgeAngle;
@@ -272,8 +272,11 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
 
 	dAngle = (edgeAngle-eqAngle);
 
-    //Linear force
+    // Linear force
     // T force = -k*(dAngle) * (eqLength*0.5/eqArea);
+
+    // Force based on sphere-curvature model
+    // T force = -k * sin( dAngle*(pi/180.0) );  
 
     // Non-linear force, that has linear behaviour at low dAngles but stiffens up at higher dAngles
     // It prevents crumpled geometries, while retains previous behavior at small deformations
