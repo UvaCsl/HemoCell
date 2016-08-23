@@ -17,7 +17,7 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
     //  Get the number of processes.
     int  p = MPI::COMM_WORLD.Get_size();
     //  Get the individual process ID.
-     int id = MPI::COMM_WORLD.Get_rank();
+    int id = MPI::COMM_WORLD.Get_rank();
 #else
      int p=1;
      int id = 0;

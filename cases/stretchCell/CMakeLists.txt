@@ -128,16 +128,18 @@ ENDIF(ENABLE_SMP_PARALLEL)
 
 #=======================================
 
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
-
-#=======================================
-
 IF(APPLE)
     ADD_DEFINITIONS("-DPLB_MAC_OS_X")
+    MESSAGE("MacOS X detected: disable OpenMP or set the compiler to g++-6!")
+    #SET(CMAKE_C_COMPILER gcc-6)
+    #SET(CMAKE_CXX_COMPILER g++-6)
+    MESSAGE("Current choice: OpenMP disabled.")
+ELSE(APPLE)
+  find_package(OpenMP)
+  if (OPENMP_FOUND)
+     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  endif(OPENMP_FOUND)
 ENDIF(APPLE)
 
 INCLUDE_DIRECTORIES(AFTER ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/src)
@@ -175,6 +177,11 @@ IF(NEEDHDF5)
   ELSE (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.0)
     TARGET_LINK_LIBRARIES(${PROJECT_NAME} hdf5_hl hdf5)
   ENDIF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.0)
+
+  # Temporary fix for bugous library handling on osx brew
+  IF(APPLE)
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME} /usr/local/lib/libhdf5_hl.a)
+  ENDIF(APPLE)
 ENDIF(NEEDHDF5)
 
 IF(NEEDVTK)
