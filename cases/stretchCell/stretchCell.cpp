@@ -265,7 +265,10 @@ int main(int argc, char* argv[])
 
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, nCells, numVerticesPerCell);
-    
+
+    plb_ofstream fOut("stretch.log");
+    Array<T,3> stretch = stretchedCell.measureStretch();
+    fOut << 1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
     
     // ------------------------ Starting main loop --------------------------
     
@@ -315,21 +318,25 @@ int main(int argc, char* argv[])
             pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
             //pcout << "; Volume (" << RBCField[0]->getVolume() << ")";
 
+            /*
             if (RBCField.count(0) > 0) {
                 pcout << "; Vertex_MAX-MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) -  RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
                 pcout << "; Vertex_MAX " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MAX) << "";
                 pcout << "; Vertex_MIN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MIN) << "";
                 pcout << "; Vertex_MEAN " << RBCField[0]->get1D(CCR_CELL_CENTER_DISTANCE_MEAN) << "";
             }
+            */
 
             Array<T,3> stretch = stretchedCell.measureStretch();
-			pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") ";
-            pcout << std::endl;
+			pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") " << std::endl;
+            fOut << iter+1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
         } else {
             RBCField.synchronizeCellQuantities();
         }
 
     }
+    fOut.close();
+
     RBCField[0]->saveMesh("stretchedCell.stl");
     simpleProfiler.writeIteration(tmax+1);
     //global::profiler().writeReport();

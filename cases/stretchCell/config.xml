@@ -2,16 +2,16 @@
 <ficsion>
 <caseId> caseId </caseId>
 <cellModel>
-    <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
+    <rbcModel> 0 </rbcModel> <!-- ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
     <shellDensity> 1.0 </shellDensity>
 
-    <kBend> 1200e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
-    <kVolume> 60000.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}-->
-    <kSurface> 0.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <kBend> 900e0 </kBend> <!-- bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <kVolume> 100000.0 </kVolume> <!-- volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}-->
+    <kSurface> 0.0 </kSurface> <!-- global surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}-->
 <!-- 0.5e0 -->
-    <kShear> 1000.0e0 </kShear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]-->
+    <kShear> 10000.0e0 </kShear> <!-- local area constrain coefficient (dimensionless) [0, 10, 100]-->
     <etaM> 0.0e-6 </etaM> <!-- NOT WORKING ATM --> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
-    <kWLC> 1.8e-1 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
+    <kWLC> 2.5e0 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
     <eqLengthRatio> 2.2 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
     <kRep> 1.0e0 </kRep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
     <kElastic> 0.0e0 </kElastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->
@@ -20,7 +20,7 @@
 </cellModel>
 
 <parameters>
-    <stretchForce> 173.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. -->
+    <stretchForce> 87.0 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. -->
 </parameters>
 
 
@@ -36,11 +36,11 @@
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1.00e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <dt> 5.0e-7 </dt>
+    <dt> 5e-7 </dt>
 </domain>
 
 <sim>
-    <tmax> 6000 </tmax> <!-- total number of iterations -->
+    <tmax> 15000 </tmax> <!-- total number of iterations -->
     <tmeas> 100 </tmeas> <!-- interval after which data is written --> 
 </sim>
 

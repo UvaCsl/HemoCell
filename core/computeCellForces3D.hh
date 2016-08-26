@@ -97,6 +97,25 @@ Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x
 }
 
 template<typename T>
+Array<T,3> computeInPlaneYeohLikeForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLength, T k_inPlane) {
+
+        Array<T,3> vL = (x1 - x2);
+        T L = norm(vL);
+        Array<T,3> eij = vL/L;
+
+        T dL = L-eqLength;
+        T force1D = 0.0;
+
+        /* Spectrin links are compressible */
+        if(dL > 0.0)
+            force1D =  - k_inPlane * ( dL + pow(dL, 3) );
+
+        Array<T,3> force = eij * force1D;
+
+    return force;
+}
+
+template<typename T>
 Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLengthRatio, T eqLength, T k_inPlane) {
 /*
  *  Wrapper when calling without potential
@@ -199,7 +218,14 @@ Array<T,3> computeLocalAreaConservationForce(
         cArea = k_shear*kBT/pow(eqLength,2)/eqArea;
  *  Related publications: [Pivkin2008] and secondary [FedosovCaswellKarniadakis2010, FedosovCaswell2010b]
 */
-    return -cArea * (triangleArea - eqArea)*1.0 * dAdx;
+    T dAreaRatio = (triangleArea - eqArea) / eqArea;
+
+    // Original linear response
+    // return -cArea * dAreaRatio * dAdx;
+
+    // Only allow a stretch/compression of 7%
+    //return -cArea * dAreaRatio / (1.0 - 200.0*dAreaRatio*dAreaRatio) * dAdx;
+    return -cArea * ( dAreaRatio + pow(2.0*dAreaRatio, 3)) * dAdx;
 }
 
 
@@ -278,10 +304,11 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
     // Force based on sphere-curvature model
     // T force = -k * sin( dAngle*(pi/180.0) );  
 
-    // Non-linear force, that has linear behaviour at low dAngles but stiffens up at higher dAngles
+    // Non-linear force, that has linear behaviour only at low dAngles but stiffens up at higher dAngles
     // It prevents crumpled geometries, while retains previous behavior at small deformations
     //T force = -k*(dAngle + 1e4*pow(dAngle, 3));
-    T force = -k*( dAngle / (1-pow(dAngle/pio2, 2)) );
+    //T force = -k*( dAngle / (1-pow(dAngle/pio2, 2)) );
+    T force = -k * (dAngle * pow(dAngle, 3));
 
     // Linear force with no size scaling
     //T force = -k * dAngle;

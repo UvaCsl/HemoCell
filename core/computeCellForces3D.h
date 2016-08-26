@@ -70,6 +70,8 @@ Array<T,3> computeInPlaneForce(Array<T,3> const& x1, Array<T,3> const& x2, T max
 template<typename T>
 Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLengthRatio, T eqLength, T k_inPlane);
 
+template<typename T>
+Array<T,3> computeInPlaneYeohLikeForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLength, T k_inPlane);
 
 /* Dissipative term coefficients from FedosovCaswellKarniadakis2010
         gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));

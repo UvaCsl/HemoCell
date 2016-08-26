@@ -1,0 +1,12 @@
+DA = 13.778
+DT = 4.645
+F = 87
+set arrow 1 from graph 0,first DA to graph 1,first DA nohead
+set arrow 2 from graph 0,first DT to graph 1,first DT nohead
+set yrange [DT-0.5:DA+0.5]
+set xlabel "Iterations"
+set ylabel "Diameter [um]"
+set title "Stetching with ".F." pN"
+plot 'stretch.log' u 1:2 w l t "DA", '' u 1:4 w l t "DT"
+
+# while(1) { replot; pause 15 }

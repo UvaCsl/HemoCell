@@ -196,7 +196,8 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
           /* ------------------------------------*/
          /* In Plane forces (WLC and repulsive) */
         /* ------------------------------------*/
-        force1 = computeInPlaneExplicitForce(iX, jX, eqLengthRatio, eqLengthPerEdge[edgeId], k_inPlane, potential);
+        //force1 = computeInPlaneExplicitForce(iX, jX, eqLengthRatio, eqLengthPerEdge[edgeId], k_inPlane, potential);
+        force1 = computeInPlaneYeohLikeForce(iX, jX, eqLengthPerEdge[edgeId], k_inPlane);
         iParticle->get_force() += force1;
         jParticle->get_force() -= force1;
 #ifdef PLB_DEBUG // Less Calculations
@@ -276,7 +277,7 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
     T volumeCoefficient = k_volume * (cellVolume - eqVolume)*1.0/eqVolume;
     T surfaceCoefficient = k_surface * (cellSurface - eqSurface)*1.0/eqSurface;
     T eqMeanArea = eqSurface/cellNumTriangles;
-    T areaCoefficient = k_shear/eqMeanArea ;
+    T areaCoefficient = k_shear;//eqMeanArea ;
 
 //    iParticle->get_E_volume() = 0.5*volumeCoefficient*(cellVolume - eqVolume)*1.0/cellNumVertices;
 //    iParticle->get_E_area() = 0.5*surfaceCoefficient*(cellSurface - eqSurface)*1.0/cellNumVertices;
