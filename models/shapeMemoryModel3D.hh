@@ -152,9 +152,20 @@ plint ShapeMemoryModel3D<T,Descriptor>::getEdgeId(plint iVertex, plint jVertex) 
     return -1;
 };
 
-
 template<typename T, template<typename U> class Descriptor>
 void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) {
+
+#define HIGHORDER
+#ifdef HIGHORDER
+    computeCellForceHighOrder(cell);
+#else
+    computeCellForceSuresh(cell);
+#endif
+
+};
+
+template<typename T, template<typename U> class Descriptor>
+inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceSuresh (Cell3D<T,Descriptor> * cell) {
      /* Some force calculations are according to KrugerThesis, Appendix C */
     T cellVolume = cell->getVolume();
     T cellSurface = cell->getSurface();
@@ -196,8 +207,7 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
           /* ------------------------------------*/
          /* In Plane forces (WLC and repulsive) */
         /* ------------------------------------*/
-        //force1 = computeInPlaneExplicitForce(iX, jX, eqLengthRatio, eqLengthPerEdge[edgeId], k_inPlane, potential);
-        force1 = computeInPlaneYeohLikeForce(iX, jX, eqLengthPerEdge[edgeId], k_inPlane);
+        force1 = computeInPlaneExplicitForce(iX, jX, eqLengthRatio, eqLengthPerEdge[edgeId], k_inPlane, potential);
         iParticle->get_force() += force1;
         jParticle->get_force() -= force1;
 #ifdef PLB_DEBUG // Less Calculations
@@ -241,13 +251,11 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
             Array<T,3> const& lX = cell->getVertex(lVertex);
 
             /*== Compute bending force for the vertex as part of the main edge ==*/
-            Array<T,3> fi, fk, fj, fl;
-            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fk, fj, fl);
+            Array<T,3> fi, fj;
+            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fi, fj);
 
             iParticle->get_force() += fi;
             jParticle->get_force() += fj;
-            kParticle->get_force() += fk;
-            lParticle->get_force() += fl;
 
 #ifdef PLB_DEBUG // Less Calculations
             iParticle->get_f_bending() += fi;
@@ -365,6 +373,159 @@ void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> *
 
 }
 
+template<typename T, template<typename U> class Descriptor>
+inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D<T,Descriptor> * cell) {
+    /* Some force calculations are according to KrugerThesis, Appendix C */
+    T cellVolume = cell->getVolume();
+    T cellSurface = cell->getSurface();
+    if (not ((cellVolume > 0) and (cellSurface > 0))) {
+        cout << "processor: " << cell->getMpiProcessor()
+             << ", cellId: " << cell->get_cellId()
+             << ", volume: " << cellVolume
+             << ", surface: " << cellSurface
+             << ", cellNumVertices: " << cellNumVertices
+             << endl;
+        PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
+    }
+    std::vector<plint> const& triangles = cell->getTriangles();
+    std::vector<Array<plint,2> > const& edges = cell->getEdges();
+    std::vector<plint > const& vertices = cell->getVertices();
+    for (pluint iV = 0; iV < vertices.size(); ++iV) {
+        castParticleToICP3D(cell->getParticle3D(vertices[iV]))->resetForces();
+    }
+
+    plint iTriangle;
+    plint iVertex, jVertex, kVertex, lVertex;
+
+    Array<T,3> force1, force2, force3;
+
+    for (pluint iE = 0; iE < edges.size(); ++iE) {
+        iVertex = edges[iE][0];  jVertex = edges[iE][1];
+        plint edgeId = getEdgeId(iVertex, jVertex);
+        Array<T,3> const& iX = cell->getVertex(iVertex);
+        Array<T,3> const& jX = cell->getVertex(jVertex);
+        SurfaceParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        SurfaceParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+
+        /* ------------------------------------*/
+        /* In Plane forces (WLC and repulsive) */
+        /* ------------------------------------*/
+        force1 = computeInPlaneHighOrderForce(iX, jX, eqLengthPerEdge[edgeId], k_inPlane);
+        iParticle->get_force() += force1;
+        jParticle->get_force() -= force1;
+
+
+        /* ------------------------------------*/
+        /*    Dissipative Forces Calculations  */
+        /* ------------------------------------*/
+        if (gamma_T>0.0) {
+            force1 = computeDissipativeForce(iX, jX, iParticle->get_v(), jParticle->get_v(), gamma_T, gamma_C);
+            iParticle->get_force() += force1;
+            jParticle->get_force() -= force1;
+
+        }
+
+        /* ------------------------------------*/
+        /*    Bending Forces Calculations      */
+        /* ------------------------------------*/
+        bool angleFound;
+
+        T edgeAngle = cell->computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
+        if (angleFound) {
+            Array<T,3> iNormal = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
+            Array<T,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
+            //T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
+            //T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
+            //SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+            //SurfaceParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
+            Array<T,3> const& kX = cell->getVertex(kVertex);
+            Array<T,3> const& lX = cell->getVertex(lVertex);
+
+            /*== Compute bending force for the vertex as part of the main edge ==*/
+            Array<T,3> fi, fj;
+            fi = computeHighOrderBendingForce (iX, kX, jX, lX, iNormal, jNormal, eqAnglePerEdge[edgeId], k_bend, fi, fj);
+
+            iParticle->get_force() += fi;
+            jParticle->get_force() += fj;
+
+        } else {
+            cout << global::mpi().getRank() << " WARNING: angle not found between neighbouring triangles -> surface is not closed and smooth!" << std::endl;
+        }
+    }
+
+    /* ===================== In case of quasi-rigid object =====================
+     *
+     * If this is a boundary element (k_rest != 0), get the reference locations
+     * of iVertex and calculate and return the force for quasi-rigid objects.
+     *          (FengMichaelides2004, J.Comp.Phys. 195(2))
+     * // CURRENTLY UNAVAILABLE
+     * */
+
+    /* Calculate cell coefficients */
+    T volumeCoefficient = k_volume * (cellVolume - eqVolume)*1.0/eqVolume;
+    //T surfaceCoefficient = k_surface * (cellSurface - eqSurface)*1.0/eqSurface;
+    //T eqMeanArea = eqSurface/cellNumTriangles;
+    T areaCoefficient = k_shear;//eqMeanArea ;
+
+//    iParticle->get_E_volume() = 0.5*volumeCoefficient*(cellVolume - eqVolume)*1.0/cellNumVertices;
+//    iParticle->get_E_area() = 0.5*surfaceCoefficient*(cellSurface - eqSurface)*1.0/cellNumVertices;
+
+
+    /* Run through all the neighbouring faces of iVertex and calculate:
+         x Volume conservation force
+         x Surface conservation force
+         x Shear force
+     */
+    //Array<T,3> dAdx1, dAdx2, dAdx3, dVdx, tmp(0,0,0);
+    //std::map<plint, T> trianglesArea;
+    //std::map<plint, Array<T,3> > trianglesNormal;
+    T triangleArea;
+    Array<T,3> triangleNormal;
+
+    for (pluint iT = 0; iT < triangles.size(); ++iT) {
+        iTriangle = triangles[iT];
+        triangleNormal = cell->computeTriangleNormal(iTriangle);
+        triangleArea = cell->computeTriangleArea(iTriangle);
+        iVertex = cell->getVertexId(iTriangle,0);
+        jVertex = cell->getVertexId(iTriangle,1);
+        kVertex = cell->getVertexId(iTriangle,2);
+        Array<T,3> const& x1 = cell->getVertex(iVertex);
+        Array<T,3> const& x2 = cell->getVertex(jVertex);
+        Array<T,3> const& x3 = cell->getVertex(kVertex);
+        SurfaceParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        SurfaceParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+        SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+
+
+        /* Local area conservation forces */
+        force1 = computeHighOrderLocalAreaConservationForce(x1, x2, x3, triangleNormal, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
+        force2 = computeHighOrderLocalAreaConservationForce(x2, x3, x1, triangleNormal, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
+        force3 = computeHighOrderLocalAreaConservationForce(x3, x1, x2, triangleNormal, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
+        iParticle->get_force() += force1;
+        jParticle->get_force() += force2;
+        kParticle->get_force() += force3;
+
+
+        /* Volume conservation forces */
+        force1  = computeVolumeConservationForce(x1, x2, x3, volumeCoefficient);
+        force2  = computeVolumeConservationForce(x2, x3, x1, volumeCoefficient);
+        force3  = computeVolumeConservationForce(x3, x1, x2, volumeCoefficient);
+        iParticle->get_force() += force1;
+        jParticle->get_force() += force2;
+        kParticle->get_force() += force3;
+
+#ifdef PLB_DEBUG // Less Calculations
+        iParticle->get_f_volume() += force1;
+    jParticle->get_f_volume() += force2;
+    kParticle->get_f_volume() += force3;
+    potential = 0.5*volumeCoefficient*(cellVolume - eqVolume)*1.0/cellNumVertices;
+    iParticle->get_E_volume() += potential;
+    jParticle->get_E_volume() += potential;
+    kParticle->get_E_volume() += potential;
+#endif
+
+    }
+}
 
 template<typename T, template<typename U> class Descriptor>
 ShapeMemoryModel3D<T, Descriptor>* ShapeMemoryModel3D<T,Descriptor>::clone() const {

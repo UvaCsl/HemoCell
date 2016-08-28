@@ -71,7 +71,7 @@ template<typename T>
 Array<T,3> computeInPlaneExplicitForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLengthRatio, T eqLength, T k_inPlane);
 
 template<typename T>
-Array<T,3> computeInPlaneYeohLikeForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLength, T k_inPlane);
+Array<T,3> computeInPlaneHighOrderForce(Array<T,3> const& x1, Array<T,3> const& x2, T eqLength, T k_inPlane);
 
 /* Dissipative term coefficients from FedosovCaswellKarniadakis2010
         gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
@@ -128,6 +128,12 @@ Array<T,3> computeLocalAreaConservationForce(
                 T cArea);
 
 
+template<typename T>
+Array<T,3> computeHighOrderLocalAreaConservationForce(
+		Array<T,3> const& x1, Array<T,3> const& x2, Array<T,3> const& x3,
+		Array<T,3> const& triangleNormal,  T triangleArea, T eqArea,
+		T cArea);
+
 /* Elastic force to couple with the WLC force.
     C_elastic = k_elastic * 3.0 * sqrt(3.0)* kBT
              * (maxLength*maxLength*maxLength) * (x0*x0*x0*x0)
@@ -157,12 +163,17 @@ Array<T,3> computeElasticRepulsiveForce(Array<T,3> const& dAdx, T triangleArea, 
 /* The most messy force! */
 template<typename T>
 Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
-                                Array<T,3> const& x3, Array<T,3> const& x4,
-                                Array<T,3> const& ni, Array<T,3> const& nj,
-                                T Ai, T Aj,
-                                T eqArea, T eqLength, T eqAngle, T k,
-								Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4);
+								Array<T,3> const& x3, Array<T,3> const& x4,
+								Array<T,3> const& ni, Array<T,3> const& nj,
+								T Ai, T Aj,
+								T eqArea, T eqLength, T eqAngle, T k,
+								Array<T,3> & iFx, Array<T,3> & jFx);
 
+template<typename T>
+Array<T,3> computeHighOrderBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
+                                         Array<T,3> const& x3, Array<T,3> const& x4,
+                                         Array<T,3> const& ni, Array<T,3> const& nj,
+                                         T eqAngle, T k, Array<T,3> & iFx, Array<T,3> & jFx);
 /*
  * Calculates the bending forces.
  * Angles are expected to be between [-pi,pi].

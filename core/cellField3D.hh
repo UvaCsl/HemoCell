@@ -196,6 +196,7 @@ void CellField3D<T, Descriptor>::applyConstitutiveModel() {
     global::timer("Model").stop();
 }
 
+
 template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::applyCellCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius) {
     global::timer("CellCellForce").start();

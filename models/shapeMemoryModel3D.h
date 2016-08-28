@@ -76,6 +76,9 @@ public:
 
     virtual ShapeMemoryModel3D<T,Descriptor>* clone() const;
 private:
+    inline void computeCellForceHighOrder (Cell3D<T,Descriptor> *cell);
+    inline void computeCellForceSuresh (Cell3D<T,Descriptor> * cell);
+
     plint getTriangleId(plint iTriangle);
     plint getEdgeId(plint iVertex, plint jVertex);
 private:

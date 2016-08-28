@@ -239,13 +239,11 @@ void IntermediateModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> 
             Array<T,3> const& lX = cell->getVertex(lVertex);
 
             /*== Compute bending force for the vertex as part of the main edge ==*/
-            Array<T,3> fi, fk, fj, fl;
-            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fk, fj, fl);
+            Array<T,3> fi, fj;
+            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fi, fj);
 
             iParticle->get_force() += fi;
             jParticle->get_force() += fj;
-            kParticle->get_force() += fk;
-            lParticle->get_force() += fl;
 
 #ifdef PLB_DEBUG // Less Calculations
             iParticle->get_f_bending() += fi;
