@@ -186,6 +186,7 @@ int main(int argc, char* argv[])
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
     T persistenceLengthFine = 7.5e-9; // In meters
     T eqVolume = 0;
+    T eqSurface = 0;
     plint shape = 1;    // shape: Sphere[0], RBC from sphere[1], Cell(defined)[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5]
     Array<T,3> eulerAngles(0., 0., 0.);
     std::string cellPath = " "; // If particle is loaded from stl file.
@@ -204,6 +205,7 @@ int main(int argc, char* argv[])
     MeshMetrics<T> meshmetric(meshElement);    
     meshmetric.write();
     eqVolume = meshmetric.getVolume();
+    eqSurface = meshmetric.getSurface();
     plint numVerticesPerCell = meshElement.getNumVertices();
 
     if (rbcModel == 0) {
@@ -328,8 +330,8 @@ int main(int argc, char* argv[])
             */
 
             Array<T,3> stretch = stretchedCell.measureStretch();
-			pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<") " << std::endl;
-            fOut << iter+1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
+			pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<"); Volume  " << RBCField[0]->getVolume() / eqVolume * 100.0 << "%; Surface " << RBCField[0]->getSurface() / eqSurface * 100.0 << "%" << std::endl;
+            fOut << iter+1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << " " << RBCField[0]->getVolume() / eqVolume * 100.0 << " " << RBCField[0]->getSurface() / eqSurface * 100.0 << endl;
         } else {
             RBCField.synchronizeCellQuantities();
         }
