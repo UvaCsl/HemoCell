@@ -44,7 +44,12 @@ Array<T,3> computeInPlaneHighOrderForce(Array<T,3> const& x1, Array<T,3> const& 
 
     /* Spectrin links are compressible */
     //if(dL > 0.0)
-    T force1D =  - k_inPlane * ( dL + 15.0 * dL*dL*dL );
+    //T force1D =  - k_inPlane * ( dL + 300.0 * dL*dL*dL );
+    T force1D;
+    if(dL > 0)
+        force1D = - k_inPlane * ( dL + dL/(1.21-dL*dL) );   // 110% stretch
+    else
+        force1D = - k_inPlane * ( dL + dL/(0.056-dL*dL) );   // 75% compression
 
     Array<T,3> force = eij * force1D;
 
@@ -65,9 +70,10 @@ Array<T,3> computeHighOrderLocalAreaConservationForce(
 
     T dAreaRatio = (triangleArea - eqArea) / eqArea;
 
-    // Only allow a stretch/compression of a maximum of 10%
-    //return -cArea * dAreaRatio / (1.0 - 100.0*dAreaRatio*dAreaRatio) * dAdx;
-    return -cArea * ( dAreaRatio + 200.0 * dAreaRatio*dAreaRatio*dAreaRatio) * dAdx;
+    // Only allow a stretch/compression of a maximum of 11%
+    return -cArea * (dAreaRatio + dAreaRatio / (0.0121-dAreaRatio*dAreaRatio) ) * dAdx;
+    //return -cArea * ( dAreaRatio + 1250.0 * dAreaRatio*dAreaRatio*dAreaRatio) * dAdx;
+
 }
 
 /* Calculates the bending force for the triangles formed by the vertices:
@@ -107,8 +113,7 @@ Array<T,3> computeHighOrderBendingForce (Array<T,3> const& x1, Array<T,3> const&
     // Non-linear force, that has linear behaviour only at low dAngles but stiffens up at higher dAngles
     // It prevents crumpled geometries, while retains previous behavior at small deformations
     //T force = -k*(dAngle + 1e4*pow(dAngle, 3));
-    T dAnglePio2 = dAngle * pio2inv;
-    T force = -k * ( dAngle / (1 - (dAnglePio2 * dAnglePio2)) );    // Gets very strong around pi/2
+    T force = -k * ( dAngle + dAngle / (2.467 - (dAngle * dAngle)) );    // Gets very strong around pi/2
     //T force = -k * (dAngle + dAngle*dAngle*dAngle);
 
     iFx = force*ni;
@@ -128,7 +133,7 @@ Array<T,3> computeVolumeConservationForce(
 */
     Array<T,3> tmp;
     crossProduct(x3, x2, tmp);
-    return cVolume * tmp;
+    return cVolume * 1.0/6.0 * tmp;
 }
 
 
