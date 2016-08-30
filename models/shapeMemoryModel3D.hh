@@ -282,8 +282,8 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceSuresh (Cell3D<T,
      * */
 
     /* Calculate cell coefficients */
-    T volumeCoefficient = k_volume * (cellVolume - eqVolume)*1.0/eqVolume;
-    T surfaceCoefficient = k_surface * (cellSurface - eqSurface)*1.0/eqSurface;
+    T volumeCoefficient = k_volume * (cellVolume - eqVolume)/eqVolume;
+    T surfaceCoefficient = k_surface * (cellSurface - eqSurface)/eqSurface;
     T eqMeanArea = eqSurface/cellNumTriangles;
     T areaCoefficient = k_shear;//eqMeanArea ;
 
@@ -377,12 +377,12 @@ template<typename T, template<typename U> class Descriptor>
 inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D<T,Descriptor> * cell) {
     /* Some force calculations are according to KrugerThesis, Appendix C */
     T cellVolume = cell->getVolume();
-    T cellSurface = cell->getSurface();
-    if (not ((cellVolume > 0) and (cellSurface > 0))) {
+    //T cellSurface = cell->getSurface();
+    if (not ((cellVolume > 0) )) {
         cout << "processor: " << cell->getMpiProcessor()
              << ", cellId: " << cell->get_cellId()
              << ", volume: " << cellVolume
-             << ", surface: " << cellSurface
+             << ", surface: " << cell->getSurface()
              << ", cellNumVertices: " << cellNumVertices
              << endl;
         PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
@@ -462,7 +462,8 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
      * */
 
     /* Calculate cell coefficients */
-    T volumeCoefficient = k_volume * (cellVolume - eqVolume)*1.0/eqVolume;
+    T dVolume = (cellVolume - eqVolume)/eqVolume;
+    T volumeCoefficient = k_volume * dVolume/(0.01 - dVolume*dVolume);
     //T surfaceCoefficient = k_surface * (cellSurface - eqSurface)*1.0/eqSurface;
     //T eqMeanArea = eqSurface/cellNumTriangles;
     T areaCoefficient = k_shear;//eqMeanArea ;

@@ -39,7 +39,7 @@ Array<T,3> computeInPlaneHighOrderForce(Array<T,3> const& x1, Array<T,3> const& 
     T L = norm(vL);
     Array<T,3> eij = vL/L;
 
-    T dL = L-eqLength;
+    T dL = (L-eqLength)/eqLength;
     //T force1D = 0.0;
 
     /* Spectrin links are compressible */
@@ -47,9 +47,9 @@ Array<T,3> computeInPlaneHighOrderForce(Array<T,3> const& x1, Array<T,3> const& 
     //T force1D =  - k_inPlane * ( dL + 300.0 * dL*dL*dL );
     T force1D;
     if(dL > 0)
-        force1D = - k_inPlane * ( dL + dL/(1.21-dL*dL) );   // 110% stretch
+        force1D = - k_inPlane * ( dL + dL/(0.7-dL*dL) );   // 120% stretch
     else
-        force1D = - k_inPlane * ( dL + dL/(0.056-dL*dL) );   // 75% compression
+        force1D = - k_inPlane * dL * dL * dL;   // 75% compression
 
     Array<T,3> force = eij * force1D;
 
@@ -71,7 +71,8 @@ Array<T,3> computeHighOrderLocalAreaConservationForce(
     T dAreaRatio = (triangleArea - eqArea) / eqArea;
 
     // Only allow a stretch/compression of a maximum of 11%
-    return -cArea * (dAreaRatio + dAreaRatio / (0.0121-dAreaRatio*dAreaRatio) ) * dAdx;
+    //return -cArea * (dAreaRatio + dAreaRatio / (0.0121-dAreaRatio*dAreaRatio) ) * dAdx;
+    return -cArea * (dAreaRatio + dAreaRatio / (0.04-dAreaRatio*dAreaRatio) ) * dAdx;
     //return -cArea * ( dAreaRatio + 1250.0 * dAreaRatio*dAreaRatio*dAreaRatio) * dAdx;
 
 }
@@ -132,8 +133,8 @@ Array<T,3> computeVolumeConservationForce(
 *  Related publications: [Pivkin2008] and secondary [FedosovCaswellKarniadakis2010, FedosovCaswell2010b]
 */
     Array<T,3> tmp;
-    crossProduct(x3, x2, tmp);
-    return cVolume * 1.0/6.0 * tmp;
+    crossProduct(x2, x3, tmp);
+    return -cVolume * 1.0/6.0 * tmp;
 }
 
 
