@@ -40,16 +40,13 @@ Array<T,3> computeInPlaneHighOrderForce(Array<T,3> const& x1, Array<T,3> const& 
     Array<T,3> eij = vL/L;
 
     T dL = (L-eqLength)/eqLength;
-    //T force1D = 0.0;
 
-    /* Spectrin links are compressible */
-    //if(dL > 0.0)
-    //T force1D =  - k_inPlane * ( dL + 300.0 * dL*dL*dL );
+    /* Spectrin links that are somewhat compressible */
     T force1D;
     if(dL > 0)
-        force1D = - k_inPlane * ( dL + dL/(0.7-dL*dL) );   // 120% stretch
+        force1D = - k_inPlane * ( dL + dL/(0.7-dL*dL) );   // allows at max. 85% stretch
     else
-        force1D = - k_inPlane * dL * dL * dL;   // 75% compression
+        force1D = - k_inPlane * dL * dL * dL;   // less stiff compression resistance
 
     Array<T,3> force = eij * force1D;
 
@@ -70,10 +67,8 @@ Array<T,3> computeHighOrderLocalAreaConservationForce(
 
     T dAreaRatio = (triangleArea - eqArea) / eqArea;
 
-    // Only allow a stretch/compression of a maximum of 11%
-    //return -cArea * (dAreaRatio + dAreaRatio / (0.0121-dAreaRatio*dAreaRatio) ) * dAdx;
+    // Only allow a stretch/compression of a maximum of 20% -> this usally results in a 11% stretch at max
     return -cArea * (dAreaRatio + dAreaRatio / (0.04-dAreaRatio*dAreaRatio) ) * dAdx;
-    //return -cArea * ( dAreaRatio + 1250.0 * dAreaRatio*dAreaRatio*dAreaRatio) * dAdx;
 
 }
 
@@ -114,7 +109,7 @@ Array<T,3> computeHighOrderBendingForce (Array<T,3> const& x1, Array<T,3> const&
     // Non-linear force, that has linear behaviour only at low dAngles but stiffens up at higher dAngles
     // It prevents crumpled geometries, while retains previous behavior at small deformations
     //T force = -k*(dAngle + 1e4*pow(dAngle, 3));
-    T force = -k * ( dAngle + dAngle / (2.467 - (dAngle * dAngle)) );    // Gets very strong around pi/2
+    T force = -k * ( dAngle + dAngle / (0.62 - (dAngle * dAngle)) );    // Gets very strong around pi/4
     //T force = -k * (dAngle + dAngle*dAngle*dAngle);
 
     iFx = force*ni;

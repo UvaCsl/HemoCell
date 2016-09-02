@@ -15,7 +15,7 @@ plot 'stretch.log' u 1:2 w l t "DA", '' u 1:4 w l t "DT"
 
 
 set arrow 1 from graph 0,first 100 to graph 1,first 100 nohead
-set arrow 2 from graph 0,first 107 to graph 1,first 107 nohead
+set arrow 2 from graph 0,first 111 to graph 1,first 111 nohead
 set yrange [95:115]
 set xlabel "Iterations"
 set ylabel "Percentage"

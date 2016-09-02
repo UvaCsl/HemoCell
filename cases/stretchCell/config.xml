@@ -5,7 +5,7 @@
     <rbcModel> 0 </rbcModel> <!-- ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
     <shellDensity> 1.0 </shellDensity>
 
-    <kBend> 600 </kBend> <!-- bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <kBend> 225 </kBend> <!-- bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
     <kVolume> 1000.0 </kVolume> <!-- volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}-->
     <kSurface> 0.0 </kSurface> <!-- global surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}-->
 <!-- 0.5e0 -->
@@ -20,7 +20,7 @@
 </cellModel>
 
 <parameters>
-    <stretchForce> 37.899 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. -->
+    <stretchForce> 173 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. -->
 </parameters>
 
 <ibm>
@@ -39,7 +39,7 @@
 </domain>
 
 <sim>
-    <tmax> 25000 </tmax> <!-- total number of iterations -->
+    <tmax> 250000 </tmax> <!-- total number of iterations -->
     <tmeas> 100 </tmeas> <!-- interval after which data is written --> 
 </sim>
 

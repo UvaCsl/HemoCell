@@ -411,7 +411,7 @@ int main(int argc, char *argv[]) {
 
     if (initIter == 0)
     {
-        pcout << "(main) fresh start: warming up fluid domain for "  << warmup << " terations..." << std::endl;
+        pcout << "(main) fresh start: warming up fluid domain for "  << warmup << " iterations..." << std::endl;
         for (plint itrt = 0; itrt < warmup; ++itrt) { lattice.collideAndStream(); }
     }
 
