@@ -155,11 +155,8 @@ BlockDomain::DomainT WriteInMultipleHDF5Files<T>::appliesTo () const {
 
 template<typename T, template<typename U> class Descriptor>
 void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
-              IncomprFlowParam<T> const& parameters, plint iter, bool invertXZ_for_XDMF)
+              T dx, T dt, plint iter, bool invertXZ_for_XDMF)
 {
-    T dx = parameters.getDeltaX();
-    T dt = parameters.getDeltaT();
-
     plint envelopeWidth = lattice.getMultiBlockManagement().getEnvelopeWidth();
 //    cout << "env " << envelopeWidth << std::endl;
     MultiTensorField3D<T,3> vel = *computeVelocity(lattice);

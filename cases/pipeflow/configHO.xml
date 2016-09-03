@@ -17,7 +17,7 @@
 
 <parameters>
     <Re> 0.2 </Re>   <!--Reynolds number-->
-    <warmup> 3000 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <warmup> 5000 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
 </parameters>
 
@@ -43,7 +43,7 @@
 
 <sim>
     <tmax> 100000 </tmax> <!-- total number of iterations -->
-    <tmeas> 500 </tmeas> <!-- interval after which data is written --> 
+    <tmeas> 50 </tmeas> <!-- interval after which data is written --> 
     <hematocrit> 40 </hematocrit> <!-- Hematocrit  > -->
 </sim>
 

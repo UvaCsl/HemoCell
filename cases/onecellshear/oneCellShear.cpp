@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
             lz-dx
     );
 
-    checkParameterSanity(parameters);
+    checkParameterSanity(nu_lbm, u_lbm_max);
 
     // Debug line
     // pcout << "(main) tau = " << parameters.getTau() << " Re = " << parameters.getRe() << " u_lb = " << u_lbm_max << " nu_lb = " << parameters.getLatticeNu() << endl;
@@ -167,7 +167,7 @@ int main(int argc, char* argv[])
         defaultMultiBlockPolicy3D().getBlockCommunicator(),
         defaultMultiBlockPolicy3D().getCombinedStatistics(),
         defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
-        new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(parameters.getOmega()));
+        new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(1./tau));
 
 
     // -------------------------- Define boundary conditions ---------------------
@@ -263,7 +263,7 @@ int main(int argc, char* argv[])
     pcout << std::endl << "(main) Starting simulation i=" << initIter  << ", tmeas = " << tmeas << std::endl;
 
     global::timer("HDFOutput").start();
-    writeHDF5(lattice, parameters, 0);
+    writeHDF5(lattice, dx, dt, 0);
     writeCellField3D_HDF5(RBCField, dx, dt, 0);
     global::timer("HDFOutput").stop();
 
@@ -301,7 +301,7 @@ int main(int argc, char* argv[])
             RBCField.synchronizeCellQuantities(everyCCR);
 
             global::timer("HDFOutput").start();
-            // writeHDF5(lattice, parameters, iter+1);
+            // writeHDF5(lattice, dx, dt, iter+1);
             writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
             writeCell3D_HDF5(RBCField, dx, dt, iter+1);
             global::timer("HDFOutput").stop();

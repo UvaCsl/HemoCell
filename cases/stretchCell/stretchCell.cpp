@@ -134,18 +134,6 @@ int main(int argc, char* argv[])
     pcout << "(main) tau = " << tau << " Re = " << Re << " u_lb = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
     pcout << "(main) Re corresponds to u_max = " << (Re * nu_p)/(ny*dx) << " [m/s]" << endl;
 
-
-    // Because structures use it. Kind of nonsense. TODO: To be changed later.
-    plint resolution = (int)(1.0/dx);
-    IncomprFlowParam<T> parameters(
-            u_lbm_max,
-            Re*(resolution/nx),     // Because Palabos calculates Re in a uniform way (which is not a good thing for CFD)
-            resolution,
-            lx,
-            ly,
-            lz
-    );
-
     // Debug line
     // pcout << "(main) tau = " << parameters.getTau() << " Re = " << parameters.getRe() << " u_lb = " << u_lbm_max << " nu_lb = " << parameters.getLatticeNu() << endl;
 
@@ -157,7 +145,7 @@ int main(int argc, char* argv[])
         defaultMultiBlockPolicy3D().getBlockCommunicator(),
         defaultMultiBlockPolicy3D().getCombinedStatistics(),
         defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
-        new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(parameters.getOmega()));
+        new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(1./tau));
     
     lattice.periodicity().toggleAll(true);
 
@@ -259,7 +247,7 @@ int main(int argc, char* argv[])
     // -------------------------- Initial output --------------------------
 
     global::timer("HDFOutput").start();
-    writeHDF5(lattice, parameters, 0);
+    writeHDF5(lattice, dx, dt, 0);
     writeCellField3D_HDF5(RBCField, dx, dt, 0);
     global::timer("HDFOutput").stop();
 

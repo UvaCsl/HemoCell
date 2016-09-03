@@ -241,23 +241,11 @@ int main(int argc, char *argv[]) {
     //"kT = " << kBT <<
     std::endl;
 
-    pcout << "(main) tau = " << tau << " Re = " << Re << " u_lb = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
+    pcout << "(main) tau = " << tau << " Re = " << Re << " u_lb_max = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
     pcout << "(main) Re corresponds to u_max = " << (Re * nu_p)/(ny*dx) << " [m/s]" << endl;
 
-    // Because structures use it. Kind of nonsense. TODO: To be changed later.
-    IncomprFlowParam<T> parameters(
-            (Re * nu_p)/(ny*dx),
-            u_lbm_max, 
-            Re,//1.0/nu_lbm,
-            dx, 
-            1,   
-            nx*dx,        
-            ny*dx,        
-            nz*dx        
-    );
-
     // Do a general check for suspiciosly off values.
-    checkParameterSanity(parameters);
+    checkParameterSanity(nu_lbm, u_lbm_max);
     
     //pcout << "(main) dx = " << parameters.getDeltaX() << " dt = " << parameters.getDeltaT() << endl;
     //pcout << "(main) tau = " << parameters.getTau() << " Re = " << parameters.getRe() << " u_lb = " << parameters.getLatticeU() << " nu_lb = " << parameters.getLatticeNu() << endl;
@@ -283,7 +271,8 @@ int main(int argc, char *argv[]) {
 
     // ----------------------- Define external driving force ---------------
 
-    T poiseuilleForce = 8 * (nu_lbm * nu_lbm) * Re / (ny * ny * ny);
+    //T poiseuilleForce = 8 * (nu_lbm * nu_lbm) * Re / (ny * ny * ny);
+    T poiseuilleForce = 8 * nu_lbm * (u_lbm_max*0.5) / (refDirN/2.0) / (refDirN/2.0);
     if (tmeas == 0) {
         tmeas = plint(ny * ny * 1.0 / (4 * nu_lbm * Re)) / 40;
     }
@@ -391,7 +380,7 @@ int main(int argc, char *argv[]) {
     pcout << "(main) saving initial output..."  << std::endl;
     global::timer("HDFOutput").start();
     bool invertXZ_for_XDMF = true;
-    writeHDF5(lattice, parameters, initIter, invertXZ_for_XDMF);
+    writeHDF5(lattice, dx, dt, initIter, invertXZ_for_XDMF);
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
         writeCellField3D_HDF5(*cellFields[iCell], dx, dt, initIter);
         writeCell3D_HDF5(*cellFields[iCell], dx, dt, initIter);
@@ -456,7 +445,7 @@ int main(int argc, char *argv[]) {
             }
             global::timer("HDFOutput").start();
             bool invertXZ_for_XDMF = true;
-            writeHDF5(lattice, parameters, iter + 1, invertXZ_for_XDMF);
+            writeHDF5(lattice, dx, dt, iter + 1, invertXZ_for_XDMF);
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
                 writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter + 1);
                 writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter + 1);

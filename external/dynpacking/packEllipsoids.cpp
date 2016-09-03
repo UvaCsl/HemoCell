@@ -269,7 +269,7 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
     Nprint_step = 250;
 
     cout << "Number of maximal iterations: " << Max_steps << endl;
-    cout << "Packing domain size (um * sizing): " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
+    cout << "Number of bins for neighbour cutoff: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
     cout << "Number of cells to pack:  " << endl;
     for(int i = 0; i < No_species; i++)
         cout << "    Type: " << i << " - number: " << nPartsPerComponent[i] << " - diameters: " << 	diametersPerComponent[i][0] << "x" << diametersPerComponent[i][1] << "x" << diametersPerComponent[i][2] << endl;    

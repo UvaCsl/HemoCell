@@ -15,7 +15,7 @@ using namespace std;
 // Exporting files in XDMF switches X and Z axes.
 template<typename T, template<typename U> class Descriptor>
 void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
-              IncomprFlowParam<T> const& parameters, plint iter, bool invertXZ_for_XDMF=false);
+              T dx, T dt, plint iter, bool invertXZ_for_XDMF=false);
 
 
 template<typename T>
