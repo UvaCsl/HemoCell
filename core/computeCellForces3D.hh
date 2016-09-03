@@ -372,7 +372,7 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
     // T force = -k*(dAngle) * (eqLength*0.5/eqArea);
 
     // Force based on sphere-curvature model
-     T force = -k * sin( dAngle*(pi/180.0) );
+     T force = -k * sin( dAngle );
 
     iFx = force*ni;
     jFx = force*nj;
