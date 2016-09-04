@@ -61,19 +61,18 @@ void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, B
     plint maxNx = fluid.getNx(), maxNy = fluid.getNy(), maxNz = fluid.getNz();
     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
         Array<T,3> vertex = startingPoint + mesh->getVertex(iVertex);
-        particleField.computeGridPosition (vertex, iX, iY, iZ);
+        particleField.computeGridPosition (vertex-0.5, iX, iY, iZ);
         Dot3D fluidDomainCell = Dot3D(iX, iY, iZ) - relativeDisplacement;
-        particleField.addParticle(particleField.getBoundingBox(), new SurfaceParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
-	//*
+
         bool isInsideFluidDomain = (fluidDomainCell.x >= 0 and fluidDomainCell.y >= 0 and fluidDomainCell.z >= 0) and
         		(fluidDomainCell.x < maxNx and fluidDomainCell.y < maxNy and fluidDomainCell.z < maxNz);
-        if (isInsideFluidDomain and fluid.get(fluidDomainCell.x, fluidDomainCell.y, fluidDomainCell.z).getDynamics().isBoundary()) {
+
+        // Test if particle is inside and in a boundary -> dont add this particle
+        if (isInsideFluidDomain and fluid.get(fluidDomainCell.x, fluidDomainCell.y, fluidDomainCell.z).getDynamics().isBoundary())
         	break;
-        }
-        else {
-//            particleField.addParticle(particleField.getBoundingBox(), new ImmersedCellParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
-        }
-	//*/
+
+        particleField.addParticle(particleField.getBoundingBox(), new SurfaceParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
+
     }
 }
 

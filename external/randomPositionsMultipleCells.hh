@@ -150,6 +150,7 @@ void RandomPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
     std::vector<std::vector<plint> > cellIds;
     std::vector<std::vector<Array<T,3> > > randomAngles;
 
+    // Run an iterative kinematic simultion to get approximating particle positions
     getRandomPositionsMultipleCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, packingDensity, maxPackIter);
 
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
@@ -164,7 +165,8 @@ void RandomPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
             //positionCellInParticleField(*(particleFields[iCF]), fluid,
             //                            meshes[iCF], positions[iCF][c]-0.5, cellIds[iCF][c]);
             positionCellInParticleField(*(particleFields[iCF]), fluid,
-                                         meshCopy, positions[iCF][c]-0.5, cellIds[iCF][c]);
+                                         meshCopy, positions[iCF][c], cellIds[iCF][c]);
+
 			delete meshCopy;
         }
 

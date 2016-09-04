@@ -43,12 +43,14 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          Array<T,3> cellPosition = cell3d->getPosition();
          NpBulk += cell3d->getNumVertices_LocalBulk();
          correctPBPosition[itrtr->first].resetToZero();
+
          if (cellPosition[0] > Nx) { correctPBPosition[itrtr->first][0] = -int(cellPosition[0]/Nx)*Nx;}
          if (cellPosition[0] <  0) { correctPBPosition[itrtr->first][0] =  int(cellPosition[0]/Nx)*Nx;}
          if (cellPosition[1] > Ny) { correctPBPosition[itrtr->first][1] = -int(cellPosition[1]/Ny)*Ny;}
          if (cellPosition[1] <  0) { correctPBPosition[itrtr->first][1] =  int(cellPosition[1]/Ny)*Ny;}
          if (cellPosition[2] > Nz) { correctPBPosition[itrtr->first][2] = -int(cellPosition[2]/Nz)*Nz;}
          if (cellPosition[2] <  0) { correctPBPosition[itrtr->first][2] =  int(cellPosition[2]/Nz)*Nz;}
+
 //         std::cout << MPI::COMM_WORLD.Get_rank() << " Cell Volume " << cell3d->getVolume()
 //                         << " surface " << cell3d->getSurface()
 //                         << " CCR_ANGLE_MEAN " << cell3d->getMeanAngle()
@@ -132,6 +134,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
              }
              H5LTmake_dataset_float(file_id, icParticle->getVectorName(ivN).c_str(), 2, dimVertices, matrixTensor);
          }
+         // TODO: This part is commented out, since it causes some MPI problems!
          /*  Take care of Vertex Normals */
          /*
          plint itr=0;
