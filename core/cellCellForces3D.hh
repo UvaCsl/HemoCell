@@ -248,7 +248,7 @@ template<typename T, template<typename U> class Descriptor>
 bool ComputeWallCellForces3D<T,Descriptor>::conditionsAreMet (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
-    eij = p1->getPosition() - p2->getPosition();
+    eij = p2->getPosition() - p1->getPosition(); //TODO: p2-p1 or p1-p2? depends on the force signature
     r = norm(eij);
     if (r > cutoffRadius) { return false; }
     eij = eij * (1.0/r);

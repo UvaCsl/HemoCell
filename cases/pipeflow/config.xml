@@ -16,7 +16,7 @@
 </cellModel>
 
 <parameters>
-    <Re> 3.0 </Re>   <!--Reynolds number-->
+    <Re> 1.0 </Re>   <!--Reynolds number-->
     <warmup> 3000 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
 </parameters>
@@ -36,7 +36,7 @@
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <dx> 1.00e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <dt> 8.0e-8 </dt>
+    <dt> 5.0e-8 </dt>
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
     <refDirN> 32 </refDirN>  <!-- Number of numerical cell in the reference direction -->
 </domain>

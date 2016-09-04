@@ -122,6 +122,9 @@ void RandomPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
             domain.x0 + fLocation.x, domain.x1 + fLocation.x,
             domain.y0 + fLocation.y, domain.y1 + fLocation.y,
             domain.z0 + fLocation.z, domain.z1 + fLocation.z );
+
+    pcout << "(RandomPositionMultipleCellField3D) Real domain to initialise - X: " << realDomain.x0 << ", " << realDomain.x1 << "; Y: " << realDomain.y0 << ", " << realDomain.y1 << "; Z: " << realDomain.z0 << ", " << realDomain.z1 << "; " << endl;
+
     Array<T,2> xRange, yRange, zRange;
 
     for (pluint iCF = 0; iCF < cellFields.size(); ++iCF) {
