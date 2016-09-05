@@ -345,7 +345,8 @@ int main(int argc, char *argv[]) {
         std::vector<Array<T, 3> > cellsOrigin;
         cellsOrigin.push_back(Array<T, 3>(nx * 0.5, ny * 0.5, nz * 0.5));
 
-        randomPositionMultipleCellField3D(cellFields, hematocrit, maxPackIter);
+        //randomPositionMultipleCellField3D(cellFields, hematocrit, maxPackIter);
+        readPositionsBloodCellField3D(cellFields, "cells.pos");
        
         checkpointer.save(lattice, cellFields, initIter);
     }

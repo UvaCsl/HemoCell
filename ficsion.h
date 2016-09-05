@@ -70,6 +70,7 @@ using namespace std;
 /* Particle position initialisation method */
 //#include "external/orderedPositionsMultipleCells.h"
 #include "external/randomPositionsMultipleCells.h"
+#include "external/readPositionsBloodCells.h"
 
 
 

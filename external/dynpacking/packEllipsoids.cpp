@@ -112,7 +112,7 @@ public:
     void initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing, double rPlatelet);
 	void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps, double sizing);
     void savePov(const char * fileName, int sx, int sy, int sz);
-    void saveBloodCellPositions(const char* rbcFileName, const char * pltFileName);
+    void saveBloodCellPositions(const char* cellsFileName);
     void getOutput(vector<vector<vector3> > &positions, vector<vector<vector3> > &angles);
     void testOutput();
 };
@@ -817,11 +817,16 @@ void Packing::savePov(const char *fileName, int sx, int sy, int sz)
     povf.close();
 }
 
-void Packing::saveBloodCellPositions(const char* rbcFileName, const char * pltFileName)
+void Packing::saveBloodCellPositions(const char* cellsFileName)
 {
 
-    ofstream rbcFile (rbcFileName);
-    ofstream pltFile (pltFileName);
+    ofstream cellsFile (cellsFileName);
+
+    //cellsFile << No_cells_x << " " << No_cells_y << " " << No_cells_z << endl; // Dimensions
+
+    cellsFile << species[0]->getn() << endl; // Num. of RBCs
+    cellsFile << species[1]->getn() << endl; // Num. of PLTs
+
 
     for(int i = 0; i < No_parts; i++)
     {
@@ -832,14 +837,13 @@ void Packing::saveBloodCellPositions(const char* rbcFileName, const char * pltFi
         vector3 euler(atan2(Q(1,2),Q(2,2)), -asin(Q(0,2)), atan2(Q(0,1),Q(0,0)));
         euler *= 180 / PI; //Rad to Deg
 
-        if(i < species[0]->getn())
-            rbcFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2] << endl;
-        else
-            pltFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2] << endl;
+        //if(i < species[0]->getn())
+        cellsFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2] << endl;
+        //else
+        //    pltFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2] << endl;
     }
 
-    rbcFile.close();
-    pltFile.close();
+    cellsFile.close();
 }
 
 void Packing::testOutput()
@@ -991,13 +995,12 @@ int main(int argc, char *argv[])
 {
     if (argc < 6) {
         cout << "Usage: " << argv[0] << " hematocrit sX[um] sY[um] sZ[um] maxIter <scale_for_binning=0.3>" << endl;
-        cout << "Output: PLTs.pos, RBCs.pos and cells.pov for visualisation." << endl;
+        cout << "Output: cells.pos for ficsion and cells.pov for visualisation." << endl;
         cout << "Note that the unity in the unit of domain will be used as bin size withouth scaling. Bin-size heavily influences cutoff distance and thus performance." << endl;
         return 1;
     }
 
-	string rbcFileName = "RBCs.pos";
-    string pltFileName = "PLTs.pos";
+	string cellsFileName = "cells.pos";
     string povFileName = "ellipsoids.pov";
 
     double scale = 0.3; // Default scale for blood is 0.3
@@ -1022,7 +1025,7 @@ int main(int argc, char *argv[])
 
 	pack.execute();
 
-    pack.saveBloodCellPositions(rbcFileName.c_str(), pltFileName.c_str());
+    pack.saveBloodCellPositions(cellsFileName.c_str());
     pack.savePov(povFileName.c_str(), sX, sY, sZ);
 
     return 0;

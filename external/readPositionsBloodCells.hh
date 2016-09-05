@@ -11,10 +11,48 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
                                             std::vector<std::vector<Array<T,3> > > & positions,
                                             std::vector<std::vector<plint> > & cellIds,
                                             std::vector<std::vector<Array<T,3> > > & randomAngles,
-                                            T packingDensity, plint maxPackIter)
+                                            const char* positionsFileName)
 {
-    PLB_PRECONDITION( meshes.size()==Np.size() );
+    PLB_PRECONDITION( meshes.size() == 2 );
 
+
+    if(!global::mpi().isMainProcessor())
+    {
+        cout << "WARNING! (readPositionsBloodCels) You should run initialisation in a single process!" << endl
+             << "WARNING! If you need multiprocessor initialisation use (randomPositionsMultipleCells)!"
+             << endl << "WARNING! You should cancel this run (unless you are really sure you want this), as only the master will be initialised this way!" << endl;
+    }
+
+    pcout << "Reading particle positions..." << std::endl;
+
+
+    vector<vector3> packPositions[2];
+    vector<vector3> packAngles[2];
+
+
+    // Reading data from file
+
+    plb_ifstream fIn(positionsFileName);
+
+    //uint nCell[2];
+    Np.resize(2);
+    fIn >> Np[0] >> Np[1];
+
+
+    // TODO: proper try-catch
+    for(pluint j = 0; j < 2; j++) {
+
+        packPositions[j].resize(Np[j]); packAngles[j].resize(Np[j]);
+
+        for (pluint i = 0; i < Np[j]; i++)
+            fIn >> packPositions[j][i][0] >> packPositions[j][i][1] >> packPositions[j][i][2] >> packAngles[j][i][0]
+                >> packAngles[j][i][1] >> packAngles[j][i][2];
+    }
+    //
+
+    pcout << "Reading done." << std::endl;
+
+    pcout << "Domain: " << (int)realDomain.getNx() << " " << (int)realDomain.getNy() << " " << (int)realDomain.getNz() << endl;
 
     vector<int> domainSize;
     domainSize.push_back((int)realDomain.getNx());
@@ -39,24 +77,6 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
         diameters[i] = vector3(dx,dy,dz);
         nPartsPerComponent[i] = Np[i];
     }
-
-    pcout << "Executing packing dynamics..." << std::endl;
-
-    Packing pack;
-
-    pack.initSuspension(nPartsPerComponent, diameters, domainSize, packingDensity, maxPackIter, 0.3);
-    pack.execute();
-
-    vector<vector<vector3> > packPositions;
-    vector<vector<vector3> > packAngles;
-
-    pack.getOutput(packPositions, packAngles);
-    
-    //Debug
-    //pack.testOutput(); pack.savePov("ellipsoids.pov");
-
-    pcout << "Packing Done." << std::endl;
-
 
     // Copy results of packing to appropriate arrays for ficsion
     positions.clear();	positions.resize(Np.size());
@@ -151,7 +171,7 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
     std::vector<std::vector<plint> > cellIds;
     std::vector<std::vector<Array<T,3> > > randomAngles;
 
-    getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, packingDensity, maxPackIter);
+    getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, positionsFileName);
 
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
@@ -215,7 +235,7 @@ BlockDomain::DomainT ReadPositionsBloodCellField3D<T,Descriptor>::appliesTo() co
 
 
 template<typename T, template<typename U> class Descriptor>
-void readPositionsBloodCellField3D(std::vector<CellField3D<T, Descriptor> *> &cellFields, T packingDensity, plint maxPackIter) {
+void readPositionsBloodCellField3D(std::vector<CellField3D<T, Descriptor> *> &cellFields, const char* positionsFileName) {
     global::timer("CellInit").start();
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
@@ -229,7 +249,7 @@ void readPositionsBloodCellField3D(std::vector<CellField3D<T, Descriptor> *> &ce
     //particleFieldsArg.push_back(&(cellFields[0]->getParticleField3D()));
 
     applyProcessingFunctional(
-            new ReadPositionsBloodCellField3D<T, Descriptor>(cellFields, packingDensity, maxPackIter),
+            new ReadPositionsBloodCellField3D<T, Descriptor>(cellFields, positionsFileName),
             cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg);
 
     pcout << "Ready to start.." << std::endl;
