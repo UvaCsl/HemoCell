@@ -12,7 +12,7 @@ Building Prerequisites
 
 Remarks:
 
-- Though the library is being developed on linux, it is known to buld and execute on Mac OS X (10.11.4 was tested). The suggested way to install the required library is through `homebrew`.
+- Though the library is being developed on linux, it is known to build and execute on Mac OS X (10.11.4 was tested). The suggested way to install the required library is through `homebrew`.
 - The code should work on Windows as well, however, this is completeley untested. The suggested compiler suite is `TDM-gcc`.
 
 ## `palabos`
@@ -35,7 +35,7 @@ sudo apt-get install python python-numpy python-matplotlib python-h5py
 
 
 ## Known issues
-* Newer GNU C versions (>= 5.1) do not work. They generate problems with the MPI code. 
+* Newer GNU C versions (>= 5.1) do not work. They generate problems with the MPI code. (On newer Ubuntu set CC, CXX, OMPI_CC, OMPI_CXX environmental variables to an older compiler).
 * Ordinary `Makefile`s do not work for IBM BG/Q systems. Instead use the `Makefile.cineca` as a template, found in the parent directory.
 * Due to some changes required in the `Palabos` source code, patch files are provided for version 1.5r1 under the `patch` directory. See the bash script `patchPLB.sh` for info on how to apply them.
 
