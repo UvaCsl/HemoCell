@@ -16,14 +16,14 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
     PLB_PRECONDITION( meshes.size() == 2 );
 
 
-    if(!global::mpi().isMainProcessor())
+    if(global::mpi().getSize()>1)
     {
-        cout << "WARNING! (readPositionsBloodCels) You should run initialisation in a single process!" << endl
+        pcout << "WARNING! (readPositionsBloodCels) You should run this type of initialisation in a single process!" << endl
              << "WARNING! If you need multiprocessor initialisation use (randomPositionsMultipleCells)!"
              << endl << "WARNING! You should cancel this run (unless you are really sure you want this), as only the master will be initialised this way!" << endl;
     }
 
-    pcout << "Reading particle positions..." << std::endl;
+    pcout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
 
 
     vector<vector3> packPositions[2];
@@ -38,21 +38,26 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
     Np.resize(2);
     fIn >> Np[0] >> Np[1];
 
+    pcout << "(readPositionsBloodCels) Particle count (RBCs, PLTs): " << Np[0] << ", " << Np[1] << endl;
 
     // TODO: proper try-catch
     for(pluint j = 0; j < 2; j++) {
 
         packPositions[j].resize(Np[j]); packAngles[j].resize(Np[j]);
 
-        for (pluint i = 0; i < Np[j]; i++)
+        for (pluint i = 0; i < Np[j]; i++) {
             fIn >> packPositions[j][i][0] >> packPositions[j][i][1] >> packPositions[j][i][2] >> packAngles[j][i][0]
                 >> packAngles[j][i][1] >> packAngles[j][i][2];
+            packAngles[j][i] *= pi/180.0;
+            packAngles[j][i] *= -1.0;  // Right- to left-handed coordinate system
+
+        }
     }
     //
 
-    pcout << "Reading done." << std::endl;
+    pcout << "(readPositionsBloodCels) Reading done." << std::endl;
 
-    pcout << "Domain: " << (int)realDomain.getNx() << " " << (int)realDomain.getNy() << " " << (int)realDomain.getNz() << endl;
+    pcout << "(readPositionsBloodCels) Domain: " << (int)realDomain.getNx() << " " << (int)realDomain.getNy() << " " << (int)realDomain.getNz() << endl;
 
     vector<int> domainSize;
     domainSize.push_back((int)realDomain.getNx());
@@ -111,7 +116,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
 
 
-/* ******** OrderedPositionMultipleCellField3D *********************************** */
+/* ******** ReadPositionMultipleCellField3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
 void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (

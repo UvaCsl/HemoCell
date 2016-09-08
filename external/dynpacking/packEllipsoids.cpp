@@ -49,8 +49,8 @@ class Packing {
 	int Nrot_step;
 
     // Standard diameters for bounding ellipsoids of RBCs and platelets in um [= 1e-6 m]
-    double rbcA = 8.0, rbcB = 8.0, rbcC = 2.4;
-    double plateletA = 2.5 , plateletB = 2.5, plateletC = 0.75;
+    double rbcA = 8.0, rbcB = 2.4, rbcC = 8.0;
+    double plateletA = 2.5 , plateletB = 0.75, plateletC = 2.5;
 
     double Sizing = 1.0;
 

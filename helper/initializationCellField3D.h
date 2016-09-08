@@ -45,7 +45,7 @@ void meshRotation (TriangularSurfaceMesh<T> * mesh, Array<T,3> rotationAngles) {
     mesh->computeBoundingBox (xRange, yRange, zRange);
     Array<T,3> meshCenter = Array<T,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
     mesh->translate(-1.0 * meshCenter);
-    mesh->rotate(rotationAngles[0], rotationAngles[1], rotationAngles[2]);
+    mesh->rotateXYZ(rotationAngles[0], rotationAngles[1], rotationAngles[2]);
 
     mesh->computeBoundingBox (xRange, yRange, zRange);
     mesh->translate(Array<T,3>(-xRange[0], -yRange[0], -zRange[0]));
