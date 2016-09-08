@@ -35,7 +35,7 @@ sudo apt-get install python python-numpy python-matplotlib python-h5py
 
 
 ## Known issues
-* The membrane model of the particles might blow up the simulation under too large deformations.
+* Newer GNU C versions (>= 5.1) do not work. They generate problems with the MPI code. 
 * Ordinary `Makefile`s do not work for IBM BG/Q systems. Instead use the `Makefile.cineca` as a template, found in the parent directory.
 * Due to some changes required in the `Palabos` source code, patch files are provided for version 1.5r1 under the `patch` directory. See the bash script `patchPLB.sh` for info on how to apply them.
 
