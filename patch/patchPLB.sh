@@ -5,6 +5,7 @@ getAbsFilename() {
   echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 }
 
+patch $(getAbsFilename "./../palabos/src/offLattice/triangularSurfaceMesh.h") ./triangularSurfaceMesh.h.patch
 patch $(getAbsFilename "./../palabos/src/offLattice/triangularSurfaceMesh.hh") ./triangularSurfaceMesh.hh.patch
 patch $(getAbsFilename "./../palabos/src/particles/particleField3D.h") ./particleField3D.h.patch
 patch $(getAbsFilename "./../palabos/src/particles/particleField3D.hh") ./particleField3D.hh.patch
