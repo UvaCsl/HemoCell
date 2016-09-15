@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
 
 	pcout << "(main) reading geometry stl..." << std::endl;
 
-    plint extendedEnvelopeWidth = 4;  // Depends on the requirements of the ibmKernel. 2 might be enough
+    plint extendedEnvelopeWidth = 2;  // Depends on the requirements of the ibmKernel. 4 or  even 2 might be enough
 
     plb::MultiScalarField3D<int> *flagMatrix = 0;
     VoxelizedDomain3D<T> *voxelizedDomain = 0;
@@ -237,8 +237,8 @@ int main(int argc, char *argv[]) {
     
     pcout << "(main) dx = " << dx << ", " <<
     "dt = " << dt << ", " <<
-    "dm = " << dm << //", " <<
-    //"kT = " << kBT <<
+    "dm = " << dm << ", " <<
+    "dN = " << dNewton <<
     std::endl;
 
     pcout << "(main) tau = " << tau << " Re = " << Re << " u_lb_max = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
@@ -345,8 +345,8 @@ int main(int argc, char *argv[]) {
         std::vector<Array<T, 3> > cellsOrigin;
         cellsOrigin.push_back(Array<T, 3>(nx * 0.5, ny * 0.5, nz * 0.5));
 
-        //randomPositionMultipleCellField3D(cellFields, hematocrit, maxPackIter);
-        readPositionsBloodCellField3D(cellFields, "cells.pos");
+        //randomPositionMultipleCellField3D(cellFields, hematocrit, dx, maxPackIter);
+        readPositionsBloodCellField3D(cellFields, dx, "cells.pos");
        
         checkpointer.save(lattice, cellFields, initIter);
     }
@@ -392,9 +392,17 @@ int main(int argc, char *argv[]) {
     // ------------------------- Create boundary particles ----------------
     
     pcout << "(main) creating boundary particles..."  << std::endl;
-    MultiParticleField3D<LightParticleField3D<T, DESCRIPTOR> > *boundaryParticleField3D =
+    MultiParticleField3D<DenseParticleField3D<T, DESCRIPTOR> > *boundaryParticleField3D =
             createBoundaryParticleField3D(lattice);
     writeParticleField3D_HDF5(*boundaryParticleField3D, dx, dt, 0, "BoundaryParticles");
+
+    
+    // ------------------------- Add particle repulsion force -------------
+
+    //T k_int = 0.00025, DeltaX=1.0, R=1.0, k=1.5;
+    T k_int = 1.5e-12 / dNewton, DeltaX=1.5e-6 / dx, R=1.5e-6 / dx, k=1.5;	// Scale force with simulation units
+    if (DeltaX > 2.0) DeltaX = 2.0; if (R > 2.0) R = 2.0;  // Should not have effect further than 2 lu -> might go out of domain
+    PowerLawForce<T> repForce(k_int, DeltaX, R, k);
 
 
 	// ------------------------- Warming up fluid domain ------------------    
@@ -415,9 +423,10 @@ int main(int argc, char *argv[]) {
     global::timer("mainLoop").start();
     for (plint iter = 0 + initIter; iter < tmax + 1; ++iter) {
 
-        // #1# Membrane Model
+        // #1# Membrane Model + Repulsion of surfaces
         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
             cellFields[iCell]->applyConstitutiveModel();
+            cellFields[iCell]->applyWallCellForce(repForce, R, boundaryParticleField3D);
         }
 
         // #2# IBM Spreading

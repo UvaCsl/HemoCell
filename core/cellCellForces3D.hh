@@ -248,7 +248,7 @@ template<typename T, template<typename U> class Descriptor>
 bool ComputeWallCellForces3D<T,Descriptor>::conditionsAreMet (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
-    eij = p2->getPosition() - p1->getPosition(); //TODO: p2-p1 or p1-p2? depends on the force signature
+    eij = p1->getPosition() - p2->getPosition(); //TODO: p2-p1 or p1-p2? depends on the force signature -> now it points towards the wall particle
     r = norm(eij);
     if (r > cutoffRadius) { return false; }
     eij = eij * (1.0/r);
@@ -263,7 +263,7 @@ void ComputeWallCellForces3D<T,Descriptor>::applyForce (
         SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
         Array<T,3> force = calcForce(r, eij);
         nParticle->get_force() += force;
-//        cout << "(ComputeWallCellForces3D) r=" << r << ", norm-force=" << norm(force) << std::endl;
+        //cout << "(ComputeWallCellForces3D) r=" << r << ", norm-force=" << norm(force) << std::endl;
 #ifdef PLB_DEBUG // Less Calculations
         nParticle->get_f_repulsive() += force;
         T potential = calcForce.calculatePotential(r,eij);
@@ -287,6 +287,8 @@ void ComputeWallCellForces3D<T,Descriptor>::processGenericBlocks (
     plint dR = ceil(cutoffRadius);
 
     std::vector<Particle3D<T,Descriptor>*> currentWallParticles, neighboringCellParticles;
+
+    
     for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
         for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
             for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
@@ -309,6 +311,40 @@ void ComputeWallCellForces3D<T,Descriptor>::processGenericBlocks (
             }
         }
     }
+    
+    /*
+    Dot3D offset = wallParticleField.getLocation();
+    Box3D rdomain(domain.x0 + offset.x, domain.x1 + offset.x, domain.y0 + offset.y, domain.y1 + offset.y, domain.z0 + offset.z, domain.z1 + offset.z);
+
+    // TODO: this does not change -> should be turned into a static lookup list
+    wallParticleField.findParticles(rdomain, currentWallParticles);
+    if (currentWallParticles.size() == 0) { return; }
+
+    for (pluint cP=0; cP<currentWallParticles.size(); ++cP) {
+        
+        neighboringCellParticles.clear();
+
+        Array<T,3> position = currentWallParticles[cP]->getPosition();
+        plint iX = util::roundToInt(position[0]);//-offset.x;
+        plint iY = util::roundToInt(position[1]);//-offset.y;
+        plint iZ = util::roundToInt(position[2]);//-offset.z;
+
+        Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
+        
+        //cout << "WP position: " << position[0] << " " << position[1] << " " << position[2] << " Domain: " << domain.x0 << " " << domain.x1 << " " << domain.y0 << " " << domain.y1 << " " << domain.z0 << " " << domain.z1 << " wall part offset: "<< offset.x << " " << offset.y << " " <<  offset.z <<endl;
+        
+        particleField.findParticles(neighboringBoxes, neighboringCellParticles);
+        
+        if (neighboringCellParticles.size() == 0) { continue; }
+
+        for (pluint nP=0; nP<neighboringCellParticles.size(); ++nP) {
+            if (conditionsAreMet(currentWallParticles[cP], neighboringCellParticles[nP], r, eij)) {
+                applyForce(currentWallParticles[cP], neighboringCellParticles[nP], r, eij);
+            }
+        }
+    }
+    */
+
 }
 
 template<typename T, template<typename U> class Descriptor>
