@@ -227,6 +227,15 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
         interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
 //        curateInterpolationCoefficients (fluid, cellPos, weights); // TODO: Check validity of curateInterpolationCoefficients
         Array<T,3> elasticForce = particle->get_force();
+
+        // // Check for too large force (TODO: meaning of "too large" should scale with dt, dx)
+        // static const T maxForce = 0.03;
+        // if(norm(elasticForce) > maxForce)
+        // {
+        //     elasticForce /= norm(elasticForce);
+        //     elasticForce *= maxForce;
+        // }
+
         // pcout << "elastic force: (" << elasticForce[0] << ", "<< elasticForce[1] << ", "<< elasticForce[2] << ")\n";
         for (pluint iCell = 0; iCell < weights.size(); ++iCell) {
             Dot3D cellPosition = cellPos[iCell];

@@ -111,14 +111,14 @@ void SurfaceParticle3D<T,Descriptor>::advance() {
     //    this->getPosition() += 1.5*v - 0.5*vPrevious;
     //    vPrevious = v;
 
-    static const T maxVel = 0.25-1.e-6;
-    static const T maxVelSqr = maxVel*maxVel;
+    // static const T maxVel = 0.25-1.e-6;
+    // static const T maxVelSqr = maxVel*maxVel;
 
-    if (normSqr(vPrevious)>maxVelSqr) {
-        vPrevious /= norm(vPrevious);
-        vPrevious *= maxVel;
-        pcout << "(SurfaceParticle3D::advance) Warning, spurious velocity detected! Forced to 0.25 lu/lt" << endl;
-    }
+    // if (normSqr(vPrevious)>maxVelSqr) {
+    //     vPrevious /= norm(vPrevious);
+    //     vPrevious *= maxVel;
+    //     pcout << "(SurfaceParticle3D::advance) Warning, spurious velocity detected! Forced to 0.25 lu/lt" << endl;
+    // }
 
     // Euler update scheme
         this->getPosition() += vPrevious;
