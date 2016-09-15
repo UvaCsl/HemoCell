@@ -36,7 +36,7 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
         for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
             for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
 
-// TODO: Next snippet to allocate only nodes that have a fluid node. // DONE
+
                 bool neighboringBoundariesEverywhere=true;
                 try {
                     for (int px = iX-1; px <= iX+1; ++px) {  for (int py = iY-1; py <= iY+1; ++py) { for (int pz = iZ-1; pz <= iZ+1; ++pz) {
@@ -44,11 +44,12 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
                     }  }  }
                 } catch (int e) { neighboringBoundariesEverywhere=false; }
                 if (fluid.get(iX, iY, iZ).getDynamics().isBoundary() and (not neighboringBoundariesEverywhere) ) {
-//            	if (fluid.get(iX, iY, iZ).getDynamics().isBoundary()) {
             		Array<T,3> vertex = Array<T,3>(iX,iY,iZ) + relativePosition;
-//            		std::cout << "(" << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << ") " << id << std::endl;
             		std::vector<Array<T,3> > vertices;
-            		T step= 0.25;
+
+            		// Position 8 particles inside the fluid cell
+                    /*
+                    T step= 0.25;
                     vertices.push_back(Array<T,3>(step, step, step) + vertex);
                     vertices.push_back(Array<T,3>(step, step, step*3) + vertex);
                     vertices.push_back(Array<T,3>(step, step*3, step*3) + vertex);
@@ -57,12 +58,35 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
                     vertices.push_back(Array<T,3>(step*3, step, step) + vertex);
                     vertices.push_back(Array<T,3>(step*3, step, step*3) + vertex);
                     vertices.push_back(Array<T,3>(step*3, step*3, step*3) + vertex);
+                    */
+
+                    // Position 6 particles face centered, if they face a fluid cell
+                    T step = 0.5;
+                    if(!fluid.get(iX, iY, iZ-1).getDynamics().isBoundary())
+                        vertices.push_back(Array<T,3>(step, step, 0) + vertex);
+
+                    if(!fluid.get(iX, iY-1, iZ).getDynamics().isBoundary())
+                        vertices.push_back(Array<T,3>(step, 0, step) + vertex);
+
+                    if(!fluid.get(iX-1, iY, iZ).getDynamics().isBoundary())
+                        vertices.push_back(Array<T,3>(0, step, step) + vertex);
+
+                    if(!fluid.get(iX+1, iY, iZ).getDynamics().isBoundary())
+                        vertices.push_back(Array<T,3>(2*step, step, step) + vertex);
+
+                    if(!fluid.get(iX, iY+1, iZ).getDynamics().isBoundary())
+                        vertices.push_back(Array<T,3>(step, 2*step, step) + vertex);
+
+                    if(!fluid.get(iX, iY, iZ+1).getDynamics().isBoundary())
+                        vertices.push_back(Array<T,3>(step, step, 2*step) + vertex);
+
                     cellId +=1;
-            	    for (plint indx=0; indx<8; ++indx) {
+            	    for (plint indx=0; indx<vertices.size(); ++indx) {
             	    	boundaryParticleField.addParticle(
             	    			boundaryParticleField.getBoundingBox(),
             	    			new SurfaceParticle3D<T,Descriptor>(vertices[indx], cellId, indx));
             	    }
+
             	}
             }
         }
