@@ -25,7 +25,7 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
             particleEnvelopeWidth,
             latticeManagement.getRefinementLevel() );
 
-    immersedParticles = new MultiParticleField3D<LightParticleField3D<T,Descriptor> >(
+    immersedParticles = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(
             particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
     immersedParticles->periodicity().toggleAll(true);
     immersedParticles->toggleInternalStatistics(false);
@@ -36,7 +36,7 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
             reductionParticleEnvelopeWidth,
             latticeManagement.getRefinementLevel() );
 
-    reductionParticles = new MultiParticleField3D<LightParticleField3D<T,Descriptor> >(reductionParticleManagement,
+    reductionParticles = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(reductionParticleManagement,
             defaultMultiBlockPolicy3D().getCombinedStatistics() );
     reductionParticles->periodicity().toggleAll(true);
     reductionParticles->toggleInternalStatistics(false);
@@ -207,8 +207,20 @@ void CellField3D<T, Descriptor>::applyCellCellForce(CellCellForce3D<T> & calcFor
 }
 
 template<typename T, template<typename U> class Descriptor>
+void CellField3D<T, Descriptor>::applyWallCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > *wallParticles) {
+    std::vector<MultiBlock3D*> wallParticleArg;
+    wallParticleArg.push_back(wallParticles);
+    wallParticleArg.push_back(immersedParticles);
+    global::timer("WallCellForce").start();
+    applyProcessingFunctional (
+       new ComputeWallCellForces3D<T,Descriptor> (calcForce, cutoffRadius),
+       immersedParticles->getBoundingBox(), wallParticleArg );
+    global::timer("WallCellForce").stop();
+}
+
+template<typename T, template<typename U> class Descriptor>
 void CellField3D<T, Descriptor>::applyDifferentCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
-        MultiParticleField3D<LightParticleField3D<T,Descriptor> > * otherCellParticles) {
+        MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * otherCellParticles) {
 
     std::vector<MultiBlock3D*> differentCellCellParticleArg;
     differentCellCellParticleArg.push_back(otherCellParticles);
