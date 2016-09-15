@@ -156,6 +156,9 @@ void RandomPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
     // Run an iterative kinematic simultion to get approximating particle positions
     getRandomPositionsMultipleCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, packingDensity, maxPackIter);
 
+    // Change positions to match dx (it is in um originally)
+    T posRatio = 1e-6/dx;
+
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
         cout << "(RandomPositionMultipleCellField3D) ";
@@ -168,7 +171,7 @@ void RandomPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
             //positionCellInParticleField(*(particleFields[iCF]), fluid,
             //                            meshes[iCF], positions[iCF][c]-0.5, cellIds[iCF][c]);
             positionCellInParticleField(*(particleFields[iCF]), fluid,
-                                         meshCopy, positions[iCF][c], cellIds[iCF][c]);
+                                         meshCopy, (positions[iCF][c]*posRatio)-0.5, cellIds[iCF][c]);
 
 			delete meshCopy;
         }
@@ -219,7 +222,7 @@ BlockDomain::DomainT RandomPositionMultipleCellField3D<T,Descriptor>::appliesTo(
 
 
 template<typename T, template<typename U> class Descriptor>
-void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor> *> &cellFields, T packingDensity, plint maxPackIter) {
+void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor> *> &cellFields, T packingDensity, T dx, plint maxPackIter) {
     global::timer("CellInit").start();
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
@@ -233,7 +236,7 @@ void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor> *>
     //particleFieldsArg.push_back(&(cellFields[0]->getParticleField3D()));
 
     applyProcessingFunctional(
-            new RandomPositionMultipleCellField3D<T, Descriptor>(cellFields, packingDensity, maxPackIter),
+            new RandomPositionMultipleCellField3D<T, Descriptor>(cellFields, packingDensity, dx, maxPackIter),
             cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg);
 
     pcout << "Ready to start.." << std::endl;
