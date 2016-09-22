@@ -70,6 +70,21 @@ void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, B
         // Test if particle is inside and in a boundary -> dont add this particle
         if (isInsideFluidDomain and fluid.get(fluidDomainCell.x, fluidDomainCell.y, fluidDomainCell.z).getDynamics().isBoundary())
         	break;
+        
+        // Also deny particles that are in the outer most layer, aka. the "shear layer"
+        bool neighboringBoundariesAnywhere = false;    
+        for (int px = -2; px <= 2; ++px) {  for (int py = -2; py <= 2; ++py) { for (int pz = -2; pz <= 2; ++pz) {
+                    bool isInsideDomain = (fluidDomainCell.x+px >= 0 and fluidDomainCell.y+py >= 0 and fluidDomainCell.z+pz >= 0) and
+                        (fluidDomainCell.x+px < maxNx and fluidDomainCell.y+py < maxNy and fluidDomainCell.z+pz < maxNz);
+                    if(isInsideDomain) {
+                        neighboringBoundariesAnywhere = neighboringBoundariesAnywhere or fluid.get(fluidDomainCell.x+px, fluidDomainCell.y+py, fluidDomainCell.z+pz).getDynamics().isBoundary();
+                    }
+                }  
+            }  
+        }
+        
+        if(neighboringBoundariesAnywhere)
+            break; 
 
         particleField.addParticle(particleField.getBoundingBox(), new SurfaceParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
 
