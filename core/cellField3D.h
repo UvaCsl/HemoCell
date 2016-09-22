@@ -55,13 +55,15 @@ public:
 	        return NULL;
 	    }
 	}
+    void set_dt(T dt_) {dt = dt_;}
+    T get_dt () { return dt; }
 public:
 	std::map<plint, Cell3D<T,Descriptor>* > & getCellIdToCell3D() { return cellIdToCell3D; };
 	MultiBlockLattice3D<T, Descriptor> & getFluidField3D() { return lattice; };
-    MultiParticleField3D<LightParticleField3D<T,Descriptor> > & getParticleField3D() { return *immersedParticles; };
+    MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & getParticleField3D() { return *immersedParticles; };
     std::string getIdentifier() { return identifier; };
     T getVolumeFraction() { return hematocrit; };
-    void setParticleField3D(MultiParticleField3D<LightParticleField3D<T,Descriptor> > * immersedParticles_) {
+    void setParticleField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles_) {
         delete immersedParticles;
         immersedParticles=immersedParticles_;
         particleArg.clear(); particleLatticeArg.clear(); particleReductionParticleArg.clear();
@@ -85,8 +87,9 @@ public:
     virtual void interpolateVelocityIBM();
     virtual void applyConstitutiveModel();
     virtual void applyCellCellForce(CellCellForce3D<T> & calcForce_, T cutoffRadius_);
+    virtual void applyWallCellForce(CellCellForce3D<T> & calcForce_, T cutoffRadius_, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * wallParticles_);
     virtual void applyDifferentCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
-            MultiParticleField3D<LightParticleField3D<T,Descriptor> > * otherCellParticles);
+            MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * otherCellParticles);
     virtual void deleteIncompleteCells();
 	/* Need implementation */
     virtual void synchronizeSyncRequirements_Local(SyncRequirements ccrRequirements_);
@@ -116,8 +119,8 @@ public:
     bool has_cellId(plint cellId) { return cellIdToCell3D.count(cellId) > 0; }
 private:
 	MultiBlockLattice3D<T, Descriptor> & lattice;
-	MultiParticleField3D<LightParticleField3D<T,Descriptor> > * immersedParticles;
-	MultiParticleField3D<LightParticleField3D<T,Descriptor> > * reductionParticles;
+	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * immersedParticles;
+	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * reductionParticles;
 	TriangularSurfaceMesh<T> & elementaryMesh;
     T hematocrit;
 	ConstitutiveModel<T, Descriptor> * cellModel;
@@ -145,7 +148,7 @@ private:
 
 template<typename T, template<typename U> class Descriptor>
 void applyWallCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
-        MultiParticleField3D<LightParticleField3D<T,Descriptor> > & wallParticles,
+        MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & wallParticles,
         CellField3D<T, Descriptor> & cellField) {
 
     std::vector<MultiBlock3D*> wallParticleSurfaceParticleArg;
