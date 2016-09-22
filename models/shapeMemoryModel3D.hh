@@ -113,8 +113,10 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
     /* Dissipative term coefficients from FedosovCaswellKarniadakis2010 */
     gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
     gamma_C = (gamma_T/3.0);
-#ifdef PLB_DEBUG // Less Calculations
+
     pcout << std::endl;
+    pcout << " ============================================= " << std::endl;
+    pcout << " ========  Material model properties ========= " << std::endl;
     pcout << " ============================================= " << std::endl;
     pcout << "k_bend: " << k_bend << ",\t eqAngle (degrees): " << eqAngle*180.0/pi << std::endl;
     pcout << "k_volume: " << k_volume << ",\t eqVolume: " << eqVolume << std::endl;
@@ -136,7 +138,7 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
     pcout << "# YoungsModulus = " << getYoungsModulus()*dNewton/dx << std::endl;
     pcout << "# Poisson ratio = " << getPoissonRatio() << std::endl;
     pcout << " ============================================= " << std::endl;
-#endif // PLB_DEBUG // Less Calculations
+
 }
 
 
@@ -412,6 +414,7 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
         /* In Plane forces (WLC and repulsive) */
         /* ------------------------------------*/
         force1 = computeInPlaneHighOrderForce(iX, jX, eqLengthPerEdge[edgeId], k_inPlane);
+        //if(norm(force1) > 1e-3) force1 *= 1e-3/norm(force1);
         iParticle->get_force() += force1;
         jParticle->get_force() -= force1;
 
@@ -445,7 +448,8 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
             /*== Compute bending force for the vertex as part of the main edge ==*/
             Array<T,3> fi, fj;
             fi = computeHighOrderBendingForce (iX, kX, jX, lX, iNormal, jNormal, eqAnglePerEdge[edgeId], k_bend, fi, fj);
-
+            //if(norm(fi) > 1e-3) fi *= 1e-3/norm(fi);
+            //if(norm(fj) > 1e-3) fj *= 1e-3/norm(fj);
             iParticle->get_force() += fi;
             jParticle->get_force() += fj;
 
@@ -503,6 +507,9 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
         force1 = computeHighOrderLocalAreaConservationForce(x1, x2, x3, triangleNormal, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
         force2 = computeHighOrderLocalAreaConservationForce(x2, x3, x1, triangleNormal, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
         force3 = computeHighOrderLocalAreaConservationForce(x3, x1, x2, triangleNormal, triangleArea, eqAreaPerTriangle[iTriangle], areaCoefficient);
+        //if(norm(force1) > 1e-3) force1 *= 1e-3/norm(force1);
+        //if(norm(force2) > 1e-3) force2 *= 1e-3/norm(force2);
+        //if(norm(force3) > 1e-3) force3 *= 1e-3/norm(force3);
         iParticle->get_force() += force1;
         jParticle->get_force() += force2;
         kParticle->get_force() += force3;

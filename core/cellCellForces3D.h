@@ -136,7 +136,7 @@ public:
 public:
     virtual T calculatePotential (T r) { return 0; }
     virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
-        return - k_int * (pow((DeltaX*1.0/r),k) - DeltaXoverRink)*eij;
+        return k_int * (pow((DeltaX*1.0/r),k) - DeltaXoverRink)*eij;
     }
 private:
     T k_int, DeltaX, R, k;

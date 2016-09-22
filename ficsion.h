@@ -68,7 +68,7 @@ using namespace std;
 #include "diagonalize.hpp"
 
 /* Particle position initialisation method */
-//#include "external/orderedPositionsMultipleCells.h"
+#include "external/orderedPositionsMultipleCells.h"
 #include "external/randomPositionsMultipleCells.h"
 #include "external/readPositionsBloodCells.h"
 

@@ -400,9 +400,24 @@ int main(int argc, char *argv[]) {
     // ------------------------- Create boundary particles ----------------
     
     pcout << "(main) creating boundary particles..."  << std::endl;
-    MultiParticleField3D<LightParticleField3D<T, DESCRIPTOR> > *boundaryParticleField3D =
+    MultiParticleField3D<DenseParticleField3D<T, DESCRIPTOR> > *boundaryParticleField3D =
             createBoundaryParticleField3D(lattice);
     writeParticleField3D_HDF5(*boundaryParticleField3D, dx, dt, 0, "BoundaryParticles");
+
+    
+    // ------------------------- Add particle-wall repulsion force -------------
+
+    //T k_int = 0.00025, DeltaX=1.0, R=1.0, k=1.5;
+    // was 1.5e-12
+    T k_int = 2.0e-10 / dNewton, DeltaX=1.5e-6 / dx, R=1.5e-6 / dx, k=1.5;	// Scale force with simulation units
+    if (DeltaX > 2.0) DeltaX = 2.0; if (R > 2.0) R = 2.0;  // Should not have effect further than 2 lu -> might go out of domain
+    PowerLawForce<T> repWP(k_int, DeltaX, R, k);
+
+    // ------------------------- Add particle-particle repulsion force ---------
+
+    k_int = 1.0e-12 / dNewton; DeltaX=0.5e-6 / dx; T R2=0.5e-6 / dx; k=1.5;
+    if (DeltaX > 2.0) DeltaX = 2.0; if (R2 > 2.0) R2 = 2.0;
+    PowerLawForce<T> repPP(k_int, DeltaX, R2, k);
 
 
 	// ------------------------- Warming up fluid domain ------------------    
@@ -410,7 +425,7 @@ int main(int argc, char *argv[]) {
     if (initIter == 0)
     {
         pcout << "(main) fresh start: warming up fluid domain for "  << warmup << " iterations..." << std::endl;
-        for (plint itrt = 0; itrt < warmup; ++itrt) { lattice.collideAndStream(); }
+        for (plint itrt = 0; itrt < warmup; ++itrt) { cellFields[0]->setFluidExternalForce(poiseuilleForce); lattice.collideAndStream(); }
     }
 
 
