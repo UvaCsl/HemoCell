@@ -358,12 +358,7 @@ class Quaternion {
     double s;
     vector3 p;
 public:
-    Quaternion() {
-        double phi = Random::ran1(0, PI);
-        s = cos(phi);
-        p.random();
-        p *= sin(phi);
-    }
+    Quaternion();
     Quaternion(double ss, vector3 pp) : s(ss), p(pp) { norm(); }
     Quaternion(vector3 euler_angles) {
         vector3 px(sin(0.5*euler_angles[0]), 0, 0);
@@ -393,6 +388,15 @@ public:
         }
         return *this;
     }
+
+    Quaternion& random() {
+        double phi = Random::ran1(0, PI);
+        s = cos(phi);
+        p.random();
+        p *= sin(phi);
+        return *this;
+    }
+
     matrix33 countQ() const {
         matrix33 Q;
         Q = vvt(p, p) - s * skew(p) + (s*s - 0.5) * eye();

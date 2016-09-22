@@ -49,11 +49,16 @@ class Packing {
 	int Nrot_step;
 
     // Standard diameters for bounding ellipsoids of RBCs and platelets in um [= 1e-6 m]
-    double rbcA = 8.0, rbcB = 2.4, rbcC = 8.0;
+    //double rbcA = 8.0, rbcB = 2.5, rbcC = 8.0;
+    //double plateletA = 2.5 , plateletB = 0.75, plateletC = 2.5;
+
+    double rbcA = 9.0, rbcB = 3.5, rbcC = 9.0; // Inreased to cover biconcave shape of RBCs
     double plateletA = 2.5 , plateletB = 0.75, plateletC = 2.5;
+
 
     double Sizing = 1.0;
 
+    bool rndRotation = true;
 
 	void setup();
 	void stepon();
@@ -115,6 +120,7 @@ public:
     void saveBloodCellPositions(const char* cellsFileName);
     void getOutput(vector<vector<vector3> > &positions, vector<vector<vector3> > &angles);
     void testOutput();
+    void setRndRotation(bool rndRotation_) {rndRotation = rndRotation_;}
 };
 
 Packing::Packing () {
@@ -211,16 +217,21 @@ void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float
     // Get nominal volume ratio
     Pnom0 = (rbcVol * nRBC + plateletVol * nPlatelet) / domainVol;
 
+    if(rndRotation)
+    	Nrot_step = 1;	// Execute rotation every n-th step
+    else
+    	Nrot_step = maxSteps+1; // a.k.a. never
+
     // Output properties
     Nprint_step = 10;
-    Nrot_step = 1;
 
     cout << "Number of maximal iterations: " << Max_steps << endl;
+    cout << "Rotation happens every nth step: " << Nrot_step << endl;
     cout << "Number of bins: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
     cout << "Number of cells to pack:  " << endl;
     
-    cout << "    RBCs: " << nRBC << " Resizd volume(for ellipsoids): " << rbcVol << " Dimensions: " << rbcA << "x" << rbcB << "x"<< rbcC << endl;
-    cout << "    Platelets: " << nPlatelet << " Resized volume(for ellipsoids): "<< plateletVol << endl;
+    cout << "    RBCs: " << nRBC <<endl; //<< " Resized volume(for ellipsoids): " << rbcVol << " Dimensions: " << rbcA << "x" << rbcB << "x"<< rbcC << endl;
+    cout << "    Platelets: " << nPlatelet <<endl; //<< " Resized volume(for ellipsoids): "<< plateletVol << endl;
 }
 
 // Takes dimensions in um!
@@ -252,8 +263,14 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
     No_cells_x = ceil(domainSize[0] * Sizing); // in the same quantity as cell diameters
     No_cells_y = ceil(domainSize[1] * Sizing);
     No_cells_z = ceil(domainSize[2] * Sizing);
+    
     Ntau = 102400;//150000000;//102400;
-    Nrot_step = 1;	// Execute rotation every n-th step
+
+    if(rndRotation)
+    	Nrot_step = 1;	// Execute rotation every n-th step
+    else
+    	Nrot_step = maxSteps+1; // a.k.a. never
+
     Max_steps = maxSteps; // if force-free configuration is not possible, still stop calculation at some point
 
     // Set up species
@@ -269,6 +286,7 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
     Nprint_step = 250;
 
     cout << "Number of maximal iterations: " << Max_steps << endl;
+    cout << "Rotation happens every nth step: " << Nrot_step << endl;
     cout << "Number of bins for neighbour cutoff: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
     cout << "Number of cells to pack:  " << endl;
     for(int i = 0; i < No_species; i++)
@@ -422,14 +440,14 @@ void Packing::motion() {
 	for (i = 0; i < No_parts; i++) {
 		Ellipsoid *p = parts[i];
 		Force_step += sqrt(p->get_f()*p->get_f());
-//	shift
+//	translation
 		buff = p->get_pos() + p->get_f() * Epsilon_scl;
 		buff.pbc(Box);
 		p->get_pos() = buff;
 //		if (i == 0) cout << p->get_f() << endl << p->get_pos() << endl;
 
 //	rotation
-		if (Nstep % Nrot_step) continue;
+		if ((Nstep+1) % Nrot_step) continue;
 		if (fabs(Eps_rot) < 1e-5) continue;
 		if (p->get_k()->gets()) continue;	//	sphere
 //		cout << i << " " << p->get_fu() << endl;
@@ -993,8 +1011,8 @@ double Packing::zeroin(Ellipsoid_2& ell, double ax, double bx) {
 #ifdef STANDALONE
 int main(int argc, char *argv[]) 
 {
-    if (argc < 6) {
-        cout << "Usage: " << argv[0] << " hematocrit sX[um] sY[um] sZ[um] maxIter <scale_for_binning=0.3>" << endl;
+    if (argc < 7) {
+        cout << "Usage: " << argv[0] << " hematocrit[0;1] sX[um] sY[um] sZ[um] maxIter[2500] allowRotation[0/1] <scale_for_binning=0.3>" << endl;
         cout << "Output: cells.pos for ficsion and cells.pov for visualisation." << endl;
         cout << "Note that the unity in the unit of domain will be used as bin size withouth scaling. Bin-size heavily influences cutoff distance and thus performance." << endl;
         return 1;
@@ -1015,14 +1033,19 @@ int main(int argc, char *argv[])
 
     int maxIter = atoi(argv[5]);
 
-    if(argc > 6)
-        scale = atof(argv[6]);
+    bool doRotate = atoi(argv[6]);
+
+    if(argc > 7)
+        scale = atof(argv[7]);
+
+    cout << "Rotation: " << (bool)doRotate << endl;
 
     Packing pack;
 
+    pack.setRndRotation(doRotate); // This needs to be set first!
 
     pack.initBlood(hematocrit, sX, sY, sZ, maxIter, scale, plt_ratio);
-
+    
 	pack.execute();
 
     pack.saveBloodCellPositions(cellsFileName.c_str());

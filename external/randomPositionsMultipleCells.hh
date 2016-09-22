@@ -43,7 +43,7 @@ void getRandomPositionsMultipleCellsVector(Box3D realDomain,
     pcout << "Executing packing dynamics..." << std::endl;
 
     Packing pack;
-
+    pack.setRndRotation(true); //Whether to allow rotation of the particles
     pack.initSuspension(nPartsPerComponent, diameters, domainSize, packingDensity, maxPackIter, 0.3);
     pack.execute();
 
