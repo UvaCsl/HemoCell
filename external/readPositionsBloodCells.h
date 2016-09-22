@@ -11,7 +11,7 @@ using namespace std;
 using namespace plb;
 
 template<typename T, template<typename U> class Descriptor>
-void readPositionsBloodCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields, const char* positionsFileName);
+void readPositionsBloodCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields, T dx, const char* positionsFileName);
 
 template<typename T>
 void getReadPositionsBloodCellsVector(Box3D realDomain,
@@ -26,8 +26,8 @@ template<typename T, template<typename U> class Descriptor>
 class ReadPositionsBloodCellField3D : public BoxProcessingFunctional3D
 {
 public:
-    ReadPositionsBloodCellField3D (std::vector<CellField3D<T, Descriptor>* > & cellFields_, const char* positionsFileName_):
-            cellFields(cellFields_), positionsFileName(positionsFileName_) { }
+    ReadPositionsBloodCellField3D (std::vector<CellField3D<T, Descriptor>* > & cellFields_, T dx_, const char* positionsFileName_):
+            cellFields(cellFields_), dx(dx_), positionsFileName(positionsFileName_) { }
     /// Arguments: [0] Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual ReadPositionsBloodCellField3D<T,Descriptor>* clone() const;
@@ -37,6 +37,7 @@ public:
 private:
     std::vector<CellField3D<T, Descriptor>* > & cellFields;
     const char* positionsFileName;
+    T dx;
 };
 
 

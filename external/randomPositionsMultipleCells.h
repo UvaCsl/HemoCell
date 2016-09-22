@@ -12,7 +12,7 @@ using namespace std;
 using namespace plb;
 
 template<typename T, template<typename U> class Descriptor>
-void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields, T packingDensity, plint maxPackIter = 25000);
+void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields, T packingDensity, T dx, plint maxPackIter = 25000);
 
 template<typename T>
 void getRandomPositionsMultipleCellsVector(Box3D realDomain,
@@ -27,8 +27,8 @@ template<typename T, template<typename U> class Descriptor>
 class RandomPositionMultipleCellField3D : public BoxProcessingFunctional3D
 {
 public:
-    RandomPositionMultipleCellField3D (std::vector<CellField3D<T, Descriptor>* > & cellFields_, T packingDensity_, plint maxPackIter_):
-            cellFields(cellFields_), packingDensity(packingDensity_), maxPackIter(maxPackIter_) { }
+    RandomPositionMultipleCellField3D (std::vector<CellField3D<T, Descriptor>* > & cellFields_, T packingDensity_, T dx_, plint maxPackIter_):
+            cellFields(cellFields_), packingDensity(packingDensity_), dx(dx_), maxPackIter(maxPackIter_) { }
     /// Arguments: [0] Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual RandomPositionMultipleCellField3D<T,Descriptor>* clone() const;
@@ -39,6 +39,7 @@ private:
     std::vector<CellField3D<T, Descriptor>* > & cellFields;
     T packingDensity;
     plint maxPackIter;
+    T dx;
 };
 
 

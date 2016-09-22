@@ -48,7 +48,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
         for (pluint i = 0; i < Np[j]; i++) {
             fIn >> packPositions[j][i][0] >> packPositions[j][i][1] >> packPositions[j][i][2] >> packAngles[j][i][0]
                 >> packAngles[j][i][1] >> packAngles[j][i][2];
-            packAngles[j][i] *= pi/180.0;
+            packAngles[j][i] *= pi/180.0; // Deg to Rad
             packAngles[j][i] *= -1.0;  // Right- to left-handed coordinate system
 
         }
@@ -157,7 +157,7 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
 
         TriangularSurfaceMesh<T> * mesh = copyTriangularSurfaceMesh(cellFields[iCF]->getMesh(), emptyEoTSM[iCF]);
         mesh->computeBoundingBox (xRange, yRange, zRange);
-        mesh->translate(Array<T,3>(-xRange[0], -yRange[0], -zRange[0]));
+        mesh->translate(Array<T,3>(-(xRange[0]+xRange[1])/2.0, -(yRange[0]+yRange[1])/2.0, -(zRange[0]+zRange[1])/2.0));
         meshes[iCF] = mesh;
         volumes[iCF] = MeshMetrics<T>(*mesh).getVolume();
 
@@ -178,9 +178,12 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
 
     getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, positionsFileName);
 
+    // Change positions to match dx (it is in um originally)
+    T posRatio = 1e-6/dx;
+
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
-        cout << "(ReadPositionsBloodCellField3D) ";
+        cout << "(ReadPositionsBloodCellField3D) " ;
         for (pluint c = 0; c < positions[iCF].size(); ++c)
         {
             ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;
@@ -190,13 +193,13 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
             //positionCellInParticleField(*(particleFields[iCF]), fluid,
             //                            meshes[iCF], positions[iCF][c]-0.5, cellIds[iCF][c]);
             positionCellInParticleField(*(particleFields[iCF]), fluid,
-                                         meshCopy, positions[iCF][c]-0.5, cellIds[iCF][c]);
+                                         meshCopy, positions[iCF][c]*posRatio, cellIds[iCF][c]);
 			delete meshCopy;
         }
 
         // DELETE CELLS THAT ARE NOT WHOLE
         plint nVertices=meshes[iCF]->getNumVertices();
-        cout << mpiRank;
+        cout << "MPI rank: " << mpiRank;
         plint cellsDeleted = deleteIncompleteCells(*(particleFields[iCF]), fluid, relativeDomains[iCF], nVertices);
         std::vector<Particle3D<T,Descriptor>*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(),   particles);
@@ -240,7 +243,7 @@ BlockDomain::DomainT ReadPositionsBloodCellField3D<T,Descriptor>::appliesTo() co
 
 
 template<typename T, template<typename U> class Descriptor>
-void readPositionsBloodCellField3D(std::vector<CellField3D<T, Descriptor> *> &cellFields, const char* positionsFileName) {
+void readPositionsBloodCellField3D(std::vector<CellField3D<T, Descriptor> *> &cellFields, T dx, const char* positionsFileName) {
     global::timer("CellInit").start();
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
@@ -254,7 +257,7 @@ void readPositionsBloodCellField3D(std::vector<CellField3D<T, Descriptor> *> &ce
     //particleFieldsArg.push_back(&(cellFields[0]->getParticleField3D()));
 
     applyProcessingFunctional(
-            new ReadPositionsBloodCellField3D<T, Descriptor>(cellFields, positionsFileName),
+            new ReadPositionsBloodCellField3D<T, Descriptor>(cellFields, dx, positionsFileName),
             cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg);
 
     pcout << "Ready to start.." << std::endl;

@@ -155,6 +155,7 @@ int main(int argc, char *argv[]) {
     std::string meshFileName;
     plint warmup;
     plint maxPackIter;
+    string particlePosFile;
 
 
     // ------------------------- Read in config file ------------------------------------------------
@@ -203,10 +204,13 @@ int main(int argc, char *argv[]) {
     document["domain"]["dt"].read(dt);
     document["domain"]["refDir"].read(refDir);
     document["domain"]["refDirN"].read(refDirN);
+    document["domain"]["timeStepSize"].read(cellStep);
 
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
     document["sim"]["hematocrit"].read(hematocrit);
+    document["sim"]["particlePosFile"].read(particlePosFile);
+
 
     hematocrit /= 100;
 
@@ -345,15 +349,19 @@ int main(int argc, char *argv[]) {
         std::vector<Array<T, 3> > cellsOrigin;
         cellsOrigin.push_back(Array<T, 3>(nx * 0.5, ny * 0.5, nz * 0.5));
 
-        //randomPositionMultipleCellField3D(cellFields, hematocrit, maxPackIter);
-        readPositionsBloodCellField3D(cellFields, "cells.pos");
+        //orderedPositionMultipleCellField3D(cellFields);
+        //randomPositionMultipleCellField3D(cellFields, hematocrit, dx, maxPackIter);
+        readPositionsBloodCellField3D(cellFields, dx, particlePosFile.c_str());
        
         checkpointer.save(lattice, cellFields, initIter);
     }
 
+    // ---------------------- Set integration scheme and time step amplification for cell fields ---------------
+
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-        cellFields[iCell]->setParticleUpdateScheme(ibmScheme);
+        cellFields[iCell]->setParticleUpdateScheme(ibmScheme, cellStep);
     }
+    pcout << "(main) material model integration step: " << cellStep <<  " lt, update scheme: " << ibmScheme << endl;
 
 
     plint domainVol = computeSum(*flagMatrix);
