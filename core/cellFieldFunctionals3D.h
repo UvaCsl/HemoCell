@@ -20,7 +20,7 @@ template<typename T, template<typename U> class Descriptor>
 class ChangeParticleUpdateScheme : public BoxProcessingFunctional3D
 {
 public:
-    ChangeParticleUpdateScheme (plint scheme_) : scheme(scheme_) { } ;
+    ChangeParticleUpdateScheme (plint scheme_, T cellTimeStep = 1.0) : scheme(scheme_), dt(cellTimeStep) { } ;
     ~ChangeParticleUpdateScheme() { };
     ChangeParticleUpdateScheme(ChangeParticleUpdateScheme<T,Descriptor> const& rhs) :
         scheme(rhs.scheme) { } ;
@@ -37,9 +37,11 @@ public:
         particleField.findParticles(domain, particles); // Gets particle only from the bulk
         for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
             castParticleToICP3D(particles[iParticle])->get_scheme() = scheme;
+            castParticleToICP3D(particles[iParticle])->set_dt(dt);
         }
     };
 private:
+    T dt;
     plint scheme;
 };
 

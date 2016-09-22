@@ -144,6 +144,8 @@ int main(int argc, char *argv[]) {
     T dx, dt, dm, dNewton;
     T tau, nu_lbm, u_lbm_max;
     T nu_p, rho_p;
+    T cell_dt;
+    plint cellStep;
     plint nx, ny, nz;
     T hematocrit;
     T shellDensity, eqLengthRatio, radius;
@@ -218,7 +220,7 @@ int main(int argc, char *argv[]) {
 
 	pcout << "(main) reading geometry stl..." << std::endl;
 
-    plint extendedEnvelopeWidth = 4;  // Depends on the requirements of the ibmKernel. 2 might be enough
+    plint extendedEnvelopeWidth = 2;  // Depends on the requirements of the ibmKernel. 4 or  even 2 might be enough
 
     plb::MultiScalarField3D<int> *flagMatrix = 0;
     VoxelizedDomain3D<T> *voxelizedDomain = 0;
@@ -238,11 +240,12 @@ int main(int argc, char *argv[]) {
 	//kBT = kBT_p / ( dNewton * dx );
     //shearRate = shearRate_p * dt;
     //stretchForceScalar = stretchForce_p / dNewton;
-    
+
     pcout << "(main) dx = " << dx << ", " <<
     "dt = " << dt << ", " <<
-    "dm = " << dm << //", " <<
-    //"kT = " << kBT <<
+    "cell_dt" << cellStep * dt <<
+    "dm = " << dm << ", " <<
+    "dN = " << dNewton <<
     std::endl;
 
     pcout << "(main) tau = " << tau << " Re = " << Re << " u_lb_max = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
@@ -436,24 +439,30 @@ int main(int argc, char *argv[]) {
 
     
     global::timer("mainLoop").start();
-    for (plint iter = 0 + initIter; iter < tmax + 1; ++iter) {
+    for (plint iter = 0 + initIter; iter < tmax + 1; iter+=cellStep) {
 
-        // #1# Membrane Model
+        // #1# Membrane Model + Repulsion of surfaces
         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
             cellFields[iCell]->applyConstitutiveModel();
+            cellFields[iCell]->applyWallCellForce(repWP, R, boundaryParticleField3D);
+            cellFields[iCell]->applyCellCellForce(repPP, R2);
         }
 
-        // #2# IBM Spreading
-        cellFields[0]->setFluidExternalForce(poiseuilleForce);
-        for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-            cellFields[iCell]->spreadForceIBM();
+        // Inner iteration cycle of fluid
+        for(int innerIt = 0; innerIt < cellStep; innerIt++){
+            // #2# IBM Spreading
+            cellFields[0]->setFluidExternalForce(poiseuilleForce);
+            for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+                cellFields[iCell]->spreadForceIBM();
+            }
+
+            // #3# LBM
+            global::timer("LBM").start();
+            lattice.collideAndStream();
+            global::timer("LBM").stop();
         }
 
-        // #3# LBM
-        global::timer("LBM").start();
-        lattice.collideAndStream();
-        global::timer("LBM").stop();
-
+        // Gather velocities from the fluid
         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
             // #4# IBM Interpolation
             cellFields[iCell]->interpolateVelocityIBM();
@@ -462,27 +471,27 @@ int main(int argc, char *argv[]) {
         }
 
         // #6# Output
-        if ((iter + 1) % tmeas == 0) {
+        if ((iter % tmeas) == 0) {
             SyncRequirements everyCCR(allReductions);
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
                 cellFields[iCell]->synchronizeCellQuantities(everyCCR);
             }
             global::timer("HDFOutput").start();
             bool invertXZ_for_XDMF = true;
-            writeHDF5(lattice, dx, dt, iter + 1, invertXZ_for_XDMF);
+            writeHDF5(lattice, dx, dt, iter, invertXZ_for_XDMF);
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter + 1);
-                writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter + 1);
+                writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter);
+                writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter);
             }
             global::timer("HDFOutput").stop();
-            if ((iter + 1) % (2 * tmeas) == 0) {
+            if ((iter % (2 * tmeas)) == 0) {
                 global::timer("Checkpoint").start();
-                checkpointer.save(lattice, cellFields, iter + 1);
+                checkpointer.save(lattice, cellFields, iter);
                 global::timer("Checkpoint").stop();
             }
             T dtIteration = global::timer("mainLoop").stop();
-            simpleProfiler.writeIteration(iter + 1);
-            pcout << "(main) Iteration:" << iter + 1 << "(" << iter * dt << " s)" <<"; time / it = " << dtIteration / tmeas;
+            simpleProfiler.writeIteration(iter * cellStep);
+            pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" <<"; time / it = " << dtIteration / tmeas;
             pcout << std::endl;
         } else {
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {

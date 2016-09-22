@@ -43,11 +43,11 @@ public:
      *  2: Velocity Verlet
      */
     SurfaceParticle3D(SurfaceParticle3D<T,Descriptor> const& rhs);
-    SurfaceParticle3D(Array<T,3> const& position, plint cellId_ = -1, plint vertexId_ = 0);
+    SurfaceParticle3D(Array<T,3> const& position, plint cellId_ = -1, plint vertexId_ = 0, T dt_= 1.0);
     SurfaceParticle3D(Array<T,3> const& position,
                           Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
                             Array<T,3> const& a_, Array<T,3> const& force_, Array<T,3> const& vPrevious_,
-                            plint cellId_ = -1, plint vertexId_=0, plint scheme_=0);
+                            plint cellId_ = -1, plint vertexId_=0, plint scheme_=0, T dt_ = 1);
     virtual SurfaceParticle3D<T,Descriptor>* clone() const;
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
     virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
@@ -83,6 +83,8 @@ public:
     Array<T,3>& get_vPrevious() { return vPrevious; }
     Array<T,3>& get_a() { return a; }
     Array<T,3>& get_force() { return force; }
+    T& get_dt() { return dt; }
+    void set_dt( T dt_ ) { dt = dt_; }
     plint const& get_cellId() const { return cellId; }
     plint& get_cellId() { return cellId; }
     plint const& getVertexId() const { return vertexId; }
@@ -97,6 +99,7 @@ public:
     	return plint(myrank); }
 private:
     Array<T,3> v, pbcPosition, a, force, vPrevious, vProgressed;
+    T dt=1.0;
     static int id;
 private:
     plint processor;

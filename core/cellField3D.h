@@ -40,10 +40,10 @@ public:
 	/* Set or change parameters */
 	void setIBMKernel(plint ibmKernel_) { ibmKernel = ibmKernel_; }
 	void setIBMCoupling(bool coupleWithIBM_) { coupleWithIBM = coupleWithIBM_; }
-	void setParticleUpdateScheme (plint scheme) {
+	void setParticleUpdateScheme (plint scheme, T cellTimeStep=1.0) {
 	    pcout << "IBM kernerl set to " << ibmKernel << " and particle update scheme to " << scheme << std::endl;
 	    applyProcessingFunctional ( // advance particles in time according to velocity
-	        new ChangeParticleUpdateScheme<T,Descriptor>(scheme),
+	        new ChangeParticleUpdateScheme<T,Descriptor>(scheme, cellTimeStep),
 	        immersedParticles->getBoundingBox(), particleArg );
 }
 	TriangularSurfaceMesh<T> & getMesh() { return elementaryMesh; }
@@ -128,6 +128,7 @@ private:
 	bool coupleWithIBM;
     SyncRequirements ccrRequirements;
     std::string identifier;
+    T dt = 1.0;
 
 public:
     std::vector<MultiBlock3D*> & getReductionParticleArg()                 { return reductionParticleArg; }

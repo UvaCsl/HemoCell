@@ -35,7 +35,7 @@ template<typename T, template<typename U> class Descriptor>
 SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D(SurfaceParticle3D<T,Descriptor> const& rhs)
     : Particle3D<T,Descriptor>(rhs.getTag(), rhs.getPosition()), v(rhs.v), pbcPosition(rhs.pbcPosition), a(rhs.a),
       force(rhs.force), vPrevious(rhs.vPrevious), processor(rhs.processor), cellId(rhs.cellId), vertexId(rhs.vertexId),
-      scheme(rhs.scheme), bondTypeSaturation(rhs.bondTypeSaturation)
+      scheme(rhs.scheme), bondTypeSaturation(rhs.bondTypeSaturation), dt(rhs.dt)
 {
 }
 
@@ -60,11 +60,12 @@ SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D()
 { }
 
 template<typename T, template<typename U> class Descriptor>
-SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D (Array<T,3> const& position, plint cellId_, plint vertexId_ )
+SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D (Array<T,3> const& position, plint cellId_, plint vertexId_, T dt_ )
     : Particle3D<T,Descriptor>(cellId_, position),
       v(T(),T(),T()),
       pbcPosition(position),
       a(T(),T(),T()),
+      dt(dt_),
       force(T(),T(),T()),
       vPrevious(T(),T(),T()),
 #ifdef PLB_DEBUG // Less Calculations
@@ -81,12 +82,13 @@ template<typename T, template<typename U> class Descriptor>
 SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D (
         Array<T,3> const& position,
         Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
-        Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_, plint cellId_, plint vertexId_, plint scheme_)
+        Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_, plint cellId_, plint vertexId_, plint scheme_, T dt_)
     : Particle3D<T,Descriptor>(cellId_, position),
       v(v_),
       pbcPosition(pbcPosition_),
       a(a_),
       force(force_),
+      dt(dt_),
       vPrevious(vPrevious_),
 #ifdef PLB_DEBUG // Less Calculations
       f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()), f_surface(T(),T(),T()), f_shear(T(),T(),T()), f_viscosity(T(),T(),T()),
@@ -111,18 +113,18 @@ void SurfaceParticle3D<T,Descriptor>::advance() {
     //    this->getPosition() += 1.5*v - 0.5*vPrevious;
     //    vPrevious = v;
 
-    static const T maxVel = 0.25-1.e-6;
-    static const T maxVelSqr = maxVel*maxVel;
+    // static const T maxVel = 0.25-1.e-6;
+    // static const T maxVelSqr = maxVel*maxVel;
 
-    if (normSqr(vPrevious)>maxVelSqr) {
-        vPrevious /= norm(vPrevious);
-        vPrevious *= maxVel;
-        pcout << "(SurfaceParticle3D::advance) Warning, spurious velocity detected! Forced to 0.25 lu/lt" << endl;
-    }
+    // if (normSqr(vPrevious)>maxVelSqr) {
+    //     vPrevious /= norm(vPrevious);
+    //     vPrevious *= maxVel;
+    //     pcout << "(SurfaceParticle3D::advance) Warning, spurious velocity detected! Forced to 0.25 lu/lt" << endl;
+    // }
 
     // Euler update scheme
-        this->getPosition() += vPrevious;
-        pbcPosition += vPrevious;
+        this->getPosition() += vPrevious * dt;
+        pbcPosition += vPrevious * dt;
         vPrevious.resetToZero();
         processor = this->getMpiProcessor();
 }
