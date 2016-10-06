@@ -65,7 +65,7 @@ public:
         TriangularSurfaceMesh<T> & mesh = cellField.getMesh();
         plint numVertices = mesh.getNumVertices();
         nparPerSide = ceil( percentage * numVertices );
-        forcePerSide = force_ / 2.0;   // Totle force / 2 for each side
+        forcePerSide = force_ ;   // Totle force / 2 for each side -> Nope, it was good as it was. (Remember to think twice before modifying!)
         std::vector<std::pair <plint,T> > iv2X, iv2Y, iv2Z;
         for (plint iV = 0; iV < numVertices; ++iV) {
             Array<T,3> vertex = mesh.getVertex(iV);
