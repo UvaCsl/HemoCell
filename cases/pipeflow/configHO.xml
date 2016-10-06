@@ -37,7 +37,7 @@
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
     <dx> 1e-6 </dx> <!--Physical length of 1 Lattice Unit -->
     <dt> 8.0e-8 </dt> <!-- Time step for the LBM system -->
-    <timeStepSize> 2 </timeStepSize> <!-- Update particle material model after how many fluid time steps. [Integer] -->
+    <timeStepSize> 1 </timeStepSize> <!-- Update particle material model after how many fluid time steps. [Integer] -->
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
     <refDirN> 80 </refDirN>  <!-- Number of numerical cell in the reference direction -->
 </domain>

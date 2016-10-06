@@ -99,7 +99,7 @@ public:
     	return plint(myrank); }
 private:
     Array<T,3> v, pbcPosition, a, force, vPrevious, vProgressed;
-    T dt=2.0;
+    T dt=1.0;
     static int id;
 private:
     plint processor;

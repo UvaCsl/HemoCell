@@ -87,7 +87,7 @@ void ComputeCellCellForces3D<T,Descriptor>::processGenericBlocks (
                 for (pluint cP=0; cP<currentParticles.size(); ++cP) {
                     for (pluint nP=0; nP<neighboringParticles.size(); ++nP) {
                         if (conditionsAreMet(currentParticles[cP], neighboringParticles[nP], r, eij)) {
-                            // Avoid self-repulsion
+                            // Avoid self-repulsion -> it is in conditionsAreMet already!
                             //SurfaceParticle3D<T, Descriptor> *p1 = dynamic_cast<SurfaceParticle3D<T, Descriptor>*>(currentParticles[cP]);
                             //SurfaceParticle3D<T, Descriptor> *p2 = dynamic_cast<SurfaceParticle3D<T, Descriptor>*>(neighboringParticles[nP]);
                             //if(p1->get_cellId() != p2->get_cellId())
