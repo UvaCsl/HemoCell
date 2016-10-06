@@ -37,8 +37,8 @@ void meshRandomRotation (TriangularSurfaceMesh<T> * mesh, Array<T,3> randomAngle
     mesh->translate(Array<T,3>(-xRange[0], -yRange[0], -zRange[0]));
 }
 
-// Rotates the mesh in a random angle.
-// Mesh is supposed to start at (0,0,0)
+// Rotates the mesh in a given angle around its centerpoint.
+// Mesh is supposed to start at (0,0,0), however, this function will not change the center position!
 template<typename T>
 void meshRotation (TriangularSurfaceMesh<T> * mesh, Array<T,3> rotationAngles) {
     Array<T,2> xRange, yRange, zRange;
@@ -46,8 +46,14 @@ void meshRotation (TriangularSurfaceMesh<T> * mesh, Array<T,3> rotationAngles) {
     Array<T,3> meshCenter = Array<T,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
     mesh->translate(-1.0 * meshCenter);
     mesh->rotateXYZ(rotationAngles[0], rotationAngles[1], rotationAngles[2]);
+    mesh->translate(meshCenter);
+}
 
-    mesh->computeBoundingBox (xRange, yRange, zRange);
+// For positioning that uses meshes starting at (0,0,0)
+template<typename T>
+void meshPositionToOrigin (TriangularSurfaceMesh<T> * mesh) {
+    Array<T,2> xRange, yRange, zRange;
+    mesh->computeBoundingBox (xRange, yRange, zRange);    
     mesh->translate(Array<T,3>(-xRange[0], -yRange[0], -zRange[0]));
 }
 

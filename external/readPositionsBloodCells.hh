@@ -18,9 +18,9 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
     if(global::mpi().getSize()>1)
     {
-        pcout << "WARNING! (readPositionsBloodCels) You should run this type of initialisation in a single process!" << endl
-             << "WARNING! If you need multiprocessor initialisation use (randomPositionsMultipleCells)!"
-             << endl << "WARNING! You should cancel this run (unless you are really sure you want this), as only the master will be initialised this way!" << endl;
+        pcout << "*** WARNING! (readPositionsBloodCels) You should run this type of initialisation in a single process!" << endl
+             << "*** WARNING! If you need multiprocessor initialisation use (randomPositionsMultipleCells)!"
+             << endl << "*** WARNING! You should cancel this run (unless you are really sure you want this), as only the master will be initialised this way!" << endl;
     }
 
     pcout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
@@ -32,10 +32,17 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
     // Reading data from file
 
-    plb_ifstream fIn(positionsFileName);
+    plb_ifstream fIn;
+    fIn.open(positionsFileName);
+
+    if(!fIn.is_open())
+    {
+        pcout << "*** WARNING! particle positions input file does not exist!" << endl;
+    }
 
     //uint nCell[2];
     Np.resize(2);
+
     fIn >> Np[0] >> Np[1];
 
     pcout << "(readPositionsBloodCels) Particle count (RBCs, PLTs): " << Np[0] << ", " << Np[1] << endl;
@@ -161,7 +168,7 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
         meshes[iCF] = mesh;
         volumes[iCF] = MeshMetrics<T>(*mesh).getVolume();
 
-        Np[iCF] = (1 + 0.05*(guessRandomNumber() -0.5)) * (Vdomain/volumes[iCF] * volumeFractions[iCF]) ;
+        //Np[iCF] = (1 + 0.05*(guessRandomNumber() -0.5)) * (Vdomain/volumes[iCF] * volumeFractions[iCF]) ;
         totalVolumeFraction += volumes[iCF];
         particleFields[iCF] = ( dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[iCF+1]) );
         particleFields[iCF]->removeParticles(particleFields[iCF]->getBoundingBox());
@@ -176,6 +183,7 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
     std::vector<std::vector<plint> > cellIds;
     std::vector<std::vector<Array<T,3> > > randomAngles;
 
+    // Note: this method uses the center of the particles for location
     getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, positionsFileName);
 
     // Change positions to match dx (it is in um originally)
@@ -188,10 +196,15 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
         {
             ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;
     	    TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
-//    	    meshRandomRotation(meshCopy, randomAngles[iCF][c]);
+    	    
+            // To have randomized rotation
+            //meshRandomRotation(meshCopy, randomAngles[iCF][c]);
+
             meshRotation (meshCopy, randomAngles[iCF][c]);
-            //positionCellInParticleField(*(particleFields[iCF]), fluid,
-            //                            meshes[iCF], positions[iCF][c]-0.5, cellIds[iCF][c]);
+
+            // If the positioning method does not use the center of the cell mesh but rather the lower left corner of the bounding box
+            //meshPositionToOrigin(meshCopy);
+            
             positionCellInParticleField(*(particleFields[iCF]), fluid,
                                          meshCopy, positions[iCF][c]*posRatio, cellIds[iCF][c]);
 			delete meshCopy;
@@ -203,7 +216,7 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
         plint cellsDeleted = deleteIncompleteCells(*(particleFields[iCF]), fluid, relativeDomains[iCF], nVertices);
         std::vector<Particle3D<T,Descriptor>*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(),   particles);
-        cout    << ", number of particles/nVertices " << particles.size()*1.0/nVertices
+        cout    << ", number of cells (particles/nVertices) " << particles.size()*1.0/nVertices
         << " (deleted:" << cellsDeleted << ") for particleId:" << iCF << std::endl;
         delete meshes[iCF];
     }
