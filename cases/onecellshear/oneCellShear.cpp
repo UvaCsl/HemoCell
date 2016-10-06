@@ -270,6 +270,11 @@ int main(int argc, char* argv[])
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, nCells, numVerticesPerCell);
 
+    plb_ofstream fOut("stretch.log");
+    Array<T,3> stretch = RBCField[0]->get3D(CCR_POSITION_MAX) - RBCField[0]->get3D(CCR_POSITION_MIN); // ***** Added by Britt
+    pcout << "dx: " << stretch[0] << "dy: " << stretch[1]<<  "dz: " << stretch[2] << endl; // *****
+    fOut << 1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
+
 
     // ------------------------ Starting main loop --------------------------
     
@@ -315,7 +320,10 @@ int main(int argc, char* argv[])
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter+1);
             //global::profiler().writeReport();
-            pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
+            pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas;
+            Array<T,3> stretch = RBCField[0]->get3D(CCR_POSITION_MAX) - RBCField[0]->get3D(CCR_POSITION_MIN); // ***** Added by Britt
+            pcout << " dx: " << stretch[0] << " dy: " << stretch[1]<<  " dz: " << stretch[2] << endl; // *****
+            fOut << iter+1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
 
         } else {
             RBCField.synchronizeCellQuantities();
