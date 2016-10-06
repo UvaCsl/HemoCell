@@ -26,8 +26,8 @@ bool ComputeCellCellForces3D<T,Descriptor>::conditionsAreMet (
 {
     SurfaceParticle3D<T,Descriptor>* cParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p1);
     SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
-    if (cParticle->get_cellId() == nParticle->get_cellId()) { return false; }
-    if (cParticle->getTag() < nParticle->getTag()) { return false; }
+    if (cParticle->get_cellId() == nParticle->get_cellId()) { return false; } // Avoid self-repulsion
+    if (cParticle->getTag() < nParticle->getTag()) { return false; } // Calc force only once per pair
     eij = cParticle->getPosition() - nParticle->getPosition();  // TODO: when force is positive, it will lead to adhesion
     r = norm(eij);
     if (r > cutoffRadius) { return false; }
@@ -87,7 +87,11 @@ void ComputeCellCellForces3D<T,Descriptor>::processGenericBlocks (
                 for (pluint cP=0; cP<currentParticles.size(); ++cP) {
                     for (pluint nP=0; nP<neighboringParticles.size(); ++nP) {
                         if (conditionsAreMet(currentParticles[cP], neighboringParticles[nP], r, eij)) {
-                            applyForce(currentParticles[cP], neighboringParticles[nP], r, eij);
+                            // Avoid self-repulsion
+                            //SurfaceParticle3D<T, Descriptor> *p1 = dynamic_cast<SurfaceParticle3D<T, Descriptor>*>(currentParticles[cP]);
+                            //SurfaceParticle3D<T, Descriptor> *p2 = dynamic_cast<SurfaceParticle3D<T, Descriptor>*>(neighboringParticles[nP]);
+                            //if(p1->get_cellId() != p2->get_cellId())
+                                applyForce(currentParticles[cP], neighboringParticles[nP], r, eij);
                         }
                     }
                 }
@@ -248,7 +252,7 @@ template<typename T, template<typename U> class Descriptor>
 bool ComputeWallCellForces3D<T,Descriptor>::conditionsAreMet (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
-    eij = p2->getPosition() - p1->getPosition(); //NOTE: force < 0: adhesion;  force > 0: repulsion
+    eij = p1->getPosition() - p2->getPosition(); //NOTE: force < 0: adhesion;  force > 0: repulsion
     r = norm(eij);
     if (r > cutoffRadius) { return false; }
     eij = eij * (1.0/r);
@@ -262,7 +266,7 @@ void ComputeWallCellForces3D<T,Descriptor>::applyForce (
 {
         SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
         Array<T,3> force = calcForce(r, eij);
-        nParticle->get_force() += force;
+        nParticle->get_force() -= force;
         //cout << "(ComputeWallCellForces3D) r=" << r << ", norm-force=" << norm(force) << std::endl;
 #ifdef PLB_DEBUG // Less Calculations
         nParticle->get_f_repulsive() += force;
