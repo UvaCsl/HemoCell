@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
 
 	pcout << "(main) reading geometry stl..." << std::endl;
 
-    plint extendedEnvelopeWidth = 2;  // Depends on the requirements of the ibmKernel. 4 or  even 2 might be enough
+    plint extendedEnvelopeWidth = 2;  // Depends on the requirements of the ibmKernel. 4 or even 2 might be enough (also depends on dx)
 
     plb::MultiScalarField3D<int> *flagMatrix = 0;
     VoxelizedDomain3D<T> *voxelizedDomain = 0;
@@ -330,7 +330,7 @@ int main(int argc, char *argv[]) {
 
     pcout << "(main)   init PLT structures..."  << std::endl;
     T pltRadius = 1.15e-6 / dx;
-    T aspectRatio = 1.0 / (2 * pltRadius);
+    T aspectRatio = 1.0 / 2.3;//(2 * pltRadius);
     TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, (plint)ceil(minNumOfTriangles/3.0), dx, cellPath, eulerAngles, aspectRatio);
     TriangularSurfaceMesh<T> pltMeshElement = PLTCells.getMesh();
     eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
@@ -348,9 +348,7 @@ int main(int argc, char *argv[]) {
     checkpointer.load(documentXML, lattice, cellFields, initIter);
 
     if (not checkpointer.wasCheckpointed()) {
-        pcout << "(main) initializing particle positions..." << std::endl;
-        std::vector<Array<T, 3> > cellsOrigin;
-        cellsOrigin.push_back(Array<T, 3>(nx * 0.5, ny * 0.5, nz * 0.5));
+        pcout << "(main) initializing particle positions from " << particlePosFile << "..." << std::endl;
 
         //orderedPositionMultipleCellField3D(cellFields);
         //randomPositionMultipleCellField3D(cellFields, hematocrit, dx, maxPackIter);
@@ -362,9 +360,11 @@ int main(int argc, char *argv[]) {
     // ---------------------- Set integration scheme and time step amplification for cell fields ---------------
 
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-        cellFields[iCell]->setParticleUpdateScheme(ibmScheme, cellStep);
+        cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);
     }
     pcout << "(main) material model integration step: " << cellStep <<  " lt, update scheme: " << ibmScheme << endl;
+
+    pcout << "(main) material model integration step: " << (T)cellStep <<  " lt, update scheme: " << ibmScheme << endl;
 
 
     plint domainVol = computeSum(*flagMatrix);
@@ -409,16 +409,17 @@ int main(int argc, char *argv[]) {
 
     
     // ------------------------- Add particle-wall repulsion force -------------
+    // F > 0 means repulsion. F < 0 is used for adhesion,
 
     //T k_int = 0.00025, DeltaX=1.0, R=1.0, k=1.5;
     // was 1.5e-12
-    T k_int = 2.0e-10 / dNewton, DeltaX=1.5e-6 / dx, R=1.5e-6 / dx, k=1.5;	// Scale force with simulation units
+    T k_int = 2.0e-12 / dNewton, DeltaX=1.5e-6 / dx, R=1.5e-6 / dx, k=1.5;	// Scale force with simulation units
     if (DeltaX > 2.0) DeltaX = 2.0; if (R > 2.0) R = 2.0;  // Should not have effect further than 2 lu -> might go out of domain
     PowerLawForce<T> repWP(k_int, DeltaX, R, k);
 
     // ------------------------- Add particle-particle repulsion force ---------
 
-    k_int = 1.0e-12 / dNewton; DeltaX=0.5e-6 / dx; T R2=0.5e-6 / dx; k=1.5;
+    k_int = 1.0e-13 / dNewton; DeltaX=0.75e-6 / dx; T R2=0.75e-6 / dx; k=1.5;
     if (DeltaX > 2.0) DeltaX = 2.0; if (R2 > 2.0) R2 = 2.0;
     PowerLawForce<T> repPP(k_int, DeltaX, R2, k);
 
@@ -448,6 +449,10 @@ int main(int argc, char *argv[]) {
             cellFields[iCell]->applyCellCellForce(repPP, R2);
         }
 
+        // Particle-particle force between RBCs and PLTs
+        cellFields[1]->applyDifferentCellForce(repPP, R2, &cellFields[0]->getParticleField3D());
+
+        
         // Inner iteration cycle of fluid
         for(int innerIt = 0; innerIt < cellStep; innerIt++){
             // #2# IBM Spreading
@@ -505,5 +510,5 @@ int main(int argc, char *argv[]) {
     }
 
     simpleProfiler.writeIteration(tmax + 1);
-    pcout << "(main) simulation finished." << std::endl;
+    pcout << "(main) simulation finished. :)" << std::endl;
 }

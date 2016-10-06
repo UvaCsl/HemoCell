@@ -123,6 +123,12 @@ void SurfaceParticle3D<T,Descriptor>::advance() {
     // }
 
     // Euler update scheme
+    /*if( dt != 2.0)
+        cout << "dt: "<< dt << "  " ;
+    if( dt == 2.0)
+        cout << "dt is OK!  " ;
+    */
+
         this->getPosition() += vPrevious * dt;
         pbcPosition += vPrevious * dt;
         vPrevious.resetToZero();

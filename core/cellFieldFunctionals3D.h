@@ -23,7 +23,7 @@ public:
     ChangeParticleUpdateScheme (plint scheme_, T cellTimeStep = 1.0) : scheme(scheme_), dt(cellTimeStep) { } ;
     ~ChangeParticleUpdateScheme() { };
     ChangeParticleUpdateScheme(ChangeParticleUpdateScheme<T,Descriptor> const& rhs) :
-        scheme(rhs.scheme) { } ;
+        scheme(rhs.scheme), dt(rhs.dt) { } ;
     /// Arguments: [0] Particle-field
     virtual ChangeParticleUpdateScheme<T,Descriptor>* clone() const { return new ChangeParticleUpdateScheme<T,Descriptor>(*this); };
     virtual BlockDomain::DomainT appliesTo() const { return BlockDomain::bulkAndEnvelope; } ;
@@ -36,8 +36,11 @@ public:
         std::vector<Particle3D<T,Descriptor>*> particles;
         particleField.findParticles(domain, particles); // Gets particle only from the bulk
         for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-            castParticleToICP3D(particles[iParticle])->get_scheme() = scheme;
-            castParticleToICP3D(particles[iParticle])->set_dt(dt);
+            //castParticleToICP3D(particles[iParticle])->get_scheme() = scheme;
+            //castParticleToICP3D(particles[iParticle])->get_dt() = dt;
+            SurfaceParticle3D<T,Descriptor>* particle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
+            particle->get_scheme() = scheme;
+            particle->get_dt() = dt;
         }
     };
 private:
