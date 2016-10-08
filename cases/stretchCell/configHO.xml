@@ -3,8 +3,8 @@
 <caseId> caseId </caseId>
 <cellModel>
     <rbcModel> 0 </rbcModel> <!-- ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
+    <materialModel> 2 </materialModel> <!-- Original Suresh: [0], Sures w. new bending: [1], Higher order model: [2] -->
     <shellDensity> 1.0 </shellDensity>
-
     <kBend> 225 </kBend> <!-- bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
     <kVolume> 1000.0 </kVolume> <!-- volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}-->
     <kSurface> 0.0 </kSurface> <!-- global surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}-->
@@ -26,8 +26,8 @@
 <ibm>
     <ibmKernel> 2 </ibmKernel> <!-- ibmKernel: Phi2 [2], Phi3 [3], Phi4 [4],  Phi4c [5] -->
     <ibmScheme> 0 </ibmScheme> <!-- ibmScheme: Euler [0], Adams-Bashforth [1] -->
-    <radius> 3.85e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
-    <minNumOfTriangles> 400 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
+    <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
+    <minNumOfTriangles> 600 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
 </ibm>
 
 <domain>
@@ -36,6 +36,7 @@
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1.00e-6 </dx> <!--Physical length of 1 Lattice Unit -->
     <dt> 5e-7 </dt>
+    <timeStepSize> 1 </timeStepSize> <!-- Update particle material model after how many fluid time steps. [Integer] -->
 </domain>
 
 <sim>

@@ -48,6 +48,7 @@ int main(int argc, char* argv[])
     T k_WLC, k_rep, k_rest, k_elastic, k_bend, k_volume, k_surface, k_shear, k_stretch, eta_m;
     plint minNumOfTriangles;
     plint rbcModel;
+    plint materialModel;
     plint ibmKernel, ibmScheme;
     Array<T, 3> eulerAngles;
     plint tmax, tmeas;
@@ -81,6 +82,7 @@ int main(int argc, char* argv[])
         eulerAngles[i] *= pi/180.;
 
     document["cellModel"]["rbcModel"].read(rbcModel);
+    document["cellModel"]["materialModel"].read(materialModel);
     document["cellModel"]["shellDensity"].read(shellDensity);
     document["cellModel"]["kWLC"].read(k_WLC);
     document["cellModel"]["eqLengthRatio"].read(eqLengthRatio);
@@ -199,7 +201,7 @@ int main(int argc, char* argv[])
     if (rbcModel == 0) {
         pcout << "(main) Using ShapeMemoryModel3D. " << std::endl;
         cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-        persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
+        persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement, materialModel);
     } else if (rbcModel==1) {
         pcout << "(main) Using CellModel3D. " << std::endl;
         cellModel = new CellModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,

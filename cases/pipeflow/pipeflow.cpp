@@ -146,6 +146,7 @@ int main(int argc, char *argv[]) {
     T nu_p, rho_p;
     T cell_dt;
     plint cellStep;
+    plint materialModel;
     plint nx, ny, nz;
     T hematocrit;
     T shellDensity, eqLengthRatio, radius;
@@ -182,6 +183,7 @@ int main(int argc, char *argv[]) {
     document["parameters"]["warmup"].read(warmup);
     document["parameters"]["maxPackIter"].read(maxPackIter);
 
+    document["cellModel"]["materialModel"].read(materialModel);
     document["cellModel"]["shellDensity"].read(shellDensity);
     document["cellModel"]["kWLC"].read(k_WLC);
     document["cellModel"]["eqLengthRatio"].read(eqLengthRatio);
@@ -322,7 +324,7 @@ int main(int argc, char *argv[]) {
     cellModels.push_back(
             new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic,
                                                   k_volume, k_surface, eta_m,
-                                                  persistenceLengthFine, eqLengthRatio, dx, dt, dm, meshElement));
+                                                  persistenceLengthFine, eqLengthRatio, dx, dt, dm, meshElement, materialModel));
     cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hematocrit, cellModels[0], ibmKernel, "RBC"));
 
     
@@ -338,7 +340,7 @@ int main(int argc, char *argv[]) {
     cellModels.push_back(
             new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend * 5, k_stretch, k_WLC * 5.0,
                                                   k_elastic, k_volume, k_surface, eta_m,
-                                                  persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement));
+                                                  persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement, materialModel));
     cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.0025 * hematocrit,
                                                         cellModels[cellModels.size() - 1], ibmKernel, "PLT"));
 

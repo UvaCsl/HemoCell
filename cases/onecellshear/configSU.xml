@@ -3,6 +3,7 @@
 <caseId> caseId </caseId>
 <cellModel>
     <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
+    <materialModel> 0 </materialModel> <!-- Original Suresh: [0], Sures w. new bending: [1], Higher order model: [2] -->
     <shellDensity> 1.0 </shellDensity>
 
     <kBend> 100e0 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->

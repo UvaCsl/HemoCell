@@ -58,7 +58,7 @@ public:
             T k_volume_, T k_surface_, T eta_m_,
             T persistenceLengthFine, T eqLengthRatio_,
             T dx_, T dt_, T dm_,
-            TriangularSurfaceMesh<T> const& meshElement);
+            TriangularSurfaceMesh<T> const& meshElement, pluint materialModel = 0);
     ShapeMemoryModel3D(ShapeMemoryModel3D<T,Descriptor> const& rhs);
     ~ShapeMemoryModel3D() { } ;
     Array<T,3> computeElasticForce (
@@ -97,6 +97,7 @@ private:
     T dx, dt, dm;
     T persistenceLengthFine;
     pluint cellNumTriangles, cellNumVertices;
+    pluint materialModel;
 public:
     /* Computes the equilibrium quantities to correspond to the an inflated cell with
      * 		eqVolume=ratio*eqVolume.

@@ -37,6 +37,7 @@ int main(int argc, char* argv[])
     plint initIter = 0;
     T Re;
     T dx, dt, dm, dNewton;
+    plint cellStep;
     T tau, nu_lbm, u_lbm_max;
     T nu_p, rho_p;
     plint nx, ny, nz;
@@ -47,6 +48,7 @@ int main(int argc, char* argv[])
     T k_WLC, k_rep, k_rest, k_elastic, k_bend, k_volume, k_surface, k_shear, k_stretch, eta_m;
     plint minNumOfTriangles;
     plint rbcModel;
+    plint materialModel;
     plint ibmKernel, ibmScheme;
     plint tmax, tmeas;
     std::string meshFileName;
@@ -72,6 +74,7 @@ int main(int argc, char* argv[])
     stretchForce_p *= 1e-12;  // Change to Newton (SI)
 
     document["cellModel"]["rbcModel"].read(rbcModel);
+    document["cellModel"]["materialModel"].read(materialModel);
     document["cellModel"]["shellDensity"].read(shellDensity);
     document["cellModel"]["kWLC"].read(k_WLC);
     document["cellModel"]["eqLengthRatio"].read(eqLengthRatio);
@@ -100,6 +103,7 @@ int main(int argc, char* argv[])
     document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
     document["domain"]["dt"].read(dt);
+    document["domain"]["timeStepSize"].read(cellStep);
 
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
@@ -199,7 +203,7 @@ int main(int argc, char* argv[])
     if (rbcModel == 0) {
         pcout << "(main) Using ShapeMemoryModel3D. " << std::endl;
         cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-        persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
+        persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement, materialModel);
     } else if (rbcModel==1) {
         pcout << "(main) Using CellModel3D. " << std::endl;
         cellModel = new CellModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
@@ -229,6 +233,8 @@ int main(int argc, char* argv[])
         checkpointer.save(lattice, cellFields, initIter);
     }
 
+    // Update integration scheme and time step for surfaceParticles
+    RBCField.setParticleUpdateScheme(ibmScheme, (T)cellStep);
 
     plint nCells = RBCField.getNumberOfCells_Global();
     pcout << std::endl ;
@@ -270,14 +276,18 @@ int main(int argc, char* argv[])
         RBCField.applyConstitutiveModel();
         stretchedCell.stretch();
         
-        // #2# IBM Spreading
-        RBCField.setFluidExternalForce(0); // TODO: Can this line be omitted?
-        RBCField.spreadForceIBM();
+        // Inner iteration cycle of fluid
+        for(int innerIt = 0; innerIt < cellStep; innerIt++){
         
-        // #3# LBM
-        global::timer("LBM").start();
-        lattice.collideAndStream();
-        global::timer("LBM").stop();
+            // #2# IBM Spreading
+            RBCField.setFluidExternalForce(0); // TODO: Can this line be omitted?
+            RBCField.spreadForceIBM();
+        
+            // #3# LBM
+            global::timer("LBM").start();
+            lattice.collideAndStream();
+            global::timer("LBM").stop();
+        }
         
         // #4# IBM Interpolation
         RBCField.interpolateVelocityIBM();
@@ -286,26 +296,26 @@ int main(int argc, char* argv[])
         RBCField.advanceParticles();
         
         // #6# Output
-        if ((iter+1)%tmeas==0) {
+        if ((iter%tmeas)==0) {
             SyncRequirements everyCCR(allReductions);
             RBCField.synchronizeCellQuantities(everyCCR);
 
             global::timer("HDFOutput").start();
             // writeHDF5(lattice, parameters, iter+1);
-            writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
-            writeCell3D_HDF5(RBCField, dx, dt, iter+1);
+            writeCellField3D_HDF5(RBCField, dx, dt, iter);
+            writeCell3D_HDF5(RBCField, dx, dt, iter);
             global::timer("HDFOutput").stop();
 
-            if ((iter+1)%(2*tmeas)==0) {
+            if ((iter%(2*tmeas))==0) {
                 global::timer("Checkpoint").start();
-                checkpointer.save(lattice, cellFields, iter+1);
+                checkpointer.save(lattice, cellFields, iter);
                 global::timer("Checkpoint").stop();
             }
 
             T dtIteration = global::timer("mainLoop").stop();
-            simpleProfiler.writeIteration(iter+1);
+            simpleProfiler.writeIteration(iter);
             //global::profiler().writeReport();
-            pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas ;
+            pcout << "(main) Iteration:" << iter << "; time "<< dtIteration*1.0/tmeas ;
             //pcout << "; Volume (" << RBCField[0]->getVolume() << ")";
 
             /*
