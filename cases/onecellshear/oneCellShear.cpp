@@ -38,6 +38,7 @@ int main(int argc, char* argv[])
     plint warmup = 0;
     T Re;
     T dx, dt, dm, dNewton;
+    plint cellStep;
     T tau, nu_lbm, u_lbm_max;
     T nu_p, rho_p;
     plint nx, ny, nz;
@@ -108,6 +109,7 @@ int main(int argc, char* argv[])
     document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
     document["domain"]["dt"].read(dt);
+    document["domain"]["timeStepSize"].read(cellStep);
 
     document["sim"]["tmax"].read(tmax);
     document["sim"]["tmeas"].read(tmeas);
@@ -131,6 +133,7 @@ int main(int argc, char* argv[])
     
     pcout << "(main) dx = " << dx << ", " <<
         "dt = " << dt << ", " <<
+        "cell_dt" << cellStep * dt <<
         "dm = " << dm << ", " <<
         "dN = " << dNewton << ", " <<
         "shear rate = " << shearRate << ", " <<
@@ -139,18 +142,6 @@ int main(int argc, char* argv[])
 
     pcout << "(main) tau = " << tau << " Re = " << Re << " u_lb = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
     pcout << "(main) Re corresponds to u_max = " << (Re * nu_p)/(ny*dx) << " [m/s]" << endl;
-
-
-    // Because structures use it. Kind of nonsense. TODO: To be changed later.
-    plint resolution = (int)(1.0/dx);
-    IncomprFlowParam<T> parameters(
-            u_lbm_max,
-            Re*(resolution/nx),     // Because Palabos calculates Re in a uniform way (which is not a good thing for CFD)
-            resolution,
-            lx-dx,
-            ly-dx,
-            lz-dx
-    );
 
     checkParameterSanity(nu_lbm, u_lbm_max);
 
@@ -177,7 +168,7 @@ int main(int argc, char* argv[])
 
     lattice.toggleInternalStatistics(false);
 
-    iniLatticeSquareCouette(lattice, parameters, *boundaryCondition, shearRate);
+    iniLatticeSquareCouette(lattice, nx, ny, nz, *boundaryCondition, shearRate);
 
 
     // ----------------------- Init cell models --------------------------
@@ -236,6 +227,8 @@ int main(int argc, char* argv[])
         checkpointer.save(lattice, cellFields, initIter);
     }
 
+    // Update integration scheme and time step for surfaceParticles
+    RBCField.setParticleUpdateScheme(ibmScheme, (T)cellStep);
 
     plint nCells = RBCField.getNumberOfCells_Global();
     pcout << std::endl ;
@@ -281,19 +274,23 @@ int main(int argc, char* argv[])
     global::timer("mainLoop").start();
     //global::profiler().turnOn();
 
-    for (pluint iter=initIter; iter<tmax+1; ++iter) {
+    for (pluint iter=initIter; iter<tmax+1; iter+=cellStep) {
         // #1# Membrane Model
         RBCField.applyConstitutiveModel();
         
-        // #2# IBM Spreading
-        RBCField.setFluidExternalForce(0); // TODO: Can this line be omitted?
-        RBCField.spreadForceIBM();
+        // Inner iteration cycle of fluid
+        for(int innerIt = 0; innerIt < cellStep; innerIt++){
+            
+            // #2# IBM Spreading
+            RBCField.setFluidExternalForce(0); 
+            RBCField.spreadForceIBM();
         
-        // #3# LBM
-        global::timer("LBM").start();
-        lattice.collideAndStream();
-        global::timer("LBM").stop();
-        
+            // #3# LBM
+            global::timer("LBM").start();
+            lattice.collideAndStream();
+            global::timer("LBM").stop();
+        }
+
         // #4# IBM Interpolation
         RBCField.interpolateVelocityIBM();
         
@@ -301,29 +298,29 @@ int main(int argc, char* argv[])
         RBCField.advanceParticles();
         
         // #6# Output
-        if ((iter+1)%tmeas==0) {
+        if ((iter%tmeas)==0) {
             SyncRequirements everyCCR(allReductions);
             RBCField.synchronizeCellQuantities(everyCCR);
 
             global::timer("HDFOutput").start();
             // writeHDF5(lattice, dx, dt, iter+1);
-            writeCellField3D_HDF5(RBCField, dx, dt, iter+1);
-            writeCell3D_HDF5(RBCField, dx, dt, iter+1);
+            writeCellField3D_HDF5(RBCField, dx, dt, iter);
+            writeCell3D_HDF5(RBCField, dx, dt, iter);
             global::timer("HDFOutput").stop();
 
-            if ((iter+1)%(2*tmeas)==0) {
+            if ((iter%(2*tmeas))==0) {
                 global::timer("Checkpoint").start();
-                checkpointer.save(lattice, cellFields, iter+1);
+                checkpointer.save(lattice, cellFields, iter);
                 global::timer("Checkpoint").stop();
             }
 
             T dtIteration = global::timer("mainLoop").stop();
-            simpleProfiler.writeIteration(iter+1);
+            simpleProfiler.writeIteration(iter);
             //global::profiler().writeReport();
-            pcout << "(main) Iteration:" << iter + 1 << "; time "<< dtIteration*1.0/tmeas;
-            Array<T,3> stretch = RBCField[0]->get3D(CCR_POSITION_MAX) - RBCField[0]->get3D(CCR_POSITION_MIN); // ***** Added by Britt
-            pcout << " dx: " << stretch[0] << " dy: " << stretch[1]<<  " dz: " << stretch[2] << endl; // *****
-            fOut << iter+1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
+            pcout << "(main) Iteration:" << iter << "; time/it: "<< dtIteration*1.0/tmeas << " physical time: " << iter*dt << " s;";
+            Array<T,3> stretch = RBCField[0]->get3D(CCR_POSITION_MAX) - RBCField[0]->get3D(CCR_POSITION_MIN); 
+            pcout << " dx: " << stretch[0] << " dy: " << stretch[1]<<  " dz: " << stretch[2] << endl; 
+            fOut << iter << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
 
         } else {
             RBCField.synchronizeCellQuantities();

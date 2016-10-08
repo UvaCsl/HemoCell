@@ -162,10 +162,11 @@ int main(int argc, char *argv[]) {
 
     // ------------------------- Read in config file ------------------------------------------------
 
-    pcout << "(main) reading config xml..." << std::endl;
-
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
+
+    pcout << "(main) reading " <<  paramXmlFileName <<"..." << std::endl;
+
     XMLreader documentXML(paramXmlFileName);
 
     // Check if it is a fresh start or a checkpointed run
@@ -362,6 +363,7 @@ int main(int argc, char *argv[]) {
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
         cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);
     }
+
     pcout << "(main) material model integration step: " << cellStep <<  " lt, update scheme: " << ibmScheme << endl;
 
     pcout << "(main) material model integration step: " << (T)cellStep <<  " lt, update scheme: " << ibmScheme << endl;
@@ -440,7 +442,7 @@ int main(int argc, char *argv[]) {
 
     
     global::timer("mainLoop").start();
-    for (plint iter = 0 + initIter; iter < tmax + 1; iter+=cellStep) {
+    for (plint iter = initIter; iter < tmax + 1; iter+=cellStep) {
 
         // #1# Membrane Model + Repulsion of surfaces
         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {

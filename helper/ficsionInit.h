@@ -101,7 +101,7 @@ void iniLatticeFullyPeriodic(MultiBlockLattice3D<T,Descriptor>& lattice, Incompr
 
 template<typename T, template<class U> class Descriptor>
 void iniLatticeSquareCouette( MultiBlockLattice3D<T,Descriptor>& lattice,
-                 IncomprFlowParam<T> const& parameters,
+                 plint nx, plint ny, plint nz,
                  OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T shearRate);
 
 /* ******************* changeCouetteShearRate ***************************************** */

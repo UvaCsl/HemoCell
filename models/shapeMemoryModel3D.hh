@@ -158,7 +158,7 @@ template<typename T, template<typename U> class Descriptor>
 void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) {
 
 // Cheap fix to select material model TODO: implement it on higher level
-#define HIGHORDER
+//#define HIGHORDER
 #ifdef HIGHORDER
     computeCellForceHighOrder(cell);
 #else

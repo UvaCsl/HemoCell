@@ -326,12 +326,9 @@ void iniLatticeFullyPeriodic(MultiBlockLattice3D<T,Descriptor>& lattice, Incompr
 /* ************* iniLatticeSquareCouette ******************* */
 template<typename T, template<class U> class Descriptor>
 void iniLatticeSquareCouette( MultiBlockLattice3D<T,Descriptor>& lattice,
-                 IncomprFlowParam<T> const& parameters,
+                 plint nx, plint ny, plint nz,
                  OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T shearRate)
 {
-    const plint nx = parameters.getNx();
-    const plint ny = parameters.getNy();
-    const plint nz = parameters.getNz();
 
     Box3D top   = Box3D(0, nx-1, 0,    0,    0, nz-1);
     Box3D bottom  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);

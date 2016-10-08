@@ -38,12 +38,13 @@
     <nuP> 0.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1.00e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <dt> 5.0e-8 </dt>
+    <dt> 2.0e-7 </dt>
+    <timeStepSize> 1 </timeStepSize> <!-- Update particle material model after how many fluid time steps. [Integer] -->
 </domain>
 
 <sim>
-    <tmax> 50000 </tmax> <!-- total number of iterations -->
-    <tmeas> 1000 </tmeas> <!-- interval after which data is written --> 
+    <tmax> 100000 </tmax> <!-- total number of iterations -->
+    <tmeas> 5000 </tmeas> <!-- interval after which data is written --> 
 </sim>
 
 </ficsion>

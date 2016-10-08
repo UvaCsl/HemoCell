@@ -39,6 +39,7 @@
     <tau> 1.0 </tau>  <!--Relaxation time of the Lattice Boltzmann scheme-->
     <dx> 1.00e-6 </dx> <!--Physical length of 1 Lattice Unit -->
     <dt> 1.0e-7 </dt>
+    <timeStepSize> 1 </timeStepSize> <!-- Update particle material model after how many fluid time steps. [Integer] -->
 </domain>
 
 <sim>

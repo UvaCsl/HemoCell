@@ -219,6 +219,7 @@ void SurfaceParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializer
     serializer.addValue<plint>(cellId);
     serializer.addValue<plint>(vertexId);
     serializer.addValue<plint>(scheme);
+    serializer.addValue<T>(dt);
 //    if (trombosit::useTrombosit) {     }
     serializeMap<plint, T>(serializer, bondTypeSaturation);
 }
@@ -236,6 +237,7 @@ void SurfaceParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& unseri
     unserializer.readValue<plint>(cellId);
     unserializer.readValue<plint>(vertexId);
     unserializer.readValue<plint>(scheme);
+    unserializer.readValue<T>(dt);
     //    if (trombosit::useTrombosit) {     }
     bondTypeSaturation = unserializeMap<plint, T>(unserializer);
 
