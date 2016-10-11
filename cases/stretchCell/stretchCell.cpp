@@ -262,7 +262,12 @@ int main(int argc, char* argv[])
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, nCells, numVerticesPerCell);
 
-    plb_ofstream fOut("stretch.log");
+    plb_ofstream fOut;
+    if(checkpointer.wasCheckpointed())
+        fOut.open("stretch.log", std::ofstream::app);
+    else
+        fOut.open("stretch.log");
+    
     Array<T,3> stretch = stretchedCell.measureStretch();
     fOut << 1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
     
@@ -329,7 +334,8 @@ int main(int argc, char* argv[])
 
             Array<T,3> stretch = stretchedCell.measureStretch();
 			pcout << "; Stretch (" << stretch[0] <<", " << stretch[1]<<", " << stretch[2]<<"); Volume  " << RBCField[0]->getVolume() / eqVolume * 100.0 << "%; Surface " << RBCField[0]->getSurface() / eqSurface * 100.0 << "%" << std::endl;
-            fOut << iter+1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << " " << RBCField[0]->getVolume() / eqVolume * 100.0 << " " << RBCField[0]->getSurface() / eqSurface * 100.0 << endl;
+            fOut << iter << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << " " << RBCField[0]->getVolume() / eqVolume * 100.0 << " " << RBCField[0]->getSurface() / eqSurface * 100.0 << endl;
+            RBCField[0]->saveMesh("stretchedCell.stl");
         } else {
             RBCField.synchronizeCellQuantities();
         }
@@ -338,7 +344,7 @@ int main(int argc, char* argv[])
     fOut.close();
 
     RBCField[0]->saveMesh("stretchedCell.stl");
-    simpleProfiler.writeIteration(tmax+1);
+    simpleProfiler.writeIteration(tmax);
     //global::profiler().writeReport();
     pcout << "(main) Simulation finished." << std::endl;
 }

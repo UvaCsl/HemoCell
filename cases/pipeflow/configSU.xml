@@ -17,8 +17,8 @@
 </cellModel>
 
 <parameters>
-    <Re> 1.0 </Re>   <!--Reynolds number-->
-    <warmup> 1000 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <Re> 0.1 </Re>   <!--Reynolds number-->
+    <warmup> 2000 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
 </parameters>
 
@@ -38,14 +38,14 @@
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <dx> 1.00e-6 </dx> <!--Physical length of 1 Lattice Unit -->
     <dt> 5.0e-8 </dt>
-    <timeStepSize> 1 </timeStepSize> <!-- Update particle material model after how many fluid time steps. [Integer] -->
+    <timeStepSize> 2 </timeStepSize> <!-- Update particle material model after how many fluid time steps. [Integer] -->
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
     <refDirN> 32 </refDirN>  <!-- Number of numerical cell in the reference direction -->
 </domain>
 
 <sim>
-    <tmax> 100000 </tmax> <!-- total number of iterations -->
-    <tmeas> 250 </tmeas> <!-- interval after which data is written --> 
+    <tmax> 300000 </tmax> <!-- total number of iterations -->
+    <tmeas> 1500 </tmeas> <!-- interval after which data is written --> 
     <hematocrit> 40 </hematocrit> <!-- Hematocrit  > -->
     <particlePosFile> cells.pos </particlePosFile>
 </sim>
