@@ -29,14 +29,14 @@ public:
     } ;
 
     // CellField and ParticleField
-    BondField3D(CellField3D<T, Descriptor> & cellField1, MultiParticleField3D<LightParticleField3D<T,Descriptor> > & particleField2,
+    BondField3D(CellField3D<T, Descriptor> & cellField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
     		BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
     	initializeBondField3D( &(cellField1.getParticleField3D()), &particleField2 );
     } ;
 
     // Two ParticleFields
-    BondField3D(MultiParticleField3D<LightParticleField3D<T,Descriptor> > & particleField1,
-    			MultiParticleField3D<LightParticleField3D<T,Descriptor> > & particleField2,
+    BondField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField1,
+    			MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
     		BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
     	initializeBondField3D(&particleField1, &particleField2 );
     } ;
@@ -49,13 +49,13 @@ public:
     virtual ~BondField3D() { delete BondParticles3D; } ;
 
     // Common initializer for the above constructors
-    void initializeBondField3D(MultiParticleField3D<LightParticleField3D<T,Descriptor> > * particleField1,
-    						   MultiParticleField3D<LightParticleField3D<T,Descriptor> > * particleField2) {
+    void initializeBondField3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * particleField1,
+    						   MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * particleField2) {
         MultiBlockManagement3D const& particleManagement(particleField1->getMultiBlockManagement());
 
         PLB_ASSERT( int(bondType.getBreakDistance()+0.5) < particleManagement.getEnvelopeWidth() );
 
-        BondParticles3D = new MultiParticleField3D<LightParticleField3D<T,Descriptor> >(
+        BondParticles3D = new MultiParticleField3D<DenseParticleField3D<T,Descriptor> >(
                 particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
         BondParticles3D->periodicity().toggleAll(true);
         BondParticles3D->toggleInternalStatistics(false);
@@ -112,7 +112,7 @@ public:
     	return bondParticleArg;
     }
     Box3D getBoundingBox()  { return BondParticles3D->getBoundingBox(); }
-    MultiParticleField3D<LightParticleField3D<T,Descriptor> > & getBondParticles3D()  { return *BondParticles3D; }
+    MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & getBondParticles3D()  { return *BondParticles3D; }
     std::set<std::string> & getBondUIDs() { return bondUIDs; } ;
     BondType<T,Descriptor> & getBondType() { return bondType; } ;
 
@@ -120,7 +120,7 @@ public:
 
 
 private:
-    MultiParticleField3D<LightParticleField3D<T,Descriptor> >* BondParticles3D;
+    MultiParticleField3D<DenseParticleField3D<T,Descriptor> >* BondParticles3D;
 	std::map<std::string, Particle3D<T,Descriptor>* > bondParticleMap;
     std::vector<MultiBlock3D*> particleParticleBondArg;
     BondType<T,Descriptor> & bondType;
@@ -210,12 +210,12 @@ public:
 		bondField(cellField1, cellField2, bondType_) {    } ;
 
     // CellField and ParticleField
-	BondFieldWrapper3D(CellField3D<T, Descriptor> & cellField1, MultiParticleField3D<LightParticleField3D<T,Descriptor> > & particleField2,
+	BondFieldWrapper3D(CellField3D<T, Descriptor> & cellField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
     		BondType<T,Descriptor> & bondType_) :
 		bondField(cellField1, particleField2, bondType_) {    } ;
 
     // Two ParticleFields
-	BondFieldWrapper3D(MultiParticleField3D<LightParticleField3D<T,Descriptor> > & particleField1, MultiParticleField3D<LightParticleField3D<T,Descriptor> > & particleField2,
+	BondFieldWrapper3D(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
     		BondType<T,Descriptor> & bondType_) :
 		bondField(particleField1, particleField2, bondType_) {    } ;
 

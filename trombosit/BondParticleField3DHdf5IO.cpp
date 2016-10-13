@@ -160,7 +160,7 @@ BlockDomain::DomainT WriteBondParticleField3D<T,Descriptor>::appliesTo () const 
 
 
 template<typename T, template<typename U> class Descriptor>
-void writeBondParticleField3D_HDF5(MultiParticleField3D<LightParticleField3D<T,Descriptor> > & particleField, T dx, T dt, plint iter, std::string identifier)
+void writeBondParticleField3D_HDF5(MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField, T dx, T dt, plint iter, std::string identifier)
 {
     std::vector<MultiBlock3D*> particleArg;
     particleArg.push_back(&particleField);
