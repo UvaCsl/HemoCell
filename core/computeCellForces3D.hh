@@ -44,7 +44,7 @@ Array<T,3> computeInPlaneHighOrderForce(Array<T,3> const& x1, Array<T,3> const& 
     /* Spectrin links that are somewhat compressible */
     T force1D;
     if(dL > 0)
-        force1D = - k_inPlane * ( dL + dL/(0.7-dL*dL) );   // allows at max. 85% stretch
+        force1D = - k_inPlane * ( dL + dL/(0.64-dL*dL) );   // allows at max. 80% stretch
     else
         force1D = - k_inPlane * dL * dL * dL;   // less stiff compression resistance
 
