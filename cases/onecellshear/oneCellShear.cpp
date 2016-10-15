@@ -323,6 +323,7 @@ int main(int argc, char* argv[])
             Array<T,3> stretch = RBCField[0]->get3D(CCR_POSITION_MAX) - RBCField[0]->get3D(CCR_POSITION_MIN); 
             pcout << " dx: " << stretch[0] << " dy: " << stretch[1]<<  " dz: " << stretch[2] << endl; 
             fOut << iter << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
+            RBCField[0]->saveMesh("stretchedCell.stl");
 
         } else {
             RBCField.synchronizeCellQuantities();
