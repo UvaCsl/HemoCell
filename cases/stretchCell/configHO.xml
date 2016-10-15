@@ -5,13 +5,13 @@
     <rbcModel> 0 </rbcModel> <!-- ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
     <materialModel> 2 </materialModel> <!-- Original Suresh: [0], Sures w. new bending: [1], Higher order model: [2] -->
     <shellDensity> 1.0 </shellDensity>
-    <kBend> 225 </kBend> <!-- bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <kBend> 100 </kBend> <!-- bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
     <kVolume> 800.0 </kVolume> <!-- volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}-->
     <kSurface> 0.0 </kSurface> <!-- global surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}-->
 <!-- 0.5e0 -->
-    <kShear> 100.0e0 </kShear> <!-- local area constrain coefficient (dimensionless) [0, 10, 100]-->
+    <kShear> 80.0e0 </kShear> <!-- local area constrain coefficient (dimensionless) [0, 10, 100]-->
     <etaM> 0.0e-6 </etaM> <!-- NOT WORKING ATM --> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
-    <kWLC> 0.5 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
+    <kWLC> 1.0 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
     <eqLengthRatio> 2.2 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
     <kRep> 1.0e0 </kRep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
     <kElastic> 0.0e0 </kElastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->
