@@ -269,7 +269,8 @@ int main(int argc, char* argv[])
         fOut.open("stretch.log");
     
     Array<T,3> stretch = stretchedCell.measureStretch();
-    fOut << 1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
+    if (not checkpointer.wasCheckpointed())
+        fOut << 1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << << " " << 100.0 << " " << 100.0 << endl;
     
     // ------------------------ Starting main loop --------------------------
     
