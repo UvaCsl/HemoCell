@@ -34,11 +34,11 @@ public:
 			pluint numberOfCells_. Global numer of Cells
 	*/
 	CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, TriangularSurfaceMesh<T> & elementaryMesh_,
-			T hematocrit_, ConstitutiveModel<T, Descriptor> * cellModel_, plint ibmKernel_, std::string identifier_);
+			T hematocrit_, ConstitutiveModel<T, Descriptor> * cellModel_, plint ibmKernel_, std::string identifier_, plint kernelSize_ = 1);
 	virtual ~CellField3D();
 public:
 	/* Set or change parameters */
-	void setIBMKernel(plint ibmKernel_) { ibmKernel = ibmKernel_; }
+	void setIBMKernel(plint kernelSize_, plint ibmKernel_) { kernelSize = kernelSize_; ibmKernel = ibmKernel_; }
 	void setIBMCoupling(bool coupleWithIBM_) { coupleWithIBM = coupleWithIBM_; }
 	void setParticleUpdateScheme (plint scheme, T cellTimeStep=1.0) {
 	    pcout << "(CellField3D) Particle dynamics set -> IBM kernel: " << ibmKernel << ", integration scheme: " << scheme << ", time-step: " << cellTimeStep << " lt" << std::endl;
@@ -125,6 +125,7 @@ private:
     T hematocrit;
 	ConstitutiveModel<T, Descriptor> * cellModel;
 	plint ibmKernel;
+    plint kernelSize;
 	bool coupleWithIBM;
     SyncRequirements ccrRequirements;
     std::string identifier;

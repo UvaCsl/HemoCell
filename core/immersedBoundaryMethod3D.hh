@@ -80,7 +80,7 @@ T phi4c (T x) {
 template<typename T>
 void interpolationCoefficients (
         AtomicBlock3D const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize,
         plint ibmKernel) {
     /*
      * ibmKernel == 2, Phi2 ! Default
@@ -89,15 +89,15 @@ void interpolationCoefficients (
      * ibmKernel == 5, Phi4c
      */
     if (ibmKernel == 2) {
-        interpolationCoefficientsPhi2(block, position, cellPos, weights);
+        interpolationCoefficientsPhi2(block, position, cellPos, weights, kernelSize);
     } else if (ibmKernel == 3) {
-        interpolationCoefficientsPhi3(block, position, cellPos, weights);
+        interpolationCoefficientsPhi3(block, position, cellPos, weights, kernelSize);
     } else if (ibmKernel == 4) {
-        interpolationCoefficientsPhi4(block, position, cellPos, weights);
+        interpolationCoefficientsPhi4(block, position, cellPos, weights, kernelSize);
     } else if (ibmKernel == 5) {
-        interpolationCoefficientsPhi4c(block, position, cellPos, weights);
+        interpolationCoefficientsPhi4c(block, position, cellPos, weights, kernelSize);
     } else {
-        interpolationCoefficientsPhi4(block, position, cellPos, weights);
+        interpolationCoefficientsPhi4(block, position, cellPos, weights, kernelSize);
     }
 }
 
@@ -105,12 +105,13 @@ void interpolationCoefficients (
 template<typename T>
 void interpolationCoefficientsPhi2 (
         AtomicBlock3D const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights )
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
 {
     cellPos.clear();
     weights.clear();
     plint i = 0;
-    plint x0=-1, x1=2;
+    //plint x0=-1, x1=2;
+    plint x0=-kernelSize, x1=kernelSize+1;
     Box3D boundingBox(block.getBoundingBox());
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
@@ -138,7 +139,7 @@ void interpolationCoefficientsPhi2 (
 template<typename T>
 void interpolationCoefficientsPhi3 (
         AtomicBlock3D const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights )
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
 {
     cellPos.clear();
     weights.clear();
@@ -171,7 +172,7 @@ void interpolationCoefficientsPhi3 (
 template<typename T>
 void interpolationCoefficientsPhi4 (
         AtomicBlock3D const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights )
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
 {
     cellPos.clear();
     weights.clear();
@@ -203,7 +204,7 @@ void interpolationCoefficientsPhi4 (
 template<typename T>
 void interpolationCoefficientsPhi4c (
         AtomicBlock3D const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights )
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
 {
     cellPos.clear();
     weights.clear();

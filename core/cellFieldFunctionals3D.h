@@ -53,7 +53,8 @@ template<typename T, template<typename U> class Descriptor>
 class ForceToFluid3D : public BoxProcessingFunctional3D
 {
 public:
-    ForceToFluid3D (plint ibmKernel_=4 );
+    // kernelSize gives the envelope size in each direction -> kernelSize=1 will yield a 3x3x3 kernel
+    ForceToFluid3D (plint kernelSize = 1, plint ibmKernel_= 2 );
     /// Arguments: [0] Particle-field. [1] Lattice.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual ForceToFluid3D<T,Descriptor>* clone() const;
@@ -62,6 +63,7 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
 private:
     plint ibmKernel;
+    plint kernelSize;
 };
 
 
@@ -69,7 +71,8 @@ template<typename T, template<typename U> class Descriptor>
 class FluidVelocityToImmersedCell3D : public BoxProcessingFunctional3D
 {
 public:
-    FluidVelocityToImmersedCell3D (plint ibmKernel_=4 );
+    // kernelSize gives the envelope size in each direction -> kernelSize=1 will yield a 3x3x3 kernel
+    FluidVelocityToImmersedCell3D (plint kernelSize = 1, plint ibmKernel_= 2 );
     /// Arguments: [0] Particle-field. [1] Lattice.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual FluidVelocityToImmersedCell3D<T,Descriptor>* clone() const;
@@ -78,6 +81,7 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
 private:
     plint ibmKernel;
+    plint kernelSize;
 };
 
 template<typename T, template<typename U> class Descriptor>

@@ -305,6 +305,7 @@ int main(int argc, char *argv[]) {
     std::vector<CellField3D<T, DESCRIPTOR> *> cellFields;
     std::vector<T> eqVolumes;
 
+    plint kernelSize = ceil(1e-6 / dx);
     
     // ----------------------- Init RBCs ---------------------------------
 
@@ -325,7 +326,7 @@ int main(int argc, char *argv[]) {
             new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic,
                                                   k_volume, k_surface, eta_m,
                                                   persistenceLengthFine, eqLengthRatio, dx, dt, dm, meshElement, materialModel));
-    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hematocrit, cellModels[0], ibmKernel, "RBC"));
+    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hematocrit, cellModels[0], ibmKernel, "RBC", kernelSize));
 
     
     // ----------------------- Init platelets ----------------------------
@@ -342,7 +343,7 @@ int main(int argc, char *argv[]) {
                                                   k_elastic, k_volume, k_surface, eta_m,
                                                   persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement, materialModel));
     cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.0025 * hematocrit,
-                                                        cellModels[cellModels.size() - 1], ibmKernel, "PLT"));
+                                                        cellModels[cellModels.size() - 1], ibmKernel, "PLT", kernelSize));
 
 
     // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
@@ -450,11 +451,11 @@ int main(int argc, char *argv[]) {
         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
             cellFields[iCell]->applyConstitutiveModel();
             cellFields[iCell]->applyWallCellForce(repWP, R, boundaryParticleField3D);
-            cellFields[iCell]->applyCellCellForce(repPP, R2);
+            //cellFields[iCell]->applyCellCellForce(repPP, R2);
         }
 
         // Particle-particle force between RBCs and PLTs
-        cellFields[1]->applyDifferentCellForce(repPP, R2, &cellFields[0]->getParticleField3D());
+        //cellFields[1]->applyDifferentCellForce(repPP, R2, &cellFields[0]->getParticleField3D());
 
         
         // Inner iteration cycle of fluid

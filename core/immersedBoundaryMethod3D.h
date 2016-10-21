@@ -46,28 +46,28 @@ T phi4c (T x) ;
 template<typename T>
 void interpolationCoefficients (
         AtomicBlock3D const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize,
         plint ibmKernel=2);
 
 template<typename T>
 void interpolationCoefficientsPhi2 (
         AtomicBlock3D const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights );
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
 
 template<typename T>
 void interpolationCoefficientsPhi3 (
         AtomicBlock3D const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights );
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
 
 template<typename T>
 void interpolationCoefficientsPhi4 (
         AtomicBlock3D const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights );
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
 
 template<typename T>
 void interpolationCoefficientsPhi4c (
         AtomicBlock3D const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights );
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
 
 /*
  * In case one of the interpolating boundary nodes is a boundary,

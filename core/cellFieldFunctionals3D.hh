@@ -66,8 +66,8 @@ void ComputeCellForce3D<T,Descriptor>::getModificationPattern(std::vector<bool>&
 /* ******** FluidVelocityToImmersedCell3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
-FluidVelocityToImmersedCell3D<T,Descriptor>::FluidVelocityToImmersedCell3D (
-        plint ibmKernel_) : ibmKernel(ibmKernel_) {};
+FluidVelocityToImmersedCell3D<T,Descriptor>::FluidVelocityToImmersedCell3D (plint kernelSize_,
+        plint ibmKernel_) : kernelSize(kernelSize_), ibmKernel(ibmKernel_) {};
 
 template<typename T, template<typename U> class Descriptor>
 void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
@@ -91,7 +91,7 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
         std::vector<T>  & weights = particle->getIBMweights();
         if (cellPos.size() == 0) {
-            interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
+            interpolationCoefficients(fluid, position, cellPos, weights, kernelSize, ibmKernel);
 //            curateInterpolationCoefficients (fluid, cellPos, weights); // TODO: Check validity of curateInterpolationCoefficients
         }
         particle->get_v().resetToZero();
@@ -199,8 +199,8 @@ BlockDomain::DomainT ViscousPositionUpdate3D<T,Descriptor>::appliesTo () const {
 
 /* ******** ForceToFluid3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
-ForceToFluid3D<T,Descriptor>::ForceToFluid3D (
-        plint ibmKernel_) : ibmKernel(ibmKernel_) {};
+ForceToFluid3D<T,Descriptor>::ForceToFluid3D (plint kernelSize_,
+        plint ibmKernel_) : kernelSize(kernelSize_), ibmKernel(ibmKernel_) {};
 
 template<typename T, template<typename U> class Descriptor>
 void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
@@ -224,7 +224,7 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
         Array<T,3> position(particle->getPosition());
         std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
         std::vector<T> & weights = particle->getIBMweights();
-        interpolationCoefficients(fluid, position, cellPos, weights, ibmKernel);
+        interpolationCoefficients(fluid, position, cellPos, weights, kernelSize, ibmKernel);
 //        curateInterpolationCoefficients (fluid, cellPos, weights); // TODO: Check validity of curateInterpolationCoefficients
         Array<T,3> elasticForce = particle->get_force();
 
