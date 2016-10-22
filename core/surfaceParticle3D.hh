@@ -1,23 +1,3 @@
-/* This file is part of the Palabos library.
- * Copyright (C) 2009, 2010 Jonas Latt
- * E-mail contact: jonas@lbmethod.org
- * The most recent release of Palabos can be downloaded at 
- * <http://www.lbmethod.org/palabos/>
- *
- * The library Palabos is free software: you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * The library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #ifndef SURFACE_PARTICLE_3D_HH
 #define SURFACE_PARTICLE_3D_HH
 
@@ -113,25 +93,30 @@ void SurfaceParticle3D<T,Descriptor>::advance() {
     //    this->getPosition() += 1.5*v - 0.5*vPrevious;
     //    vPrevious = v;
 
-    // static const T maxVel = 0.25-1.e-6;
-    // static const T maxVelSqr = maxVel*maxVel;
+    /* scheme:
+     *  0: Euler
+     *  1: Adams-Bashforth
+     *  2: Velocity Verlet
+     */
+		if(scheme ==0) {
+            Array<T,3> dx = v * dt;
+        	this->getPosition() += dx;         // TODO: why do we have to step the periodiuc boundary condition particle as well?
+        	pbcPosition += dx;
+        }
+        else if (scheme == 1)
+        {
+            Array<T,3> dx = (1.5*v - 0.5*vPrevious)*dt;
+        	this->getPosition() +=  dx;
+        	pbcPosition += dx;
+        	
+        	vPrevious = v;  // Store velocity
+        }
 
-    // if (normSqr(vPrevious)>maxVelSqr) {
-    //     vPrevious /= norm(vPrevious);
-    //     vPrevious *= maxVel;
-    //     pcout << "(SurfaceParticle3D::advance) Warning, spurious velocity detected! Forced to 0.25 lu/lt" << endl;
-    // }
 
-    // Euler update scheme
-    /*if( dt != 2.0)
-        cout << "dt: "<< dt << "  " ;
-    if( dt == 2.0)
-        cout << "dt is OK!  " ;
-    */
+        // Reset current velocity
+        v.resetToZero();
 
-        this->getPosition() += vPrevious * dt;
-        pbcPosition += vPrevious * dt;
-        vPrevious.resetToZero();
+        // Get the current processor (TODO: why here?)
         processor = this->getMpiProcessor();
 }
 
