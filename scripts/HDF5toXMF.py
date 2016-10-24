@@ -295,11 +295,11 @@ def createXDMF(fnameString, processorStrings):
 
 
 if __name__ == '__main__':
-	dirname = './hdf5/'
+        dirname = os.path.abspath('./hdf5/') + '/'
 	identifier = 'Fluid'
 	fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
 	if len(fluidH5files) == 0:
-		dirname = './tmp/hdf5/'
+		dirname = os.path.abspath('./tmp/hdf5/') + '/'
 		fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
 	fluidIDs = map(lambda x: x[:-3], fluidH5files)
 	iterationStrings, processorStrings  = zip(*map(lambda f: [f.split('.')[-3], f.split('.')[-1]], fluidIDs))

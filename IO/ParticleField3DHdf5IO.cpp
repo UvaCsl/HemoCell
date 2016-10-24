@@ -62,25 +62,78 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
     	 positions[itr++] = tmp[1];
     	 positions[itr++] = tmp[2];
      }
+#ifdef NO_COMPRESSION
      H5LTmake_dataset_float(file_id, "position", 2, dimVertices, positions);
+#else            
+     {
+    int sid = H5Screate_simple(2,dimVertices,NULL);
+    int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+    H5Pset_chunk(plist_id, 2, dimVertices); 
+    H5Pset_deflate(plist_id, 6);
+    int did = H5Dcreate2(file_id,"position",H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+    H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,positions);
+    H5Dclose(did);
+    H5Sclose(sid);
+     }
+#endif
      delete [] positions;
 
      /* Tags */
      int * tags= new int [Np];
      for (plint iP = 0; iP < Np; ++iP) { tags[iP] = particles[iP]->getTag(); }
+#ifdef NO_COMPRESSION
      H5LTmake_dataset_int(file_id, "tag", 1, dimVertices, tags);
+#else            
+     {
+    int sid = H5Screate_simple(1,dimVertices,NULL);
+    int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+    H5Pset_chunk(plist_id, 1, dimVertices); 
+    H5Pset_deflate(plist_id, 6);
+    int did = H5Dcreate2(file_id,"tag",H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+    H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,tags);
+    H5Dclose(did);
+    H5Sclose(sid);
+     }
+#endif
      delete [] tags;
 
      /* Tags */
      int * ids= new int [Np];
      for (plint iP = 0; iP < Np; ++iP) { ids[iP] = particles[iP]->getId(); }
+#ifdef NO_COMPRESSION
      H5LTmake_dataset_int(file_id, "id", 1, dimVertices, ids);
+#else            
+     {
+    int sid = H5Screate_simple(1,dimVertices,NULL);
+    int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+    H5Pset_chunk(plist_id, 1, dimVertices); 
+    H5Pset_deflate(plist_id, 6);
+    int did = H5Dcreate2(file_id,"id",H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+    H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,ids);
+    H5Dclose(did);
+    H5Sclose(sid);
+     }
+#endif
      delete [] ids;
 
      /* Processor */
      int * pIds= new int [Np];
      for (plint iP = 0; iP < Np; ++iP) { pIds[iP] = id; }
+#ifdef NO_COMPRESSION
      H5LTmake_dataset_int(file_id, "processor", 1, dimVertices, pIds);
+#else            
+     {
+
+    int sid = H5Screate_simple(1,dimVertices,NULL);
+    int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+    H5Pset_chunk(plist_id, 1, dimVertices); 
+    H5Pset_deflate(plist_id, 6);
+    int did = H5Dcreate2(file_id,"processor",H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+    H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,pIds);
+    H5Dclose(did);
+    H5Sclose(sid);
+     }
+#endif
      delete [] pIds;
 
 

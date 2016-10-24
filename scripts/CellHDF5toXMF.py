@@ -294,7 +294,7 @@ if __name__ == '__main__':
 	if len(sys.argv) == 1:
 		sys.argv += ['RBC']
 	for identifier in sys.argv[1:]:
-		dirname = './hdf5/'
+                dirname = os.path.abspath('./hdf5/') + '/'
 		try:
 			fluidH5files = sorted( glob(dirname + identifier + '.*p*.h5') )
 			if len(fluidH5files) == 0:

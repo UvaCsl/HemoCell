@@ -5,7 +5,6 @@
 #include "ficsionInit.h"
 #include <algorithm>    // std::swap
 
-
 /* ******** WriteInMultipleHDF5Files *********************************** */
 template<typename T>
 WriteInMultipleHDF5Files<T>::WriteInMultipleHDF5Files (
@@ -92,7 +91,18 @@ void WriteInMultipleHDF5Files<T>::processGenericBlocks (
 					}
 				}
             }
+#ifdef NO_COMPRESSION
             H5LTmake_dataset_float(file_id, hdf5ContainerNames[i].c_str(), 3, dim, matrixScalar);
+#else            
+            int sid = H5Screate_simple(3,dim,NULL);
+            int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+            H5Pset_chunk(plist_id, 3, dim); 
+            H5Pset_deflate(plist_id, 6);
+            int did = H5Dcreate2(file_id,hdf5ContainerNames[i].c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+            H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,matrixScalar);
+            H5Dclose(did);
+            H5Sclose(sid);
+#endif
             delete [] matrixScalar;
 
         } else {
@@ -124,7 +134,18 @@ void WriteInMultipleHDF5Files<T>::processGenericBlocks (
 					}
 				}
 			}
+#ifdef NO_COMPRESSION
             H5LTmake_dataset_float(file_id, hdf5ContainerNames[i].c_str(), 4, dim, matrixTensor);
+#else
+            int sid = H5Screate_simple(4,dim,NULL);
+            int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+            H5Pset_chunk(plist_id, 4, dim); 
+            H5Pset_deflate(plist_id, 6);
+            int did = H5Dcreate2(file_id,hdf5ContainerNames[i].c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+            H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,matrixTensor);
+            H5Dclose(did);
+            H5Sclose(sid);
+#endif
             delete [] matrixTensor;
         }
     }

@@ -291,7 +291,7 @@ def createXDMF(fnameString, processorStrings):
 
 
 if __name__ == '__main__':
-	dirname = './hdf5/'
+        dirname = os.path.abspath('./hdf5/') + '/'
 	try:
 		identifier = sys.argv[1]
 		print identifier
@@ -299,7 +299,7 @@ if __name__ == '__main__':
 		identifier = 'BoundaryParticles'
 	fluidH5files = sorted( glob(dirname + identifier + '.*p*.h5') )
 	if len(fluidH5files) == 0:
-		dirname = './tmp/hdf5/'
+                dirname = os.path.abspath('./tmp/hdf5/') + '/'
 		fluidH5files = sorted( glob(dirname + identifier + '*p*.h5') )
 	fluidIDs = map(lambda x: x[:-3], fluidH5files)
 	if len(fluidIDs) > 0:

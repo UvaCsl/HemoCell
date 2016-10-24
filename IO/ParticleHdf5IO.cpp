@@ -132,7 +132,18 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
                 matrixTensor[itr++] = vector[1];
                 matrixTensor[itr++] = vector[2];
              }
-             H5LTmake_dataset_float(file_id, icParticle->getVectorName(ivN).c_str(), 2, dimVertices, matrixTensor);
+#ifdef NO_COMPRESSION
+            H5LTmake_dataset_float(file_id, icParticle->getVectorName(ivN).c_str(), 2, dimVertices, matrixTensor);
+#else            
+            int sid = H5Screate_simple(2,dimVertices,NULL);
+            int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+            H5Pset_chunk(plist_id, 2, dimVertices); 
+            H5Pset_deflate(plist_id, 6);
+            int did = H5Dcreate2(file_id,icParticle->getVectorName(ivN).c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+            H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,matrixTensor);
+            H5Dclose(did);
+            H5Sclose(sid);
+#endif
          }
          // TODO: This part is commented out, since it causes some MPI problems!
          /*  Take care of Vertex Normals */
@@ -164,7 +175,18 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
                  particles[iP]->getScalar(isN, scalarValue);
                  scalarTensor[iP] = scalarValue;
              }
+#ifdef NO_COMPRESSION
              H5LTmake_dataset_float(file_id, icParticle->getScalarName(isN).c_str(), 1, dimVertices, scalarTensor);
+#else            
+            int sid = H5Screate_simple(1,dimVertices,NULL);
+            int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+            H5Pset_chunk(plist_id, 1, dimVertices); 
+            H5Pset_deflate(plist_id, 6);
+            int did = H5Dcreate2(file_id,icParticle->getScalarName(isN).c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+            H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,scalarTensor);
+            H5Dclose(did);
+            H5Sclose(sid);
+#endif
          }
          delete [] scalarTensor;
      }
