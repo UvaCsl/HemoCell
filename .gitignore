@@ -3,6 +3,7 @@ log/
 tmp/
 palabos/
 build/
+!build/*/CMakeLists.txt
 
 # Ignore IDE, buildsystem and OS specific cache directories and object files
 .idea/

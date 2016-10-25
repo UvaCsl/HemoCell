@@ -6,32 +6,26 @@ SET(PROJECT_NAME pipeflow)
 SET(PROJECT_SRC "pipeflow.cpp")
 
 # Ficsion location relative to CMakelists.txt
-SET(FICSION_BASE_DIR "./../..")
+SET(FICSION_BASE_DIR "./../../")
+get_filename_component(FICSION_BASE_DIR "${FICSION_BASE_DIR}" ABSOLUTE)
+SET(FICSION_DIR "${FICSION_BASE_DIR}/build/ficsion")
+SET(PALABOS_BASE_DIR "${FICSION_BASE_DIR}/palabos")
+SET(PALABOS_DIR "${FICSION_BASE_DIR}/build/palabos")
 
-# Palabos setup
-SET(PALABOS_DIR "${FICSION_BASE_DIR}/palabos")
-SET(PALABOS_MAJOR_VERSION 1)
-SET(PALABOS_MINOR_VERSION 5)
-SET(PALABOS_PATCH_VERSION 1)
 
-# Build settings
-SET(ENABLE_MPI 1)
-SET(ENABLE_POSIX 1)
-SET(SMP_PARALLEL 1)
-SET(BUILD_TYPE Release)  # Debug or Release
-
-# Required additional external libraries
-SET(NEEDHDF5 1)  # For highlevel HDF5 routines
-SET(NEEDVTK 0)   # For VTK
-SET(NEEDTXML 0)  # Set to 1 to enable external TinyXml libs (Palabos 1.5.0+)
-SET(NEEDEIGEN 0) # Set to 1 to use external Eigen3 libraries
-
-MESSAGE( STATUS "PALABOS_DIR:         " ${PALABOS_DIR} )
 MESSAGE( STATUS "FICSION_BASE_DIR:         " ${FICSION_BASE_DIR} )
+MESSAGE( STATUS "FICSION_DIR:         " ${FICSION_DIR} )
+MESSAGE( STATUS "PALABOS_BASE_DIR:         " ${PALABOS_BASE_DIR} )
+MESSAGE( STATUS "PALABOS_DIR:         " ${PALABOS_DIR} )
 
 ### Workaround for building with external cmake (e.g., when using an IDE with built in cmake):
 # Access system wide libraries in ubuntu 14.04 in case one uses an external cmake ditribution (e.g., CLion)
 #SET(CMAKE_MODULE_PATH /usr/share/cmake-2.8/Modules)  # Needed to find installed libraries on the system with the bundled cmake
+
+SET(ENABLE_MPI 1)  
+SET(NEEDTXML 0)  # Set to 1 to enable external TinyXml libs (Palabos 1.5.0+)
+SET(NEEDHDF5 1)  # For highlevel HDF5 routines
+#SET(HDF5_USE_STATIC_LIBRARIES ON) #does not work anyway :(
 
 #=======================================
 ##### Beginning of build script
@@ -46,51 +40,25 @@ INCLUDE(GNUInstallDirs)
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
 
-#=======================================
-# Set up cmake environment
-
-IF(NEEDTXML)
-  FIND_PACKAGE(TinyXML REQUIRED HINTS ${FICSION_BASE_DIR}/cmake )
-  INCLUDE_DIRECTORIES(AFTER ${TINYXML_INCLUDE_DIR})
-ENDIF(NEEDTXML)
-
-IF(NEEDEIGEN)
-  FIND_PACKAGE(Eigen3 REQUIRED)
-  INCLUDE_DIRECTORIES(AFTER ${EIGEN3_INCLUDE_DIR})
-ENDIF(NEEDEIGEN)
-
-FIND_PACKAGE(MPI REQUIRED)
-INCLUDE_DIRECTORIES(AFTER ${MPI_INCLUDE_PATH})
-
-IF(NEEDHDF5)
-  # This is needed since stupid Lisa has a bug in 3.5.1
-  IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.0)
-    FIND_PACKAGE(HDF5 COMPONENTS CXX HL REQUIRED)
-  ELSE (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.0)
-    FIND_PACKAGE(HDF5 REQUIRED)
-  ENDIF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.0)
-  
-  INCLUDE_DIRECTORIES(AFTER ${HDF5_INCLUDE_DIRS})
-ENDIF(NEEDHDF5)
-
-IF(NEEDVTK)
-  FIND_PACKAGE(VTK REQUIRED)
-  INCLUDE(${VTK_USE_FILE})
-ENDIF(NEEDVTK)
-
-#=======================================
-
 IF (NOT CMAKE_CXX_FLAGS)
   #If flags are not set, add default flags
   SET(CMAKE_BUILD_TYPE ${BUILD_TYPE})
-  SET(CMAKE_CXX_FLAGS  " -Wall -g -fstack-protector --param=ssp-buffer-size=4 -Wformat -Wformat-security -Werror=format-security")
+  SET(CMAKE_CXX_FLAGS  " -Wall -Wextra -g -Wformat -Wformat-security -Werror=format-security -O3 -march=native")
 ENDIF (NOT CMAKE_CXX_FLAGS)
 
 #=======================================
+IF(NEEDTXML)
+  FIND_PACKAGE(TinyXML REQUIRED HINTS ${FICSION_BASE_DIR}/cmake )
+  INCLUDE_DIRECTORIES(${TINYXML_INCLUDE_DIR})
+ENDIF(NEEDTXML)
 
-SET(DEFAULT ON CACHE INTERNAL "Default value for enabled by default options")
-OPTION(ENABLE_MPI "Enable MPI" ${DEFAULT})
-
+IF(NOT NEEDTXML)
+  INCLUDE_DIRECTORIES(${PALABOS_BASE_DIR}/externalLibraries)
+ENDIF(NOT NEEDTXML)
+IF(NEEDHDF5)
+    FIND_PACKAGE(HDF5 COMPONENTS C HL)
+  INCLUDE_DIRECTORIES(AFTER ${HDF5_INCLUDE_DIRS})
+ENDIF(NEEDHDF5)
 IF(ENABLE_MPI)
   INCLUDE(FindMPI)
   IF(MPI_C_FOUND AND MPI_CXX_FOUND)
@@ -109,67 +77,35 @@ IF(ENABLE_MPI)
   ENDIF(MPI_C_FOUND AND MPI_CXX_FOUND)
 ENDIF(ENABLE_MPI)
 
-#=======================================
 
-OPTION(ENABLE_POSIX "Enable POSIX" ${DEFAULT})
+SET(DEFAULT ON CACHE INTERNAL "Default value for enabled by default options")
+OPTION(ENABLE_MPI "Enable MPI" ${DEFAULT})
 
-IF(ENABLE_POSIX)
-  ADD_DEFINITIONS("-DPLB_USE_POSIX")
-ENDIF(ENABLE_POSIX)
-
-#=======================================
-
-OPTION(ENABLE_SMP_PARALLEL "Enable SMP_PARALLEL" ${DEFAULT})
-
-IF(ENABLE_SMP_PARALLEL)
-  ADD_DEFINITIONS("-DPLB_SMP_PARALLEL")
-ENDIF(ENABLE_SMP_PARALLEL)
-
-#=======================================
-
-IF(APPLE)
-  MESSAGE("OpenMP support is disabled on MacOS X.")
-ELSE(APPLE)
-  find_package(OpenMP)
-  if (OPENMP_FOUND)
-      set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  endif()
-ENDIF(APPLE)
-#=======================================
-
-IF(APPLE)
-    ADD_DEFINITIONS("-DPLB_MAC_OS_X")
-ENDIF(APPLE)
-
-INCLUDE_DIRECTORIES(AFTER ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/src)
-
-INCLUDE_DIRECTORIES(AFTER ${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR})
-INCLUDE_DIRECTORIES(AFTER ${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/IO)
-INCLUDE_DIRECTORIES(AFTER ${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/core)
-INCLUDE_DIRECTORIES(AFTER ${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/extensions)
-INCLUDE_DIRECTORIES(AFTER ${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/external/)
-INCLUDE_DIRECTORIES(AFTER ${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/helper)
-INCLUDE_DIRECTORIES(AFTER ${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/models)
-
-IF(NOT NEEDEIGEN)
-  #INCLUDE(${PALABOS_DIR}/externalLibraries/Eigen/CMakeLists.txt)
-  INCLUDE_DIRECTORIES(AFTER ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/Eigen3)
-ENDIF(NOT NEEDEIGEN)
-
-FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/src/*.cpp")
-
-IF(NOT NEEDTXML)
-  INCLUDE_DIRECTORIES(AFTER ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries)
-  LIST(APPEND SRC_FILES_SRC ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxml.cpp)
-  LIST(APPEND SRC_FILES_SRC ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlerror.cpp)
-  LIST(APPEND SRC_FILES_SRC ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlparser.cpp)
-ENDIF(NOT NEEDTXML)
+INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/)
+INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/helper)
+INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/core)
+INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/models)
+INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/external)
+INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/IO)
+INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/extensions)
+INCLUDE_DIRECTORIES(${PALABOS_BASE_DIR}/src)
 
 LIST(APPEND SRC_FILES_SRC ${PROJECT_SRC})
 
-ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES_SRC})
+include(ExternalProject) 
+ExternalProject_Add("ficsion" PREFIX ${FICSION_DIR} 
+                              SOURCE_DIR ${FICSION_DIR}
+                              BINARY_DIR ${FICSION_DIR} 
+                              INSTALL_COMMAND "")
+ExternalProject_Add("palabos" PREFIX ${PALABOS_DIR} SOURCE_DIR ${PALABOS_DIR}
+    BINARY_DIR ${PALABOS_DIR} INSTALL_COMMAND "")
 
+
+#SET(CMAKE_EXE_LINKER_FLAGS "-static") !Good luck on finding statically linked mpi libraries, it should be possible though
+ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES_SRC})
+ADD_DEPENDENCIES(${PROJECT_NAME} "ficsion" "palabos")
+target_link_libraries(${PROJECT_NAME} ${FICSION_DIR}/libficsion.a)
+target_link_libraries(${PROJECT_NAME} ${PALABOS_DIR}/libpalabos.a)
 IF(NEEDHDF5)
   # This is needed since stupid Lisa has a bug in 3.5.1
   IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.0)
@@ -178,13 +114,5 @@ IF(NEEDHDF5)
     TARGET_LINK_LIBRARIES(${PROJECT_NAME} hdf5_hl hdf5)
   ENDIF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.0)
 ENDIF(NEEDHDF5)
-
-IF(NEEDVTK)
-  TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${VTK_LIBRARIES})
-ENDIF(NEEDVTK)
-
-IF(NEEDTXML)
-  TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${TINYXML_LIBRARIES})
-ENDIF(NEEDTXML)
 
 
