@@ -270,7 +270,7 @@ int main(int argc, char* argv[])
     
     Array<T,3> stretch = stretchedCell.measureStretch();
     if (not checkpointer.wasCheckpointed())
-        fOut << 1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << << " " << 100.0 << " " << 100.0 << endl;
+        fOut << 1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << " " << 100.0 << " " << 100.0 << endl;
     
     // ------------------------ Starting main loop --------------------------
     
