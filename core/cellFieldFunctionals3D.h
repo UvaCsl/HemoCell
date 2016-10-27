@@ -158,6 +158,21 @@ protected:
     plint qId;
 };
 
+/* ******** GetGlobalMaxForce *********************************** */
+template<typename T, template<typename U> class Descriptor>
+class GetGlobalMaxForce : public PlainReductiveBoxProcessingFunctional3D
+{
+public:
+    GetGlobalMaxForce();
+    /// Argument: Particle-field.
+    virtual GetGlobalMaxForce<T,Descriptor>* clone() const { return new GetGlobalMaxForce<T,Descriptor>(*this); };
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const { modified[0] = modif::nothing; };
+    virtual T getValue();
+    virtual BlockDomain::DomainT appliesTo() const;
+protected:
+    plint qId;
+};
 
 /* ******** ComputeRequiredQuantities *********************************** */
 template<typename T, template<typename U> class Descriptor>

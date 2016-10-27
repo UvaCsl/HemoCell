@@ -101,9 +101,13 @@ public:
 	pluint getNumberOfCells_Global() {
 	    CountGlobalNumberOfCells<T,Descriptor> nfunctional( elementaryMesh.getNumVertices() );
 	    applyProcessingFunctional(nfunctional, immersedParticles->getBoundingBox(), particleArg);
-	    pluint gnoc =  nfunctional.getValue();
-	    return gnoc;
+	    return nfunctional.getValue();
 	};
+    T getMaximumForce_Global() {
+        GetGlobalMaxForce<T,Descriptor> nfunctional;
+        applyProcessingFunctional(nfunctional, immersedParticles->getBoundingBox(), particleArg);
+        return nfunctional.getValue();
+    };
 	pluint getNumberOfCells_Local() { return cellIdToCell3D.size(); } ;
 	pluint getNumberOfCells() { return getNumberOfCells_Local(); } ;
     plint count(plint cellId) { return cellIdToCell3D.count(cellId); }

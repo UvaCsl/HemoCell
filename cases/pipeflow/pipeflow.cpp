@@ -139,6 +139,10 @@ int main(int argc, char *argv[]) {
     // ------------------------ Variable declarations here -----------------------------------------
 
     bool checkpointed = 0;
+    bool isAdaptive = false;
+    plint maxInnerIterSize = 1;
+    const plint probeMaterialForce = 10;
+    T minForce, maxForce;
     plint initIter = 0;
     T Re;
     T dx, dt, dm, dNewton;
@@ -217,7 +221,17 @@ int main(int argc, char *argv[]) {
     document["sim"]["particlePosFile"].read(particlePosFile);
 
 
-    hematocrit /= 100;
+    hematocrit /= 100; // put it between [0;1]
+    
+    // Check if an adaptive run is requested
+    if (cellStep == -1){
+        isAdaptive = true;
+        cellStep = 1;
+        pcout << "(main) Adaptive membrane model time-steps are enabled!" << endl;
+        document["domain"]["maxTimeStepSize"].read(maxInnerIterSize);
+        document["domain"]["minForce"].read(minForce);
+        document["domain"]["maxForce"].read(maxForce);
+    }
 
     // ---------------------------- Read in geometry (STL) ------------------------------------------------
 
@@ -419,7 +433,7 @@ int main(int argc, char *argv[]) {
     //T k_int = 0.00025, DeltaX=1.0, R=1.0, k=1.5;
     // was 1.5e-12
     T k_int = 2.0e-12 / dNewton, DeltaX=1.5e-6 / dx, R=1.5e-6 / dx, k=1.5;	// Scale force with simulation units
-    if (DeltaX > 2.0) DeltaX = 2.0; if (R > 2.0) R = 2.0;  // Should not have effect further than 2 lu -> might go out of domain
+    if (DeltaX > 2.0) DeltaX = 2.0; if (R > 2.0) R = 2.0;  // Should not have effect further than 2 lu -> might go out of domain envelope
     PowerLawForce<T> repWP(k_int, DeltaX, R, k);
 
     // ------------------------- Add particle-particle repulsion force ---------
@@ -443,41 +457,92 @@ int main(int argc, char *argv[]) {
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, -1, numVerticesPerCell);
 
+    pluint lastCellUpdateSince = 0;
+    T fMax = 0; 
     
     global::timer("mainLoop").start();
-    for (plint iter = initIter; iter < tmax + 1; iter+=cellStep) {
+    for (plint iter = initIter; iter < tmax + 1; iter++) {
 
-        // #1# Membrane Model + Repulsion of surfaces
-        for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-            cellFields[iCell]->applyConstitutiveModel();
-            cellFields[iCell]->applyWallCellForce(repWP, R, boundaryParticleField3D);
-            //cellFields[iCell]->applyCellCellForce(repPP, R2);
+        bool stepCells = false; // Whether to advance the material model
+
+        // Check if we need to advance the material model at this iteration
+        lastCellUpdateSince++;
+        if(0 == (lastCellUpdateSince % cellStep)){
+            stepCells = true; lastCellUpdateSince =0;
         }
 
-        // Particle-particle force between RBCs and PLTs
-        //cellFields[1]->applyDifferentCellForce(repPP, R2, &cellFields[0]->getParticleField3D());
-
-        
-        // Inner iteration cycle of fluid
-        for(int innerIt = 0; innerIt < cellStep; innerIt++){
-            // #2# IBM Spreading
-            cellFields[0]->setFluidExternalForce(poiseuilleForce);
+        // #####1##### Membrane Model + Repulsion of surfaces
+        if(stepCells) {
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                cellFields[iCell]->spreadForceIBM();
+                cellFields[iCell]->applyConstitutiveModel();
+                cellFields[iCell]->applyWallCellForce(repWP, R, boundaryParticleField3D);
+                cellFields[iCell]->applyCellCellForce(repPP, R2); // Repulsion between the same cell types
             }
 
-            // #3# LBM
-            global::timer("LBM").start();
-            lattice.collideAndStream();
-            global::timer("LBM").stop();
+            // Particle-particle force between RBCs and PLTs
+            cellFields[1]->applyDifferentCellForce(repPP, R2, &cellFields[0]->getParticleField3D());
+            // TODO: extend this in case of other cellFields (e.g. WBC)
+        }
+        
+        
+        // #####2##### IBM Spreading
+        cellFields[0]->setFluidExternalForce(poiseuilleForce);
+        for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+            cellFields[iCell]->spreadForceIBM();
         }
 
-        // Gather velocities from the fluid
-        for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-            // #4# IBM Interpolation
-            cellFields[iCell]->interpolateVelocityIBM();
-            // #5# Position Update
-            cellFields[iCell]->advanceParticles();
+        // #####3##### LBM
+        global::timer("LBM").start();
+        lattice.collideAndStream();
+        global::timer("LBM").stop();
+        
+        if(stepCells){
+            // Gather velocities from the fluid
+            for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+                // #####4##### IBM Interpolation
+                cellFields[iCell]->interpolateVelocityIBM();
+                // #####5##### Position Update
+                cellFields[iCell]->advanceParticles();
+            }
+        }
+
+        // Probe maximal force every 10th step if adaptive steps are enabled
+        // TODO: Also probe for maximum velocity: maxVel * cellStep < 1
+        if(isAdaptive)
+        if ( ((iter+1) % probeMaterialForce) == 0 ) {  // Do not change inner time-step at the first iteration!
+
+        	fMax = 0;
+            for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+                T fMax_field = cellFields[iCell]->getMaximumForce_Global();
+                if( fMax_field > fMax)
+                    fMax = fMax_field;                
+            }
+
+            // If force is too large decrease time step
+            if(fMax > maxForce) 
+            {
+                if(cellStep > 1){
+                    cellStep--;
+
+                    pcout << "(main) Large force encountered (" << fMax << "): reducing inner time-step to: " << cellStep << endl;
+
+                    for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
+                        cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);                    
+                }
+            }
+
+            // If forces are small, try to increase time-step
+            if(fMax < minForce)
+            {
+                if(cellStep < maxInnerIterSize){  // Don't go over maxInnerIterSize even if forces are small!
+                    cellStep++;
+
+                    pcout << "(main) Forces are small (" << fMax << "): increasing inner time-step to: " << cellStep << endl;
+
+                    for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
+                        cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);
+                }
+            }
         }
 
         // #6# Output
@@ -501,9 +566,9 @@ int main(int argc, char *argv[]) {
             }
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter * cellStep);
-            pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" <<"; time / it = " << dtIteration / tmeas;
-            pcout << std::endl;
+            pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" << "; Time / it = " << dtIteration / tmeas << "; Last largest force = " << fMax << std::endl;
         } else {
+            if(stepCells) // Sync only if we changed anything
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
                 cellFields[iCell]->synchronizeCellQuantities();
             }

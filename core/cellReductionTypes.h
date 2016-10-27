@@ -69,6 +69,8 @@
 #define CCR_VELOCITY_MAX           723 // 3d
 #define CCR_ENERGY                 901 // 1d
 #define CCR_FORCE                 1603 // 3d
+#define CCR_FORCE_MEAN            1613 // 3d
+#define CCR_FORCE_MAX             1623 // 3d
 #define CCR_FORCE_NORMALIZED      2603 // 3d
 #define CCR_INERTIA                809 // 9d, Not working
 #define CCR_TORQUE                1703 // 3d

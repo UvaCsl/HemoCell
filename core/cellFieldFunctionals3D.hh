@@ -419,6 +419,42 @@ BlockDomain::DomainT CountGlobalNumberOfCells<T,Descriptor>::appliesTo() const {
     return BlockDomain::bulk; // It is NOT extended in the processGenericBlocks
 }
 
+/* ******** GetGlobalMaxForce *********************************** */
+template<typename T, template<typename U> class Descriptor>
+GetGlobalMaxForce<T,Descriptor>::GetGlobalMaxForce()
+{
+    qId  = this->getStatistics().subscribeMax();
+}
+
+template<typename T, template<typename U> class Descriptor>
+void GetGlobalMaxForce<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+    ParticleField3D<T,Descriptor>& particleField =
+        *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
+    std::vector<Particle3D<T,Descriptor>*> particles;
+    particleField.findParticles(domain, particles); // Gets particle only from the bulk
+
+    for(plint iPart = 0; iPart < particles.size(); iPart++)
+    {
+        SurfaceParticle3D<T,Descriptor>* particle = 
+                dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iPart]);
+        T forceMag = norm(particle->get_force());
+        this->getStatistics().gatherMax(qId, forceMag);
+    }
+    
+}
+
+template<typename T, template<typename U> class Descriptor>
+T GetGlobalMaxForce<T,Descriptor>::getValue() {
+    return T(this->getStatistics().getMax(qId));
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT GetGlobalMaxForce<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulk; // It is NOT extended in the processGenericBlocks
+}
+
 
 /* ******** DeleteIncompleteCells *********************************** */
 
