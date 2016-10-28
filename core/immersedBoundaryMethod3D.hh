@@ -120,10 +120,11 @@ void interpolationCoefficientsPhi2 (
                 Dot3D cellPositionInDomain = cellPosition - block.getLocation(); // Convert cell position to local coordinates.
                 if (contained(cellPositionInDomain,boundingBox)) {
                     T phi[3];
-                    phi[0] = (position[0] - (T)cellPosition.x);
-                    phi[1] = (position[1] - (T)cellPosition.y);
-                    phi[2] = (position[2] - (T)cellPosition.z);
+                    phi[0] = (position[0] - 0.5 - (T)cellPosition.x);
+                    phi[1] = (position[1] - 0.5 - (T)cellPosition.y);
+                    phi[2] = (position[2] - 0.5 - (T)cellPosition.z);
                     T weight = phi2(phi[0]) * phi2(phi[1]) * phi2(phi[2]);
+
                     if (weight>0) {
                         weights.push_back(weight);
                         cellPos.push_back(cellPositionInDomain);
