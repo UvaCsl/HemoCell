@@ -41,7 +41,7 @@ public:
 	void setIBMKernel(plint kernelSize_, plint ibmKernel_) { kernelSize = kernelSize_; ibmKernel = ibmKernel_; }
 	void setIBMCoupling(bool coupleWithIBM_) { coupleWithIBM = coupleWithIBM_; }
 	void setParticleUpdateScheme (plint scheme, T cellTimeStep=1.0) {
-	    pcout << "(CellField3D) Particle dynamics set -> IBM kernel: " << ibmKernel << ", integration scheme: " << scheme << ", time-step: " << cellTimeStep << " lt" << std::endl;
+	    pcout << "(CellField3D) " << identifier << "-> Particle dynamics set -> IBM kernel: " << ibmKernel << ", integration scheme: " << scheme << ", time-step: " << cellTimeStep << " lt" << std::endl;
 	    applyProcessingFunctional ( // advance particles in time according to velocity
 	        new ChangeParticleUpdateScheme<T,Descriptor>(scheme, cellTimeStep),
 	        immersedParticles->getBoundingBox(), particleArg );

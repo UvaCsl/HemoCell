@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
 
     pcout << "(main) dx = " << dx << ", " <<
     "dt = " << dt << ", " <<
-    "cell_dt" << cellStep * dt <<
+    "cell_dt = " << cellStep * dt << ", " <<
     "dm = " << dm << ", " <<
     "dN = " << dNewton <<
     std::endl;
@@ -320,6 +320,10 @@ int main(int argc, char *argv[]) {
     std::vector<T> eqVolumes;
 
     plint kernelSize = ceil(1e-6 / dx);
+   	if(ibmKernel == 2){
+   		kernelSize = 1;
+   		pcout << "(main)   WARNING: kernel " << ibmKernel << " is a nearest-neighbour kernel, it will not be scaled!" << endl;
+   	}
     
     // ----------------------- Init RBCs ---------------------------------
 
@@ -383,14 +387,11 @@ int main(int argc, char *argv[]) {
 
     pcout << "(main) material model integration step: " << cellStep <<  " lt, update scheme: " << ibmScheme << endl;
 
-    pcout << "(main) material model integration step: " << (T)cellStep <<  " lt, update scheme: " << ibmScheme << endl;
-
-
     plint domainVol = computeSum(*flagMatrix);
     pcout << "(main) Number of fluid cells: " << domainVol << " / " << nx*ny*nz << std::endl;
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
         plint nCells = cellFields[iCell]->getNumberOfCells_Global();
-        pcout << "(main) Species: " << iCell << endl;
+        pcout << "(main) Species: #" << iCell << " (" << cellFields[iCell]->getIdentifier() << ")"<< endl;
         pcout << "(main)   Volume ratio [x100%]: " << nCells * eqVolumes[iCell] * 100.0 / (domainVol) << std::endl;
         pcout << "(main)   nCells (global) = " << nCells << ", pid: " << global::mpi().getRank();
         pcout << ", Volume = " << eqVolumes[iCell] << std::endl;

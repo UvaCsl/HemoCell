@@ -16,9 +16,9 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
     pluint particleEnvelopeWidth = maxEdgeLengthLU;
     pluint reductionParticleEnvelopeWidth = maxCellDiameterLU;
 
-    pcout << "(CellField3D) particle envelope [lu]: " << particleEnvelopeWidth << std::endl;
-    pcout << "(CellField3D) reduction particle envelope width [lu]: " << reductionParticleEnvelopeWidth << std::endl;
-    pcout << "(CellField3D) IBM kernel envelope width in every direction [lu]: " << kernelSize << std::endl;
+    pcout << "(CellField3D) " << identifier << "-> particle envelope [lu]: " << particleEnvelopeWidth << std::endl;
+    pcout << "(CellField3D) " << identifier << "-> reduction particle envelope width [lu]: " << reductionParticleEnvelopeWidth << std::endl;
+    pcout << "(CellField3D) " << identifier << "-> IBM kernel envelope width in every direction [lu]: " << kernelSize << std::endl;
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
             latticeManagement.getSparseBlockStructure(),
