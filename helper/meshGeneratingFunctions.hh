@@ -131,7 +131,8 @@ template<typename T>
 Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R) {
     Array<T,3> rbcPoint(point);
     T r2 = rbcPoint[0]*rbcPoint[0] + rbcPoint[1]*rbcPoint[1];
-    T C0 = 0.204, C2 = 2.002, C4 = -1.123;
+    T C0 = 0.02716, C2 = 2.0024, C4 = -1.123;
+    //T C0 = 0.02716, C2 = 2.0024, C4 = -1.123;
     T val = rbcPoint[2];
     plint sign = (T(0) < val) - (val < T(0));
     rbcPoint[0] *= R;
@@ -164,7 +165,8 @@ Array<T,3> mapMeshAsRBC(const Array<T,3> point, const Array<T,3> center, T R) {
     rbcPoint[0] = rbcPoint[0] > R ? R : rbcPoint[0];
     rbcPoint[1] = rbcPoint[1] > R ? R : rbcPoint[1];
     T r2 = rbcPoint[0]*rbcPoint[0] + rbcPoint[1]*rbcPoint[1];
-    T C0 = 0.204, C2 = 2.002, C4 = -1.123;
+    //T C0 = 0.02716, C2 = 2.0024, C4 = -1.123;
+    T C0 = 0.02716, C2 = 2.0024, C4 = -1.123;
     T val = rbcPoint[2];
     plint sign = (T(0) < val) - (val < T(0));
 //    rbcPoint[0] *= R;
