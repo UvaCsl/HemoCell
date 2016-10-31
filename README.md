@@ -1,14 +1,20 @@
-ficsion
+     _   _  ____  __  __  _____  ___  ____  __    __   
+    ( )_( )( ___)(  \/  )(  _  )/ __)( ___)(  )  (  )  
+     ) _ (  )__)  )    (  )(_)(( (__  )__)  )(__  )(__ 
+    (_) (_)(____)(_/\/\_)(_____)\___)(____)(____)(____)
+
+
+HemoCell (former ficsion)
 ==========
 
-`ficsion` is a framework for simulating suspensions of deformable cells, focusing on blood. It is based of the combined Immersed boundary-lattice Boltzmann method (IB-LBM) and is built on top of the open source `C++` lattice Boltzmann solver `palabos`.
+`HemoCell` is a framework for simulating suspensions of deformable cells, focusing on blood. It is based of the combined Immersed boundary-lattice Boltzmann method (IB-LBM) and is built on top of the open source `C++` lattice Boltzmann solver `palabos`.
 
-`ficsion` has been developed as a framework and not as a single monolithic application. The user/developer can choose the geometry and type of flow he/she will use, the type of cells (red blood cells, platelets, etc.), the model which will be applied to them and a variety of actions: from applying forces to a certain number of surface particles to letting platelets stick to the walls or between each other. In that sense, the already implemented files serve as examples where the user can take the modules and built his/her own application, like lego-bricks.
+`HemoCell` has been developed as a framework and not as a single monolithic application. The user/developer can choose the geometry and type of flow he/she will use, the type of cells (red blood cells, platelets, etc.), the model which will be applied to them and a variety of actions: from applying forces to a certain number of surface particles to letting platelets stick to the walls or between each other. In that sense, the already implemented files serve as examples where the user can take the modules and built his/her own application, like lego-bricks.
 
 Building Prerequisites
 ====================
 
-`ficsion` is built on top of `palabos` and it should be possible to be build on any GNU/Linux system with at least the GNU GCC compiler suite and OpenMPI. Make and SCONS or CMake are used as the build automation tools. GCC versions 4.7.2 and 4.8.1 as well as OpenMPI version 1.4.5 and 1.6.5 have been successfully tested. It is very likely that other compilers will also produce favorable results. `ficsion` has been successfully built and ran on x64 and IBM BG/Q systems. 
+`HemoCell` is built on top of `palabos` and it should be possible to be build on any GNU/Linux system with at least the GNU GCC compiler suite and OpenMPI. Make and SCONS or CMake are used as the build automation tools. GCC versions 4.7.2 and 4.8.1 as well as OpenMPI version 1.4.5 and 1.6.5 have been successfully tested. It is very likely that other compilers will also produce favorable results. `HemoCell` has been successfully built and ran on x64 and IBM BG/Q systems. 
 
 Remarks:
 
@@ -16,7 +22,7 @@ Remarks:
 - The code should work on Windows as well, however, this is completeley untested. The suggested compiler suite is `TDM-gcc`.
 
 ## `palabos`
-The working version of `palabos` is [v1.5r1](http://www.palabos.org/images/palabos_releases/palabos-v1.5r1.zip). Some modification of the source code is necessary for seamless and performant interoperation with `ficsion`; see know-issues. Earlier versions of `palabos` are no longer supported due to strong dependency on the sparse particle classes present from this version.
+The working version of `palabos` is [v1.5r1](http://www.palabos.org/images/palabos_releases/palabos-v1.5r1.zip). Some modification of the source code is necessary for seamless and performant interoperation with `HemoCell`; see know-issues. Earlier versions of `palabos` are no longer supported due to strong dependency on the sparse particle classes present from this version.
 
 ## HDF5
 `ficsion` uses the `hdf5` library with the high-level extensions for the output and post-processing of the results. Debian packages `h5utils hdf5-tools libhdf5-serial-dev` are known to work for the I/O.
@@ -63,11 +69,11 @@ Note: The CMake files are also suitable to use in IDE-s supporting cmake project
 Building Instructions for SCons (deprecated)
 ============================================
 
-Ensure that the above packages are downloaded and installed on your system. Assuming that ficsion lies in the directory `${FICSION}`,  e.g. 
+Ensure that the above packages are downloaded and installed on your system. Assuming that HemoCell lies in the directory `${HEMOCELL}`,  e.g. 
 ```shell
-export FICSION=${HOME}/ficsion
+export HEMOCELL=${HOME}/hemocell
 ```
-download `palabos` v1.5r1 from its [website](http://www.palabos.org/images/palabos_releases/palabos-v1.5r1.zip) and extract it to the path `${FICSION}/palabos`. Now navigate into one of the `case` subfolders and build the corresponding case:
+download `palabos` v1.5r1 from its [website](http://www.palabos.org/images/palabos_releases/palabos-v1.5r1.zip) and extract it to the path `${HEMOCELL}/palabos`. Now navigate into one of the `case` subfolders and build the corresponding case:
 
 ``` shell
 make
@@ -77,4 +83,4 @@ and it will produce an executable with the name of the case. Should you want to 
 Documentation
 =============
 
-Program Documentation can be found in `${FICSION}/doc/ficsion_UserGuide.pdf` which provides detailed information on the `ficsion` configuration.
+Program Documentation can be found in `${HEMOCELL}/doc/ficsion_UserGuide.pdf` which provides detailed information on the `HemoCell` configuration.
