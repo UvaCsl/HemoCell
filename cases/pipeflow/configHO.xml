@@ -18,14 +18,14 @@
 
 <parameters>
     <Re> 0.1 </Re>   <!--Reynolds number-->
-    <warmup> 2000 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <warmup> 1000 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
 </parameters>
 
 
 <ibm>
     <ibmKernel> 2 </ibmKernel> <!-- ibmKernel: Phi2 [2], Phi3 [3], Phi4 [4],  Phi4c [5] -->
-    <ibmScheme> 1 </ibmScheme> <!-- ibmScheme: Euler [0], Adams-Bashforth [1] -->
+    <ibmScheme> 0 </ibmScheme> <!-- ibmScheme: Euler [0], Adams-Bashforth [1] -->
     <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5] -->
     <cellPath> ./lib/RBC.stl </cellPath>
     <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
@@ -37,18 +37,18 @@
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
     <dx> 1e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <dt> 5.0e-8 </dt> <!-- Time step for the LBM system -->
+    <dt> 5e-8 </dt> <!-- Time step for the LBM system -->
     <timeStepSize> -1 </timeStepSize> <!-- Update particle material model after how many fluid time steps. Set it to -1 to enable adaptive time steps. [Integer] -->
-    <maxTimeStepSize> 20 </maxTimeStepSize> <!-- Maximum allowed time-step size if adaptive steps are enabled. -->
-    <minForce>5e-5</minForce>
-    <maxForce>5e-4</maxForce>
+    <maxTimeStepSize> 10 </maxTimeStepSize> <!-- Maximum allowed time-step size if adaptive steps are enabled. -->
+    <minForce>5e-4</minForce>
+    <maxForce>1e-3</maxForce>
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
     <refDirN> 32 </refDirN>  <!-- Number of numerical cell in the reference direction -->
 </domain>
 
 <sim>
-    <tmax> 300000 </tmax> <!-- total number of iterations -->
-    <tmeas> 1000 </tmeas> <!-- interval after which data is written (NOTE: tmeas % timeStepSize must be == 0!) --> 
+    <tmax> 1000000 </tmax> <!-- total number of iterations -->
+    <tmeas> 2000 </tmeas> <!-- interval after which data is written --> 
     <hematocrit> 40 </hematocrit> <!-- Hematocrit  > -->
     <particlePosFile> cells.pos </particlePosFile>
 </sim>
