@@ -291,7 +291,13 @@ def createXDMF(fnameString, processorStrings):
 
 
 if __name__ == '__main__':
-        dirname = './hdf5/'
+        try:
+            if os.environ["ABSPATH"] == "1":
+                dirname = os.path.abspath('./hdf5/') + '/'
+            else:
+                dirname = './hdf5/'
+        except:
+            dirname = './hdf5/'
 	try:
 		identifier = sys.argv[1]
 		print identifier
