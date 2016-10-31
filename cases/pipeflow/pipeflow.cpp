@@ -458,8 +458,10 @@ int main(int argc, char *argv[]) {
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, -1, numVerticesPerCell);
 
-    pluint lastCellUpdateSince = 0;
-    T fMax = 0; 
+    pluint lastCellUpdateSince = 0; // Counts when we need to advance the material model
+    T fMax = 0;  // maximal force encountered
+    plint lastTSChange =0;  // Counts time since last iteration when we changed time-scale separation
+
     
     global::timer("mainLoop").start();
     for (plint iter = initIter; iter < tmax + 1; iter++) {
@@ -513,6 +515,8 @@ int main(int argc, char *argv[]) {
         if ( ((iter+1) % probeMaterialForce) == 0 ) {  // Do not change inner time-step at the first iteration!
 
         	fMax = 0;
+            lastTSChange++;
+
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
                 T fMax_field = cellFields[iCell]->getMaximumForce_Global();
                 if( fMax_field > fMax)
@@ -528,12 +532,15 @@ int main(int argc, char *argv[]) {
                     pcout << "(main) Large force encountered (" << fMax << "): reducing inner time-step to: " << cellStep << endl;
 
                     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-                        cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);                    
+                        cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);   
+
+                    lastTSChange = 0; // We just adjusted now
+
                 }
             }
 
-            // If forces are small, try to increase time-step
-            if(fMax < minForce)
+            // If forces are small nad we did not increase recently: try to increase time-step
+            if((fMax < minForce) && (lastTSChange > 2))
             {
                 if(cellStep < maxInnerIterSize){  // Don't go over maxInnerIterSize even if forces are small!
                     cellStep++;
@@ -542,6 +549,8 @@ int main(int argc, char *argv[]) {
 
                     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
                         cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);
+
+                    lastTSChange = 0;
                 }
             }
         }
