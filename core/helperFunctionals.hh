@@ -36,6 +36,31 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
         for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
             for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
 
+                Array<T,3> vertex = Array<T,3>(iX,iY,iZ) + relativePosition;
+
+                if(fluid.get(iX, iY, iZ).getDynamics().isBoundary())
+                {
+                    for (int px = -1; px <= +1; ++px){ for (int py = -1; py <= +1; ++py) { for (int pz = -1; pz <= +1; ++pz) {
+                        
+                        if(abs(px)+abs(py)+abs(pz) != 1) 
+                            continue;
+
+                        try{
+                            if(!fluid.get(px+iX, py+iY, pz+iZ).getDynamics().isBoundary()) {
+                                cellId +=1;
+                                boundaryParticleField.addParticle(
+                                    boundaryParticleField.getBoundingBox(),
+                                    new SurfaceParticle3D<T,Descriptor>(Array<T,3>(0.5+(px*0.5), 0.5+(py*0.5), 0.5+(pz*0.5)) + vertex, cellId, 0));
+                            }
+                        }
+                        catch (int e) { }
+
+                    } } }
+
+                }
+
+                // -------------------
+                /*
                 // Put boundary particles in the first fluid layer
                 //  rational: deny particles from the outer shear layer -> glycocalyx
 
@@ -62,7 +87,10 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
                                 new SurfaceParticle3D<T,Descriptor>(Array<T,3>(0.5, 0.5, 0.5) + vertex, cellId, 0));
                     }
                 }
-                
+                */
+
+                // ----------------------
+
                 /*
                 if (fluid.get(iX, iY, iZ).getDynamics().isBoundary() and (not neighboringBoundariesEverywhere) ) {
             		
