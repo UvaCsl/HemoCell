@@ -11,8 +11,8 @@ void FcnCheckpoint<T, Descriptor>::init(XMLreader & xmlr) {
     XMLwriter& xmlMultiBlock = xmlw["Checkpoint"];
     xmlMultiBlock["General"]["Iteration"].set(0);
 
-    if (!isCheckpointed) { copyXMLreader2XMLwriter(xmlr["ficsion"], xmlw["Checkpoint"]); }
-    else { copyXMLreader2XMLwriter(xmlr["Checkpoint"]["ficsion"], xmlw["Checkpoint"]); }
+    if (!isCheckpointed) { copyXMLreader2XMLwriter(xmlr["hemocell"], xmlw["Checkpoint"]); }
+    else { copyXMLreader2XMLwriter(xmlr["Checkpoint"]["hemocell"], xmlw["Checkpoint"]); }
 }
 
 
