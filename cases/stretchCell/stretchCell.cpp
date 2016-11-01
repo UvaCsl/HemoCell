@@ -1,4 +1,4 @@
-#include "ficsion.h"
+#include "hemocell.h"
 #include "cellStretching3D.hh"
 
 typedef double T;
@@ -8,6 +8,8 @@ typedef Array<T,3> Velocity;
 
 int main(int argc, char* argv[])
 {
+    printHeader();
+    
     if(argc < 2)
     {
         cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
@@ -15,7 +17,7 @@ int main(int argc, char* argv[])
     }
 
     plbInit(&argc, &argv);
-    global::timer("ficsion_init").start();
+    global::timer("hemocell_init").start();
 
     global::directories().setOutputDir("./tmp/");
     global::directories().setLogOutDir("./log/");
@@ -65,10 +67,10 @@ int main(int argc, char* argv[])
     // Check if it is a fresh start or a checkpointed run
     std::string firstField = (*(documentXML.getChildren(
             documentXML.getFirstId())[0])).getName(); // VERY COMPLICATED! Hope I could find sth easier!
-    if (firstField == "ficsion") { checkpointed = 0; }
+    if (firstField == "hemocell") { checkpointed = 0; }
     else { checkpointed = 1; }
 
-    XMLreaderProxy document = checkpointed ? documentXML["Checkpoint"]["ficsion"] : documentXML["ficsion"];
+    XMLreaderProxy document = checkpointed ? documentXML["Checkpoint"]["hemocell"] : documentXML["hemocell"];
    
     document["parameters"]["stretchForce"].read(stretchForce_p); // In picoNewton
     stretchForce_p *= 1e-12;  // Change to Newton (SI)

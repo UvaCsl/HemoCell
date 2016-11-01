@@ -1,8 +1,11 @@
-#ifndef FICSION_H
-#define FICSION_H
+#ifndef HEMOCELL_H
+#define HEMOCELL_H
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+
+#define VERSION_MAJOR 0
+#define VERSION_MINOR 1
 
 using namespace plb;
 
@@ -74,4 +77,4 @@ using namespace std;
 
 
 
-#endif // FICSION_H
+#endif // HEMOCELL_H

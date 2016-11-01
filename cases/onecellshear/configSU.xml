@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<ficsion>
+<hemocell>
 <caseId> caseId </caseId>
 <cellModel>
     <rbcModel> 0 </rbcModel> <!--ShapeMemory: [0], MeanValues: [1], Intermediate Model [2] -->
@@ -48,4 +48,4 @@
     <tmeas> 5000 </tmeas> <!-- interval after which data is written --> 
 </sim>
 
-</ficsion>
+</hemocell>

@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<ficsion>
+<hemocell>
 <cellModel>
     <materialModel> 0 </materialModel> <!-- Original Suresh: [0], Sures w. new bending: [1], Higher order model: [2] -->
     <shellDensity> 1.0 </shellDensity>
@@ -53,4 +53,4 @@
     <particlePosFile> cells.pos </particlePosFile>
 </sim>
 
-</ficsion>
+</hemocell>

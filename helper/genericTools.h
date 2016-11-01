@@ -16,4 +16,14 @@ void checkParameterSanity(T nu_lbm, T u_max_lbm)
         pcout << "(WARNING!!!) lattice velocity [" << u_max_lbm << "] is too high [>0.1]!" << std::endl;
 }
 
+void printHeader()
+{
+	pcout << " _   _   ____   __  __   _____   ___   ____   __     __ " << endl;
+	pcout << "( )_( ) ( ___) (  \\/  ) (  _  ) / __) ( ___) (  )   (  )" << endl;
+	pcout << " ) _ (   )__)   )    (   )(_)( ( (__   )__)   )(__   )(__ " << endl;
+	pcout << "(_) (_) (____) (_/\\/\\_) (_____) \\___) (____) (____) (____) " << endl;
+	pcout << "                         v." << VERSION_MAJOR << "." << VERSION_MINOR << endl;
+	pcout << endl;
+}
+
 #endif // GENERIC_TOOLS_H
