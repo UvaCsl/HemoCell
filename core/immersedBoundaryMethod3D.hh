@@ -130,7 +130,7 @@ void interpolationCoefficientsPhi1 (
                     if(not block.get(cellPositionInDomain.x, cellPositionInDomain.y, cellPositionInDomain.z).getDynamics().isBoundary()) {
                     	T dist = sqrt(phi[0] * phi[0] + phi[1] * phi[1] + phi[2] * phi[2]);
                     	//T dist = phi[0] * phi[0] + phi[1] * phi[1] + phi[2] * phi[2];
-                        if(dist == 0.0) dist = 0.000001;
+                        if(dist < 0.01) dist = 0.01; // Dont let the 27 point kernel turn into a completely single point one
                         dist = 1.0 / dist;
                     	
                         totWeight += dist;
