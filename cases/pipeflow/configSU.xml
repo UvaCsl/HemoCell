@@ -24,7 +24,7 @@
 
 
 <ibm>
-    <ibmKernel> 2 </ibmKernel> <!-- ibmKernel: Phi2 [2], Phi3 [3], Phi4 [4],  Phi4c [5] -->
+    <ibmKernel> 1 </ibmKernel> <!-- ibmKernel: Phi1 [1], Phi2 [2], Phi3 [3], Phi4 [4],  Phi4c [5] -->
     <ibmScheme> 0 </ibmScheme> <!-- ibmScheme: Euler [0], Adams-Bashforth [1] -->
     <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5] -->
     <cellPath> ./lib/RBC.stl </cellPath>

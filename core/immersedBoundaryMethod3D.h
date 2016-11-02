@@ -43,30 +43,35 @@ T phi4 (T x) ;
 template<typename T>
 T phi4c (T x) ;
 
-template<typename T>
+template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficients (
-        AtomicBlock3D const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize,
         plint ibmKernel=2);
 
-template<typename T>
+template<typename T, template<typename U> class Descriptor>
+void interpolationCoefficientsPhi1 (
+        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
+
+template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi2 (
-        AtomicBlock3D const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
 
-template<typename T>
+template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi3 (
-        AtomicBlock3D const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
 
-template<typename T>
+template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi4 (
-        AtomicBlock3D const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
 
-template<typename T>
+template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi4c (
-        AtomicBlock3D const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
 
 /*

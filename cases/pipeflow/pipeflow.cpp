@@ -111,8 +111,6 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
 
 int main(int argc, char *argv[]) {
 
-    printHeader();
-
 	if(argc < 2)
 	{
 		cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
@@ -120,6 +118,8 @@ int main(int argc, char *argv[]) {
 	}
 
     plbInit(&argc, &argv);
+
+    printHeader();
 
     global::timer("hemocell_init").start();
 

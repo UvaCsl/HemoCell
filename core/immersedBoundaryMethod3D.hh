@@ -77,18 +77,21 @@ T phi4c (T x) {
         return 0.0;
 }
 
-template<typename T>
+template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficients (
-        AtomicBlock3D const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize,
         plint ibmKernel) {
     /*
+     * ibmKernel == 1, Phi1
      * ibmKernel == 2, Phi2 ! Default
      * ibmKernel == 3, Phi3
      * ibmKernel == 4, Phi4
      * ibmKernel == 5, Phi4c
      */
-    if (ibmKernel == 2) {
+    if (ibmKernel == 1) {
+    	interpolationCoefficientsPhi1(block, position, cellPos, weights, kernelSize);
+    } else if (ibmKernel == 2) {
         interpolationCoefficientsPhi2(block, position, cellPos, weights, kernelSize);
     } else if (ibmKernel == 3) {
         interpolationCoefficientsPhi3(block, position, cellPos, weights, kernelSize);
@@ -101,10 +104,51 @@ void interpolationCoefficients (
     }
 }
 
+template<typename T, template<typename U> class Descriptor>
+void interpolationCoefficientsPhi1 (
+        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
+{
+    cellPos.clear();
+    weights.clear();
 
-template<typename T>
+    T totWeight = 0;
+    plint x0=-1, x1=2;
+    //plint x0=-kernelSize, x1=kernelSize+1;
+    Box3D boundingBox(block.getBoundingBox());
+    for (int dx = x0; dx < x1; ++dx) {
+        for (int dy = x0; dy < x1; ++dy) {
+            for (int dz = x0; dz < x1; ++dz) {
+                Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
+                Dot3D cellPositionInDomain = cellPosition - block.getLocation(); // Convert cell position to local coordinates.
+                if (contained(cellPositionInDomain,boundingBox)) {
+                    T phi[3];
+                    phi[0] = (position[0] - 0.5 - (T)cellPosition.x);
+                    phi[1] = (position[1] - 0.5 - (T)cellPosition.y);
+                    phi[2] = (position[2] - 0.5 - (T)cellPosition.z);
+
+                    if(not block.get(cellPositionInDomain.x, cellPositionInDomain.y, cellPositionInDomain.z).getDynamics().isBoundary()) {
+                    	T dist = sqrt(phi[0] * phi[0] + phi[1] * phi[1] + phi[2] * phi[2]);
+                    	//T dist = phi[0] * phi[0] + phi[1] * phi[1] + phi[2] * phi[2];
+                        if(dist == 0.0) dist = 0.000001;
+                        dist = 1.0 / dist;
+                    	
+                        totWeight += dist;
+                        weights.push_back(dist);
+                        cellPos.push_back(cellPositionInDomain);
+                    }
+                }
+            }
+        }
+    }
+
+    for(pluint j = 0; j < weights.size(); j++)
+    	weights[j] /= totWeight;
+}
+
+template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi2 (
-        AtomicBlock3D const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
 {
     cellPos.clear();
@@ -137,9 +181,9 @@ void interpolationCoefficientsPhi2 (
 }
 
 
-template<typename T>
+template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi3 (
-        AtomicBlock3D const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
 {
     cellPos.clear();
@@ -170,9 +214,9 @@ void interpolationCoefficientsPhi3 (
 }
 
 
-template<typename T>
+template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi4 (
-        AtomicBlock3D const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
 {
     cellPos.clear();
@@ -202,9 +246,9 @@ void interpolationCoefficientsPhi4 (
     }
 }
 
-template<typename T>
+template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi4c (
-        AtomicBlock3D const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
 {
     cellPos.clear();
