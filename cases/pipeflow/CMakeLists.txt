@@ -5,16 +5,16 @@
 SET(PROJECT_NAME pipeflow)
 SET(PROJECT_SRC "pipeflow.cpp")
 
-# Ficsion location relative to CMakelists.txt
-SET(FICSION_BASE_DIR "./../../")
-get_filename_component(FICSION_BASE_DIR "${FICSION_BASE_DIR}" ABSOLUTE)
-SET(FICSION_DIR "${FICSION_BASE_DIR}/build/ficsion")
-SET(PALABOS_BASE_DIR "${FICSION_BASE_DIR}/palabos")
-SET(PALABOS_DIR "${FICSION_BASE_DIR}/build/palabos")
+# HemoCell location relative to CMakelists.txt
+SET(HEMOCELL_BASE_DIR "./../../")
+get_filename_component(HEMOCELL_BASE_DIR "${HEMOCELL_BASE_DIR}" ABSOLUTE)
+SET(HEMOCELL_DIR "${HEMOCELL_BASE_DIR}/build/hemocell")
+SET(PALABOS_BASE_DIR "${HEMOCELL_BASE_DIR}/palabos")
+SET(PALABOS_DIR "${HEMOCELL_BASE_DIR}/build/palabos")
 
 
-MESSAGE( STATUS "FICSION_BASE_DIR:         " ${FICSION_BASE_DIR} )
-MESSAGE( STATUS "FICSION_DIR:         " ${FICSION_DIR} )
+MESSAGE( STATUS "HEMOCELL_BASE_DIR:         " ${HEMOCELL_BASE_DIR} )
+MESSAGE( STATUS "HEMOCELL_DIR:         " ${HEMOCELL_DIR} )
 MESSAGE( STATUS "PALABOS_BASE_DIR:         " ${PALABOS_BASE_DIR} )
 MESSAGE( STATUS "PALABOS_DIR:         " ${PALABOS_DIR} )
 
@@ -48,7 +48,7 @@ ENDIF (NOT CMAKE_CXX_FLAGS)
 
 #=======================================
 IF(NEEDTXML)
-  FIND_PACKAGE(TinyXML REQUIRED HINTS ${FICSION_BASE_DIR}/cmake )
+  FIND_PACKAGE(TinyXML REQUIRED HINTS ${HEMOCELL_BASE_DIR}/cmake )
   INCLUDE_DIRECTORIES(${TINYXML_INCLUDE_DIR})
 ENDIF(NEEDTXML)
 
@@ -81,21 +81,21 @@ ENDIF(ENABLE_MPI)
 SET(DEFAULT ON CACHE INTERNAL "Default value for enabled by default options")
 OPTION(ENABLE_MPI "Enable MPI" ${DEFAULT})
 
-INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/)
-INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/helper)
-INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/core)
-INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/models)
-INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/external)
-INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/IO)
-INCLUDE_DIRECTORIES(${FICSION_BASE_DIR}/extensions)
+INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/)
+INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/helper)
+INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/core)
+INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/models)
+INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/external)
+INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/IO)
+INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/extensions)
 INCLUDE_DIRECTORIES(${PALABOS_BASE_DIR}/src)
 
 LIST(APPEND SRC_FILES_SRC ${PROJECT_SRC})
 
 include(ExternalProject) 
-ExternalProject_Add("ficsion" PREFIX ${FICSION_DIR} 
-                              SOURCE_DIR ${FICSION_DIR}
-                              BINARY_DIR ${FICSION_DIR} 
+ExternalProject_Add("hemocell" PREFIX ${HEMOCELL_DIR} 
+                              SOURCE_DIR ${HEMOCELL_DIR}
+                              BINARY_DIR ${HEMOCELL_DIR} 
                               INSTALL_COMMAND "")
 ExternalProject_Add("palabos" PREFIX ${PALABOS_DIR} SOURCE_DIR ${PALABOS_DIR}
     BINARY_DIR ${PALABOS_DIR} INSTALL_COMMAND "")
@@ -103,8 +103,8 @@ ExternalProject_Add("palabos" PREFIX ${PALABOS_DIR} SOURCE_DIR ${PALABOS_DIR}
 
 #SET(CMAKE_EXE_LINKER_FLAGS "-static") !Good luck on finding statically linked mpi libraries, it should be possible though
 ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES_SRC})
-ADD_DEPENDENCIES(${PROJECT_NAME} "ficsion" "palabos")
-target_link_libraries(${PROJECT_NAME} ${FICSION_DIR}/libficsion.a)
+ADD_DEPENDENCIES(${PROJECT_NAME} "hemocell" "palabos")
+target_link_libraries(${PROJECT_NAME} ${HEMOCELL_DIR}/libhemocell.a)
 target_link_libraries(${PROJECT_NAME} ${PALABOS_DIR}/libpalabos.a)
 IF(NEEDHDF5)
   # This is needed since stupid Lisa has a bug in 3.5.1

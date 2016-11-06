@@ -2,14 +2,14 @@
 # Build settings. Set these.
 
 # Project setup
-SET(PROJECT_NAME ficsion)
+SET(PROJECT_NAME hemocell)
 
-# Ficsion location relative to CMakelists.txt
-SET(FICSION_BASE_DIR "./../..")
+# HemoCell location relative to CMakelists.txt
+SET(HEMOCELL_BASE_DIR "./../..")
 
 # Palabos setup
-SET(PALABOS_DIR "${FICSION_BASE_DIR}/build/palabos")
-SET(PALABOS_BASE_DIR "${FICSION_BASE_DIR}/palabos")
+SET(PALABOS_DIR "${HEMOCELL_BASE_DIR}/build/palabos")
+SET(PALABOS_BASE_DIR "${HEMOCELL_BASE_DIR}/palabos")
 
 # Build settings
 SET(ENABLE_MPI 1)
@@ -22,7 +22,7 @@ SET(NEEDHDF5 1)  # For highlevel HDF5 routines
 SET(NEEDTXML 0)  # Set to 1 to enable external TinyXml libs (Palabos 1.5.0+)
 
 MESSAGE( STATUS "PALABOS_DIR:         " ${PALABOS_DIR} )
-MESSAGE( STATUS "FICSION_BASE_DIR:         " ${FICSION_BASE_DIR} )
+MESSAGE( STATUS "HEMOCELL_BASE_DIR:         " ${HEMOCELL_BASE_DIR} )
 
 ### Workaround for building with external cmake (e.g., when using an IDE with built in cmake):
 # Access system wide libraries in ubuntu 14.04 in case one uses an external cmake ditribution (e.g., CLion)
@@ -48,7 +48,7 @@ FIND_PACKAGE(MPI REQUIRED)
 INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
 
 IF(NEEDTXML)
-  FIND_PACKAGE(TinyXML REQUIRED HINTS ${FICSION_BASE_DIR}/cmake )
+  FIND_PACKAGE(TinyXML REQUIRED HINTS ${HEMOCELL_BASE_DIR}/cmake )
   INCLUDE_DIRECTORIES(${TINYXML_INCLUDE_DIR})
 ENDIF(NEEDTXML)
 
@@ -121,19 +121,19 @@ IF(APPLE)
     ADD_DEFINITIONS("-DPLB_MAC_OS_X")
 ENDIF(APPLE)
 
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR})
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/IO)
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/core)
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/extensions)
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/external)
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/helper)
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/models)
-FILE(GLOB SRC_FILES "${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/IO/*.cpp"
-                     "${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/core/*.cpp"
-                     "${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/extensions/*.cpp"
-                     "${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/external/*.cpp"
-                     "${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/helper/*.cpp"
-                     "${CMAKE_SOURCE_DIR}/${FICSION_BASE_DIR}/models/*.cpp")
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/IO)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/core)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/extensions)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/external)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/helper)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/models)
+FILE(GLOB SRC_FILES "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/IO/*.cpp"
+                     "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/core/*.cpp"
+                     "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/extensions/*.cpp"
+                     "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/external/*.cpp"
+                     "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/helper/*.cpp"
+                     "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/models/*.cpp")
 include(ExternalProject) 
 ExternalProject_Add("palabos" PREFIX ${PALABOS_DIR} SOURCE_DIR ${PALABOS_DIR}
     BINARY_DIR ${PALABOS_DIR} INSTALL_COMMAND "")
