@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
 
     hematocrit /= 100; // put it between [0;1]
     
-    // Check if an adaptive run is requested
+    // ---------------------------- Check if an adaptive run is requested ---------------------------------
     if (cellStep == -1){
         isAdaptive = true;
         cellStep = 1;
@@ -251,24 +251,32 @@ int main(int argc, char *argv[]) {
     ny = domainBox.getNy();
     nz = domainBox.getNz();
 
-    nu_lbm = nu_p * dt / (dx*dx); 
-    u_lbm_max = Re * nu_lbm / ny;
+    // ---------------------------- Calc. LBM parameters -------------------------------------------------
 
-    tau = 3.0 * nu_lbm + 0.5;
+    if(dt < 0.0) { // e.g. == -1, set tau = 1 and calc. dt
+    	tau = 1.0;
+    	nu_lbm = 1./3. * (tau - 0.5);
+    	dt = nu_lbm / nu_p * (dx * dx);
+    }
+    else{  // set dt directly and calculate corresponding tau
+    	nu_lbm = nu_p * dt / (dx*dx); 
+    	tau = 3.0 * nu_lbm + 0.5;
+    }
+
+	u_lbm_max = Re * nu_lbm / ny;  // Approximate max. occuring numerical velocity from Re. >0.1 should never occure    
     dm = rho_p * (dx * dx * dx);
     dNewton = (dm * dx / (dt * dt));
 	//kBT = kBT_p / ( dNewton * dx );
     //shearRate = shearRate_p * dt;
     //stretchForceScalar = stretchForce_p / dNewton;
 
+
     pcout << "(main) dx = " << dx << ", " <<
     "dt = " << dt << ", " <<
     "cell_dt = " << cellStep * dt << ", " <<
     "dm = " << dm << ", " <<
-    "dN = " << dNewton <<
-    std::endl;
-
-    pcout << "(main) tau = " << tau << " Re = " << Re << " u_lb_max = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
+    "dN = " << dNewton << std::endl;
+    pcout << "(main) tau = " << tau << " Re = " << Re << " u_lb_max(based on Re) = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
     pcout << "(main) Re corresponds to u_max = " << (Re * nu_p)/(ny*dx) << " [m/s]" << endl;
 
     // Do a general check for suspiciosly off values.
