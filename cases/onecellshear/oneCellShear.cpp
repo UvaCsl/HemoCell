@@ -126,10 +126,19 @@ int main(int argc, char* argv[])
     ny = (int)(ly / dx);
     nz = (int)(lz / dx);
 
-    nu_lbm = nu_p * dt / (dx*dx); 
-    u_lbm_max = Re * nu_lbm / nx;
+// ---------------------------- Calc. LBM parameters -------------------------------------------------
 
-    tau = 3.0 * nu_lbm + 0.5;
+    if(dt < 0.0) { // e.g. == -1, set tau = 1 and calc. dt
+        tau = 1.0;
+        nu_lbm = 1./3. * (tau - 0.5);
+        dt = nu_lbm / nu_p * (dx * dx);
+    }
+    else{  // set dt directly and calculate corresponding tau
+        nu_lbm = nu_p * dt / (dx*dx); 
+        tau = 3.0 * nu_lbm + 0.5;
+    }
+
+    u_lbm_max = Re * nu_lbm / nx;
     dm = rho_p * (dx * dx * dx);
     dNewton = (dm * dx / (dt * dt));
     //kBT = kBT_p / ( dNewton * dx );
@@ -145,7 +154,7 @@ int main(int argc, char* argv[])
         //"kT = " << kBT <<
         std::endl;
 
-    pcout << "(main) tau = " << tau << " Re = " << Re << " u_lb = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
+    pcout << "(main) tau = " << tau << " Re = " << Re << " u_lb_max(based on Re) = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
     pcout << "(main) Re corresponds to u_max = " << (Re * nu_p)/(ny*dx) << " [m/s]" << endl;
 
     checkParameterSanity(nu_lbm, u_lbm_max);

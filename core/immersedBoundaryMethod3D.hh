@@ -35,7 +35,7 @@ const double pi = 4.*atan(1.);
 namespace plb {
 
 template<typename T>
-T phi2 (T x) {
+inline T phi2 (T x) {
     x = fabs(x);
     if (x <= 1.0) {
         return (1.0 - x);
@@ -45,7 +45,7 @@ T phi2 (T x) {
 }
 
 template<typename T>
-T phi3 (T x) {
+inline T phi3 (T x) {
     x = fabs(x);
     if (x <= 0.5) {
         return 1.0/3.0 * (1 + sqrt(1 - 3*x*x));
@@ -57,7 +57,7 @@ T phi3 (T x) {
 }
 
 template<typename T>
-T phi4 (T x) {
+inline T phi4 (T x) {
     x = fabs(x);
     if (x <= 1.0) {
         return 0.125 * (3 - 2*x + sqrt(1 + 4*x - 4*x*x));
@@ -69,7 +69,7 @@ T phi4 (T x) {
 }
 
 template<typename T>
-T phi4c (T x) {
+inline T phi4c (T x) {
     x = fabs(x);
     if (x<=2)
         return 0.25*(1 + cos(pi*x*0.5));
@@ -99,8 +99,8 @@ void interpolationCoefficients (
         interpolationCoefficientsPhi4(block, position, cellPos, weights, kernelSize);
     } else if (ibmKernel == 5) {
         interpolationCoefficientsPhi4c(block, position, cellPos, weights, kernelSize);
-    } else {
-        interpolationCoefficientsPhi4(block, position, cellPos, weights, kernelSize);
+    } else { // Default
+        interpolationCoefficientsPhi2(block, position, cellPos, weights, kernelSize);
     }
 }
 
