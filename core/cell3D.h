@@ -76,11 +76,11 @@ public:
     std::vector<plint> const& getScalarCcrIds() { make_ccrId_List(); return scalar_ccrIds; }
     std::vector<plint> const& getVectorCcrIds() { make_ccrId_List(); return vector_ccrIds; }
     std::vector<plint> const& getTensorCcrIds() { make_ccrId_List(); return tensor_ccrIds; }
+    std::map<plint, T > quantities1D; // quantities1D[CCR_VOLUME] = CELL_VOLUME
 private:
     plint cellId, particlesPerCellId;
     std::map<plint, plint > numParts_ccrId; // quantities1D[CCR_VOLUME] = CELL_VOLUME
 
-    std::map<plint, T > quantities1D; // quantities1D[CCR_VOLUME] = CELL_VOLUME
     std::map<plint, Array<T,3> > quantities3D;
     std::map<plint, std::vector<T> > quantitiesND;
     std::vector<plint> scalar_ccrIds, vector_ccrIds, tensor_ccrIds;

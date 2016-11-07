@@ -41,6 +41,7 @@ public:
     CellParticle3D(plint tag_, Array<T,3> const& position);
 
     virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
+    virtual void velocityToParticle(NTensorField3D<T>& velocityField, T scaling=1.) { }
     virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
     virtual void fluidToParticle(BlockLattice3D<T,Descriptor>& fluid, T scaling=1.) { }
     /// Implements Euler integration with velocity alone.
