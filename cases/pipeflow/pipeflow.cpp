@@ -440,7 +440,8 @@ int main(int argc, char *argv[]) {
 
     
     // ------------------------- Add particle-wall repulsion force -------------
-    // F > 0 means repulsion. F < 0 is used for adhesion,
+    // F > 0 means repulsion. F < 0 is used for adhesion
+    // This represents glycocalyx layer as well
 
     //T k_int = 0.00025, DeltaX=1.0, R=1.0, k=1.5;
     // was 1.5e-12
@@ -450,7 +451,7 @@ int main(int argc, char *argv[]) {
 
     // ------------------------- Add particle-particle repulsion force ---------
 
-    k_int = 1.0e-13 / dNewton; DeltaX=0.75e-6 / dx; T R2=0.75e-6 / dx; k=1.5;
+    k_int = 4.0e-21 / dNewton; DeltaX=0.75e-6 / dx; T R2=0.75e-6 / dx; k=1.5;
     if (DeltaX > 2.0) DeltaX = 2.0; if (R2 > 2.0) R2 = 2.0;
     PowerLawForce<T> repPP(k_int, DeltaX, R2, k);
 
