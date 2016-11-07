@@ -257,6 +257,7 @@ int main(int argc, char *argv[]) {
     	tau = 1.0;
     	nu_lbm = 1./3. * (tau - 0.5);
     	dt = nu_lbm / nu_p * (dx * dx);
+        pcout << "(main) Tau is set to unity, and dt is derived from that! (For the fluid, this is the most numerically stable settings.)" << endl;
     }
     else{  // set dt directly and calculate corresponding tau
     	nu_lbm = nu_p * dt / (dx*dx); 

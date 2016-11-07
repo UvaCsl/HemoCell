@@ -18,7 +18,7 @@
 
 <parameters>
     <Re> 0.1 </Re>   <!--Reynolds number-->
-    <warmup> 1000 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <warmup> 1500 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
 </parameters>
 
@@ -36,14 +36,14 @@
     <geometry>tube.stl</geometry>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
-    <dx> 1e-6 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dx> 3.333333e-7 </dx> <!--Physical length of 1 Lattice Unit -->
     <dt> -5e-8 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
     <timeStepSize> -1 </timeStepSize> <!-- Update particle material model after how many fluid time steps. Set it to -1 to enable adaptive time steps. [Integer] -->
     <maxTimeStepSize> 10 </maxTimeStepSize> <!-- Maximum allowed time-step size if adaptive steps are enabled. -->
     <minForce>5e-4</minForce>
     <maxForce>1e-3</maxForce>
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
-    <refDirN> 32 </refDirN>  <!-- Number of numerical cell in the reference direction -->
+    <refDirN> 96 </refDirN>  <!-- Number of numerical cell in the reference direction -->
 </domain>
 
 <sim>
