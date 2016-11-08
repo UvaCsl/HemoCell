@@ -56,9 +56,9 @@ BlockDomain::DomainT CopyFromNeighbor<Tp>::appliesTo() const {
 
 void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint refDirLength, plint refDir,
                           VoxelizedDomain3D<T> *&voxelizedDomain, MultiScalarField3D<int> *&flagMatrix) {
-    plint extraLayer = 0;  	// Make the bounding box larger; for visualization purposes
-    						//   only. For the simulation, it is OK to have extraLayer=0.
-    plint blockSize = -1; 	// Zero means: no sparse representation.
+    plint extraLayer = 0;   // Make the bounding box larger; for visualization purposes
+                            //   only. For the simulation, it is OK to have extraLayer=0.
+    plint blockSize = -1;   // Zero means: no sparse representation.
     plint borderWidth = 1;  // Because the Guo boundary condition acts in a one-cell layer.
     
     // Requirement: margin>=borderWidth.
@@ -111,11 +111,11 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
 
 int main(int argc, char *argv[]) {
 
-	if(argc < 2)
-	{
-		cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
-		return -1;
-	}
+    if(argc < 2)
+    {
+        cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
+        return -1;
+    }
 
     plbInit(&argc, &argv);
 
@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
     bool checkpointed = 0;
     bool isAdaptive = false;
     plint maxInnerIterSize = 1;
-    const plint probeMaterialForce = 10;
+    plint probeMaterialForce = 10;
     T minForce, maxForce;
     plint initIter = 0;
     T Re;
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
 
-    pcout << "(main) reading " <<  paramXmlFileName <<"..." << std::endl;
+    pcout << "(main) reading " <<  paramXmlFileName << "..." << std::endl;
 
     XMLreader documentXML(paramXmlFileName);
 
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
     XMLreaderProxy document = checkpointed ? documentXML["Checkpoint"]["hemocell"] : documentXML["hemocell"];
 
     // ---- Particle material properties
-  	document["parameters"]["Re"].read(Re);
+    document["parameters"]["Re"].read(Re);
     document["parameters"]["warmup"].read(warmup);
     document["parameters"]["maxPackIter"].read(maxPackIter);
 
@@ -227,18 +227,18 @@ int main(int argc, char *argv[]) {
     hematocrit /= 100; // put it between [0;1]
     
     // ---------------------------- Check if an adaptive run is requested ---------------------------------
-    if (cellStep == -1){
+    if (cellStep < 1){
         isAdaptive = true;
+        pcout << "(main) Adaptive membrane model integration is enabled!" << endl;
+        maxInnerIterSize = abs(cellStep);
         cellStep = 1;
-        pcout << "(main) Adaptive membrane model time-steps are enabled!" << endl;
-        document["domain"]["maxTimeStepSize"].read(maxInnerIterSize);
         document["domain"]["minForce"].read(minForce);
         document["domain"]["maxForce"].read(maxForce);
     }
 
     // ---------------------------- Read in geometry (STL) ------------------------------------------------
 
-	pcout << "(main) reading geometry stl..." << std::endl;
+    pcout << "(main) reading geometry stl..." << std::endl;
 
     plint extendedEnvelopeWidth = 2;  // Depends on the requirements of the ibmKernel. 4 or even 2 might be enough (also depends on dx)
 
@@ -254,20 +254,20 @@ int main(int argc, char *argv[]) {
     // ---------------------------- Calc. LBM parameters -------------------------------------------------
 
     if(dt < 0.0) { // e.g. == -1, set tau = 1 and calc. dt
-    	tau = 1.0;
-    	nu_lbm = 1./3. * (tau - 0.5);
-    	dt = nu_lbm / nu_p * (dx * dx);
+        tau = 1.0;
+        nu_lbm = 1./3. * (tau - 0.5);
+        dt = nu_lbm / nu_p * (dx * dx);
         pcout << "(main) Tau is set to unity, and dt is derived from that! (For the fluid, this is the most numerically stable settings.)" << endl;
     }
     else{  // set dt directly and calculate corresponding tau
-    	nu_lbm = nu_p * dt / (dx*dx); 
-    	tau = 3.0 * nu_lbm + 0.5;
+        nu_lbm = nu_p * dt / (dx*dx); 
+        tau = 3.0 * nu_lbm + 0.5;
     }
 
-	u_lbm_max = Re * nu_lbm / ny;  // Approximate max. occuring numerical velocity from Re. >0.1 should never occure    
+    u_lbm_max = Re * nu_lbm / ny;  // Approximate max. occuring numerical velocity from Re. >0.1 should never occure    
     dm = rho_p * (dx * dx * dx);
     dNewton = (dm * dx / (dt * dt));
-	//kBT = kBT_p / ( dNewton * dx );
+    //kBT = kBT_p / ( dNewton * dx );
     //shearRate = shearRate_p * dt;
     //stretchForceScalar = stretchForce_p / dNewton;
 
@@ -332,18 +332,18 @@ int main(int argc, char *argv[]) {
     std::vector<T> eqVolumes;
 
     plint kernelSize = ceil(1e-6 / dx);
-   	if(ibmKernel == 2){
-   		kernelSize = 1;
-   		pcout << "(main)   WARNING: kernel " << ibmKernel << " is a nearest-neighbour kernel, it will not be scaled!" << endl;
-   	}
+    if(ibmKernel == 2){
+        kernelSize = 1;
+        pcout << "(main)   WARNING: kernel " << ibmKernel << " is a nearest-neighbour kernel, it will not be scaled!" << endl;
+    }
     
     // ----------------------- Init RBCs ---------------------------------
 
     pcout << "(main)   init RBC structures..."  << std::endl;
     Array<T,3> eulerAngles(0., 0., 0.);
 
-    plint shape = 1; 	// shape: Sphere[0], RBC from sphere[1], Cell(defined)[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5]
-	std::string cellPath = " "; // If particle is loaded from stl file.
+    plint shape = 1;    // shape: Sphere[0], RBC from sphere[1], Cell(defined)[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5]
+    std::string cellPath = " "; // If particle is loaded from stl file.
 
     TriangleBoundary3D<T> RBCCells = constructMeshElement(shape, radius / dx, minNumOfTriangles, dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> meshElement = RBCCells.getMesh();
@@ -361,17 +361,19 @@ int main(int argc, char *argv[]) {
     
     // ----------------------- Init platelets ----------------------------
     // TODO - Collect material properties, don't just derive them from RBC
+    // TODO - We can use a numerically cheaper model
 
     pcout << "(main)   init PLT structures..."  << std::endl;
     T pltRadius = 1.15e-6 / dx;
     T aspectRatio = 1.0 / 2.3;//(2 * pltRadius);
-    TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, (plint)ceil(minNumOfTriangles/3.0), dx, cellPath, eulerAngles, aspectRatio);
+    TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, (plint)ceil(minNumOfTriangles/9.0), dx, cellPath, eulerAngles, aspectRatio);
     TriangularSurfaceMesh<T> pltMeshElement = PLTCells.getMesh();
     eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
     cellModels.push_back(
-            new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend * 5, k_stretch, k_WLC * 5.0,
+            new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend * 10, k_stretch, k_WLC * 10.0,
                                                   k_elastic, k_volume, k_surface, eta_m,
-                                                  persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement, materialModel));
+                                                  persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement, materialModel)
+        );
     cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.0025 * hematocrit,
                                                         cellModels[cellModels.size() - 1], ibmKernel, "PLT", kernelSize));
 
@@ -446,7 +448,7 @@ int main(int argc, char *argv[]) {
 
     //T k_int = 0.00025, DeltaX=1.0, R=1.0, k=1.5;
     // was 1.5e-12
-    T k_int = 2.0e-12 / dNewton, DeltaX=1.5e-6 / dx, R=1.5e-6 / dx, k=1.5;	// Scale force with simulation units
+    T k_int = 1.0e-12 / dNewton, DeltaX=1.5e-6 / dx, R=1.5e-6 / dx, k=1.5;  // Scale force with simulation units
     if (DeltaX > 2.0) DeltaX = 2.0; if (R > 2.0) R = 2.0;  // Should not have effect further than 2 lu -> might go out of domain envelope
     PowerLawForce<T> repWP(k_int, DeltaX, R, k);
 
@@ -457,7 +459,7 @@ int main(int argc, char *argv[]) {
     PowerLawForce<T> repPP(k_int, DeltaX, R2, k);
 
 
-	// ------------------------- Warming up fluid domain ------------------    
+    // ------------------------- Warming up fluid domain ------------------    
 
     if (initIter == 0)
     {
@@ -466,14 +468,15 @@ int main(int argc, char *argv[]) {
     }
 
 
-	// ------------------------ Starting main loop --------------------------
-	pcout << std::endl << "(main) starting simulation at " << initIter << " of tmax=" << tmax << " iterations (" << tmax * dt << " s)..." << std::endl;
+    // ------------------------ Starting main loop --------------------------
+    pcout << std::endl << "(main) starting simulation at " << initIter << " of tmax=" << tmax << " iterations (" << tmax * dt << " s)..." << std::endl;
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, -1, numVerticesPerCell);
 
     pluint lastCellUpdateSince = 0; // Counts when we need to advance the material model
     T fMax = 0;  // maximal force encountered
-    plint lastTSChange =0;  // Counts time since last iteration when we changed time-scale separation
+    plint lastTSChange = 0;  // Counts time since last iteration when we changed time-scale separation
+    plint adaptiveScaleStep = ceil(maxInnerIterSize/10.);
 
     
     global::timer("mainLoop").start();
@@ -527,7 +530,7 @@ int main(int argc, char *argv[]) {
         if(isAdaptive)
         if ( ((iter+1) % probeMaterialForce) == 0 ) {  // Do not change inner time-step at the first iteration!
 
-        	fMax = 0;
+            fMax = 0;
             lastTSChange++;
 
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
@@ -540,7 +543,7 @@ int main(int argc, char *argv[]) {
             if(fMax > maxForce) 
             {
                 if(cellStep > 1){
-                    cellStep--;
+                    cellStep-=adaptiveScaleStep; if(cellStep < 1) cellStep = 1;
 
                     pcout << "(main) Large force encountered (" << fMax << "): reducing inner time-step to: " << cellStep << endl;
 
@@ -556,7 +559,7 @@ int main(int argc, char *argv[]) {
             if((fMax < minForce) && (lastTSChange > 2))
             {
                 if(cellStep < maxInnerIterSize){  // Don't go over maxInnerIterSize even if forces are small!
-                    cellStep++;
+                    cellStep+=adaptiveScaleStep; if(cellStep > maxInnerIterSize) cellStep = maxInnerIterSize;
 
                     pcout << "(main) Forces are small (" << fMax << "): increasing inner time-step to: " << cellStep << endl;
 
@@ -566,6 +569,11 @@ int main(int argc, char *argv[]) {
                     lastTSChange = 0;
                 }
             }
+
+            if (cellStep > 10)		// For large integration step there is no need to update force regularly
+            	probeMaterialForce = cellStep;
+            else
+            	probeMaterialForce = 10;
         }
 
         // #6# Output
@@ -589,7 +597,7 @@ int main(int argc, char *argv[]) {
             }
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter * cellStep);
-            pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" << "; Time / it = " << dtIteration / tmeas << "; Last largest force = " << fMax << std::endl;
+            pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" << "; Time / it = " << dtIteration / tmeas << "; Last largest force (if adaptive) = " << fMax << std::endl;
         } else {
             if(stepCells) // Sync only if we changed anything
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
