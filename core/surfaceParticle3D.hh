@@ -100,8 +100,8 @@ void SurfaceParticle3D<T,Descriptor>::advance() {
      */
 		if(scheme ==0) {
             Array<T,3> dx = v * dt;
-        	this->getPosition() += dx;         // TODO: why do we have to step the periodiuc boundary condition particle as well?
-        	pbcPosition += dx;
+        	this->getPosition() += dx;         
+        	pbcPosition += dx;                     // TODO: why do we have to step the periodiuc boundary condition particle as well?
         }
         else if (scheme == 1)
         {
@@ -114,7 +114,7 @@ void SurfaceParticle3D<T,Descriptor>::advance() {
 
 
         // Reset current velocity
-        v.resetToZero();
+        // v.resetToZero();
 
         // Get the current processor (TODO: why here?)
         processor = this->getMpiProcessor();
