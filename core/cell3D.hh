@@ -198,8 +198,11 @@ template<typename T, template<typename U> class Descriptor>
 Cell3D<T, Descriptor>::Cell3D(TriangularSurfaceMesh<T> & mesh_, plint cellId_) :
     CellQuantityHolder<T>(), mesh(mesh_), cellId(cellId_) {
     setMesh();
-    for (pluint i = 0; i < allReductions.size(); i++) {
-      this->quantities1D[allReductions[i]] = *(new T()); 
+    for (plint i = 0; i < allReductions.size(); i++) {
+        plint d = getReductionDimension(allReductions[i]);
+        if (d == 1) {
+            this->quantities1D[allReductions[i]] = *(new T()); 
+        }
     }
 };
 
@@ -207,8 +210,11 @@ template<typename T, template<typename U> class Descriptor>
 Cell3D<T, Descriptor>::Cell3D(Cell3D<T,Descriptor> const& rhs) :
     CellQuantityHolder<T>(rhs), mesh(rhs.mesh), cellId(rhs.cellId) {
     setMesh();
-    for (pluint i = 0; i < allReductions.size(); i++) {
-      this->quantities1D[allReductions[i]] = *(new T()); 
+    for (plint i = 0; i < allReductions.size(); i++) {
+        plint d = getReductionDimension(allReductions[i]);
+        if (d == 1) {
+            this->quantities1D[allReductions[i]] = *(new T()); 
+        }
     }
 };
 
