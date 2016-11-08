@@ -1,8 +1,8 @@
 #include "hemocell.h"
 
 typedef double T;
-#define DESCRIPTOR descriptors::ForcedMRTD3Q19Descriptor
-
+//#define DESCRIPTOR descriptors::ForcedMRTD3Q19Descriptor    //Use this whenever tau != 1
+#define DESCRIPTOR descriptors::ForcedMRTD3Q19Descriptor    // Using this with tau == 1 will increase numeric stability
 
 
 // ----------------------- Copy from neighbour ------------------------------------
@@ -144,6 +144,7 @@ int main(int argc, char *argv[]) {
     bool checkpointed = 0;
     bool isAdaptive = false;
     plint maxInnerIterSize = 1;
+    plint minInnerIterSize = 1;
     plint probeMaterialForce = 10;
     T minForce, maxForce;
     plint initIter = 0;
@@ -229,11 +230,13 @@ int main(int argc, char *argv[]) {
     // ---------------------------- Check if an adaptive run is requested ---------------------------------
     if (cellStep < 1){
         isAdaptive = true;
-        pcout << "(main) Adaptive membrane model integration is enabled!" << endl;
-        maxInnerIterSize = abs(cellStep);
-        cellStep = 1;
+        maxInnerIterSize = abs(cellStep);        
         document["domain"]["minForce"].read(minForce);
         document["domain"]["maxForce"].read(maxForce);
+        document["domain"]["minTimeStepSize"].read(minInnerIterSize);
+        cellStep = minInnerIterSize;
+
+        pcout << "(main) Adaptive membrane model integration is enabled! Membrane integration step-size in [" << minInnerIterSize << "; " << maxInnerIterSize << "]." << endl;
     }
 
     // ---------------------------- Read in geometry (STL) ------------------------------------------------
@@ -296,7 +299,8 @@ int main(int argc, char *argv[]) {
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
             defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-            new GuoExternalForceMRTdynamics<T, DESCRIPTOR>(1.0/tau));
+            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/tau));
+            //new GuoExternalForceMRTdynamics<T, DESCRIPTOR>(1.0/tau)); // Use with MRT dynamics!
 
 
     defineDynamics(lattice, *flagMatrix, lattice.getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
@@ -370,7 +374,7 @@ int main(int argc, char *argv[]) {
     TriangularSurfaceMesh<T> pltMeshElement = PLTCells.getMesh();
     eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
     cellModels.push_back(
-            new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend * 10, k_stretch, k_WLC * 10.0,
+            new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend * 5.0, k_stretch, k_WLC * 5.0,
                                                   k_elastic, k_volume, k_surface, eta_m,
                                                   persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement, materialModel)
         );
@@ -493,8 +497,8 @@ int main(int argc, char *argv[]) {
         // #####1##### Membrane Model + Repulsion of surfaces
         if(stepCells) {
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                cellFields[iCell]->applyConstitutiveModel();
-                cellFields[iCell]->applyWallCellForce(repWP, R, boundaryParticleField3D);
+                cellFields[iCell]->applyConstitutiveModel();    // This zeroes forces at the beginning, always calculate this first
+                cellFields[iCell]->applyWallCellForce(repWP, R, boundaryParticleField3D); // Repulsion from the wall
                 cellFields[iCell]->applyCellCellForce(repPP, R2); // Repulsion between the same cell types
             }
 
@@ -542,8 +546,8 @@ int main(int argc, char *argv[]) {
             // If force is too large decrease time step
             if(fMax > maxForce) 
             {
-                if(cellStep > 1){
-                    cellStep-=adaptiveScaleStep; if(cellStep < 1) cellStep = 1;
+                if(cellStep > minInnerIterSize){
+                    cellStep-=adaptiveScaleStep; if(cellStep < minInnerIterSize) cellStep = minInnerIterSize;
 
                     pcout << "(main) Large force encountered (" << fMax << "): reducing inner time-step to: " << cellStep << endl;
 
