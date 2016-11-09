@@ -188,7 +188,7 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
 
     // Change positions to match dx (it is in um originally)
     T posRatio = 1e-6/dx;
-
+    T wallWidth = 1.5; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
         cout << "(ReadPositionsBloodCellField3D) " ;
@@ -206,7 +206,7 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
             //meshPositionToOrigin(meshCopy);
             
             positionCellInParticleField(*(particleFields[iCF]), fluid,
-                                         meshCopy, positions[iCF][c]*posRatio, cellIds[iCF][c]);
+                                         meshCopy, positions[iCF][c]*posRatio+wallWidth, cellIds[iCF][c]); 
 			delete meshCopy;
         }
 
