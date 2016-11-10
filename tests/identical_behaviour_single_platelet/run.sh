@@ -7,10 +7,10 @@ make -j8 > /dev/null 2>/dev/null
 make -j8 > /dev/null 2>/dev/null
 cd ../
 echo "======Setting up tests========="
-rm -r case1 case2
+rm -r case1 case2 2> /dev/null
 mkdir -p case1 case2
-cp cells.pos1 case1/cells.pos
-cp cells.pos2 case2/cells.pos
+cp cells.pos case1/cells.pos
+cp cells.pos case2/cells.pos
 cp configHO.xml case1/
 cp configHO.xml case2/
 cp pipeflow case1/
