@@ -1,0 +1,56 @@
+<?xml version="1.0" ?>
+<hemocell>
+<cellModel>
+    <materialModel> 2 </materialModel> <!-- Original Suresh: [0], Sures w. new bending: [1], Higher order model: [2] -->
+    <shellDensity> 1.0 </shellDensity>
+    <kBend> 100 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
+    <kVolume> 800.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <kSurface> 0.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
+    <kShear> 80.0e0 </kShear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
+    <etaM> 0.0e-6 </etaM> <!-- NOT WORKING ATM --> <!--membrane viscosity (in N s/m (Pa s m) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
+    <kWLC> 1.0 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
+    <eqLengthRatio> 2.2 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
+    <kRep> 1.0e0 </kRep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
+    <kElastic> 0.0e0 </kElastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->
+    <kRest> 0.0e-4 </kRest> <!--Resting modulus (in N/m) [0.0, 1.0e-4]-->
+    <kStretch> 0.0e-10</kStretch> <!--spring modulus (in N) [0.0]-->
+</cellModel>
+
+<parameters>
+    <Re> 0.1 </Re>   <!--Reynolds number-->
+    <warmup> 1500 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
+</parameters>
+
+
+<ibm>
+    <ibmKernel> 2 </ibmKernel> <!-- ibmKernel: Phi1 [1], Phi2 [2] - Default, Phi3 [3], Phi4 [4],  Phi4c [5] -->
+    <ibmScheme> 0 </ibmScheme> <!-- ibmScheme: Euler [0], Adams-Bashforth [1] -->
+    <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5] -->
+    <cellPath> ./lib/RBC.stl </cellPath>
+    <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
+    <minNumOfTriangles> 600 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
+</ibm>
+
+<domain>
+    <geometry>tube.stl</geometry>
+    <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
+    <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
+    <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dt> -5e-8 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
+    <timeStepSize> 40 </timeStepSize> <!-- Update particle material model after how many fluid time steps. Set it to a negative value to enable adaptive time steps, where the abs() will sign the max step size. [Integer] -->
+    <minTimeStepSize> 4 </minTimeStepSize> <!-- Dont allow membrane integration steps size to go below this. -->
+    <minForce>1e-3</minForce> <!-- Point of increase for integration steps -->
+    <maxForce>2e-3</maxForce> <!-- Point of decrease for integration steps -->
+    <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
+    <refDirN> 32 </refDirN>  <!-- Number of numerical cell in the reference direction -->
+</domain>
+
+<sim>
+    <tmax> 10000 </tmax> <!-- total number of iterations -->
+    <tmeas>  1000 </tmeas> <!-- interval after which data is written --> 
+    <hematocrit> 40 </hematocrit> <!-- Hematocrit  > -->
+    <particlePosFile> cells.pos </particlePosFile>
+</sim>
+
+</hemocell>
