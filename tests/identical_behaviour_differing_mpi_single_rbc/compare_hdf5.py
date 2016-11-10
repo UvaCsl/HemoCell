@@ -7,6 +7,9 @@ files20.sort()
 files21 = glob.glob("case2/tmp/hdf5/RBC.*.001.h5")
 files21.sort()
 
+for i in range(0,len(files1) - len(files21)):
+    files21 = [files20[i]] + files21
+
 for i in range(0,len(files1)):
     f1 = h5py.File(files1[i], "r")
     f20= h5py.File(files20[i], "r")
