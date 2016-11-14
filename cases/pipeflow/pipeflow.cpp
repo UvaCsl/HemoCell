@@ -529,13 +529,11 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        // Probe maximal force every 10th step if adaptive steps are enabled
+        // Probe maximal force every 10th step
         // TODO: Also probe for maximum velocity: maxVel * cellStep < 1
-        if(isAdaptive)
         if ( ((iter+1) % probeMaterialForce) == 0 ) {  // Do not change inner time-step at the first iteration!
 
             fMax = 0;
-            lastTSChange++;
 
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
                 T fMax_field = cellFields[iCell]->getMaximumForce_Global();
@@ -543,45 +541,52 @@ int main(int argc, char *argv[]) {
                     fMax = fMax_field;                
             }
 
-            // If force is too large decrease time step
-            if(fMax > maxForce) 
-            {
-                if(cellStep > minInnerIterSize){
-                    cellStep-=adaptiveScaleStep; if(cellStep < minInnerIterSize) cellStep = minInnerIterSize;
+            if(isAdaptive) {
+                lastTSChange++;
 
-                    pcout << "(main) Large force encountered (" << fMax << "): reducing inner time-step to: " << cellStep << endl;
+                // If force is too large decrease time step
+                if(fMax > maxForce) 
+                {
+                    if(cellStep > minInnerIterSize){
+                        cellStep-=adaptiveScaleStep; if(cellStep < minInnerIterSize) cellStep = minInnerIterSize;
 
-                    for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-                        cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);   
+                        pcout << "(main) Large force encountered (" << fMax << "): reducing inner time-step to: " << cellStep << endl;
 
-                    lastTSChange = 0; // We just adjusted now
+                        for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
+                            cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);   
 
+                        lastTSChange = 0; // We just adjusted now
+                    }
                 }
-            }
 
-            // If forces are small nad we did not increase recently: try to increase time-step
-            if((fMax < minForce) && (lastTSChange > 2))
-            {
-                if(cellStep < maxInnerIterSize){  // Don't go over maxInnerIterSize even if forces are small!
-                    cellStep+=adaptiveScaleStep; if(cellStep > maxInnerIterSize) cellStep = maxInnerIterSize;
+                // If forces are small and we did not increase recently: try to increase time-step
+                if((fMax < minForce) && (lastTSChange > 2))
+                {
+                    if(cellStep < maxInnerIterSize){  // Don't go over maxInnerIterSize even if forces are small!
+                        cellStep+=adaptiveScaleStep; if(cellStep > maxInnerIterSize) cellStep = maxInnerIterSize;
 
-                    pcout << "(main) Forces are small (" << fMax << "): increasing inner time-step to: " << cellStep << endl;
+                        pcout << "(main) Forces are small (" << fMax << "): increasing inner time-step to: " << cellStep << endl;
 
-                    for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-                        cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);
+                        for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
+                            cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);
 
-                    lastTSChange = 0;
+                        lastTSChange = 0;
+                    }
                 }
-            }
 
-            if (cellStep > 10)		// For large integration step there is no need to update force regularly
-            	probeMaterialForce = cellStep;
-            else
-            	probeMaterialForce = 10;
+                if (cellStep > 10)      // For large integration step there is no need to probe forces regularly
+                    probeMaterialForce = cellStep;
+                else
+                    probeMaterialForce = 10;
+            }
         }
 
         // #6# Output
         if ((iter % tmeas) == 0) {
+            for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+                cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);
+            }
+            
             SyncRequirements everyCCR(allReductions);
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
                 cellFields[iCell]->synchronizeCellQuantities(everyCCR);
@@ -601,7 +606,8 @@ int main(int argc, char *argv[]) {
             }
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter * cellStep);
-            pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" << "; Time / it = " << dtIteration / tmeas << "; Last largest force (if adaptive) = " << fMax << std::endl;
+            pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" << "; Wall time / iter. = " << dtIteration / tmeas << " s; Last largest force [lm*lu/lt^2] = " << fMax << std::endl;
+            
         } else {
             if(stepCells) // Sync only if we changed anything
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
