@@ -2,7 +2,7 @@
 
 typedef double T;
 //#define DESCRIPTOR descriptors::ForcedMRTD3Q19Descriptor    //Use this whenever tau != 1
-#define DESCRIPTOR descriptors::ForcedMRTD3Q19Descriptor    // Using this with tau == 1 will increase numeric stability
+#define DESCRIPTOR descriptors::ForcedD3Q19Descriptor    // Using this with tau == 1 will increase numeric stability
 
 
 // ----------------------- Copy from neighbour ------------------------------------
@@ -583,10 +583,6 @@ int main(int argc, char *argv[]) {
 
         // #6# Output
         if ((iter % tmeas) == 0) {
-            for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);
-            }
-            
             SyncRequirements everyCCR(allReductions);
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
                 cellFields[iCell]->synchronizeCellQuantities(everyCCR);
