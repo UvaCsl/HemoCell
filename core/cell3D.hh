@@ -266,11 +266,13 @@ void Cell3D<T, Descriptor>::push_back(Particle3D<T,Descriptor>* particle3D, bool
 	if (particleIsInBulk) {
 	    iVertexToParticle3D[vertexId] = particle3D;
 	    verticesInBulk.insert(vertexId);
-	} else {
-	    // For some reason Palabos deletes particles that are in the envelope after some functionals;
-	    iVertexToParticle3D[vertexId] = particle3D->clone();
-	    particlesToDelete.push_back(iVertexToParticle3D[vertexId]);
-	}
+	} 
+    /*else {  // TODO: check this, and check what happens with particles in particlesToDelete
+		cout << " IT happened!" << endl;
+	    // // For some reason Palabos deletes particles that are in the envelope after some functionals;
+	    // iVertexToParticle3D[vertexId] = particle3D->clone();
+	    // particlesToDelete.push_back(iVertexToParticle3D[vertexId]);
+	}*/
 }
 
 template<typename T, template<typename U> class Descriptor>

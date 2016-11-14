@@ -273,7 +273,7 @@ void readPositionsBloodCellField3D(std::vector<CellField3D<T, Descriptor> *> &ce
             new ReadPositionsBloodCellField3D<T, Descriptor>(cellFields, dx, positionsFileName),
             cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg);
 
-    pcout << "Ready to start.." << std::endl;
+    //pcout << "Ready to start.." << std::endl;
 
     for (pluint icf = 0; icf < cellFields.size(); ++icf) {
         cellFields[icf]->advanceParticles();
