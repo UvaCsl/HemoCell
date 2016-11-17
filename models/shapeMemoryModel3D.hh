@@ -515,6 +515,15 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
 #endif
 
     }
+
+    /* ======================== Viscosity =======================
+        Highly experimental and theoretically wrong as it is. 
+        Stay tuned for a better solution!
+    */
+
+    for (pluint iV = 0; iV < vertices.size(); ++iV) {
+        castParticleToICP3D(cell->getParticle3D(vertices[iV]))->get_force()*=0.98; // 2% damping
+    }
 }
 
 template<typename T, template<typename U> class Descriptor>
