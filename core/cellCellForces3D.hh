@@ -186,7 +186,7 @@ void ComputeDifferentCellForces3D<T,Descriptor>::processGenericBlocks (
     plint dR = ceil(cutoffRadius);
 
     std::vector<Particle3D<T,Descriptor>*> currentParticles, neighboringParticles;
-    Box3D extendedDomain = particleField.getBoundingBox();
+    Box3D extendedDomain = particleField2.getBoundingBox();
 
     for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
         for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
