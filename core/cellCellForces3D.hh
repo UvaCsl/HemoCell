@@ -186,13 +186,23 @@ void ComputeDifferentCellForces3D<T,Descriptor>::processGenericBlocks (
     plint dR = ceil(cutoffRadius);
 
     std::vector<Particle3D<T,Descriptor>*> currentParticles, neighboringParticles;
+    Box3D extendedDomain = particleField.getBoundingBox();
+
     for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
         for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
             for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
                 currentParticles.clear(); neighboringParticles.clear();
 
                 Box3D currentBox(iX,iX,iY,iY,iZ,iZ);
-                Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
+
+                plint x0, x1, y0, y1, z0, z1;
+                x0 = max(extendedDomain.x0, iX-dR); x1 = min(extendedDomain.x1, iX+dR);
+                y0 = max(extendedDomain.y0, iY-dR); y1 = min(extendedDomain.y1, iY+dR);
+                z0 = max(extendedDomain.z0, iZ-dR); z1 = min(extendedDomain.z1, iZ+dR);
+
+                //Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
+                Box3D neighboringBoxes(x0, x1, y0, y1, z0, z1);
+                
                 particleField1.findParticles(currentBox, currentParticles);
                 if (currentParticles.size() == 0) { continue; }
                 particleField2.findParticles(neighboringBoxes, neighboringParticles);
@@ -220,6 +230,7 @@ ComputeDifferentCellForces3D<T,Descriptor>*
 template<typename T, template<typename U> class Descriptor>
 void ComputeDifferentCellForces3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
     isWritten[0] = true;  // Particle field.
+    isWritten[1] = true;
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -232,6 +243,7 @@ void ComputeDifferentCellForces3D<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::dynamicVariables; // Particle field.
+    modified[1] = modif::dynamicVariables;
 }
 
 
@@ -291,7 +303,7 @@ void ComputeWallCellForces3D<T,Descriptor>::processGenericBlocks (
     plint dR = ceil(cutoffRadius);
 
     std::vector<Particle3D<T,Descriptor>*> currentWallParticles, neighboringCellParticles;
-
+    Box3D extendedDomain = particleField.getBoundingBox();
     
     for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
         for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
@@ -299,7 +311,14 @@ void ComputeWallCellForces3D<T,Descriptor>::processGenericBlocks (
                 currentWallParticles.clear(); neighboringCellParticles.clear();
 
                 Box3D currentBox(iX,iX,iY,iY,iZ,iZ);
-                Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
+                plint x0, x1, y0, y1, z0, z1;
+                x0 = max(extendedDomain.x0, iX-dR); x1 = min(extendedDomain.x1, iX+dR);
+                y0 = max(extendedDomain.y0, iY-dR); y1 = min(extendedDomain.y1, iY+dR);
+                z0 = max(extendedDomain.z0, iZ-dR); z1 = min(extendedDomain.z1, iZ+dR);
+
+                Box3D neighboringBoxes(x0, x1, y0, y1, z0, z1);
+                //Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
+
                 wallParticleField.findParticles(currentBox, currentWallParticles);
                 if (currentWallParticles.size() == 0) { continue; }
                 particleField.findParticles(neighboringBoxes, neighboringCellParticles);

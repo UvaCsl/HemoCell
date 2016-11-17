@@ -57,6 +57,16 @@ public:
 	}
     void set_dt(T dt_) {dt = dt_;}
     T get_dt () { return dt; }
+    void syncParticleFieldEnvelope() {
+        applyProcessingFunctional ( // signal Palabos a need for particle sync in the envelope
+            new SyncParticleFieldEnvelope<T,Descriptor>(),
+            immersedParticles->getBoundingBox(), particleArg );
+    }
+    void syncParticleFieldBulk() {
+        applyProcessingFunctional ( // signal Palabos a need for particle sync in the envelope
+            new SyncParticleFieldBulk<T,Descriptor>(),
+            immersedParticles->getBoundingBox(), particleArg );
+    }
 public:
 	std::map<plint, Cell3D<T,Descriptor>* > & getCellIdToCell3D() { return cellIdToCell3D; };
 	MultiBlockLattice3D<T, Descriptor> & getFluidField3D() { return lattice; };

@@ -361,7 +361,7 @@ template<typename T, template<typename U> class Descriptor>
 inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D<T,Descriptor> * cell) {
     /* Some force calculations are according to KrugerThesis, Appendix C */
     T cellVolume = cell->getVolume();
-    //T cellSurface = cell->getSurface();
+    //T cellSurface = cell->getSurface();  // For global surface conservation. Not applicable in HO model
     if (not ((cellVolume > 0) )) {
         cout << "processor: " << cell->getMpiProcessor()
              << ", cellId: " << cell->get_cellId()
@@ -369,7 +369,7 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
              << ", surface: " << cell->getSurface()
              << ", cellNumVertices: " << cellNumVertices
              << endl;
-        PLB_PRECONDITION( (cellVolume > 0) and (cellSurface > 0) );
+        PLB_PRECONDITION( (cellVolume > 0) );
     }
     std::vector<plint> const& triangles = cell->getTriangles();
     std::vector<Array<plint,2> > const& edges = cell->getEdges();

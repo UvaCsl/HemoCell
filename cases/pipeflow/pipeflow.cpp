@@ -88,6 +88,7 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
                   voxelFlag::innerBorder, flagMatrix->getBoundingBox(), 1);
 
 
+	// Since the domain is closed, open up the two ends by copying the slice before it.
     Box3D domainBox = flagMatrix->getBoundingBox();
     plint nx = domainBox.getNx();
     plint ny = domainBox.getNy();
@@ -98,7 +99,7 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
 
     domain = Box3D(nx - 2, nx - 1, 0, ny - 1, 0, nz - 1);
     applyProcessingFunctional(new CopyFromNeighbor<int>(Array<plint, 3>(-1, 0, 0)), domain, *flagMatrix);
-
+	
 
     // Output result for debugging
     //VtkImageOutput3D<T> vtkOut("test.vtk");
@@ -243,7 +244,7 @@ int main(int argc, char *argv[]) {
 
     pcout << "(main) reading geometry stl..." << std::endl;
 
-    plint extendedEnvelopeWidth = 2;  // Depends on the requirements of the ibmKernel. 4 or even 2 might be enough (also depends on dx)
+    plint extendedEnvelopeWidth = 1;  // Depends on the requirements of the ibmKernel. 4 or even 2 might be enough (also depends on dx)
 
     plb::MultiScalarField3D<int> *flagMatrix = 0;
     VoxelizedDomain3D<T> *voxelizedDomain = 0;
@@ -499,14 +500,16 @@ int main(int argc, char *argv[]) {
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
                 cellFields[iCell]->applyConstitutiveModel();    // This zeroes forces at the beginning, always calculate this first
                 cellFields[iCell]->applyWallCellForce(repWP, R, boundaryParticleField3D); // Repulsion from the wall
-                cellFields[iCell]->applyCellCellForce(repPP, R2); // Repulsion between the same cell types
+                cellFields[iCell]->applyCellCellForce(repPP, R2); // Repulsion between the same cell types (most likely this is not needed -> happens automatically thx to IBM. It is useful to set lubrication forces.)
             }
 
             // Particle-particle force between RBCs and PLTs
-            cellFields[1]->applyDifferentCellForce(repPP, R2, &cellFields[0]->getParticleField3D());
+            //cellFields[1]->applyDifferentCellForce(repPP, R2, &cellFields[0]->getParticleField3D()); // TODO: it might not sync the argument cell field
             // TODO: extend this in case of other cellFields (e.g. WBC)
+	    	//cellFields[0]->syncParticleFieldBulk(); // in case we need a sync point
+	    	// TODO: Fix different cell collision and collect them into a single sync
         }
-        
+
         
         // #####2##### IBM Spreading
         cellFields[0]->setFluidExternalForce(poiseuilleForce);

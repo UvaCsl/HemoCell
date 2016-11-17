@@ -49,6 +49,40 @@ private:
 };
 
 
+
+template<typename T, template<typename U> class Descriptor>
+class SyncParticleFieldEnvelope : public BoxProcessingFunctional3D
+{
+public:
+    // Does nothing but signals Palabos, that the field has been modified
+    SyncParticleFieldEnvelope ();
+    /// Arguments: [0] Particle-field. [1] Lattice.
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    SyncParticleFieldEnvelope(SyncParticleFieldEnvelope<T,Descriptor> const& rhs);
+    virtual SyncParticleFieldEnvelope<T,Descriptor>* clone() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+};
+
+
+template<typename T, template<typename U> class Descriptor>
+class SyncParticleFieldBulk : public BoxProcessingFunctional3D
+{
+public:
+    // Does nothing but signals Palabos, that the field has been modified
+    SyncParticleFieldBulk ();
+    /// Arguments: [0] Particle-field. [1] Lattice.
+    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    SyncParticleFieldBulk(SyncParticleFieldBulk<T,Descriptor> const& rhs);
+    virtual SyncParticleFieldBulk<T,Descriptor>* clone() const;
+    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    void getModificationPattern(std::vector<bool>& isWritten) const;
+    virtual BlockDomain::DomainT appliesTo() const;
+};
+
+
+
 template<typename T, template<typename U> class Descriptor>
 class ForceToFluid3D : public BoxProcessingFunctional3D
 {

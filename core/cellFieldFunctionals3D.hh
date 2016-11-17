@@ -2,6 +2,94 @@
 #define CELL_FIELD_FUNCTIONALS_3D_HH
 #include "cellFieldFunctionals3D.h"
 
+/* ******** Sync Particle Field Bulk *********************************** */
+
+template<typename T, template<typename U> class Descriptor>
+SyncParticleFieldBulk<T,Descriptor>::SyncParticleFieldBulk () { }
+
+template<typename T, template<typename U> class Descriptor>
+SyncParticleFieldBulk<T,Descriptor>::SyncParticleFieldBulk (
+            SyncParticleFieldBulk<T,Descriptor> const& rhs)
+{ }
+
+
+template<typename T, template<typename U> class Descriptor>
+void SyncParticleFieldBulk<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+
+    PLB_PRECONDITION( blocks.size()==1 );
+    // This does nothing but signals towards palabos, that this field has been written, so needs sync
+}
+
+template<typename T, template<typename U> class Descriptor>
+SyncParticleFieldBulk<T,Descriptor>*
+    SyncParticleFieldBulk<T,Descriptor>::clone() const
+{
+    return new SyncParticleFieldBulk<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT SyncParticleFieldBulk<T,Descriptor>::appliesTo() const {
+    return BlockDomain::bulk;
+}
+
+template<typename T, template<typename U> class Descriptor>
+void SyncParticleFieldBulk<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::dynamicVariables; // Particle field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+void SyncParticleFieldBulk<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Particle field.
+}
+
+/* ******** Sync Particle Field Envelope *********************************** */
+
+template<typename T, template<typename U> class Descriptor>
+SyncParticleFieldEnvelope<T,Descriptor>::SyncParticleFieldEnvelope () { }
+
+template<typename T, template<typename U> class Descriptor>
+SyncParticleFieldEnvelope<T,Descriptor>::SyncParticleFieldEnvelope (
+            SyncParticleFieldEnvelope<T,Descriptor> const& rhs)
+{ }
+
+
+template<typename T, template<typename U> class Descriptor>
+void SyncParticleFieldEnvelope<T,Descriptor>::processGenericBlocks (
+        Box3D domain, std::vector<AtomicBlock3D*> blocks )
+{
+
+    PLB_PRECONDITION( blocks.size()==1 );
+    // This does nothing but signals towards palabos, that this field has been written, so needs sync
+}
+
+template<typename T, template<typename U> class Descriptor>
+SyncParticleFieldEnvelope<T,Descriptor>*
+    SyncParticleFieldEnvelope<T,Descriptor>::clone() const
+{
+    return new SyncParticleFieldEnvelope<T,Descriptor>(*this);
+}
+
+template<typename T, template<typename U> class Descriptor>
+BlockDomain::DomainT SyncParticleFieldEnvelope<T,Descriptor>::appliesTo() const {
+    return BlockDomain::envelope;
+}
+
+template<typename T, template<typename U> class Descriptor>
+void SyncParticleFieldEnvelope<T,Descriptor>::getTypeOfModification (
+        std::vector<modif::ModifT>& modified ) const
+{
+    modified[0] = modif::dynamicVariables; // Particle field.
+}
+
+template<typename T, template<typename U> class Descriptor>
+void SyncParticleFieldEnvelope<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+    isWritten[0] = true;  // Particle field.
+}
+
 
 /* ******** ComputeCellForce3D *********************************** */
 
@@ -87,7 +175,7 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
             dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
         PLB_ASSERT( particle );
         Array<T,3> position(particle->getPosition());
-        Array<T,3> velocity; velocity.resetToZero();
+        Array<T,3> velocity;
         std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
         std::vector<T>  & weights = particle->getIBMweights();
         if (cellPos.size() == 0) {
@@ -97,9 +185,8 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         particle->get_v().resetToZero();
         for (pluint iCell=0; iCell < weights.size(); ++iCell) {
             velocity.resetToZero();
-            Dot3D cellPosition = cellPos[iCell];
 //            Dot3D cellPosition = cellPos[iCell] + offset;
-            fluid.get(cellPosition.x, cellPosition.y, cellPosition.z).computeVelocity(velocity);
+            fluid.get(cellPos[iCell].x, cellPos[iCell].y, cellPos[iCell].z).computeVelocity(velocity);
             particle->get_v() += weights[iCell] * velocity;
         }
         //particle->get_vPrevious() = particle->get_v();
@@ -214,36 +301,36 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
 //    Dot3D offset = computeRelativeDisplacement(particleField, fluid); NOT USED
 
     std::vector<Particle3D<T,Descriptor>*> particles;
-    particleField.findParticles(domain, particles);
-    std::vector<Dot3D> cellPos;
+    
+    Box3D domainPlusEnvelope (
+        domain.x0 - kernelSize, domain.x1 + kernelSize,
+        domain.y0 - kernelSize, domain.y1 + kernelSize,
+        domain.z0 - kernelSize, domain.z1 + kernelSize );
+
+    //particleField.findParticles(domain, particles); // Get particles only from within the domain
+    particleField.findParticles(domainPlusEnvelope, particles); // Get envelope particles within kernelSize as well, as they might have effect on local bulk fluid
+
+    //std::vector<Dot3D> cellPos;
     Cell<T,Descriptor>* cell;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
         SurfaceParticle3D<T,Descriptor>* particle =
             dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
         PLB_ASSERT( particle );
-        Array<T,3> position(particle->getPosition());
+        Array<T,3> position(particle->getPosition());  // TODO: why do we make a copy of the coord?
         std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
         std::vector<T> & weights = particle->getIBMweights();
         interpolationCoefficients(fluid, position, cellPos, weights, kernelSize, ibmKernel);
 //        curateInterpolationCoefficients (fluid, cellPos, weights); // TODO: Check validity of curateInterpolationCoefficients
-        Array<T,3> elasticForce = particle->get_force();
+        Array<T,3> force = particle->get_force();
 
-        // // Check for too large force (TODO: meaning of "too large" should scale with dt, dx)
-        // static const T maxForce = 0.03;
-        // if(norm(elasticForce) > maxForce)
-        // {
-        //     elasticForce /= norm(elasticForce);
-        //     elasticForce *= maxForce;
-        // }
-
-        // pcout << "elastic force: (" << elasticForce[0] << ", "<< elasticForce[1] << ", "<< elasticForce[2] << ")\n";
         for (pluint iCell = 0; iCell < weights.size(); ++iCell) {
-            Dot3D cellPosition = cellPos[iCell];
-            cell = &fluid.get(cellPosition.x, cellPosition.y, cellPosition.z);
-            T *locForce = cell->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
-            for (pluint iA = 0; iA < 3; ++iA) {
-                locForce[iA] += (weights[iCell])*elasticForce[iA];
-            }
+            //if(particleField.isContained(cellPos[iCell].x, cellPos[iCell].y, cellPos[iCell].z, domain)) { // Check whether the forced lattice is local, or is in the envelope
+                cell = &fluid.get(cellPos[iCell].x, cellPos[iCell].y, cellPos[iCell].z);
+                T *locForce = cell->getExternal(Descriptor<T>::ExternalField::forceBeginsAt);
+                for (pluint iA = 0; iA < 3; ++iA) {
+                    locForce[iA] += (weights[iCell])*force[iA];
+                }
+            //}
         }
     }
 }
@@ -270,7 +357,7 @@ void ForceToFluid3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isW
 
 template<typename T, template<typename U> class Descriptor>
 BlockDomain::DomainT ForceToFluid3D<T,Descriptor>::appliesTo () const {
-    return BlockDomain::bulkAndEnvelope;
+    return BlockDomain::bulk; //bulk;// We dont want to sync the envelope, since we do not update in it. // TODO: Why is it so much slower to not to sync the envelope?
 }
 
 
