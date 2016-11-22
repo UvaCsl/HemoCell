@@ -7,9 +7,9 @@
 template<typename T, template<typename U> class Descriptor>
 CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, 
 	TriangularSurfaceMesh<T> & elementaryMesh_, T hematocrit_,
-	ConstitutiveModel<T, Descriptor> * cellModel_, plint ibmKernel_, std::string identifier_, plint kernelSize_) :
+	ConstitutiveModel<T, Descriptor> * cellModel_, std::string identifier_) :
 		lattice(lattice_), elementaryMesh(elementaryMesh_),
-		hematocrit(hematocrit_), cellModel(cellModel_), ibmKernel(ibmKernel_), kernelSize(kernelSize_), identifier(identifier_)
+		hematocrit(hematocrit_), cellModel(cellModel_), identifier(identifier_)
 {
     plint maxEdgeLengthLU = ceil(cellModel->getMaximumEdgeExtensionLengthLU());
     plint maxCellDiameterLU = ceil(cellModel->getMaxCellDiameterLU());
@@ -18,7 +18,7 @@ CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lat
 
     pcout << "(CellField3D) " << identifier << "-> particle envelope [lu]: " << particleEnvelopeWidth << std::endl;
     pcout << "(CellField3D) " << identifier << "-> reduction particle envelope width [lu]: " << reductionParticleEnvelopeWidth << std::endl;
-    pcout << "(CellField3D) " << identifier << "-> IBM kernel size in every direction [lu]: " << kernelSize << std::endl;
+
     MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
             latticeManagement.getSparseBlockStructure(),
@@ -142,7 +142,7 @@ void CellField3D<T, Descriptor>::spreadForceIBM() {
     global::timer("IBM").start();
     if (coupleWithIBM != 0) { // Force from the Cell dynamics to the Fluid
         applyProcessingFunctional ( // compute force applied on the fluid by the particles
-                new ForceToFluid3D<T,Descriptor> (kernelSize, ibmKernel),
+                new ForceToFluid3D<T,Descriptor> (),
                 immersedParticles->getBoundingBox(), particleLatticeArg );
     }
     global::timer("IBM").stop();
@@ -167,7 +167,7 @@ void CellField3D<T, Descriptor>::interpolateVelocityIBM() {
     global::timer("IBM").start();
     if (coupleWithIBM != 0) { // Force from the Cell dynamics to the Fluid
         applyProcessingFunctional ( // copy fluid velocity on particles
-            new FluidVelocityToImmersedCell3D<T,Descriptor>(kernelSize, ibmKernel),
+            new FluidVelocityToImmersedCell3D<T,Descriptor>(),
             immersedParticles->getBoundingBox(), particleLatticeArg);
     }
     global::timer("IBM").stop();

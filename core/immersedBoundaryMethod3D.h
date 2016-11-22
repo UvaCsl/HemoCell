@@ -22,33 +22,32 @@ T phi4c (T x) ;
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficients (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize,
-        plint ibmKernel=2);
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi1 (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi2 (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize);
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi3 (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi4 (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi4c (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize );
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 /*
  * In case one of the interpolating boundary nodes is a boundary,

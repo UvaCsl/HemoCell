@@ -15,7 +15,7 @@ template<typename T, template<typename U> class Descriptor>
 SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D(SurfaceParticle3D<T,Descriptor> const& rhs)
     : Particle3D<T,Descriptor>(rhs.getTag(), rhs.getPosition()), v(rhs.v), pbcPosition(rhs.pbcPosition), a(rhs.a),
       force(rhs.force), vPrevious(rhs.vPrevious), processor(rhs.processor), cellId(rhs.cellId), vertexId(rhs.vertexId),
-      scheme(rhs.scheme), bondTypeSaturation(rhs.bondTypeSaturation), dt(rhs.dt)
+      bondTypeSaturation(rhs.bondTypeSaturation), dt(rhs.dt)
 {
 }
 
@@ -36,7 +36,7 @@ SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D()
       E_repulsive(T()),
 #endif
       processor(getMpiProcessor()), cellId(this->getTag()), vertexId(0),
-      scheme(0), bondTypeSaturation()
+      bondTypeSaturation()
 { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -55,14 +55,14 @@ SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D (Array<T,3> const& position, 
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
 #endif
-      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_), scheme(0), bondTypeSaturation()
+      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_), bondTypeSaturation()
 { }
 
 template<typename T, template<typename U> class Descriptor>
 SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D (
         Array<T,3> const& position,
         Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
-        Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_, plint cellId_, plint vertexId_, plint scheme_, T dt_)
+        Array<T,3> const& a_, Array<T,3> const& force_,  Array<T,3> const& vPrevious_, plint cellId_, plint vertexId_, T dt_)
     : Particle3D<T,Descriptor>(cellId_, position),
       v(v_),
       pbcPosition(pbcPosition_),
@@ -77,7 +77,7 @@ SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D (
       E_other(T()),
       E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
 #endif
-      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_), scheme(scheme_), bondTypeSaturation()
+      processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_), bondTypeSaturation()
 { }
 
 
@@ -94,24 +94,21 @@ void SurfaceParticle3D<T,Descriptor>::advance() {
     //    vPrevious = v;
 
     /* scheme:
-     *  0: Euler
-     *  1: Adams-Bashforth
-     *  2: Velocity Verlet
+     *  1: Euler
+     *  2: Adams-Bashforth
      */
-		if(scheme ==0) {
+    #if HEMOCELL_MATERIAL_INTEGRATION == 1
             Array<T,3> dx = v * dt;
         	this->getPosition() += dx;         
-        	pbcPosition += dx;                     // TODO: why do we have to step the periodiuc boundary condition particle as well?
-        }
-        else if (scheme == 1)
-        {
+        	pbcPosition += dx;                 
+
+    #elif HEMOCELL_MATERIAL_INTEGRATION == 2
             Array<T,3> dx = (1.5*v - 0.5*vPrevious)*dt;
         	this->getPosition() +=  dx;
         	pbcPosition += dx;
         	
         	vPrevious = v;  // Store velocity
-        }
-
+    #endif
 
         // Reset current velocity
         // v.resetToZero();
@@ -203,7 +200,6 @@ void SurfaceParticle3D<T,Descriptor>::serialize(HierarchicSerializer& serializer
     serializer.addValue<plint>(processor);
     serializer.addValue<plint>(cellId);
     serializer.addValue<plint>(vertexId);
-    serializer.addValue<plint>(scheme);
     serializer.addValue<T>(dt);
 //    if (trombosit::useTrombosit) {     }
     serializeMap<plint, T>(serializer, bondTypeSaturation);
@@ -221,7 +217,6 @@ void SurfaceParticle3D<T,Descriptor>::unserialize(HierarchicUnserializer& unseri
     unserializer.readValue<plint>(processor);
     unserializer.readValue<plint>(cellId);
     unserializer.readValue<plint>(vertexId);
-    unserializer.readValue<plint>(scheme);
     unserializer.readValue<T>(dt);
     //    if (trombosit::useTrombosit) {     }
     bondTypeSaturation = unserializeMap<plint, T>(unserializer);

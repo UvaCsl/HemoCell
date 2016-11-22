@@ -17,7 +17,7 @@ ShapeMemoryModel3D<T, Descriptor>::ShapeMemoryModel3D(ShapeMemoryModel3D<T,Descr
     eqLengthPerEdge(rhs.eqLengthPerEdge), eqAnglePerEdge(rhs.eqAnglePerEdge), eqVolume(rhs.eqVolume),
     eqSurface(rhs.eqSurface), eqTileSpan(rhs.eqTileSpan), persistenceLengthCoarse(rhs.persistenceLengthCoarse),
     eqLengthRatio(rhs.eqLengthRatio), dx(rhs.dx), dt(rhs.dt), dm(rhs.dm), cellNumTriangles(rhs.cellNumTriangles),
-    cellNumVertices(rhs.cellNumVertices), materialModel(rhs.materialModel)
+    cellNumVertices(rhs.cellNumVertices)
     {}
 
 
@@ -28,7 +28,7 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
         T k_volume_, T k_surface_, T eta_m_,
         T persistenceLengthFine_, T eqLengthRatio_,
         T dx_, T dt_, T dm_,
-        TriangularSurfaceMesh<T> const& meshElement, pluint materialModel_)
+        TriangularSurfaceMesh<T> const& meshElement)
     : ConstitutiveModel<T,Descriptor>(density_),
       meshmetric(meshElement),
       k_rest(k_rest_),
@@ -41,8 +41,7 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
       eta_m(eta_m_),
       eqLengthRatio(eqLengthRatio_),
       dx(dx_), dt(dt_), dm(dm_),
-      persistenceLengthFine(persistenceLengthFine_),
-      materialModel(materialModel_)
+      persistenceLengthFine(persistenceLengthFine_)
 {
     T dNewton = (dm*dx/(dt*dt)) ;
     T kBT = kBT_p / ( dm * dx*dx/(dt*dt) );
@@ -95,31 +94,30 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
     gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
     gamma_C = (gamma_T/3.0);
 
-    pcout << std::endl;
-    pcout << " ============================================= " << std::endl;
-    pcout << " ========  Material model properties ========= " << std::endl;
-    pcout << " ============================================= " << std::endl;
-    pcout << "material model: " << materialModel << std::endl;
-    pcout << "k_bend: " << k_bend << ",\t eqAngle (degrees): " << eqAngle*180.0/pi << std::endl;
-    pcout << "k_volume: " << k_volume << ",\t eqVolume: " << eqVolume << std::endl;
-    pcout << "k_surface: " << k_surface << ",\t eqSurface: " << eqSurface << std::endl;
-    pcout << "k_shear: " << k_shear << ",\t eqMeanArea: " << eqMeanArea << std::endl;
-    pcout << "eta_m: " << eta_m << ",\t eqLengthRatio: " << eqLengthRatio << std::endl;
-    pcout << "persistenceLengthFine: " << persistenceLengthFine << ",\t persistenceLengthCoarse: " << persistenceLengthCoarse << std::endl;
-    pcout << "gamma_T: " << gamma_T << ", gamma_C: " << gamma_C << std::endl;
-    pcout << "k_rest: " << k_rest << ",\t 0 : " << 0 << std::endl;
-    pcout << "k_stretch: " << k_stretch << ",\t eqTileSpan: " << eqTileSpan << std::endl;
-    pcout << "k_elastic: " << k_elastic << ",\t eqLength: " << eqLength << std::endl;
-    pcout << "* k_bend: " << k_bend/kBT << std::endl;
-    pcout << "* k_volume: " <<  k_volume/(kBT/pow(eqLength,3)) <<  std::endl;
-    pcout << "* k_surface: " << k_surface/(kBT/pow(eqLength,2)) <<  std::endl;
-    pcout << "* k_shear: " << k_shear/(kBT/pow(eqLength,2)) <<  std::endl;
-    pcout << "* eqLength from eqArea: " << sqrt(4*eqMeanArea/sqrt(3.0)) << ",\t eqLength: " << eqLength << std::endl;
-    pcout << "# mu_0 = " << getMembraneShearModulus()*dNewton/dx << std::endl;
-    pcout << "# K = " << getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
-    pcout << "# YoungsModulus = " << getYoungsModulus()*dNewton/dx << std::endl;
-    pcout << "# Poisson ratio = " << getPoissonRatio() << std::endl;
-    pcout << " ============================================= " << std::endl;
+    // pcout << std::endl;
+    // pcout << " ============================================= " << std::endl;
+    // pcout << " ========  Material model properties ========= " << std::endl;
+    // pcout << " ============================================= " << std::endl;
+    // pcout << "k_bend: " << k_bend << ",\t eqAngle (degrees): " << eqAngle*180.0/pi << std::endl;
+    // pcout << "k_volume: " << k_volume << ",\t eqVolume: " << eqVolume << std::endl;
+    // pcout << "k_surface: " << k_surface << ",\t eqSurface: " << eqSurface << std::endl;
+    // pcout << "k_shear: " << k_shear << ",\t eqMeanArea: " << eqMeanArea << std::endl;
+    // pcout << "eta_m: " << eta_m << ",\t eqLengthRatio: " << eqLengthRatio << std::endl;
+    // pcout << "persistenceLengthFine: " << persistenceLengthFine << ",\t persistenceLengthCoarse: " << persistenceLengthCoarse << std::endl;
+    // pcout << "gamma_T: " << gamma_T << ", gamma_C: " << gamma_C << std::endl;
+    // pcout << "k_rest: " << k_rest << ",\t 0 : " << 0 << std::endl;
+    // pcout << "k_stretch: " << k_stretch << ",\t eqTileSpan: " << eqTileSpan << std::endl;
+    // pcout << "k_elastic: " << k_elastic << ",\t eqLength: " << eqLength << std::endl;
+    // pcout << "* k_bend: " << k_bend/kBT << std::endl;
+    // pcout << "* k_volume: " <<  k_volume/(kBT/pow(eqLength,3)) <<  std::endl;
+    // pcout << "* k_surface: " << k_surface/(kBT/pow(eqLength,2)) <<  std::endl;
+    // pcout << "* k_shear: " << k_shear/(kBT/pow(eqLength,2)) <<  std::endl;
+    // pcout << "* eqLength from eqArea: " << sqrt(4*eqMeanArea/sqrt(3.0)) << ",\t eqLength: " << eqLength << std::endl;
+    // pcout << "# mu_0 = " << getMembraneShearModulus()*dNewton/dx << std::endl;
+    // pcout << "# K = " << getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
+    // pcout << "# YoungsModulus = " << getYoungsModulus()*dNewton/dx << std::endl;
+    // pcout << "# Poisson ratio = " << getPoissonRatio() << std::endl;
+    // pcout << " ============================================= " << std::endl;
 
 }
 
@@ -139,13 +137,13 @@ plint ShapeMemoryModel3D<T,Descriptor>::getEdgeId(plint iVertex, plint jVertex) 
 template<typename T, template<typename U> class Descriptor>
 void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) {
 
-// Cheap fix to select material model TODO: implement it on higher level
-if(materialModel==2)                   // Higher order model
-    computeCellForceHighOrder(cell);
-else if(materialModel==1)              // Fixed Suresh model
-    computeCellForceSuresh(cell);
-else                                   // Original Suresh model
-    computeCellForceSuresh(cell);
+#if HEMOCELL_MATERIAL_MODEL == 2
+    computeCellForceHighOrder(cell);        // Higher order model
+#elif HEMOCELL_MATERIAL_MODEL ==1
+    computeCellForceSuresh(cell);           // Suresh/Dao modell improved by Fedosov
+#else                                    
+    computeCellForceHighOrder(cell);        // Default -> HO model
+#endif
 };
 
 template<typename T, template<typename U> class Descriptor>

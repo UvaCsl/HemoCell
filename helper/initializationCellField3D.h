@@ -77,9 +77,12 @@ void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, B
         if (isInsideFluidDomain and fluid.get(fluidDomainCell.x, fluidDomainCell.y, fluidDomainCell.z).getDynamics().isBoundary())
         	break;
         
-        // Also deny particles that are in the outer most layer, aka. the "shear layer"
-        bool neighboringBoundariesAnywhere = false;    
-        for (int px = -1; px <= 1; ++px) {  for (int py = -1; py <= 1; ++py) { for (int pz = -1; pz <= 1; ++pz) {
+        // If all neighbours are boundaries or denied cells
+        bool neighboringBoundariesAnywhere = false;  
+
+        // Deny particles that are in the outer most layer, aka. the "shear layer"
+        int denyLayerSize = 1; // Size of the outer shear layer to deny particles from (= create a starting CFL). This should scale with dx and be <= 1um.    
+        for (int px = -denyLayerSize; px <= denyLayerSize; ++px) {  for (int py = -denyLayerSize; py <= denyLayerSize; ++py) { for (int pz = -denyLayerSize; pz <= denyLayerSize; ++pz) {
                     bool isInsideDomain = (fluidDomainCell.x+px >= 0 and fluidDomainCell.y+py >= 0 and fluidDomainCell.z+pz >= 0) and
                         (fluidDomainCell.x+px < maxNx and fluidDomainCell.y+py < maxNy and fluidDomainCell.z+pz < maxNz);
                     if(isInsideDomain) {
@@ -89,9 +92,11 @@ void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, B
             }  
         }
         
+        // This cell does not satisfy all requirements.
         if(neighboringBoundariesAnywhere)
             break; 
 
+        // Finally, if all checks are passed, add the particle.
         particleField.addParticle(particleField.getBoundingBox(), new SurfaceParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
 
     }

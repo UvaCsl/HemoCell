@@ -154,8 +154,7 @@ void ComputeCellForce3D<T,Descriptor>::getModificationPattern(std::vector<bool>&
 /* ******** FluidVelocityToImmersedCell3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
-FluidVelocityToImmersedCell3D<T,Descriptor>::FluidVelocityToImmersedCell3D (plint kernelSize_,
-        plint ibmKernel_) : kernelSize(kernelSize_), ibmKernel(ibmKernel_) {};
+FluidVelocityToImmersedCell3D<T,Descriptor>::FluidVelocityToImmersedCell3D () {};
 
 template<typename T, template<typename U> class Descriptor>
 void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
@@ -179,7 +178,7 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
         std::vector<T>  & weights = particle->getIBMweights();
         if (cellPos.size() == 0) {
-            interpolationCoefficients(fluid, position, cellPos, weights, kernelSize, ibmKernel);
+            interpolationCoefficients(fluid, position, cellPos, weights);
 //            curateInterpolationCoefficients (fluid, cellPos, weights); // TODO: Check validity of curateInterpolationCoefficients
         }
         particle->get_v().resetToZero();
@@ -286,8 +285,7 @@ BlockDomain::DomainT ViscousPositionUpdate3D<T,Descriptor>::appliesTo () const {
 
 /* ******** ForceToFluid3D *********************************** */
 template<typename T, template<typename U> class Descriptor>
-ForceToFluid3D<T,Descriptor>::ForceToFluid3D (plint kernelSize_,
-        plint ibmKernel_) : kernelSize(kernelSize_), ibmKernel(ibmKernel_) {};
+ForceToFluid3D<T,Descriptor>::ForceToFluid3D () {};
 
 template<typename T, template<typename U> class Descriptor>
 void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
@@ -302,13 +300,19 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
 
     std::vector<Particle3D<T,Descriptor>*> particles;
     
+    #if HEMOCELL_KERNEL <= 2
+      #define KERNEL_SIZE 1
+    #else
+      #define KERNEL_SIZE 2
+    #endif
+    
     Box3D domainPlusEnvelope (
-        domain.x0 - kernelSize, domain.x1 + kernelSize,
-        domain.y0 - kernelSize, domain.y1 + kernelSize,
-        domain.z0 - kernelSize, domain.z1 + kernelSize );
+        domain.x0 - KERNEL_SIZE, domain.x1 + KERNEL_SIZE,
+        domain.y0 - KERNEL_SIZE, domain.y1 + KERNEL_SIZE,
+        domain.z0 - KERNEL_SIZE, domain.z1 + KERNEL_SIZE );
 
     //particleField.findParticles(domain, particles); // Get particles only from within the domain
-    particleField.findParticles(domainPlusEnvelope, particles); // Get envelope particles within kernelSize as well, as they might have effect on local bulk fluid
+    particleField.findParticles(domainPlusEnvelope, particles); // Get envelope particles within KERNEL_SIZE as well, as they might have effect on local bulk fluid
 
     //std::vector<Dot3D> cellPos;
     Cell<T,Descriptor>* cell;
@@ -319,7 +323,7 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
         Array<T,3> position(particle->getPosition());  // TODO: why do we make a copy of the coord?
         std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
         std::vector<T> & weights = particle->getIBMweights();
-        interpolationCoefficients(fluid, position, cellPos, weights, kernelSize, ibmKernel);
+        interpolationCoefficients(fluid, position, cellPos, weights);
 //        curateInterpolationCoefficients (fluid, cellPos, weights); // TODO: Check validity of curateInterpolationCoefficients
         Array<T,3> force = particle->get_force();
 

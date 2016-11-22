@@ -20,10 +20,9 @@ template<typename T, template<typename U> class Descriptor>
 class ChangeParticleUpdateScheme : public BoxProcessingFunctional3D
 {
 public:
-    ChangeParticleUpdateScheme (plint scheme_, T cellTimeStep = 1.0) : scheme(scheme_), dt(cellTimeStep) { } ;
+    ChangeParticleUpdateScheme ( T cellTimeStep = 1.0) : dt(cellTimeStep) { } ;
     ~ChangeParticleUpdateScheme() { };
-    ChangeParticleUpdateScheme(ChangeParticleUpdateScheme<T,Descriptor> const& rhs) :
-        scheme(rhs.scheme), dt(rhs.dt) { } ;
+    ChangeParticleUpdateScheme(ChangeParticleUpdateScheme<T,Descriptor> const& rhs) : dt(rhs.dt) { } ;
     /// Arguments: [0] Particle-field
     virtual ChangeParticleUpdateScheme<T,Descriptor>* clone() const { return new ChangeParticleUpdateScheme<T,Descriptor>(*this); };
     virtual BlockDomain::DomainT appliesTo() const { return BlockDomain::bulkAndEnvelope; } ;
@@ -36,10 +35,7 @@ public:
         std::vector<Particle3D<T,Descriptor>*> particles;
         particleField.findParticles(domain, particles); // Gets particle only from the bulk
         for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-            //castParticleToICP3D(particles[iParticle])->get_scheme() = scheme;
-            //castParticleToICP3D(particles[iParticle])->get_dt() = dt;
             SurfaceParticle3D<T,Descriptor>* particle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
-            particle->get_scheme() = scheme;
             particle->get_dt() = dt;
         }
     };
@@ -88,16 +84,13 @@ class ForceToFluid3D : public BoxProcessingFunctional3D
 {
 public:
     // kernelSize gives the envelope size in each direction -> kernelSize=1 will yield a 3x3x3 kernel
-    ForceToFluid3D (plint kernelSize = 1, plint ibmKernel_= 2 );
+    ForceToFluid3D ();
     /// Arguments: [0] Particle-field. [1] Lattice.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual ForceToFluid3D<T,Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
     void getModificationPattern(std::vector<bool>& isWritten) const;
     virtual BlockDomain::DomainT appliesTo() const;
-private:
-    plint ibmKernel;
-    plint kernelSize;
 };
 
 
@@ -106,7 +99,7 @@ class FluidVelocityToImmersedCell3D : public BoxProcessingFunctional3D
 {
 public:
     // kernelSize gives the envelope size in each direction -> kernelSize=1 will yield a 3x3x3 kernel
-    FluidVelocityToImmersedCell3D (plint kernelSize = 1, plint ibmKernel_= 2 );
+    FluidVelocityToImmersedCell3D ();
     /// Arguments: [0] Particle-field. [1] Lattice.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual FluidVelocityToImmersedCell3D<T,Descriptor>* clone() const;

@@ -1,9 +1,12 @@
 #include "hemocell.h"
 
 typedef double T;
-//#define DESCRIPTOR descriptors::ForcedMRTD3Q19Descriptor    //Use this whenever tau != 1
-#define DESCRIPTOR descriptors::ForcedD3Q19Descriptor    // Using this with tau == 1 will increase numeric stability
 
+#if HEMOCELL_CFD_DYNAMICS == 1
+    #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor    // Using this with tau == 1 will increase numeric stability. (Suppresses oscillations).
+#elif HEMOCELL_CFD_DYNAMICS == 2
+    #define DESCRIPTOR descriptors::ForcedMRTD3Q19Descriptor    //Use this whenever tau != 1
+#endif
 
 // ----------------------- Copy from neighbour ------------------------------------
 
@@ -155,13 +158,13 @@ int main(int argc, char *argv[]) {
     T nu_p, rho_p;
     T cell_dt;
     plint cellStep;
-    plint materialModel;
+    // plint materialModel;
     plint nx, ny, nz;
     T hematocrit;
     T shellDensity, eqLengthRatio, radius;
     T k_WLC, k_rep, k_rest, k_elastic, k_bend, k_volume, k_surface, k_shear, k_stretch, eta_m;
     plint minNumOfTriangles;
-    plint ibmKernel, ibmScheme;
+    // plint ibmKernel, ibmScheme;
     plint tmax, tmeas;
     plint refDir, refDirN;
     std::string meshFileName;
@@ -192,7 +195,7 @@ int main(int argc, char *argv[]) {
     document["parameters"]["warmup"].read(warmup);
     document["parameters"]["maxPackIter"].read(maxPackIter);
 
-    document["cellModel"]["materialModel"].read(materialModel);
+    // document["cellModel"]["materialModel"].read(materialModel);
     document["cellModel"]["shellDensity"].read(shellDensity);
     document["cellModel"]["kWLC"].read(k_WLC);
     document["cellModel"]["eqLengthRatio"].read(eqLengthRatio);
@@ -206,8 +209,8 @@ int main(int argc, char *argv[]) {
     document["cellModel"]["kShear"].read(k_shear);
     document["cellModel"]["kStretch"].read(k_stretch);
   
-    document["ibm"]["ibmKernel"].read(ibmKernel);
-    document["ibm"]["ibmScheme"].read(ibmScheme);
+    // document["ibm"]["ibmKernel"].read(ibmKernel);
+    // document["ibm"]["ibmScheme"].read(ibmScheme);
     document["ibm"]["radius"].read(radius);
     document["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
 
@@ -295,14 +298,22 @@ int main(int argc, char *argv[]) {
     // ------------------------ Init lattice --------------------------------
 
     pcout << "(main) init lattice structure..."  << std::endl;
-    MultiBlockLattice3D<T, DESCRIPTOR> lattice(
+
+    #if HEMOCELL_CFD_DYNAMICS == 1
+        MultiBlockLattice3D<T, DESCRIPTOR> lattice(
             defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
             defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
             new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/tau));
-            //new GuoExternalForceMRTdynamics<T, DESCRIPTOR>(1.0/tau)); // Use with MRT dynamics!
-
+    #elif HEMOCELL_CFD_DYNAMICS == 2
+        MultiBlockLattice3D<T, DESCRIPTOR> lattice(
+            defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
+            defaultMultiBlockPolicy3D().getBlockCommunicator(),
+            defaultMultiBlockPolicy3D().getCombinedStatistics(),
+            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+            new GuoExternalForceMRTdynamics<T, DESCRIPTOR>(1.0/tau)); // Use with MRT dynamics!
+    #endif
 
     defineDynamics(lattice, *flagMatrix, lattice.getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
 
@@ -336,15 +347,16 @@ int main(int argc, char *argv[]) {
     std::vector<CellField3D<T, DESCRIPTOR> *> cellFields;
     std::vector<T> eqVolumes;
 
-    plint kernelSize = ceil(1e-6 / dx);
-    if(ibmKernel == 2){
-        kernelSize = 1;
-        pcout << "(main)   WARNING: kernel " << ibmKernel << " is a nearest-neighbour kernel, it will not be scaled!" << endl;
-    }
+    pcout << "(main) IBM kernel: " << HEMOCELL_KERNEL << endl;
+    // plint kernelSize = ceil(1e-6 / dx);
+    // if(ibmKernel == 2){
+    //     kernelSize = 1;
+    //     pcout << "(main)   WARNING: kernel " << ibmKernel << " is a nearest-neighbour kernel, it will not be scaled!" << endl;
+    // }
     
     // ----------------------- Init RBCs ---------------------------------
 
-    pcout << "(main)   init RBC structures..."  << std::endl;
+    pcout << "(main)   * init RBC structures..."  << std::endl;
     Array<T,3> eulerAngles(0., 0., 0.);
 
     plint shape = 1;    // shape: Sphere[0], RBC from sphere[1], Cell(defined)[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5]
@@ -360,15 +372,15 @@ int main(int argc, char *argv[]) {
     cellModels.push_back(
             new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic,
                                                   k_volume, k_surface, eta_m,
-                                                  persistenceLengthFine, eqLengthRatio, dx, dt, dm, meshElement, materialModel));
-    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hematocrit, cellModels[0], ibmKernel, "RBC", kernelSize));
+                                                  persistenceLengthFine, eqLengthRatio, dx, dt, dm, meshElement));
+    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hematocrit, cellModels[0], "RBC"));
 
     
     // ----------------------- Init platelets ----------------------------
     // TODO - Collect material properties, don't just derive them from RBC
     // TODO - We can use a numerically cheaper model
 
-    pcout << "(main)   init PLT structures..."  << std::endl;
+    pcout << "(main)   * init PLT structures..."  << std::endl;
     T pltRadius = 1.15e-6 / dx;
     T aspectRatio = 1.0 / 2.3;//(2 * pltRadius);
     TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, (plint)ceil(minNumOfTriangles/9.0), dx, cellPath, eulerAngles, aspectRatio);
@@ -377,10 +389,9 @@ int main(int argc, char *argv[]) {
     cellModels.push_back(
             new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend * 5.0, k_stretch, k_WLC * 5.0,
                                                   k_elastic, k_volume, k_surface, eta_m,
-                                                  persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement, materialModel)
-        );
+                                                  persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement));
     cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.0025 * hematocrit,
-                                                        cellModels[cellModels.size() - 1], ibmKernel, "PLT", kernelSize));
+                                                        cellModels[cellModels.size() - 1], "PLT"));
 
 
     // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
@@ -401,10 +412,10 @@ int main(int argc, char *argv[]) {
     // ---------------------- Set integration scheme and time step amplification for cell fields ---------------
 
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-        cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);
+        cellFields[iCell]->setParticleUpdateScheme((T)cellStep);
     }
 
-    pcout << "(main) material model integration step: " << cellStep <<  " lt, update scheme: " << ibmScheme << endl;
+    pcout << "(main) material model parameters: model: " << HEMOCELL_MATERIAL_MODEL <<  ", update scheme: " << HEMOCELL_MATERIAL_INTEGRATION << ", step-size: " << cellStep << " lt" << endl;
 
     plint domainVol = computeSum(*flagMatrix);
     pcout << "(main) Number of fluid cells: " << domainVol << " / " << nx*ny*nz << std::endl;
@@ -556,7 +567,7 @@ int main(int argc, char *argv[]) {
                         pcout << "(main) Large force encountered (" << fMax << "): reducing inner time-step to: " << cellStep << endl;
 
                         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-                            cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);   
+                            cellFields[iCell]->setParticleUpdateScheme((T)cellStep);   
 
                         lastTSChange = 0; // We just adjusted now
                     }
@@ -571,7 +582,7 @@ int main(int argc, char *argv[]) {
                         pcout << "(main) Forces are small (" << fMax << "): increasing inner time-step to: " << cellStep << endl;
 
                         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-                            cellFields[iCell]->setParticleUpdateScheme(ibmScheme, (T)cellStep);
+                            cellFields[iCell]->setParticleUpdateScheme((T)cellStep);
 
                         lastTSChange = 0;
                     }

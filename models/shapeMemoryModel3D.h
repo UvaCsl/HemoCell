@@ -38,7 +38,7 @@ public:
             T k_volume_, T k_surface_, T eta_m_,
             T persistenceLengthFine, T eqLengthRatio_,
             T dx_, T dt_, T dm_,
-            TriangularSurfaceMesh<T> const& meshElement, pluint materialModel = 0);
+            TriangularSurfaceMesh<T> const& meshElement);
     ShapeMemoryModel3D(ShapeMemoryModel3D<T,Descriptor> const& rhs);
     ~ShapeMemoryModel3D() { } ;
     Array<T,3> computeElasticForce (

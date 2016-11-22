@@ -3,7 +3,12 @@
 
 typedef double T;
 typedef Array<T,3> Velocity;
-#define DESCRIPTOR descriptors::ForcedD3Q19Descriptor
+
+#if HEMOCELL_CFD_DYNAMICS == 1
+    #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor    // Using this with tau == 1 will increase numeric stability. (Suppresses oscillations).
+#elif HEMOCELL_CFD_DYNAMICS == 2
+    #define DESCRIPTOR descriptors::ForcedMRTD3Q19Descriptor    //Use this whenever tau != 1
+#endif
 
 
 int main(int argc, char* argv[])
@@ -51,8 +56,8 @@ int main(int argc, char* argv[])
     T k_WLC, k_rep, k_rest, k_elastic, k_bend, k_volume, k_surface, k_shear, k_stretch, eta_m;
     plint minNumOfTriangles;
     plint rbcModel;
-    plint materialModel;
-    plint ibmKernel, ibmScheme;
+    // plint materialModel;
+    // plint ibmKernel, ibmScheme;
     Array<T, 3> eulerAngles;
     plint tmax, tmeas;
     std::string meshFileName;
@@ -85,7 +90,7 @@ int main(int argc, char* argv[])
         eulerAngles[i] *= pi/180.;
 
     document["cellModel"]["rbcModel"].read(rbcModel);
-    document["cellModel"]["materialModel"].read(materialModel);
+    // document["cellModel"]["materialModel"].read(materialModel);
     document["cellModel"]["shellDensity"].read(shellDensity);
     document["cellModel"]["kWLC"].read(k_WLC);
     document["cellModel"]["eqLengthRatio"].read(eqLengthRatio);
@@ -99,8 +104,8 @@ int main(int argc, char* argv[])
     document["cellModel"]["kShear"].read(k_shear);
     document["cellModel"]["kStretch"].read(k_stretch);
 
-    document["ibm"]["ibmKernel"].read(ibmKernel);
-    document["ibm"]["ibmScheme"].read(ibmScheme);
+    // document["ibm"]["ibmKernel"].read(ibmKernel);
+    // document["ibm"]["ibmScheme"].read(ibmScheme);
     document["ibm"]["radius"].read(radius);
     document["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
 
@@ -111,7 +116,7 @@ int main(int argc, char* argv[])
 
     document["domain"]["rhoP"].read(rho_p);
     document["domain"]["nuP"].read(nu_p);
-    document["domain"]["tau"].read(tau);
+    // document["domain"]["tau"].read(tau);
     document["domain"]["dx"].read(dx);
     document["domain"]["dt"].read(dt);
     document["domain"]["timeStepSize"].read(cellStep);
@@ -167,12 +172,22 @@ int main(int argc, char* argv[])
     pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
 
     plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
-    MultiBlockLattice3D<T, DESCRIPTOR> lattice(
-        defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
-        defaultMultiBlockPolicy3D().getBlockCommunicator(),
-        defaultMultiBlockPolicy3D().getCombinedStatistics(),
-        defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
-        new GuoExternalForceBGKdynamics<T,DESCRIPTOR>(1./tau));
+
+    #if HEMOCELL_CFD_DYNAMICS == 1
+        MultiBlockLattice3D<T, DESCRIPTOR> lattice(
+            defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
+            defaultMultiBlockPolicy3D().getBlockCommunicator(),
+            defaultMultiBlockPolicy3D().getCombinedStatistics(),
+            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/tau));
+    #elif HEMOCELL_CFD_DYNAMICS == 2
+        MultiBlockLattice3D<T, DESCRIPTOR> lattice(
+            defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
+            defaultMultiBlockPolicy3D().getBlockCommunicator(),
+            defaultMultiBlockPolicy3D().getCombinedStatistics(),
+            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+            new GuoExternalForceMRTdynamics<T, DESCRIPTOR>(1.0/tau)); // Use with MRT dynamics!
+    #endif
 
 
     // -------------------------- Define boundary conditions ---------------------
@@ -213,7 +228,7 @@ int main(int argc, char* argv[])
     if (rbcModel == 0) {
         pcout << "(main) Using ShapeMemoryModel3D. " << std::endl;
         cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-        persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement, materialModel);
+        persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
     } else if (rbcModel==1) {
         pcout << "(main) Using CellModel3D. " << std::endl;
         cellModel = new CellModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
@@ -225,7 +240,7 @@ int main(int argc, char* argv[])
     }
 
     // Giving artificial hematocrit of 0.01, since it does not matter here
-    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.01, cellModel, ibmKernel, "RBC");
+    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.01, cellModel, "RBC");
     cellFields.push_back(&RBCField);
 
 
@@ -242,7 +257,7 @@ int main(int argc, char* argv[])
     }
 
     // Update integration scheme and time step for surfaceParticles
-    RBCField.setParticleUpdateScheme(ibmScheme, (T)cellStep);
+    RBCField.setParticleUpdateScheme((T)cellStep);
 
     plint nCells = RBCField.getNumberOfCells_Global();
     pcout << std::endl ;

@@ -21,6 +21,37 @@ using namespace plb;
 
 using namespace std;
 
+// ============== Compile time options - Set these
+
+/*
+Choose kernel. 
+Phi1 [1], Phi2 [2] - Default, Phi3 [3], Phi4 [4],  Phi4c [5]
+*/
+#define HEMOCELL_KERNEL 2
+
+/*
+Choose material model.
+1 - Dao/Suresh model (+Fedosov 2010 improvements)
+2 - HO model (Under testing)
+*/
+#define HEMOCELL_MATERIAL_MODEL 2
+
+/*
+Choose material integration method.
+Euler [1], Adams-Bashforth [2]
+*/
+#define HEMOCELL_MATERIAL_INTEGRATION 1
+
+/*
+Choose collision operator for LBM.
+[1] - BGK <- use this for dt < 0 settings to have tau = 1 suppress oscillations
+[2] - MRT <- use this in every other case
+*/
+#define HEMOCELL_CFD_DYNAMICS 1
+
+
+// ===================================
+
 #include "fcnGenericFunctions.h"
 #include "simpleProfiler.cpp"
 

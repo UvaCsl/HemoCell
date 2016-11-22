@@ -34,16 +34,15 @@ public:
 			pluint numberOfCells_. Global numer of Cells
 	*/
 	CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, TriangularSurfaceMesh<T> & elementaryMesh_,
-			T hematocrit_, ConstitutiveModel<T, Descriptor> * cellModel_, plint ibmKernel_, std::string identifier_, plint kernelSize_ = 1);
+			T hematocrit_, ConstitutiveModel<T, Descriptor> * cellModel_, std::string identifier_);
 	virtual ~CellField3D();
 public:
 	/* Set or change parameters */
-	void setIBMKernel(plint kernelSize_, plint ibmKernel_) { kernelSize = kernelSize_; ibmKernel = ibmKernel_; }
 	void setIBMCoupling(bool coupleWithIBM_) { coupleWithIBM = coupleWithIBM_; }
-	void setParticleUpdateScheme (plint scheme, T cellTimeStep=1.0) {
-	    pcout << "(CellField3D) " << identifier << "-> Particle dynamics set -> IBM kernel: " << ibmKernel << ", integration scheme: " << scheme << ", time-step: " << cellTimeStep << " lt" << std::endl;
+	void setParticleUpdateScheme (T cellTimeStep=1.0) {
+	    pcout << "(CellField3D) " << identifier << "-> Particle time-step set ->  " << cellTimeStep << " lt" << std::endl;
 	    applyProcessingFunctional ( // advance particles in time according to velocity
-	        new ChangeParticleUpdateScheme<T,Descriptor>(scheme, cellTimeStep),
+	        new ChangeParticleUpdateScheme<T,Descriptor>(cellTimeStep),
 	        immersedParticles->getBoundingBox(), particleArg );
 }
 	TriangularSurfaceMesh<T> & getMesh() { return elementaryMesh; }
@@ -138,8 +137,6 @@ private:
 	TriangularSurfaceMesh<T> & elementaryMesh;
     T hematocrit;
 	ConstitutiveModel<T, Descriptor> * cellModel;
-	plint ibmKernel;
-    plint kernelSize;
 	bool coupleWithIBM;
     SyncRequirements ccrRequirements;
     std::string identifier;

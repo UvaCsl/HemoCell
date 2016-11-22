@@ -56,8 +56,7 @@ inline T phi4c (T x) {
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficients (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize,
-        plint ibmKernel) {
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights) {
     /*
      * ibmKernel == 1, Phi1
      * ibmKernel == 2, Phi2 ! Default
@@ -65,32 +64,34 @@ void interpolationCoefficients (
      * ibmKernel == 4, Phi4
      * ibmKernel == 5, Phi4c
      */
-    if (ibmKernel == 1) {
-    	interpolationCoefficientsPhi1(block, position, cellPos, weights, kernelSize);
-    } else if (ibmKernel == 2) {
-        interpolationCoefficientsPhi2(block, position, cellPos, weights, kernelSize);
-    } else if (ibmKernel == 3) {
-        interpolationCoefficientsPhi3(block, position, cellPos, weights, kernelSize);
-    } else if (ibmKernel == 4) {
-        interpolationCoefficientsPhi4(block, position, cellPos, weights, kernelSize);
-    } else if (ibmKernel == 5) {
-        interpolationCoefficientsPhi4c(block, position, cellPos, weights, kernelSize);
-    } else { // Default
-        interpolationCoefficientsPhi2(block, position, cellPos, weights, kernelSize);
-    }
+    #if HEMOCELL_KERNEL == 1
+    	interpolationCoefficientsPhi1(block, position, cellPos, weights);
+    #elif HEMOCELL_KERNEL == 2
+        interpolationCoefficientsPhi2(block, position, cellPos, weights);
+    #elif HEMOCELL_KERNEL == 3
+        interpolationCoefficientsPhi3(block, position, cellPos, weights);
+    #elif HEMOCELL_KERNEL == 4
+        interpolationCoefficientsPhi4(block, position, cellPos, weights);
+    #elif HEMOCELL_KERNEL == 5
+        interpolationCoefficientsPhi4c(block, position, cellPos, weights);
+    #else // Default
+        interpolationCoefficientsPhi2(block, position, cellPos, weights);
+    #endif
 }
 
 template<typename T, template<typename U> class Descriptor>
-void interpolationCoefficientsPhi1 (
+inline void interpolationCoefficientsPhi1 (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights )
 {
     cellPos.clear();
     weights.clear();
 
     T totWeight = 0;
+    
+    // Fixed kernel size.
     plint x0=-1, x1=2;
-    //plint x0=-kernelSize, x1=kernelSize+1;
+    
     Box3D boundingBox(block.getBoundingBox());
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
@@ -123,15 +124,16 @@ void interpolationCoefficientsPhi1 (
 }
 
 template<typename T, template<typename U> class Descriptor>
-void interpolationCoefficientsPhi2 (
+inline void interpolationCoefficientsPhi2 (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize)
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights)
 {
     cellPos.clear();
     weights.clear();
-    //plint i = 0;
-    //plint x0=-1, x1=2;
+
+    // Fixed kernel size
     plint x0=-1, x1=2;
+
     Box3D boundingBox(block.getBoundingBox());
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
@@ -148,7 +150,6 @@ void interpolationCoefficientsPhi2 (
                     if (weight>0) {
                         weights.push_back(weight);
                         cellPos.push_back(cellPositionInDomain);
-                        //i+=1;
                     }
                 }
             }
@@ -160,12 +161,12 @@ void interpolationCoefficientsPhi2 (
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi3 (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights )
 {
     cellPos.clear();
     weights.clear();
-    plint i = 0;
-    plint x0=-2, x1=3;
+
+    plint x0=-2, x1=2+1;
     Box3D boundingBox(block.getBoundingBox());
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
@@ -181,7 +182,6 @@ void interpolationCoefficientsPhi3 (
                     if (weight>0) {
                         weights.push_back(weight);
                         cellPos.push_back(cellPositionInDomain);
-                        i+=1;
                     }
                 }
             }
@@ -193,12 +193,12 @@ void interpolationCoefficientsPhi3 (
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi4 (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights)
 {
     cellPos.clear();
     weights.clear();
-    plint i = 0;
-    plint x0=-2, x1=3;
+
+    plint x0=-2, x1=2+1;
     Box3D boundingBox(block.getBoundingBox());
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
@@ -214,7 +214,6 @@ void interpolationCoefficientsPhi4 (
                     if (weight>0) {
                         weights.push_back(weight);
                         cellPos.push_back(cellPositionInDomain);
-                        i+=1;
                     }
                 }
             }
@@ -225,12 +224,12 @@ void interpolationCoefficientsPhi4 (
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi4c (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights, plint kernelSize )
+        std::vector<Dot3D>& cellPos, std::vector<T>& weights)
 {
     cellPos.clear();
     weights.clear();
-    plint i = 0;
-    plint x0=-2, x1=3;
+ 
+    plint x0=-2, x1=2+1;
     Box3D boundingBox(block.getBoundingBox());
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
@@ -246,7 +245,6 @@ void interpolationCoefficientsPhi4c (
                     if (weight>0) {
                         weights.push_back(weight);
                         cellPos.push_back(cellPositionInDomain);
-                        i+=1;
                     }
                 }
             }
