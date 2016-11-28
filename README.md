@@ -24,7 +24,7 @@ Remarks:
 - The code should work on Windows as well, however, this is completeley untested. The suggested compiler suite is `TDM-gcc`.
 
 ## `palabos`
-The working version of `palabos` is [v1.5r1](http://www.palabos.org/images/palabos_releases/palabos-v1.5r1.zip). Some modification of the source code is necessary for seamless and performant interoperation with `HemoCell`; see know-issues. Earlier versions of `palabos` are no longer supported due to strong dependency on the sparse particle classes present from this version.
+The working version of `palabos` is [v1.5r1](http://www.palabos.org/images/palabos_releases/palabos-v1.5r1.zip) or newer. Some modification of the source code is necessary for seamless and performant interoperation with `HemoCell`; see know-issues. Earlier versions of `palabos` are no longer supported due to strong dependency on the sparse particle classes present from this version.
 
 ## HDF5
 `HemoCell` uses the `hdf5` library with the high-level extensions for the output and post-processing of the results. Debian packages `h5utils hdf5-tools libhdf5-serial-dev` are known to work for the I/O.
