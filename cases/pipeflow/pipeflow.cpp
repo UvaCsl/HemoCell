@@ -351,11 +351,6 @@ int main(int argc, char *argv[]) {
     std::vector<T> eqVolumes;
 
     pcout << "(main) IBM kernel: " << HEMOCELL_KERNEL << endl;
-    // plint kernelSize = ceil(1e-6 / dx);
-    // if(ibmKernel == 2){
-    //     kernelSize = 1;
-    //     pcout << "(main)   WARNING: kernel " << ibmKernel << " is a nearest-neighbour kernel, it will not be scaled!" << endl;
-    // }
     
     // ----------------------- Init RBCs ---------------------------------
 
