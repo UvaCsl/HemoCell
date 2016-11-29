@@ -186,7 +186,12 @@ void ComputeDifferentCellForces3D<T,Descriptor>::processGenericBlocks (
     plint dR = ceil(cutoffRadius);
 
     std::vector<Particle3D<T,Descriptor>*> currentParticles, neighboringParticles;
-    Box3D extendedDomain = particleField2.getBoundingBox();
+    Box3D extendedDomain1 = particleField1.getBoundingBox();
+    Box3D extendedDomain2 = particleField2.getBoundingBox();
+    
+    if(extendedDomain1.x1 < extendedDomain2.x1)
+        extendedDomain2 = extendedDomain1;
+
 
     for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
         for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
@@ -196,9 +201,9 @@ void ComputeDifferentCellForces3D<T,Descriptor>::processGenericBlocks (
                 Box3D currentBox(iX,iX,iY,iY,iZ,iZ);
 
                 plint x0, x1, y0, y1, z0, z1;
-                x0 = max(extendedDomain.x0, iX-dR); x1 = min(extendedDomain.x1, iX+dR);
-                y0 = max(extendedDomain.y0, iY-dR); y1 = min(extendedDomain.y1, iY+dR);
-                z0 = max(extendedDomain.z0, iZ-dR); z1 = min(extendedDomain.z1, iZ+dR);
+                x0 = max(extendedDomain2.x0, iX-dR); x1 = min(extendedDomain2.x1, iX+dR);
+                y0 = max(extendedDomain2.y0, iY-dR); y1 = min(extendedDomain2.y1, iY+dR);
+                z0 = max(extendedDomain2.z0, iZ-dR); z1 = min(extendedDomain2.z1, iZ+dR);
 
                 //Box3D neighboringBoxes(iX-dR,iX+dR,iY-dR,iY+dR,iZ-dR,iZ+dR);
                 Box3D neighboringBoxes(x0, x1, y0, y1, z0, z1);
