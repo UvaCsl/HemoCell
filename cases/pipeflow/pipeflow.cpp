@@ -151,6 +151,7 @@ int main(int argc, char *argv[]) {
     plint minInnerIterSize = 1;
     plint probeMaterialForce = 10;
     T minForce, maxForce;
+    T ppForceDistance;
     plint initIter = 0;
     T Re;
     T dx, dt, dm, dNewton;
@@ -213,6 +214,7 @@ int main(int argc, char *argv[]) {
     // document["ibm"]["ibmScheme"].read(ibmScheme);
     document["ibm"]["radius"].read(radius);
     document["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
+    document["ibm"]["ppForceDistance"].read(ppForceDistance);
 
     document["domain"]["geometry"].read(meshFileName);
     document["domain"]["rhoP"].read(rho_p);
@@ -345,6 +347,7 @@ int main(int argc, char *argv[]) {
 
     std::vector<ConstitutiveModel<T, DESCRIPTOR> *> cellModels;
     std::vector<CellField3D<T, DESCRIPTOR> *> cellFields;
+    std::vector<TriangularSurfaceMesh<T> *> meshes;
     std::vector<T> eqVolumes;
 
     pcout << "(main) IBM kernel: " << HEMOCELL_KERNEL << endl;
@@ -362,8 +365,9 @@ int main(int argc, char *argv[]) {
     plint shape = 1;    // shape: Sphere[0], RBC from sphere[1], Cell(defined)[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5]
     std::string cellPath = " "; // If particle is loaded from stl file.
 
-    TriangleBoundary3D<T> RBCCells = constructMeshElement(shape, radius / dx, minNumOfTriangles, dx, cellPath, eulerAngles);
+    TriangleBoundary3D<T> RBCCells = constructMeshElement(shape, (radius / dx) , minNumOfTriangles, dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> meshElement = RBCCells.getMesh();
+    meshes.push_back(&meshElement);
     MeshMetrics<T> meshmetric(meshElement);
     meshmetric.write();
     eqVolumes.push_back(meshmetric.getVolume());
@@ -385,6 +389,7 @@ int main(int argc, char *argv[]) {
     T aspectRatio = 1.0 / 2.3;//(2 * pltRadius);
     TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, (plint)ceil(minNumOfTriangles/9.0), dx, cellPath, eulerAngles, aspectRatio);
     TriangularSurfaceMesh<T> pltMeshElement = PLTCells.getMesh();
+    meshes.push_back(&pltMeshElement);
     eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
     cellModels.push_back(
             new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend * 5.0, k_stretch, k_WLC * 5.0,
@@ -414,19 +419,29 @@ int main(int argc, char *argv[]) {
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
         cellFields[iCell]->setParticleUpdateScheme((T)cellStep);
     }
-
+    
+    // ------------------------- Output flow parameters ----------------------
     pcout << "(main) material model parameters: model: " << HEMOCELL_MATERIAL_MODEL <<  ", update scheme: " << HEMOCELL_MATERIAL_INTEGRATION << ", step-size: " << cellStep << " lt" << endl;
 
     plint domainVol = computeSum(*flagMatrix);
     pcout << "(main) Number of fluid cells: " << domainVol << " / " << nx*ny*nz << std::endl;
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
         plint nCells = cellFields[iCell]->getNumberOfCells_Global();
-        pcout << "(main) Species: #" << iCell << " (" << cellFields[iCell]->getIdentifier() << ")"<< endl;
-        pcout << "(main)   Volume ratio [x100%]: " << nCells * eqVolumes[iCell] * 100.0 / (domainVol) << std::endl;
-        pcout << "(main)   nCells (global) = " << nCells << ", pid: " << global::mpi().getRank();
-        pcout << ", Volume = " << eqVolumes[iCell] << std::endl;
-    }
 
+        // Get the dynamic volume from the radius increased by the particle-particle force cutoff
+        Array<T,2> xRange, yRange, zRange;
+        meshes[iCell]->computeBoundingBox (xRange, yRange, zRange);
+        Array<T, 3> cellBounds (xRange[1]-xRange[0], yRange[1]-yRange[0], zRange[1]-zRange[0]);
+        Array<T, 3> cellRatio;
+        T dynVolume = eqVolumes[iCell];
+        for(int iDir = 0; iDir < 3; iDir++)
+            dynVolume *= 1.0 + (ppForceDistance * 1e-6 / dx) / cellBounds[iDir];
+
+        pcout << "(main) Species: #" << iCell << " (" << cellFields[iCell]->getIdentifier() << ")"<< endl;
+        pcout << "(main)   Volume ratio [x100%]: " << nCells * dynVolume * 100.0 / (domainVol) << std::endl;
+        pcout << "(main)   nCells (global) = " << nCells << ", pid: " << global::mpi().getRank();
+        pcout << ", Volume = " << dynVolume * (dx * dx * dx * 1e18) << " um^3 (" << eqVolumes[iCell] << "->" << dynVolume << ")" << std::endl;
+    }
 
     // ------------------------- Sync all quantities ----------------------
 
@@ -435,7 +450,6 @@ int main(int argc, char *argv[]) {
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
         cellFields[iCell]->synchronizeCellQuantities(everyCCR);
     }
-    
 
     // -------------------------- Initial output --------------------------
 
@@ -464,13 +478,13 @@ int main(int argc, char *argv[]) {
 
     //T k_int = 0.00025, DeltaX=1.0, R=1.0, k=1.5;
     // was 1.5e-12
-    T k_int = 1.0e-12 / dNewton, DeltaX=1.5e-6 / dx, R=1.5e-6 / dx, k=1.5;  // Scale force with simulation units
+    T k_int = 1.0e-12 / dNewton, DeltaX=ppForceDistance * 2.0 * 1e-6 / dx, R=ppForceDistance * 2.0 * 1e-6 / dx, k=1.5;  // Scale force with simulation units
     if (DeltaX > 2.0) DeltaX = 2.0; if (R > 2.0) R = 2.0;  // Should not have effect further than 2 lu -> might go out of domain envelope
     PowerLawForce<T> repWP(k_int, DeltaX, R, k);
 
     // ------------------------- Add particle-particle repulsion force ---------
 
-    k_int = 4.0e-21 / dNewton; DeltaX=0.75e-6 / dx; T R2=0.75e-6 / dx; k=1.5;
+    k_int = 1.0e-12 / dNewton; DeltaX=ppForceDistance * 1e-6 / dx; T R2=ppForceDistance * 1e-6 / dx; k=1.5;
     if (DeltaX > 2.0) DeltaX = 2.0; if (R2 > 2.0) R2 = 2.0;
     PowerLawForce<T> repPP(k_int, DeltaX, R2, k);
 
@@ -515,7 +529,7 @@ int main(int argc, char *argv[]) {
             }
 
             // Particle-particle force between RBCs and PLTs
-            //cellFields[1]->applyDifferentCellForce(repPP, R2, &cellFields[0]->getParticleField3D()); // TODO: it might not sync the argument cell field
+            cellFields[1]->applyDifferentCellForce(repPP, R2, &cellFields[0]->getParticleField3D()); // TODO: it might not sync the argument cell field
             // TODO: extend this in case of other cellFields (e.g. WBC)
 	    	//cellFields[0]->syncParticleFieldBulk(); // in case we need a sync point
 	    	// TODO: Fix different cell collision and collect them into a single sync

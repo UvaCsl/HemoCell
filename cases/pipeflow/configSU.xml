@@ -27,6 +27,7 @@
     <cellPath> ./lib/RBC.stl </cellPath>
     <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
     <minNumOfTriangles> 600 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
+    <ppForceDistance> 0.45 </ppForceDistance> <!-- Particle-particle force intaraction cut-off [um]. -->
 </ibm>
 
 <domain>

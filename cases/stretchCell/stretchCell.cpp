@@ -222,7 +222,7 @@ int main(int argc, char* argv[])
 
     pcout << "(main)   init RBC structure..."  << std::endl;
 
-    TriangleBoundary3D<T> Cells = constructMeshElement(shape, radius / dx, minNumOfTriangles, dx, cellPath, eulerAngles);
+    TriangleBoundary3D<T> Cells = constructMeshElement(shape, (radius / dx), minNumOfTriangles, dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> meshElement = Cells.getMesh();
     MeshMetrics<T> meshmetric(meshElement);    
     meshmetric.write();
@@ -271,6 +271,7 @@ int main(int argc, char* argv[])
     pcout << "(main) Volume ratio [x100%]: " << nCells*eqVolume*100.0/(nx*ny*nz) << std::endl;
     pcout << "(main) nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() << std::endl;
     pcout << std::endl << "(main) Starting simulation i=" << initIter  << ", tmeas = " << tmeas << std::endl;
+    pcout << "Volume of the cell = " << eqVolume << " (" << eqVolume * dx * dx * dx * 1e18 << " um^3)" << std::endl;
 
 //    MultiParticleField3D<LightParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
 //                                                        createBoundaryParticleField3D(lattice);
