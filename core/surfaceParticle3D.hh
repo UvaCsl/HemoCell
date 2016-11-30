@@ -110,6 +110,17 @@ void SurfaceParticle3D<T,Descriptor>::advance() {
         	vPrevious = v;  // Store velocity
     #endif
 
+        // Hack warning!
+        // TODO: change this, it is an ugly fix
+        // If force is VERY large, prevent crash by allow some leaking    
+        // if( norm(this->get_force()) > 0.01 )
+        // {
+        //     Array<T,3> dx = this->get_force() * dt;
+        //     this->getPosition() +=  dx;
+        //     pbcPosition += dx;
+        //     cout << "- Leaking FIX! -";
+        // }
+
         // Reset current velocity
         // v.resetToZero();
 

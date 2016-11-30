@@ -83,6 +83,10 @@ Array<T,3> computeDissipativeForce(Array<T,3> const& x1, Array<T,3> const& x2,
                                    Array<T,3> const& v1, Array<T,3> const& v2,
                                    T gamma_T, T gamma_C);
 
+template<typename T>
+Array<T,3> computeDissipativeForceHO(Array<T,3> const& x1, Array<T,3> const& x2,
+                                   Array<T,3> const& v1, Array<T,3> const& v2,
+                                   T eta);
 
 /* Global volume conservation force, acting on a vertex.
     cVolume = k_volume * kBT/pow(eqLength,3) * (cellVolume - eqVolume)*1.0/eqVolume;

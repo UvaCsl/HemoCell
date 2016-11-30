@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
         tau = 3.0 * nu_lbm + 0.5;
     }
 
-    u_lbm_max = Re * nu_lbm / ny;  // Approximate max. occuring numerical velocity from Re. >0.1 should never occure    
+    u_lbm_max = Re * nu_lbm / ny;  // Approximate max. occuring numerical velocity >0.1 should never happen    
     dm = rho_p * (dx * dx * dx);
     dNewton = (dm * dx / (dt * dt));
     //kBT = kBT_p / ( dNewton * dx );
@@ -326,7 +326,10 @@ int main(int argc, char *argv[]) {
     // ----------------------- Define external driving force ---------------
 
     //T poiseuilleForce = 8 * (nu_lbm * nu_lbm) * Re / (ny * ny * ny);
-    T poiseuilleForce = 8 * nu_lbm * (u_lbm_max*0.5) / (refDirN/2.0) / (refDirN/2.0);
+    T rPipe = refDirN/2.0 ; // -1 for the wall width is not needed, BB nodes seem to be forced as well
+    T poiseuilleForce =  8 * nu_lbm * (u_lbm_max * 0.5) / rPipe / rPipe;
+    
+    // If no saving was set up give some sane default
     if (tmeas == 0) {
         tmeas = plint(ny * ny * 1.0 / (4 * nu_lbm * Re)) / 40;
     }
@@ -488,10 +491,13 @@ int main(int argc, char *argv[]) {
 
     if (initIter == 0)
     {
-        pcout << "(main) fresh start: warming up fluid domain for "  << warmup << " iterations..." << std::endl;
+        pcout << "(main) fresh start: warming up cell-free fluid domain for "  << warmup << " iterations..." << std::endl;
         for (plint itrt = 0; itrt < warmup; ++itrt) { cellFields[0]->setFluidExternalForce(poiseuilleForce); lattice.collideAndStream(); }
     }
+	T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
+	pcout << "(main) Mean velocity: " << meanVel  * (dx/dt) << " m/s; Apparent rel. viscosity: " << (u_lbm_max*0.5) / meanVel << std::endl;
 
+	
 
     // ------------------------ Starting main loop --------------------------
     pcout << std::endl << "(main) starting simulation at " << initIter << " of tmax=" << tmax << " iterations (" << tmax * dt << " s)..." << std::endl;
@@ -623,10 +629,11 @@ int main(int argc, char *argv[]) {
                 checkpointer.save(lattice, cellFields, iter);
                 global::timer("Checkpoint").stop();
             }
+            T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
             T dtIteration = global::timer("mainLoop").stop();
             simpleProfiler.writeIteration(iter * cellStep);
-            pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" << "; Wall time / iter. = " << dtIteration / tmeas << " s; Last largest force [lm*lu/lt^2] = " << fMax << std::endl;
-            
+            pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" << "; Wall time / iter. = " << dtIteration / tmeas << " s; Last largest force [lm*lu/lt^2] = " << fMax <<  std::endl;
+          	pcout << "(main) Mean velocity: " << meanVel * (dx/dt) << " m/s; Apparent rel. viscosity: " << (u_lbm_max*0.5) / meanVel << std::endl;  
         } else {
             if(stepCells) // Sync only if we changed anything
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
@@ -640,5 +647,5 @@ int main(int argc, char *argv[]) {
     }
 
     simpleProfiler.writeIteration(tmax + 1);
-    pcout << "(main) simulation finished. :)" << std::endl;
+    pcout << "(main) Simulation finished. :)" << std::endl;
 }

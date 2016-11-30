@@ -46,7 +46,7 @@ Array<T,3> computeInPlaneHighOrderForce(Array<T,3> const& x1, Array<T,3> const& 
     if(dL > 0)
         force1D = - k_inPlane * ( dL + dL/(0.64-dL*dL) );   // allows at max. 80% stretch
     else
-        force1D = - k_inPlane * dL * dL * dL;   // less stiff compression resistance
+        force1D = - k_inPlane * dL * dL * dL;   // less stiff compression resistance -> let compression be dominated by area conservation force
 
     Array<T,3> force = eij * force1D;
 
@@ -225,12 +225,20 @@ Array<T,3> computeDissipativeForce(Array<T,3> const& x1, Array<T,3> const& x2,
  *  Where eta_m is the 2D membrane viscosity.
  *  Related publications: [FedosovCaswellKarniadakis2010, FedosovCaswell2010b]
 */
-    Array<T,3> dL = (x1 - x2)*1.0;
+    Array<T,3> dL = x1 - x2;
     Array<T,3> eij = dL/norm(dL);
     Array<T,3> vij = v1 - v2;
     return -gamma_T*vij -gamma_C*dot(vij,eij)*eij;
 }
 
+template<typename T>
+Array<T,3> computeDissipativeForceHO(Array<T,3> const& x1, Array<T,3> const& x2,
+                                   Array<T,3> const& v1, Array<T,3> const& v2,
+                                   T eta) {
+
+    Array<T,3> vij = v1 - v2;
+    return -eta*vij;
+}
 
 template<typename T>
 Array<T,3> computeSurfaceConservationForce(

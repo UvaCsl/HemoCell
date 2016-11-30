@@ -48,8 +48,10 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
 
     k_WLC_ *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
     k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
-    eta_m /= dNewton*dt/dx;     k_stretch /= dNewton;    k_rest /= dNewton/dx;
-
+    eta_m /= dNewton*dt/dx;
+    //eta_m /= dNewton*dt/dx/dx; 
+    k_stretch /= dNewton;    k_rest /= dNewton/dx;
+    
 
     syncRequirements.insert(volumeAndSurfaceReductions);
 
@@ -401,12 +403,12 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
         /* ------------------------------------*/
         /*    Dissipative Forces Calculations  */
         /* ------------------------------------*/
-        if (gamma_T>0.0) {
-            force1 = computeDissipativeForce(iX, jX, iParticle->get_v(), jParticle->get_v(), gamma_T, gamma_C);
+        //if (eta_m>0.0) {
+            force1 = computeDissipativeForceHO(iX, jX, iParticle->get_v(), jParticle->get_v(), eta_m);
             iParticle->get_force() += force1;
             jParticle->get_force() -= force1;
 
-        }
+        //}
 
         /* ------------------------------------*/
         /*    Bending Forces Calculations      */
@@ -519,9 +521,9 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
         Stay tuned for a better solution!
     */
 
-    for (pluint iV = 0; iV < vertices.size(); ++iV) {
-        castParticleToICP3D(cell->getParticle3D(vertices[iV]))->get_force()*=0.98; // 2% damping
-    }
+    // for (pluint iV = 0; iV < vertices.size(); ++iV) {
+    //     castParticleToICP3D(cell->getParticle3D(vertices[iV]))->get_force()*=0.98; // 2% damping
+    // }
 }
 
 template<typename T, template<typename U> class Descriptor>
