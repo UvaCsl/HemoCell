@@ -40,7 +40,7 @@ public:
 	/* Set or change parameters */
 	void setIBMCoupling(bool coupleWithIBM_) { coupleWithIBM = coupleWithIBM_; }
 	void setParticleUpdateScheme (T cellTimeStep=1.0) {
-	    pcout << "(CellField3D) " << identifier << "-> Particle time-step set ->  " << cellTimeStep << " lt" << std::endl;
+	    //pcout << "(CellField3D) " << identifier << "-> Particle time-step set ->  " << cellTimeStep << " lt" << std::endl;
 	    applyProcessingFunctional ( // advance particles in time according to velocity
 	        new ChangeParticleUpdateScheme<T,Descriptor>(cellTimeStep),
 	        immersedParticles->getBoundingBox(), particleArg );
