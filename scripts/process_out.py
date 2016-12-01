@@ -14,7 +14,7 @@ fOutName = "metrics.dat"
 
 def getFiles(directory):
     files = []
-    for file in os.listdir(directory):
+    for file in sorted(os.listdir(directory)):
         if file.endswith(".out"):
             files.append(file)
             
