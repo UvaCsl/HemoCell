@@ -5,7 +5,7 @@
 #include "palabos3D.hh"
 #include "initializationCellField3D.h"
 #include "initializationCellField3D.hh"
-#include "dynpacking/packEllipsoids.cpp"
+#include "tools/dynpacking/packEllipsoids.cpp"
 #include <vector>
 
 using namespace std;

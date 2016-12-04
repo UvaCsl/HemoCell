@@ -49,6 +49,17 @@ Choose collision operator for LBM.
 */
 #define HEMOCELL_CFD_DYNAMICS 1
 
+/*
+Choose bending force implementation. This is a numerical modelling choice.
+[1] - Local only bending implementation acting on the two opposing vertices of the surfaces with the bending angle.
+[2] - Distributed bending using all four vertices with wieghting.
+[3] - Distributed bending using all four vertices.
+Note: 	[1] is advised for cases where structural rigidity is needed. 
+		[2] is an intermediate modell between [1] and [3] using four vertices, however, weighting them. So far seem to be the best option.
+		[3] is useful for having increased numerical stability (req.: dx<= 0.5 um, otherwise oscillates). 
+*/
+#define HEMOCELL_MEMBRANE_BENDING 2
+
 
 // ===================================
 

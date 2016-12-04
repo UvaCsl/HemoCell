@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
     bool isAdaptive = false;
     plint maxInnerIterSize = 1;
     plint minInnerIterSize = 1;
-    plint probeMaterialForce = 10;
+    const plint probeMaterialForceMinPeriod = 10;
     T minForce, maxForce;
     T ppForceDistance;
     plint initIter = 0;
@@ -159,13 +159,11 @@ int main(int argc, char *argv[]) {
     T nu_p, rho_p;
     T cell_dt;
     plint cellStep;
-    // plint materialModel;
     plint nx, ny, nz;
     T hematocrit;
     T shellDensity, eqLengthRatio, radius;
     T k_WLC, k_rep, k_rest, k_elastic, k_bend, k_volume, k_surface, k_shear, k_stretch, eta_m;
     plint minNumOfTriangles;
-    // plint ibmKernel, ibmScheme;
     plint tmax, tmeas;
     plint refDir, refDirN;
     std::string meshFileName;
@@ -196,7 +194,6 @@ int main(int argc, char *argv[]) {
     document["parameters"]["warmup"].read(warmup);
     document["parameters"]["maxPackIter"].read(maxPackIter);
 
-    // document["cellModel"]["materialModel"].read(materialModel);
     document["cellModel"]["shellDensity"].read(shellDensity);
     document["cellModel"]["kWLC"].read(k_WLC);
     document["cellModel"]["eqLengthRatio"].read(eqLengthRatio);
@@ -210,8 +207,6 @@ int main(int argc, char *argv[]) {
     document["cellModel"]["kShear"].read(k_shear);
     document["cellModel"]["kStretch"].read(k_stretch);
   
-    // document["ibm"]["ibmKernel"].read(ibmKernel);
-    // document["ibm"]["ibmScheme"].read(ibmScheme);
     document["ibm"]["radius"].read(radius);
     document["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
     document["ibm"]["ppForceDistance"].read(ppForceDistance);
@@ -292,10 +287,6 @@ int main(int argc, char *argv[]) {
     // Do a general check for suspiciosly off values.
     checkParameterSanity(nu_lbm, u_lbm_max);
     
-    //pcout << "(main) dx = " << parameters.getDeltaX() << " dt = " << parameters.getDeltaT() << endl;
-    //pcout << "(main) tau = " << parameters.getTau() << " Re = " << parameters.getRe() << " u_lb = " << parameters.getLatticeU() << " nu_lb = " << parameters.getLatticeNu() << endl;
-    //cout << "(main) Re corresponds to u_max = " << parameters.getPhysicalU() << " [m/s]" << endl;
-    
 
     // ------------------------ Init lattice --------------------------------
 
@@ -325,7 +316,6 @@ int main(int argc, char *argv[]) {
 
     // ----------------------- Define external driving force ---------------
 
-    //T poiseuilleForce = 8 * (nu_lbm * nu_lbm) * Re / (ny * ny * ny);
     T rPipe = refDirN/2.0 ; // -1 for the wall width is not needed, BB nodes seem to be forced as well
     T poiseuilleForce =  8 * nu_lbm * (u_lbm_max * 0.5) / rPipe / rPipe;
     
@@ -409,7 +399,11 @@ int main(int argc, char *argv[]) {
         //randomPositionMultipleCellField3D(cellFields, hematocrit, dx, maxPackIter);
         readPositionsBloodCellField3D(cellFields, dx, particlePosFile.c_str());
        
+        pcout << "(main) saving checkpoint..." << std::endl;
         checkpointer.save(lattice, cellFields, initIter);
+    }
+    else {
+    	pcout << "(main) particle positions read from checkpoint." << std::endl;
     }
 
     // ---------------------- Set integration scheme and time step amplification for cell fields ---------------
@@ -422,7 +416,7 @@ int main(int argc, char *argv[]) {
     pcout << "(main) material model parameters: model: " << HEMOCELL_MATERIAL_MODEL <<  ", update scheme: " << HEMOCELL_MATERIAL_INTEGRATION << ", step-size: " << cellStep << " lt" << endl;
 
     plint domainVol = computeSum(*flagMatrix);
-    pcout << "(main) Number of fluid cells: " << domainVol << " / " << nx*ny*nz << std::endl;
+    pcout << "(main) Number of fluid cells: " << domainVol << " / " << nx*ny*nz << " (" << domainVol * (dx * dx * dx * 1e18) << " um^3)" << std::endl;
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
         plint nCells = cellFields[iCell]->getNumberOfCells_Global();
 
@@ -433,12 +427,12 @@ int main(int argc, char *argv[]) {
         Array<T, 3> cellRatio;
         T dynVolume = eqVolumes[iCell];
         for(int iDir = 0; iDir < 3; iDir++)
-            dynVolume *= 1.0 + (ppForceDistance * 1e-6 / dx) / cellBounds[iDir];
+            dynVolume *= 1.0 + (ppForceDistance * 0.5 * 1e-6 / dx) / cellBounds[iDir];
 
         pcout << "(main) Species: #" << iCell << " (" << cellFields[iCell]->getIdentifier() << ")"<< endl;
-        pcout << "(main)   Volume ratio [x100%]: " << nCells * dynVolume * 100.0 / (domainVol) << std::endl;
+        pcout << "(main)   Volume ratio [x100%]: " << nCells * eqVolumes[iCell] * 100.0 / domainVol << "(" << nCells * dynVolume * 100.0 / domainVol <<")" << std::endl;
         pcout << "(main)   nCells (global) = " << nCells << ", pid: " << global::mpi().getRank();
-        pcout << ", Volume = " << dynVolume * (dx * dx * dx * 1e18) << " um^3 (" << eqVolumes[iCell] << "->" << dynVolume << ")" << std::endl;
+        pcout << ", Cell volume = " << eqVolumes[iCell] * (dx * dx * dx * 1e18) << " um^3 (" <<  dynVolume * (dx * dx * dx * 1e18) << "  um^3)" << std::endl;
     }
 
     // ------------------------- Sync all quantities ----------------------
@@ -493,35 +487,49 @@ int main(int argc, char *argv[]) {
     {
         pcout << "(main) fresh start: warming up cell-free fluid domain for "  << warmup << " iterations..." << std::endl;
         for (plint itrt = 0; itrt < warmup; ++itrt) { cellFields[0]->setFluidExternalForce(poiseuilleForce); lattice.collideAndStream(); }
+
+	    // pcout << "(main) Assigning initial velocity to particles." << std::endl;
+		// for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+  		// 		cellFields[iCell]->interpolateVelocityIBM();
+        //		cellFields[iCell]->synchronizeCellQuantities(everyCCR);
+    	//	}
     }
 	T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
 	pcout << "(main) Mean velocity: " << meanVel  * (dx/dt) << " m/s; Apparent rel. viscosity: " << (u_lbm_max*0.5) / meanVel << std::endl;
 
-	
 
     // ------------------------ Starting main loop --------------------------
-    pcout << std::endl << "(main) starting simulation at " << initIter << " of tmax=" << tmax << " iterations (" << tmax * dt << " s)..." << std::endl;
+    pcout << std::endl << "(main) * starting simulation at " << initIter << " of tmax=" << tmax << " iterations (" << tmax * dt << " s)..." << std::endl;
     SimpleFicsionProfiler simpleProfiler(tmeas);
     simpleProfiler.writeInitial(nx, ny, nz, -1, numVerticesPerCell);
 
     pluint lastCellUpdateSince = 0; // Counts when we need to advance the material model
     T fMax = 0;  // maximal force encountered
-    plint lastTSChange = 0;  // Counts time since last iteration when we changed time-scale separation
+    //plint lastTSChange = 0;  // Counts time since last iteration when we changed time-scale separation
     plint adaptiveScaleStep = ceil(maxInnerIterSize/10.);
+    plint lastForceProbeSince = 0; // If time-step is small, dont probe force at every step
 
     
     global::timer("mainLoop").start();
     for (plint iter = initIter; iter < tmax + 1; iter++) {
 
+		// Check if we need to advance the material model during this iteration
         bool stepCells = false; // Whether to advance the material model
-
-        // Check if we need to advance the material model at this iteration
-        lastCellUpdateSince++;
         if(0 == (lastCellUpdateSince % cellStep)){
             stepCells = true; lastCellUpdateSince =0;
-        }
+        }; lastCellUpdateSince++;
 
-        // #####1##### Membrane Model + Repulsion of surfaces
+        // Check if it is time to probe the forces in the system and allow some adaptivity
+        bool forceProbe = false;
+        if(stepCells && (lastForceProbeSince > probeMaterialForceMinPeriod)) {
+        	forceProbe = true; lastForceProbeSince = 0;
+        }; lastForceProbeSince++;
+    
+    	// Reduce later code complexity, and calculate how much iterations left before saving
+    	plint stepsToSave = (iter % tmeas);
+    	if (stepsToSave > 0) stepsToSave = tmeas - stepsToSave;
+
+		// ##### 1 ##### Membrane Model + Repulsion of surfaces
         if(stepCells) {
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
                 cellFields[iCell]->applyConstitutiveModel();    // This zeroes forces at the beginning, always calculate this first
@@ -537,41 +545,41 @@ int main(int argc, char *argv[]) {
         }
 
         
-        // #####2##### IBM Spreading
+        // ##### 2 ##### IBM Spreading
         cellFields[0]->setFluidExternalForce(poiseuilleForce);
         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
             cellFields[iCell]->spreadForceIBM();
         }
 
-        // #####3##### LBM
+        // ##### 3 ##### LBM
         global::timer("LBM").start();
         lattice.collideAndStream();
         global::timer("LBM").stop();
-        
+
+        // ##### 4 & 5 ##### IBM interpolation + Particle position update
         if(stepCells){
             // Gather velocities from the fluid
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                // #####4##### IBM Interpolation
+                //  IBM Interpolation
                 cellFields[iCell]->interpolateVelocityIBM();
-                // #####5##### Position Update
+                //  Position Update
                 cellFields[iCell]->advanceParticles();
             }
         }
 
-        // Probe maximal force every 10th step
-        // TODO: Also probe for maximum velocity: maxVel * cellStep < 1
-        if ( ((iter+1) % probeMaterialForce) == 0 ) {  // Do not change inner time-step at the first iteration!
+ 		// ###### 6 ###### Probe maximal force & allow time-step adaptivity
+        if(forceProbe) {
 
             fMax = 0;
-
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
                 T fMax_field = cellFields[iCell]->getMaximumForce_Global();
                 if( fMax_field > fMax)
                     fMax = fMax_field;                
             }
 
+            // If adaptivity enabled, check if we need to modify time-steps
             if(isAdaptive) {
-                lastTSChange++;
+                //lastTSChange++;
 
                 // If force is too large decrease time step
                 if(fMax > maxForce) 
@@ -579,39 +587,49 @@ int main(int argc, char *argv[]) {
                     if(cellStep > minInnerIterSize){
                         cellStep-=adaptiveScaleStep; if(cellStep < minInnerIterSize) cellStep = minInnerIterSize;
 
-                        pcout << "(main) Large force encountered (" << fMax << "): reducing inner time-step to: " << cellStep << endl;
+                        pcout << "(main) Large force encountered (" << fMax << ", it: " << iter <<"): reducing inner time-step to: " << cellStep << endl;
 
                         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
                             cellFields[iCell]->setParticleUpdateScheme((T)cellStep);   
 
-                        lastTSChange = 0; // We just adjusted now
+                        //lastTSChange = 0; // We just adjusted now
                     }
-                }
-
-                // If forces are small and we did not increase recently: try to increase time-step
-                if((fMax < minForce) && (lastTSChange > 2))
+                } 
+                else if((fMax < minForce)) //&& (lastTSChange > 2)) // If forces are small and we did not increase recently: try to increase time-step
                 {
                     if(cellStep < maxInnerIterSize){  // Don't go over maxInnerIterSize even if forces are small!
                         cellStep+=adaptiveScaleStep; if(cellStep > maxInnerIterSize) cellStep = maxInnerIterSize;
 
-                        pcout << "(main) Forces are small (" << fMax << "): increasing inner time-step to: " << cellStep << endl;
+                        pcout << "(main) Forces are small (" << fMax << ", it: " << iter <<"): increasing inner time-step to: " << cellStep << endl;
 
                         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
                             cellFields[iCell]->setParticleUpdateScheme((T)cellStep);
 
-                        lastTSChange = 0;
+                        //lastTSChange = 0;
                     }
                 }
 
-                if (cellStep > 10)      // For large integration step there is no need to probe forces regularly
-                    probeMaterialForce = cellStep;
-                else
-                    probeMaterialForce = 10;
+                // Check if we need to slow down to have an update point at saving
+                if(stepsToSave != cellStep && stepsToSave != 0){ 	// If saving will NOT fall to cell update iteration
+                	if(stepsToSave < cellStep)	// If we would over-step it
+                	{
+                		cellStep = stepsToSave;
+            	    	pcout << "(main) Inner-step was reset to coincide with checkpointing (" << cellStep << ", it: " << iter <<")" <<endl;
+        	        	for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
+    	                        cellFields[iCell]->setParticleUpdateScheme((T)cellStep);
+	                }
+                	else if (stepsToSave < (probeMaterialForceMinPeriod-lastForceProbeSince)) {  // If the next check is too late and we would over-step it (can only happen, if cellStep < probeMaterialForceMinPeriod)
+            	    	cellStep = 1;
+        	        	pcout << "(main) Inner-step was reset to coincide with checkpointing (" << cellStep << ", it: " << iter <<")" <<endl;
+    	            	for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
+	                            cellFields[iCell]->setParticleUpdateScheme((T)cellStep);
+                	}
+            	}
             }
         }
 
-        // #6# Output
-        if ((iter % tmeas) == 0) {
+        // #### 7 ##### Output & Sync particles
+        if (stepsToSave == 0) {
             SyncRequirements everyCCR(allReductions);
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
                 cellFields[iCell]->synchronizeCellQuantities(everyCCR);
@@ -640,12 +658,15 @@ int main(int argc, char *argv[]) {
                 cellFields[iCell]->synchronizeCellQuantities();
             }
         }
+
     }
 
+    // Be nice and clean up the cell fields
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
         delete cellFields[iCell];
     }
 
     simpleProfiler.writeIteration(tmax + 1);
-    pcout << "(main) Simulation finished. :)" << std::endl;
+
+    pcout << "(main) * simulation finished. :)" << std::endl;
 }

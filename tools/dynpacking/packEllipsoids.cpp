@@ -17,7 +17,7 @@
 
 using namespace std;
 
-// Oversize ellipsoids by 10%
+// Oversize ellipsoids by 10% (only for init suspension)
 const double OVERSIZE = 1.1;	// This helps to avoid too close membranes -> problematic overlaps for IBM
 
 class Packing {
@@ -52,8 +52,9 @@ class Packing {
     //double rbcA = 8.0, rbcB = 2.5, rbcC = 8.0;
     //double plateletA = 2.5 , plateletB = 0.75, plateletC = 2.5;
 
-    double rbcA = 9.0, rbcB = 3.5, rbcC = 9.0; // Inreased to cover biconcave shape of RBCs
-    double plateletA = 2.5 , plateletB = 0.75, plateletC = 2.5;
+    //double rbcA = 9.0, rbcB = 4.4, rbcC = 9.0; // Inreased to cover biconcave shape of RBCs
+    double rbcA = 8.4, rbcB = 4.4, rbcC = 8.4; // Inreased to cover biconcave shape of RBCs
+    double plateletA = 2.4 , plateletB = 1.05, plateletC = 2.4;
 
 
     double Sizing = 1.0;
@@ -217,6 +218,12 @@ void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float
     // Get nominal volume ratio
     Pnom0 = (rbcVol * nRBC + plateletVol * nPlatelet) / domainVol;
 
+    if (Pnom0 > 0.7){
+    	cout << "*** WARNING ***" << endl;
+    	cout << "For the requested hematocrit the enclosing ellipsoids yield a nominal volume ratio of: " << Pnom0 << endl;
+    	cout << "Best known packing is around 0.77!!! You might want to reconsider..." << endl;
+    }
+
     if(rndRotation)
     	Nrot_step = 1;	// Execute rotation every n-th step
     else
@@ -229,6 +236,7 @@ void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float
     cout << "Rotation happens every nth step: " << Nrot_step << endl;
     cout << "Number of bins: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
     cout << "Number of cells to pack:  " << endl;
+    cout << "Hematocrit: " << Pnom0 * 100.0 << "%." << endl;
     
     cout << "    RBCs: " << nRBC <<endl; //<< " Resized volume(for ellipsoids): " << rbcVol << " Dimensions: " << rbcA << "x" << rbcB << "x"<< rbcC << endl;
     cout << "    Platelets: " << nPlatelet <<endl; //<< " Resized volume(for ellipsoids): "<< plateletVol << endl;
@@ -239,10 +247,12 @@ void Packing::initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ,
 {
     // Calc. volumes
     double domainVol = sizeX * sizeY * sizeZ;
-    double rbcVol = 88.7; // This is set to match the model used in ficsion! //4./3. * PI * rbcA/2. * rbcB/2. * rbcC/2.;
 
-    int nRBC = (int)round( hematocrit * domainVol / rbcVol );
+    double rbcVolNominal = 90.0; // This is set to match the model used in ficsion! //4./3. * PI * rbcA/2. * rbcB/2. * rbcC/2.;
+
+    int nRBC = (int)round( hematocrit * domainVol / rbcVolNominal );
     int nPlatelets = (int)round(nRBC * rPlatelet); // the typical platelet count is about 5-8% of the RBC count
+
 
     initBlood(nRBC, nPlatelets, sizeX, sizeY, sizeZ, maxSteps, sizing);
 

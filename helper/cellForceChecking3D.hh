@@ -136,34 +136,36 @@ void writeBendingDataVTK(
 }
 
 
-
+// TODO: This function might be obsolete!
 void testBending() {
-    Array<T,3> x1(1.,0.,0.);
-    Array<T,3> x3(-1.,0.,0.);
-    Array<T,3> x4(0.,-1.,0.);
-    Array<T,3> x2, f1,f2,f3,f4,f;
+    Array<T,3> xi(1.,0.,0.);
+    Array<T,3> xj(-1.,0.,0.);
+    Array<T,3> xl(0.,-1.,0.);
+    Array<T,3> xk, f1,f2,f3,f4,f;
     int eqAngle=0, th;
 //    for (eqAngle=0; eqAngle<360; eqAngle+=1) {
         for (int ath=0; ath<360; ath+=1) {
             th = (ath+180)%360;
-            x2 = Array<T,3>(0., cos(th*pi/180), sin(th*pi/180));
+            xk = Array<T,3>(0., cos(th*pi/180), sin(th*pi/180));
 
         	Array<T,3> ni(0.,0.,0.),  nj(0.,0.,0.);
         	T Ai, Aj;
-            crossProduct(x2-x1,  x3-x1, ni);
-            crossProduct(x4-x3,  x1-x3, nj);
+            crossProduct(xk-xi,  xj-xi, ni);
+            crossProduct(xl-xj,  xi-xj, nj);
             Ai = norm(ni)/2; ni = ni*1.0/(2*Ai);
             Aj = norm(nj)/2; nj = nj*1.0/(2*Aj);
 //            f1 = computeBendingForceFromPotential (x1, x2, x3, x4, 0., 0.,eqAngle*pi/180, 1.0, f2, f3, f4);
             //f1 = computeBendingForce(x1, x2, x3, x4, ni, nj, Ai, Aj, 0.5*(Ai+Aj), 2.0, eqAngle*pi/180, 1.0, f2, f3, f4);
-            computeBendingForce(x1,x2, x3,x4, ni, nj, Ai, Aj, 0.5*(Ai+Aj), 2.0, eqAngle*pi/180, 1.0, f1, f2);
+            //computeBendingForce(x1,x2, x3,x4, ni, nj, Ai, Aj, 0.5*(Ai+Aj), 2.0, eqAngle*pi/180, 1.0, f1, f2);
+            //computeBendingForce(x1,x2, x3,x4, ni, nj, Ai, Aj, 0.5*(Ai+Aj), 2.0, eqAngle*pi/180, 1.0, f1, f2);
+            computeBendingForce(xi,xj, xk,xl, ni, nj, 0.5*(Ai+Aj), 2.0, eqAngle*pi/180, 1.0, f1, f2);
             f = f1+f2+f3+f4;
             if (norm(f) < 1.e-10) {
                 pcout << "BENDOK;"  ;
             } else {
                 pcout << "BENDNOTOK;" ;
             }
-            writeBendingDataVTK(x1,x2,x3,x4,f1,f2,f3,f4, createFileName("./BTEST/DANGLE_",ath,10)+".vtk");
+            writeBendingDataVTK(xi,xj,xk,xl,f1,f2,f3,f4, createFileName("./BTEST/DANGLE_",ath,10)+".vtk");
             pcout << eqAngle * pi/180
                   << ";" << th* pi/180
                   << ";" << (th-eqAngle)* pi/180

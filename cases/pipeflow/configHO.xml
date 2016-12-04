@@ -6,7 +6,7 @@
     <kVolume> 800.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
     <kSurface> 0.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
     <kShear> 80.0e0 </kShear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
-    <etaM> 0.04e-8 </etaM> <!-- NOT WORKING ATM --> <!--membrane viscosity (in N s/m^2 (Pa s) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
+    <etaM> 0.022e-14 </etaM> <!-- NOT WORKING ATM --> <!--membrane viscosity (in N s/m^2 (Pa s) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
     <kWLC> 1.0 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
     <eqLengthRatio> 2.2 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
     <kRep> 1.0e0 </kRep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
@@ -27,7 +27,7 @@
     <cellPath> ./lib/RBC.stl </cellPath>
     <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
     <minNumOfTriangles> 600 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
-    <ppForceDistance> 0.45 </ppForceDistance> <!-- Particle-particle force intaraction cut-off [um]. -->
+    <ppForceDistance> 0.75 </ppForceDistance> <!-- Particle-particle force intaraction cut-off [um]. -->
 </ibm>
 
 <domain>

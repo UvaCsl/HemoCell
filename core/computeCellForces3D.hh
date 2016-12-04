@@ -1,23 +1,3 @@
-/* This file is part of the Palabos library.
- * Copyright (C) 2009, 2010 Jonas Latt
- * E-mail contact: jonas@lbmethod.org
- * The most recent release of Palabos can be downloaded at 
- * <http://www.lbmethod.org/palabos/>
- *
- * The library Palabos is free software: you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * The library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #ifndef COMPUTE_CELL_FORCES3D_HH
 #define COMPUTE_CELL_FORCES3D_HH
 
@@ -73,28 +53,24 @@ Array<T,3> computeHighOrderLocalAreaConservationForce(
 }
 
 /* Calculates the bending force for the triangles formed by the vertices:
-* (x1, x2, x3) and (x1,x3,x4) with the common edge (x1,x3).
-* eqAngle is expected to be between [-pi,pi].  */
+* (xi, xj, xk) and (xi,xj,xl) with the common edge (xi,xj).
+* eqAngle is expected to be between [-pi,pi].  
+* This force pulls the opposing vertices apart (outwards from the shape).
+* WARNING:  This force proved to be stable only for small deformations!
+*           Use the inward pulling version instead! */
 template<typename T>
-Array<T,3> computeHighOrderBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
-                                         Array<T,3> const& x3, Array<T,3> const& x4,
-                                         Array<T,3> const& ni, Array<T,3> const& nj, T eqAngle, T k,
-                                         Array<T,3> & iFx, Array<T,3> & jFx) {
+Array<T,3> computeHighOrderBendingForce (Array<T,3> const& xi, Array<T,3> const& xj,
+                                         Array<T,3> const& xk, Array<T,3> const& xl,
+                                         Array<T,3> const& nTk, Array<T,3> const& nTl, T eqAngle, T k,
+                                         Array<T,3> & kFx, Array<T,3> & lFx) {
 /*
 * Triangles are:
-*      (i, j, k) and (l, k, j). These triangles share
-*      (x2, x1, x3) and (x4, x3, x1). These triangles share
-*      the common edge j-k or 1-3.
-*
-*      crossProduct(jPosition - iPosition, kPosition - jPosition, nijk);
-*      crossProduct(kPosition - lPosition, jPosition - kPosition, nlkj);
-*      crossProduct(x1 - x2, x3 - x1, nijk);
-*      crossProduct(x3 - x4, x1 - x3, nlkj);
+	(i,j,k) and (i, j, l) share the edge (i,j).
 */
     T dAngle;
-    T edgeAngle = angleBetweenVectors(ni, nj);
+    T edgeAngle = angleBetweenVectors(nTk, nTl);
 
-    plint sign = dot(x2-x1, nj) > 0?1:-1;
+    plint sign = dot(xk-xi, nTl) > 0?1:-1;
     if (sign <= 0) {
         edgeAngle = 2*pi-edgeAngle;
     }
@@ -112,8 +88,100 @@ Array<T,3> computeHighOrderBendingForce (Array<T,3> const& x1, Array<T,3> const&
     T force = -k * ( dAngle + dAngle / (0.62 - (dAngle * dAngle)) );    // Gets very strong around pi/4
     //T force = -k * (dAngle + dAngle*dAngle*dAngle);
 
-    iFx = force*ni;
-    jFx = force*nj;
+    kFx = -force*nTk;
+    lFx = -force*nTl;
+    return kFx;
+}
+
+/* Calculates the bending force for the triangles formed by the vertices:
+* (xi, xj, xk) and (xi,xj,xl) with the common edge (xi,xj).
+* eqAngle is expected to be between [-pi,pi]. 
+* This function pulls the edge inwards to the closed shape.  */
+template<typename T>
+Array<T,3> computeHighOrderBendingForceIn (Array<T,3> const& xi, Array<T,3> const& xj,
+                                           Array<T,3> const& xk, Array<T,3> const& xl,
+                                           Array<T,3> const& nTk, Array<T,3> const& nTl, T eqAngle, T k,
+                                           Array<T,3> & iFx, Array<T,3> & jFx) {
+/*
+* Triangles are:
+	(i,j,k) and (i, j, l) share the edge (i,j).
+*/
+    T dAngle;
+    T edgeAngle = angleBetweenVectors(nTk, nTl);
+
+    plint sign = dot(xk-xi, nTl) > 0?1:-1;
+    if (sign <= 0) {
+        edgeAngle = 2*pi-edgeAngle;
+    }
+    edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle;
+    eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
+    eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
+
+    // WARNING: sign is mixed up! (Clockwise vs. anti-clockwise problem)
+    //dAngle = (edgeAngle-eqAngle);
+    dAngle = eqAngle-edgeAngle;
+
+    // Non-linear force, that has linear behaviour only at low dAngles but stiffens up at higher dAngles
+    // It prevents crumpled geometries, while retains previous behavior at small deformations
+    //T force = -k*(dAngle + 1e4*pow(dAngle, 3));
+    T force = -k * ( dAngle + dAngle / (0.62 - (dAngle * dAngle)) );    // Gets very strong around pi/4
+    //T force = -k * (dAngle + dAngle*dAngle*dAngle);
+
+    iFx = force*(nTk+nTl)*0.5;
+    jFx = iFx;
+
+    return iFx;
+}
+
+
+/* Calculates the bending force for the triangles formed by the vertices:
+* (x1, x2, x3) and (x1,x3,x4) with the common edge (x1,x3).
+* eqAngle is expected to be between [-pi,pi].  
+* This function pulls the opposing vertices apart while the edge inwards.
+* Note: for closed surface most bending forces will cancel out!*/
+template<typename T>
+Array<T,3> computeHighOrderBendingForce4p (Array<T,3> const& xi, Array<T,3> const& xj,
+                                           Array<T,3> const& xk, Array<T,3> const& xl,
+                                           Array<T,3> const& nTk, Array<T,3> const& nTl, T eqAngle, T k,
+                                           Array<T,3> & iFx, Array<T,3> & jFx, Array<T,3> & kFx, Array<T,3> & lFx) {
+/*
+* Triangles are:
+	(i,j,k) and (i, j, l) share the edge (i,j).
+*/
+    T dAngle;
+    T edgeAngle = angleBetweenVectors(nTk, nTl);
+
+    plint sign = dot(xk-xi, nTl) > 0?1:-1;
+    if (sign <= 0) {
+        edgeAngle = 2*pi-edgeAngle;
+    }
+    edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle;
+    eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
+    eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
+
+    // WARNING: sign is mixed up! (Clockwise vs. anti-clockwise problem)
+    //dAngle = (edgeAngle-eqAngle);
+    dAngle = eqAngle-edgeAngle;
+
+    // Non-linear force, that has linear behaviour only at low dAngles but stiffens up at higher dAngles
+    // It prevents crumpled geometries, while retains previous behavior at small deformations
+    //T force = -k*(dAngle + 1e4*pow(dAngle, 3));
+    T force = -k * ( dAngle + dAngle / (0.62 - (dAngle * dAngle)) );    // Gets very strong around pi/4
+    //T force = -k * (dAngle + dAngle*dAngle*dAngle);
+
+
+    #if HEMOCELL_MEMBRANE_BENDING == 2
+        kFx = -force*nTk*0.5; // These on a closed and regular surface will mostly cancel eachother out
+        lFx = -force*nTl*0.5;
+        iFx = -(kFx+lFx);   
+        jFx = iFx;
+    #elif HEMOCELL_MEMBRANE_BENDING == 3
+        kFx = -force*nTk; // These on a closed and regular surface will mostly cancel eachother out
+        lFx = -force*nTl;
+        iFx = -(kFx+lFx)*0.5;   
+        jFx = iFx;
+    #endif
+
     return iFx;
 }
 
@@ -344,10 +412,10 @@ Array<T,3> computeElasticRepulsiveForce(Array<T,3> const& dAdx, T triangleArea, 
  * (x1, x2, x3) and (x1,x3,x4) with the common edge (x1,x3).
  * eqAngle is expected to be between [-pi,pi].  */
 template<typename T>
-Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
-                                Array<T,3> const& x3, Array<T,3> const& x4,
-                                Array<T,3> const& ni, Array<T,3> const& nj,
-                                T Ai, T Aj,
+Array<T,3> computeBendingForce (Array<T,3> const& xi, Array<T,3> const& xj,
+                                Array<T,3> const& xk, Array<T,3> const& xl,
+                                Array<T,3> const& nTk, Array<T,3> const& nTl,
+                                //T Ai, T Aj,
                                 T eqArea, T eqLength, T eqAngle, T k,
 								Array<T,3> & iFx, Array<T,3> & jFx) {
 /* The most messy force!
@@ -362,9 +430,9 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
  *      crossProduct(x3 - x4, x1 - x3, nlkj);
 */
 	T dAngle;
-	T edgeAngle = angleBetweenVectors(ni, nj);
+	T edgeAngle = angleBetweenVectors(nTk, nTl);
         
-	plint sign = dot(x2-x1, nj) > 0?1:-1;
+	plint sign = dot(xk-xi, nTl) > 0?1:-1;
 	if (sign <= 0) {
 		edgeAngle = 2*pi-edgeAngle;
 	}
@@ -380,10 +448,69 @@ Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
     // T force = -k*(dAngle) * (eqLength*0.5/eqArea);
 
     // Force based on sphere-curvature model
+    T force = -k * sin( dAngle );
+
+    iFx = force*(nTk+nTl)*0.5;
+    jFx = iFx;
+
+    return iFx;
+}
+
+/* The most messy force! */
+/* Calculates the bending force for the triangles formed by the vertices:
+ * (x1, x2, x3) and (x1,x3,x4) with the common edge (x1,x3).
+ * eqAngle is expected to be between [-pi,pi].  */
+template<typename T>
+Array<T,3> computeBendingForce4p (Array<T,3> const& xi, Array<T,3> const& xj,
+                                Array<T,3> const& xk, Array<T,3> const& xl,
+                                Array<T,3> const& nTk, Array<T,3> const& nTl,
+                                //T Ai, T Aj,
+                                T eqArea, T eqLength, T eqAngle, T k,
+                                Array<T,3> & iFx, Array<T,3> & jFx, Array<T,3> & kFx, Array<T,3> & lFx) {
+/* The most messy force!
+ * Triangles are:
+ *      (i, j, k) and (l, k, j). These triangles share
+ *      (x2, x1, x3) and (x4, x3, x1). These triangles share
+ *      the common edge j-k or 1-3.
+ *
+ *      crossProduct(jPosition - iPosition, kPosition - jPosition, nijk);
+ *      crossProduct(kPosition - lPosition, jPosition - kPosition, nlkj);
+ *      crossProduct(x1 - x2, x3 - x1, nijk);
+ *      crossProduct(x3 - x4, x1 - x3, nlkj);
+*/
+    T dAngle;
+    T edgeAngle = angleBetweenVectors(nTk, nTl);
+        
+    plint sign = dot(xk-xi, nTl) > 0?1:-1;
+    if (sign <= 0) {
+        edgeAngle = 2*pi-edgeAngle;
+    }
+    edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle;
+    eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
+    eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
+
+    // WARNING: sign is mixed up! (Clockwise vs. anti-clockwise problem)
+    //dAngle = (edgeAngle-eqAngle);
+    dAngle = eqAngle-edgeAngle;
+
+    // Linear force
+    // T force = -k*(dAngle) * (eqLength*0.5/eqArea);
+
+    // Force based on sphere-curvature model
      T force = -k * sin( dAngle );
 
-    iFx = force*ni;
-    jFx = force*nj;
+    #if HEMOCELL_MEMBRANE_BENDING == 2
+        kFx = -force*nTk*0.5; // Reduced to half to avoid self-cancellation.
+        lFx = -force*nTl*0.5;
+        iFx = -(kFx+lFx);   
+        jFx = iFx;
+    #elif HEMOCELL_MEMBRANE_BENDING == 3
+        kFx = -force*nTk; // These on a closed and regular surface will mostly cancel eachother out
+        lFx = -force*nTl;
+        iFx = -(kFx+lFx)*0.5;   
+        jFx = iFx;
+    #endif
+
     return iFx;
 }
 
@@ -447,20 +574,25 @@ Array<T,3> computeBendingForce_Krueger (Array<T,3> const& x1, Array<T,3> const& 
  * Angles are expected to be between [-pi,pi]. */
 /* The most messy force! */
 template<typename T>
-Array<T,3> computeBendingForces (T edgeAngle, T eqAngle, T k,
-								Array<T,3> const& ni, Array<T,3> const& nj,
-								Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4) {
-	Array<T,3> fx1;
+Array<T,3> computeBendingForcesLin4p (T edgeAngle, T eqAngle, T k,
+								Array<T,3> const& nTk, Array<T,3> const& nTl,
+								Array<T,3> & jFx, Array<T,3> & kFx, Array<T,3> & lFx) {
+	Array<T,3> iFx;
 	edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle;
 	eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle;
 	eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle;
+	
 	T dAngle = (edgeAngle-eqAngle);
-	fx2 = -k*dAngle*ni;
-    fx4 = -k*dAngle*nj;
-    fx1 = -(fx2+fx4)*0.5;
-    fx3 = fx1;
-    return fx1;
+	T force = -k * dAngle;
+	
+   	kFx = -force*nTk; // These on a closed and regular surface will mostly cancel eachother out
+    lFx = -force*nTl;
+    iFx = -(kFx+lFx)*0.5;   
+    jFx = iFx;
+
+    return iFx;
 }
+
 
 template<typename T>
 Array<T,3> computeBendingForceEdge (T edgeAngle, T eqAngle, T k,

@@ -166,27 +166,47 @@ Array<T,3> computeElasticRepulsiveForce(Array<T,3> const& dAdx, T triangleArea, 
  * eqAngle is expected to be between [-pi,pi].  */
 /* The most messy force! */
 template<typename T>
-Array<T,3> computeBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
-								Array<T,3> const& x3, Array<T,3> const& x4,
-								Array<T,3> const& ni, Array<T,3> const& nj,
-								T Ai, T Aj,
+Array<T,3> computeBendingForce (Array<T,3> const& xi, Array<T,3> const& xj,
+								Array<T,3> const& xk, Array<T,3> const& xl,
+								Array<T,3> const& nTk, Array<T,3> const& nTl,
+								//T Ai, T Aj,
 								T eqArea, T eqLength, T eqAngle, T k,
 								Array<T,3> & iFx, Array<T,3> & jFx);
 
 template<typename T>
-Array<T,3> computeHighOrderBendingForce (Array<T,3> const& x1, Array<T,3> const& x2,
-                                         Array<T,3> const& x3, Array<T,3> const& x4,
-                                         Array<T,3> const& ni, Array<T,3> const& nj,
-                                         T eqAngle, T k, Array<T,3> & iFx, Array<T,3> & jFx);
+Array<T,3> computeBendingForce4p (Array<T,3> const& xi, Array<T,3> const& xj,
+                                Array<T,3> const& xk, Array<T,3> const& xl,
+                                Array<T,3> const& nTk, Array<T,3> const& nTl,
+                                //T Ai, T Aj,
+                                T eqArea, T eqLength, T eqAngle, T k,
+                                Array<T,3> & iFx, Array<T,3> & jFx, Array<T,3> & kFx, Array<T,3> & lFx);
+
+template<typename T>
+Array<T,3> computeHighOrderBendingForce (Array<T,3> const& xi, Array<T,3> const& xj,
+                                         Array<T,3> const& xk, Array<T,3> const& xl,
+                                         Array<T,3> const& nTk, Array<T,3> const& nTl, T eqAngle, T k,
+                                         Array<T,3> & kFx, Array<T,3> & lFx);
+
+template<typename T>
+Array<T,3> computeHighOrderBendingForceIn (Array<T,3> const& xi, Array<T,3> const& xj,
+                                           Array<T,3> const& xk, Array<T,3> const& xl,
+                                           Array<T,3> const& nTk, Array<T,3> const& nTl, T eqAngle, T k,
+                                           Array<T,3> & iFx, Array<T,3> & jFx);
+
+template<typename T>
+Array<T,3> computeHighOrderBendingForce4p (Array<T,3> const& xi, Array<T,3> const& xj,
+                                           Array<T,3> const& xk, Array<T,3> const& xl,
+                                           Array<T,3> const& nTk, Array<T,3> const& nTl, T eqAngle, T k,
+                                           Array<T,3> & iFx, Array<T,3> & jFx, Array<T,3> & kFx, Array<T,3> & lFx);
 /*
  * Calculates the bending forces.
  * Angles are expected to be between [-pi,pi].
  */
 /* The most messy force! */
 template<typename T>
-Array<T,3> computeBendingForces (T edgeAngle, T eqAngle, T k,
-								Array<T,3> const& ni, Array<T,3> const& nj,
-								Array<T,3> & fx2, Array<T,3> & fx3, Array<T,3> & fx4) ;
+Array<T,3> computeBendingForcesLin4p (T edgeAngle, T eqAngle, T k,
+								Array<T,3> const& nTk, Array<T,3> const& nTl,
+								Array<T,3> & fxj, Array<T,3> & fxk, Array<T,3> & fxl) ;
 
 template<typename T>
 Array<T,3> computeBendingForceEdge (T edgeAngle, T eqAngle, T k,

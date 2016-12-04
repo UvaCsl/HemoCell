@@ -235,11 +235,20 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceSuresh (Cell3D<T,
             Array<T,3> const& lX = cell->getVertex(lVertex);
 
             /*== Compute bending force for the vertex as part of the main edge ==*/
-            Array<T,3> fi, fj;
-            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fi, fj);
-
-            iParticle->get_force() += fi;
-            jParticle->get_force() += fj;
+            #if HEMOCELL_MEMBRANE_BENDING == 1
+                Array<T,3> fi, fj;
+                fi = computeBendingForce (iX, jX, kX, lX, iNormal, jNormal, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fi, fj);
+                iParticle->get_force() += fi;
+                jParticle->get_force() += fj;
+            #else
+                // Four-point bending effect
+                Array<T,3> fi, fj, fk, fl;
+                fi = computeBendingForce (iX, jX, kX, lX, iNormal, jNormal, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fi, fj, fk, fl);
+                iParticle->get_force() += fi;
+                jParticle->get_force() += fj;
+                kParticle->get_force() += fk;
+                lParticle->get_force() += fl;
+            #endif
 
 #ifdef PLB_DEBUG // Less Calculations
             iParticle->get_f_bending() += fi;
@@ -403,11 +412,10 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
         /* ------------------------------------*/
         /*    Dissipative Forces Calculations  */
         /* ------------------------------------*/
-        //if (eta_m>0.0) {
+        //if (eta_m>0.0) { 
             force1 = computeDissipativeForceHO(iX, jX, iParticle->get_v(), jParticle->get_v(), eta_m);
             iParticle->get_force() += force1;
             jParticle->get_force() -= force1;
-
         //}
 
         /* ------------------------------------*/
@@ -417,22 +425,37 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
 
         T edgeAngle = cell->computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
         if (angleFound) {
-            Array<T,3> iNormal = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
-            Array<T,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
+            Array<T,3> tri1Norm = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
+            Array<T,3> tri2Norm = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
+            SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+            SurfaceParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
+
             //T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
             //T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
-            //SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
-            //SurfaceParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
+
             Array<T,3> const& kX = cell->getVertex(kVertex);
             Array<T,3> const& lX = cell->getVertex(lVertex);
 
             /*== Compute bending force for the vertex as part of the main edge ==*/
-            Array<T,3> fi, fj;
-            fi = computeHighOrderBendingForce (iX, kX, jX, lX, iNormal, jNormal, eqAnglePerEdge[edgeId], k_bend, fi, fj);
-            //if(norm(fi) > 1e-3) fi *= 1e-3/norm(fi);
-            //if(norm(fj) > 1e-3) fj *= 1e-3/norm(fj);
-            iParticle->get_force() += fi;
-            jParticle->get_force() += fj;
+            #if HEMOCELL_MEMBRANE_BENDING == 1
+/*                Array<T,3> fk, fl;
+                fk = computeHighOrderBendingForce (iX, jX, kX, lX, tri1Norm, tri2Norm, eqAnglePerEdge[edgeId], k_bend, fk, fl);
+                kParticle->get_force() += fk;
+                lParticle->get_force() += fl;
+                */
+                Array<T,3> fi, fj;
+                computeHighOrderBendingForceIn (iX, jX, kX, lX, tri1Norm, tri2Norm, eqAnglePerEdge[edgeId], k_bend, fi, fj);
+                iParticle->get_force() += fi;
+                jParticle->get_force() += fj;
+            #else
+                // Four-point bending effect - more stable, less structurally strong, might oscillate on lower lattice resolution
+                Array<T,3> fi, fj, fk, fl;
+                computeHighOrderBendingForce4p (iX, jX, kX, lX, tri1Norm, tri2Norm, eqAnglePerEdge[edgeId], k_bend, fi, fj, fk, fl);
+                iParticle->get_force() += fi;
+                jParticle->get_force() += fj;
+                kParticle->get_force() += fk;
+                lParticle->get_force() += fl;
+            #endif
 
         } else {
             cout << global::mpi().getRank() << " WARNING: angle not found between neighbouring triangles -> surface is not closed and smooth!" << std::endl;
