@@ -66,6 +66,10 @@ void WriteInMultipleHDF5Files<T>::processGenericBlocks (
      dim[0] = Nx; dim[1] = Ny; dim[2] = Nz;
      dim[3] = 3;
 
+     hsize_t chunk[4];  
+     chunk[0] = Nx/4; chunk[1] = Ny/4; chunk[2] = Nz/4;
+     chunk[3] = 3;   
+
     for (pluint i = 0; i < hdf5ContainerNames.size(); ++i) {
         int nDim = hdf5ContainerDimensions[i];
         if (nDim == 1) {
@@ -96,7 +100,7 @@ void WriteInMultipleHDF5Files<T>::processGenericBlocks (
 #else            
             int sid = H5Screate_simple(3,dim,NULL);
             int plist_id = H5Pcreate (H5P_DATASET_CREATE);
-            H5Pset_chunk(plist_id, 3, dim); 
+            H5Pset_chunk(plist_id, 3, chunk); 
             H5Pset_deflate(plist_id, 6);
             int did = H5Dcreate2(file_id,hdf5ContainerNames[i].c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
             H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,matrixScalar);
@@ -139,7 +143,7 @@ void WriteInMultipleHDF5Files<T>::processGenericBlocks (
 #else
             int sid = H5Screate_simple(4,dim,NULL);
             int plist_id = H5Pcreate (H5P_DATASET_CREATE);
-            H5Pset_chunk(plist_id, 4, dim); 
+            H5Pset_chunk(plist_id, 4, chunk); 
             H5Pset_deflate(plist_id, 6);
             int did = H5Dcreate2(file_id,hdf5ContainerNames[i].c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
             H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,matrixTensor);
@@ -179,7 +183,7 @@ void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
               T dx, T dt, plint iter, bool invertXZ_for_XDMF)
 {
     plint envelopeWidth = lattice.getMultiBlockManagement().getEnvelopeWidth();
-//    cout << "env " << envelopeWidth << std::endl;
+
     MultiTensorField3D<T,3> vel = *computeVelocity(lattice);
     MultiTensorField3D<T,3> vorticity = *computeVorticity(vel);
     MultiTensorField3D<T,3> force(lattice);

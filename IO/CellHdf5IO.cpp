@@ -52,7 +52,11 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      hid_t file_id;
      file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-     hsize_t dimVertices[2]; dimVertices[0] = Nc; dimVertices[1] = 3;
+     hsize_t dimVertices[2]; 
+     dimVertices[0] = Nc; dimVertices[1] = 3;
+
+    hsize_t chunk[2];  
+    chunk[0] = Nc/p; chunk[1] = 3;
 
      H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
      H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
@@ -84,15 +88,15 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          }
 #ifdef NO_COMPRESSION
          H5LTmake_dataset_double(file_id, ccrNames[ccrId].c_str(), 2, dimVertices, matrixTensor);
-#else            
-            int sid = H5Screate_simple(2,dimVertices,NULL);
-            int plist_id = H5Pcreate (H5P_DATASET_CREATE);
-            H5Pset_chunk(plist_id, 2, dimVertices); 
-            H5Pset_deflate(plist_id, 6);
-            int did = H5Dcreate2(file_id,ccrNames[ccrId].c_str(),H5T_NATIVE_DOUBLE,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
-            H5Dwrite(did,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,matrixTensor);
-            H5Dclose(did);
-            H5Sclose(sid);
+#else               
+        int sid = H5Screate_simple(2,dimVertices,NULL);
+        int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+        H5Pset_chunk(plist_id, 2, chunk); 
+        H5Pset_deflate(plist_id, 6);
+        int did = H5Dcreate2(file_id,ccrNames[ccrId].c_str(),H5T_NATIVE_DOUBLE,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+        H5Dwrite(did,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,matrixTensor);
+        H5Dclose(did);
+        H5Sclose(sid);
 #endif
      }
      delete [] matrixTensor;
@@ -109,15 +113,16 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          }
 #ifdef NO_COMPRESSION
          H5LTmake_dataset_double(file_id, ccrNames[ccrId].c_str(), 1, dimVertices, scalarTensor);
-#else            
-            int sid = H5Screate_simple(1,dimVertices,NULL);
-            int plist_id = H5Pcreate (H5P_DATASET_CREATE);
-            H5Pset_chunk(plist_id, 1, dimVertices); 
-            H5Pset_deflate(plist_id, 6);
-            int did = H5Dcreate2(file_id,ccrNames[ccrId].c_str(),H5T_NATIVE_DOUBLE,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
-            H5Dwrite(did,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,scalarTensor);
-            H5Dclose(did);
-            H5Sclose(sid);
+#else
+            
+        int sid = H5Screate_simple(1,dimVertices,NULL);
+        int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+        H5Pset_chunk(plist_id, 1, chunk); 
+        H5Pset_deflate(plist_id, 6);
+        int did = H5Dcreate2(file_id,ccrNames[ccrId].c_str(),H5T_NATIVE_DOUBLE,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+        H5Dwrite(did,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,scalarTensor);
+        H5Dclose(did);
+        H5Sclose(sid);
 #endif
      }
      delete [] scalarTensor;
@@ -139,16 +144,16 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          }
          hsize_t dimTensor[2]; dimTensor[0] = Nc; dimTensor[1] = numT;
 #ifdef NO_COMPRESSION
-         H5LTmake_dataset_double(file_id, ccrNames[ccrId].c_str(), 2, dimTensor, tensorTensor);
+        H5LTmake_dataset_double(file_id, ccrNames[ccrId].c_str(), 2, dimTensor, tensorTensor);
 #else            
-            int sid = H5Screate_simple(2,dimTensor,NULL);
-            int plist_id = H5Pcreate (H5P_DATASET_CREATE);
-            H5Pset_chunk(plist_id, 2, dimTensor); 
-            H5Pset_deflate(plist_id, 6);
-            int did = H5Dcreate2(file_id,ccrNames[ccrId].c_str(),H5T_NATIVE_DOUBLE,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
-            H5Dwrite(did,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,tensorTensor);
-            H5Dclose(did);
-            H5Sclose(sid);
+        int sid = H5Screate_simple(2,dimTensor,NULL);
+        int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+        H5Pset_chunk(plist_id, 2, chunk); 
+        H5Pset_deflate(plist_id, 6);
+        int did = H5Dcreate2(file_id,ccrNames[ccrId].c_str(),H5T_NATIVE_DOUBLE,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+        H5Dwrite(did,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,tensorTensor);
+        H5Dclose(did);
+        H5Sclose(sid);
 #endif
          delete [] tensorTensor;
      }

@@ -38,7 +38,12 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
      std::string fileName = global::directories().getOutputDir() + "/hdf5/" + createFileName((identifier+".").c_str(),iter,8) + createFileName(".p.",id,3) + ".h5";
      hid_t file_id;
      file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-     hsize_t dimVertices[2]; dimVertices[0] = Np; dimVertices[1] = 3;
+     
+     hsize_t dimVertices[2]; 
+     dimVertices[0] = Np; dimVertices[1] = 3;
+
+    hsize_t chunk[2];  
+    chunk[0] = Np/p; chunk[1] = 3;
 
      H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
      H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
@@ -68,7 +73,7 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
      {
     int sid = H5Screate_simple(2,dimVertices,NULL);
     int plist_id = H5Pcreate (H5P_DATASET_CREATE);
-    H5Pset_chunk(plist_id, 2, dimVertices); 
+    H5Pset_chunk(plist_id, 2, chunk); 
     H5Pset_deflate(plist_id, 6);
     int did = H5Dcreate2(file_id,"position",H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
     H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,positions);
@@ -87,7 +92,7 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
      {
     int sid = H5Screate_simple(1,dimVertices,NULL);
     int plist_id = H5Pcreate (H5P_DATASET_CREATE);
-    H5Pset_chunk(plist_id, 1, dimVertices); 
+    H5Pset_chunk(plist_id, 1, chunk); 
     H5Pset_deflate(plist_id, 6);
     int did = H5Dcreate2(file_id,"tag",H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
     H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,tags);
@@ -106,7 +111,7 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
      {
     int sid = H5Screate_simple(1,dimVertices,NULL);
     int plist_id = H5Pcreate (H5P_DATASET_CREATE);
-    H5Pset_chunk(plist_id, 1, dimVertices); 
+    H5Pset_chunk(plist_id, 1, chunk); 
     H5Pset_deflate(plist_id, 6);
     int did = H5Dcreate2(file_id,"id",H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
     H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,ids);
@@ -126,7 +131,7 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
 
     int sid = H5Screate_simple(1,dimVertices,NULL);
     int plist_id = H5Pcreate (H5P_DATASET_CREATE);
-    H5Pset_chunk(plist_id, 1, dimVertices); 
+    H5Pset_chunk(plist_id, 1, chunk); 
     H5Pset_deflate(plist_id, 6);
     int did = H5Dcreate2(file_id,"processor",H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
     H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,pIds);
@@ -134,7 +139,7 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
     H5Sclose(sid);
      }
 #endif
-     delete [] pIds;
+    delete [] pIds;
 
 
      H5Fclose(file_id);
