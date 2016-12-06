@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH -t 10:00 #Ten minutes, adjust to need
-#SBATCH -n 40    #number of needed processors, automatically calculate number of needed nodes
-#SBATCH -p short #partition allocation
+#SBATCH -t 00:10:00 #Ten minutes, adjust to need
+#SBATCH -n 40       #number of needed processors, automatically calculate number of needed nodes
+#SBATCH -p short    #partition allocation
 		#name     max   type description
 		# normal    5-00:00:00    720       thin      the default partition
 		# fat       5-00:00:00     16       fat       fat node partition
@@ -12,6 +12,10 @@
 module rm mpi fortran c
 module load mpi/openmpi/1.10.2
 module load gcc/5.2.0
+
+# This is necessary for runs over 128 nodes -> otherwise the communication queue overflows
+export OMPI_MCA_btl_openib_receive_queues="X,128,256,192,128:X,2048,256,128,32:X,12288,256,128,32:X,65536,256,128,32"
+
 #Place the actual command here
 #Dont forget to place this file in the directory you want to run from
 mpirun -n 40 ./pipeflow tmp/checkpoint.xml #dont forget to adjust -n !!
