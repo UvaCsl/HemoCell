@@ -101,7 +101,7 @@ void WriteInMultipleHDF5Files<T>::processGenericBlocks (
             int sid = H5Screate_simple(3,dim,NULL);
             int plist_id = H5Pcreate (H5P_DATASET_CREATE);
             H5Pset_chunk(plist_id, 3, chunk); 
-            H5Pset_deflate(plist_id, 6);
+            H5Pset_deflate(plist_id, 9);
             int did = H5Dcreate2(file_id,hdf5ContainerNames[i].c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
             H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,matrixScalar);
             H5Dclose(did);
@@ -191,15 +191,15 @@ void writeHDF5(MultiBlockLattice3D<T, Descriptor>& lattice,
             Descriptor<T>::ExternalField::forceBeginsAt), lattice.getBoundingBox(), lattice, force);
 
     MultiScalarField3D<T> density = *computeDensity(lattice);
-    MultiScalarField3D<T> velNorm = *computeNorm(vel, vel.getBoundingBox());
-    MultiScalarField3D<T> forceNorm = *computeNorm(force, force.getBoundingBox());
+    //MultiScalarField3D<T> velNorm = *computeNorm(vel, vel.getBoundingBox());
+    //MultiScalarField3D<T> forceNorm = *computeNorm(force, force.getBoundingBox());
 
     std::vector<MultiBlock3D*> hdf5ContainerArg;
     std::vector<std::string> hdf5ContainerNames;
     std::vector<plint> hdf5ContainerDimensions;
     hdf5ContainerArg.push_back(&density);   hdf5ContainerNames.push_back("density");    hdf5ContainerDimensions.push_back(1);
-    hdf5ContainerArg.push_back(&velNorm);   hdf5ContainerNames.push_back("velNorm");    hdf5ContainerDimensions.push_back(1);
-    hdf5ContainerArg.push_back(&forceNorm); hdf5ContainerNames.push_back("forceNorm");  hdf5ContainerDimensions.push_back(1);
+    //hdf5ContainerArg.push_back(&velNorm);   hdf5ContainerNames.push_back("velNorm");    hdf5ContainerDimensions.push_back(1);
+    //hdf5ContainerArg.push_back(&forceNorm); hdf5ContainerNames.push_back("forceNorm");  hdf5ContainerDimensions.push_back(1);
     hdf5ContainerArg.push_back(&vel);       hdf5ContainerNames.push_back("velocity");   hdf5ContainerDimensions.push_back(3);
     hdf5ContainerArg.push_back(&force);     hdf5ContainerNames.push_back("force");      hdf5ContainerDimensions.push_back(3);
     hdf5ContainerArg.push_back(&vorticity); hdf5ContainerNames.push_back("vorticity");  hdf5ContainerDimensions.push_back(3);

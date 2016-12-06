@@ -56,7 +56,7 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
      dimVertices[0] = Nc; dimVertices[1] = 3;
 
     hsize_t chunk[2];  
-    chunk[0] = Nc/p; chunk[1] = 3;
+    chunk[0] = (Nc/p) > 1 ? (Nc/p) : 1 ; chunk[1] = 3;
 
      H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
      H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
@@ -92,7 +92,7 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
         int sid = H5Screate_simple(2,dimVertices,NULL);
         int plist_id = H5Pcreate (H5P_DATASET_CREATE);
         H5Pset_chunk(plist_id, 2, chunk); 
-        H5Pset_deflate(plist_id, 6);
+        H5Pset_deflate(plist_id, 7);
         int did = H5Dcreate2(file_id,ccrNames[ccrId].c_str(),H5T_NATIVE_DOUBLE,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
         H5Dwrite(did,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,matrixTensor);
         H5Dclose(did);
@@ -118,7 +118,7 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
         int sid = H5Screate_simple(1,dimVertices,NULL);
         int plist_id = H5Pcreate (H5P_DATASET_CREATE);
         H5Pset_chunk(plist_id, 1, chunk); 
-        H5Pset_deflate(plist_id, 6);
+        H5Pset_deflate(plist_id, 7);
         int did = H5Dcreate2(file_id,ccrNames[ccrId].c_str(),H5T_NATIVE_DOUBLE,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
         H5Dwrite(did,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,scalarTensor);
         H5Dclose(did);
@@ -149,7 +149,7 @@ void WriteCell3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
         int sid = H5Screate_simple(2,dimTensor,NULL);
         int plist_id = H5Pcreate (H5P_DATASET_CREATE);
         H5Pset_chunk(plist_id, 2, chunk); 
-        H5Pset_deflate(plist_id, 6);
+        H5Pset_deflate(plist_id, 7);
         int did = H5Dcreate2(file_id,ccrNames[ccrId].c_str(),H5T_NATIVE_DOUBLE,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
         H5Dwrite(did,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,tensorTensor);
         H5Dclose(did);

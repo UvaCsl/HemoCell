@@ -42,8 +42,8 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
      hsize_t dimVertices[2]; 
      dimVertices[0] = Np; dimVertices[1] = 3;
 
-    hsize_t chunk[2];  
-    chunk[0] = Np/p; chunk[1] = 3;
+     hsize_t chunk[2];  
+     chunk[0] = (Np/p) > 1 ? (Np/p) : 1; chunk[1] = 3;
 
      H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
      H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
@@ -74,7 +74,7 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
     int sid = H5Screate_simple(2,dimVertices,NULL);
     int plist_id = H5Pcreate (H5P_DATASET_CREATE);
     H5Pset_chunk(plist_id, 2, chunk); 
-    H5Pset_deflate(plist_id, 6);
+    H5Pset_deflate(plist_id, 7);
     int did = H5Dcreate2(file_id,"position",H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
     H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,positions);
     H5Dclose(did);
@@ -93,7 +93,7 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
     int sid = H5Screate_simple(1,dimVertices,NULL);
     int plist_id = H5Pcreate (H5P_DATASET_CREATE);
     H5Pset_chunk(plist_id, 1, chunk); 
-    H5Pset_deflate(plist_id, 6);
+    H5Pset_deflate(plist_id, 7);
     int did = H5Dcreate2(file_id,"tag",H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
     H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,tags);
     H5Dclose(did);
@@ -112,7 +112,7 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
     int sid = H5Screate_simple(1,dimVertices,NULL);
     int plist_id = H5Pcreate (H5P_DATASET_CREATE);
     H5Pset_chunk(plist_id, 1, chunk); 
-    H5Pset_deflate(plist_id, 6);
+    H5Pset_deflate(plist_id, 7);
     int did = H5Dcreate2(file_id,"id",H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
     H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,ids);
     H5Dclose(did);
@@ -132,7 +132,7 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
     int sid = H5Screate_simple(1,dimVertices,NULL);
     int plist_id = H5Pcreate (H5P_DATASET_CREATE);
     H5Pset_chunk(plist_id, 1, chunk); 
-    H5Pset_deflate(plist_id, 6);
+    H5Pset_deflate(plist_id, 7);
     int did = H5Dcreate2(file_id,"processor",H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
     H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,pIds);
     H5Dclose(did);
