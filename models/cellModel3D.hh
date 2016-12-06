@@ -227,8 +227,8 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
         if (angleFound) {
             Array<T,3> iNormal = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
             Array<T,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
-            T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
-            T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
+            //T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
+            //T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
 
             SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
             SurfaceParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
@@ -237,7 +237,7 @@ void CellModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) 
 
             /*== Compute bending force for the vertex as part of the main edge ==*/
             Array<T,3> fi, fj;
-            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqArea, eqLength, eqAngle, k_bend, fi, fj);
+            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, eqArea, eqLength, eqAngle, k_bend, fi, fj);
 
             iParticle->get_force() += fi;
             jParticle->get_force() += fj;

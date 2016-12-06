@@ -231,8 +231,8 @@ void IntermediateModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> 
         if (angleFound) {
             Array<T,3> iNormal = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
             Array<T,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
-            T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
-            T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
+            //T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
+            //T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
             SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
             SurfaceParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
             Array<T,3> const& kX = cell->getVertex(kVertex);
@@ -240,7 +240,7 @@ void IntermediateModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> 
 
             /*== Compute bending force for the vertex as part of the main edge ==*/
             Array<T,3> fi, fj;
-            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, Ai, Aj, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fi, fj);
+            fi = computeBendingForce (iX, kX, jX, lX, iNormal, jNormal, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fi, fj);
 
             iParticle->get_force() += fi;
             jParticle->get_force() += fj;
