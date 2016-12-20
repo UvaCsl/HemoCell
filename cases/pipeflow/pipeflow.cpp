@@ -102,11 +102,6 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
 
     domain = Box3D(nx - 2, nx - 1, 0, ny - 1, 0, nz - 1);
     applyProcessingFunctional(new CopyFromNeighbor<int>(Array<plint, 3>(-1, 0, 0)), domain, *flagMatrix);
-	
-
-    // Output result for debugging
-    //VtkImageOutput3D<T> vtkOut("test.vtk");
-    //vtkOut.writeData<float>(*copyConvert<int, double>(*extractSubDomain(*flagMatrix, flagMatrix->getBoundingBox())), "flag", 1.);
 
 }
 
@@ -430,7 +425,7 @@ int main(int argc, char *argv[]) {
             dynVolume *= 1.0 + (ppForceDistance * 0.5 * 1e-6 / dx) / cellBounds[iDir];
 
         pcout << "(main) Species: #" << iCell << " (" << cellFields[iCell]->getIdentifier() << ")"<< endl;
-        pcout << "(main)   Volume ratio [x100%]: " << nCells * eqVolumes[iCell] * 100.0 / domainVol << "(" << nCells * dynVolume * 100.0 / domainVol <<")" << std::endl;
+        pcout << "(main)   Volume ratio [x100%]: " << nCells * eqVolumes[iCell] * 100.0 / domainVol << " (" << nCells * dynVolume * 100.0 / domainVol <<")" << std::endl;
         pcout << "(main)   nCells (global) = " << nCells << ", pid: " << global::mpi().getRank();
         pcout << ", Cell volume = " << eqVolumes[iCell] * (dx * dx * dx * 1e18) << " um^3 (" <<  dynVolume * (dx * dx * dx * 1e18) << "  um^3)" << std::endl;
     }
@@ -467,10 +462,10 @@ int main(int argc, char *argv[]) {
     // ------------------------- Add particle-wall repulsion force -------------
     // F > 0 means repulsion. F < 0 is used for adhesion
     // This represents glycocalyx layer as well
-
-    //T k_int = 0.00025, DeltaX=1.0, R=1.0, k=1.5;
-    // was 1.5e-12
-    T k_int = 1.0e-12 / dNewton, DeltaX=ppForceDistance * 2.0 * 1e-6 / dx, R=ppForceDistance * 2.0 * 1e-6 / dx, k=1.5;  // Scale force with simulation units
+	
+	// For D < 32 um decrease this to recover proper apparent viscosity
+    T glycocalyxWidth = 0.75; 	// in [um]
+    T k_int = 1.0e-12 / dNewton, DeltaX = glycocalyxWidth * 2.0 * 1e-6 / dx, R = glycocalyxWidth * 2.0 * 1e-6 / dx, k=1.5;  // Scale force with simulation units
     if (DeltaX > 2.0) DeltaX = 2.0; if (R > 2.0) R = 2.0;  // Should not have effect further than 2 lu -> might go out of domain envelope
     PowerLawForce<T> repWP(k_int, DeltaX, R, k);
 
@@ -487,12 +482,6 @@ int main(int argc, char *argv[]) {
     {
         pcout << "(main) fresh start: warming up cell-free fluid domain for "  << warmup << " iterations..." << std::endl;
         for (plint itrt = 0; itrt < warmup; ++itrt) { cellFields[0]->setFluidExternalForce(poiseuilleForce); lattice.collideAndStream(); }
-
-	    // pcout << "(main) Assigning initial velocity to particles." << std::endl;
-		// for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-  		// 		cellFields[iCell]->interpolateVelocityIBM();
-        //		cellFields[iCell]->synchronizeCellQuantities(everyCCR);
-    	//	}
     }
 	T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
 	pcout << "(main) Mean velocity: " << meanVel  * (dx/dt) << " m/s; Apparent rel. viscosity: " << (u_lbm_max*0.5) / meanVel << std::endl;
@@ -505,7 +494,6 @@ int main(int argc, char *argv[]) {
 
     pluint lastCellUpdateSince = 0; // Counts when we need to advance the material model
     T fMax = 0;  // maximal force encountered
-    //plint lastTSChange = 0;  // Counts time since last iteration when we changed time-scale separation
     plint adaptiveScaleStep = ceil(maxInnerIterSize/10.);
     plint lastForceProbeSince = 0; // If time-step is small, dont probe force at every step
 
@@ -579,7 +567,6 @@ int main(int argc, char *argv[]) {
 
             // If adaptivity enabled, check if we need to modify time-steps
             if(isAdaptive) {
-                //lastTSChange++;
 
                 // If force is too large decrease time step
                 if(fMax > maxForce) 
@@ -592,10 +579,9 @@ int main(int argc, char *argv[]) {
                         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
                             cellFields[iCell]->setParticleUpdateScheme((T)cellStep);   
 
-                        //lastTSChange = 0; // We just adjusted now
                     }
                 } 
-                else if((fMax < minForce)) //&& (lastTSChange > 2)) // If forces are small and we did not increase recently: try to increase time-step
+                else if((fMax < minForce)) // try to increase time-step
                 {
                     if(cellStep < maxInnerIterSize){  // Don't go over maxInnerIterSize even if forces are small!
                         cellStep+=adaptiveScaleStep; if(cellStep > maxInnerIterSize) cellStep = maxInnerIterSize;
@@ -605,7 +591,6 @@ int main(int argc, char *argv[]) {
                         for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
                             cellFields[iCell]->setParticleUpdateScheme((T)cellStep);
 
-                        //lastTSChange = 0;
                     }
                 }
 
