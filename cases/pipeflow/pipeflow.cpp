@@ -1,12 +1,10 @@
+//-----------------
+//Add Definition overrides here
+
+//-----------------
 #include "hemocell.h"
 
 typedef double T;
-
-#if HEMOCELL_CFD_DYNAMICS == 1
-    #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor    // Using this with tau == 1 will increase numeric stability. (Suppresses oscillations).
-#elif HEMOCELL_CFD_DYNAMICS == 2
-    #define DESCRIPTOR descriptors::ForcedMRTD3Q19Descriptor    //Use this whenever tau != 1
-#endif
 
 // ----------------------- Copy from neighbour ------------------------------------
 
@@ -148,7 +146,6 @@ int main(int argc, char *argv[]) {
     T minForce, maxForce;
     T ppForceDistance;
     plint initIter = 0;
-    T Re;
     T dx, dt, dm, dNewton;
     T tau, nu_lbm, u_lbm_max;
     T nu_p, rho_p;
@@ -156,14 +153,11 @@ int main(int argc, char *argv[]) {
     plint cellStep;
     plint nx, ny, nz;
     T hematocrit;
-    T shellDensity, eqLengthRatio, radius;
-    T k_WLC, k_rep, k_rest, k_elastic, k_bend, k_volume, k_surface, k_shear, k_stretch, eta_m;
+    T eqLengthRatio, radius;
     plint minNumOfTriangles;
     plint tmax, tmeas;
     plint refDir, refDirN;
     std::string meshFileName;
-    plint warmup;
-    plint maxPackIter;
     string particlePosFile;
 
 
@@ -175,50 +169,29 @@ int main(int argc, char *argv[]) {
     pcout << "(main) reading " <<  paramXmlFileName << "..." << std::endl;
 
     XMLreader documentXML(paramXmlFileName);
-
-    // Check if it is a fresh start or a checkpointed run
-    std::string firstField = (*(documentXML.getChildren(
-            documentXML.getFirstId())[0])).getName(); // VERY COMPLICATED! Hope I could find sth easier!
-    if (firstField == "hemocell") { checkpointed = 0; }
-    else { checkpointed = 1; }
-
-    XMLreaderProxy document = checkpointed ? documentXML["Checkpoint"]["hemocell"] : documentXML["hemocell"];
+    Config cfg(paramXmlFileName);
 
     // ---- Particle material properties
-    document["parameters"]["Re"].read(Re);
-    document["parameters"]["warmup"].read(warmup);
-    document["parameters"]["maxPackIter"].read(maxPackIter);
 
-    document["cellModel"]["shellDensity"].read(shellDensity);
-    document["cellModel"]["kWLC"].read(k_WLC);
-    document["cellModel"]["eqLengthRatio"].read(eqLengthRatio);
-    document["cellModel"]["kRep"].read(k_rep);
-    document["cellModel"]["kElastic"].read(k_elastic);
-    document["cellModel"]["kBend"].read(k_bend);
-    document["cellModel"]["kVolume"].read(k_volume);
-    document["cellModel"]["kSurface"].read(k_surface);
-    document["cellModel"]["etaM"].read(eta_m);
-    document["cellModel"]["kRest"].read(k_rest);
-    document["cellModel"]["kShear"].read(k_shear);
-    document["cellModel"]["kStretch"].read(k_stretch);
+    cfg["cellModel"]["eqLengthRatio"].read(eqLengthRatio);
   
-    document["ibm"]["radius"].read(radius);
-    document["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
-    document["ibm"]["ppForceDistance"].read(ppForceDistance);
+    cfg["ibm"]["radius"].read(radius);
+    cfg["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
+    cfg["ibm"]["ppForceDistance"].read(ppForceDistance);
 
-    document["domain"]["geometry"].read(meshFileName);
-    document["domain"]["rhoP"].read(rho_p);
-    document["domain"]["nuP"].read(nu_p);
-    document["domain"]["dx"].read(dx);
-    document["domain"]["dt"].read(dt);
-    document["domain"]["refDir"].read(refDir);
-    document["domain"]["refDirN"].read(refDirN);
-    document["domain"]["timeStepSize"].read(cellStep);
+    cfg["domain"]["geometry"].read(meshFileName);
+    cfg["domain"]["rhoP"].read(rho_p);
+    cfg["domain"]["nuP"].read(nu_p);
+    cfg["domain"]["dx"].read(dx);
+    cfg["domain"]["dt"].read(dt);
+    cfg["domain"]["refDir"].read(refDir);
+    cfg["domain"]["refDirN"].read(refDirN);
+    cfg["domain"]["timeStepSize"].read(cellStep);
 
-    document["sim"]["tmax"].read(tmax);
-    document["sim"]["tmeas"].read(tmeas);
-    document["sim"]["hematocrit"].read(hematocrit);
-    document["sim"]["particlePosFile"].read(particlePosFile);
+    cfg["sim"]["tmax"].read(tmax);
+    cfg["sim"]["tmeas"].read(tmeas);
+    cfg["sim"]["hematocrit"].read(hematocrit);
+    cfg["sim"]["particlePosFile"].read(particlePosFile);
 
 
     hematocrit /= 100; // put it between [0;1]
@@ -227,9 +200,9 @@ int main(int argc, char *argv[]) {
     if (cellStep < 1){
         isAdaptive = true;
         maxInnerIterSize = abs(cellStep);        
-        document["domain"]["minForce"].read(minForce);
-        document["domain"]["maxForce"].read(maxForce);
-        document["domain"]["minTimeStepSize"].read(minInnerIterSize);
+        cfg["domain"]["minForce"].read(minForce);
+        cfg["domain"]["maxForce"].read(maxForce);
+        cfg["domain"]["minTimeStepSize"].read(minInnerIterSize);
         cellStep = minInnerIterSize;
 
         pcout << "(main) Adaptive membrane model integration is enabled! Membrane integration step-size in [" << minInnerIterSize << "; " << maxInnerIterSize << "]." << endl;
@@ -263,7 +236,7 @@ int main(int argc, char *argv[]) {
         tau = 3.0 * nu_lbm + 0.5;
     }
 
-    u_lbm_max = Re * nu_lbm / ny;  // Approximate max. occuring numerical velocity >0.1 should never happen    
+    u_lbm_max = cfg["parameters"]["Re"].read<double>() * nu_lbm / ny;  // Approximate max. occuring numerical velocity >0.1 should never happen    
     dm = rho_p * (dx * dx * dx);
     dNewton = (dm * dx / (dt * dt));
     //kBT = kBT_p / ( dNewton * dx );
@@ -276,8 +249,8 @@ int main(int argc, char *argv[]) {
     "cell_dt = " << cellStep * dt << ", " <<
     "dm = " << dm << ", " <<
     "dN = " << dNewton << std::endl;
-    pcout << "(main) tau = " << tau << " Re = " << Re << " u_lb_max(based on Re) = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
-    pcout << "(main) Re corresponds to u_max = " << (Re * nu_p)/(ny*dx) << " [m/s]" << endl;
+    pcout << "(main) tau = " << tau << " Re = " << cfg["parameters"]["Re"].read<double>() << " u_lb_max(based on Re) = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
+    pcout << "(main) Re corresponds to u_max = " << (cfg["parameters"]["Re"].read<double>() * nu_p)/(ny*dx) << " [m/s]" << endl;
 
     // Do a general check for suspiciosly off values.
     checkParameterSanity(nu_lbm, u_lbm_max);
@@ -316,7 +289,7 @@ int main(int argc, char *argv[]) {
     
     // If no saving was set up give some sane default
     if (tmeas == 0) {
-        tmeas = plint(ny * ny * 1.0 / (4 * nu_lbm * Re)) / 40;
+        tmeas = plint(ny * ny * 1.0 / (4 * nu_lbm * cfg["parameters"]["Re"].read<double>())) / 40;
     }
 
     setExternalVector(lattice, lattice.getBoundingBox(),
@@ -331,7 +304,6 @@ int main(int argc, char *argv[]) {
 
     pcout << "(main) init cell structures..."  << std::endl;
     T persistenceLengthFine = 7.5e-9; // In meters
-    k_rest = 0;
 
     std::vector<ConstitutiveModel<T, DESCRIPTOR> *> cellModels;
     std::vector<CellField3D<T, DESCRIPTOR> *> cellFields;
@@ -357,9 +329,7 @@ int main(int argc, char *argv[]) {
     plint numVerticesPerCell = meshElement.getNumVertices();
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
     cellModels.push_back(
-            new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic,
-                                                  k_volume, k_surface, eta_m,
-                                                  persistenceLengthFine, eqLengthRatio, dx, dt, dm, meshElement));
+             ShapeMemoryModel3D::RBCShapeMemoryModel3D(&cfg, persistenceLengthFine, eqLengthRatio, dx, dt, dm, meshElement));
     cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hematocrit, cellModels[0], "RBC"));
 
     
@@ -375,9 +345,7 @@ int main(int argc, char *argv[]) {
     meshes.push_back(&pltMeshElement);
     eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
     cellModels.push_back(
-            new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend * 5.0, k_stretch, k_WLC * 5.0,
-                                                  k_elastic, k_volume, k_surface, eta_m,
-                                                  persistenceLengthFine, eqLengthRatio, dx, dt, dm, pltMeshElement));
+            ShapeMemoryModel3D::PlateletShapeMemoryModel3D(&cfg, persistenceLengthFine, eqLengthRatio, dx, dt, dm, meshElement));
     cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.0025 * hematocrit,
                                                         cellModels[cellModels.size() - 1], "PLT"));
 
@@ -480,8 +448,8 @@ int main(int argc, char *argv[]) {
 
     if (initIter == 0)
     {
-        pcout << "(main) fresh start: warming up cell-free fluid domain for "  << warmup << " iterations..." << std::endl;
-        for (plint itrt = 0; itrt < warmup; ++itrt) { cellFields[0]->setFluidExternalForce(poiseuilleForce); lattice.collideAndStream(); }
+        pcout << "(main) fresh start: warming up cell-free fluid domain for "  << cfg["parameters"]["warmup"].read<plint>() << " iterations..." << std::endl;
+        for (plint itrt = 0; itrt < cfg["parameters"]["warmup"].read<plint>(); ++itrt) { cellFields[0]->setFluidExternalForce(poiseuilleForce); lattice.collideAndStream(); }
     }
 	T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
 	pcout << "(main) Mean velocity: " << meanVel  * (dx/dt) << " m/s; Apparent rel. viscosity: " << (u_lbm_max*0.5) / meanVel << std::endl;

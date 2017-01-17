@@ -45,6 +45,7 @@ IF (NOT CMAKE_CXX_FLAGS)
   SET(CMAKE_BUILD_TYPE ${BUILD_TYPE})
   SET(CMAKE_CXX_FLAGS  " -Wall -Wextra -g -Wformat -Wformat-security -Werror=format-security -O3 -march=native")
 ENDIF (NOT CMAKE_CXX_FLAGS)
+SET (CMAKE_CXX_STANDARD 11)
 
 #=======================================
 IF(NEEDTXML)
@@ -54,6 +55,7 @@ ENDIF(NEEDTXML)
 
 IF(NOT NEEDTXML)
   INCLUDE_DIRECTORIES(${PALABOS_BASE_DIR}/externalLibraries)
+  INCLUDE_DIRECTORIES(${PALABOS_BASE_DIR}/src/libraryInterfaces)
 ENDIF(NOT NEEDTXML)
 IF(NEEDHDF5)
     FIND_PACKAGE(HDF5 COMPONENTS C HL)
@@ -83,28 +85,31 @@ OPTION(ENABLE_MPI "Enable MPI" ${DEFAULT})
 
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/helper)
+INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/config)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/core)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/models)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/external)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/IO)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/extensions)
 INCLUDE_DIRECTORIES(${PALABOS_BASE_DIR}/src)
+FILE(GLOB SRC_FILES "${HEMOCELL_BASE_DIR}/IO/*.cpp"
+                    "${HEMOCELL_BASE_DIR}/core/*.cpp"
+                    "${HEMOCELL_BASE_DIR}/config/*.cpp"
+                    "${HEMOCELL_BASE_DIR}/extensions/*.cpp"
+                    "${HEMOCELL_BASE_DIR}/external/*.cpp"
+                    "${HEMOCELL_BASE_DIR}/helper/*.cpp"
+                    "${HEMOCELL_BASE_DIR}/models/*.cpp")
 
 LIST(APPEND SRC_FILES_SRC ${PROJECT_SRC})
 
 include(ExternalProject) 
-ExternalProject_Add("hemocell" PREFIX ${HEMOCELL_DIR} 
-                              SOURCE_DIR ${HEMOCELL_DIR}
-                              BINARY_DIR ${HEMOCELL_DIR} 
-                              INSTALL_COMMAND "")
 ExternalProject_Add("palabos" PREFIX ${PALABOS_DIR} SOURCE_DIR ${PALABOS_DIR}
     BINARY_DIR ${PALABOS_DIR} INSTALL_COMMAND "")
 
 
 #SET(CMAKE_EXE_LINKER_FLAGS "-static") !Good luck on finding statically linked mpi libraries, it should be possible though
 ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES_SRC})
-ADD_DEPENDENCIES(${PROJECT_NAME} "hemocell" "palabos")
-target_link_libraries(${PROJECT_NAME} ${HEMOCELL_DIR}/libhemocell.a)
+ADD_DEPENDENCIES(${PROJECT_NAME} "palabos")
 target_link_libraries(${PROJECT_NAME} ${PALABOS_DIR}/libpalabos.a)
 IF(NEEDHDF5)
   # This is needed since stupid Lisa has a bug in 3.5.1

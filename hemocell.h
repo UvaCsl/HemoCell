@@ -1,6 +1,9 @@
 #ifndef HEMOCELL_H
 #define HEMOCELL_H
 
+//Load Constants
+#include "constant_defaults.h"
+
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
@@ -15,56 +18,14 @@ using namespace plb;
 #include <stdio.h>
 #include <string>
 #include <vector>
-//#include <array>
 #include <limits>
 #include <map>
 
 using namespace std;
 
-// ============== Compile time options - Set these
-
-/*
-Choose kernel. 
-Phi1 [1], Phi2 [2] - Default, Phi3 [3], Phi4 [4],  Phi4c [5]
-*/
-#define HEMOCELL_KERNEL 2
-
-/*
-Choose material model.
-1 - Dao/Suresh model (+Fedosov 2010 improvements)
-2 - HO model (Under testing)
-*/
-#define HEMOCELL_MATERIAL_MODEL 2
-
-/*
-Choose material integration method.
-Euler [1], Adams-Bashforth [2]
-*/
-#define HEMOCELL_MATERIAL_INTEGRATION 1
-
-/*
-Choose collision operator for LBM.
-[1] - BGK <- use this for dt < 0 settings to have tau = 1 suppress oscillations
-[2] - MRT <- use this in every other case
-*/
-#define HEMOCELL_CFD_DYNAMICS 1
-
-/*
-Choose bending force implementation. This is a numerical modelling choice.
-[1] - Local only bending implementation acting on the two opposing vertices of the surfaces with the bending angle.
-[2] - Distributed bending using all four vertices with wieghting.
-[3] - Distributed bending using all four vertices.
-Note: 	[1] is advised for cases where structural rigidity is needed. 
-		[2] is an intermediate modell between [1] and [3] using four vertices, however, weighting them. So far seem to be the best option.
-		[3] is useful for having increased numerical stability (req.: dx<= 0.5 um, otherwise oscillates). 
-*/
-#define HEMOCELL_MEMBRANE_BENDING 2
-
-
-// ===================================
-
 #include "fcnGenericFunctions.h"
 #include "simpleProfiler.cpp"
+#include "config.cpp"
 
 #include "ficsionInit.h"
 #include "ficsionInit.hh"
@@ -89,6 +50,7 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
 #include "ParticleHdf5IO.h"
 #include "CellHdf5IO.h"
 #include "ParticleField3DHdf5IO.h"
+#include "config.h"
 
 
 /* MODELS */

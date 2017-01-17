@@ -6,9 +6,9 @@
 
 namespace plb {
 
-template<typename T, template<typename U> class Descriptor>
-ShapeMemoryModel3D<T, Descriptor>::ShapeMemoryModel3D(ShapeMemoryModel3D<T,Descriptor> const& rhs) :
-    ConstitutiveModel<T,Descriptor>(rhs), meshmetric(meshmetric),
+//Looks like some poorly implemented clone function? ...  TODO:FIX
+ShapeMemoryModel3D::ShapeMemoryModel3D(ShapeMemoryModel3D const& rhs) :
+    ConstitutiveModel<double,DESCRIPTOR>(rhs), meshmetric(meshmetric),
     syncRequirements(rhs.syncRequirements), maxLength(rhs.maxLength), cellRadiusLU(rhs.cellRadiusLU),
     k_rest(rhs.k_rest), k_shear(rhs.k_shear), k_bend(rhs.k_bend), k_stretch(rhs.k_stretch),
     k_inPlane(rhs.k_inPlane), k_elastic(rhs.k_elastic), k_surface(rhs.k_surface), k_volume(rhs.k_volume),
@@ -20,33 +20,62 @@ ShapeMemoryModel3D<T, Descriptor>::ShapeMemoryModel3D(ShapeMemoryModel3D<T,Descr
     cellNumVertices(rhs.cellNumVertices)
     {}
 
-
-
-template<typename T, template<typename U> class Descriptor>
-ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
-        T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
-        T k_volume_, T k_surface_, T eta_m_,
-        T persistenceLengthFine_, T eqLengthRatio_,
-        T dx_, T dt_, T dm_,
-        TriangularSurfaceMesh<T> const& meshElement)
-    : ConstitutiveModel<T,Descriptor>(density_),
-      meshmetric(meshElement),
-      k_rest(k_rest_),
-      k_shear(k_shear_),
-      k_bend(k_bend_),
-      k_stretch(k_stretch_),
-      k_elastic(k_elastic_),
-      k_surface(k_surface_),
-      k_volume(k_volume_),
-      eta_m(eta_m_),
-      eqLengthRatio(eqLengthRatio_),
-      dx(dx_), dt(dt_), dm(dm_),
-      persistenceLengthFine(persistenceLengthFine_)
+ShapeMemoryModel3D* ShapeMemoryModel3D::PlateletShapeMemoryModel3D( Config* cfg,
+                                        double persistenceLengthFine_, 
+                                        double eqLengthRatio_,
+                                        double dx_, double dt_, double dm_,
+                                        TriangularSurfaceMesh<double> const& meshElement) 
 {
-    T dNewton = (dm*dx/(dt*dt)) ;
-    T kBT = kBT_p / ( dm * dx*dx/(dt*dt) );
+  ShapeMemoryModel3D* model = new ShapeMemoryModel3D(cfg,meshElement);
+  model->eqLengthRatio = eqLengthRatio_;
+  model->dx = dx_;
+  model->dt = dt_;
+  model->dm = dm_;
+  model->k_bend = (*cfg)["cellModel"]["kBend"].read<double>() * 5.0;
 
-    k_WLC_ *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
+  model->Initialize(meshElement);
+
+  return model;
+}
+
+ShapeMemoryModel3D* ShapeMemoryModel3D::RBCShapeMemoryModel3D( Config* cfg,
+                                        double persistenceLengthFine_, 
+                                        double eqLengthRatio_,
+                                        double dx_, double dt_, double dm_,
+                                        TriangularSurfaceMesh<double> const& meshElement)
+{
+  ShapeMemoryModel3D* model = new ShapeMemoryModel3D(cfg,meshElement);
+  model->eqLengthRatio = eqLengthRatio_;
+  model->dx = dx_;
+  model->dt = dt_;
+  model->dm = dm_;
+
+  model->Initialize(meshElement);
+
+  return model;
+}
+
+ShapeMemoryModel3D::ShapeMemoryModel3D(Config* cfg,TriangularSurfaceMesh<double> const& meshElement) 
+            : ConstitutiveModel<double,DESCRIPTOR>((*cfg)["cellModel"]["shellDensity"].read<double>()),
+            meshmetric(meshElement)
+{
+  k_rest = (*cfg)["cellModel"]["kRest"].read<double>();
+  k_shear = (*cfg)["cellModel"]["kShear"].read<double>();
+  k_bend = (*cfg)["cellModel"]["kBend"].read<double>();
+  k_stretch =	(*cfg)["cellModel"]["kStretch"].read<double>();
+  k_WLC = (*cfg)["cellModel"]["kWLC"].read<double>(); 
+  k_elastic =	(*cfg)["cellModel"]["kElastic"].read<double>();
+  k_volume = (*cfg)["cellModel"]["kVolume"].read<double>();
+  k_surface = (*cfg)["cellModel"]["kSurface"].read<double>();
+  eta_m = (*cfg)["cellModel"]["etaM"].read<double>();
+}
+
+void ShapeMemoryModel3D::Initialize(TriangularSurfaceMesh<double> const& meshElement) {
+
+    double dNewton = (dm*dx/(dt*dt)) ;
+    double kBT = kBT_p / ( dm * dx*dx/(dt*dt) );
+
+    k_WLC *= 1.0;     k_elastic *= 1.0;     k_bend *= 1.0;
     k_volume *= 1.0;     k_surface *= 1.0;     k_shear *= 1.0;
     eta_m /= dNewton*dt/dx;
     //eta_m /= dNewton*dt/dx/dx; 
@@ -59,7 +88,7 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
     cellNumTriangles = meshmetric.getNumTriangles();
     eqLength = meshmetric.getMeanLength();
     maxLength = meshmetric.getMaxLength()*eqLengthRatio;
-    T eqMeanArea = eqArea = meshmetric.getMeanArea();
+    double eqMeanArea = eqArea = meshmetric.getMeanArea();
 //    eqAngle = meshmetric.getMeanAngle();
     eqVolume = meshmetric.getVolume();
     eqSurface = meshmetric.getSurface();
@@ -71,7 +100,7 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
 
     eqAngle=0.0;
 
-    typename map<plint,T>::reverse_iterator iter = eqAnglePerEdge.rbegin();
+    typename map<plint,double>::reverse_iterator iter = eqAnglePerEdge.rbegin();
     for (iter = eqAnglePerEdge.rbegin(); iter != eqAnglePerEdge.rend(); ++iter) {
        eqAngle += iter->second;
     }
@@ -90,7 +119,7 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
     k_shear *= kBT/pow(eqLength,2);
     k_bend *= kBT;
     /* In plane coefficient initialization */
-    k_inPlane = k_WLC_ * kBT /(4.0*persistenceLengthCoarse);
+    k_inPlane = k_WLC * kBT /(4.0*persistenceLengthCoarse);
 
     /* Dissipative term coefficients from FedosovCaswellKarniadakis2010 */
     gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
@@ -124,8 +153,7 @@ ShapeMemoryModel3D<T,Descriptor>::ShapeMemoryModel3D (T density_, T k_rest_,
 }
 
 
-template<typename T, template<typename U> class Descriptor>
-plint ShapeMemoryModel3D<T,Descriptor>::getEdgeId(plint iVertex, plint jVertex) {
+plint ShapeMemoryModel3D::getEdgeId(plint iVertex, plint jVertex) {
     iVertex = iVertex % cellNumVertices;
     jVertex = jVertex % cellNumVertices;
     if (iVertex > jVertex){
@@ -136,23 +164,21 @@ plint ShapeMemoryModel3D<T,Descriptor>::getEdgeId(plint iVertex, plint jVertex) 
     return -1;
 };
 
-template<typename T, template<typename U> class Descriptor>
-void ShapeMemoryModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> * cell) {
+void ShapeMemoryModel3D::computeCellForce (Cell3D<double,DESCRIPTOR> * cell) {
 
 #if HEMOCELL_MATERIAL_MODEL == 2
     computeCellForceHighOrder(cell);        // Higher order model
-#elif HEMOCELL_MATERIAL_MODEL ==1
+#elif HEMOCELL_MATERIAL_MODEL == 1
     computeCellForceSuresh(cell);           // Suresh/Dao modell improved by Fedosov
 #else                                    
     computeCellForceHighOrder(cell);        // Default -> HO model
 #endif
 };
 
-template<typename T, template<typename U> class Descriptor>
-inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceSuresh (Cell3D<T,Descriptor> * cell) {
+inline void ShapeMemoryModel3D::computeCellForceSuresh (Cell3D<double,DESCRIPTOR> * cell) {
      /* Some force calculations are according to KrugerThesis, Appendix C */
-    T cellVolume = cell->getVolume();
-    T cellSurface = cell->getSurface();
+    double cellVolume = cell->getVolume();
+    double cellSurface = cell->getSurface();
     if (not ((cellVolume > 0) and (cellSurface > 0))) {
         cout << "processor: " << cell->getMpiProcessor()
              << ", cellId: " << cell->get_cellId()
@@ -177,17 +203,17 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceSuresh (Cell3D<T,
          x Bending force
          o Stretch force
      */
-    Array<T,3> force1, force2, force3;
+    Array<double,3> force1, force2, force3;
 
     // Potential only gets computed in debug mode
-    T potential;
+    double potential;
     for (pluint iE = 0; iE < edges.size(); ++iE) {
         iVertex = edges[iE][0];  jVertex = edges[iE][1];
         plint edgeId = getEdgeId(iVertex, jVertex);
-        Array<T,3> const& iX = cell->getVertex(iVertex);
-        Array<T,3> const& jX = cell->getVertex(jVertex);
-        SurfaceParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
-        SurfaceParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+        Array<double,3> const& iX = cell->getVertex(iVertex);
+        Array<double,3> const& jX = cell->getVertex(jVertex);
+        SurfaceParticle3D<double,DESCRIPTOR>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        SurfaceParticle3D<double,DESCRIPTOR>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
           /* ------------------------------------*/
          /* In Plane forces (WLC and repulsive) */
         /* ------------------------------------*/
@@ -223,26 +249,26 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceSuresh (Cell3D<T,
         /* ------------------------------------*/
         bool angleFound;
 
-        T edgeAngle = cell->computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
+        double edgeAngle = cell->computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
         if (angleFound) {
-            Array<T,3> iNormal = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
-            Array<T,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
-            T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
-            T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
-            SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
-            SurfaceParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
-            Array<T,3> const& kX = cell->getVertex(kVertex);
-            Array<T,3> const& lX = cell->getVertex(lVertex);
+            Array<double,3> iNormal = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
+            Array<double,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
+            double Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
+            double Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
+            SurfaceParticle3D<double,DESCRIPTOR>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+            SurfaceParticle3D<double,DESCRIPTOR>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
+            Array<double,3> const& kX = cell->getVertex(kVertex);
+            Array<double,3> const& lX = cell->getVertex(lVertex);
 
             /*== Compute bending force for the vertex as part of the main edge ==*/
             #if HEMOCELL_MEMBRANE_BENDING == 1
-                Array<T,3> fi, fj;
+                Array<double,3> fi, fj;
                 fi = computeBendingForce (iX, jX, kX, lX, iNormal, jNormal, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fi, fj);
                 iParticle->get_force() += fi;
                 jParticle->get_force() += fj;
             #else
                 // Four-point bending effect
-                Array<T,3> fi, fj, fk, fl;
+                Array<double,3> fi, fj, fk, fl;
                 fi = computeBendingForce (iX, jX, kX, lX, iNormal, jNormal, eqArea, eqLengthPerEdge[edgeId], eqAnglePerEdge[edgeId], k_bend, fi, fj, fk, fl);
                 iParticle->get_force() += fi;
                 jParticle->get_force() += fj;
@@ -275,10 +301,10 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceSuresh (Cell3D<T,
      * */
 
     /* Calculate cell coefficients */
-    T volumeCoefficient = k_volume * (cellVolume - eqVolume)/eqVolume;
-    T surfaceCoefficient = k_surface * (cellSurface - eqSurface)/eqSurface;
-    T eqMeanArea = eqSurface/cellNumTriangles;
-    T areaCoefficient = k_shear;//eqMeanArea ;
+    double volumeCoefficient = k_volume * (cellVolume - eqVolume)/eqVolume;
+    double surfaceCoefficient = k_surface * (cellSurface - eqSurface)/eqSurface;
+    double eqMeanArea = eqSurface/cellNumTriangles;
+    double areaCoefficient = k_shear;//eqMeanArea ;
 
 //    iParticle->get_E_volume() = 0.5*volumeCoefficient*(cellVolume - eqVolume)*1.0/cellNumVertices;
 //    iParticle->get_E_area() = 0.5*surfaceCoefficient*(cellSurface - eqSurface)*1.0/cellNumVertices;
@@ -289,11 +315,11 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceSuresh (Cell3D<T,
          x Surface conservation force
          x Shear force
      */
-    Array<T,3> dAdx1, dAdx2, dAdx3, dVdx, tmp(0,0,0);
-    std::map<plint, T> trianglesArea;
-    std::map<plint, Array<T,3> > trianglesNormal;
-    T triangleArea;
-    Array<T,3> triangleNormal;
+    Array<double,3> dAdx1, dAdx2, dAdx3, dVdx, tmp(0,0,0);
+    std::map<plint, double> trianglesArea;
+    std::map<plint, Array<double,3> > trianglesNormal;
+    double triangleArea;
+    Array<double,3> triangleNormal;
 
     for (pluint iT = 0; iT < triangles.size(); ++iT) {
         iTriangle = triangles[iT];
@@ -302,12 +328,12 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceSuresh (Cell3D<T,
         iVertex = cell->getVertexId(iTriangle,0);
         jVertex = cell->getVertexId(iTriangle,1);
         kVertex = cell->getVertexId(iTriangle,2);
-        Array<T,3> const& x1 = cell->getVertex(iVertex);
-        Array<T,3> const& x2 = cell->getVertex(jVertex);
-        Array<T,3> const& x3 = cell->getVertex(kVertex);
-        SurfaceParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
-        SurfaceParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
-        SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+        Array<double,3> const& x1 = cell->getVertex(iVertex);
+        Array<double,3> const& x2 = cell->getVertex(jVertex);
+        Array<double,3> const& x3 = cell->getVertex(kVertex);
+        SurfaceParticle3D<double,DESCRIPTOR>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        SurfaceParticle3D<double,DESCRIPTOR>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+        SurfaceParticle3D<double,DESCRIPTOR>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
 
         /* Surface conservation forces */
         force1  = computeSurfaceConservationForce(x1, x2, x3, triangleNormal, surfaceCoefficient, dAdx1);
@@ -366,10 +392,9 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceSuresh (Cell3D<T,
 
 }
 
-template<typename T, template<typename U> class Descriptor>
-inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D<T,Descriptor> * cell) {
+inline void ShapeMemoryModel3D::computeCellForceHighOrder (Cell3D<double,DESCRIPTOR> * cell) {
     /* Some force calculations are according to KrugerThesis, Appendix C */
-    T cellVolume = cell->getVolume();
+    double cellVolume = cell->getVolume();
     //T cellSurface = cell->getSurface();  // For global surface conservation. Not applicable in HO model
     if (not ((cellVolume > 0) )) {
         cout << "processor: " << cell->getMpiProcessor()
@@ -390,15 +415,15 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
     plint iTriangle;
     plint iVertex, jVertex, kVertex, lVertex;
 
-    Array<T,3> force1, force2, force3;
+    Array<double,3> force1, force2, force3;
 
     for (pluint iE = 0; iE < edges.size(); ++iE) {
         iVertex = edges[iE][0];  jVertex = edges[iE][1];
         plint edgeId = getEdgeId(iVertex, jVertex);
-        Array<T,3> const& iX = cell->getVertex(iVertex);
-        Array<T,3> const& jX = cell->getVertex(jVertex);
-        SurfaceParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
-        SurfaceParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+        Array<double,3> const& iX = cell->getVertex(iVertex);
+        Array<double,3> const& jX = cell->getVertex(jVertex);
+        SurfaceParticle3D<double,DESCRIPTOR>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        SurfaceParticle3D<double,DESCRIPTOR>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
 
         /* ------------------------------------*/
         /* In Plane forces (WLC and repulsive) */
@@ -423,18 +448,18 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
         /* ------------------------------------*/
         bool angleFound;
 
-        T edgeAngle = cell->computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
+        double edgeAngle = cell->computeSignedAngle(iVertex, jVertex, kVertex, lVertex, angleFound); //edge is iVertex, jVertex
         if (angleFound) {
-            Array<T,3> tri1Norm = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
-            Array<T,3> tri2Norm = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
-            SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
-            SurfaceParticle3D<T,Descriptor>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
+            Array<double,3> tri1Norm = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
+            Array<double,3> tri2Norm = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
+            SurfaceParticle3D<double,DESCRIPTOR>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+            SurfaceParticle3D<double,DESCRIPTOR>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
 
             //T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
             //T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
 
-            Array<T,3> const& kX = cell->getVertex(kVertex);
-            Array<T,3> const& lX = cell->getVertex(lVertex);
+            Array<double,3> const& kX = cell->getVertex(kVertex);
+            Array<double,3> const& lX = cell->getVertex(lVertex);
 
             /*== Compute bending force for the vertex as part of the main edge ==*/
             #if HEMOCELL_MEMBRANE_BENDING == 1
@@ -443,13 +468,13 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
                 kParticle->get_force() += fk;
                 lParticle->get_force() += fl;
                 */
-                Array<T,3> fi, fj;
+                Array<double,3> fi, fj;
                 computeHighOrderBendingForceIn (iX, jX, kX, lX, tri1Norm, tri2Norm, eqAnglePerEdge[edgeId], k_bend, fi, fj);
                 iParticle->get_force() += fi;
                 jParticle->get_force() += fj;
             #else
                 // Four-point bending effect - more stable, less structurally strong, might oscillate on lower lattice resolution
-                Array<T,3> fi, fj, fk, fl;
+                Array<double,3> fi, fj, fk, fl;
                 computeHighOrderBendingForce4p (iX, jX, kX, lX, tri1Norm, tri2Norm, eqAnglePerEdge[edgeId], k_bend, fi, fj, fk, fl);
                 iParticle->get_force() += fi;
                 jParticle->get_force() += fj;
@@ -471,11 +496,11 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
      * */
 
     /* Calculate cell coefficients */
-    T dVolume = (cellVolume - eqVolume)/eqVolume;
-    T volumeCoefficient = k_volume * dVolume/(0.01 - dVolume*dVolume);
+    double dVolume = (cellVolume - eqVolume)/eqVolume;
+    double volumeCoefficient = k_volume * dVolume/(0.01 - dVolume*dVolume);
     //T surfaceCoefficient = k_surface * (cellSurface - eqSurface)*1.0/eqSurface;
     //T eqMeanArea = eqSurface/cellNumTriangles;
-    T areaCoefficient = k_shear;//eqMeanArea ;
+    double areaCoefficient = k_shear;//eqMeanArea ;
 
 //    iParticle->get_E_volume() = 0.5*volumeCoefficient*(cellVolume - eqVolume)*1.0/cellNumVertices;
 //    iParticle->get_E_area() = 0.5*surfaceCoefficient*(cellSurface - eqSurface)*1.0/cellNumVertices;
@@ -489,8 +514,8 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
     //Array<T,3> dAdx1, dAdx2, dAdx3, dVdx, tmp(0,0,0);
     //std::map<plint, T> trianglesArea;
     //std::map<plint, Array<T,3> > trianglesNormal;
-    T triangleArea;
-    Array<T,3> triangleNormal;
+    double triangleArea;
+    Array<double,3> triangleNormal;
 
     for (pluint iT = 0; iT < triangles.size(); ++iT) {
         iTriangle = triangles[iT];
@@ -499,12 +524,12 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
         iVertex = cell->getVertexId(iTriangle,0);
         jVertex = cell->getVertexId(iTriangle,1);
         kVertex = cell->getVertexId(iTriangle,2);
-        Array<T,3> const& x1 = cell->getVertex(iVertex);
-        Array<T,3> const& x2 = cell->getVertex(jVertex);
-        Array<T,3> const& x3 = cell->getVertex(kVertex);
-        SurfaceParticle3D<T,Descriptor>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
-        SurfaceParticle3D<T,Descriptor>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
-        SurfaceParticle3D<T,Descriptor>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+        Array<double,3> const& x1 = cell->getVertex(iVertex);
+        Array<double,3> const& x2 = cell->getVertex(jVertex);
+        Array<double,3> const& x3 = cell->getVertex(kVertex);
+        SurfaceParticle3D<double,DESCRIPTOR>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
+        SurfaceParticle3D<double,DESCRIPTOR>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+        SurfaceParticle3D<double,DESCRIPTOR>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
 
 
         /* Local area conservation forces */
@@ -549,9 +574,9 @@ inline void ShapeMemoryModel3D<T, Descriptor>::computeCellForceHighOrder (Cell3D
     // }
 }
 
-template<typename T, template<typename U> class Descriptor>
-ShapeMemoryModel3D<T, Descriptor>* ShapeMemoryModel3D<T,Descriptor>::clone() const {
-    return new ShapeMemoryModel3D<T,Descriptor>(*this);
+//TODO this is the-most-ugly-way of implementing clone, improve
+ShapeMemoryModel3D* ShapeMemoryModel3D::clone() const {
+    return new ShapeMemoryModel3D(*this);
 }
 
 
