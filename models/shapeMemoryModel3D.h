@@ -32,13 +32,11 @@ class ShapeMemoryModel3D :  public ConstitutiveModel<double, DESCRIPTOR>
 {
 public:
     static ShapeMemoryModel3D* PlateletShapeMemoryModel3D(Config* cfg, 
-                       double persistenceLengthFine, 
                        double eqLengthRatio_,
                        double dx_, double dt_, double dm_,
                        TriangularSurfaceMesh<double> const& meshElement);
     /* All input should be in dimensionless units */
     static ShapeMemoryModel3D* RBCShapeMemoryModel3D(Config* cfg, 
-                       double persistenceLengthFine, 
                        double eqLengthRatio_,
                        double dx_, double dt_, double dm_,
                        TriangularSurfaceMesh<double> const& meshElement);

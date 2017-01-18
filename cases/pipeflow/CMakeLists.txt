@@ -43,9 +43,9 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
 IF (NOT CMAKE_CXX_FLAGS)
   #If flags are not set, add default flags
   SET(CMAKE_BUILD_TYPE ${BUILD_TYPE})
-  SET(CMAKE_CXX_FLAGS  " -Wall -Wextra -g -Wformat -Wformat-security -Werror=format-security -O3 -march=native")
+  SET(CMAKE_CXX_FLAGS  "-Wno-unknown-pragmas -Wno-unused-result -Wno-unused-parameter -Wall -Wextra -g -Wformat -Wformat-security -Werror=format-security -O3 -march=native")
 ENDIF (NOT CMAKE_CXX_FLAGS)
-SET (CMAKE_CXX_STANDARD 11)
+#SET (CMAKE_CXX_STANDARD 11)
 
 #=======================================
 IF(NEEDTXML)

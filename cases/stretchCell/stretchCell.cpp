@@ -1,15 +1,12 @@
+//-----------------------
+//Add Definition overrides here
+
+//-----------------------
 #include "hemocell.h"
 #include "cellStretching3D.hh"
 
 typedef double T;
 typedef Array<T,3> Velocity;
-
-#if HEMOCELL_CFD_DYNAMICS == 1
-    #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor    // Using this with tau == 1 will increase numeric stability. (Suppresses oscillations).
-#elif HEMOCELL_CFD_DYNAMICS == 2
-    #define DESCRIPTOR descriptors::ForcedMRTD3Q19Descriptor    //Use this whenever tau != 1
-#endif
-
 
 int main(int argc, char* argv[])
 {
@@ -70,6 +67,7 @@ int main(int argc, char* argv[])
     string paramXmlFileName;
     global::argv(1).read(paramXmlFileName);
     XMLreader documentXML(paramXmlFileName);
+    Config cfg(paramXmlFileName);
 
     // Check if it is a fresh start or a checkpointed run
     std::string firstField = (*(documentXML.getChildren(
@@ -232,8 +230,7 @@ int main(int argc, char* argv[])
 
     if (rbcModel == 0) {
         pcout << "(main) Using ShapeMemoryModel3D. " << std::endl;
-        cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-        persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
+        cellModel = ShapeMemoryModel3D::RBCShapeMemoryModel3D(&cfg, eqLengthRatio, dx, dt, dm,meshElement);
     } else if (rbcModel==1) {
         pcout << "(main) Using CellModel3D. " << std::endl;
         cellModel = new CellModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,

@@ -329,7 +329,7 @@ int main(int argc, char *argv[]) {
     plint numVerticesPerCell = meshElement.getNumVertices();
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
     cellModels.push_back(
-             ShapeMemoryModel3D::RBCShapeMemoryModel3D(&cfg, persistenceLengthFine, eqLengthRatio, dx, dt, dm, meshElement));
+             ShapeMemoryModel3D::RBCShapeMemoryModel3D(&cfg, eqLengthRatio, dx, dt, dm, meshElement));
     cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hematocrit, cellModels[0], "RBC"));
 
     
@@ -345,7 +345,7 @@ int main(int argc, char *argv[]) {
     meshes.push_back(&pltMeshElement);
     eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
     cellModels.push_back(
-            ShapeMemoryModel3D::PlateletShapeMemoryModel3D(&cfg, persistenceLengthFine, eqLengthRatio, dx, dt, dm, meshElement));
+            ShapeMemoryModel3D::PlateletShapeMemoryModel3D(&cfg, eqLengthRatio, dx, dt, dm, pltMeshElement));
     cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.0025 * hematocrit,
                                                         cellModels[cellModels.size() - 1], "PLT"));
 

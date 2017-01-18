@@ -21,7 +21,6 @@ ShapeMemoryModel3D::ShapeMemoryModel3D(ShapeMemoryModel3D const& rhs) :
     {}
 
 ShapeMemoryModel3D* ShapeMemoryModel3D::PlateletShapeMemoryModel3D( Config* cfg,
-                                        double persistenceLengthFine_, 
                                         double eqLengthRatio_,
                                         double dx_, double dt_, double dm_,
                                         TriangularSurfaceMesh<double> const& meshElement) 
@@ -31,7 +30,8 @@ ShapeMemoryModel3D* ShapeMemoryModel3D::PlateletShapeMemoryModel3D( Config* cfg,
   model->dx = dx_;
   model->dt = dt_;
   model->dm = dm_;
-  model->k_bend = (*cfg)["cellModel"]["kBend"].read<double>() * 5.0;
+  model->k_bend *= 5.0;
+  model->k_WLC *= 5.0; 
 
   model->Initialize(meshElement);
 
@@ -39,7 +39,6 @@ ShapeMemoryModel3D* ShapeMemoryModel3D::PlateletShapeMemoryModel3D( Config* cfg,
 }
 
 ShapeMemoryModel3D* ShapeMemoryModel3D::RBCShapeMemoryModel3D( Config* cfg,
-                                        double persistenceLengthFine_, 
                                         double eqLengthRatio_,
                                         double dx_, double dt_, double dm_,
                                         TriangularSurfaceMesh<double> const& meshElement)
@@ -68,6 +67,7 @@ ShapeMemoryModel3D::ShapeMemoryModel3D(Config* cfg,TriangularSurfaceMesh<double>
   k_volume = (*cfg)["cellModel"]["kVolume"].read<double>();
   k_surface = (*cfg)["cellModel"]["kSurface"].read<double>();
   eta_m = (*cfg)["cellModel"]["etaM"].read<double>();
+  persistenceLengthFine = (*cfg)["cellModel"]["persistenceLengthFine"].read<double>();
 }
 
 void ShapeMemoryModel3D::Initialize(TriangularSurfaceMesh<double> const& meshElement) {
@@ -125,30 +125,30 @@ void ShapeMemoryModel3D::Initialize(TriangularSurfaceMesh<double> const& meshEle
     gamma_T = (eta_m * 12.0/(13.0 * sqrt(3.0)));
     gamma_C = (gamma_T/3.0);
 
-    // pcout << std::endl;
-    // pcout << " ============================================= " << std::endl;
-    // pcout << " ========  Material model properties ========= " << std::endl;
-    // pcout << " ============================================= " << std::endl;
-    // pcout << "k_bend: " << k_bend << ",\t eqAngle (degrees): " << eqAngle*180.0/pi << std::endl;
-    // pcout << "k_volume: " << k_volume << ",\t eqVolume: " << eqVolume << std::endl;
-    // pcout << "k_surface: " << k_surface << ",\t eqSurface: " << eqSurface << std::endl;
-    // pcout << "k_shear: " << k_shear << ",\t eqMeanArea: " << eqMeanArea << std::endl;
-    // pcout << "eta_m: " << eta_m << ",\t eqLengthRatio: " << eqLengthRatio << std::endl;
-    // pcout << "persistenceLengthFine: " << persistenceLengthFine << ",\t persistenceLengthCoarse: " << persistenceLengthCoarse << std::endl;
-    // pcout << "gamma_T: " << gamma_T << ", gamma_C: " << gamma_C << std::endl;
-    // pcout << "k_rest: " << k_rest << ",\t 0 : " << 0 << std::endl;
-    // pcout << "k_stretch: " << k_stretch << ",\t eqTileSpan: " << eqTileSpan << std::endl;
-    // pcout << "k_elastic: " << k_elastic << ",\t eqLength: " << eqLength << std::endl;
-    // pcout << "* k_bend: " << k_bend/kBT << std::endl;
-    // pcout << "* k_volume: " <<  k_volume/(kBT/pow(eqLength,3)) <<  std::endl;
-    // pcout << "* k_surface: " << k_surface/(kBT/pow(eqLength,2)) <<  std::endl;
-    // pcout << "* k_shear: " << k_shear/(kBT/pow(eqLength,2)) <<  std::endl;
-    // pcout << "* eqLength from eqArea: " << sqrt(4*eqMeanArea/sqrt(3.0)) << ",\t eqLength: " << eqLength << std::endl;
-    // pcout << "# mu_0 = " << getMembraneShearModulus()*dNewton/dx << std::endl;
-    // pcout << "# K = " << getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
-    // pcout << "# YoungsModulus = " << getYoungsModulus()*dNewton/dx << std::endl;
-    // pcout << "# Poisson ratio = " << getPoissonRatio() << std::endl;
-    // pcout << " ============================================= " << std::endl;
+     pcout << std::endl;
+     pcout << " ============================================= " << std::endl;
+     pcout << " ========  Material model properties ========= " << std::endl;
+     pcout << " ============================================= " << std::endl;
+     pcout << "k_bend: " << k_bend << ",\t eqAngle (degrees): " << eqAngle*180.0/pi << std::endl;
+     pcout << "k_volume: " << k_volume << ",\t eqVolume: " << eqVolume << std::endl;
+     pcout << "k_surface: " << k_surface << ",\t eqSurface: " << eqSurface << std::endl;
+     pcout << "k_shear: " << k_shear << ",\t eqMeanArea: " << eqMeanArea << std::endl;
+     pcout << "eta_m: " << eta_m << ",\t eqLengthRatio: " << eqLengthRatio << std::endl;
+     pcout << "persistenceLengthFine: " << persistenceLengthFine << ",\t persistenceLengthCoarse: " << persistenceLengthCoarse << std::endl;
+     pcout << "gamma_T: " << gamma_T << ", gamma_C: " << gamma_C << std::endl;
+     pcout << "k_rest: " << k_rest << ",\t 0 : " << 0 << std::endl;
+     pcout << "k_stretch: " << k_stretch << ",\t eqTileSpan: " << eqTileSpan << std::endl;
+     pcout << "k_elastic: " << k_elastic << ",\t eqLength: " << eqLength << std::endl;
+     pcout << "* k_bend: " << k_bend/kBT << std::endl;
+     pcout << "* k_volume: " <<  k_volume/(kBT/pow(eqLength,3)) <<  std::endl;
+     pcout << "* k_surface: " << k_surface/(kBT/pow(eqLength,2)) <<  std::endl;
+     pcout << "* k_shear: " << k_shear/(kBT/pow(eqLength,2)) <<  std::endl;
+     pcout << "* eqLength from eqArea: " << sqrt(4*eqMeanArea/sqrt(3.0)) << ",\t eqLength: " << eqLength << std::endl;
+     pcout << "# mu_0 = " << getMembraneShearModulus()*dNewton/dx << std::endl;
+     pcout << "# K = " << getMembraneElasticAreaCompressionModulus()*dNewton/dx << std::endl;
+     pcout << "# YoungsModulus = " << getYoungsModulus()*dNewton/dx << std::endl;
+     pcout << "# Poisson ratio = " << getPoissonRatio() << std::endl;
+     pcout << " ============================================= " << std::endl;
 
 }
 
