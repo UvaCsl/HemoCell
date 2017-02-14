@@ -12,29 +12,11 @@ namespace plb {
 
 
 template<typename T, template<typename U> class Descriptor>
-SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D(SurfaceParticle3D<T,Descriptor> const& rhs)
-    : Particle3D<T,Descriptor>(rhs.getTag(), rhs.getPosition()), v(rhs.v), pbcPosition(rhs.pbcPosition), a(rhs.a),
-      force(rhs.force), vPrevious(rhs.vPrevious), processor(rhs.processor), cellId(rhs.cellId), vertexId(rhs.vertexId),
-      bondTypeSaturation(rhs.bondTypeSaturation), dt(rhs.dt)
-{
-}
-
-
-template<typename T, template<typename U> class Descriptor>
 SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D()
     : Particle3D<T,Descriptor>(),
       v(T(),T(),T()),
       pbcPosition(this->getPosition()),
       a(T(),T(),T()), force(T(),T(),T()), vPrevious(T(),T(),T()),
-#ifdef PLB_DEBUG // Less Calculations
-      f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()),
-      f_surface(T(),T(),T()), f_shear(T(),T(),T()), f_viscosity(T(),T(),T()),
-      f_repulsive(T(),T(),T()),
-      stress(T(),T(),T()),
-      E_other(T()),
-      E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()),
-      E_repulsive(T()),
-#endif
       processor(getMpiProcessor()), cellId(this->getTag()), vertexId(0),
       bondTypeSaturation()
 { }
@@ -45,18 +27,10 @@ SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D (Array<T,3> const& position, 
       v(T(),T(),T()),
       pbcPosition(position),
       a(T(),T(),T()),
-      dt(dt_),
       force(T(),T(),T()),
       vPrevious(T(),T(),T()),
-#ifdef PLB_DEBUG // Less Calculations
-      f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()), f_surface(T(),T(),T()), f_shear(T(),T(),T()),
-      f_viscosity(T(),T(),T()), f_repulsive(T(),T(),T()),
-      stress(T(),T(),T()),
-      E_other(T()),
-      E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
-#endif
       processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_), bondTypeSaturation()
-{ }
+{dt=dt_;}
 
 template<typename T, template<typename U> class Descriptor>
 SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D (
@@ -68,17 +42,9 @@ SurfaceParticle3D<T,Descriptor>::SurfaceParticle3D (
       pbcPosition(pbcPosition_),
       a(a_),
       force(force_),
-      dt(dt_),
       vPrevious(vPrevious_),
-#ifdef PLB_DEBUG // Less Calculations
-      f_wlc(T(),T(),T()), f_bending(T(),T(),T()), f_volume(T(),T(),T()), f_surface(T(),T(),T()), f_shear(T(),T(),T()), f_viscosity(T(),T(),T()),
-      f_repulsive(T(),T(),T()),
-      stress(T(),T(),T()),
-      E_other(T()),
-      E_inPlane(T()), E_bending(T()), E_area(T()),  E_volume(T()), E_repulsive(T()),
-#endif
       processor(getMpiProcessor()), cellId(cellId_), vertexId(vertexId_), bondTypeSaturation()
-{ }
+{dt=dt_;}
 
 
 template<typename T, template<typename U> class Descriptor>

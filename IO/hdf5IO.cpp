@@ -14,8 +14,8 @@ WriteInMultipleHDF5Files<T>::WriteInMultipleHDF5Files (
         plint envelopeWidth_, bool invertXZ_for_XDMF_) :
             hdf5ContainerNames(hdf5ContainerNames_),
             hdf5ContainerDimensions(hdf5ContainerDimensions_),
-            iter(iter_), dx(dx_), dt(dt_),
-            envelopeWidth(envelopeWidth_), invertXZ_for_XDMF(invertXZ_for_XDMF_) {};
+            iter(iter_), dx(dx_), dt(dt_)
+{envelopeWidth=envelopeWidth_; invertXZ_for_XDMF=invertXZ_for_XDMF_; };
 
 template<typename T>
 void WriteInMultipleHDF5Files<T>::processGenericBlocks (

@@ -31,7 +31,7 @@ void FcnCheckpoint<T, Descriptor>::load(XMLreader & documentXML, MultiBlockLatti
     if (isCheckpointed) {
         documentXML["Checkpoint"]["General"]["Iteration"].read(iter);
         parallelIO::load(outDir + "lattice", lattice, true);
-        for (int icf= 0; icf < cellFields.size(); ++icf) {
+        for (unsigned int icf= 0; icf < cellFields.size(); ++icf) {
             parallelIO::load(outDir + cellFields[icf]->getIdentifier(), cellFields[icf]->getParticleField3D(), true);
             cellFields[icf]->deleteIncompleteCells();
             cellFields[icf]->createCellMap();
@@ -49,7 +49,7 @@ void FcnCheckpoint<T, Descriptor>::save(MultiBlockLattice3D<T, Descriptor> & lat
         renameFileToDotOld(outDir + "lattice.dat");
         renameFileToDotOld(outDir + "lattice.plb");
         renameFileToDotOld(outDir + "checkpoint.xml");
-        for (int icf= 0; icf < cellFields.size(); ++icf) {
+        for (unsigned int icf= 0; icf < cellFields.size(); ++icf) {
             renameFileToDotOld(outDir + cellFields[icf]->getIdentifier() + ".dat");
             renameFileToDotOld(outDir + cellFields[icf]->getIdentifier() + ".plb");
         }

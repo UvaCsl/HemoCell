@@ -34,9 +34,15 @@ public:
     virtual Array<T,3> computeElasticForce (
            TriangleBoundary3D<T> const& boundary,
             plint iVertex ) =0;
-    virtual ShellModel3D<T>* clone() const =0;
+    ShellModel3D<T>* clone() const { return new ShellModel3D(*this); }
     T const& getDensity() const { return density; }
     T& getDensity() { return density; }
+
+    //TODO WTF do these do, why are they even used?
+    virtual plint getMaximumEdgeExtensionLengthLU()=0;
+    virtual plint getMaxCellDiameterLU()=0;
+    virtual SyncRequirements & getSyncRequirements()=0;
+    virtual void computeCellForce (Cell3D<T,DESCRIPTOR> * cell)=0;
 private:
     T density;
 };
@@ -49,7 +55,6 @@ public:
     virtual Array<T,3> computeElasticForce (
             TriangleBoundary3D<T> const& boundary,
             plint iVertex );
-    virtual SpringModel3D<T>* clone() const;
     T const& getRestingStiffness() const { return k_rest; }
     T& getRestingStiffness() { return k_rest; }
     T const& getStretchingStiffness() const { return k_stretch; }
@@ -58,6 +63,7 @@ public:
     T& getShearingStiffness() { return k_shear; }
     T const& getBendingStiffness() const { return k_bend; }
     T& getBendingStiffness() { return k_bend; }
+
 private:
     T k_rest, k_stretch, k_shear, k_bend;
 };
@@ -70,7 +76,6 @@ public:
     virtual Array<T,3> computeElasticForce (
             TriangleBoundary3D<T> const& boundary,
             plint iVertex );
-    virtual MembraneBendingModel3D<T>* clone() const;
     T const& getYoungModulus() const { return youngModulus; }
     T& getYoungModulus() { return youngModulus; }
     T const& getPoissonRatio() const { return poissonRatio; }

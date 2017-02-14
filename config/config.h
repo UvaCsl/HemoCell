@@ -12,7 +12,7 @@ class Config : public plb::XMLreader {
     Config(std::string paramXmlFilename); 
 
     plb::XMLreaderProxy operator[] (std::string name) const;
-	
+
 };
 
 

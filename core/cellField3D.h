@@ -30,11 +30,14 @@ public:
 	Arguments:
 	-------------
 			MultiBlockLattice3D<T, Descriptor> & lattice. Contents may be changed (like IBM Force spreading)
-			ConstitutiveModel<T, Descriptor> * cellModel. Deletion is taken care by CellField3D
+			ShellModel3D<T, Descriptor> * cellModel. Deletion is taken care by CellField3D
 			pluint numberOfCells_. Global numer of Cells
 	*/
-	CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, TriangularSurfaceMesh<T> & elementaryMesh_,
-			T hematocrit_, ConstitutiveModel<T, Descriptor> * cellModel_, std::string identifier_);
+	CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, 
+              TriangularSurfaceMesh<T> & elementaryMesh_,
+			        T hematocrit_, 
+              ShellModel3D<T> * cellModel_, 
+              std::string identifier_);
 	virtual ~CellField3D();
 public:
 	/* Set or change parameters */
@@ -136,7 +139,7 @@ private:
 	MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * reductionParticles;
 	TriangularSurfaceMesh<T> & elementaryMesh;
     T hematocrit;
-	ConstitutiveModel<T, Descriptor> * cellModel;
+	ShellModel3D<T> * cellModel;
 	bool coupleWithIBM;
     SyncRequirements ccrRequirements;
     std::string identifier;

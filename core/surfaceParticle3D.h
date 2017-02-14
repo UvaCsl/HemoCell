@@ -19,7 +19,6 @@ public:
      *  0: Euler
      *  1: Adams-Bashforth
      */
-    SurfaceParticle3D(SurfaceParticle3D<T,Descriptor> const& rhs);
     SurfaceParticle3D(Array<T,3> const& position, plint cellId_ = -1, plint vertexId_ = 0, T dt_= 1.0);
     SurfaceParticle3D(Array<T,3> const& position,
                           Array<T,3> const& v_, Array<T,3> const& pbcPosition_,

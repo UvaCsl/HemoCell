@@ -6,11 +6,12 @@
 
 template<typename T>
 CellQuantityHolder<T>::CellQuantityHolder(CellQuantityHolder<T> const& rhs):
-    cellId(rhs.cellId),particlesPerCellId(rhs.particlesPerCellId),
     quantities1D(rhs.quantities1D),quantities3D(rhs.quantities3D),
     quantitiesND(rhs.quantitiesND),scalar_ccrIds(rhs.scalar_ccrIds),
     vector_ccrIds(rhs.vector_ccrIds),tensor_ccrIds(rhs.tensor_ccrIds)
-    {    };
+    {particlesPerCellId=rhs.particlesPerCellId; 
+      cellId=rhs.cellId;
+         };
 
 template<typename T>
 CellQuantityHolder<T>& CellQuantityHolder<T>::operator=(CellQuantityHolder<T> const& rhs){
@@ -198,7 +199,7 @@ template<typename T, template<typename U> class Descriptor>
 Cell3D<T, Descriptor>::Cell3D(TriangularSurfaceMesh<T> & mesh_, plint cellId_) :
     CellQuantityHolder<T>(), mesh(mesh_), cellId(cellId_) {
     setMesh();
-    for (plint i = 0; i < allReductions.size(); i++) {
+    for (pluint i = 0; i < allReductions.size(); i++) {
         plint d = getReductionDimension(allReductions[i]);
         if (d == 1) {
             this->quantities1D[allReductions[i]] = *(new T()); 

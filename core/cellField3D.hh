@@ -5,9 +5,13 @@
 
 
 template<typename T, template<typename U> class Descriptor>
-CellField3D<T, Descriptor>::CellField3D(MultiBlockLattice3D<T, Descriptor> & lattice_, 
-	TriangularSurfaceMesh<T> & elementaryMesh_, T hematocrit_,
-	ConstitutiveModel<T, Descriptor> * cellModel_, std::string identifier_) :
+CellField3D<T, Descriptor>::CellField3D(
+    MultiBlockLattice3D<T, Descriptor> & lattice_, 
+	  TriangularSurfaceMesh<T> & elementaryMesh_, 
+    T hematocrit_,
+	  ShellModel3D<T> * cellModel_, 
+    std::string identifier_) 
+    :
 		lattice(lattice_), elementaryMesh(elementaryMesh_),
 		hematocrit(hematocrit_), cellModel(cellModel_), identifier(identifier_)
 {
@@ -98,7 +102,8 @@ void CellField3D<T, Descriptor>::grow(plint growIterations) {
     advanceParticles();
     synchronizeCellQuantities();
     for (plint i = 0; i < growIterations; ++i) {
-        T iRatio = 1.0; ratio + i*1.0 / (growIterations*0.5) ;
+        T iRatio = 1.0; 
+        iRatio = ratio + i*1.0 / (growIterations*0.5) ;
         if (iRatio > 1.0) { iRatio = 1.0; }
         if (i%100 == 0) {
             pcout << "growth iter:" << i<< ", " <<  i*100.0/growIterations << "%" <<std::endl;

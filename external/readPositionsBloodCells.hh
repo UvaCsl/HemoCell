@@ -52,7 +52,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
         packPositions[j].resize(Np[j]); packAngles[j].resize(Np[j]);
 
-        for (pluint i = 0; i < Np[j]; i++) {
+        for (plint i = 0; i < Np[j]; i++) {
             fIn >> packPositions[j][i][0] >> packPositions[j][i][1] >> packPositions[j][i][2] >> packAngles[j][i][0]
                 >> packAngles[j][i][1] >> packAngles[j][i][2];
             packAngles[j][i] *= pi/180.0; // Deg to Rad
@@ -77,7 +77,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
     nPartsPerComponent.clear(); nPartsPerComponent.resize(Np.size());
     diameters.clear(); diameters.resize(Np.size());
 
-    for(int i = 0; i < Np.size(); i++)
+    for(unsigned int i = 0; i < Np.size(); i++)
     {
         T dx, dy, dz;
         Array<T,2> xRange, yRange, zRange;
@@ -105,7 +105,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
         cellIds[i].resize(Np[i]);
         randomAngles[i].resize(Np[i]);
 
-        for (pluint j = 0; j < Np[i]; ++j)
+        for (plint j = 0; j < Np[i]; ++j)
         {
             // Store mesh positions and rotations
             //randomAngles[i][j] = Array<T, 3>(1.0,0.0,0.0);
@@ -233,7 +233,7 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::nothing; // Fluid field.
-    for (int iField = 0; iField < cellFields.size(); ++iField) {
+    for (unsigned int iField = 0; iField < cellFields.size(); ++iField) {
         modified[1+iField] = modif::dynamicVariables; // Particle fields.
     }
 }
@@ -241,7 +241,7 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::getTypeOfModification (
 template<typename T, template<typename U> class Descriptor>
 void ReadPositionsBloodCellField3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
     isWritten[0] = false; // Fluid field.
-    for (int iField = 0; iField < cellFields.size(); ++iField) {
+    for (unsigned int iField = 0; iField < cellFields.size(); ++iField) {
         isWritten[1+iField] = true; // Particle fields.
     }
 
@@ -256,14 +256,14 @@ BlockDomain::DomainT ReadPositionsBloodCellField3D<T,Descriptor>::appliesTo() co
 
 
 template<typename T, template<typename U> class Descriptor>
-void readPositionsBloodCellField3D(std::vector<CellField3D<T, Descriptor> *> &cellFields, T dx, const char* positionsFileName) {
+void readPositionsBloodCellField3D(CellFields3D & cellFields, T dx, const char* positionsFileName) {
     global::timer("CellInit").start();
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
-    fluidAndParticleFieldsArg.push_back(&(cellFields[0]->getFluidField3D()));
+    fluidAndParticleFieldsArg.push_back(cellFields[0]->getFluidField3D());
 
     for (pluint icf = 0; icf < cellFields.size(); ++icf) {
-        fluidAndParticleFieldsArg.push_back(&(cellFields[icf]->getParticleField3D()));
+        fluidAndParticleFieldsArg.push_back(cellFields[icf]->getParticleField3D());
     }
 
     //std::vector<MultiBlock3D *> particleFieldsArg;
@@ -271,13 +271,13 @@ void readPositionsBloodCellField3D(std::vector<CellField3D<T, Descriptor> *> &ce
 
     applyProcessingFunctional(
             new ReadPositionsBloodCellField3D<T, Descriptor>(cellFields, dx, positionsFileName),
-            cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg);
+            cellFields[0]->getFluidField3D()->getBoundingBox(), fluidAndParticleFieldsArg);
 
     //pcout << "Ready to start.." << std::endl;
 
     for (pluint icf = 0; icf < cellFields.size(); ++icf) {
-        cellFields[icf]->advanceParticles();
-        cellFields[icf]->synchronizeCellQuantities();
+        //cellFields[icf]->advanceParticles();
+        //cellFields[icf]->synchronizeCellQuantities();
     }
 
     global::timer("CellInit").stop();

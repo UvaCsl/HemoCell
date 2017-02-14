@@ -56,3 +56,15 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
 #ifndef HEMOCELL_MEMBRANE_BENDING
 #define HEMOCELL_MEMBRANE_BENDING 1
 #endif
+
+/*
+ * Particle Field Type:
+ * Correct options are:
+ * DenseParticleField3D [Palabos]
+ * LightParticleField3D [Palabos]
+ * HemoParticleField3D  [HemoCell]
+ */
+#ifndef HEMOCELL_PARTICLE_FIELD
+#define HEMOCELL_PARTICLE_FIELD HemoParticleField3D<double, DESCRIPTOR>
+#endif
+

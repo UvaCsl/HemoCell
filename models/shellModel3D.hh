@@ -78,10 +78,6 @@ Array<T,3> SpringModel3D<T>::computeElasticForce (
     return force;
 }
 
-template<typename T>
-SpringModel3D<T>* SpringModel3D<T>::clone() const {
-    return new SpringModel3D<T>(*this);
-}
 
 template<typename T>
 MembraneBendingModel3D<T>::MembraneBendingModel3D (
@@ -128,11 +124,6 @@ Array<T,3> MembraneBendingModel3D<T>::computeElasticForce (
         force[i] = -(up-um) / (2.0*eps);
     }
     return force;
-}
-
-template<typename T>
-MembraneBendingModel3D<T>* MembraneBendingModel3D<T>::clone() const {
-    return new MembraneBendingModel3D<T>(*this);
 }
 
 namespace shellModelHelper3D {

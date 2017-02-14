@@ -261,7 +261,7 @@ void Packing::initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ,
 void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps = 25000, double sizing = 1.0)
 {
     No_parts = 0;
-    for(int i = 0; i < nPartsPerComponent.size(); i++)
+    for(unsigned int i = 0; i < nPartsPerComponent.size(); i++)
         No_parts += nPartsPerComponent[i];
 
     No_species = nPartsPerComponent.size();
@@ -884,9 +884,9 @@ void Packing::testOutput()
     ofstream of;
     of.open("test_coord.txt");
 
-    for(int i = 0; i < positions.size(); i++)
+    for(unsigned int i = 0; i < positions.size(); i++)
     {
-    	for(int j = 0; j < positions[i].size(); j++)
+    	for(unsigned int j = 0; j < positions[i].size(); j++)
     	{
     		of << positions[i][j][0] << " " << positions[i][j][1] << " " << positions[i][j][2] << " " << angles[i][j][0] << " " << angles[i][j][1] << " " << angles[i][j][2] << endl;
     	}	

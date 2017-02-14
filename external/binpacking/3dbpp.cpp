@@ -124,10 +124,10 @@
 #define MINIMUM_3dbpp(i,j)      ((i) < (j) ? (i) : (j))
 #define MAXIMUM_3dbpp(i,j)      ((i) > (j) ? (i) : (j))
 #define DIF_3dbpp(i,j)          ((int) ((j) - (i) + 1))
-#define SWAPINT_3dbpp(a,b)      { register int t; t=*(a);*(a)=*(b);*(b)=t; }
-#define SWAP_3dbpp(a,b)         { register box t; t=*(a);*(a)=*(b);*(b)=t; }
+#define SWAPINT_3dbpp(a,b)      { int t; t=*(a);*(a)=*(b);*(b)=t; }
+#define SWAP_3dbpp(a,b)         { box t; t=*(a);*(a)=*(b);*(b)=t; }
 #define SWAPI_3dbpp(a,b)        { register itype t; t=(a);(a)=(b);(b)=t; }
-#define SWAPP_3dbpp(a,b)        { register point t; t=*(a);*(a)=*(b);*(b)=t; }
+#define SWAPP_3dbpp(a,b)        { point t; t=*(a);*(a)=*(b);*(b)=t; }
 #define DF_3dbpp(a,b)           ((r=(a).y-(b).y) != 0 ? r : (a).x-(b).x)
 
 
@@ -419,7 +419,7 @@ boolean_3dbpp checksol(allinfo *a, box *f, box *l)
         extreme = 1;
         for (j = f; j <= m; j++) { 
           if (j == i) continue;
-          if ((j->bno != b) || (!j->k != 1)) continue;
+          if ((j->bno != b) || ((!j->k) != 1)) continue;
           if ((i->x < j->x + j->w) || (i->y < j->y + j->h) 
                                    || (i->z < j->z + j->d)) extreme = 0;
         }
@@ -537,7 +537,7 @@ void isortdecr(int *f, int *l)
 
 void psortdecr(point *f, point *l)
 {
-  register point mi;
+  point mi;
   register point *i, *j, *m;
   register int d, r;
 

@@ -11,7 +11,7 @@ using namespace std;
 using namespace plb;
 
 template<typename T, template<typename U> class Descriptor>
-void readPositionsBloodCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields, T dx, const char* positionsFileName);
+void readPositionsBloodCellField3D(CellFields3D & cellFields, T dx, const char* positionsFileName);
 
 template<typename T>
 void getReadPositionsBloodCellsVector(Box3D realDomain,
@@ -26,18 +26,17 @@ template<typename T, template<typename U> class Descriptor>
 class ReadPositionsBloodCellField3D : public BoxProcessingFunctional3D
 {
 public:
-    ReadPositionsBloodCellField3D (std::vector<CellField3D<T, Descriptor>* > & cellFields_, T dx_, const char* positionsFileName_):
-            cellFields(cellFields_), dx(dx_), positionsFileName(positionsFileName_) { }
+    ReadPositionsBloodCellField3D (CellFields3D & cellFields_, T dx_, const char* positionsFileName_)
+            : cellFields(cellFields) {dx = dx_; positionsFileName=positionsFileName_;}
     /// Arguments: [0] Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual ReadPositionsBloodCellField3D<T,Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
     void getModificationPattern(std::vector<bool>& isWritten) const;
     virtual BlockDomain::DomainT appliesTo() const;
-private:
-    std::vector<CellField3D<T, Descriptor>* > & cellFields;
     const char* positionsFileName;
     T dx;
+    CellFields3D & cellFields;
 };
 
 

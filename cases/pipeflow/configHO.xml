@@ -18,7 +18,7 @@
 
 <parameters>
     <Re> 0.1 </Re>   <!--Reynolds number-->
-    <warmup> 1500 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <warmup> 10 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
 </parameters>
 

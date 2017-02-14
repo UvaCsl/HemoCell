@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
     plint cellStep;
     plint nx, ny, nz;
     T hematocrit;
-    T eqLengthRatio, radius;
+    T radius;
     plint minNumOfTriangles;
     plint tmax, tmeas;
     plint refDir, refDirN;
@@ -173,8 +173,6 @@ int main(int argc, char *argv[]) {
 
     // ---- Particle material properties
 
-    cfg["cellModel"]["eqLengthRatio"].read(eqLengthRatio);
-  
     cfg["ibm"]["radius"].read(radius);
     cfg["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
     cfg["ibm"]["ppForceDistance"].read(ppForceDistance);
@@ -305,8 +303,8 @@ int main(int argc, char *argv[]) {
     pcout << "(main) init cell structures..."  << std::endl;
     T persistenceLengthFine = 7.5e-9; // In meters
 
-    std::vector<ConstitutiveModel<T, DESCRIPTOR> *> cellModels;
-    std::vector<CellField3D<T, DESCRIPTOR> *> cellFields;
+    std::vector<ShellModel3D<T> *> cellModels;
+    CellFields3D  cellFields = CellFields3D(lattice,extendedEnvelopeWidth);
     std::vector<TriangularSurfaceMesh<T> *> meshes;
     std::vector<T> eqVolumes;
 
@@ -329,8 +327,8 @@ int main(int argc, char *argv[]) {
     plint numVerticesPerCell = meshElement.getNumVertices();
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
     cellModels.push_back(
-             ShapeMemoryModel3D::RBCShapeMemoryModel3D(&cfg, eqLengthRatio, dx, dt, dm, meshElement));
-    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, meshElement, hematocrit, cellModels[0], "RBC"));
+             ShapeMemoryModel3D::RBCShapeMemoryModel3D(&cfg, dx, dt, dm, meshElement));
+    cellFields.addCellType(&meshElement, hematocrit, cellModels[0], "RBC");
 
     
     // ----------------------- Init platelets ----------------------------
@@ -345,25 +343,25 @@ int main(int argc, char *argv[]) {
     meshes.push_back(&pltMeshElement);
     eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
     cellModels.push_back(
-            ShapeMemoryModel3D::PlateletShapeMemoryModel3D(&cfg, eqLengthRatio, dx, dt, dm, pltMeshElement));
-    cellFields.push_back(new CellField3D<T, DESCRIPTOR>(lattice, pltMeshElement, 0.0025 * hematocrit,
-                                                        cellModels[cellModels.size() - 1], "PLT"));
+            ShapeMemoryModel3D::PlateletShapeMemoryModel3D(&cfg, dx, dt, dm, pltMeshElement));
+    cellFields.addCellType(&pltMeshElement, 0.0025 * hematocrit,
+                                                        cellModels[cellModels.size() - 1], "PLT");
 
 
     // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
 
     FcnCheckpoint<T, DESCRIPTOR> checkpointer(documentXML);
-    checkpointer.load(documentXML, lattice, cellFields, initIter);
+    cellFields.load(&documentXML, initIter);
 
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing particle positions from " << particlePosFile << "..." << std::endl;
 
         //orderedPositionMultipleCellField3D(cellFields);
         //randomPositionMultipleCellField3D(cellFields, hematocrit, dx, maxPackIter);
-        readPositionsBloodCellField3D(cellFields, dx, particlePosFile.c_str());
+       //readPositionsBloodCellField3D(cellFields, dx, particlePosFile.c_str());
        
         pcout << "(main) saving checkpoint..." << std::endl;
-        checkpointer.save(lattice, cellFields, initIter);
+        cellFields.save(&documentXML, initIter);
     }
     else {
     	pcout << "(main) particle positions read from checkpoint." << std::endl;
@@ -371,9 +369,9 @@ int main(int argc, char *argv[]) {
 
     // ---------------------- Set integration scheme and time step amplification for cell fields ---------------
 
-    for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-        cellFields[iCell]->setParticleUpdateScheme((T)cellStep);
-    }
+    //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+        cellFields.setParticleUpdateScheme((T)cellStep);
+    //}
     
     // ------------------------- Output flow parameters ----------------------
     pcout << "(main) material model parameters: model: " << HEMOCELL_MATERIAL_MODEL <<  ", update scheme: " << HEMOCELL_MATERIAL_INTEGRATION << ", step-size: " << cellStep << " lt" << endl;

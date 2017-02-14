@@ -28,16 +28,14 @@ void getCellShapeQuantitiesFromMesh(TriangularSurfaceMesh<T> const& dynMesh,
 
 
 
-class ShapeMemoryModel3D :  public ConstitutiveModel<double, DESCRIPTOR>
+class ShapeMemoryModel3D :  public ShellModel3D<double>
 {
 public:
     static ShapeMemoryModel3D* PlateletShapeMemoryModel3D(Config* cfg, 
-                       double eqLengthRatio_,
                        double dx_, double dt_, double dm_,
                        TriangularSurfaceMesh<double> const& meshElement);
     /* All input should be in dimensionless units */
     static ShapeMemoryModel3D* RBCShapeMemoryModel3D(Config* cfg, 
-                       double eqLengthRatio_,
                        double dx_, double dt_, double dm_,
                        TriangularSurfaceMesh<double> const& meshElement);
 private:
@@ -46,7 +44,8 @@ private:
     void Initialize(TriangularSurfaceMesh<double> const& meshElement);
 
 public:
-    ShapeMemoryModel3D(ShapeMemoryModel3D const& rhs);
+    //ShapeMemoryModel3D(ShapeMemoryModel3D const& rhs); //Let the compiler auto
+    //generate the copy function
 
     ~ShapeMemoryModel3D() { } ;
 
@@ -69,7 +68,6 @@ public:
     virtual SyncRequirements & getSyncRequirements() {return syncRequirements;} ;
     virtual SyncRequirements const& getSyncRequirements() const {return syncRequirements;} ;
 
-    virtual ShapeMemoryModel3D* clone() const;
 private:
     inline void computeCellForceHighOrder (Cell3D<double,DESCRIPTOR> *cell);
     inline void computeCellForceSuresh (Cell3D<double,DESCRIPTOR> * cell);

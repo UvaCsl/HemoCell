@@ -52,15 +52,15 @@ public:
     std::vector<T> &        getND(plint ccrId)   { return quantitiesND[ccrId]; }
     T const&                get1D(plint ccrId) const  {
         if (quantities1D.count(ccrId) > 0) { return quantities1D.at(ccrId); }
-        else { return 0; }
+        else { return *(new double(0.0)) ; }
     }
     Array<T,3> const&       get3D(plint ccrId) const  {
         if (quantities3D.count(ccrId) > 0) { return quantities3D.at(ccrId); }
-        else { return Array<T,3>(0,0,0); }
+        else { return *(new Array<T,3>(0,0,0)); }
     }
     std::vector<T> const&   getND(plint ccrId) const  {
         if (quantitiesND.count(ccrId) > 0) { return quantitiesND.at(ccrId); }
-        else { return std::vector<T>() ; }
+        else { return *(new std::vector<T>()) ; }
     }
     void get(plint ccrId, T& value)              { value = get1D(ccrId); return value; }
     void get(plint ccrId, Array<T,3>& value)     { value = get3D(ccrId); return value; }

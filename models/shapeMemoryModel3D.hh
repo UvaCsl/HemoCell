@@ -6,56 +6,36 @@
 
 namespace plb {
 
-//Looks like some poorly implemented clone function? ...  TODO:FIX
-ShapeMemoryModel3D::ShapeMemoryModel3D(ShapeMemoryModel3D const& rhs) :
-    ConstitutiveModel<double,DESCRIPTOR>(rhs), meshmetric(meshmetric),
-    syncRequirements(rhs.syncRequirements), maxLength(rhs.maxLength), cellRadiusLU(rhs.cellRadiusLU),
-    k_rest(rhs.k_rest), k_shear(rhs.k_shear), k_bend(rhs.k_bend), k_stretch(rhs.k_stretch),
-    k_inPlane(rhs.k_inPlane), k_elastic(rhs.k_elastic), k_surface(rhs.k_surface), k_volume(rhs.k_volume),
-    C_elastic(rhs.C_elastic), eta_m(rhs.eta_m), gamma_T(rhs.gamma_T), gamma_C(rhs.gamma_C),
-    eqLength(rhs.eqLength), eqArea(rhs.eqArea), eqAngle(rhs.eqAngle), eqAreaPerTriangle(rhs.eqAreaPerTriangle),
-    eqLengthPerEdge(rhs.eqLengthPerEdge), eqAnglePerEdge(rhs.eqAnglePerEdge), eqVolume(rhs.eqVolume),
-    eqSurface(rhs.eqSurface), eqTileSpan(rhs.eqTileSpan), persistenceLengthCoarse(rhs.persistenceLengthCoarse),
-    eqLengthRatio(rhs.eqLengthRatio), dx(rhs.dx), dt(rhs.dt), dm(rhs.dm), cellNumTriangles(rhs.cellNumTriangles),
-    cellNumVertices(rhs.cellNumVertices)
-    {}
-
 ShapeMemoryModel3D* ShapeMemoryModel3D::PlateletShapeMemoryModel3D( Config* cfg,
-                                        double eqLengthRatio_,
                                         double dx_, double dt_, double dm_,
                                         TriangularSurfaceMesh<double> const& meshElement) 
 {
   ShapeMemoryModel3D* model = new ShapeMemoryModel3D(cfg,meshElement);
-  model->eqLengthRatio = eqLengthRatio_;
   model->dx = dx_;
   model->dt = dt_;
   model->dm = dm_;
   model->k_bend *= 5.0;
   model->k_WLC *= 5.0; 
-
   model->Initialize(meshElement);
 
   return model;
 }
 
 ShapeMemoryModel3D* ShapeMemoryModel3D::RBCShapeMemoryModel3D( Config* cfg,
-                                        double eqLengthRatio_,
                                         double dx_, double dt_, double dm_,
                                         TriangularSurfaceMesh<double> const& meshElement)
 {
   ShapeMemoryModel3D* model = new ShapeMemoryModel3D(cfg,meshElement);
-  model->eqLengthRatio = eqLengthRatio_;
   model->dx = dx_;
   model->dt = dt_;
   model->dm = dm_;
-
   model->Initialize(meshElement);
 
   return model;
 }
 
 ShapeMemoryModel3D::ShapeMemoryModel3D(Config* cfg,TriangularSurfaceMesh<double> const& meshElement) 
-            : ConstitutiveModel<double,DESCRIPTOR>((*cfg)["cellModel"]["shellDensity"].read<double>()),
+            : ShellModel3D<double>((*cfg)["cellModel"]["shellDensity"].read<double>()),
             meshmetric(meshElement)
 {
   k_rest = (*cfg)["cellModel"]["kRest"].read<double>();
@@ -67,6 +47,7 @@ ShapeMemoryModel3D::ShapeMemoryModel3D(Config* cfg,TriangularSurfaceMesh<double>
   k_volume = (*cfg)["cellModel"]["kVolume"].read<double>();
   k_surface = (*cfg)["cellModel"]["kSurface"].read<double>();
   eta_m = (*cfg)["cellModel"]["etaM"].read<double>();
+  eqLengthRatio = (*cfg)["cellModel"]["eqLengthRatio"].read<double>();
   persistenceLengthFine = (*cfg)["cellModel"]["persistenceLengthFine"].read<double>();
 }
 
@@ -574,10 +555,6 @@ inline void ShapeMemoryModel3D::computeCellForceHighOrder (Cell3D<double,DESCRIP
     // }
 }
 
-//TODO this is the-most-ugly-way of implementing clone, improve
-ShapeMemoryModel3D* ShapeMemoryModel3D::clone() const {
-    return new ShapeMemoryModel3D(*this);
-}
 
 
 template<typename T>

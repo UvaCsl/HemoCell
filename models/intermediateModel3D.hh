@@ -27,29 +27,13 @@
 namespace plb {
 
 template<typename T, template<typename U> class Descriptor>
-IntermediateModel3D<T, Descriptor>::IntermediateModel3D(IntermediateModel3D<T,Descriptor> const& rhs) :
-    ConstitutiveModel<T,Descriptor>(rhs), meshmetric(meshmetric),
-    syncRequirements(rhs.syncRequirements), maxLength(rhs.maxLength), cellRadiusLU(rhs.cellRadiusLU),
-    k_rest(rhs.k_rest), k_shear(rhs.k_shear), k_bend(rhs.k_bend), k_stretch(rhs.k_stretch),
-    k_inPlane(rhs.k_inPlane), k_elastic(rhs.k_elastic), k_surface(rhs.k_surface), k_volume(rhs.k_volume),
-    C_elastic(rhs.C_elastic), eta_m(rhs.eta_m), gamma_T(rhs.gamma_T), gamma_C(rhs.gamma_C),
-    eqLength(rhs.eqLength), eqArea(rhs.eqArea), eqAngle(rhs.eqAngle), eqAreaPerTriangle(rhs.eqAreaPerTriangle),
-    eqLengthPerEdge(rhs.eqLengthPerEdge), eqAnglePerEdge(rhs.eqAnglePerEdge), eqVolume(rhs.eqVolume),
-    eqSurface(rhs.eqSurface), eqTileSpan(rhs.eqTileSpan), persistenceLengthCoarse(rhs.persistenceLengthCoarse),
-    eqLengthRatio(rhs.eqLengthRatio), dx(rhs.dx), dt(rhs.dt), dm(rhs.dm), cellNumTriangles(rhs.cellNumTriangles),
-    cellNumVertices(rhs.cellNumVertices)
-    {}
-
-
-
-template<typename T, template<typename U> class Descriptor>
 IntermediateModel3D<T,Descriptor>::IntermediateModel3D (T density_, T k_rest_,
         T k_shear_, T k_bend_, T k_stretch_, T k_WLC_, T k_elastic_,
         T k_volume_, T k_surface_, T eta_m_,
         T persistenceLengthFine_, T eqLengthRatio_,
         T dx_, T dt_, T dm_,
         TriangularSurfaceMesh<T> const& meshElement)
-    : ConstitutiveModel<T,Descriptor>(density_),
+    : ShellModel3D<T>(density_),
       meshmetric(meshElement),
       k_rest(k_rest_),
       k_shear(k_shear_),
@@ -359,12 +343,6 @@ void IntermediateModel3D<T, Descriptor>::computeCellForce (Cell3D<T,Descriptor> 
 
     }
 
-}
-
-
-template<typename T, template<typename U> class Descriptor>
-IntermediateModel3D<T, Descriptor>* IntermediateModel3D<T,Descriptor>::clone() const {
-    return new IntermediateModel3D<T,Descriptor>(*this);
 }
 
 

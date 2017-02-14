@@ -41,7 +41,7 @@ namespace plb {
 
 
 template<typename T, template<typename U> class Descriptor>
-class IntermediateModel3D :  public ConstitutiveModel<T,Descriptor>
+class IntermediateModel3D :  public ShellModel3D<T>
 {
 public:
     /* All input should be in dimensionless units */
@@ -51,7 +51,6 @@ public:
             T persistenceLengthFine, T eqLengthRatio_,
             T dx_, T dt_, T dm_,
             TriangularSurfaceMesh<T> const& meshElement);
-    IntermediateModel3D(IntermediateModel3D<T,Descriptor> const& rhs);
     ~IntermediateModel3D() { } ;
     Array<T,3> computeElasticForce (
                TriangleBoundary3D<T> const& boundary,
@@ -66,7 +65,6 @@ public:
     virtual SyncRequirements & getSyncRequirements() {return syncRequirements;} ;
     virtual SyncRequirements const& getSyncRequirements() const {return syncRequirements;} ;
 
-    virtual IntermediateModel3D<T,Descriptor>* clone() const;
 private:
     plint getTriangleId(plint iTriangle);
     plint getEdgeId(plint iVertex, plint jVertex);

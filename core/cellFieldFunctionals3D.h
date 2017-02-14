@@ -132,7 +132,7 @@ template<typename T, template<typename U> class Descriptor>
 class ComputeCellForce3D : public BoxProcessingFunctional3D
 {
 public:
-    ComputeCellForce3D (ConstitutiveModel<T,Descriptor>* cellModel_, std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_) ;
+    ComputeCellForce3D (ShellModel3D<T>* cellModel_, std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_) ;
     ~ComputeCellForce3D() {
 //        std::cout <<" ~ComputeCellForce3D() " << global::mpi().getRank() << std::endl;
     }; // { delete cellModel; } ;
@@ -144,7 +144,7 @@ public:
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
     void getModificationPattern(std::vector<bool>& isWritten) const;
 private:
-    ConstitutiveModel<T,Descriptor>* cellModel;
+    ShellModel3D<T>* cellModel;
     std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D;
 };
 

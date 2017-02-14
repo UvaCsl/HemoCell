@@ -51,7 +51,7 @@ plint maximum(plint x1, plint x2) {
 
 
 namespace plb {
-
+#if 0
 template<typename T, template<typename U> class Descriptor>
 class ConstitutiveModel : public ShellModel3D<T>
 {
@@ -112,10 +112,10 @@ public:
     virtual void setEquilibriumSurface(T value)=0;
     virtual void setEquilibriumTileSpan(T value)=0;
 };
-
+#endif
 
 template<typename T, template<typename U> class Descriptor>
-class CellModel3D : public ConstitutiveModel<T,Descriptor>
+class CellModel3D : public ShellModel3D<T>
 {
 public:
     /* All input should be given in dimensional units.
@@ -131,7 +131,6 @@ public:
             T dx_, T dt_, T dm_,
             TriangularSurfaceMesh<T> const& meshElement);
     ~CellModel3D() { } ;
-    CellModel3D(CellModel3D<T,Descriptor> const& rhs);
     virtual void computeCellForce (Cell3D<T,Descriptor> * cell);
     virtual plint getMaximumEdgeExtensionLengthLU() { return maximum(ceil(2*maxLength + 0.5),4); };
     virtual plint getMaxCellDiameterLU() { return maximum(ceil(4*cellRadiusLU),4); };   // TODO: optimise this
@@ -142,7 +141,6 @@ public:
     virtual SyncRequirements & getSyncRequirements() {return syncRequirements;} ;
     virtual SyncRequirements const& getSyncRequirements() const {return syncRequirements;} ;
 
-    virtual CellModel3D<T, Descriptor>* clone() const;
 private:
     MeshMetrics<T> meshmetric;
     T k_rest, k_shear, k_bend, k_stretch, k_inPlane, k_elastic, k_surface, k_volume;

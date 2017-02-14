@@ -49,7 +49,7 @@ private:
 
 
 template<typename T, template<typename U> class Descriptor>
-class RestModel3D : public ConstitutiveModel<T,Descriptor>
+class RestModel3D : public ShellModel3D<T>
 {
 public:
     /* All input should be given in dimensional units.
@@ -66,7 +66,6 @@ public:
             TriangularSurfaceMesh<T> const& meshElement,
             std::map<plint, TriangularSurfaceMesh<T>* > & meshes_);
     ~RestModel3D() { } ;
-    RestModel3D(RestModel3D<T,Descriptor> const& rhs);
     virtual void computeCellForce (Cell3D<T,Descriptor> * cell);
     virtual plint getMaximumEdgeExtensionLengthLU() { return maximum(ceil(2*maxLength + 0.5),4); };
     virtual plint getMaxCellDiameterLU() { return maximum(ceil(2*cellRadiusLU),2); };
@@ -77,7 +76,6 @@ public:
     virtual SyncRequirements & getSyncRequirements() {return syncRequirements;} ;
     virtual SyncRequirements const& getSyncRequirements() const {return syncRequirements;} ;
 
-    virtual RestModel3D<T, Descriptor>* clone() const;
 private:
     MeshMetrics<T> meshmetric;
     T k_rest, k_shear, k_bend, k_stretch, k_inPlane, k_elastic, k_surface, k_volume;

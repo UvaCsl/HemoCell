@@ -50,7 +50,7 @@ public:
     virtual void unserialize(HierarchicUnserializer& unserializer);
     virtual CellParticle3D<T,Descriptor>* clone() const;
 
-    plint const getMpiProcessor() const {
+    plint getMpiProcessor() const {
     	int myrank = 0;
 #ifdef PLB_MPI_PARALLEL
     myrank = MPI::COMM_WORLD.Get_rank();

@@ -69,7 +69,7 @@ void serializeString(HierarchicSerializer& serializer, std::string const& s)
 {
 	plint n = s.length();
     serializer.addValue<plint>(n);
-	for (int i = 0; i < s.length(); ++i)
+	for (pluint i = 0; i < s.length(); ++i)
         serializer.addValue<int>( int(s[i]) );
 }
 

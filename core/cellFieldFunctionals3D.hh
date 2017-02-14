@@ -94,7 +94,7 @@ void SyncParticleFieldEnvelope<T,Descriptor>::getModificationPattern(std::vector
 /* ******** ComputeCellForce3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
-ComputeCellForce3D<T,Descriptor>::ComputeCellForce3D (ConstitutiveModel<T,Descriptor>* cellModel_, std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_)
+ComputeCellForce3D<T,Descriptor>::ComputeCellForce3D (ShellModel3D<T>* cellModel_, std::map<plint, Cell3D<T,Descriptor>* > & cellIdToCell3D_)
 : cellModel(cellModel_), cellIdToCell3D(cellIdToCell3D_) { }
 
 template<typename T, template<typename U> class Descriptor>
@@ -526,7 +526,7 @@ void GetGlobalMaxForce<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles); // Gets particle only from the bulk
 
-    for(plint iPart = 0; iPart < particles.size(); iPart++)
+    for(pluint iPart = 0; iPart < particles.size(); iPart++)
     {
         SurfaceParticle3D<T,Descriptor>* particle = 
                 dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iPart]);
