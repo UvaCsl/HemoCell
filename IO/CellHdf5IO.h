@@ -1,3 +1,4 @@
+/*
 #ifndef FICSION_CELL_HDF5IO_H
 #define FICSION_CELL_HDF5IO_H
 
@@ -11,12 +12,13 @@
 #include <string>
 #include <hdf5.h>
 #include <hdf5_hl.h>
+#include "cellFields3D.h"
 
 using namespace plb;
 using namespace std;
 
 template<typename T, template<typename U> class Descriptor>
-void writeCell3D_HDF5(CellField3D<T, Descriptor>& cellField3D, T dx, T dt, plint iter, std::string preString="");
+void writeCell3D_HDF5(HemoCellField& cellField3D, double dx, double dt, plint iter, std::string preString="");
 
 template<typename T, template<typename U> class Descriptor>
 class WriteCell3DInMultipleHDF5Files : public BoxProcessingFunctional3D
@@ -43,3 +45,4 @@ private:
 
 #include "CellHdf5IO.cpp"
 #endif  // FICSION_CELL_HDF5IO_H
+*/

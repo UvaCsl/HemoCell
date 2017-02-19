@@ -61,17 +61,22 @@ public:
     void save(XMLreader * documentXML, plint iter);
     void InitAfterLoadCheckpoint();
 
+    double getMaximumForce_Global() {return 0;}
+
     unsigned int size();
 
     HemoCellField * operator[](unsigned int index);
     //to be used with the old (only) initialization. really ugly pass through code TODO: FIX
     vector <CellField3D<double, DESCRIPTOR>> getLegacyCellFieldsVector();
 
+    void setFluidExternalForce(double poiseuilleForce) {}
+
 	MultiBlockLattice3D<double, DESCRIPTOR> & lattice;
   vector<HemoCellField> cellFields;
 	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles;
 	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * reductionParticles;
   double cellTimeStep;
+  void synchronizeCellQuantities(SyncRequirements _dummy) {}
 };
 
 /*contains information about one particular cellfield, structlike*/
@@ -86,8 +91,13 @@ class HemoCellField{
   CellFields3D * cellFields;
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D() {return cellFields->immersedParticles;}
   MultiBlockLattice3D<double,DESCRIPTOR> * getFluidField3D() {return &(cellFields->lattice);}
-  int getNumberOfCells_Global()
+  int getNumberOfCells_Global() {return 0;}
+  std::string getIdentifier() {return name;}
+  Box3D getBoundingBox() { return cellFields->immersedParticles->getBoundingBox(); }
+  MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg() { return cellFields->immersedParticles; }
+  std::map<plint, Cell3D<double,DESCRIPTOR>* > getCellIdToCell3D() { std::map<plint,Cell3D<double,DESCRIPTOR>* > tmp; return tmp ;}
+  
+
 
 };
 #endif
-

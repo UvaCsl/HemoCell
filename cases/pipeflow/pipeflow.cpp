@@ -390,8 +390,7 @@ int main(int argc, char *argv[]) {
         for(int iDir = 0; iDir < 3; iDir++)
             dynVolume *= 1.0 + (ppForceDistance * 0.5 * 1e-6 / dx) / cellBounds[iDir];
 
-        pcout << "(main) Species: #" << iCell << " (" << cellFields[iCell]->getIdentifier() << ")"<< endl;
-        pcout << "(main)   Volume ratio [x100%]: " << nCells * eqVolumes[iCell] * 100.0 / domainVol << " (" << nCells * dynVolume * 100.0 / domainVol <<")" << std::endl;
+        pcout << "(main) Species: #" << iCell << " (" << nCells * eqVolumes[iCell] * 100.0 / domainVol << " (" << nCells * dynVolume * 100.0 / domainVol <<")" << std::endl;
         pcout << "(main)   nCells (global) = " << nCells << ", pid: " << global::mpi().getRank();
         pcout << ", Cell volume = " << eqVolumes[iCell] * (dx * dx * dx * 1e18) << " um^3 (" <<  dynVolume * (dx * dx * dx * 1e18) << "  um^3)" << std::endl;
     }
@@ -400,19 +399,19 @@ int main(int argc, char *argv[]) {
 
     pcout << "(main) synchronising quantities..."  << std::endl;
     SyncRequirements everyCCR(allReductions);
-    for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-        cellFields[iCell]->synchronizeCellQuantities(everyCCR);
-    }
+    //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+        cellFields.synchronizeCellQuantities(everyCCR);
+    //}
 
     // -------------------------- Initial output --------------------------
 
     pcout << "(main) saving initial output..."  << std::endl;
     global::timer("HDFOutput").start();
     bool invertXZ_for_XDMF = true;
-    writeHDF5(lattice, dx, dt, initIter, invertXZ_for_XDMF);
+    //writeHDF5(lattice, dx, dt, initIter, invertXZ_for_XDMF);
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-        writeCellField3D_HDF5(*cellFields[iCell], dx, dt, initIter);
-        writeCell3D_HDF5(*cellFields[iCell], dx, dt, initIter);
+        //writeCellField3D_HDF5(*cellFields[iCell], dx, dt, initIter);
+        //writeCell3D_HDF5(*cellFields[iCell], dx, dt, initIter);
     }
     global::timer("HDFOutput").stop();
 
@@ -422,7 +421,7 @@ int main(int argc, char *argv[]) {
     pcout << "(main) creating boundary particles..."  << std::endl;
     MultiParticleField3D<DenseParticleField3D<T, DESCRIPTOR> > *boundaryParticleField3D =
             createBoundaryParticleField3D(lattice);
-    writeParticleField3D_HDF5(*boundaryParticleField3D, dx, dt, 0, "BoundaryParticles");
+    //writeParticleField3D_HDF5(*boundaryParticleField3D, dx, dt, 0, "BoundaryParticles");
 
     
     // ------------------------- Add particle-wall repulsion force -------------
@@ -447,7 +446,7 @@ int main(int argc, char *argv[]) {
     if (initIter == 0)
     {
         pcout << "(main) fresh start: warming up cell-free fluid domain for "  << cfg["parameters"]["warmup"].read<plint>() << " iterations..." << std::endl;
-        for (plint itrt = 0; itrt < cfg["parameters"]["warmup"].read<plint>(); ++itrt) { cellFields[0]->setFluidExternalForce(poiseuilleForce); lattice.collideAndStream(); }
+        for (plint itrt = 0; itrt < cfg["parameters"]["warmup"].read<plint>(); ++itrt) { cellFields.setFluidExternalForce(poiseuilleForce); lattice.collideAndStream(); }
     }
 	T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
 	pcout << "(main) Mean velocity: " << meanVel  * (dx/dt) << " m/s; Apparent rel. viscosity: " << (u_lbm_max*0.5) / meanVel << std::endl;
@@ -485,14 +484,10 @@ int main(int argc, char *argv[]) {
 
 		// ##### 1 ##### Membrane Model + Repulsion of surfaces
         if(stepCells) {
-            for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                cellFields[iCell]->applyConstitutiveModel();    // This zeroes forces at the beginning, always calculate this first
-                cellFields[iCell]->applyWallCellForce(repWP, R, boundaryParticleField3D); // Repulsion from the wall
-                cellFields[iCell]->applyCellCellForce(repPP, R2); // Repulsion between the same cell types (most likely this is not needed -> happens automatically thx to IBM. It is useful to set lubrication forces.)
-            }
-
-            // Particle-particle force between RBCs and PLTs
-            cellFields[1]->applyDifferentCellForce(repPP, R2, &cellFields[0]->getParticleField3D()); // TODO: it might not sync the argument cell field
+                cellFields.applyConstitutiveModel();    // This zeroes forces at the beginning, always calculate this first
+            
+           // // Particle-particle force between RBCs and PLTs
+            //cellFields[1]->applyDifferentCellForce(repPP, R2, &cellFields[0]->getParticleField3D()); // TODO: it might not sync the argument cell field
             // TODO: extend this in case of other cellFields (e.g. WBC)
 	    	//cellFields[0]->syncParticleFieldBulk(); // in case we need a sync point
 	    	// TODO: Fix different cell collision and collect them into a single sync
@@ -500,10 +495,10 @@ int main(int argc, char *argv[]) {
 
         
         // ##### 2 ##### IBM Spreading
-        cellFields[0]->setFluidExternalForce(poiseuilleForce);
-        for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-            cellFields[iCell]->spreadForceIBM();
-        }
+        cellFields.setFluidExternalForce(poiseuilleForce);
+        //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+            cellFields.spreadForceIBM();
+        //}
 
         // ##### 3 ##### LBM
         global::timer("LBM").start();
@@ -513,12 +508,12 @@ int main(int argc, char *argv[]) {
         // ##### 4 & 5 ##### IBM interpolation + Particle position update
         if(stepCells){
             // Gather velocities from the fluid
-            for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+            //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
                 //  IBM Interpolation
-                cellFields[iCell]->interpolateVelocityIBM();
+                cellFields.interpolateVelocityIBM();
                 //  Position Update
-                cellFields[iCell]->advanceParticles();
-            }
+                cellFields.advanceParticles();
+            //}
         }
 
  		// ###### 6 ###### Probe maximal force & allow time-step adaptivity
@@ -526,7 +521,7 @@ int main(int argc, char *argv[]) {
 
             fMax = 0;
             for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                T fMax_field = cellFields[iCell]->getMaximumForce_Global();
+                T fMax_field = cellFields.getMaximumForce_Global();
                 if( fMax_field > fMax)
                     fMax = fMax_field;                
             }
@@ -542,8 +537,8 @@ int main(int argc, char *argv[]) {
 
                         pcout << "(main) Large force encountered (" << fMax << ", it: " << iter <<"): reducing inner time-step to: " << cellStep << endl;
 
-                        for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-                            cellFields[iCell]->setParticleUpdateScheme((T)cellStep);   
+                     //   for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
+                            cellFields.setParticleUpdateScheme((T)cellStep);   
 
                     }
                 } 
@@ -554,8 +549,8 @@ int main(int argc, char *argv[]) {
 
                         pcout << "(main) Forces are small (" << fMax << ", it: " << iter <<"): increasing inner time-step to: " << cellStep << endl;
 
-                        for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-                            cellFields[iCell]->setParticleUpdateScheme((T)cellStep);
+                        //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
+                            cellFields.setParticleUpdateScheme((T)cellStep);
 
                     }
                 }
@@ -566,14 +561,14 @@ int main(int argc, char *argv[]) {
                 	{
                 		cellStep = stepsToSave;
             	    	pcout << "(main) Inner-step was reset to coincide with checkpointing (" << cellStep << ", it: " << iter <<")" <<endl;
-        	        	for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-    	                        cellFields[iCell]->setParticleUpdateScheme((T)cellStep);
+        	        	//for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
+    	                        cellFields.setParticleUpdateScheme((T)cellStep);
 	                }
                 	else if (stepsToSave < (probeMaterialForceMinPeriod-lastForceProbeSince)) {  // If the next check is too late and we would over-step it (can only happen, if cellStep < probeMaterialForceMinPeriod)
             	    	cellStep = 1;
         	        	pcout << "(main) Inner-step was reset to coincide with checkpointing (" << cellStep << ", it: " << iter <<")" <<endl;
-    	            	for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-	                            cellFields[iCell]->setParticleUpdateScheme((T)cellStep);
+    	            	//for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
+	                            cellFields.setParticleUpdateScheme((T)cellStep);
                 	}
             	}
             }
@@ -582,21 +577,19 @@ int main(int argc, char *argv[]) {
         // #### 7 ##### Output & Sync particles
         if (stepsToSave == 0) {
             SyncRequirements everyCCR(allReductions);
-            for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                cellFields[iCell]->synchronizeCellQuantities(everyCCR);
-            }
+            //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+                cellFields.synchronizeCellQuantities(everyCCR);
+            //}
             global::timer("HDFOutput").start();
             bool invertXZ_for_XDMF = true;
-            writeHDF5(lattice, dx, dt, iter, invertXZ_for_XDMF);
-            for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter);
-                writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter);
-            }
-            global::timer("HDFOutput").stop();
+            //writeHDF5(lattice, dx, dt, iter, invertXZ_for_XDMF);
+            //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+            //    writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter);
+            //    writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter);
+            //}
+            //global::timer("HDFOutput").stop();
             if ((iter % (2 * tmeas)) == 0) {
-                global::timer("Checkpoint").start();
-                checkpointer.save(lattice, cellFields, iter);
-                global::timer("Checkpoint").stop();
+                cellFields.save(&documentXML, iter);
             }
             T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
             T dtIteration = global::timer("mainLoop").stop();
@@ -605,9 +598,9 @@ int main(int argc, char *argv[]) {
           	pcout << "(main) Mean velocity: " << meanVel * (dx/dt) << " m/s; Apparent rel. viscosity: " << (u_lbm_max*0.5) / meanVel << std::endl;  
         } else {
             if(stepCells) // Sync only if we changed anything
-            for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                cellFields[iCell]->synchronizeCellQuantities();
-            }
+            //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
+                cellFields.synchronizeCellQuantities(everyCCR);
+            //}
         }
 
     }

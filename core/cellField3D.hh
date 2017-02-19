@@ -107,7 +107,7 @@ void CellField3D<T, Descriptor>::grow(plint growIterations) {
         if (iRatio > 1.0) { iRatio = 1.0; }
         if (i%100 == 0) {
             pcout << "growth iter:" << i<< ", " <<  i*100.0/growIterations << "%" <<std::endl;
-            writeCellField3D_HDF5(*this, 1.0, 1.0, i, "init_");
+//            writeCellField3D_HDF5(*this, 1.0, 1.0, i, "init_");
         }
         // #1# Calculate forces
         applyConstitutiveModel();

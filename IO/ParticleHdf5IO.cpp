@@ -7,40 +7,38 @@
 
 
 /* ******** WriteCellField3DInMultipleHDF5Files *********************************** */
-template<typename T, template<typename U> class Descriptor>
-WriteCellField3DInMultipleHDF5Files<T,Descriptor>::WriteCellField3DInMultipleHDF5Files (
-        CellField3D<T, Descriptor>& cellField3D_,
+WriteCellField3DInMultipleHDF5Files::WriteCellField3DInMultipleHDF5Files (
+        HemoCellField & cellField3D_,
         plint iter_, std::string identifier_,
-        T dx_, T dt_) :
+        double dx_, double dt_) :
         cellField3D(cellField3D_), iter(iter_), identifier(identifier_), dx(dx_), dt(dt_) {};
 
-template<typename T, template<typename U> class Descriptor>
-void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
+void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
     PLB_PRECONDITION( blocks.size() > 0 );
     int p = global::mpi().getSize();
     int id = global::mpi().getRank();
-    plint Nx = cellField3D.getParticleArg()[0]->getNx();
-    plint Ny = cellField3D.getParticleArg()[0]->getNy();
-    plint Nz = cellField3D.getParticleArg()[0]->getNz();
+    plint Nx = cellField3D.getParticleArg()->getNx();
+    plint Ny = cellField3D.getParticleArg()->getNy();
+    plint Nz = cellField3D.getParticleArg()->getNz();
 
     /************************************************************/
    /**            Fill triangle and particle lists            **/
   /************************************************************/
 
-     std::map<plint, Cell3D<T,Descriptor>* > cellIdToCell3D = cellField3D.getCellIdToCell3D();
+     std::map<plint, Cell3D<double,DESCRIPTOR>* > cellIdToCell3D = cellField3D.getCellIdToCell3D();
      std::vector< long int > triangles;
-     std::vector<SurfaceParticle3D<T,Descriptor>* > particles;
+     std::vector<SurfaceParticle3D<double,DESCRIPTOR>* > particles;
      plint sumLocalVertices=0;
      plint numCells=cellIdToCell3D.size();
      long int NpBulk = 0;
 
-     std::map<plint, Array<T,3> > correctPBPosition;
-     typename std::map<plint, Cell3D<T,Descriptor>* >::iterator itrtr;
+     std::map<plint, Array<double,3> > correctPBPosition;
+     typename std::map<plint, Cell3D<double,DESCRIPTOR>* >::iterator itrtr;
      for (itrtr  = cellIdToCell3D.begin(); itrtr != cellIdToCell3D.end(); ++itrtr) {
-         Cell3D<T,Descriptor> * cell3d = (itrtr->second);
-         Array<T,3> cellPosition = cell3d->getPosition();
+         Cell3D<double,DESCRIPTOR> * cell3d = (itrtr->second);
+         Array<double,3> cellPosition = cell3d->getPosition();
          NpBulk += cell3d->getNumVertices_LocalBulk();
          correctPBPosition[itrtr->first].resetToZero();
 
@@ -66,7 +64,7 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
          std::vector<plint> const& cellTriangles = cell3d->getTriangles();
          for (std::vector<plint>::const_iterator iVP = cellVertices.begin(); iVP != cellVertices.end(); ++iVP)
          {
-             particles.push_back( dynamic_cast<SurfaceParticle3D<T,Descriptor>*>(cell3d->getParticle3D(*iVP)) );
+             particles.push_back( dynamic_cast<SurfaceParticle3D<double,DESCRIPTOR>*>(cell3d->getParticle3D(*iVP)) );
          }
          std::map<plint, plint> iv = cell3d->getInvertVertices();
          for (pluint iT=0; iT < cellTriangles.size(); iT++) {
@@ -122,11 +120,11 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
    /************************************************************/
      /*  Take care of Vectors    */
      if (numCells > 0 and particles.size() > 0) {
-         SurfaceParticle3D<T,Descriptor> * icParticle = particles[0];
+         SurfaceParticle3D<double,DESCRIPTOR> * icParticle = particles[0];
          plint vN = icParticle->getVectorsNumber();
          float * matrixTensor = new float [3 * Np];
 
-         Array<T,3> vector;
+         Array<double,3> vector;
          for (plint ivN = 0; ivN < vN; ++ivN) {
              plint itr=0;
              for (plint iP = 0; iP < Np; ++iP) {
@@ -201,13 +199,11 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks (
 
 }
 
-template<typename T, template<typename U> class Descriptor>
-WriteCellField3DInMultipleHDF5Files<T,Descriptor>* WriteCellField3DInMultipleHDF5Files<T,Descriptor>::clone() const {
-    return new WriteCellField3DInMultipleHDF5Files<T,Descriptor>(*this);
+WriteCellField3DInMultipleHDF5Files* WriteCellField3DInMultipleHDF5Files::clone() const {
+    return new WriteCellField3DInMultipleHDF5Files(*this);
 }
 
-template<typename T, template<typename U> class Descriptor>
-void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::getTypeOfModification (
+void WriteCellField3DInMultipleHDF5Files::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     for (pluint i = 0; i < modified.size(); ++i) {
@@ -215,19 +211,17 @@ void WriteCellField3DInMultipleHDF5Files<T,Descriptor>::getTypeOfModification (
     }
 }
 
-template<typename T, template<typename U> class Descriptor>
-BlockDomain::DomainT WriteCellField3DInMultipleHDF5Files<T,Descriptor>::appliesTo () const {
+BlockDomain::DomainT WriteCellField3DInMultipleHDF5Files::appliesTo () const {
     return BlockDomain::bulk;
 }
 
 
 
-template<typename T, template<typename U> class Descriptor>
-void writeCellField3D_HDF5(CellField3D<T, Descriptor>& cellField3D, T dx, T dt, plint iter, std::string preString)
+void writeCellField3D_HDF5(HemoCellField& cellField3D, double dx, double dt, plint iter, std::string preString)
 {
 	std::string identifier = preString + cellField3D.getIdentifier();
     applyProcessingFunctional ( // compute force applied on the fluid by the particles
-            new WriteCellField3DInMultipleHDF5Files<T,Descriptor> (cellField3D, iter, identifier, dx, dt),
+            (BoxProcessingFunctional3D*)new WriteCellField3DInMultipleHDF5Files(cellField3D, iter, identifier, dx, dt),
             cellField3D.getBoundingBox(), cellField3D.getParticleArg() );
 
 }
