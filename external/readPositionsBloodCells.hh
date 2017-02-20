@@ -3,7 +3,6 @@
 
 #include "readPositionsBloodCells.h"
 
-
 template<typename T>
 void getReadPositionsBloodCellsVector(Box3D realDomain,
                                             std::vector<TriangularSurfaceMesh<T>* > & meshes,
@@ -124,53 +123,45 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
 
 /* ******** ReadPositionMultipleCellField3D *********************************** */
-
-template<typename T, template<typename U> class Descriptor>
-void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
+void ReadPositionsBloodCellField3D::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
-    pluint numberOfCellFields=cellFields.size();
-    PLB_PRECONDITION( blocks.size()==(numberOfCellFields+1) );
-    int mpiSize = global::mpi().getSize();;
-    int mpiRank = global::mpi().getRank();
-    srand (mpiSize * mpiRank);
-    T ratio;
-    BlockLattice3D<T,Descriptor>& fluid =
-            *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[0]);
-
-    std::vector<ParticleField3D<T,Descriptor>* > particleFields(numberOfCellFields);
-    std::vector<T> volumes(numberOfCellFields);
-    std::vector<T> volumeFractions(numberOfCellFields);
-    std::vector<TriangularSurfaceMesh<T>* > meshes(numberOfCellFields);
-    std::vector<ElementsOfTriangularSurfaceMesh<T> > emptyEoTSM(numberOfCellFields);
+    int numberOfCellFields = blocks.size() -1;
+    double ratio;
+    BlockLattice3D<double,DESCRIPTOR>& fluid =
+            *dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
+    std::vector<HEMOCELL_PARTICLE_FIELD* > particleFields(numberOfCellFields);
+    std::vector<double> volumes(numberOfCellFields);
+    std::vector<double> volumeFractions(numberOfCellFields);
+    std::vector<TriangularSurfaceMesh<double>* > meshes(numberOfCellFields);
+    std::vector<ElementsOfTriangularSurfaceMesh<double> > emptyEoTSM(numberOfCellFields);
     std::vector<Box3D> relativeDomains(numberOfCellFields);
     std::vector<plint> Np(numberOfCellFields);
 
-    T totalVolumeFraction=0;
+    double totalVolumeFraction=0;
 
-    T Vdomain = domain.getNx() * domain.getNy() * domain.getNz();
+    double Vdomain = domain.getNx() * domain.getNy() * domain.getNz();
 
     Dot3D fLocation(fluid.getLocation());
     Box3D realDomain(
             domain.x0 + fLocation.x, domain.x1 + fLocation.x,
             domain.y0 + fLocation.y, domain.y1 + fLocation.y,
             domain.z0 + fLocation.z, domain.z1 + fLocation.z );
-    Array<T,2> xRange, yRange, zRange;
+    Array<double,2> xRange, yRange, zRange;
 
     for (pluint iCF = 0; iCF < cellFields.size(); ++iCF) {
-        T vf = cellFields[iCF]->getVolumeFraction();
+        double vf = cellFields[iCF]->getVolumeFraction();
         if (vf > 1.0) { vf /= 100; }
         volumeFractions[iCF] = vf;
 
-        TriangularSurfaceMesh<T> * mesh = copyTriangularSurfaceMesh(cellFields[iCF]->getMesh(), emptyEoTSM[iCF]);
+        TriangularSurfaceMesh<double> * mesh = copyTriangularSurfaceMesh(cellFields[iCF]->getMesh(), emptyEoTSM[iCF]);
         mesh->computeBoundingBox (xRange, yRange, zRange);
-        mesh->translate(Array<T,3>(-(xRange[0]+xRange[1])/2.0, -(yRange[0]+yRange[1])/2.0, -(zRange[0]+zRange[1])/2.0));
+        mesh->translate(Array<double,3>(-(xRange[0]+xRange[1])/2.0, -(yRange[0]+yRange[1])/2.0, -(zRange[0]+zRange[1])/2.0));
         meshes[iCF] = mesh;
         volumes[iCF] = MeshMetrics<T>(*mesh).getVolume();
 
-        //Np[iCF] = (1 + 0.05*(guessRandomNumber() -0.5)) * (Vdomain/volumes[iCF] * volumeFractions[iCF]) ;
         totalVolumeFraction += volumes[iCF];
-        particleFields[iCF] = ( dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[iCF+1]) );
+        particleFields[iCF] = ( dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[iCF+1]) );
         particleFields[iCF]->removeParticles(particleFields[iCF]->getBoundingBox());
         Dot3D relativeDisplacement = computeRelativeDisplacement(fluid, *(particleFields[iCF]));
         relativeDomains[iCF] = ( Box3D(
@@ -179,32 +170,26 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
                 domain.z0 + relativeDisplacement.z, domain.z1 + relativeDisplacement.z ) );
     }
 
-    std::vector<std::vector<Array<T,3> > > positions;
+    std::vector<std::vector<Array<double,3> > > positions;
     std::vector<std::vector<plint> > cellIds;
-    std::vector<std::vector<Array<T,3> > > randomAngles;
+    std::vector<std::vector<Array<double,3> > > randomAngles;
 
     // Note: this method uses the center of the particles for location
     getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, positionsFileName);
 
     // Change positions to match dx (it is in um originally)
-    T posRatio = 1e-6/dx;
-    T wallWidth = 1.5; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
+    double posRatio = 1e-6/dx;
+    double wallWidth = 1.5; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
         cout << "(ReadPositionsBloodCellField3D) " ;
         for (pluint c = 0; c < positions[iCF].size(); ++c)
         {
-            ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;
-    	    TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
+            ElementsOfTriangularSurfaceMesh<double> emptyEoTSMCopy;
+    	    TriangularSurfaceMesh<double> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
     	    
-            // To have randomized rotation
-            //meshRandomRotation(meshCopy, randomAngles[iCF][c]);
-
             meshRotation (meshCopy, randomAngles[iCF][c]);
 
-            // If the positioning method does not use the center of the cell mesh but rather the lower left corner of the bounding box
-            //meshPositionToOrigin(meshCopy);
-            
             positionCellInParticleField(*(particleFields[iCF]), fluid,
                                          meshCopy, positions[iCF][c]*posRatio+wallWidth, cellIds[iCF][c]); 
 			delete meshCopy;
@@ -212,52 +197,46 @@ void ReadPositionsBloodCellField3D<T,Descriptor>::processGenericBlocks (
 
         // DELETE CELLS THAT ARE NOT WHOLE
         plint nVertices=meshes[iCF]->getNumVertices();
-        cout << "MPI rank: " << mpiRank;
+        cout << "MPI rank: " << global::mpi().getRank();
         plint cellsDeleted = deleteIncompleteCells(*(particleFields[iCF]), fluid, relativeDomains[iCF], nVertices);
-        std::vector<Particle3D<T,Descriptor>*> particles;
+        std::vector<Particle3D<double,DESCRIPTOR>*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(),   particles);
         cout    << ", number of cells (particles/nVertices) " << particles.size()*1.0/nVertices
         << " (deleted:" << cellsDeleted << ") for particleId:" << iCF << std::endl;
-        delete meshes[iCF];
+//delete meshes[iCF];
     }
 }
 
 
-template<typename T, template<typename U> class Descriptor>
-ReadPositionsBloodCellField3D<T,Descriptor>* ReadPositionsBloodCellField3D<T,Descriptor>::clone() const {
-    return new ReadPositionsBloodCellField3D<T,Descriptor>(*this);
+ReadPositionsBloodCellField3D* ReadPositionsBloodCellField3D::clone() const {
+    return new ReadPositionsBloodCellField3D(*this);
 }
 
-template<typename T, template<typename U> class Descriptor>
-void ReadPositionsBloodCellField3D<T,Descriptor>::getTypeOfModification (
+void ReadPositionsBloodCellField3D::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::nothing; // Fluid field.
-    for (unsigned int iField = 0; iField < cellFields.size(); ++iField) {
+    for (unsigned int iField = 0; iField < modified.size(); ++iField) {
         modified[1+iField] = modif::dynamicVariables; // Particle fields.
     }
 }
 
-template<typename T, template<typename U> class Descriptor>
-void ReadPositionsBloodCellField3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+void ReadPositionsBloodCellField3D::getModificationPattern(std::vector<bool>& isWritten) const {
     isWritten[0] = false; // Fluid field.
-    for (unsigned int iField = 0; iField < cellFields.size(); ++iField) {
+    for (unsigned int iField = 0; iField < isWritten.size(); ++iField) {
         isWritten[1+iField] = true; // Particle fields.
     }
 
 }
 
 
-template<typename T, template<typename U> class Descriptor>
-BlockDomain::DomainT ReadPositionsBloodCellField3D<T,Descriptor>::appliesTo() const {
+BlockDomain::DomainT ReadPositionsBloodCellField3D::appliesTo() const {
     return BlockDomain::bulk;
 }
 
 
 
-template<typename T, template<typename U> class Descriptor>
-void readPositionsBloodCellField3D(CellFields3D & cellFields, T dx, const char* positionsFileName) {
-    global::timer("CellInit").start();
+void readPositionsBloodCellField3D(CellFields3D & cellFields, double dx, const char* positionsFileName) {
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
     fluidAndParticleFieldsArg.push_back(cellFields[0]->getFluidField3D());
@@ -266,21 +245,10 @@ void readPositionsBloodCellField3D(CellFields3D & cellFields, T dx, const char* 
         fluidAndParticleFieldsArg.push_back(cellFields[icf]->getParticleField3D());
     }
 
-    //std::vector<MultiBlock3D *> particleFieldsArg;
-    //particleFieldsArg.push_back(&(cellFields[0]->getParticleField3D()));
-
     applyProcessingFunctional(
-            new ReadPositionsBloodCellField3D<T, Descriptor>(cellFields, dx, positionsFileName),
+            new ReadPositionsBloodCellField3D(cellFields, dx, positionsFileName),
             cellFields[0]->getFluidField3D()->getBoundingBox(), fluidAndParticleFieldsArg);
 
-    //pcout << "Ready to start.." << std::endl;
-
-    for (pluint icf = 0; icf < cellFields.size(); ++icf) {
-        //cellFields[icf]->advanceParticles();
-        //cellFields[icf]->synchronizeCellQuantities();
-    }
-
-    global::timer("CellInit").stop();
 }
 
 #endif

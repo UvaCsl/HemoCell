@@ -24,18 +24,16 @@ CellFields3D::CellFields3D( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, 
 
 void CellFields3D::addCellType(TriangularSurfaceMesh<double> * meshElement, double hematocrit, ShellModel3D<double> *cellmodel, std::string name_)
 {
-  HemoCellField * cf = new HemoCellField();
+  HemoCellField * cf = new HemoCellField(*this);
   cf->hematocrit = hematocrit;
   cf->meshElement = meshElement;
-  cf->model = cellmodel;
   cf->name = name_;
-  cf->cellFields = this;
   cellFields.push_back(*cf);
 }
 
 unsigned int CellFields3D::size() 
 {
-  return cellFields.size();
+  return this->cellFields.size();
 }
 
 HemoCellField * CellFields3D::operator[](unsigned int index)
@@ -43,14 +41,14 @@ HemoCellField * CellFields3D::operator[](unsigned int index)
   return &(cellFields[index]);
 }
 //Initialization
-vector <CellField3D<double, DESCRIPTOR>> CellFields3D::getLegacyCellFieldsVector() {
-  vector <CellField3D<double, DESCRIPTOR>> cfv;
+//vector <CellField3D<double, DESCRIPTOR>> CellFields3D::getLegacyCellFieldsVector() {
+//  vector <CellField3D<double, DESCRIPTOR>> cfv;
 //  for (uint i = 0 ; i < cellFields.size() ; i++) {
 //    cfv.push_back(CellField3D<double,DESCRIPTOR>(ce
      
 //  }
-  return cfv;
-}
+//  return cfv;
+//}
 
 //SAVING FUNCTIONS
 /* ******************* copyXMLreader2XMLwriter ***************************************** */

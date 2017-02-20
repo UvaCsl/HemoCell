@@ -358,7 +358,7 @@ int main(int argc, char *argv[]) {
 
         //orderedPositionMultipleCellField3D(cellFields);
         //randomPositionMultipleCellField3D(cellFields, hematocrit, dx, maxPackIter);
-       //readPositionsBloodCellField3D(cellFields, dx, particlePosFile.c_str());
+       readPositionsBloodCellField3D(cellFields, dx, particlePosFile.c_str());
        
         pcout << "(main) saving checkpoint..." << std::endl;
         cellFields.save(&documentXML, initIter);

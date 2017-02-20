@@ -176,7 +176,7 @@ void HemoParticleField3D<T,Descriptor>::addParticle(Box3D domain, Particle3D<T,D
     Array<T,3> pos; 
     pos = particle->getPosition();
     if( intersect(domain, this->getBoundingBox(), finalDomain) &&
-        this->isContained(pos[0],pos[1],pos[2], finalDomain) )
+        this->isContained(pos, finalDomain) )
     {
         particles.push_back(particle);
     }
@@ -194,7 +194,7 @@ void HemoParticleField3D<T,Descriptor>::removeParticles(Box3D domain) {
     {
         for (pluint i=0; i<particles.size(); ++i) {
             pos = particles[i]->getPosition();
-            if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
+            if (this->isContained(pos,finalDomain)) {
                 delete particles[i];
             }
             else {
@@ -214,7 +214,7 @@ void HemoParticleField3D<T,Descriptor>::removeParticles(Box3D domain, plint tag)
         Array<T,3> pos; 
         for (pluint i=0; i<particles.size(); ++i) {
             pos = particles[i]->getPosition();
-            if (this->isContained(pos[0],pos[1],pos[2],finalDomain) &&
+            if (this->isContained(pos,finalDomain) &&
                 particles[i]->getTag() == tag )
             {
                 delete particles[i];
@@ -236,7 +236,7 @@ void HemoParticleField3D<T,Descriptor>::findParticles (
     Array<T,3> pos; 
     for (pluint i=0; i<particles.size(); ++i) {
         pos = particles[i]->getPosition();
-        if (this->isContained(pos[0],pos[1],pos[2],domain)) {
+        if (this->isContained(pos,domain)) {
             found.push_back(particles[i]);
         }
     }
@@ -252,7 +252,7 @@ void HemoParticleField3D<T,Descriptor>::findParticles (
         
     for (pluint i=0; i<particles.size(); ++i) {
         pos = particles[i]->getPosition();
-        if (this->isContained(pos[0],pos[1],pos[2],domain)) {
+        if (this->isContained(pos,domain)) {
             found.push_back(particles[i]);
         }
     }
@@ -268,7 +268,7 @@ void HemoParticleField3D<T,Descriptor>::velocityToParticleCoupling (
       Array<T,3> pos;
         for (pluint i=0; i<particles.size(); ++i) {
 	  pos = particles[i]->getPosition();
-	  if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
+	  if (this->isContained(pos,finalDomain)) {
                 particles[i]->velocityToParticle(velocityField, scaling);
             }
         }
@@ -300,7 +300,7 @@ void HemoParticleField3D<T,Descriptor>::rhoBarJtoParticleCoupling (
       Array<T,3> pos;
         for (pluint i=0; i<particles.size(); ++i) {
 	  pos = particles[i]->getPosition();
-	  if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
+	  if (this->isContained(pos,finalDomain)) {
                 particles[i]->rhoBarJtoParticle(rhoBarJfield, velIsJ, scaling);
             }
         }
@@ -317,7 +317,7 @@ void HemoParticleField3D<T,Descriptor>::fluidToParticleCoupling (
         Array<T,3> pos;
         for (pluint i=0; i<particles.size(); ++i) {
             pos = particles[i]->getPosition();
-            if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
+            if (this->isContained(pos,finalDomain)) {
                 particles[i]->fluidToParticle(lattice, scaling);
             }
         }
@@ -334,12 +334,12 @@ void HemoParticleField3D<T,Descriptor>::advanceParticles(Box3D domain, T cutOffV
         for (pluint i=0; i<particles.size(); ++i) {
             Particle3D<T,Descriptor>* particle = particles[i];
             pos = particle->getPosition();
-            if (this->isContained(pos[0],pos[1],pos[2],finalDomain)) {
+            if (this->isContained(pos,finalDomain)) {
                 Array<T,3> oldPos( particle->getPosition() );
                 particle->advance();
                 pos = particle->getPosition();
                 if ( (cutOffValue>=T() && normSqr(oldPos-particle->getPosition())<cutOffValue) ||
-                     (!this->isContained(pos[0],pos[1],pos[2],this->getBoundingBox()))  )
+                     (!this->isContained(pos,this->getBoundingBox()))  )
                 {
                     delete particle;
                 }

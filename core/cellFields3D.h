@@ -67,7 +67,7 @@ public:
 
     HemoCellField * operator[](unsigned int index);
     //to be used with the old (only) initialization. really ugly pass through code TODO: FIX
-    vector <CellField3D<double, DESCRIPTOR>> getLegacyCellFieldsVector();
+   // vector <CellField3D<double, DESCRIPTOR>> getLegacyCellFieldsVector();
 
     void setFluidExternalForce(double poiseuilleForce) {}
 
@@ -82,19 +82,20 @@ public:
 /*contains information about one particular cellfield, structlike*/
 class HemoCellField{
   public:
+  HemoCellField(CellFields3D& cellFields_):cellFields(cellFields_){};
   double getVolumeFraction() { return hematocrit;}
   double hematocrit;
   ShellModel3D<double> * model;
-  TriangularSurfaceMesh<double> * getMesh() { return meshElement;}
+  TriangularSurfaceMesh<double> & getMesh() { return *meshElement;}
   TriangularSurfaceMesh<double> * meshElement;
   std::string name;
-  CellFields3D * cellFields;
-  MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D() {return cellFields->immersedParticles;}
-  MultiBlockLattice3D<double,DESCRIPTOR> * getFluidField3D() {return &(cellFields->lattice);}
+  CellFields3D & cellFields;
+  MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D() {return cellFields.immersedParticles;}
+  MultiBlockLattice3D<double,DESCRIPTOR> * getFluidField3D() {return &(cellFields.lattice);}
   int getNumberOfCells_Global() {return 0;}
   std::string getIdentifier() {return name;}
-  Box3D getBoundingBox() { return cellFields->immersedParticles->getBoundingBox(); }
-  MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg() { return cellFields->immersedParticles; }
+  Box3D getBoundingBox() { return cellFields.immersedParticles->getBoundingBox(); }
+  MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg() { return cellFields.immersedParticles; }
   std::map<plint, Cell3D<double,DESCRIPTOR>* > getCellIdToCell3D() { std::map<plint,Cell3D<double,DESCRIPTOR>* > tmp; return tmp ;}
   
 

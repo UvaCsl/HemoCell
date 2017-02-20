@@ -4,6 +4,7 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "cellField3D.h"
+#include "hemoCellParticleField3D.h"
 #include "meshMetrics.h"
 #include <stdlib.h>     /* srand, rand */
 
@@ -58,7 +59,7 @@ void meshPositionToOrigin (TriangularSurfaceMesh<T> * mesh) {
 }
 
 template<typename T, template<typename U> class Descriptor>
-void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, BlockLattice3D<T,Descriptor>& fluid,
+void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, BlockLattice3D<T,Descriptor>& fluid,
                                             TriangularSurfaceMesh<T> * mesh, Array<T,3> startingPoint, plint cellId) {
     plint nVertices=mesh->getNumVertices();
     Dot3D relativeDisplacement = computeRelativeDisplacement(fluid, particleField);
@@ -97,7 +98,7 @@ void positionCellInParticleField(ParticleField3D<T,Descriptor>& particleField, B
             break; 
 
         // Finally, if all checks are passed, add the particle.
-        particleField.addParticle(particleField.getBoundingBox(), new SurfaceParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
+        particleField.addParticle(particleField.getBoundingBox(), new SurfaceParticle3D<double,DESCRIPTOR>(vertex, cellId, iVertex) );
 
     }
 }
