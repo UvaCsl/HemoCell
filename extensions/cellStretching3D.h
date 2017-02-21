@@ -42,13 +42,13 @@ std::vector<plint> meshVerticesFromDirection(TriangularSurfaceMesh<T> & mesh, pl
 
 
 template<typename T, template<typename U> class Descriptor>
-void applyForceToCells(CellField3D<T, Descriptor> & cellField_,
+void applyForceToCells(HemoCellField & cellField_,
               std::vector<plint> const& cellIds_, std::vector<std::vector<plint> > iVertices_,
               std::vector<Array<T,3> > const& forces_);
 
 
 template<typename T, template<typename U> class Descriptor>
-void applyForceToCells(CellField3D<T, Descriptor> & cellField_,
+void applyForceToCells(HemoCellField & cellField_,
               std::vector<plint> const& cellIds_,
               std::vector<Array<T,3> > const& forces_);
 
@@ -59,7 +59,7 @@ template<typename T, template<typename U> class Descriptor>
 class CellStretch
 {
 public:
-    CellStretch(CellField3D<T, Descriptor> & cellField_, T force_, T percentage) :
+    CellStretch(HemoCellField & cellField_, T force_, T percentage) :
         cellField(cellField_)
     {
         TriangularSurfaceMesh<T> & mesh = cellField.getMesh();
@@ -114,7 +114,7 @@ public:
     void setForces(std::vector<Array<T,3> > forces_)  { forces = forces_; } ;
     void setForce(T force_)  { forcePerSide = force_; } ;
 private:
-    CellField3D<T, Descriptor> & cellField;
+    HemoCellField & cellField;
     T forcePerSide;
     plint nparPerSide;
     std::vector<plint> cellIds;
@@ -129,10 +129,10 @@ template<typename T, template<typename U> class Descriptor>
 class ApplyForce3D : public BoxProcessingFunctional3D
 {
 public:
-    ApplyForce3D (CellField3D<T, Descriptor> & cellField_,
+    ApplyForce3D (HemoCellField & cellField_,
                   std::vector<plint> const& cellIds_, std::vector<std::vector<plint> > iVertices_,
                   std::vector<Array<T,3> > const& forces_);
-    ApplyForce3D (CellField3D<T, Descriptor> & cellField_,
+    ApplyForce3D (HemoCellField & cellField_,
                   std::vector<plint> const& cellIds_,
                   std::vector<Array<T,3> > const& forces_);
     ~ApplyForce3D() {
@@ -146,7 +146,7 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
 private:
-    CellField3D<T, Descriptor> & cellField;
+    HemoCellField & cellField;
     std::vector<plint> const& cellIds;
     std::vector<std::vector<plint> > iVertices;
     std::vector<Array<T,3> > const& forces;

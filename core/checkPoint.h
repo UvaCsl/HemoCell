@@ -29,9 +29,9 @@ public:
 	~FcnCheckpoint() {} ;
 	bool wasCheckpointed() { return isCheckpointed; } ;
 	virtual void init(XMLreader & xmlr) ;
-    void load(std::string paramXmlFileName, MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<CellField3D<T, Descriptor>* > & cellFields, plint & iter);
-    void load(XMLreader & documentXML, MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<CellField3D<T, Descriptor>* > & cellFields, plint & iter);
-	void save(MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<CellField3D<T, Descriptor>* > & cellFields, plint iter);
+    void load(std::string paramXmlFileName, MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<HemoCellField* > & cellFields, plint & iter);
+    void load(XMLreader & documentXML, MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<HemoCellField* > & cellFields, plint & iter);
+	void save(MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<HemoCellField* > & cellFields, plint iter);
 
 private:
     XMLwriter xmlw;

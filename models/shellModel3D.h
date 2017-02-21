@@ -23,6 +23,9 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include "cell3D.h"
+#include "cellReductionTypes.h"
+
 
 namespace plb {
 

@@ -26,7 +26,7 @@
 #include <map>
 
 #include "surfaceParticle3D.h"
-#include "cellField3D.h"
+#include "cellFields3D.h"
 #include "cellModel3D.h"
 #include "immersedBoundaryMethod3D.h"
 #include "meshGeneratingFunctions.h"
@@ -111,7 +111,7 @@ class ComputeImmersedElasticForce3D : public BoxProcessingFunctional3D
 public:
     ComputeImmersedElasticForce3D (
             TriangleBoundary3D<T> const& triangleBoundary_,
-            ShellModel3D<T>* cellModel_, CellField3D<T,Descriptor> & chq_);
+            ShellModel3D<T>* cellModel_, HemoCellField & chq_);
     ~ComputeImmersedElasticForce3D();
     ComputeImmersedElasticForce3D(ComputeImmersedElasticForce3D<T,Descriptor> const& rhs);
     /// Arguments: [0] Particle-field
@@ -123,7 +123,7 @@ public:
 private:
     TriangleBoundary3D<T> const& triangleBoundary;
     ShellModel3D<T>* cellModel;
-    CellField3D<T,Descriptor> & chq;
+    HemoCellField & chq;
 };
 
 /// Requirement: particles must be of type point-particle.

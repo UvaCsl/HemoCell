@@ -25,7 +25,7 @@ class WriteCell3DInMultipleHDF5Files : public BoxProcessingFunctional3D
 {
 public:
     WriteCell3DInMultipleHDF5Files (
-            CellField3D<T, Descriptor>& cellField3D_,
+            HemoCellField& cellField3D_,
             plint iter_, std::string identifier_,
             T dx_, T dt_);
     /// Arguments: [0] Particle-field. [1] Lattice.
@@ -34,7 +34,7 @@ public:
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
     virtual BlockDomain::DomainT appliesTo() const;
 private:
-    CellField3D<T, Descriptor>& cellField3D;
+    HemoCellField& cellField3D;
     plint iter;
     std::string identifier;
     T dx;

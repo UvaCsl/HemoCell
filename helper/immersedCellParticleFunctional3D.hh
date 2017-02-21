@@ -44,9 +44,7 @@ void CreateImmersedCellParticle3D<T,Descriptor>::processGenericBlocks (
     TriangularSurfaceMesh<T> const& mesh = triangleBoundary.getMesh();
     for (plint iVertex=0; iVertex<mesh.getNumVertices(); ++iVertex) {
         Array<T,3> vertex(mesh.getVertex(iVertex));
-        SurfaceParticle3D<T,Descriptor>* particle
-            = new SurfaceParticle3D<T,Descriptor>(vertex, 0, iVertex);
-        particleField.addParticle(domain, particle);
+       particleField.addParticle(domain, new SurfaceParticle3D(vertex, 0, iVertex));
     }
 }
 
@@ -81,8 +79,8 @@ void CreateTaggedImmersedCellParticle3D<T,Descriptor>::processGenericBlocks (
     TriangularSurfaceMesh<T> const& mesh = triangleBoundary.getMesh();
     for (plint iVertex= tag * numPartsPerTag; iVertex < (tag+1) * numPartsPerTag; ++iVertex) {
         Array<T,3> vertex(mesh.getVertex(iVertex));
-        SurfaceParticle3D<T,Descriptor>* particle
-            = new SurfaceParticle3D<T,Descriptor>(vertex, tag, iVertex);
+        SurfaceParticle3D* particle
+            = new SurfaceParticle3D(vertex, tag, iVertex);
 		particleField.addParticle(domain, particle);
     }
 }
@@ -123,8 +121,7 @@ void CountTaggedParticlesFunctional3D<T,Descriptor>::processGenericBlocks (
     particleField.findParticles(domain, particles);
     plint numParts = 0;
     for (pluint iA = 0; iA < particles.size(); ++iA) {
-        SurfaceParticle3D<T,Descriptor>* particle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iA]);
+        SurfaceParticle3D* particle = particles[iA];
             
         if (particle->get_cellId() == tag) {
 //         if (particle->getTag() == tag) {
@@ -181,8 +178,7 @@ void AbsorbTaggedParticlesFunctional3D<T,Descriptor>::processGenericBlocks (
     particleField.findParticles(domain, particles);
     std::vector<plint> cellIds;
     for (pluint iP = 0; iP < particles.size(); ++iP) {
-        SurfaceParticle3D<T,Descriptor>* particle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iP]);
+        SurfaceParticle3D* particle = particles[iP];
 
         if (particle->get_cellId() == tag) {
             cellIds.push_back(particle->getTag());
@@ -232,8 +228,7 @@ void GetTaggedParticleVelocity3D<T,Descriptor>::processGenericBlocks (
     Box3D clonedDomain(domain.shift(offset.x, offset.y, offset.z));
 
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
-        SurfaceParticle3D<T,Descriptor>* particle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (found[iParticle]);
+        SurfaceParticle3D* particle = found[iParticle];
 
 //         if (particle->getTag() == tag) {
         if (particle->get_cellId() == tag) {
@@ -277,7 +272,7 @@ void GetTaggedParticleVelocity3D<T,Descriptor>::getTypeOfModification (
 template<typename T, template<typename U> class Descriptor>
 ComputeImmersedElasticForce3D<T,Descriptor>::ComputeImmersedElasticForce3D (
         TriangleBoundary3D<T> const& triangleBoundary_,
-        ShellModel3D<T>* cellModel_, CellField3D<T,Descriptor> & chq_)
+        ShellModel3D<T>* cellModel_, HemoCellField & chq_)
     : triangleBoundary(triangleBoundary_),
       cellModel(cellModel_),
       chq(chq_)
@@ -309,14 +304,12 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> found;
     particleField.findParticles(domain, found);
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
-        SurfaceParticle3D<T,Descriptor>* particle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (found[iParticle]);
+        SurfaceParticle3D* particle = found[iParticle];
         particle->reset(particle->getPosition(), particle->get_v());
     }
     // T eqArea = cellModel->getEquilibriumTriangleArea();
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
-        SurfaceParticle3D<T,Descriptor>* particle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (found[iParticle]);
+        SurfaceParticle3D* particle = found[iParticle];
         plint vertexId = particle->getTag();
         T iSurface = T(); // one third of the sum of the areas of all triangles that share the given vertex.
         plint cellId = particle->get_cellId();
@@ -325,7 +318,7 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
             Array<T,3> cellForce(0,0,0);// = cellModel->computeCellForce (
 //                    triangleBoundary, chq.getVolume(cellId), chq.getSurface(cellId), iSurface, vertexId);
             particle->get_force() += cellForce;
-            particle->get_stress() = particle->get_force()*1.0/iSurface;
+            //particle->get_stress() = particle->get_force()*1.0/iSurface;
         }
     }
     Array<T,3> sforce; sforce.resetToZero();
@@ -333,8 +326,7 @@ void ComputeImmersedElasticForce3D<T,Descriptor>::processGenericBlocks (
     sf_wlc.resetToZero(); sf_bending.resetToZero(); sf_volume.resetToZero(); sf_surface.resetToZero();
     sf_shear.resetToZero(); sf_viscosity.resetToZero();
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
-        SurfaceParticle3D<T,Descriptor>* particle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (found[iParticle]);
+        SurfaceParticle3D* particle = found[iParticle];
 
         sforce += particle->get_force();
 #ifdef PLB_DEBUG // Less Calculations

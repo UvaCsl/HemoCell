@@ -129,8 +129,8 @@ BlockDomain::DomainT OrderedPositionMultipleCellField3DWithSpace<T,Descriptor>::
 
 // Function
 template<typename T, template<typename U> class Descriptor>
-void orderedPositionMultipleCellField3DWithSpace(std::vector<CellField3D<T, Descriptor>* > & cellFields, Box3D ToDelete) {
-//void orderedPositionMultipleCellField3DWithSpace(CellField3D<T, Descriptor>  & cellField, Box3D ToDelete) {
+void orderedPositionMultipleCellField3DWithSpace(std::vector<HemoCellField* > & cellFields, Box3D ToDelete) {
+//void orderedPositionMultipleCellField3DWithSpace(HemoCellField  & cellField, Box3D ToDelete) {
     int mpiRank = global::mpi().getRank();
 
     global::timer("CellInit").start();

@@ -11,7 +11,7 @@ template<typename T, template<typename U> class Descriptor>
 class SickleCellForce3D
 {
 public:
-    SickleCellForce3D(CellField3D<T, Descriptor> & cellField_, Array<T,3> forceLeft, Array<T,3> forceRight, T percentage) :
+    SickleCellForce3D(HemoCellField & cellField_, Array<T,3> forceLeft, Array<T,3> forceRight, T percentage) :
         cellField(cellField_)
     {
         TriangularSurfaceMesh<T> & mesh = cellField.getMesh();
@@ -66,7 +66,7 @@ public:
         return stretch;
     }
 private:
-    CellField3D<T, Descriptor> & cellField;
+    HemoCellField & cellField;
     plint nparPerSide;
     std::vector<plint> cellIds;
     std::vector<std::vector<plint> > vertices;

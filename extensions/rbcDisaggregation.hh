@@ -125,7 +125,7 @@ void ZeroOutForceVelocity3D<T,Descriptor>::processGenericBlocks (
     for (pluint iT = 0; iT < nParts; ++iT) {
         plint tag = pTags[iT];
         if (tagToParticle3D.count(tag) > 0) {
-            SurfaceParticle3D<T,Descriptor> * particle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*>( tagToParticle3D[tag]);
+            SurfaceParticle3D * particle = dynamic_cast<SurfaceParticle3D*>( tagToParticle3D[tag]);
 //                particle->get_a()     += forces[var] * (1.0/nParts)/cellDensity;
             if (zeroOut == 0 or zeroOut == 1) { particle->get_v() = particle->get_vPrevious() = Array<T,3>(0,0,0); }
             if (zeroOut == 0 or zeroOut == 2) { particle->get_force() = Array<T,3>(0,0,0); }

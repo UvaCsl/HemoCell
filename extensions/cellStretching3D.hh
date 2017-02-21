@@ -8,7 +8,7 @@
 /* ================================================================================ */
 
 template<typename T, template<typename U> class Descriptor>
-void applyForceToCells(CellField3D<T, Descriptor> & cellField,
+void applyForceToCells(HemoCellField & cellField,
         std::vector<plint> const& cellIds, std::vector<std::vector<plint> > iVertices,
         std::vector<Array<T,3> > const& forces)
 {
@@ -19,7 +19,7 @@ void applyForceToCells(CellField3D<T, Descriptor> & cellField,
 
 
 template<typename T, template<typename U> class Descriptor>
-void applyForceToCells(CellField3D<T, Descriptor> & cellField,
+void applyForceToCells(HemoCellField & cellField,
         std::vector<plint> const& cellIds,
         std::vector<Array<T,3> > const& forces)
 {
@@ -39,7 +39,7 @@ ApplyForce3D<T,Descriptor>::ApplyForce3D (ApplyForce3D<T,Descriptor> const& rhs)
 
 
 template<typename T, template<typename U> class Descriptor>
-ApplyForce3D<T,Descriptor>::ApplyForce3D (CellField3D<T, Descriptor> & cellField_,
+ApplyForce3D<T,Descriptor>::ApplyForce3D (HemoCellField & cellField_,
       std::vector<plint> const& cellIds_, std::vector<std::vector<plint> > iVertices_,
       std::vector<Array<T,3> > const& forces_)
       :   cellField(cellField_), cellIds(cellIds_), iVertices(iVertices_), forces(forces_)
@@ -48,7 +48,7 @@ ApplyForce3D<T,Descriptor>::ApplyForce3D (CellField3D<T, Descriptor> & cellField
 };
 
 template<typename T, template<typename U> class Descriptor>
-ApplyForce3D<T,Descriptor>::ApplyForce3D (CellField3D<T, Descriptor> & cellField_,
+ApplyForce3D<T,Descriptor>::ApplyForce3D (HemoCellField & cellField_,
       std::vector<plint> const& cellIds_,
       std::vector<Array<T,3> > const& forces_)
       :   cellField(cellField_), cellIds(cellIds_), forces(forces_)

@@ -94,7 +94,7 @@ void getRandomPositionsMultipleCellsVector(Box3D realDomain,
 /* ******** OrderedPositionMultipleCellField3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
-void RandomPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
+void RandomPositionMultipleHemoCellField::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
     pluint numberOfCellFields=cellFields.size();
@@ -190,12 +190,12 @@ void RandomPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
 
 
 template<typename T, template<typename U> class Descriptor>
-RandomPositionMultipleCellField3D<T,Descriptor>* RandomPositionMultipleCellField3D<T,Descriptor>::clone() const {
-    return new RandomPositionMultipleCellField3D<T,Descriptor>(*this);
+RandomPositionMultipleHemoCellField* RandomPositionMultipleHemoCellField::clone() const {
+    return new RandomPositionMultipleHemoCellField(*this);
 }
 
 template<typename T, template<typename U> class Descriptor>
-void RandomPositionMultipleCellField3D<T,Descriptor>::getTypeOfModification (
+void RandomPositionMultipleHemoCellField::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::nothing; // Fluid field.
@@ -205,7 +205,7 @@ void RandomPositionMultipleCellField3D<T,Descriptor>::getTypeOfModification (
 }
 
 template<typename T, template<typename U> class Descriptor>
-void RandomPositionMultipleCellField3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+void RandomPositionMultipleHemoCellField::getModificationPattern(std::vector<bool>& isWritten) const {
     isWritten[0] = false; // Fluid field.
     for (int iField = 0; iField < cellFields.size(); ++iField) {
         isWritten[1+iField] = true; // Particle fields.
@@ -215,14 +215,14 @@ void RandomPositionMultipleCellField3D<T,Descriptor>::getModificationPattern(std
 
 
 template<typename T, template<typename U> class Descriptor>
-BlockDomain::DomainT RandomPositionMultipleCellField3D<T,Descriptor>::appliesTo() const {
+BlockDomain::DomainT RandomPositionMultipleHemoCellField::appliesTo() const {
     return BlockDomain::bulk;
 }
 
 
 
 template<typename T, template<typename U> class Descriptor>
-void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor> *> &cellFields, T packingDensity, T dx, plint maxPackIter) {
+void randomPositionMultipleCellField3D(std::vector<HemoCellField *> &cellFields, T packingDensity, T dx, plint maxPackIter) {
     global::timer("CellInit").start();
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
@@ -236,7 +236,7 @@ void randomPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor> *>
     //particleFieldsArg.push_back(&(cellFields[0]->getParticleField3D()));
 
     applyProcessingFunctional(
-            new RandomPositionMultipleCellField3D<T, Descriptor>(cellFields, packingDensity, dx, maxPackIter),
+            new RandomPositionMultipleHemoCellField(cellFields, packingDensity, dx, maxPackIter),
             cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg);
 
     pcout << "Ready to start.." << std::endl;

@@ -1,3 +1,4 @@
+#if 0
 #ifndef CELLFIELD_3D_HH
 #define CELLFIELD_3D_HH
 #include "cellField3D.h"
@@ -5,7 +6,7 @@
 
 
 template<typename T, template<typename U> class Descriptor>
-CellField3D<T, Descriptor>::CellField3D(
+HemoCellField::CellField3D(
     MultiBlockLattice3D<T, Descriptor> & lattice_, 
 	  TriangularSurfaceMesh<T> & elementaryMesh_, 
     T hematocrit_,
@@ -61,7 +62,7 @@ CellField3D<T, Descriptor>::CellField3D(
 }
 
 template<typename T, template<typename U> class Descriptor>
-CellField3D<T, Descriptor>::~CellField3D() {
+HemoCellField::~CellField3D() {
     typename std::map<plint, Cell3D<T,Descriptor>* >::iterator iter;
     for (iter  = cellIdToCell3D.begin(); iter != cellIdToCell3D.end(); ++iter) {
         delete (iter->second);
@@ -76,7 +77,7 @@ CellField3D<T, Descriptor>::~CellField3D() {
 
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::initialize(std::vector<Array<T,3> > & centers) {
+void HemoCellField::initialize(std::vector<Array<T,3> > & centers) {
     global::timer("CellInit").start();
     applyProcessingFunctional (
         new PositionCellParticles3D<T,Descriptor>(elementaryMesh, centers),
@@ -88,7 +89,7 @@ void CellField3D<T, Descriptor>::initialize(std::vector<Array<T,3> > & centers) 
 
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::grow(plint growIterations) {
+void HemoCellField::grow(plint growIterations) {
     global::timer("CellInit").start();
     T ratio;
     coupleWithIBM = false;
@@ -123,7 +124,7 @@ void CellField3D<T, Descriptor>::grow(plint growIterations) {
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::createCellMap() {
+void HemoCellField::createCellMap() {
     global::timer("Quantities").start();
     applyProcessingFunctional (
         new FillCellMap<T,Descriptor> (elementaryMesh, cellIdToCell3D),
@@ -132,7 +133,7 @@ void CellField3D<T, Descriptor>::createCellMap() {
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::advanceParticles() {
+void HemoCellField::advanceParticles() {
     global::timer("IBM").start();
     applyProcessingFunctional ( // advance particles in time according to velocity
         new AdvanceParticlesEveryWhereFunctional3D<T,Descriptor>,
@@ -143,7 +144,7 @@ void CellField3D<T, Descriptor>::advanceParticles() {
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::spreadForceIBM() {
+void HemoCellField::spreadForceIBM() {
     global::timer("IBM").start();
     if (coupleWithIBM != 0) { // Force from the Cell dynamics to the Fluid
         applyProcessingFunctional ( // compute force applied on the fluid by the particles
@@ -154,7 +155,7 @@ void CellField3D<T, Descriptor>::spreadForceIBM() {
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::setFluidExternalForce(Array<T,3> force) {
+void HemoCellField::setFluidExternalForce(Array<T,3> force) {
     global::timer("IBM").start();
         setExternalVector( lattice, lattice.getBoundingBox(),
                        Descriptor<T>::ExternalField::forceBeginsAt, 
@@ -163,12 +164,12 @@ void CellField3D<T, Descriptor>::setFluidExternalForce(Array<T,3> force) {
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::setFluidExternalForce(T forceScalar) {
+void HemoCellField::setFluidExternalForce(T forceScalar) {
     setFluidExternalForce(Array<T,3>(forceScalar,0.0,0.0) );
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::interpolateVelocityIBM() {
+void HemoCellField::interpolateVelocityIBM() {
     global::timer("IBM").start();
     if (coupleWithIBM != 0) { // Force from the Cell dynamics to the Fluid
         applyProcessingFunctional ( // copy fluid velocity on particles
@@ -179,7 +180,7 @@ void CellField3D<T, Descriptor>::interpolateVelocityIBM() {
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::computeVelocity(T ratio) {
+void HemoCellField::computeVelocity(T ratio) {
     interpolateVelocityIBM();
 //    if (coupleWithIBM != 0) { // Force from the Cell dynamics to the Fluid
 //        interpolateVelocityIBM();
@@ -193,7 +194,7 @@ void CellField3D<T, Descriptor>::computeVelocity(T ratio) {
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::applyConstitutiveModel() {
+void HemoCellField::applyConstitutiveModel() {
     global::timer("Model").start();
     // #1# Membrane Model + Stretching
     applyProcessingFunctional (
@@ -204,7 +205,7 @@ void CellField3D<T, Descriptor>::applyConstitutiveModel() {
 
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::applyCellCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius) {
+void HemoCellField::applyCellCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius) {
     global::timer("CellCellForce").start();
     applyProcessingFunctional (
        new ComputeCellCellForces3D<T,Descriptor> (calcForce, cutoffRadius),
@@ -213,7 +214,7 @@ void CellField3D<T, Descriptor>::applyCellCellForce(CellCellForce3D<T> & calcFor
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::applyWallCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > *wallParticles) {
+void HemoCellField::applyWallCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > *wallParticles) {
     std::vector<MultiBlock3D*> wallParticleArg;
     wallParticleArg.push_back(wallParticles);
     wallParticleArg.push_back(immersedParticles);
@@ -225,7 +226,7 @@ void CellField3D<T, Descriptor>::applyWallCellForce(CellCellForce3D<T> & calcFor
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::applyDifferentCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
+void HemoCellField::applyDifferentCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
         MultiParticleField3D<DenseParticleField3D<T,Descriptor> > * otherCellParticles) {
 
     std::vector<MultiBlock3D*> differentCellCellParticleArg;
@@ -239,7 +240,7 @@ void CellField3D<T, Descriptor>::applyDifferentCellForce(CellCellForce3D<T> & ca
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::deleteIncompleteCells() {
+void HemoCellField::deleteIncompleteCells() {
 	createCellMap();
     SyncRequirements ccReq;
     ccReq.insert(CCR_NO_PBC_POSITION_MEAN);
@@ -260,7 +261,7 @@ void CellField3D<T, Descriptor>::deleteIncompleteCells() {
 
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::synchronizeSyncRequirements_Local(SyncRequirements ccReq) {
+void HemoCellField::synchronizeSyncRequirements_Local(SyncRequirements ccReq) {
     ccReq.insert(CCR_NO_PBC_POSITION_MEAN);
     SyncRequirements ccrIndependent, ccrDependent;
     separateDependencies(ccReq, ccrIndependent, ccrDependent);
@@ -296,12 +297,12 @@ void CellField3D<T, Descriptor>::synchronizeSyncRequirements_Local(SyncRequireme
 }
 
 template<typename T, template<typename U> class Descriptor>
-void CellField3D<T, Descriptor>::synchronizeCellQuantities_Local(SyncRequirements ccReq) {
+void HemoCellField::synchronizeCellQuantities_Local(SyncRequirements ccReq) {
     ccReq.insert(ccrRequirements);
     synchronizeSyncRequirements_Local(ccReq);
 }
 
 
 #endif
-
+#endif
 

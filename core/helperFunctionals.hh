@@ -50,7 +50,7 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
                                 cellId +=1;
                                 boundaryParticleField.addParticle(
                                     boundaryParticleField.getBoundingBox(),
-                                    new SurfaceParticle3D<T,Descriptor>(Array<T,3>(0.5+(px*0.5), 0.5+(py*0.5), 0.5+(pz*0.5)) + vertex, cellId, 0));
+                                    new SurfaceParticle3D(Array<T,3>(0.5+(px*0.5), 0.5+(py*0.5), 0.5+(pz*0.5)) + vertex, cellId, 0));
                             }
                         }
                         catch (int e) { }
@@ -84,7 +84,7 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
                         cellId +=1;
                         boundaryParticleField.addParticle(
                                 boundaryParticleField.getBoundingBox(),
-                                new SurfaceParticle3D<T,Descriptor>(Array<T,3>(0.5, 0.5, 0.5) + vertex, cellId, 0));
+                                new SurfaceParticle3D(Array<T,3>(0.5, 0.5, 0.5) + vertex, cellId, 0));
                     }
                 }
                 */
@@ -133,7 +133,7 @@ void PositionBoundaryParticles<T,Descriptor>::processGenericBlocks (
             	    for (plint indx=0; indx<vertices.size(); ++indx) {
             	    	boundaryParticleField.addParticle(
             	    			boundaryParticleField.getBoundingBox(),
-            	    			new SurfaceParticle3D<T,Descriptor>(vertices[indx], cellId, indx));
+            	    			new SurfaceParticle3D(vertices[indx], cellId, indx));
             	    }
                     
             	} */

@@ -11,7 +11,6 @@
 #include "cellReductionTypes.h"
 #include "cellFieldFunctionals3D.h"
 #include "cellCellForces3D.h"
-#include "hemoCellField3D.h"
 #include "fcnGenericFunctions.h"
 #include <sys/stat.h>
 #include <unistd.h>

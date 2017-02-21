@@ -130,7 +130,7 @@ void getOrderedPositionsMultipleCellsVector(Box3D realDomain,
 /* ******** OrderedPositionMultipleCellField3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
-void OrderedPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
+void OrderedPositionMultipleHemoCellField::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
     pluint numberOfCellFields=cellFields.size();
@@ -215,12 +215,12 @@ void OrderedPositionMultipleCellField3D<T,Descriptor>::processGenericBlocks (
 
 
 template<typename T, template<typename U> class Descriptor>
-OrderedPositionMultipleCellField3D<T,Descriptor>* OrderedPositionMultipleCellField3D<T,Descriptor>::clone() const {
-    return new OrderedPositionMultipleCellField3D<T,Descriptor>(*this);
+OrderedPositionMultipleHemoCellField* OrderedPositionMultipleHemoCellField::clone() const {
+    return new OrderedPositionMultipleHemoCellField(*this);
 }
 
 template<typename T, template<typename U> class Descriptor>
-void OrderedPositionMultipleCellField3D<T,Descriptor>::getTypeOfModification (
+void OrderedPositionMultipleHemoCellField::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::nothing; // Fluid field.
@@ -230,7 +230,7 @@ void OrderedPositionMultipleCellField3D<T,Descriptor>::getTypeOfModification (
 }
 
 template<typename T, template<typename U> class Descriptor>
-void OrderedPositionMultipleCellField3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+void OrderedPositionMultipleHemoCellField::getModificationPattern(std::vector<bool>& isWritten) const {
     isWritten[0] = false; // Fluid field.
     for (int iField = 0; iField < cellFields.size(); ++iField) {
         isWritten[1+iField] = true; // Particle fields.
@@ -240,7 +240,7 @@ void OrderedPositionMultipleCellField3D<T,Descriptor>::getModificationPattern(st
 
 
 template<typename T, template<typename U> class Descriptor>
-BlockDomain::DomainT OrderedPositionMultipleCellField3D<T,Descriptor>::appliesTo() const {
+BlockDomain::DomainT OrderedPositionMultipleHemoCellField::appliesTo() const {
     return BlockDomain::bulk;
 }
 
@@ -249,7 +249,7 @@ BlockDomain::DomainT OrderedPositionMultipleCellField3D<T,Descriptor>::appliesTo
 
 
 template<typename T, template<typename U> class Descriptor>
-void orderedPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields) {
+void orderedPositionMultipleCellField3D(std::vector<HemoCellField* > & cellFields) {
     global::timer("CellInit").start();
     std::vector<MultiBlock3D*> fluidAndParticleFieldsArg;
     fluidAndParticleFieldsArg.push_back( &(cellFields[0]->getFluidField3D()) );
@@ -261,7 +261,7 @@ void orderedPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor>* 
     //particleFieldsArg.push_back( &(cellFields[0]->getParticleField3D()) );
 
     applyProcessingFunctional (
-        new OrderedPositionMultipleCellField3D<T,Descriptor>(cellFields),
+        new OrderedPositionMultipleHemoCellField(cellFields),
         cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg );
     pcout << "Ready to start.." << std::endl;
 

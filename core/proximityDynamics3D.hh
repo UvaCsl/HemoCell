@@ -7,7 +7,7 @@
 
 
 template<typename T, template<typename U> class Descriptor>
-void applySameCellFieldForces(CellField3D<T, Descriptor> & cellField, CellCellForce3D<T> & forceType, T cutoffRadius) {
+void applySameCellFieldForces(HemoCellField & cellField, CellCellForce3D<T> & forceType, T cutoffRadius) {
     std::vector<MultiBlock3D*> particleFieldArg;
     particleFieldArg.push_back(cellField.getParticleArg()[0]);
     particleFieldArg.push_back(cellField.getParticleArg()[0]);

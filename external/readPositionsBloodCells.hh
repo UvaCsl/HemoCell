@@ -191,7 +191,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
             meshRotation (meshCopy, randomAngles[iCF][c]);
 
             positionCellInParticleField(*(particleFields[iCF]), fluid,
-                                         meshCopy, positions[iCF][c]*posRatio+wallWidth, cellIds[iCF][c]); 
+                                         meshCopy, positions[iCF][c]*posRatio+wallWidth, cellIds[iCF][c], iCF); 
 			delete meshCopy;
         }
 

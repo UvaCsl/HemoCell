@@ -173,7 +173,7 @@ inline void ShapeMemoryModel3D::computeCellForceSuresh (Cell3D<double,DESCRIPTOR
     std::vector<Array<plint,2> > const& edges = cell->getEdges();
     std::vector<plint > const& vertices = cell->getVertices();
     for (pluint iV = 0; iV < vertices.size(); ++iV) {
-        castParticleToICP3D(cell->getParticle3D(vertices[iV]))->resetForces();
+        cell->getParticle3D(vertices[iV])->resetForces();
     }
     plint iTriangle;
     plint iVertex, jVertex, kVertex, lVertex;
@@ -193,8 +193,8 @@ inline void ShapeMemoryModel3D::computeCellForceSuresh (Cell3D<double,DESCRIPTOR
         plint edgeId = getEdgeId(iVertex, jVertex);
         Array<double,3> const& iX = cell->getVertex(iVertex);
         Array<double,3> const& jX = cell->getVertex(jVertex);
-        SurfaceParticle3D<double,DESCRIPTOR>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
-        SurfaceParticle3D<double,DESCRIPTOR>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+        SurfaceParticle3D* iParticle = cell->getParticle3D(iVertex);
+        SurfaceParticle3D* jParticle = cell->getParticle3D(jVertex);
           /* ------------------------------------*/
          /* In Plane forces (WLC and repulsive) */
         /* ------------------------------------*/
@@ -236,8 +236,8 @@ inline void ShapeMemoryModel3D::computeCellForceSuresh (Cell3D<double,DESCRIPTOR
             Array<double,3> jNormal = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
             double Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
             double Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
-            SurfaceParticle3D<double,DESCRIPTOR>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
-            SurfaceParticle3D<double,DESCRIPTOR>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
+            SurfaceParticle3D* kParticle = cell->getParticle3D(kVertex);
+            SurfaceParticle3D* lParticle = cell->getParticle3D(lVertex);
             Array<double,3> const& kX = cell->getVertex(kVertex);
             Array<double,3> const& lX = cell->getVertex(lVertex);
 
@@ -312,9 +312,9 @@ inline void ShapeMemoryModel3D::computeCellForceSuresh (Cell3D<double,DESCRIPTOR
         Array<double,3> const& x1 = cell->getVertex(iVertex);
         Array<double,3> const& x2 = cell->getVertex(jVertex);
         Array<double,3> const& x3 = cell->getVertex(kVertex);
-        SurfaceParticle3D<double,DESCRIPTOR>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
-        SurfaceParticle3D<double,DESCRIPTOR>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
-        SurfaceParticle3D<double,DESCRIPTOR>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+        SurfaceParticle3D* iParticle = cell->getParticle3D(iVertex);
+        SurfaceParticle3D* jParticle = cell->getParticle3D(jVertex);
+        SurfaceParticle3D* kParticle = cell->getParticle3D(kVertex);
 
         /* Surface conservation forces */
         force1  = computeSurfaceConservationForce(x1, x2, x3, triangleNormal, surfaceCoefficient, dAdx1);
@@ -390,7 +390,7 @@ inline void ShapeMemoryModel3D::computeCellForceHighOrder (Cell3D<double,DESCRIP
     std::vector<Array<plint,2> > const& edges = cell->getEdges();
     std::vector<plint > const& vertices = cell->getVertices();
     for (pluint iV = 0; iV < vertices.size(); ++iV) {
-        castParticleToICP3D(cell->getParticle3D(vertices[iV]))->resetForces();
+        cell->getParticle3D(vertices[iV])->resetForces();
     }
 
     plint iTriangle;
@@ -403,8 +403,8 @@ inline void ShapeMemoryModel3D::computeCellForceHighOrder (Cell3D<double,DESCRIP
         plint edgeId = getEdgeId(iVertex, jVertex);
         Array<double,3> const& iX = cell->getVertex(iVertex);
         Array<double,3> const& jX = cell->getVertex(jVertex);
-        SurfaceParticle3D<double,DESCRIPTOR>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
-        SurfaceParticle3D<double,DESCRIPTOR>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
+        SurfaceParticle3D* iParticle = cell->getParticle3D(iVertex);
+        SurfaceParticle3D* jParticle = cell->getParticle3D(jVertex);
 
         /* ------------------------------------*/
         /* In Plane forces (WLC and repulsive) */
@@ -433,8 +433,8 @@ inline void ShapeMemoryModel3D::computeCellForceHighOrder (Cell3D<double,DESCRIP
         if (angleFound) {
             Array<double,3> tri1Norm = cell->computeTriangleNormal(iVertex, jVertex, kVertex);
             Array<double,3> tri2Norm = cell->computeTriangleNormal(iVertex, jVertex, lVertex);
-            SurfaceParticle3D<double,DESCRIPTOR>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
-            SurfaceParticle3D<double,DESCRIPTOR>* lParticle = castParticleToICP3D(cell->getParticle3D(lVertex));
+            SurfaceParticle3D* kParticle = cell->getParticle3D(kVertex);
+            SurfaceParticle3D* lParticle = cell->getParticle3D(lVertex);
 
             //T Ai = cell->computeTriangleArea(iVertex, jVertex, kVertex);
             //T Aj = cell->computeTriangleArea(iVertex, jVertex, lVertex);
@@ -508,9 +508,9 @@ inline void ShapeMemoryModel3D::computeCellForceHighOrder (Cell3D<double,DESCRIP
         Array<double,3> const& x1 = cell->getVertex(iVertex);
         Array<double,3> const& x2 = cell->getVertex(jVertex);
         Array<double,3> const& x3 = cell->getVertex(kVertex);
-        SurfaceParticle3D<double,DESCRIPTOR>* iParticle = castParticleToICP3D(cell->getParticle3D(iVertex));
-        SurfaceParticle3D<double,DESCRIPTOR>* jParticle = castParticleToICP3D(cell->getParticle3D(jVertex));
-        SurfaceParticle3D<double,DESCRIPTOR>* kParticle = castParticleToICP3D(cell->getParticle3D(kVertex));
+        SurfaceParticle3D* iParticle = cell->getParticle3D(iVertex);
+        SurfaceParticle3D* jParticle = cell->getParticle3D(jVertex);
+        SurfaceParticle3D* kParticle = cell->getParticle3D(kVertex);
 
 
         /* Local area conservation forces */

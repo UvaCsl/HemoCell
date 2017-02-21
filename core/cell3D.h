@@ -192,19 +192,18 @@ public:
     bool isInBulk(plint iVertex) { return (verticesInBulk.count(iVertex) > 0); }
     bool hasVertex(plint iVertex) { return (iVertexToParticle3D.count(iVertex) > 0); }
     plint count(plint iVertex) { return iVertexToParticle3D.count(iVertex); }
-    Array<T,3> getVertex(plint iVertex) { PLB_ASSERT(iVertexToParticle3D.count(iVertex)>0); return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_pbcPosition(); }
+    Array<T,3> getVertex(plint iVertex) { PLB_ASSERT(iVertexToParticle3D.count(iVertex)>0); return iVertexToParticle3D[iVertex]->get_pbcPosition(); }
     Array<T,3> getVertex(plint iTriangle, plint id) { return getVertex( getVertexId(iTriangle, id) ); }
 
-    Particle3D<T,Descriptor>* operator[](plint iVertex)    { return getParticle3D(iVertex); };
-    Particle3D<T,Descriptor>* getParticle3D(plint iVertex) { return iVertexToParticle3D[iVertex]; }
+    SurfaceParticle3D* operator[](plint iVertex)    { return getParticle3D(iVertex); };
+    SurfaceParticle3D* getParticle3D(plint iVertex) { return iVertexToParticle3D[iVertex]; }
 
     // Using getVelocity instead of get_v, because it's only for reading.
-    Array<T,3> get_v(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->getVelocity(); }
+    Array<T,3> get_v(plint iVertex) { return iVertexToParticle3D[iVertex]->getVelocity(); }
 
-    T get_Energy(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_Energy(); }
-    Array<T,3>  get_force(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_force(); }
+    Array<T,3>  get_force(plint iVertex) { return iVertexToParticle3D[iVertex]->get_force(); }
     Array<T,3>  getPosition(plint iVertex) { return iVertexToParticle3D[iVertex]->getPosition();}
-    Array<T,3> get_pbcPosition(plint iVertex) { return castParticleToICP3D(iVertexToParticle3D[iVertex])->get_pbcPosition(); }
+    Array<T,3> get_pbcPosition(plint iVertex) { return iVertexToParticle3D[iVertex]->get_pbcPosition(); }
 
     T computeEdgeLength(plint iVertex, plint jVertex);
     Array<T,3> computeEdgeLengthVector(plint iVertex, plint jVertex);
@@ -221,7 +220,7 @@ public:
     /* Reduction functions */
     virtual void clearReducer() { reducer.clear();  }
     virtual void computeCCRQuantities(plint ccrId, plint iVertex) { calculateCCRQuantities(ccrId, reducer, this, iVertex); }
-    virtual void computeCCRQuantities(plint ccrId, Particle3D<T,Descriptor> * particle) { calculateCCRQuantities(ccrId, reducer, this, castParticleToICP3D(particle)->getVertexId()); }
+    virtual void computeCCRQuantities(plint ccrId, SurfaceParticle3D * particle) { calculateCCRQuantities(ccrId, reducer, this, particle->getVertexId()); }
     void closeCCRQuantities() { this->copyFromBlockStatisticsCCR(reducer); }
 public:
     Array<T,3> & getPosition() { return this->get3D(CCR_POSITION_MEAN);  } ;
@@ -230,8 +229,8 @@ private:
     /* data */
     TriangularSurfaceMesh<T> & mesh;
     plint cellId;
-    std::map<plint, Particle3D<T,Descriptor>*> iVertexToParticle3D;
-    std::vector<Particle3D<T,Descriptor>*> particlesToDelete;
+    std::map<plint, SurfaceParticle3D*> iVertexToParticle3D;
+    std::vector<SurfaceParticle3D*> particlesToDelete;
     std::set<plint> verticesInBulk;
 
     BlockStatisticsCCR<T> reducer;

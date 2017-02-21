@@ -1,3 +1,4 @@
+#if 0
 #ifndef CELLFIELD_3D_H
 #define CELLFIELD_3D_H
 
@@ -165,7 +166,7 @@ private:
 template<typename T, template<typename U> class Descriptor>
 void applyWallCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
         MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & wallParticles,
-        CellField3D<T, Descriptor> & cellField) {
+        HemoCellField & cellField) {
 
     std::vector<MultiBlock3D*> wallParticleSurfaceParticleArg;
     wallParticleSurfaceParticleArg.push_back(&wallParticles);
@@ -180,4 +181,4 @@ void applyWallCellForce(CellCellForce3D<T> & calcForce, T cutoffRadius,
 
 #include "cellField3D.hh"
 #endif
-
+#endif

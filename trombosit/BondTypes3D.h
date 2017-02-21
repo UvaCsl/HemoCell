@@ -51,8 +51,8 @@ public:
     }
     // UID should be unique and it is suggested to include the bondTypeId.
     virtual std::string getUID(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1) {
-        SurfaceParticle3D<T,Descriptor>* sp0 = castParticleToICP3D(p0);
-        SurfaceParticle3D<T,Descriptor>* sp1 = castParticleToICP3D(p1);
+        SurfaceParticle3D* sp0 = castParticleToICP3D(p0);
+        SurfaceParticle3D* sp1 = castParticleToICP3D(p1);
         plint cellId0=sp0->get_cellId(), cellId1=sp1->get_cellId();
         plint vertexId0=sp0->getVertexId(), vertexId1=sp1->getVertexId();
         std::string ret;

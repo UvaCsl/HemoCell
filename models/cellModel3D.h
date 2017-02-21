@@ -26,6 +26,7 @@
 #include "shellModel3D.h"
 #include "computeCellForces3D.h"
 #include "cell3D.h"
+#include "cellReductionTypes.h"
 #include "meshMetrics.h"
 #include <cmath>
 #include <map>

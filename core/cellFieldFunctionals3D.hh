@@ -167,12 +167,10 @@ void FluidVelocityToImmersedCell3D<T,Descriptor>::processGenericBlocks (
         *dynamic_cast<BlockLattice3D<T,Descriptor>*>(blocks[1]);
     /* Not used */
 //    Dot3D offset = computeRelativeDisplacement(particleField, fluid);
-    std::vector<Particle3D<T,Descriptor>*> particles;
+    std::vector<SurfaceParticle3D*> particles;
     particleField.findParticles(domain, particles);
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        SurfaceParticle3D<T,Descriptor>* particle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
-        PLB_ASSERT( particle );
+        SurfaceParticle3D* particle = particles[iParticle];
         Array<T,3> position(particle->getPosition());
         Array<T,3> velocity;
         std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
@@ -243,8 +241,8 @@ void ViscousPositionUpdate3D<T,Descriptor>::processGenericBlocks (
     particleField.findParticles(particleField.getBoundingBox(), particles);
 
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        SurfaceParticle3D<T,Descriptor>* particle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
+        SurfaceParticle3D* particle =
+            dynamic_cast<SurfaceParticle3D*> (particles[iParticle]);
         PLB_ASSERT( particle );
         T dt = 1.0;
         if ((particle->get_force()[0]!=0) || (particle->get_force()[1]!=0) || (particle->get_force()[2]!=0))
@@ -317,9 +315,7 @@ void ForceToFluid3D<T,Descriptor>::processGenericBlocks (
     //std::vector<Dot3D> cellPos;
     Cell<T,Descriptor>* cell;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        SurfaceParticle3D<T,Descriptor>* particle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
-        PLB_ASSERT( particle );
+        SurfaceParticle3D* particle = particles[iParticle];
         Array<T,3> position(particle->getPosition());  // TODO: why do we make a copy of the coord?
         std::vector<Dot3D> & cellPos = particle->getIBMcoordinates();
         std::vector<T> & weights = particle->getIBMweights();
@@ -383,10 +379,10 @@ void FillCellMap<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> found;
     particleField.findParticles(particleField.getBoundingBox(), found); // Gets the whole domain.
     std::map<plint, pluint> cellIdToVerticesInDomain;
-
+    
+    SurfaceParticle3D * particle;
     for (pluint iParticle=0; iParticle<found.size(); ++iParticle) {
-        SurfaceParticle3D<T,Descriptor>* particle = 
-                dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (found[iParticle]);
+                particle = found[iParticle];
         PLB_ASSERT(particle);
         bool particleIsInBulk = particleField.isContained(particle->getPosition(), domain);
 //        cout << global::mpi().getRank()
@@ -526,10 +522,12 @@ void GetGlobalMaxForce<T,Descriptor>::processGenericBlocks (
     std::vector<Particle3D<T,Descriptor>*> particles;
     particleField.findParticles(domain, particles); // Gets particle only from the bulk
 
+    
+    SurfaceParticle3D* particle; 
+
     for(pluint iPart = 0; iPart < particles.size(); iPart++)
     {
-        SurfaceParticle3D<T,Descriptor>* particle = 
-                dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iPart]);
+        particle = particles[iPart];
         T forceMag = norm(particle->get_force());
         this->getStatistics().gatherMax(qId, forceMag);
     }
@@ -646,7 +644,7 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
     ParticleField3D<T,Descriptor>& reductionParticleField =
         *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[1]);
 
-    std::vector<Particle3D<T,Descriptor>*> particles;
+    std::vector<SurfaceParticle3D*> particles;
     particleField.findParticles(domain, particles); // Gets particle only from the bulk
 
     typename std::map<plint, Cell3D<T,Descriptor>*  >::iterator iter;
@@ -655,8 +653,8 @@ void ComputeRequiredQuantities<T,Descriptor>::processGenericBlocks (
     }
     std::map<plint, pluint> particlesPerCellId;
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        plint cellId = castParticleToICP3D(particles[iParticle])->get_cellId();
-        plint iVertex = castParticleToICP3D(particles[iParticle])->getVertexId();
+        plint cellId = particles[iParticle]->get_cellId();
+        plint iVertex = particles[iParticle]->getVertexId();
         particlesPerCellId[cellId] = particlesPerCellId[cellId] + 1;
         for (std::vector<plint>::iterator i = ccrRequirements.begin(); i != ccrRequirements.end(); ++i)
         {

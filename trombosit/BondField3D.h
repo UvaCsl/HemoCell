@@ -19,17 +19,17 @@ template<typename T, template<typename U> class Descriptor>
 class BondField3D {
 public:
 	// Single CellField
-    BondField3D(CellField3D<T, Descriptor> & cellField, BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
+    BondField3D(HemoCellField & cellField, BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
     	initializeBondField3D( &(cellField.getParticleField3D()), &(cellField.getParticleField3D()) );
     } ;
 
     // Two CellFields
-    BondField3D(CellField3D<T, Descriptor> & cellField1, CellField3D<T, Descriptor> & cellField2, BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
+    BondField3D(HemoCellField & cellField1, HemoCellField & cellField2, BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
     	initializeBondField3D( &(cellField1.getParticleField3D()), &(cellField2.getParticleField3D()) );
     } ;
 
     // CellField and ParticleField
-    BondField3D(CellField3D<T, Descriptor> & cellField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
+    BondField3D(HemoCellField & cellField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
     		BondType<T,Descriptor> & bondType_) : bondType(bondType_) {
     	initializeBondField3D( &(cellField1.getParticleField3D()), &particleField2 );
     } ;
@@ -202,15 +202,15 @@ private:
 template<typename T, template<typename U> class Descriptor>
 class BondFieldWrapper3D {
 public:
-	BondFieldWrapper3D(CellField3D<T, Descriptor> & cellField, BondType<T,Descriptor> & bondType_) :
+	BondFieldWrapper3D(HemoCellField & cellField, BondType<T,Descriptor> & bondType_) :
 		bondField(cellField, bondType_) {    } ;
 
     // Two CellFields
-	BondFieldWrapper3D(CellField3D<T, Descriptor> & cellField1, CellField3D<T, Descriptor> & cellField2, BondType<T,Descriptor> & bondType_) :
+	BondFieldWrapper3D(HemoCellField & cellField1, HemoCellField & cellField2, BondType<T,Descriptor> & bondType_) :
 		bondField(cellField1, cellField2, bondType_) {    } ;
 
     // CellField and ParticleField
-	BondFieldWrapper3D(CellField3D<T, Descriptor> & cellField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
+	BondFieldWrapper3D(HemoCellField & cellField1, MultiParticleField3D<DenseParticleField3D<T,Descriptor> > & particleField2,
     		BondType<T,Descriptor> & bondType_) :
 		bondField(cellField1, particleField2, bondType_) {    } ;
 

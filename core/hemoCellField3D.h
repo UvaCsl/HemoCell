@@ -1,3 +1,0 @@
-class HemoCellField3D {
-
-};

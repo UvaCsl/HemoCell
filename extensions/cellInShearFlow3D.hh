@@ -13,7 +13,7 @@ SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::SingleCellInShearFlow(Triang
         MultiParticleField3D<ParticleFieldT<T,Descriptor> > & particles_, std::vector<plint> cellIds,
         std::vector< Array<T,3> > cellCenters, std::vector<T> cellsVolume,
         plint numParticlesPerSide_, plint flowType_, T dx_, T dt_, T dNewton_,
-        CellField3D<T,Descriptor> & chq_,
+        HemoCellField & chq_,
         bool checkpointed_,
         bool store_)
         :
@@ -172,8 +172,8 @@ void SingleCellInShearFlow<T,Descriptor,ParticleFieldT>::write(bool writeOutput)
             for (pluint iTag = 0; iTag < lateralCellParticleTags.size(); ++iTag) {
                 std::vector<plint>* const pTags = lateralCellParticleTags[iTag];
                 for (pluint iVertex = 0; iVertex < pTags->size(); ++iVertex) {
-                    SurfaceParticle3D<T,Descriptor>* particle =
-                            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (tagToParticle3D[ (*pTags)[iVertex]]);
+                    SurfaceParticle3D* particle =
+                            dynamic_cast<SurfaceParticle3D*> (tagToParticle3D[ (*pTags)[iVertex]]);
 
                     positions.push_back(particle->get_pbcPosition());
                     tags.push_back(iTag);
@@ -251,8 +251,8 @@ void InertiaTensorCellReduceFunctional3D<T,Descriptor>::calculateQuantity(Triang
     T Izx, Izy, Izz;
     for (pluint iA = 0; iA < particles.size(); ++iA) {
         Particle3D<T,Descriptor>* nonTypedParticle = particles[iA];
-        SurfaceParticle3D<T,Descriptor>* particle =
-                dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (nonTypedParticle);
+        SurfaceParticle3D* particle =
+                dynamic_cast<SurfaceParticle3D*> (nonTypedParticle);
         plint iVertex = particle->getTag();
         plint cellId = particle->get_cellId();
         Array<T,3> r0 = cellCenters[cellId];

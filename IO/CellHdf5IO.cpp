@@ -10,7 +10,7 @@
 /* ******** WriteCellField3DInMultipleHDF5Files *********************************** */
 template<typename T, template<typename U> class Descriptor>
 WriteCell3DInMultipleHDF5Files<T,Descriptor>::WriteCell3DInMultipleHDF5Files (
-        CellField3D<T, Descriptor>& cellField3D_,
+        HemoCellField& cellField3D_,
         plint iter_, std::string identifier_,
         T dx_, T dt_) :
         cellField3D(cellField3D_), iter(iter_), identifier(identifier_), dx(dx_), dt(dt_) {};

@@ -17,14 +17,14 @@ void FcnCheckpoint<T, Descriptor>::init(XMLreader & xmlr) {
 
 
 template<typename T, template<typename U> class Descriptor>
-void FcnCheckpoint<T, Descriptor>::load(std::string paramXmlFileName, MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<CellField3D<T, Descriptor>* > & cellFields, plint & iter) {
+void FcnCheckpoint<T, Descriptor>::load(std::string paramXmlFileName, MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<HemoCellField* > & cellFields, plint & iter) {
     XMLreader document(paramXmlFileName);
     load(document, lattice, cellFields, iter);
 }
 
 
 template<typename T, template<typename U> class Descriptor>
-void FcnCheckpoint<T, Descriptor>::load(XMLreader & documentXML, MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<CellField3D<T, Descriptor>* > & cellFields, plint & iter) {
+void FcnCheckpoint<T, Descriptor>::load(XMLreader & documentXML, MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<HemoCellField* > & cellFields, plint & iter) {
     std::string outDir = global::directories().getOutputDir();
     std::string firstField = (*(documentXML.getChildren( documentXML.getFirstId() )[0])).getName(); // VERY COMPLICATED! Hope I could find sth easier!
     isCheckpointed = (firstField=="Checkpoint");
@@ -42,7 +42,7 @@ void FcnCheckpoint<T, Descriptor>::load(XMLreader & documentXML, MultiBlockLatti
 
 
 template<typename T, template<typename U> class Descriptor>
-void FcnCheckpoint<T, Descriptor>::save(MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<CellField3D<T, Descriptor>* > & cellFields, plint iter) {
+void FcnCheckpoint<T, Descriptor>::save(MultiBlockLattice3D<T, Descriptor> & lattice, std::vector<HemoCellField* > & cellFields, plint iter) {
     std::string outDir = global::directories().getOutputDir();
     /* Rename files, for safety reasons */
     if (global::mpi().isMainProcessor()) {

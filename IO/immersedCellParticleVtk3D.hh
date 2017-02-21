@@ -76,8 +76,8 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
     // structure is too small, and one of the particles was outside the allocated domain.
 //     PLB_PRECONDITION((plint)particles.size() == mesh.getNumVertices());
 
-    SurfaceParticle3D<T,Descriptor>* p0 =
-        dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[0]);
+    SurfaceParticle3D* p0 =
+        dynamic_cast<SurfaceParticle3D*> (particles[0]);
     std::vector<std::string> vectorNames, scalarNames;
     for (plint iVector = 0; iVector < p0->getVectorsNumber(); ++iVector) {
         vectorNames.push_back(p0->getVectorName(iVector));
@@ -108,8 +108,8 @@ void vtkForImmersedVertices(std::vector<Particle3D<T,Descriptor>*> const& partic
 //    draftPostProcessPBCPositions(particles, posVect, 25, 25, 25);
     draftPostProcessPBCPositions(particles, posVect, nx, ny, nz);
     for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-        SurfaceParticle3D<T,Descriptor>* iparticle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
+        SurfaceParticle3D* iparticle =
+            dynamic_cast<SurfaceParticle3D*> (particles[iParticle]);
         plint iVertex = iparticle->getTag();
 //        posVect[iVertex] = iparticle->get_pbcPosition();
         posVect[iVertex] *= boundary.getDx();
@@ -252,8 +252,8 @@ void draftPostProcessPBCPositions(std::vector<Particle3D<T,Descriptor>*> const &
 
     // Find minimum and maximum X,Y,Z
     for (pluint iParticle = 0; iParticle < particles.size(); ++iParticle) {
-        SurfaceParticle3D<T,Descriptor>* iparticle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
+        SurfaceParticle3D* iparticle =
+            dynamic_cast<SurfaceParticle3D*> (particles[iParticle]);
         pbcPosition = iparticle->get_pbcPosition();
         plint iVertex = iparticle->getTag();
         posVect[iVertex] = pbcPosition;
@@ -275,8 +275,8 @@ void draftPostProcessPBCPositions(std::vector<Particle3D<T,Descriptor>*> const &
 
     // Check if whole cell is outside of the domain. If it is, transfer it to its normal position
     for (pluint iParticle = 0; iParticle < particles.size(); ++iParticle) {
-        SurfaceParticle3D<T,Descriptor>* iparticle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
+        SurfaceParticle3D* iparticle =
+            dynamic_cast<SurfaceParticle3D*> (particles[iParticle]);
         plint iVertex = iparticle->getTag();
         cellId = iparticle->get_cellId();
         for (int dim=0; dim < 3; ++dim) {

@@ -1,3 +1,4 @@
+#if 0
 #ifndef CELL_CELL_FORCES_3D_HH
 #define CELL_CELL_FORCES_3D_HH
 
@@ -24,8 +25,8 @@ template<typename T, template<typename U> class Descriptor>
 bool ComputeCellCellForces3D<T,Descriptor>::conditionsAreMet (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
-    SurfaceParticle3D<T,Descriptor>* cParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p1);
-    SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
+    SurfaceParticle3D* cParticle = dynamic_cast<SurfaceParticle3D*> (p1);
+    SurfaceParticle3D* nParticle = dynamic_cast<SurfaceParticle3D*> (p2);
     if (cParticle->get_cellId() == nParticle->get_cellId()) { return false; } // Avoid self-repulsion
     if (cParticle->getTag() < nParticle->getTag()) { return false; } // Calc force only once per pair
     eij = cParticle->getPosition() - nParticle->getPosition();  // TODO: when force is positive, it will lead to adhesion
@@ -40,8 +41,8 @@ template<typename T, template<typename U> class Descriptor>
 void ComputeCellCellForces3D<T,Descriptor>::applyForce (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T r, Array<T,3> & eij)
 {
-        SurfaceParticle3D<T,Descriptor>* cParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p1);
-        SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
+        SurfaceParticle3D* cParticle = dynamic_cast<SurfaceParticle3D*> (p1);
+        SurfaceParticle3D* nParticle = dynamic_cast<SurfaceParticle3D*> (p2);
         Array<T,3> force = calcForce(r, eij);
         cParticle->get_force() += force;
         nParticle->get_force() -= force;
@@ -158,8 +159,8 @@ template<typename T, template<typename U> class Descriptor>
 void ComputeDifferentCellForces3D<T,Descriptor>::applyForce (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
-        SurfaceParticle3D<T,Descriptor>* cParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p1);
-        SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
+        SurfaceParticle3D* cParticle = dynamic_cast<SurfaceParticle3D*> (p1);
+        SurfaceParticle3D* nParticle = dynamic_cast<SurfaceParticle3D*> (p2);
         Array<T,3> force = calcForce(r, eij);
         cParticle->get_force() += force;
         nParticle->get_force() -= force;
@@ -284,7 +285,7 @@ template<typename T, template<typename U> class Descriptor>
 void ComputeWallCellForces3D<T,Descriptor>::applyForce (
         Particle3D<T,Descriptor> * p1, Particle3D<T,Descriptor> * p2, T & r, Array<T,3> & eij)
 {
-        SurfaceParticle3D<T,Descriptor>* nParticle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (p2);
+        SurfaceParticle3D* nParticle = dynamic_cast<SurfaceParticle3D*> (p2);
         Array<T,3> force = calcForce(r, eij);
         nParticle->get_force() -= force;
         //cout << "(ComputeWallCellForces3D) r=" << r << ", norm-force=" << norm(force) << std::endl;
@@ -432,4 +433,4 @@ T CellCellForce3D<T>::calculatePotential (T r, Array<T,3> & eij) {
 
 
 #endif  // CELL_CELL_FORCES_3D_HH
-
+#endif

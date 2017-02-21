@@ -34,10 +34,6 @@ public:
             *dynamic_cast<ParticleField3D<T,Descriptor>*>(blocks[0]);
         std::vector<Particle3D<T,Descriptor>*> particles;
         particleField.findParticles(domain, particles); // Gets particle only from the bulk
-        for (pluint iParticle=0; iParticle<particles.size(); ++iParticle) {
-            SurfaceParticle3D<T,Descriptor>* particle = dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iParticle]);
-            particle->get_dt() = dt;
-        }
     };
 private:
     T dt;

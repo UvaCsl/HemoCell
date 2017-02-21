@@ -6,7 +6,7 @@
 
 
 template<typename T, template<typename U> class Descriptor>
-void randomPositionCellFieldsForGrowth3D(std::vector<CellField3D<T, Descriptor>* > & cellFields) {
+void randomPositionCellFieldsForGrowth3D(std::vector<HemoCellField* > & cellFields) {
     global::timer("CellInit").start();
     std::vector<MultiBlock3D*> fluidAndParticleFieldsArg;
     fluidAndParticleFieldsArg.push_back( &(cellFields[0]->getFluidField3D()) );
@@ -61,7 +61,7 @@ void PositionCellParticles3D<T,Descriptor>::processGenericBlocks (
         plint cellId = iCO;
         for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
             Array<T,3> vertex = cellOrigin + mesh->getVertex(iVertex);
-            particleField.addParticle(domain, new SurfaceParticle3D<T,Descriptor>(vertex, cellId, iVertex) );
+            particleField.addParticle(domain, new SurfaceParticle3D(vertex, cellId, iVertex) );
         }
     }
     std::vector<Particle3D<T,Descriptor>*> particles;
@@ -188,7 +188,7 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
 //                            cout << global::mpi().getRank() << "vertex (" << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << ")" <<std::endl;
                             break;
                         } else {
-                            particleField.addParticle(domain, new SurfaceParticle3D<T,Descriptor>(vertex, cellId + 1000*mpiRank, iVertex) );
+                            particleField.addParticle(domain, new SurfaceParticle3D(vertex, cellId + 1000*mpiRank, iVertex) );
                         }
 
                     }
@@ -203,8 +203,8 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     particleField.findParticles(domain, particles);
     std::map<plint, plint> cellIdToNumberOfVertices;
     for (pluint iP = 0; iP < particles.size(); ++iP) {
-        SurfaceParticle3D<T,Descriptor>* particle =
-            dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particles[iP]);
+        SurfaceParticle3D* particle =
+            dynamic_cast<SurfaceParticle3D*> (particles[iP]);
         cellIdToNumberOfVertices[particle->get_cellId()]++;
     }
     plint cellsDeleted=0;
@@ -447,7 +447,7 @@ void getOrderedPositionsVector(Box3D realDomain, Array<T,3> step,
 
 
 template<typename T, template<typename U> class Descriptor>
-void orderedPositionCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields, Dot3D latticeSize) {
+void orderedPositionCellField3D(std::vector<HemoCellField* > & cellFields, Dot3D latticeSize) {
     global::timer("CellInit").start();
     std::vector<MultiBlock3D*> fluidAndParticleFieldsArg;
     fluidAndParticleFieldsArg.push_back( &(cellFields[0]->getFluidField3D()) );
@@ -459,7 +459,7 @@ void orderedPositionCellField3D(std::vector<CellField3D<T, Descriptor>* > & cell
     particleFieldsArg.push_back( &(cellFields[0]->getParticleField3D()) );
 
     applyProcessingFunctional (
-        new OrderedPositionCellField3D<T,Descriptor>(cellFields, latticeSize),
+        new OrderedPositionHemoCellField(cellFields, latticeSize),
         cellFields[0]->getFluidField3D().getBoundingBox(), fluidAndParticleFieldsArg );
     for (pluint icf = 0; icf < cellFields.size(); ++icf) {
         cellFields[icf]->createCellMap();
@@ -482,7 +482,7 @@ void orderedPositionCellField3D(std::vector<CellField3D<T, Descriptor>* > & cell
 /* ******** OrderedPositionCellField3D *********************************** */
 
 template<typename T, template<typename U> class Descriptor>
-void OrderedPositionCellField3D<T,Descriptor>::processGenericBlocks (
+void OrderedPositionHemoCellField::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
     pluint numberOfCellFields=cellFields.size();
@@ -579,12 +579,12 @@ void OrderedPositionCellField3D<T,Descriptor>::processGenericBlocks (
 
 
 template<typename T, template<typename U> class Descriptor>
-OrderedPositionCellField3D<T,Descriptor>* OrderedPositionCellField3D<T,Descriptor>::clone() const {
-    return new OrderedPositionCellField3D<T,Descriptor>(*this);
+OrderedPositionHemoCellField* OrderedPositionHemoCellField::clone() const {
+    return new OrderedPositionHemoCellField(*this);
 }
 
 template<typename T, template<typename U> class Descriptor>
-void OrderedPositionCellField3D<T,Descriptor>::getTypeOfModification (
+void OrderedPositionHemoCellField::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::nothing; // Fluid field.
@@ -594,7 +594,7 @@ void OrderedPositionCellField3D<T,Descriptor>::getTypeOfModification (
 }
 
 template<typename T, template<typename U> class Descriptor>
-void OrderedPositionCellField3D<T,Descriptor>::getModificationPattern(std::vector<bool>& isWritten) const {
+void OrderedPositionHemoCellField::getModificationPattern(std::vector<bool>& isWritten) const {
     isWritten[0] = false; // Fluid field.
     for (int iField = 0; iField < cellFields.size(); ++iField) {
         isWritten[1+iField] = true; // Particle fields.
@@ -603,7 +603,7 @@ void OrderedPositionCellField3D<T,Descriptor>::getModificationPattern(std::vecto
 }
 
 template<typename T, template<typename U> class Descriptor>
-BlockDomain::DomainT OrderedPositionCellField3D<T,Descriptor>::appliesTo() const {
+BlockDomain::DomainT OrderedPositionHemoCellField::appliesTo() const {
     return BlockDomain::bulk;
 }
 

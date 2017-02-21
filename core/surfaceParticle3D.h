@@ -9,148 +9,60 @@
 
 namespace plb {
 
-template<typename T, template<typename U> class Descriptor>
-class SurfaceParticle3D : public Particle3D<T,Descriptor> {
+class SurfaceParticle3D : public Particle3D<double,DESCRIPTOR> {
 public:
-    SurfaceParticle3D();
-    ~SurfaceParticle3D() { // TODO: needs clean-up
-    };
-    /* scheme:
-     *  0: Euler
-     *  1: Adams-Bashforth
-     */
-    SurfaceParticle3D(Array<T,3> const& position, plint cellId_ = -1, plint vertexId_ = 0, T dt_= 1.0);
-    SurfaceParticle3D(Array<T,3> const& position,
-                          Array<T,3> const& v_, Array<T,3> const& pbcPosition_,
-                            Array<T,3> const& a_, Array<T,3> const& force_, Array<T,3> const& vPrevious_,
-                            plint cellId_ = -1, plint vertexId_=0, T dt_ = 1);
-    virtual SurfaceParticle3D<T,Descriptor>* clone() const;
-    virtual void velocityToParticle(TensorField3D<T,3>& velocityField, T scaling=1.) { }
-    virtual void velocityToParticle(NTensorField3D<T>& velocityField, T scaling=1.) { }
-    virtual void rhoBarJtoParticle(NTensorField3D<T>& rhoBarJfield, bool velIsJ, T scaling=1.) { }
-    virtual void fluidToParticle(BlockLattice3D<T,Descriptor>& fluid, T scaling=1.) { }
+    SurfaceParticle3D(Array<double,3> const& position, plint cellId_ = -1, plint vertexId_ = 0, pluint celltype_=0);
+    SurfaceParticle3D* clone() const override;
+
+    void velocityToParticle(TensorField3D<double,3>& velocityField, double scaling=1.) override { }
+    void velocityToParticle(NTensorField3D<double>& velocityField, double scaling=1.) override { }
+    void rhoBarJtoParticle(NTensorField3D<double>& rhoBarJfield, bool velIsJ, double scaling=1.) override { }
+    void fluidToParticle(BlockLattice3D<double,DESCRIPTOR>& fluid, double scaling=1.) override { }
+
     /// Implements Euler integration with velocity alone.
-    virtual void advance();
-    virtual void serialize(HierarchicSerializer& serializer) const;
-    virtual void unserialize(HierarchicUnserializer& unserializer);
-    virtual int getId() const;
-    virtual void reset(Array<T,3> const& position, Array<T,3> const& velocity_, bool allVariables=false);
-    virtual void reset(Array<T,3> const& position);
-    virtual void resetForces();
-    /// Return the cellId through a generic interface (vector id=0).
-    virtual bool getScalar(plint whichScalar, T& scalar) const;
-    std::string getScalarName(plint whichScalar) const;
-    plint getScalarsNumber() const ;
-    /// Return the velocity, acceleration or pbcPosition through a generic interface (vector id=0,1,2).
-    virtual bool getVector(plint whichVector, Array<T,3>& vector) const;
-    std::string getVectorName(plint whichVector) const;
-    plint getVectorsNumber() const ;
-    Array<T,3> const& get_v() const { return v; }
-    Array<T,3> const& get_pbcPosition() const { return pbcPosition; }
-    Array<T,3> const& get_vPrevious() const { return vPrevious; }
-    Array<T,3> const& get_a() const { return a; }
-    Array<T,3> const& get_force() const { return force; }
+    void advance() override;
+    void serialize(HierarchicSerializer& serializer) const override;
+    void unserialize(HierarchicUnserializer& unserializer) override;
+
+    void reset(Array<double,3> const& position, Array<double,3> const& velocity_);
+    void reset(Array<double,3> const& position) override;
+    void resetForces();
+    
+    int getId() const {return 0;}
+
+    Array<double,3> const& get_v() const { return v; }
+    Array<double,3> const& getVelocity() const { return get_v(); }
+    Array<double,3> const& get_pbcPosition() const { return pbcPosition; }
+    Array<double,3> const& get_vPrevious() const { return vPrevious; }
+    Array<double,3> const& get_force() const { return force; }
+    plint const& get_cellId() const { return cellId; }
+    plint const& getVertexId() const { return vertexId; }
     // Difference between getVelocity and get_v:
     // get_v holds the actual interpolated velocity, while
     // getVelocity holds the velocity according to the
     // update of the position particle "method advance()".
-    Array<T,3> getVelocity() { return vProgressed; }
-    Array<T,3>& get_v() { return v; }
-    Array<T,3>& get_pbcPosition() { return pbcPosition; }
-    Array<T,3>& get_vPrevious() { return vPrevious; }
-    Array<T,3>& get_a() { return a; }
-    Array<T,3>& get_force() { return force; }
-    T& get_dt() { return dt; }
-    void set_dt( T dt_ ) { dt = dt_; }
-    plint const& get_cellId() const { return cellId; }
-    plint& get_cellId() { return cellId; }
-    plint const& getVertexId() const { return vertexId; }
-    plint& getVertexId() { return vertexId; }
-    plint const& get_processor() const { return processor; }
-    plint& get_processor() { return processor; }
-    plint getMpiProcessor() {
-    	int myrank = 0;
-#ifdef PLB_MPI_PARALLEL
-	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-#endif
-    	return plint(myrank); }
+    Array<double,3>& get_v() { return v; }
+    //Array<T,3>& get_pbcPosition() { return pbcPosition; }
+    //Array<T,3>& get_vPrevious() { return vPrevious; }
+    //Array<T,3>& get_a() { return a;double}
+    Array<double,3>& get_force() { return force; }
+    //plint& get_cellId() { return cellId; }
+    //plint& getVertexId() { return vertexId; }
+    //plint& get_processor() { return processor; }
+    int getMpiProcessor() { MPI_Comm_rank(MPI_COMM_WORLD, &rank); return rank;}
 private:
-    Array<T,3> v, pbcPosition, a, force, vPrevious, vProgressed;
-    T dt=1.0;
-    static int id;
-private:
-    plint processor;
+    Array<double,3> pbcPosition, v, force, vPrevious;
     plint cellId;
     plint vertexId;
+    pluint celltype;
+    int rank;
 public:
     std::vector<Dot3D> & getIBMcoordinates() { return cellPos; }
-    std::vector<T> & getIBMweights() { return weights; }
+    std::vector<double> & getIBMweights() { return weights; }
 private:
     std::vector<Dot3D> cellPos;
-    std::vector<T> weights;
-public:
-#ifdef PLB_DEBUG // Less Calculations
-
-    Array<T,3> const& get_f_wlc() const { return f_wlc; }
-    Array<T,3> const& get_f_bending() const { return f_bending; }
-    Array<T,3> const& get_f_volume() const { return f_volume; }
-    Array<T,3> const& get_f_surface() const { return f_surface; }
-    Array<T,3> const& get_f_shear() const { return f_shear; }
-    Array<T,3> const& get_f_viscosity() const { return f_viscosity; }
-    Array<T,3> const& get_f_repulsive() const { return f_repulsive; }
-    Array<T,3> const& get_stress() const { return stress; }
-
-    T const& get_E_other() const { return E_other; }
-    T const& get_E_inPlane() const { return E_inPlane; }
-    T const& get_E_bending() const { return E_bending; }
-    T const& get_E_area() const { return E_area; }
-    T const& get_E_volume() const { return E_volume; }
-    T const& get_E_repulsive() const { return E_repulsive; }
-
-    Array<T,3>& get_f_wlc() { return f_wlc; }
-    Array<T,3>& get_f_bending() { return f_bending; }
-    Array<T,3>& get_f_volume() { return f_volume; }
-    Array<T,3>& get_f_surface() { return f_surface; }
-    Array<T,3>& get_f_shear() { return f_shear; }
-    Array<T,3>& get_f_viscosity() { return f_viscosity; }
-    Array<T,3>& get_f_repulsive() { return f_repulsive; }
-    Array<T,3>& get_stress() { return stress; }
-
-    T& get_E_other() { return E_other; }
-    T& get_E_inPlane() { return E_inPlane; }
-    T& get_E_bending() { return E_bending; }
-    T& get_E_area() { return E_area; }
-    T& get_E_volume() { return E_volume; }
-    T& get_E_repulsive() { return E_repulsive; }
-
-    T const get_E_total() const { return (E_other + E_inPlane + E_bending + E_area + E_volume + E_repulsive);}
-    T const get_Energy() const { return (E_other + E_inPlane + E_bending + E_area + E_volume + E_repulsive);}
-private:
-    Array<T,3> f_wlc, f_bending, f_volume, f_surface, f_shear, f_viscosity, f_repulsive;
-    Array<T,3> stress;
-    T E_other, E_inPlane, E_bending, E_area,  E_volume, E_repulsive;
-#endif
-// TROMBOSIT related variables
-public:
-    T & getBondTypeSaturation(plint bondType) { return (bondTypeSaturation[bondType]); }
-    std::map<plint, T> & getBondTypeSaturation() { return bondTypeSaturation; };
-private:
-    std::map<plint, T> bondTypeSaturation;
+    std::vector<double> weights;
 };
-
-template<typename T, template<typename U> class Descriptor>
-int SurfaceParticle3D<T,Descriptor>::id = meta::registerGenericParticle3D<T,Descriptor,SurfaceParticle3D<T,Descriptor> >("ImmersedCellParticle3D");
-
-template<typename T, template<typename U> class Descriptor>
-SurfaceParticle3D<T,Descriptor>* castParticleToICP3D(Particle3D<T,Descriptor>* particle) {
-    return  dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particle);
-}
-
-template<typename T, template<typename U> class Descriptor>
-SurfaceParticle3D<T,Descriptor>* castParticleToSurfaceParticle3D(Particle3D<T,Descriptor>* particle) {
-    return  dynamic_cast<SurfaceParticle3D<T,Descriptor>*> (particle);
-}
-
 
 }  // namespace plb
 

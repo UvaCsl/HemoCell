@@ -11,7 +11,7 @@ using namespace std;
 using namespace plb;
 
 template<typename T, template<typename U> class Descriptor>
-void orderedPositionMultipleCellField3D(std::vector<CellField3D<T, Descriptor>* > & cellFields);
+void orderedPositionMultipleCellField3D(std::vector<HemoCellField* > & cellFields);
 
 
 template<typename T>
@@ -26,16 +26,16 @@ template<typename T, template<typename U> class Descriptor>
 class OrderedPositionMultipleCellField3D : public BoxProcessingFunctional3D
 {
 public:
-    OrderedPositionMultipleCellField3D (std::vector<CellField3D<T, Descriptor>* > & cellFields_):
+    OrderedPositionMultipleCellField3D (std::vector<HemoCellField* > & cellFields_):
                 cellFields(cellFields_) { }
     /// Arguments: [0] Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
-    virtual OrderedPositionMultipleCellField3D<T,Descriptor>* clone() const;
+    virtual OrderedPositionMultipleHemoCellField* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
     void getModificationPattern(std::vector<bool>& isWritten) const;
     virtual BlockDomain::DomainT appliesTo() const;
 private:
-    std::vector<CellField3D<T, Descriptor>* > & cellFields;
+    std::vector<HemoCellField* > & cellFields;
 };
 
 
