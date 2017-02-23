@@ -2,6 +2,8 @@
 #define READ_POSISIONS_OF_MULTIPLE_CELLS_HH
 
 #include "readPositionsBloodCells.h"
+#include <vector>
+#include "geometry.h"
 
 template<typename T>
 void getReadPositionsBloodCellsVector(Box3D realDomain,
@@ -169,6 +171,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
                 domain.y0 + relativeDisplacement.y, domain.y1 + relativeDisplacement.y,
                 domain.z0 + relativeDisplacement.z, domain.z1 + relativeDisplacement.z ) );
     }
+   
 
     std::vector<std::vector<Array<double,3> > > positions;
     std::vector<std::vector<plint> > cellIds;
@@ -180,6 +183,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     // Change positions to match dx (it is in um originally)
     double posRatio = 1e-6/dx;
     double wallWidth = 1.5; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
+    
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
         cout << "(ReadPositionsBloodCellField3D) " ;
@@ -198,13 +202,14 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         // DELETE CELLS THAT ARE NOT WHOLE
         plint nVertices=meshes[iCF]->getNumVertices();
         cout << "MPI rank: " << global::mpi().getRank();
-        plint cellsDeleted = deleteIncompleteCells(*(particleFields[iCF]), fluid, relativeDomains[iCF], nVertices);
+        plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells();
         std::vector<Particle3D<double,DESCRIPTOR>*> particles;
-        particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(),   particles);
+        particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(),   particles, iCF);
         cout    << ", number of cells (particles/nVertices) " << particles.size()*1.0/nVertices
         << " (deleted:" << cellsDeleted << ") for particleId:" << iCF << std::endl;
 //delete meshes[iCF];
     }
+   
 }
 
 
@@ -216,15 +221,15 @@ void ReadPositionsBloodCellField3D::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     modified[0] = modif::nothing; // Fluid field.
-    for (unsigned int iField = 0; iField < modified.size(); ++iField) {
-        modified[1+iField] = modif::dynamicVariables; // Particle fields.
+    for (unsigned int iField = 1; iField < modified.size(); ++iField) {
+        modified[iField] = modif::dynamicVariables; // Particle fields.
     }
 }
 
 void ReadPositionsBloodCellField3D::getModificationPattern(std::vector<bool>& isWritten) const {
     isWritten[0] = false; // Fluid field.
-    for (unsigned int iField = 0; iField < isWritten.size(); ++iField) {
-        isWritten[1+iField] = true; // Particle fields.
+    for (unsigned int iField = 1; iField < isWritten.size(); ++iField) {
+        isWritten[iField] = true; // Particle fields.
     }
 
 }
@@ -239,7 +244,7 @@ BlockDomain::DomainT ReadPositionsBloodCellField3D::appliesTo() const {
 void readPositionsBloodCellField3D(CellFields3D & cellFields, double dx, const char* positionsFileName) {
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
-    fluidAndParticleFieldsArg.push_back(cellFields[0]->getFluidField3D());
+    fluidAndParticleFieldsArg.push_back(&(cellFields.lattice));
 
     for (pluint icf = 0; icf < cellFields.size(); ++icf) {
         fluidAndParticleFieldsArg.push_back(cellFields[icf]->getParticleField3D());
@@ -247,7 +252,7 @@ void readPositionsBloodCellField3D(CellFields3D & cellFields, double dx, const c
 
     applyProcessingFunctional(
             new ReadPositionsBloodCellField3D(cellFields, dx, positionsFileName),
-            cellFields[0]->getFluidField3D()->getBoundingBox(), fluidAndParticleFieldsArg);
+            cellFields.lattice.getBoundingBox(), fluidAndParticleFieldsArg);
 
 }
 

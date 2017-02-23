@@ -1,3 +1,4 @@
+#if 0
 #ifndef FCN_CHECKPOINT_HH
 #define FCN_CHECKPOINT_HH
 #include "checkPoint.h"
@@ -93,3 +94,4 @@ void copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwriter & writer) {
 
 
 #endif // FCN_CHECKPOINT_HH
+#endif

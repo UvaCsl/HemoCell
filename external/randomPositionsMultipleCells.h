@@ -1,3 +1,4 @@
+#if 0
 #ifndef RANDOM_POSISIONS_OF_MULTIPLE_CELLS_H
 #define RANDOM_POSISIONS_OF_MULTIPLE_CELLS_H
 
@@ -44,4 +45,5 @@ private:
 
 
 #include "randomPositionsMultipleCells.hh"
+#endif
 #endif

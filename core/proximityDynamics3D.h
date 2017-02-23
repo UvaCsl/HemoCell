@@ -1,3 +1,4 @@
+#if 0
 #ifndef PROXIMITY_DYNAMICS_H
 #define PROXIMITY_DYNAMICS_H
 
@@ -144,4 +145,4 @@ void applySameCellFieldForces(HemoCellField & cellField, CellCellForce3D<T> & fo
 #include "proximityDynamics3D.hh"
 
 #endif  // PROXIMITY_DYNAMICS_H
-
+#endif

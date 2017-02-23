@@ -1,4 +1,3 @@
-#if 0
 #ifndef CELL_CELL_FORCES_3D_H
 #define CELL_CELL_FORCES_3D_H
 
@@ -260,5 +259,3 @@ private:
 
 
 #endif  // CELL_CELL_FORCES_3D_H
-
-#endif

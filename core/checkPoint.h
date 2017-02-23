@@ -1,3 +1,4 @@
+#if 0
 #ifndef FCN_CHECKPOINT_H
 #define FCN_CHECKPOINT_H
 #include "palabos3D.h"
@@ -42,3 +43,4 @@ private:
 
 #include "checkPoint.hh"
 #endif // FCN_CHECKPOINT_H
+#endif

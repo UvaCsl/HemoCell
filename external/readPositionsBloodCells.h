@@ -3,9 +3,9 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include <vector>
 #include "initializationCellField3D.h"
 #include "initializationCellField3D.hh"
-#include <vector>
 
 using namespace std;
 using namespace plb;

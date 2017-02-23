@@ -1,3 +1,4 @@
+#if 0 
 #ifndef PROXIMITY_DYNAMICS_HH
 #define PROXIMITY_DYNAMICS_HH
 
@@ -127,4 +128,4 @@ void ApplyProximityDynamics3D<T,Descriptor>::getTypeOfModification (
 
 
 #endif  // PROXIMITY_DYNAMICS_HH
-
+#endif

@@ -142,10 +142,6 @@ void CellFields3D::interpolateVelocityIBM() {
 void CellFields3D::applyConstitutiveModel() {
 }
 
-
-void CellFields3D::deleteIncompleteCells() {
-   // Do we need it?
-}
 #endif
 
 

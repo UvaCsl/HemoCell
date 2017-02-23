@@ -1,4 +1,3 @@
-#if 0
 #ifndef CELL_CELL_FORCES_3D_HH
 #define CELL_CELL_FORCES_3D_HH
 
@@ -433,4 +432,3 @@ T CellCellForce3D<T>::calculatePotential (T r, Array<T,3> & eij) {
 
 
 #endif  // CELL_CELL_FORCES_3D_HH
-#endif

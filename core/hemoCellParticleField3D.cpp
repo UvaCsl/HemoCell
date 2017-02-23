@@ -89,6 +89,7 @@ void HemoParticleDataTransfer3D<T,Descriptor>::receive (
             Particle3D<T,Descriptor>* newParticle =
                 meta::particleRegistration3D<T,Descriptor>().generate(unserializer);
             posInBuffer = unserializer.getCurrentPos();
+
             newParticle -> getPosition() += realAbsoluteOffset;
 
             particleField.addParticle(domain, newParticle);
@@ -173,12 +174,19 @@ void HemoParticleField3D<T,Descriptor>::swap(HemoParticleField3D<T,Descriptor>& 
 template<typename T, template<typename U> class Descriptor>
 void HemoParticleField3D<T,Descriptor>::addParticle(Box3D domain, Particle3D<T,Descriptor>* particle) {
     Box3D finalDomain;
-    Array<T,3> pos; 
-    pos = particle->getPosition();
+    SurfaceParticle3D * sparticle = dynamic_cast<SurfaceParticle3D*>(particle);
+    Array<T,3> pos = particle->getPosition();
+
+    //create entry in vector if it doesn't exists, saves us a goddamn functional
+    while (particles_per_type.size()<=sparticle->get_celltype()) {
+      particles_per_type.push_back(std::vector<Particle3D<T,Descriptor>*>());
+    }
+
     if( intersect(domain, this->getBoundingBox(), finalDomain) &&
         this->isContained(pos, finalDomain) )
     {
         particles.push_back(particle);
+        particles_per_type[sparticle->get_celltype()].push_back(particle);
     }
     else {
         delete particle;
@@ -238,6 +246,20 @@ void HemoParticleField3D<T,Descriptor>::findParticles (
         pos = particles[i]->getPosition();
         if (this->isContained(pos,domain)) {
             found.push_back(particles[i]);
+        }
+    }
+}
+template<typename T, template<typename U> class Descriptor>
+void HemoParticleField3D<T,Descriptor>::findParticles (
+        Box3D domain, std::vector<Particle3D<T,Descriptor> *>& found, pluint type) const
+{
+    found.clear();
+    PLB_ASSERT( contained(domain, this->getBoundingBox()) );
+    Array<T,3> pos; 
+    for (pluint i=0; i<particles_per_type[type].size(); ++i) {
+        pos = particles_per_type[type][i]->getPosition();
+        if (this->isContained(pos,domain)) {
+            found.push_back(particles_per_type[type][i]);
         }
     }
 }
@@ -376,6 +398,12 @@ template<typename T, template<typename U> class Descriptor>
 std::string HemoParticleField3D<T,Descriptor>::descriptorType() {
     return std::string(Descriptor<T>::name);
 }
+
+template<typename T, template<typename U> class Descriptor>
+int HemoParticleField3D<T,Descriptor>::deleteIncompleteCells() {
+  return 0;
+}
+
 
 
 #endif

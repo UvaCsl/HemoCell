@@ -48,11 +48,17 @@ public:
                                std::vector<Particle3D<T,Descriptor>*>& found);
     virtual void findParticles(Box3D domain,
                                std::vector<Particle3D<T,Descriptor> const*>& found) const;
+    void findParticles(Box3D domain,
+                               std::vector<Particle3D<T,Descriptor> *>& found,
+                               pluint type) const;
     virtual void velocityToParticleCoupling(Box3D domain, TensorField3D<T,3>& velocity, T scaling=0.);
     virtual void velocityToParticleCoupling(Box3D domain, NTensorField3D<T>& velocity, T scaling=0.);
     virtual void rhoBarJtoParticleCoupling(Box3D domain, NTensorField3D<T>& rhoBarJ, bool velIsJ, T scaling=0.);
     virtual void fluidToParticleCoupling(Box3D domain, BlockLattice3D<T,Descriptor>& lattice, T scaling=0.);
     virtual void advanceParticles(Box3D domain, T cutOffValue=-1.);
+
+    int deleteIncompleteCells();
+
 public:
     virtual HemoParticleDataTransfer3D<T,Descriptor>& getDataTransfer();
     virtual HemoParticleDataTransfer3D<T,Descriptor> const& getDataTransfer() const;
@@ -61,6 +67,7 @@ public:
     static std::string descriptorType();
 private:
     std::vector<Particle3D<T,Descriptor>*> particles;
+    std::vector<std::vector<Particle3D<T,Descriptor>*>> particles_per_type;
     HemoParticleDataTransfer3D<T,Descriptor> dataTransfer;
 };
 

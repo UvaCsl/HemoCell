@@ -350,10 +350,10 @@ int main(int argc, char *argv[]) {
 
     // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
 
-    FcnCheckpoint<T, DESCRIPTOR> checkpointer(documentXML);
+    //FcnCheckpoint<T, DESCRIPTOR> checkpointer(documentXML);
     cellFields.load(&documentXML, initIter);
 
-    if (not checkpointer.wasCheckpointed()) {
+    if (not cfg.checkpointed) {
         pcout << "(main) initializing particle positions from " << particlePosFile << "..." << std::endl;
 
         //orderedPositionMultipleCellField3D(cellFields);
@@ -366,7 +366,7 @@ int main(int argc, char *argv[]) {
     else {
     	pcout << "(main) particle positions read from checkpoint." << std::endl;
     }
-
+#if 0
     // ---------------------- Set integration scheme and time step amplification for cell fields ---------------
 
     //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
@@ -613,4 +613,5 @@ int main(int argc, char *argv[]) {
     simpleProfiler.writeIteration(tmax + 1);
 
     pcout << "(main) * simulation finished. :)" << std::endl;
+#endif
 }

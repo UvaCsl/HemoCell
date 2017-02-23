@@ -1,3 +1,4 @@
+#if 0
 #ifndef ORDERED_POSISIONS_OF_MULTIPLE_CELLS_H
 #define ORDERED_POSISIONS_OF_MULTIPLE_CELLS_H
 #include "palabos3D.h"
@@ -43,5 +44,5 @@ private:
 
 #include "orderedPositionsMultipleCells.hh"
 #endif // ORDERED_POSISIONS_OF_MULTIPLE_CELLS_H
-
+#endif
 

@@ -193,7 +193,7 @@ private:
     std::vector<HemoCellField* > & cellFields;
 };
 
-
+/*
 template<typename T, template<typename U> class Descriptor>
 class OrderedPositionCellField3D : public BoxProcessingFunctional3D
 {
@@ -202,7 +202,7 @@ public:
                 cellFields(cellFields_), latticeSize(latticeSize_) { }
     /// Arguments: [0] Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
-    virtual OrderedPositionHemoCellField* clone() const;
+    virtual OrderedPositionCellField3D<T, Descriptor>* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
     void getModificationPattern(std::vector<bool>& isWritten) const;
     virtual BlockDomain::DomainT appliesTo() const;
@@ -210,7 +210,7 @@ private:
     std::vector<HemoCellField* > & cellFields;
     Dot3D latticeSize;
 };
-
+*/
 
 
 template<typename T, template<typename U> class Descriptor>

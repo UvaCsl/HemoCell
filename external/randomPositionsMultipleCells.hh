@@ -1,3 +1,4 @@
+#if 0
 #ifndef RANDOM_POSISIONS_OF_MULTIPLE_CELLS_HH
 #define RANDOM_POSISIONS_OF_MULTIPLE_CELLS_HH
 
@@ -249,4 +250,5 @@ void randomPositionMultipleCellField3D(std::vector<HemoCellField *> &cellFields,
     global::timer("CellInit").stop();
 }
 
+#endif
 #endif

@@ -1,3 +1,4 @@
+#if 0
 #ifndef CELL_STRETCHING_3D_H
 #define CELL_STRETCHING_3D_H
 
@@ -157,3 +158,4 @@ private:
 #include "cellStretching3D.hh"
 #endif  // CELL_STRETCHING_3D_H
 
+#endif

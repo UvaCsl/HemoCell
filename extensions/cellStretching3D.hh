@@ -1,3 +1,4 @@
+#if 0
 #ifndef CELL_STRETCHING_3D_HH
 #define CELL_STRETCHING_3D_HH
 
@@ -119,3 +120,4 @@ void ApplyForce3D<T,Descriptor>::getTypeOfModification (
 
 #endif  // CELL_STRETCHING_FORCES_3D_HG
 
+#endif

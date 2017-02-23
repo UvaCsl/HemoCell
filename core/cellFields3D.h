@@ -47,7 +47,6 @@ public:
     virtual void spreadForceIBM();
     virtual void interpolateVelocityIBM();
     virtual void applyConstitutiveModel();
-    virtual void deleteIncompleteCells();
 
     void addCellType(TriangularSurfaceMesh<double> * meshElement, double hematocrit, ShellModel3D<double> * cellmodel, std::string name_);
 	  void setParticleUpdateScheme (double _cellTimeStep=1.0); //For decoupled update schemes 
@@ -65,8 +64,6 @@ public:
     unsigned int size();
 
     HemoCellField * operator[](unsigned int index);
-    //to be used with the old (only) initialization. really ugly pass through code TODO: FIX
-   // vector <CellField3D<double, DESCRIPTOR>> getLegacyCellFieldsVector();
 
     void setFluidExternalForce(double poiseuilleForce) {}
 
@@ -96,6 +93,7 @@ class HemoCellField{
   Box3D getBoundingBox() { return cellFields.immersedParticles->getBoundingBox(); }
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg() { return cellFields.immersedParticles; }
   std::map<plint, Cell3D<double,DESCRIPTOR>* > getCellIdToCell3D() { std::map<plint,Cell3D<double,DESCRIPTOR>* > tmp; return tmp ;}
+  void synchronizeSyncRequirements(SyncRequirements _dummy) {}
   
 
 

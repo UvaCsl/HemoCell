@@ -77,6 +77,7 @@ void SurfaceParticle3D::serialize(HierarchicSerializer& serializer) const
     serializer.addValue<int>(rank);
     serializer.addValue<plint>(cellId);
     serializer.addValue<plint>(vertexId);
+    serializer.addValue<pluint>(celltype);
 }
 
 void SurfaceParticle3D::unserialize(HierarchicUnserializer& unserializer)
@@ -89,6 +90,7 @@ void SurfaceParticle3D::unserialize(HierarchicUnserializer& unserializer)
     unserializer.readValue<int>(rank);
     unserializer.readValue<plint>(cellId);
     unserializer.readValue<plint>(vertexId);
+    unserializer.readValue<pluint>(celltype);
 }
 
 
@@ -97,5 +99,7 @@ SurfaceParticle3D* SurfaceParticle3D::clone() const {
 }
 
 }  // namespace plb
+
+int SurfaceParticle3D::id = meta::registerGenericParticle3D<double,DESCRIPTOR,SurfaceParticle3D>("SurfaceParticle3D");
 
 #endif  // SURFACE_PARTICLE_3D_HH

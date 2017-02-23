@@ -11,6 +11,7 @@ namespace plb {
 
 class SurfaceParticle3D : public Particle3D<double,DESCRIPTOR> {
 public:
+    SurfaceParticle3D(){}
     SurfaceParticle3D(Array<double,3> const& position, plint cellId_ = -1, plint vertexId_ = 0, pluint celltype_=0);
     SurfaceParticle3D* clone() const override;
 
@@ -27,8 +28,10 @@ public:
     void reset(Array<double,3> const& position, Array<double,3> const& velocity_);
     void reset(Array<double,3> const& position) override;
     void resetForces();
+
+    static int id;
     
-    int getId() const {return 0;}
+    int getId() const {return id;}
 
     Array<double,3> const& get_v() const { return v; }
     Array<double,3> const& getVelocity() const { return get_v(); }
@@ -36,6 +39,7 @@ public:
     Array<double,3> const& get_vPrevious() const { return vPrevious; }
     Array<double,3> const& get_force() const { return force; }
     plint const& get_cellId() const { return cellId; }
+    pluint const& get_celltype() const { return celltype; }
     plint const& getVertexId() const { return vertexId; }
     // Difference between getVelocity and get_v:
     // get_v holds the actual interpolated velocity, while

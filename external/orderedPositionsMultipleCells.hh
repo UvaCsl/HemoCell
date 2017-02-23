@@ -1,3 +1,4 @@
+#if 0
 #ifndef ORDERED_POSISIONS_OF_MULTIPLE_CELLS_HH
 #define ORDERED_POSISIONS_OF_MULTIPLE_CELLS_HH
 #include "orderedPositionsMultipleCells.h"
@@ -276,3 +277,4 @@ void orderedPositionMultipleCellField3D(std::vector<HemoCellField* > & cellField
 #endif // ORDERED_POSISIONS_OF_MULTIPLE_CELLS_HH
 
 
+#endif
