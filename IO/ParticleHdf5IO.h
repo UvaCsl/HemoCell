@@ -1,8 +1,7 @@
-/*#ifndef FICSION_PARTICLE_HDF5IO_H
+#ifndef FICSION_PARTICLE_HDF5IO_H
 #define FICSION_PARTICLE_HDF5IO_H
 
 #include <limits>
-// #include "ficsion.h"
 #include "palabos3D.h"
 #include "surfaceParticle3D.h"
 #include "cellField3D.h"
@@ -16,7 +15,7 @@
 using namespace plb;
 using namespace std;
 
-void writeCellField3D_HDF5(HemoCellField& cellField3D, double dx, double dt, plint iter, std::string preString="");
+void writeCellField3D_HDF5(CellFields3D& cellFields, double dx, double dt, plint iter, std::string preString="");
 
 
 class WriteCellField3DInMultipleHDF5Files : public BoxProcessingFunctional3D
@@ -44,4 +43,4 @@ private:
 
 #include "ParticleHdf5IO.cpp"
 #endif  // FICSION_PARTICLE_HDF5IO_H
-*/
+

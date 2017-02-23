@@ -78,7 +78,9 @@ public:
 /*contains information about one particular cellfield, structlike*/
 class HemoCellField{
   public:
-  HemoCellField(CellFields3D& cellFields_):cellFields(cellFields_){};
+  HemoCellField(CellFields3D& cellFields_, Cell3D<double,DESCRIPTOR> cell3D_)
+      :cellFields(cellFields_),
+       cell3D(cell3D_) {};
   double getVolumeFraction() { return hematocrit;}
   double hematocrit;
   ShellModel3D<double> * model;
@@ -86,6 +88,7 @@ class HemoCellField{
   TriangularSurfaceMesh<double> * meshElement;
   std::string name;
   CellFields3D & cellFields;
+  Cell3D<double,DESCRIPTOR> & cell3D;
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D() {return cellFields.immersedParticles;}
   MultiBlockLattice3D<double,DESCRIPTOR> * getFluidField3D() {return &(cellFields.lattice);}
   int getNumberOfCells_Global() {return 0;}
@@ -94,8 +97,5 @@ class HemoCellField{
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg() { return cellFields.immersedParticles; }
   std::map<plint, Cell3D<double,DESCRIPTOR>* > getCellIdToCell3D() { std::map<plint,Cell3D<double,DESCRIPTOR>* > tmp; return tmp ;}
   void synchronizeSyncRequirements(SyncRequirements _dummy) {}
-  
-
-
 };
 #endif

@@ -24,7 +24,7 @@ CellFields3D::CellFields3D( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, 
 
 void CellFields3D::addCellType(TriangularSurfaceMesh<double> * meshElement, double hematocrit, ShellModel3D<double> *cellmodel, std::string name_)
 {
-  HemoCellField * cf = new HemoCellField(*this);
+  HemoCellField * cf = new HemoCellField(*this, Cell3D<double,DESCRIPTOR>(*meshElement));
   cf->hematocrit = hematocrit;
   cf->meshElement = meshElement;
   cf->name = name_;

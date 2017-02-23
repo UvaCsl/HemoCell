@@ -49,17 +49,6 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
          if (cellPosition[2] > Nz) { correctPBPosition[itrtr->first][2] = -int(cellPosition[2]/Nz)*Nz;}
          if (cellPosition[2] <  0) { correctPBPosition[itrtr->first][2] =  int(cellPosition[2]/Nz)*Nz;}
 
-//         std::cout << MPI::COMM_WORLD.Get_rank() << " Cell Volume " << cell3d->getVolume()
-//                         << " surface " << cell3d->getSurface()
-//                         << " CCR_ANGLE_MEAN " << cell3d->getMeanAngle()
-//                         << " getMeanEdgeLength " << cell3d->getMeanEdgeLength()
-//                         << " getEnergy " << cell3d->getEnergy()
-//                         << " CCR_FORCE (" << cell3d->getForce()[0]
-//                         << ", " << cell3d->getForce()[1]
-//                         << ", " << cell3d->getForce()[2] << ") "
-//                 << std::endl;
-
-
          std::vector<plint> const& cellVertices = cell3d->getVertices();
          std::vector<plint> const& cellTriangles = cell3d->getTriangles();
          for (std::vector<plint>::const_iterator iVP = cellVertices.begin(); iVP != cellVertices.end(); ++iVP)
@@ -150,25 +139,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
             H5Sclose(sid);
 #endif
          }
-         // TODO: This part is commented out, since it causes some MPI problems!
-         /*  Take care of Vertex Normals */
-         /*
-         plint itr=0;
-         for (plint iP = 0; iP < Np; ++iP) {
-            icParticle = particles[iP];
-
-            //TODO: This fails when a particle moves to an other core!
-            Cell3D<T,Descriptor> * cell3d = cellIdToCell3D[icParticle->get_cellId()];
-            vector = cell3d->computeVertexNormal(icParticle->getVertexId());
-
-            // TODO: Change in XDMF file.
-            matrixTensor[itr++] = vector[0];
-            matrixTensor[itr++] = vector[1];
-            matrixTensor[itr++] = vector[2];
-         }
-         H5LTmake_dataset_float(file_id, "normal", 2, dimVertices, matrixTensor);
-        */
-
+         
          delete [] matrixTensor;
 
          /*  Take care of Scalars    */
@@ -217,13 +188,14 @@ BlockDomain::DomainT WriteCellField3DInMultipleHDF5Files::appliesTo () const {
 
 
 
-void writeCellField3D_HDF5(HemoCellField& cellField3D, double dx, double dt, plint iter, std::string preString)
+void writeCellField3D_HDF5(CellFields3D& cellFields, double dx, double dt, plint iter, std::string preString)
 {
-	std::string identifier = preString + cellField3D.getIdentifier();
-    applyProcessingFunctional ( // compute force applied on the fluid by the particles
-            (BoxProcessingFunctional3D*)new WriteCellField3DInMultipleHDF5Files(cellField3D, iter, identifier, dx, dt),
-            cellField3D.getBoundingBox(), cellField3D.getParticleArg() );
-
+    for (int i = 0; i < cellFields.size(); i++) {
+	std::string identifier = preString + cellFields[i].getIdentifier();
+        BoxProcessingFunctional3D* bprf = new WriteCellField3DInMultipleHDF5Files(cellFields[i], iter, identifier, dx, dt);
+        applyProcessingFunctional (bprf,cellFields.getBoundingBox(), cellFields[i].getParticleArg() );
+        delete bprf;
+    }
 }
 
 

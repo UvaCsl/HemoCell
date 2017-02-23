@@ -366,6 +366,8 @@ int main(int argc, char *argv[]) {
     else {
     	pcout << "(main) particle positions read from checkpoint." << std::endl;
     }
+    
+    writeCellField3D_HDF5(cellFields,dx,dt,initIter);
 #if 0
     // ---------------------- Set integration scheme and time step amplification for cell fields ---------------
 
