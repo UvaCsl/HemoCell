@@ -22,37 +22,34 @@ void WriteParticleField3DInMultipleHDF5Files<T,Descriptor>::processGenericBlocks
 
     int p = global::mpi().getSize();
     int id = global::mpi().getRank();
-    plint Nx = particleField.getNx();
-    plint Ny = particleField.getNy();
-    plint Nz = particleField.getNz();
 
     std::vector<Particle3D<T,Descriptor>*> particles;
-    particleField.findParticles(domain, particles);
-//    particleField.findParticles(particleField.getBoundingBox(), particles);
+    particleField.findParticles(domain, particles); //TODO const time size 
     plint Np=particles.size();
 
-     /************************************************************/
-    /**            Initialise HDF5 file                        **/
+   /************************************************************/
+   /**            Initialise HDF5 file                        **/
    /************************************************************/
 
-     std::string fileName = global::directories().getOutputDir() + "/hdf5/" + createFileName((identifier+".").c_str(),iter,8) + createFileName(".p.",id,3) + ".h5";
-     hid_t file_id;
-     file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-     
-     hsize_t dimVertices[2]; 
-     dimVertices[0] = Np; dimVertices[1] = 3;
+    std::string fileName = global::directories().getOutputDir() + "/hdf5/" + createFileName((identifier+".").c_str(),iter,8) + createFileName(".p.",id,3) + ".h5";
+    hid_t file_id;
+    file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
+    H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
+    long int iterHDF5=iter;
+    H5LTset_attribute_long (file_id, "/", "iteration", &iterHDF5, 1);
+    H5LTset_attribute_int (file_id, "/", "numberOfProcessors", &p, 1);
+    H5LTset_attribute_int (file_id, "/", "processorId", &id, 1);
+    H5LTset_attribute_long (file_id, "/", "numberOfParticles", &Np, 1); 
+    
+    hsize_t dimVertices[2]; 
+    dimVertices[0] = Np; 
+    dimVertices[1] = 3;
 
      hsize_t chunk[2];  
-     chunk[0] = (Np/p) > 1 ? (Np/p) : 1; chunk[1] = 3;
+     chunk[0] = 1000; chunk[1] = 3;
 
-     H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
-     H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
-     long int iterHDF5=iter;
-     H5LTset_attribute_long (file_id, "/", "iteration", &iterHDF5, 1);
-     H5LTset_attribute_int (file_id, "/", "numberOfProcessors", &p, 1);
-     H5LTset_attribute_int (file_id, "/", "processorId", &id, 1);
-
-     H5LTset_attribute_long (file_id, "/", "numberOfParticles", &Np, 1);
+   
 
      /************************************************************/
     /**            Write output to HDF5 file                   **/

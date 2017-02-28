@@ -68,3 +68,9 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
 #define HEMOCELL_PARTICLE_FIELD HemoParticleField3D<double, DESCRIPTOR>
 #endif
 
+
+/*
+ * Defines for desired output per celltype, can save space/time etc. etc.
+ */
+#define OUTPUT_POSITION 1
+#define OUTPUT_FORCE 2

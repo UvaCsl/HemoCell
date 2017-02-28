@@ -20,14 +20,22 @@ CellFields3D::CellFields3D( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, 
             particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
   immersedParticles->periodicity().toggleAll(true);
   immersedParticles->toggleInternalStatistics(false);
+  std::vector<plint> const& blocks = immersedParticles->getLocalInfo().getBlocks();
+  for (pluint iBlock=0; iBlock<blocks.size(); ++iBlock) {
+    SmartBulk3D bulk(immersedParticles->getMultiBlockManagement(),blocks[iBlock]);
+    Box3D blk = bulk.getBulk();
+    immersedParticles->getComponent(blocks[iBlock]).setlocalDomain(blk);
+    immersedParticles->getComponent(blocks[iBlock]).cellFields = this;
+  }
+
 }
 
-void CellFields3D::addCellType(TriangularSurfaceMesh<double> * meshElement, double hematocrit, ShellModel3D<double> *cellmodel, std::string name_)
+void CellFields3D::addCellType(TriangularSurfaceMesh<double> & meshElement, double hematocrit, ShellModel3D<double> *cellmodel, std::string name_)
 {
-  HemoCellField * cf = new HemoCellField(*this, Cell3D<double,DESCRIPTOR>(*meshElement));
+  HemoCellField * cf = new HemoCellField(*this, Cell3D<double,DESCRIPTOR>(meshElement), meshElement);
   cf->hematocrit = hematocrit;
-  cf->meshElement = meshElement;
   cf->name = name_;
+  cf->ctype = cellFields.size();
   cellFields.push_back(*cf);
 }
 

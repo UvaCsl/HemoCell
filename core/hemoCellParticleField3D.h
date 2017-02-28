@@ -5,6 +5,7 @@
 #include "atomicBlock/atomicBlock3D.h"
 #include "atomicBlock/dataField3D.h"
 #include "particles/particle3D.h"
+#include "cellFields3D.h"
 
 template<typename T, template<typename U> class Descriptor> class HemoParticleField3D;
 
@@ -43,7 +44,7 @@ public:
 public:
     virtual void addParticle(Box3D domain, Particle3D<T,Descriptor>* particle);
     virtual void removeParticles(Box3D domain);
-    virtual void removeParticles(Box3D domain, plint tag);
+    virtual void removeParticles(Box3D domain,plint tag);
     virtual void findParticles(Box3D domain,
                                std::vector<Particle3D<T,Descriptor>*>& found);
     virtual void findParticles(Box3D domain,
@@ -59,16 +60,31 @@ public:
 
     int deleteIncompleteCells();
 
+    void setlocalDomain(Box3D & localDomain_) {localDomain = localDomain_;}
+
+    //Ugly output functions:
+    void outputPositions(Box3D,vector<vector<double>>&, int, std::string&); 
+    void outputForces   (Box3D,vector<vector<double>>&, int, std::string&);
+    void AddOutputMap();
+    map<int,void (HemoParticleField3D<T,Descriptor>::*)(Box3D,vector<vector<double>>&,int,std::string&)> outputFunctionMap;
+    void passthroughpass(int,Box3D,vector<vector<double>>&,int,std::string&);
+
 public:
     virtual HemoParticleDataTransfer3D<T,Descriptor>& getDataTransfer();
     virtual HemoParticleDataTransfer3D<T,Descriptor> const& getDataTransfer() const;
     static std::string getBlockName();
     static std::string basicType();
     static std::string descriptorType();
+    CellFields3D* cellFields;
 private:
     std::vector<Particle3D<T,Descriptor>*> particles;
     std::vector<std::vector<Particle3D<T,Descriptor>*>> particles_per_type;
+    std::map<int,std::vector<SurfaceParticle3D*>> particles_per_cell;
+    std::map<int,bool> lpc;
+    void insert_ppc(SurfaceParticle3D* particle);
     HemoParticleDataTransfer3D<T,Descriptor> dataTransfer;
+    Box3D & localDomain;
+
 };
 
 #endif

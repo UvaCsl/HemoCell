@@ -1,6 +1,7 @@
 #ifndef CELLFIELDS3D_H
 #define CELLFIELDS3D_H
 
+class CellFields3D;
 #include "palabos3D.h"
 #include "constant_defaults.h"
 #include "palabos3D.hh"
@@ -48,7 +49,7 @@ public:
     virtual void interpolateVelocityIBM();
     virtual void applyConstitutiveModel();
 
-    void addCellType(TriangularSurfaceMesh<double> * meshElement, double hematocrit, ShellModel3D<double> * cellmodel, std::string name_);
+    void addCellType(TriangularSurfaceMesh<double> & meshElement, double hematocrit, ShellModel3D<double> * cellmodel, std::string name_);
 	  void setParticleUpdateScheme (double _cellTimeStep=1.0); //For decoupled update schemes 
 
     void readPositionsCellFields(std::string particlePosFile);
@@ -77,18 +78,22 @@ public:
 
 /*contains information about one particular cellfield, structlike*/
 class HemoCellField{
+  static vector<int> default_output;
   public:
-  HemoCellField(CellFields3D& cellFields_, Cell3D<double,DESCRIPTOR> cell3D_)
-      :cellFields(cellFields_),
-       cell3D(cell3D_) {};
+  HemoCellField(CellFields3D& cellFields_, Cell3D<double,DESCRIPTOR> cell3D_, TriangularSurfaceMesh<double>& meshElement_)
+      :cellFields(cellFields_), desiredOutputVariables(default_output),
+       cell3D(cell3D_), meshElement(meshElement_) {numVertex = meshElement.getNumVertices();};
   double getVolumeFraction() { return hematocrit;}
   double hematocrit;
   ShellModel3D<double> * model;
-  TriangularSurfaceMesh<double> & getMesh() { return *meshElement;}
-  TriangularSurfaceMesh<double> * meshElement;
+  TriangularSurfaceMesh<double> & getMesh() { return meshElement;}
   std::string name;
+  int ctype;
+  int numVertex;
   CellFields3D & cellFields;
+  vector<int> & desiredOutputVariables;
   Cell3D<double,DESCRIPTOR> & cell3D;
+  TriangularSurfaceMesh<double> & meshElement;
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D() {return cellFields.immersedParticles;}
   MultiBlockLattice3D<double,DESCRIPTOR> * getFluidField3D() {return &(cellFields.lattice);}
   int getNumberOfCells_Global() {return 0;}
@@ -97,5 +102,10 @@ class HemoCellField{
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg() { return cellFields.immersedParticles; }
   std::map<plint, Cell3D<double,DESCRIPTOR>* > getCellIdToCell3D() { std::map<plint,Cell3D<double,DESCRIPTOR>* > tmp; return tmp ;}
   void synchronizeSyncRequirements(SyncRequirements _dummy) {}
+  void setOutputVariables(const vector<int> & outputs) { desiredOutputVariables = outputs;}
+
+
 };
+
+vector<int> HemoCellField::default_output ({OUTPUT_POSITION});
 #endif

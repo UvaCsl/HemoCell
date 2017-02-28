@@ -125,12 +125,16 @@ void HemoParticleDataTransfer3D<T,Descriptor>::attribute (
 
 
 /* *************** class HemoParticleField3D ********************** */
+template<typename T, template<typename U> class Descriptor>
+void HemoParticleField3D<T,Descriptor>::AddOutputMap() {
+  outputFunctionMap[OUTPUT_POSITION] = &HemoParticleField3D<double,Descriptor>::outputPositions;
+  //outputFunctionMap[OUTPUT_FORCE] = outputForces;
+}
 
 template<typename T, template<typename U> class Descriptor>
 HemoParticleField3D<T,Descriptor>::HemoParticleField3D(plint nx, plint ny, plint nz)
-    : ParticleField3D<T,Descriptor>(nx,ny,nz),
-      dataTransfer(*this)
-{ }
+    : ParticleField3D<T,Descriptor>(nx,ny,nz), dataTransfer(*this), localDomain(*new Box3D())
+{ AddOutputMap(); }
 
 template<typename T, template<typename U> class Descriptor>
 HemoParticleField3D<T,Descriptor>::~HemoParticleField3D()
@@ -143,11 +147,12 @@ HemoParticleField3D<T,Descriptor>::~HemoParticleField3D()
 template<typename T, template<typename U> class Descriptor>
 HemoParticleField3D<T,Descriptor>::HemoParticleField3D(HemoParticleField3D const& rhs)
     : ParticleField3D<T,Descriptor>(rhs),
-      dataTransfer(*this)
+      dataTransfer(*this), localDomain(*new Box3D())
 {
     for (pluint i=0; i<rhs.particles.size(); ++i) {
         particles.push_back(rhs.particles[i]->clone());
     }
+    AddOutputMap();
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -177,7 +182,6 @@ void HemoParticleField3D<T,Descriptor>::addParticle(Box3D domain, Particle3D<T,D
     SurfaceParticle3D * sparticle = dynamic_cast<SurfaceParticle3D*>(particle);
     Array<T,3> pos = particle->getPosition();
 
-    //create entry in vector if it doesn't exists, saves us a goddamn functional
     while (particles_per_type.size()<=sparticle->get_celltype()) {
       particles_per_type.push_back(std::vector<Particle3D<T,Descriptor>*>());
     }
@@ -186,7 +190,11 @@ void HemoParticleField3D<T,Descriptor>::addParticle(Box3D domain, Particle3D<T,D
         this->isContained(pos, finalDomain) )
     {
         particles.push_back(particle);
-        particles_per_type[sparticle->get_celltype()].push_back(particle);
+        if (this->isContained(pos,localDomain)) {
+          particles_per_type[sparticle->get_celltype()].push_back(particle);
+          lpc[sparticle->get_cellId()] = true;
+        }
+        insert_ppc(sparticle);
     }
     else {
         delete particle;
@@ -194,45 +202,47 @@ void HemoParticleField3D<T,Descriptor>::addParticle(Box3D domain, Particle3D<T,D
 }
 
 template<typename T, template<typename U> class Descriptor>
+void HemoParticleField3D<T,Descriptor>::insert_ppc(SurfaceParticle3D* sparticle) {
+  if (particles_per_cell.find(sparticle->get_cellId()) == particles_per_cell.end()) {
+    particles_per_cell[sparticle->get_cellId()].resize((*cellFields)[sparticle->get_celltype()]->numVertex);
+  }
+  particles_per_cell[sparticle->get_cellId()][sparticle->getVertexId()] = sparticle;
+
+}
+
+template<typename T, template<typename U> class Descriptor>
+void HemoParticleField3D<T,Descriptor>::removeParticles(Box3D domain,plint tag) {
+}
+template<typename T, template<typename U> class Descriptor>
 void HemoParticleField3D<T,Descriptor>::removeParticles(Box3D domain) {
     std::vector<Particle3D<T,Descriptor>*> remainingParticles;
+    SurfaceParticle3D * sparticle;
     Box3D finalDomain;
     Array<T,3> pos; 
     if( intersect(domain, this->getBoundingBox(), finalDomain) )
     {
-        for (pluint i=0; i<particles.size(); ++i) {
-            pos = particles[i]->getPosition();
-            if (this->isContained(pos,finalDomain)) {
-                delete particles[i];
-            }
-            else {
-                remainingParticles.push_back(particles[i]);
-            }
-        }
-    }
-    remainingParticles.swap(particles);
-}
-
-template<typename T, template<typename U> class Descriptor>
-void HemoParticleField3D<T,Descriptor>::removeParticles(Box3D domain, plint tag) {
-    std::vector<Particle3D<T,Descriptor>*> remainingParticles;
-    Box3D finalDomain;
-    if( intersect(domain, this->getBoundingBox(), finalDomain) )
-    {
-        Array<T,3> pos; 
-        for (pluint i=0; i<particles.size(); ++i) {
-            pos = particles[i]->getPosition();
-            if (this->isContained(pos,finalDomain) &&
-                particles[i]->getTag() == tag )
-            {
-                delete particles[i];
-            }
-            else {
-                remainingParticles.push_back(particles[i]);
-            }
-        }
-    }
-    remainingParticles.swap(particles);
+      for (pluint i=0; i < particles_per_type.size(); i++) {
+        particles_per_type[i].clear();
+      }
+      particles_per_cell.clear();
+      lpc.clear();
+      for (pluint i=0; i<particles.size(); ++i) {
+         pos = particles[i]->getPosition();
+         if (this->isContained(pos,finalDomain)) {
+              delete particles[i];
+         }
+         else {
+             remainingParticles.push_back(particles[i]);
+             sparticle = dynamic_cast<SurfaceParticle3D*>(particles[i]);
+             if(this->isContained(pos,localDomain)) {
+               particles_per_type[sparticle->get_celltype()].push_back(particles[i]);
+               lpc[sparticle->get_cellId()] = true;
+             }
+             insert_ppc(sparticle);
+         }
+      }
+     remainingParticles.swap(particles);
+   }
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -253,6 +263,7 @@ template<typename T, template<typename U> class Descriptor>
 void HemoParticleField3D<T,Descriptor>::findParticles (
         Box3D domain, std::vector<Particle3D<T,Descriptor> *>& found, pluint type) const
 {
+    
     found.clear();
     PLB_ASSERT( contained(domain, this->getBoundingBox()) );
     Array<T,3> pos; 
@@ -262,6 +273,7 @@ void HemoParticleField3D<T,Descriptor>::findParticles (
             found.push_back(particles_per_type[type][i]);
         }
     }
+    
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -402,6 +414,28 @@ std::string HemoParticleField3D<T,Descriptor>::descriptorType() {
 template<typename T, template<typename U> class Descriptor>
 int HemoParticleField3D<T,Descriptor>::deleteIncompleteCells() {
   return 0;
+}
+
+template<typename T, template<typename U> class Descriptor>
+void HemoParticleField3D<T,Descriptor>::outputPositions(Box3D domain,vector<vector<double>>& output, int ctype, std::string & name) {
+  name = "Position";
+  output.clear();
+  vector<Particle3D<T,Descriptor>*> particles;
+  this->findParticles(domain,particles,ctype);
+  for (pluint i = 0; i < particles.size(); i++) {
+    vector<double> pbv;
+    pbv.push_back(particles[i]->getPosition()[0]);
+    pbv.push_back(particles[i]->getPosition()[1]);
+    pbv.push_back(particles[i]->getPosition()[2]);
+    output.push_back(pbv); //LOL stupid c++
+  }
+}
+
+template<typename T, template<typename U> class Descriptor>
+void HemoParticleField3D<T,Descriptor>::passthroughpass(int type, Box3D domain, vector<vector<double>>& output, int ctype, std::string & name) {
+  //Too Much c++ will give you cancer like this function
+  void (HemoParticleField3D<T,Descriptor>::*cancerpointer)(Box3D,vector<vector<double>>&, int, std::string&) = outputFunctionMap[type];
+  (this->*cancerpointer)(domain,output,ctype,name);
 }
 
 

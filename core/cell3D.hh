@@ -211,7 +211,7 @@ template<typename T, template<typename U> class Descriptor>
 Cell3D<T, Descriptor>::Cell3D(Cell3D<T,Descriptor> const& rhs) :
     CellQuantityHolder<T>(rhs), mesh(rhs.mesh), cellId(rhs.cellId) {
     setMesh();
-    for (plint i = 0; i < allReductions.size(); i++) {
+    for (pluint i = 0; i < allReductions.size(); i++) {
         plint d = getReductionDimension(allReductions[i]);
         if (d == 1) {
             this->quantities1D[allReductions[i]] = *(new T()); 

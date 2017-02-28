@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
     // ------------------------ Variable declarations here -----------------------------------------
 
     bool checkpointed = 0;
-    bool isAdaptive = false;
+    //bool isAdaptive = false;
     plint maxInnerIterSize = 1;
     plint minInnerIterSize = 1;
     const plint probeMaterialForceMinPeriod = 10;
@@ -196,7 +196,7 @@ int main(int argc, char *argv[]) {
     
     // ---------------------------- Check if an adaptive run is requested ---------------------------------
     if (cellStep < 1){
-        isAdaptive = true;
+        //isAdaptive = true;
         maxInnerIterSize = abs(cellStep);        
         cfg["domain"]["minForce"].read(minForce);
         cfg["domain"]["maxForce"].read(maxForce);
@@ -328,7 +328,7 @@ int main(int argc, char *argv[]) {
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
     cellModels.push_back(
              ShapeMemoryModel3D::RBCShapeMemoryModel3D(&cfg, dx, dt, dm, meshElement));
-    cellFields.addCellType(&meshElement, hematocrit, cellModels[0], "RBC");
+    cellFields.addCellType(meshElement, hematocrit, cellModels[0], "RBC");
 
     
     // ----------------------- Init platelets ----------------------------
@@ -344,7 +344,7 @@ int main(int argc, char *argv[]) {
     eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
     cellModels.push_back(
             ShapeMemoryModel3D::PlateletShapeMemoryModel3D(&cfg, dx, dt, dm, pltMeshElement));
-    cellFields.addCellType(&pltMeshElement, 0.0025 * hematocrit,
+    cellFields.addCellType(pltMeshElement, 0.0025 * hematocrit,
                                                         cellModels[cellModels.size() - 1], "PLT");
 
 
@@ -366,7 +366,6 @@ int main(int argc, char *argv[]) {
     else {
     	pcout << "(main) particle positions read from checkpoint." << std::endl;
     }
-    
     writeCellField3D_HDF5(cellFields,dx,dt,initIter);
 #if 0
     // ---------------------- Set integration scheme and time step amplification for cell fields ---------------

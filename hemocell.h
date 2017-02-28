@@ -49,7 +49,7 @@ using namespace std;
 
 /* IO */ //IO is FUBAR
 //#include "hdf5IO.h"
-//#include "ParticleHdf5IO.h"
+#include "ParticleHdf5IO.h"
 //#include "CellHdf5IO.h"
 //#include "ParticleField3DHdf5IO.h"
 //#include "config.h"

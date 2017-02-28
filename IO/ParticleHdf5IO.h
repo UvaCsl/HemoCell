@@ -24,8 +24,9 @@ public:
     WriteCellField3DInMultipleHDF5Files (
             HemoCellField & cellField3D_,
             plint iter_, std::string identifier_,
-            double dx_, double dt_);
+            double dx_, double dt_, int i);
     /// Arguments: [0] Particle-field. [1] Lattice.
+    ~WriteCellField3DInMultipleHDF5Files(){}; //Fuck C c++
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual WriteCellField3DInMultipleHDF5Files* clone() const;
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
@@ -36,6 +37,7 @@ private:
     std::string identifier;
     double dx;
     double dt;
+    int ctype;
 };
 
 
