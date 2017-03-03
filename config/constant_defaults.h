@@ -74,3 +74,4 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
  */
 #define OUTPUT_POSITION 1
 #define OUTPUT_FORCE 2
+#define OUTPUT_TRIANGLES 3

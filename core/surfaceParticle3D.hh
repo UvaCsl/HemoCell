@@ -12,7 +12,7 @@ namespace plb {
 
 
 SurfaceParticle3D::SurfaceParticle3D (Array<double,3> const& position, plint cellId_, plint vertexId_,pluint celltype_)
-    : Particle3D<double,DESCRIPTOR>(cellId_, position), // The cellId initializor does nothing
+    : Particle3D<double,DESCRIPTOR>(-1, position), // The cellId initializor does nothing
       pbcPosition(position),
       v(),
       force(),

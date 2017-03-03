@@ -202,7 +202,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         // DELETE CELLS THAT ARE NOT WHOLE
         plint nVertices=meshes[iCF]->getNumVertices();
         cout << "MPI rank: " << global::mpi().getRank();
-        plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells();
+        plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells(iCF);
         std::vector<Particle3D<double,DESCRIPTOR>*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(),   particles, iCF);
         cout    << ", number of cells (particles/nVertices) " << particles.size()*1.0/nVertices

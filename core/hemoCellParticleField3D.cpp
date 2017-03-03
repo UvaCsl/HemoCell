@@ -210,9 +210,40 @@ void HemoParticleField3D<T,Descriptor>::insert_ppc(SurfaceParticle3D* sparticle)
 
 }
 
+
 template<typename T, template<typename U> class Descriptor>
-void HemoParticleField3D<T,Descriptor>::removeParticles(Box3D domain,plint tag) {
+void HemoParticleField3D<T,Descriptor>::removeParticles(Box3D domain, plint tag) {
+//Almost the same, but we save a lot of branching by manking a seperate function
+    std::vector<Particle3D<T,Descriptor>*> remainingParticles;
+    SurfaceParticle3D * sparticle;
+    Box3D finalDomain;
+    Array<T,3> pos; 
+    if( intersect(domain, this->getBoundingBox(), finalDomain) )
+    {
+      for (pluint i=0; i < particles_per_type.size(); i++) {
+        particles_per_type[i].clear();
+      }
+      particles_per_cell.clear();
+      lpc.clear();
+      for (pluint i=0; i<particles.size(); ++i) {
+         pos = particles[i]->getPosition();
+         if (this->isContained(pos,finalDomain) && particles[i]->getTag() == tag) {
+              delete particles[i];
+         }
+         else {
+             remainingParticles.push_back(particles[i]);
+             sparticle = dynamic_cast<SurfaceParticle3D*>(particles[i]);
+             if(this->isContained(pos,localDomain)) {
+               particles_per_type[sparticle->get_celltype()].push_back(particles[i]);
+               lpc[sparticle->get_cellId()] = true;
+             }
+             insert_ppc(sparticle);
+         }
+      }
+     remainingParticles.swap(particles);
+   }
 }
+
 template<typename T, template<typename U> class Descriptor>
 void HemoParticleField3D<T,Descriptor>::removeParticles(Box3D domain) {
     std::vector<Particle3D<T,Descriptor>*> remainingParticles;
@@ -293,6 +324,111 @@ void HemoParticleField3D<T,Descriptor>::findParticles (
 }
 
 template<typename T, template<typename U> class Descriptor>
+int HemoParticleField3D<T,Descriptor>::deleteIncompleteCells(pluint ctype) {
+  int deleted = 0;
+  //Warning, TODO, high complexity, should be rewritten 
+  //For now abuse tagging and the remove function
+  for ( const auto &lpc_it : particles_per_cell ) {
+    int cellid = lpc_it.first;
+    bool broken = false;
+    for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
+      if (!particles_per_cell[cellid][i]) {
+        broken = true;
+        break;
+      }
+    }
+    if (!broken) {continue;}
+
+    //actually add to tobedeleted list
+    for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
+      if (particles_per_cell[cellid][i] == NULL) {continue;}
+      if (particles_per_cell[cellid][i]->get_celltype() != ctype) {break;} //certainly a entry, therefore we check here if it is the right type, if not, exit
+
+      particles_per_cell[cellid][i]->setTag(1);
+      deleted++;
+    }
+  } 
+
+  //We have our list, now abuse the removeall function
+  removeParticles(this->getBoundingBox(),1);
+
+  return deleted; 
+}
+
+template<typename T, template<typename U> class Descriptor>
+void HemoParticleField3D<T,Descriptor>::outputPositions(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
+  //DEBUG, deleteIncomplete Cells
+  int out;
+  if((out = deleteIncompleteCells(ctype)) > 0) {
+    cerr << "(outputPositions) WARNING, deleted " << out << " vertices for celltype " << ctype << "\n";
+  }
+
+  //Get positions only for whole cells
+  name = "Position";
+  output.clear();
+  SurfaceParticle3D * sparticle;
+  for ( const auto &lpc_it : lpc ) {
+    int cellid = lpc_it.first;
+    if (ctype != particles_per_cell[cellid][0]->get_celltype()) continue;
+    for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
+      sparticle = particles_per_cell[cellid][i];
+
+      vector<double> pbv;
+      pbv.push_back(sparticle->getPosition()[0]);
+      pbv.push_back(sparticle->getPosition()[1]);
+      pbv.push_back(sparticle->getPosition()[2]);
+      output.push_back(pbv); //TODO, memory copy
+
+    }
+  }
+}
+
+template<typename T, template<typename U> class Descriptor>
+void HemoParticleField3D<T,Descriptor>::outputTriangles(Box3D domain, vector<vector<plint>>& output, vector<vector<double>> & positions, pluint ctype, std::string & name) {
+  name = "Triangles";
+  output.clear();
+  int counter = 0;
+  for ( const auto &lpc_it : lpc ) {
+    int cellid = lpc_it.first;
+    if (ctype != particles_per_cell[cellid][0]->get_celltype()) continue;
+
+    for (pluint i = 0; i < (*cellFields)[ctype]->triangle_list.size(); i++) {
+      vector<plint> triangle = {(*cellFields)[ctype]->triangle_list[i][0] + counter,
+                          (*cellFields)[ctype]->triangle_list[i][1] + counter,
+                          (*cellFields)[ctype]->triangle_list[i][2] + counter};
+
+      //Do not add triangles over periodic boundaries
+      bool toolarge = false;
+      for (pluint x = 0; x < 3; x++) {
+        for (pluint y = x +1; y < 3; y++) {
+          if ((abs(positions[triangle[x]][0] - positions[triangle[y]][0]) > 2.0) ||
+              (abs(positions[triangle[x]][1] - positions[triangle[y]][1]) > 2.0) ||
+              (abs(positions[triangle[x]][2] - positions[triangle[y]][2]) > 2.0))
+          {
+            toolarge = true;
+            break;
+          }
+        }
+      }
+      if (!toolarge) {
+        output.push_back(triangle);
+      }
+    }
+    counter += (*cellFields)[ctype]->numVertex;
+  }
+   
+}
+
+
+
+template<typename T, template<typename U> class Descriptor>
+void HemoParticleField3D<T,Descriptor>::passthroughpass(int type, Box3D domain, vector<vector<double>>& output, pluint ctype, std::string & name) {
+  //Too Much c++ will give you cancer like this function
+  void (HemoParticleField3D<T,Descriptor>::*cancerpointer)(Box3D,vector<vector<double>>&, pluint, std::string&) = outputFunctionMap[type];
+  (this->*cancerpointer)(domain,output,ctype,name);
+}
+
+template<typename T, template<typename U> class Descriptor>
 void HemoParticleField3D<T,Descriptor>::velocityToParticleCoupling (
         Box3D domain, TensorField3D<T,3>& velocityField, T scaling )
 {
@@ -360,7 +496,7 @@ void HemoParticleField3D<T,Descriptor>::fluidToParticleCoupling (
 
 template<typename T, template<typename U> class Descriptor>
 void HemoParticleField3D<T,Descriptor>::advanceParticles(Box3D domain, T cutOffValue) {
-    std::vector<Particle3D<T,Descriptor>*> remainingParticles;
+    /*std::vector<Particle3D<T,Descriptor>*> remainingParticles;
     Box3D finalDomain;
     if( intersect(domain, this->getBoundingBox(), finalDomain) )
     {
@@ -384,6 +520,7 @@ void HemoParticleField3D<T,Descriptor>::advanceParticles(Box3D domain, T cutOffV
         }
     }
     particles.swap(remainingParticles);
+    */
 }
 
 template<typename T, template<typename U> class Descriptor>
@@ -410,34 +547,4 @@ template<typename T, template<typename U> class Descriptor>
 std::string HemoParticleField3D<T,Descriptor>::descriptorType() {
     return std::string(Descriptor<T>::name);
 }
-
-template<typename T, template<typename U> class Descriptor>
-int HemoParticleField3D<T,Descriptor>::deleteIncompleteCells() {
-  return 0;
-}
-
-template<typename T, template<typename U> class Descriptor>
-void HemoParticleField3D<T,Descriptor>::outputPositions(Box3D domain,vector<vector<double>>& output, int ctype, std::string & name) {
-  name = "Position";
-  output.clear();
-  vector<Particle3D<T,Descriptor>*> particles;
-  this->findParticles(domain,particles,ctype);
-  for (pluint i = 0; i < particles.size(); i++) {
-    vector<double> pbv;
-    pbv.push_back(particles[i]->getPosition()[0]);
-    pbv.push_back(particles[i]->getPosition()[1]);
-    pbv.push_back(particles[i]->getPosition()[2]);
-    output.push_back(pbv); //LOL stupid c++
-  }
-}
-
-template<typename T, template<typename U> class Descriptor>
-void HemoParticleField3D<T,Descriptor>::passthroughpass(int type, Box3D domain, vector<vector<double>>& output, int ctype, std::string & name) {
-  //Too Much c++ will give you cancer like this function
-  void (HemoParticleField3D<T,Descriptor>::*cancerpointer)(Box3D,vector<vector<double>>&, int, std::string&) = outputFunctionMap[type];
-  (this->*cancerpointer)(domain,output,ctype,name);
-}
-
-
-
 #endif

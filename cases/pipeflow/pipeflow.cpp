@@ -346,6 +346,11 @@ int main(int argc, char *argv[]) {
             ShapeMemoryModel3D::PlateletShapeMemoryModel3D(&cfg, dx, dt, dm, pltMeshElement));
     cellFields.addCellType(pltMeshElement, 0.0025 * hematocrit,
                                                         cellModels[cellModels.size() - 1], "PLT");
+    
+    vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES};
+    cellFields[0]->setOutputVariables(outputs); //SET RBC OUTPUT
+    cellFields[1]->setOutputVariables(outputs); //SET PLT OUTPUT
+
 
 
     // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
@@ -367,13 +372,7 @@ int main(int argc, char *argv[]) {
     	pcout << "(main) particle positions read from checkpoint." << std::endl;
     }
     writeCellField3D_HDF5(cellFields,dx,dt,initIter);
-#if 0
-    // ---------------------- Set integration scheme and time step amplification for cell fields ---------------
-
-    //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-        cellFields.setParticleUpdateScheme((T)cellStep);
-    //}
-    
+   
     // ------------------------- Output flow parameters ----------------------
     pcout << "(main) material model parameters: model: " << HEMOCELL_MATERIAL_MODEL <<  ", update scheme: " << HEMOCELL_MATERIAL_INTEGRATION << ", step-size: " << cellStep << " lt" << endl;
 
@@ -396,52 +395,6 @@ int main(int argc, char *argv[]) {
         pcout << ", Cell volume = " << eqVolumes[iCell] * (dx * dx * dx * 1e18) << " um^3 (" <<  dynVolume * (dx * dx * dx * 1e18) << "  um^3)" << std::endl;
     }
 
-    // ------------------------- Sync all quantities ----------------------
-
-    pcout << "(main) synchronising quantities..."  << std::endl;
-    SyncRequirements everyCCR(allReductions);
-    //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-        cellFields.synchronizeCellQuantities(everyCCR);
-    //}
-
-    // -------------------------- Initial output --------------------------
-
-    pcout << "(main) saving initial output..."  << std::endl;
-    global::timer("HDFOutput").start();
-    bool invertXZ_for_XDMF = true;
-    //writeHDF5(lattice, dx, dt, initIter, invertXZ_for_XDMF);
-    for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-        //writeCellField3D_HDF5(*cellFields[iCell], dx, dt, initIter);
-        //writeCell3D_HDF5(*cellFields[iCell], dx, dt, initIter);
-    }
-    global::timer("HDFOutput").stop();
-
-
-    // ------------------------- Create boundary particles ----------------
-    
-    pcout << "(main) creating boundary particles..."  << std::endl;
-    MultiParticleField3D<DenseParticleField3D<T, DESCRIPTOR> > *boundaryParticleField3D =
-            createBoundaryParticleField3D(lattice);
-    //writeParticleField3D_HDF5(*boundaryParticleField3D, dx, dt, 0, "BoundaryParticles");
-
-    
-    // ------------------------- Add particle-wall repulsion force -------------
-    // F > 0 means repulsion. F < 0 is used for adhesion
-    // This represents glycocalyx layer as well
-	
-	// For D < 32 um decrease this to recover proper apparent viscosity
-    T glycocalyxWidth = 0.75; 	// in [um]
-    T k_int = 1.0e-12 / dNewton, DeltaX = glycocalyxWidth * 2.0 * 1e-6 / dx, R = glycocalyxWidth * 2.0 * 1e-6 / dx, k=1.5;  // Scale force with simulation units
-    if (DeltaX > 2.0) DeltaX = 2.0; if (R > 2.0) R = 2.0;  // Should not have effect further than 2 lu -> might go out of domain envelope
-    PowerLawForce<T> repWP(k_int, DeltaX, R, k);
-
-    // ------------------------- Add particle-particle repulsion force ---------
-
-    k_int = 1.0e-12 / dNewton; DeltaX=ppForceDistance * 1e-6 / dx; T R2=ppForceDistance * 1e-6 / dx; k=1.5;
-    if (DeltaX > 2.0) DeltaX = 2.0; if (R2 > 2.0) R2 = 2.0;
-    PowerLawForce<T> repPP(k_int, DeltaX, R2, k);
-
-
     // ------------------------- Warming up fluid domain ------------------    
 
     if (initIter == 0)
@@ -452,167 +405,34 @@ int main(int argc, char *argv[]) {
 	T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
 	pcout << "(main) Mean velocity: " << meanVel  * (dx/dt) << " m/s; Apparent rel. viscosity: " << (u_lbm_max*0.5) / meanVel << std::endl;
 
-
     // ------------------------ Starting main loop --------------------------
     pcout << std::endl << "(main) * starting simulation at " << initIter << " of tmax=" << tmax << " iterations (" << tmax * dt << " s)..." << std::endl;
-    SimpleFicsionProfiler simpleProfiler(tmeas);
-    simpleProfiler.writeInitial(nx, ny, nz, -1, numVerticesPerCell);
-
-    pluint lastCellUpdateSince = 0; // Counts when we need to advance the material model
-    T fMax = 0;  // maximal force encountered
-    plint adaptiveScaleStep = ceil(maxInnerIterSize/10.);
-    plint lastForceProbeSince = 0; // If time-step is small, dont probe force at every step
-
-    
-    global::timer("mainLoop").start();
     for (plint iter = initIter; iter < tmax + 1; iter++) {
-
-		// Check if we need to advance the material model during this iteration
-        bool stepCells = false; // Whether to advance the material model
-        if(0 == (lastCellUpdateSince % cellStep)){
-            stepCells = true; lastCellUpdateSince =0;
-        }; lastCellUpdateSince++;
-
-        // Check if it is time to probe the forces in the system and allow some adaptivity
-        bool forceProbe = false;
-        if(stepCells && (lastForceProbeSince > probeMaterialForceMinPeriod)) {
-        	forceProbe = true; lastForceProbeSince = 0;
-        }; lastForceProbeSince++;
-    
-    	// Reduce later code complexity, and calculate how much iterations left before saving
-    	plint stepsToSave = (iter % tmeas);
-    	if (stepsToSave > 0) stepsToSave = tmeas - stepsToSave;
-
-		// ##### 1 ##### Membrane Model + Repulsion of surfaces
-        if(stepCells) {
-                cellFields.applyConstitutiveModel();    // This zeroes forces at the beginning, always calculate this first
-            
-           // // Particle-particle force between RBCs and PLTs
-            //cellFields[1]->applyDifferentCellForce(repPP, R2, &cellFields[0]->getParticleField3D()); // TODO: it might not sync the argument cell field
-            // TODO: extend this in case of other cellFields (e.g. WBC)
-	    	//cellFields[0]->syncParticleFieldBulk(); // in case we need a sync point
-	    	// TODO: Fix different cell collision and collect them into a single sync
-        }
-
-        
-        // ##### 2 ##### IBM Spreading
+        cellFields.applyConstitutiveModel();    // Calculate Force on Vertices
+         
+        // ##### Bodyforce
         cellFields.setFluidExternalForce(poiseuilleForce);
-        //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-            cellFields.spreadForceIBM();
-        //}
-
+        
+        // ##### Particle Force to Fluid ####
+        cellFields.spreadForceIBM();
+        
         // ##### 3 ##### LBM
-        global::timer("LBM").start();
         lattice.collideAndStream();
-        global::timer("LBM").stop();
 
         // ##### 4 & 5 ##### IBM interpolation + Particle position update
-        if(stepCells){
-            // Gather velocities from the fluid
-            //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                //  IBM Interpolation
-                cellFields.interpolateVelocityIBM();
-                //  Position Update
-                cellFields.advanceParticles();
-            //}
-        }
-
- 		// ###### 6 ###### Probe maximal force & allow time-step adaptivity
-        if(forceProbe) {
-
-            fMax = 0;
-            for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                T fMax_field = cellFields.getMaximumForce_Global();
-                if( fMax_field > fMax)
-                    fMax = fMax_field;                
-            }
-
-            // If adaptivity enabled, check if we need to modify time-steps
-            if(isAdaptive) {
-
-                // If force is too large decrease time step
-                if(fMax > maxForce) 
-                {
-                    if(cellStep > minInnerIterSize){
-                        cellStep-=adaptiveScaleStep; if(cellStep < minInnerIterSize) cellStep = minInnerIterSize;
-
-                        pcout << "(main) Large force encountered (" << fMax << ", it: " << iter <<"): reducing inner time-step to: " << cellStep << endl;
-
-                     //   for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-                            cellFields.setParticleUpdateScheme((T)cellStep);   
-
-                    }
-                } 
-                else if((fMax < minForce)) // try to increase time-step
-                {
-                    if(cellStep < maxInnerIterSize){  // Don't go over maxInnerIterSize even if forces are small!
-                        cellStep+=adaptiveScaleStep; if(cellStep > maxInnerIterSize) cellStep = maxInnerIterSize;
-
-                        pcout << "(main) Forces are small (" << fMax << ", it: " << iter <<"): increasing inner time-step to: " << cellStep << endl;
-
-                        //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-                            cellFields.setParticleUpdateScheme((T)cellStep);
-
-                    }
-                }
-
-                // Check if we need to slow down to have an update point at saving
-                if(stepsToSave != cellStep && stepsToSave != 0){ 	// If saving will NOT fall to cell update iteration
-                	if(stepsToSave < cellStep)	// If we would over-step it
-                	{
-                		cellStep = stepsToSave;
-            	    	pcout << "(main) Inner-step was reset to coincide with checkpointing (" << cellStep << ", it: " << iter <<")" <<endl;
-        	        	//for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-    	                        cellFields.setParticleUpdateScheme((T)cellStep);
-	                }
-                	else if (stepsToSave < (probeMaterialForceMinPeriod-lastForceProbeSince)) {  // If the next check is too late and we would over-step it (can only happen, if cellStep < probeMaterialForceMinPeriod)
-            	    	cellStep = 1;
-        	        	pcout << "(main) Inner-step was reset to coincide with checkpointing (" << cellStep << ", it: " << iter <<")" <<endl;
-    	            	//for (pluint iCell = 0; iCell < cellFields.size(); ++iCell)
-	                            cellFields.setParticleUpdateScheme((T)cellStep);
-                	}
-            	}
-            }
-        }
-
-        // #### 7 ##### Output & Sync particles
-        if (stepsToSave == 0) {
-            SyncRequirements everyCCR(allReductions);
-            //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                cellFields.synchronizeCellQuantities(everyCCR);
-            //}
-            global::timer("HDFOutput").start();
-            bool invertXZ_for_XDMF = true;
-            //writeHDF5(lattice, dx, dt, iter, invertXZ_for_XDMF);
-            //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-            //    writeCellField3D_HDF5(*cellFields[iCell], dx, dt, iter);
-            //    writeCell3D_HDF5(*cellFields[iCell], dx, dt, iter);
-            //}
-            //global::timer("HDFOutput").stop();
-            if ((iter % (2 * tmeas)) == 0) {
-                cellFields.save(&documentXML, iter);
-            }
+        cellFields.advanceParticles();
+        
+ 
+        //Output and checkpoint
+        if ((iter % (tmeas)) == 0) {
+            writeCellField3D_HDF5(cellFields,dx,dt,initIter);
+            cellFields.save(&documentXML, iter);
             T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
-            T dtIteration = global::timer("mainLoop").stop();
-            simpleProfiler.writeIteration(iter * cellStep);
-            pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" << "; Wall time / iter. = " << dtIteration / tmeas << " s; Last largest force [lm*lu/lt^2] = " << fMax <<  std::endl;
-          	pcout << "(main) Mean velocity: " << meanVel * (dx/dt) << " m/s; Apparent rel. viscosity: " << (u_lbm_max*0.5) / meanVel << std::endl;  
-        } else {
-            if(stepCells) // Sync only if we changed anything
-            //for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-                cellFields.synchronizeCellQuantities(everyCCR);
-            //}
+            pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" << std::endl;
+            pcout << "(main) Mean velocity: " << meanVel * (dx/dt) << " m/s; Apparent rel. viscosity: " << (u_lbm_max*0.5) / meanVel << std::endl;  
         }
 
     }
-
-    // Be nice and clean up the cell fields
-    for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
-        delete cellFields[iCell];
-    }
-
-    simpleProfiler.writeIteration(tmax + 1);
 
     pcout << "(main) * simulation finished. :)" << std::endl;
-#endif
 }

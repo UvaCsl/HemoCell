@@ -33,7 +33,7 @@ private:
 template<typename T, template<typename U> class Descriptor>
 class HemoParticleField3D : public ParticleField3D<T,Descriptor> {
 public:
-    typedef Particle3D<T,Descriptor> ParticleT;
+    typedef SurfaceParticle3D ParticleT;
 public:
     HemoParticleField3D(plint nx, plint ny, plint nz);
     virtual ~HemoParticleField3D();
@@ -58,16 +58,17 @@ public:
     virtual void fluidToParticleCoupling(Box3D domain, BlockLattice3D<T,Descriptor>& lattice, T scaling=0.);
     virtual void advanceParticles(Box3D domain, T cutOffValue=-1.);
 
-    int deleteIncompleteCells();
+    int deleteIncompleteCells(pluint ctype);
 
     void setlocalDomain(Box3D & localDomain_) {localDomain = localDomain_;}
 
     //Ugly output functions:
-    void outputPositions(Box3D,vector<vector<double>>&, int, std::string&); 
-    void outputForces   (Box3D,vector<vector<double>>&, int, std::string&);
+    void outputPositions(Box3D,vector<vector<double>>&, pluint, std::string&); 
+    void outputForces   (Box3D,vector<vector<double>>&, pluint, std::string&);
+    void outputTriangles   (Box3D,vector<vector<plint>>&, vector<vector<double>>&, pluint, std::string&);
     void AddOutputMap();
-    map<int,void (HemoParticleField3D<T,Descriptor>::*)(Box3D,vector<vector<double>>&,int,std::string&)> outputFunctionMap;
-    void passthroughpass(int,Box3D,vector<vector<double>>&,int,std::string&);
+    map<int,void (HemoParticleField3D<T,Descriptor>::*)(Box3D,vector<vector<double>>&,pluint,std::string&)> outputFunctionMap;
+    void passthroughpass(int,Box3D,vector<vector<double>>&,pluint,std::string&);
 
 public:
     virtual HemoParticleDataTransfer3D<T,Descriptor>& getDataTransfer();

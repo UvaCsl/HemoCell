@@ -19,6 +19,8 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
 
     PLB_PRECONDITION( blocks.size() > 0 );
     int id = global::mpi().getRank();
+    long int size = global::mpi().getSize();
+
       HemoParticleField3D<double,DESCRIPTOR>& particleField =
         *dynamic_cast<HemoParticleField3D<double,DESCRIPTOR>*>(blocks[0]);
     /************************************************************/
@@ -73,10 +75,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
      long int Nt = triangles.size() / 3;
 */
   
-    std::vector<Particle3D<double,DESCRIPTOR>* > particles;
-    particleField.findParticles(domain, particles); //TODO const time size 
-    plint Np=particles.size();
-    
+   
     /************************************************************/
     /**            Initialise HDF5 file                        **/
    /************************************************************/
@@ -90,33 +89,35 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
      long int iterHDF5=iter;
      H5LTset_attribute_long (file_id, "/", "iteration", &iterHDF5, 1);
      H5LTset_attribute_int (file_id, "/", "processorId", &id, 1);
-     H5LTset_attribute_long (file_id, "/", "numberOfParticles", &Np, 1);
+     H5LTset_attribute_long (file_id, "/", "numberOfProcessors", &size, 1);
           
      hsize_t dimVertices[2];
      hsize_t chunk[2];  
  
+     vector<vector<double>> positions;
+     
     /************************************************************/
     /**            Write output to HDF5 file                   **/
    /************************************************************/
- 
+         
     for (pluint i = 0; i < cellField3D.desiredOutputVariables.size(); i++) {
-        vector<vector<double>> output;
+        vector<vector<double>> * output = new vector<vector<double>>();
         std::string vectorname;
-        particleField.passthroughpass(cellField3D.desiredOutputVariables[i],domain,output,cellField3D.ctype,vectorname);
-        dimVertices[0] = output.size();
-        dimVertices[1] = output[0].size();
-        chunk[0] = 1000 < output.size() ? 1000 : output.size();
+        particleField.passthroughpass(cellField3D.desiredOutputVariables[i],domain,*output,cellField3D.ctype,vectorname);
+        dimVertices[0] = (*output).size();
+        dimVertices[1] = (*output)[0].size();
+        chunk[0] = 1000 < (*output).size() ? 1000 : (*output).size();
         chunk[1] = dimVertices[1];
         
         double output_formatted[dimVertices[0] *dimVertices[1]];
         
         int fmt_cnt = 0;
-        for (pluint x=0; x< dimVertices[0];x++)
+        for (pluint x=0; x< dimVertices[0];x++) {
             for (pluint y=0; y < dimVertices[1] ; y++) {
-                output_formatted[fmt_cnt] = output[x][y];
+                output_formatted[fmt_cnt] = (*output)[x][y];
                 fmt_cnt++;
             }
-
+        }
         int sid = H5Screate_simple(2,dimVertices,NULL);
         int plist_id = H5Pcreate (H5P_DATASET_CREATE);
         H5Pset_chunk(plist_id, 2, chunk); 
@@ -125,8 +126,50 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         H5Dwrite(did,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,output_formatted);
         H5Dclose(did);
         H5Sclose(sid);
-
+            
+        if (i == 0) {
+            long int nP = (*output).size();
+            H5LTset_attribute_long (file_id, "/", "numberOfParticles", &nP, 1);
+        }
+        if (cellField3D.desiredOutputVariables[i] == OUTPUT_POSITION) {
+            positions = (*output);
+        }
+        free(output);
     }
+     
+    if (cellField3D.outputTriangles) { //Treat triangles seperately because of double/int issues
+        vector<vector<plint>> * output = new vector<vector<plint>>();
+        std::string vectorname;
+        particleField.outputTriangles(domain,*output,positions, cellField3D.ctype,vectorname);
+        
+        dimVertices[0] = output->size();
+        dimVertices[1] = (*output)[0].size();
+        chunk[0] = 1000 < output->size() ? 1000 : output->size();
+        chunk[1] = dimVertices[1];
+        
+        int output_formatted[dimVertices[0] * dimVertices[1]];
+        int fmt_cnt = 0;
+        for (pluint x=0; x< dimVertices[0];x++) {
+            for (pluint y=0; y < dimVertices[1] ; y++) {
+                output_formatted[fmt_cnt] = (*output)[x][y];
+                fmt_cnt++;
+            }
+        }
+        
+        int sid = H5Screate_simple(2,dimVertices,NULL);
+        int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+        H5Pset_chunk(plist_id, 2, chunk); 
+        H5Pset_deflate(plist_id, 7);
+        int did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+        H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output_formatted);
+        H5Dclose(did);
+        H5Sclose(sid);
+        
+        long int nT = output->size();
+        H5LTset_attribute_long (file_id, "/", "numberOfTriangles", &nT, 1);
+        free(output);
+
+     }
 #if 0
      /*  Take care of Vectors    */
      if (numCells > 0 and particles.size() > 0) {
@@ -146,7 +189,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
                 matrixTensor[itr++] = vector[0];
                 matrixTensor[itr++] = vector[1];
                 matrixTensor[itr++] = vector[2];
-             }
+             }_
 #ifdef NO_COMPRESSION
             H5LTmake_dataset_float(file_id, icParticle->getVectorName(ivN).c_str(), 2, dimVertices, matrixTensor);
 #else            

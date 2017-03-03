@@ -59,13 +59,13 @@ def createH5TopologyAndGeometryCell(xmlInt=XMLIndentation()):
 			dx (not used)
 	"""
 	h5TopologyAndGeometry  = xmlInt.cur() + '<Topology TopologyType="Triangle" Dimensions="%(numberOfTriangles)d">\n'
-	h5TopologyAndGeometry += xmlInt.inc() + ' <DataItem Dimensions="%(numberOfTriangles)d 3" NumberType="Int" Precision="8" Format="HDF">\n'
-	h5TopologyAndGeometry += xmlInt.cur() + '%(pathToHDF5)s:/triangles\n'
+	h5TopologyAndGeometry += xmlInt.inc() + ' <DataItem Dimensions="%(numberOfTriangles)d 3" Format="HDF">\n'
+	h5TopologyAndGeometry += xmlInt.cur() + '%(pathToHDF5)s:/Triangles\n'
 	h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
 	h5TopologyAndGeometry += xmlInt.dec() + '</Topology>\n'
-	h5TopologyAndGeometry += xmlInt.inc() + '<Geometry GeometryType="XYZ">\n'
-	h5TopologyAndGeometry += xmlInt.inc() + ' <DataItem Dimensions="%(numberOfParticles)d 3" NumberType="Float" Precision="4" Format="HDF">\n'
-	h5TopologyAndGeometry += xmlInt.cur() + '%(pathToHDF5)s:/pbcPosition\n'
+	h5TopologyAndGeometry = xmlInt.inc() + '<Geometry GeometryType="XYZ">\n'
+	h5TopologyAndGeometry += xmlInt.inc() + ' <DataItem Dimensions="%(numberOfParticles)d 3" Format="HDF">\n'
+	h5TopologyAndGeometry += xmlInt.cur() + '%(pathToHDF5)s:/Position\n'
 	h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
 	h5TopologyAndGeometry += xmlInt.dec() + '</Geometry>\n'
 	return h5TopologyAndGeometry

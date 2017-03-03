@@ -82,7 +82,22 @@ class HemoCellField{
   public:
   HemoCellField(CellFields3D& cellFields_, Cell3D<double,DESCRIPTOR> cell3D_, TriangularSurfaceMesh<double>& meshElement_)
       :cellFields(cellFields_), desiredOutputVariables(default_output),
-       cell3D(cell3D_), meshElement(meshElement_) {numVertex = meshElement.getNumVertices();};
+       cell3D(cell3D_), meshElement(meshElement_) {
+         numVertex = meshElement.getNumVertices();
+         std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
+         if (it != desiredOutputVariables.end()) {
+            desiredOutputVariables.erase(it);
+            outputTriangles = true;
+         }
+
+        for (plint iTriangle = 0; iTriangle < meshElement.getNumTriangles(); iTriangle++) {
+          triangle_list.push_back({meshElement.getVertexId(iTriangle,0),
+                                   meshElement.getVertexId(iTriangle,1),
+                                   meshElement.getVertexId(iTriangle,2) 
+                                   });
+        }
+
+       }
   double getVolumeFraction() { return hematocrit;}
   double hematocrit;
   ShellModel3D<double> * model;
@@ -90,9 +105,11 @@ class HemoCellField{
   std::string name;
   int ctype;
   int numVertex;
+  bool outputTriangles = false;
   CellFields3D & cellFields;
   vector<int> & desiredOutputVariables;
   Cell3D<double,DESCRIPTOR> & cell3D;
+  vector<Array<plint,3>> triangle_list;
   TriangularSurfaceMesh<double> & meshElement;
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D() {return cellFields.immersedParticles;}
   MultiBlockLattice3D<double,DESCRIPTOR> * getFluidField3D() {return &(cellFields.lattice);}
@@ -102,7 +119,15 @@ class HemoCellField{
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg() { return cellFields.immersedParticles; }
   std::map<plint, Cell3D<double,DESCRIPTOR>* > getCellIdToCell3D() { std::map<plint,Cell3D<double,DESCRIPTOR>* > tmp; return tmp ;}
   void synchronizeSyncRequirements(SyncRequirements _dummy) {}
-  void setOutputVariables(const vector<int> & outputs) { desiredOutputVariables = outputs;}
+  void setOutputVariables(const vector<int> & outputs) { desiredOutputVariables = outputs;
+         std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
+         if (it != desiredOutputVariables.end()) {
+            desiredOutputVariables.erase(it);
+            outputTriangles = true;
+         } else {
+           outputTriangles = false;
+         }
+  }
 
 
 };
