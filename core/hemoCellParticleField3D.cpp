@@ -30,6 +30,7 @@ void HemoParticleDataTransfer3D<T,Descriptor>::send (
     {
         std::vector<Particle3D<T,Descriptor>*> foundParticles;
         particleField.findParticles(domain, foundParticles);
+        //std::vector<SurfaceParticle3D*> foundSurfaceParticles(foundParticles.begin(),foundParticles.end());
         for (pluint iParticle=0; iParticle<foundParticles.size(); ++iParticle) {
             // The serialize function automatically reallocates memory for buffer.
             serialize(*foundParticles[iParticle], buffer);
