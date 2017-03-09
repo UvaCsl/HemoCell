@@ -257,7 +257,7 @@ int main(int argc, char *argv[]) {
     // ------------------------ Init lattice --------------------------------
 
     pcout << "(main) init lattice structure..."  << std::endl;
-
+    extendedEnvelopeWidth = 1;
     #if HEMOCELL_CFD_DYNAMICS == 1
         MultiBlockLattice3D<T, DESCRIPTOR> lattice(
             defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
@@ -297,7 +297,7 @@ int main(int argc, char *argv[]) {
 
     lattice.initialize();
 
-   
+    extendedEnvelopeWidth = 15;
     // ----------------------- Init cell models --------------------------
 
     pcout << "(main) init cell structures..."  << std::endl;
