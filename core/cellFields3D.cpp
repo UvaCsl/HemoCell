@@ -7,6 +7,7 @@
 CellFields3D::CellFields3D( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth) :
   lattice(lattice_)
 {   
+  envelopeSize=particleEnvelopeWidth;
   pcout << "(CellField3D) particle envelope SHOULD BE larger then largest celldiameter [lu]: " << particleEnvelopeWidth << std::endl;
 
   MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
@@ -20,14 +21,7 @@ CellFields3D::CellFields3D( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, 
             particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
   immersedParticles->periodicity().toggleAll(true);
   immersedParticles->toggleInternalStatistics(false);
-  std::vector<plint> const& blocks = immersedParticles->getLocalInfo().getBlocks();
-  for (pluint iBlock=0; iBlock<blocks.size(); ++iBlock) {
-    SmartBulk3D bulk(immersedParticles->getMultiBlockManagement(),blocks[iBlock]);
-    Box3D blk = bulk.getBulk();
-    immersedParticles->getComponent(blocks[iBlock]).setlocalDomain(blk);
-    immersedParticles->getComponent(blocks[iBlock]).cellFields = this;
-  }
-
+  InitAfterLoadCheckpoint();
 }
 
 void CellFields3D::addCellType(TriangularSurfaceMesh<double> & meshElement, double hematocrit, ShellModel3D<double> *cellmodel, std::string name_)
@@ -88,8 +82,21 @@ void CellFields3D::setParticleUpdateScheme(double _cellTimeStep)
   cellTimeStep = _cellTimeStep;
 }
 
+/*
+ * Initialize variables that need to be loaded after a checkpoint AS WELL
+ */
 void CellFields3D::InitAfterLoadCheckpoint()
 {
+  std::vector<plint> const& blocks = immersedParticles->getLocalInfo().getBlocks();
+  for (pluint iBlock=0; iBlock<blocks.size(); ++iBlock) {
+    SmartBulk3D bulk(immersedParticles->getMultiBlockManagement(),blocks[iBlock]);
+    Box3D blk = bulk.getBulk();
+    immersedParticles->getComponent(blocks[iBlock]).setlocalDomain(blk);
+    immersedParticles->getComponent(blocks[iBlock]).cellFields = this;
+    immersedParticles->getComponent(blocks[iBlock]).atomicBlockId = blocks[iBlock];
+    immersedParticles->getComponent(blocks[iBlock]).atomicLattice = &lattice.getComponent(blocks[iBlock]);
+    immersedParticles->getComponent(blocks[iBlock]).envelopeSize = envelopeSize;
+  }
 }
 
 void CellFields3D::load(XMLreader * documentXML, plint & iter)
@@ -138,7 +145,13 @@ void CellFields3D::save(XMLreader * documentXML, plint iter)
 void readPositionsCellFields(std::string particlePosFile) {
 }
 
+void CellFields3D::HemoAdvanceParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->advanceParticles(domain);
+}
 void CellFields3D::advanceParticles() {
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  applyProcessingFunctional(new HemoAdvanceParticles(),immersedParticles->getBoundingBox(),wrapper);
 }
 
 void CellFields3D::spreadForceIBM() {

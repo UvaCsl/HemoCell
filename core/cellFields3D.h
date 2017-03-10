@@ -13,6 +13,7 @@ class CellFields3D;
 #include "cellFieldFunctionals3D.h"
 #include "cellCellForces3D.h"
 #include "fcnGenericFunctions.h"
+#include "HemoCellFunctional.h"
 #include <sys/stat.h>
 #include <unistd.h>
 #include <set>
@@ -70,10 +71,16 @@ public:
 
 	MultiBlockLattice3D<double, DESCRIPTOR> & lattice;
   vector<HemoCellField> cellFields;
+  pluint envelopeSize;
 	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles;
-	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * reductionParticles;
+	//MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * reductionParticles;
   double cellTimeStep;
   void synchronizeCellQuantities(SyncRequirements _dummy) {}
+  class HemoAdvanceParticles: public HemoCellFunctional {
+   void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+   HemoAdvanceParticles * clone() const { return new HemoAdvanceParticles(*this);}
+
+  };
 };
 
 /*contains information about one particular cellfield, structlike*/
@@ -111,6 +118,7 @@ class HemoCellField{
   Cell3D<double,DESCRIPTOR> & cell3D;
   vector<Array<plint,3>> triangle_list;
   TriangularSurfaceMesh<double> & meshElement;
+  void(*kernelMethod)(BlockLattice3D<double,DESCRIPTOR> const&,SurfaceParticle3D*) = interpolationCoefficientsPhi2;
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D() {return cellFields.immersedParticles;}
   MultiBlockLattice3D<double,DESCRIPTOR> * getFluidField3D() {return &(cellFields.lattice);}
   int getNumberOfCells_Global() {return 0;}
@@ -128,7 +136,6 @@ class HemoCellField{
            outputTriangles = false;
          }
   }
-
 
 };
 

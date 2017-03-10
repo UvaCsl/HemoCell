@@ -21,66 +21,14 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
     int id = global::mpi().getRank();
     long int size = global::mpi().getSize();
 
-      HemoParticleField3D<double,DESCRIPTOR>& particleField =
-        *dynamic_cast<HemoParticleField3D<double,DESCRIPTOR>*>(blocks[0]);
-    /************************************************************/
-   /**            Fill triangle and particle lists            **/
-  /************************************************************/
-/*
-     std::map<plint, Cell3D<double,DESCRIPTOR>* > cellIdToCell3D = cellField3D.getCellIdToCell3D();
-     std::vector< long int > triangles;
-     std::vector<SurfaceParticle3D<double,DESCRIPTOR>* > particles;
-     plint sumLocalVertices=0;
-     plint numCells=cellIdToCell3D.size();
-     long int NpBulk = 0;
-
-     std::map<plint, Array<double,3> > correctPBPosition;
-     typename std::map<plint, Cell3D<double,DESCRIPTOR>* >::iterator itrtr;
-     for (itrtr  = cellIdToCell3D.begin(); itrtr != cellIdToCell3D.end(); ++itrtr) {
-       Cell3D<double,DESCRIPTOR> * cell3d = (itrtr->second);
-      //   Array<double,3> cellPosition = cell3d->getPosition();
-      //   NpBulk += cell3d->getNumVertices_LocalBulk();
-      //   correctPBPosition[itrtr->first].resetToZero();
-
-      //   if (cellPosition[0] > Nx) { correctPBPosition[itrtr->first][0] = -int(cellPosition[0]/Nx)*Nx;}
-      //   if (cellPosition[0] <  0) { correctPBPosition[itrtr->first][0] =  int(cellPosition[0]/Nx)*Nx;}
-      //   if (cellPosition[1] > Ny) { correctPBPosition[itrtr->first][1] = -int(cellPosition[1]/Ny)*Ny;}
-      //   if (cellPosition[1] <  0) { correctPBPosition[itrtr->first][1] =  int(cellPosition[1]/Ny)*Ny;}
-      //   if (cellPosition[2] > Nz) { correctPBPosition[itrtr->first][2] = -int(cellPosition[2]/Nz)*Nz;}
-      //   if (cellPosition[2] <  0) { correctPBPosition[itrtr->first][2] =  int(cellPosition[2]/Nz)*Nz;}
-
-        std::vector<plint> const& cellVertices = cell3d->getVertices();
-        std::vector<plint> const& cellTriangles = cell3d->getTriangles();
-        for (std::vector<plint>::const_iterator iVP = cellVertices.begin(); iVP != cellVertices.end(); ++iVP)
-        {
-             particles.push_back( dynamic_cast<SurfaceParticle3D<double,DESCRIPTOR>*>(cell3d->getParticle3D(*iVP)) );
-         }
-         std::map<plint, plint> iv = cell3d->getInvertVertices();
-         for (pluint iT=0; iT < cellTriangles.size(); iT++) {
-             plint iTriangle=cellTriangles[iT];
-             plint v0 = cell3d->getVertexId(iTriangle, 0);
-             plint v1 = cell3d->getVertexId(iTriangle, 1);
-             plint v2 = cell3d->getVertexId(iTriangle, 2);
-             plint t0 = iv[v0]+sumLocalVertices;
-             plint t1 = iv[v1]+sumLocalVertices;
-             plint t2 = iv[v2]+sumLocalVertices;
-             triangles.push_back(t0);
-             triangles.push_back(t1);
-             triangles.push_back(t2);
-         }
-         sumLocalVertices += cellVertices.size();
-     }
-
-     long int Np = particles.size();
-     long int Nt = triangles.size() / 3;
-*/
-  
+      HemoParticleField3D& particleField =
+        *dynamic_cast<HemoParticleField3D*>(blocks[0]);
    
     /************************************************************/
     /**            Initialise HDF5 file                        **/
    /************************************************************/
 
-     std::string fileName = global::directories().getOutputDir() + "/hdf5/" + createFileName((identifier+".").c_str(),iter,8) + createFileName(".p.",id,3) + ".h5";
+     std::string fileName = global::directories().getOutputDir() + "/hdf5/" + createFileName((identifier+".").c_str(),iter,8) + createFileName(".p.", particleField.atomicBlockId,3) + ".h5";
      hid_t file_id;
      file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
@@ -105,9 +53,12 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         std::string vectorname;
         particleField.passthroughpass(cellField3D.desiredOutputVariables[i],domain,*output,cellField3D.ctype,vectorname);
         dimVertices[0] = (*output).size();
-        dimVertices[1] = (*output)[0].size();
+        dimVertices[1] = dimVertices[0] == 0 ? 0 :(*output)[0].size();
         chunk[0] = 1000 < (*output).size() ? 1000 : (*output).size();
         chunk[1] = dimVertices[1];
+        chunk[0] = chunk[0] > 1 ? chunk[0] : 1;
+        chunk[1] = chunk[1] > 1 ? chunk[1] : 1;
+
         
         double output_formatted[dimVertices[0] *dimVertices[1]];
         
@@ -143,9 +94,12 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         particleField.outputTriangles(domain,*output,positions, cellField3D.ctype,vectorname);
         
         dimVertices[0] = output->size();
-        dimVertices[1] = (*output)[0].size();
+        dimVertices[1] = dimVertices[0] == 0 ? 0 :(*output)[0].size();
         chunk[0] = 1000 < output->size() ? 1000 : output->size();
         chunk[1] = dimVertices[1];
+        chunk[0] = chunk[0] > 1 ? chunk[0] : 1;
+        chunk[1] = chunk[1] > 1 ? chunk[1] : 1;
+
         
         int output_formatted[dimVertices[0] * dimVertices[1]];
         int fmt_cnt = 0;
@@ -170,60 +124,6 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         free(output);
 
      }
-#if 0
-     /*  Take care of Vectors    */
-     if (numCells > 0 and particles.size() > 0) {
-         SurfaceParticle3D<double,DESCRIPTOR> * icParticle = particles[0];
-         plint vN = icParticle->getVectorsNumber();
-         float * matrixTensor = new float [3 * Np];
-
-         Array<double,3> vector;
-         for (plint ivN = 0; ivN < vN; ++ivN) {
-             plint itr=0;
-             for (plint iP = 0; iP < Np; ++iP) {
-                icParticle = particles[iP];
-                icParticle->getVector(ivN, vector);
-                // If is pbcPosition
-                if (ivN == 0) { vector = vector + correctPBPosition[icParticle->get_cellId()] ; }
-                // TODO: Change in XDMF file.
-                matrixTensor[itr++] = vector[0];
-                matrixTensor[itr++] = vector[1];
-                matrixTensor[itr++] = vector[2];
-             }_
-#ifdef NO_COMPRESSION
-            H5LTmake_dataset_float(file_id, icParticle->getVectorName(ivN).c_str(), 2, dimVertices, matrixTensor);
-#else            
-           
-#endif
-         }
-         
-         delete [] matrixTensor;
-
-         /*  Take care of Scalars    */http://stackoverflow.com/questions/594089/does-stdvector-clear-do-delete-free-memory-on-each-element
-         plint sN = icParticle->getScalarsNumber();
-         float * scalarTensor = new float [Np];
-         for (plint isN = 0; isN < sN; ++isN) {
-             double scalarValue;
-             for (plint iP = 0; iP < Np; ++iP) {
-                 particles[iP]->getScalar(isN, scalarValue);http://stackoverflow.com/questions/594089/does-stdvector-clear-do-delete-free-memory-on-each-element
-                 scalarTensor[iP] = scalarValue;
-             }
-#ifdef NO_COMPRESSION
-             H5LTmake_dataset_float(file_id, icParticle->getScalarName(isN).c_str(), 1, dimVertices, scalarTensor);
-#else            
-            int sid = H5Screate_simple(1,dimVertices,NULL);
-            int plist_id = H5Pcreate (H5P_DATASET_CREATE);
-            H5Pset_chunk(plist_id, 1, chunk); 
-            H5Pset_deflate(plist_id, 7);
-            int did = H5Dcreate2(file_id,icParticle->getScalarName(isN).c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
-            H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,scalarTensor);
-            H5Dclose(did);
-            H5Sclose(sid);
-#endif
-         }
-         delete [] scalarTensor;
-     }
-#endif
 
      H5Fclose(file_id);
 
@@ -237,7 +137,7 @@ void WriteCellField3DInMultipleHDF5Files::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     for (pluint i = 0; i < modified.size(); ++i) {
-        modified[i] = modif::nothing;
+        modified[i] = modif::dynamicVariables;
     }
 }
 

@@ -17,8 +17,8 @@
 </cellModel>
 
 <parameters>
-    <Re> 0.1 </Re>   <!--Reynolds number-->
-    <warmup> 10 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <Re> 10 </Re>   <!--Reynolds number-->
+    <warmup> 100 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
 </parameters>
 
@@ -43,11 +43,12 @@
     <maxForce>2e-3</maxForce> <!-- Point of decrease for integration steps -->
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
     <refDirN> 64 </refDirN>  <!-- Number of numerical cell in the reference direction -->
+    <blockSize> 40 </blockSize>
 </domain>
 
 <sim>
-    <tmax> 100000 </tmax> <!-- total number of iterations -->
-    <tmeas> 2000 </tmeas> <!-- interval after which data is written --> 
+    <tmax> 100 </tmax> <!-- total number of iterations -->
+    <tmeas> 20 </tmeas> <!-- interval after which data is written --> 
     <hematocrit> 40 </hematocrit> <!-- Hematocrit  > -->
     <particlePosFile> cells.pos </particlePosFile>
 </sim>

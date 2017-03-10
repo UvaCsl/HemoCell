@@ -614,7 +614,7 @@ void calculateCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D
     // CCR_NO_PBC_POSITION_MEAN
     } else if (q==0) { reducer.gather(ccrId, cell->getPosition(iVertex)); // POSITION
     // POSITION FROM PERIODIC BOUNDARY CONDITION
-    } else if (q==6) { reducer.gather(ccrId, cell->get_pbcPosition(iVertex));
+    } else if (q==6) { //reducer.gather(ccrId, cell->get_pbcPosition(iVertex));
     // VELOCITY
     } else if (q==7) { reducer.gather(ccrId, cell->get_v(iVertex)) ;
     // Force

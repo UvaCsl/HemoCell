@@ -65,7 +65,7 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
  * HemoParticleField3D  [HemoCell]
  */
 #ifndef HEMOCELL_PARTICLE_FIELD
-#define HEMOCELL_PARTICLE_FIELD HemoParticleField3D<double, DESCRIPTOR>
+#define HEMOCELL_PARTICLE_FIELD HemoParticleField3D
 #endif
 
 

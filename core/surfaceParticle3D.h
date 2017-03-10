@@ -35,7 +35,6 @@ public:
 
     Array<double,3> const& get_v() const { return v; }
     Array<double,3> const& getVelocity() const { return get_v(); }
-    Array<double,3> const& get_pbcPosition() const { return pbcPosition; }
     Array<double,3> const& get_vPrevious() const { return vPrevious; }
     Array<double,3> const& get_force() const { return force; }
     plint const& get_cellId() const { return cellId; }
@@ -54,12 +53,21 @@ public:
     //plint& getVertexId() { return vertexId; }
     //plint& get_processor() { return processor; }
     int getMpiProcessor() { MPI_Comm_rank(MPI_COMM_WORLD, &rank); return rank;}
+
+    //Is vector, optimize with array possible
+    vector<Cell<double,DESCRIPTOR>*> kernelLocations;
+    vector<double>         kernelWeights;
+    Array<double,3> v;
 private:
-    Array<double,3> pbcPosition, v, force, vPrevious;
+    Array<double,3> force, vPrevious;
+public:
     plint cellId;
     plint vertexId;
+private:
     pluint celltype;
     int rank;
+
+//TODO, remove before production, now to let legacy code compile
 public:
     std::vector<Dot3D> & getIBMcoordinates() { return cellPos; }
     std::vector<double> & getIBMweights() { return weights; }

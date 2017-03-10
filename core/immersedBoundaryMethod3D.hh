@@ -7,17 +7,22 @@ const double pi = 4.*atan(1.);
 #endif  // PI__
 
 #include "immersedBoundaryMethod3D.h"
+#include "surfaceParticle3D.h"
 
 namespace plb {
 
-template<typename T>
-inline T phi2 (T x) {
+/// Decide if a Lagrangian point is contained in 3D box, boundaries exclusive
+inline bool contained_sane(Array<int,3> const& x, Box3D const& box) {
+    return x[0]>box.x0 && x[0]<box.x1 &&
+           x[1]>box.y0 && x[1]<box.y1 &&
+           x[2]>box.z0 && x[2]<box.z1;
+}
+    
+    
+inline double phi2 (double x) {
     x = fabs(x);
-    if (x <= 1.0) {
-        return (1.0 - x);
-    } else {
-        return 0;
-    }
+    x = 1.0 - x;
+    return max(x,0.0);
 }
 
 template<typename T>
@@ -123,33 +128,47 @@ inline void interpolationCoefficientsPhi1 (
     	weights[j] /= totWeight;
 }
 
-template<typename T, template<typename U> class Descriptor>
 inline void interpolationCoefficientsPhi2 (
-        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights)
+        BlockLattice3D<double,DESCRIPTOR> const& block, SurfaceParticle3D * particle)
 {
-    cellPos.clear();
-    weights.clear();
-
+    //Clean current
+    particle->kernelWeights.clear();
+    particle->kernelLocations.clear();
+    
     // Fixed kernel size
-    plint x0=-1, x1=2;
+    const plint x0=-1, x1=2; //const for nice loop unrolling
 
-    Box3D boundingBox(block.getBoundingBox());
+    //Get position
+    const Array<double,3> position = particle->getPosition();
+   
+    //Coordinates are relative
+    const Dot3D tmpDot = block.getLocation(); 
+    const Array<plint,3> relLoc = {tmpDot.x, tmpDot.y, tmpDot.z};
+    
+    //Get our reference node (0,0), and relative
+    const Array<plint,3> center(position[0] + 0.5 - relLoc[0], position[1] + 0.5 - relLoc[1], position[2] + 0.5 -  relLoc[2]); 
+    
+    //Boundingbox of lattice
+    const Box3D boundingBox = block.getBoundingBox();
+    
+    //Prealloc is better than JItalloc
+    Array<plint,3> posInBlock;
+    double phi[3];
+    double weight;
+    
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
             for (int dz = x0; dz < x1; ++dz) {
-                Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
-                Dot3D cellPositionInDomain = cellPosition - block.getLocation(); // Convert cell position to local coordinates.
-                if (contained(cellPositionInDomain,boundingBox)) {
-                    T phi[3];
-                    phi[0] = (position[0] - 0.5 - (T)cellPosition.x);
-                    phi[1] = (position[1] - 0.5 - (T)cellPosition.y);
-                    phi[2] = (position[2] - 0.5 - (T)cellPosition.z);
-                    T weight = phi2(phi[0]) * phi2(phi[1]) * phi2(phi[2]);
+                posInBlock = {center[0] + dx, center[1] + dy, center[2] + dz};
+                if (contained_sane(posInBlock,boundingBox)) {
+                    phi[0] = (position[0] - posInBlock[0]); //Get absolute distance
+                    phi[1] = (position[1] - posInBlock[1]);
+                    phi[2] = (position[2] - posInBlock[2]);
+                    weight = phi2(phi[0]) * phi2(phi[1]) * phi2(phi[2]);
 
                     if (weight>0) {
-                        weights.push_back(weight);
-                        cellPos.push_back(cellPositionInDomain);
+                        particle->kernelWeights.push_back(weight);
+                        particle->kernelLocations.push_back(block.getPointer(posInBlock[0],posInBlock[1],posInBlock[2]));
                     }
                 }
             }
@@ -190,10 +209,9 @@ void interpolationCoefficientsPhi3 (
 }
 
 
-template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi4 (
-        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights)
+        BlockLattice3D<double,DESCRIPTOR> const& block, Array<double,3> const& position,
+        std::vector<Dot3D>& cellPos, std::vector<double>& weights)
 {
     cellPos.clear();
     weights.clear();
@@ -206,11 +224,11 @@ void interpolationCoefficientsPhi4 (
                 Dot3D cellPosition(Dot3D( (plint) position[0] + dx, (plint) position[1] + dy, (plint) position[2] + dz));
                 Dot3D cellPositionInDomain = cellPosition - block.getLocation(); // Convert cell position to local coordinates.
                 if (contained(cellPositionInDomain,boundingBox)) {
-                    T phi[3];
-                    phi[0] = (position[0] - 0.5 - (T)cellPosition.x);
-                    phi[1] = (position[1] - 0.5 - (T)cellPosition.y);
-                    phi[2] = (position[2] - 0.5 - (T)cellPosition.z);
-                    T weight = phi4(phi[0]) * phi4(phi[1]) * phi4(phi[2]);
+                    double phi[3];
+                    phi[0] = (position[0] - 0.5 - cellPosition.x);
+                    phi[1] = (position[1] - 0.5 - cellPosition.y);
+                    phi[2] = (position[2] - 0.5 - cellPosition.z);
+                    double weight = phi4(phi[0]) * phi4(phi[1]) * phi4(phi[2]);
                     if (weight>0) {
                         weights.push_back(weight);
                         cellPos.push_back(cellPositionInDomain);

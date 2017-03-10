@@ -56,10 +56,9 @@ BlockDomain::DomainT CopyFromNeighbor<Tp>::appliesTo() const {
 // ---------------------- Read in STL geometry ---------------------------------
 
 void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint refDirLength, plint refDir,
-                          VoxelizedDomain3D<T> *&voxelizedDomain, MultiScalarField3D<int> *&flagMatrix) {
+                          VoxelizedDomain3D<T> *&voxelizedDomain, MultiScalarField3D<int> *&flagMatrix, plint blockSize) {
     plint extraLayer = 0;   // Make the bounding box larger; for visualization purposes
                             //   only. For the simulation, it is OK to have extraLayer=0.
-    plint blockSize = -1;   // Zero means: no sparse representation.
     plint borderWidth = 1;  // Because the Guo boundary condition acts in a one-cell layer.
     
     // Requirement: margin>=borderWidth.
@@ -214,7 +213,11 @@ int main(int argc, char *argv[]) {
 
     plb::MultiScalarField3D<int> *flagMatrix = 0;
     VoxelizedDomain3D<T> *voxelizedDomain = 0;
-    getFlagMatrixFromSTL(meshFileName, extendedEnvelopeWidth, refDirN, refDir, voxelizedDomain, flagMatrix);
+    if (cfg.checkpointed) {
+        getFlagMatrixFromSTL(meshFileName, extendedEnvelopeWidth, refDirN, refDir, voxelizedDomain, flagMatrix, cfg["domain"]["blockSize"].read<plint>());
+    } else {
+        getFlagMatrixFromSTL(meshFileName, extendedEnvelopeWidth, refDirN, refDir, voxelizedDomain, flagMatrix, -1);
+    }
     Box3D domainBox = flagMatrix->getBoundingBox();
     
     nx = domainBox.getNx();
@@ -258,21 +261,16 @@ int main(int argc, char *argv[]) {
 
     pcout << "(main) init lattice structure..."  << std::endl;
     extendedEnvelopeWidth = 1;
-    #if HEMOCELL_CFD_DYNAMICS == 1
         MultiBlockLattice3D<T, DESCRIPTOR> lattice(
-            defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
+            voxelizedDomain->getMultiBlockManagement(),
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
             defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+#if HEMOCELL_CFD_DYNAMICS == 1
             new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/tau));
-    #elif HEMOCELL_CFD_DYNAMICS == 2
-        MultiBlockLattice3D<T, DESCRIPTOR> lattice(
-            defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
-            defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+#elif HEMOCELL_CFD_DYNAMICS == 2
             new GuoExternalForceMRTdynamics<T, DESCRIPTOR>(1.0/tau)); // Use with MRT dynamics!
-    #endif
+#endif
 
     defineDynamics(lattice, *flagMatrix, lattice.getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
 
@@ -367,11 +365,11 @@ int main(int argc, char *argv[]) {
        
         pcout << "(main) saving checkpoint..." << std::endl;
         cellFields.save(&documentXML, initIter);
+        exit(0);
     }
     else {
     	pcout << "(main) particle positions read from checkpoint." << std::endl;
     }
-    writeCellField3D_HDF5(cellFields,dx,dt,initIter);
    
     // ------------------------- Output flow parameters ----------------------
     pcout << "(main) material model parameters: model: " << HEMOCELL_MATERIAL_MODEL <<  ", update scheme: " << HEMOCELL_MATERIAL_INTEGRATION << ", step-size: " << cellStep << " lt" << endl;
@@ -425,7 +423,7 @@ int main(int argc, char *argv[]) {
  
         //Output and checkpoint
         if ((iter % (tmeas)) == 0) {
-            writeCellField3D_HDF5(cellFields,dx,dt,initIter);
+            writeCellField3D_HDF5(cellFields,dx,dt,iter);
             cellFields.save(&documentXML, iter);
             T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
             pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" << std::endl;

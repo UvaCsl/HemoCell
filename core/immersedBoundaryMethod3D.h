@@ -7,8 +7,7 @@
 
 namespace plb {
 
-template<typename T>
-T phi2 (T x) ;
+double phi2 (double x) ;
 
 template<typename T>
 T phi3 (T x) ;
@@ -29,20 +28,17 @@ void interpolationCoefficientsPhi1 (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
-template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi2 (
-        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights);
+        BlockLattice3D<double,DESCRIPTOR> const& block, SurfaceParticle3D * particle);
 
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi3 (
         BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
-template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi4 (
-        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
-        std::vector<Dot3D>& cellPos, std::vector<T>& weights);
+        BlockLattice3D<double,DESCRIPTOR> const& block, Array<double,3> const& position,
+        std::vector<Dot3D>& cellPos, std::vector<double>& weights);
 
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi4c (

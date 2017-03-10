@@ -192,7 +192,7 @@ public:
     bool isInBulk(plint iVertex) { return (verticesInBulk.count(iVertex) > 0); }
     bool hasVertex(plint iVertex) { return (iVertexToParticle3D.count(iVertex) > 0); }
     plint count(plint iVertex) { return iVertexToParticle3D.count(iVertex); }
-    Array<T,3> getVertex(plint iVertex) { PLB_ASSERT(iVertexToParticle3D.count(iVertex)>0); return iVertexToParticle3D[iVertex]->get_pbcPosition(); }
+    Array<T,3> getVertex(plint iVertex) { PLB_ASSERT(iVertexToParticle3D.count(iVertex)>0); return iVertexToParticle3D[iVertex]->getPosition(); }
     Array<T,3> getVertex(plint iTriangle, plint id) { return getVertex( getVertexId(iTriangle, id) ); }
 
     SurfaceParticle3D* operator[](plint iVertex)    { return getParticle3D(iVertex); };
@@ -203,7 +203,7 @@ public:
 
     Array<T,3>  get_force(plint iVertex) { return iVertexToParticle3D[iVertex]->get_force(); }
     Array<T,3>  getPosition(plint iVertex) { return iVertexToParticle3D[iVertex]->getPosition();}
-    Array<T,3> get_pbcPosition(plint iVertex) { return iVertexToParticle3D[iVertex]->get_pbcPosition(); }
+   
 
     T computeEdgeLength(plint iVertex, plint jVertex);
     Array<T,3> computeEdgeLengthVector(plint iVertex, plint jVertex);

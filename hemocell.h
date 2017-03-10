@@ -30,6 +30,7 @@ using namespace std;
 #include "ficsionInit.h"
 #include "ficsionInit.hh"
 /* CORE libs */
+#include "HemoCellFunctional.h"
 #include "hemoCellParticleField3D.cpp"
 #include "cellFields3D.cpp"
 #include "cellField3D.h"

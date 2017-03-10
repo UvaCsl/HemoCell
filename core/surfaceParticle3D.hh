@@ -13,7 +13,6 @@ namespace plb {
 
 SurfaceParticle3D::SurfaceParticle3D (Array<double,3> const& position, plint cellId_, plint vertexId_,pluint celltype_)
     : Particle3D<double,DESCRIPTOR>(-1, position), // The cellId initializor does nothing
-      pbcPosition(position),
       v(),
       force(),
       vPrevious(),
@@ -33,14 +32,15 @@ void SurfaceParticle3D::advance(){
      *  2: Adams-Bashforth
      */
     #if HEMOCELL_MATERIAL_INTEGRATION == 1
-            Array<double,3> dxyz = v;
-        	this->getPosition() += dxyz;         
-        	pbcPosition += dxyz;                 
+        	this->getPosition() += v;         
+          if (v[0] > 0) {
+            cerr << v[0];
+          }
 
     #elif HEMOCELL_MATERIAL_INTEGRATION == 2
             Array<double,3> dxyz = (1.5*v - 0.5*vPrevious);
         	this->getPosition() +=  dxyz;
-        	pbcPosition += dxyz;
+        	//pbcPosition += dxyz;
         	
         	vPrevious = v;  // Store velocity
     #endif
@@ -49,7 +49,6 @@ void SurfaceParticle3D::advance(){
 
 void SurfaceParticle3D::reset(Array<double,3> const& position_, Array<double,3> const& velocity_) {
         Particle3D<double,DESCRIPTOR>::reset(position_);
-        pbcPosition = position_;
         v = velocity_;
         vPrevious = velocity_;
         resetForces();
@@ -71,7 +70,6 @@ void SurfaceParticle3D::serialize(HierarchicSerializer& serializer) const
 {
     Particle3D<double,DESCRIPTOR>::serialize(serializer);
     serializer.addValues<double,3>(v);
-    serializer.addValues<double,3>(pbcPosition);
     serializer.addValues<double,3>(force);
     serializer.addValues<double,3>(vPrevious);
     serializer.addValue<int>(rank);
@@ -84,7 +82,6 @@ void SurfaceParticle3D::unserialize(HierarchicUnserializer& unserializer)
 {
     Particle3D<double,DESCRIPTOR>::unserialize(unserializer);
     unserializer.readValues<double,3>(v);
-    unserializer.readValues<double,3>(pbcPosition);
     unserializer.readValues<double,3>(force);
     unserializer.readValues<double,3>(vPrevious);
     unserializer.readValue<int>(rank);
