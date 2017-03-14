@@ -13,9 +13,9 @@ namespace plb {
 
 /// Decide if a Lagrangian point is contained in 3D box, boundaries exclusive
 inline bool contained_sane(Array<int,3> const& x, Box3D const& box) {
-    return x[0]>box.x0 && x[0]<box.x1 &&
-           x[1]>box.y0 && x[1]<box.y1 &&
-           x[2]>box.z0 && x[2]<box.z1;
+    return x[0]>=box.x0 && x[0]<=box.x1 &&
+           x[1]>=box.y0 && x[1]<=box.y1 &&
+           x[2]>=box.z0 && x[2]<=box.z1;
 }
     
     
@@ -138,15 +138,16 @@ inline void interpolationCoefficientsPhi2 (
     // Fixed kernel size
     const plint x0=-1, x1=2; //const for nice loop unrolling
 
-    //Get position
-    const Array<double,3> position = particle->getPosition();
-   
     //Coordinates are relative
     const Dot3D tmpDot = block.getLocation(); 
     const Array<plint,3> relLoc = {tmpDot.x, tmpDot.y, tmpDot.z};
-    
-    //Get our reference node (0,0), and relative
-    const Array<plint,3> center(position[0] + 0.5 - relLoc[0], position[1] + 0.5 - relLoc[1], position[2] + 0.5 -  relLoc[2]); 
+
+    //Get position, relative
+    const Array<double,3> position_tmp = particle->getPosition();
+    const Array<double,3> position = {position_tmp[0] -relLoc[0], position_tmp[1]-relLoc[1],position_tmp[2]-relLoc[2]};
+
+    //Get our reference node (0,0)
+    const Array<plint,3> center(position[0] + 0.5, position[1] + 0.5, position[2] + 0.5); 
     
     //Boundingbox of lattice
     const Box3D boundingBox = block.getBoundingBox();

@@ -295,7 +295,7 @@ int main(int argc, char *argv[]) {
 
     lattice.initialize();
 
-    extendedEnvelopeWidth = 15;
+    extendedEnvelopeWidth = 20;
     // ----------------------- Init cell models --------------------------
 
     pcout << "(main) init cell structures..."  << std::endl;
@@ -417,9 +417,15 @@ int main(int argc, char *argv[]) {
         // ##### 3 ##### LBM
         lattice.collideAndStream();
 
-        // ##### 4 & 5 ##### IBM interpolation + Particle position update
-        cellFields.advanceParticles();
+        // ##### 4 ##### IBM interpolation
+        cellFields.interpolateFluidVelocity();
+
+        //### 6 ### Might be together with interpolation
+        cellFields.syncEnvelopes();
         
+        //### 7 ### 
+        cellFields.advanceParticles();
+ 
  
         //Output and checkpoint
         if ((iter % (tmeas)) == 0) {

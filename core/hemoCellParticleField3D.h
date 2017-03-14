@@ -47,9 +47,11 @@ public:
     void findParticles(Box3D domain,
                                std::vector<Particle3D<double,DESCRIPTOR> *>& found,
                                pluint type) const;
-    virtual void advanceParticles(Box3D domain);
+    virtual void advanceParticles();
+    virtual void interpolateFluidVelocity(Box3D domain);
 
     int deleteIncompleteCells(pluint ctype);
+    void syncEnvelopes() {};
 
     void setlocalDomain(Box3D & localDomain_);
 

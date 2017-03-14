@@ -19,7 +19,7 @@ CellFields3D::CellFields3D( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, 
 
   immersedParticles = new MultiParticleField3D<HEMOCELL_PARTICLE_FIELD>(
             particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
-  immersedParticles->periodicity().toggleAll(true);
+  immersedParticles->periodicity().toggleAll(false);
   immersedParticles->toggleInternalStatistics(false);
   InitAfterLoadCheckpoint();
 }
@@ -101,15 +101,18 @@ void CellFields3D::InitAfterLoadCheckpoint()
 
 void CellFields3D::load(XMLreader * documentXML, plint & iter)
 {
+
     std::string outDir = global::directories().getOutputDir();
     std::string firstField = (*(documentXML->getChildren( documentXML->getFirstId() )[0])).getName();
     bool isCheckpointed = (firstField=="Checkpoint");
     if (isCheckpointed) {
+    hemocellfunction = true;
         (*documentXML)["Checkpoint"]["General"]["Iteration"].read(iter);
         parallelIO::load(outDir + "lattice", lattice, true);
         parallelIO::load(outDir + "particleField", *immersedParticles, true);
 
         InitAfterLoadCheckpoint();
+    hemocellfunction = false;
     }
 }
 
@@ -145,8 +148,36 @@ void CellFields3D::save(XMLreader * documentXML, plint iter)
 void readPositionsCellFields(std::string particlePosFile) {
 }
 
+void CellFields3D::HemoInterpolateFluidVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+  
+  /*
+    Box3D temp = blocks[0]->getBoundingBox();
+    Dot3D tmp = blocks[0]->getLocation();
+    cerr << "Box: " << temp.x0 << " " << temp.x1 << " " << temp.y0  << " "<< temp.y1  << " "<< temp.z0 <<" "<< temp.z1 <<std::endl;
+    cerr << "Loc: " << tmp.x << " " << tmp.y << " " << tmp.z << std::endl;
+    */
+    
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->interpolateFluidVelocity(domain);
+}
+void CellFields3D::interpolateFluidVelocity() {
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  applyProcessingFunctional(new HemoInterpolateFluidVelocity(),immersedParticles->getBoundingBox(),wrapper);
+}
+
+void CellFields3D::HemoSyncEnvelopes::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->syncEnvelopes();
+}
+void CellFields3D::syncEnvelopes() {
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  hemocellfunction=true;
+  applyProcessingFunctional(new HemoSyncEnvelopes(),immersedParticles->getBoundingBox(),wrapper);
+  hemocellfunction=false;
+}
+
 void CellFields3D::HemoAdvanceParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->advanceParticles(domain);
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->advanceParticles();
 }
 void CellFields3D::advanceParticles() {
   vector<MultiBlock3D*> wrapper;

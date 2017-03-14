@@ -193,9 +193,11 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     	    TriangularSurfaceMesh<double> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
     	    
             meshRotation (meshCopy, randomAngles[iCF][c]);
-
+            
+            cellFields.hemocellfunction=true;
             positionCellInParticleField(*(particleFields[iCF]), fluid,
                                          meshCopy, positions[iCF][c]*posRatio+wallWidth, cellIds[iCF][c], iCF); 
+            cellFields.hemocellfunction=false;
 			delete meshCopy;
         }
 
@@ -222,14 +224,14 @@ void ReadPositionsBloodCellField3D::getTypeOfModification (
 {
     modified[0] = modif::nothing; // Fluid field.
     for (unsigned int iField = 1; iField < modified.size(); ++iField) {
-        modified[iField] = modif::dynamicVariables; // Particle fields.
+        modified[iField] = modif::nothing; // Particle fields.
     }
 }
 
 void ReadPositionsBloodCellField3D::getModificationPattern(std::vector<bool>& isWritten) const {
     isWritten[0] = false; // Fluid field.
     for (unsigned int iField = 1; iField < isWritten.size(); ++iField) {
-        isWritten[iField] = true; // Particle fields.
+        isWritten[iField] = false; // Particle fields.
     }
 
 }

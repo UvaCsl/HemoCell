@@ -38,6 +38,7 @@ void HemoParticleDataTransfer3D::receive (
         Box3D domain, std::vector<char> const& buffer, modif::ModifT kind )
 {
     PLB_PRECONDITION(contained(domain, particleField.getBoundingBox()));
+
     // Clear the existing data before introducing the new data.
     particleField.removeParticles(domain);
     // Particles, by definition, are dynamic data, and they need to
@@ -64,8 +65,23 @@ void HemoParticleDataTransfer3D::receive (
 {
         //Particle Locations should always be ABSOULUTE, an offset thus makes no
         //sense
-        receive(domain, buffer, kind);
-        return;
+        Array<T,3> realAbsoluteOffset((T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z);
+    particleField.removeParticles(domain);
+    if ( (kind==modif::dynamicVariables) ||
+         (kind==modif::allVariables) ||
+         (kind==modif::dataStructure) )
+    {
+        pluint posInBuffer = 0;
+        while (posInBuffer < buffer.size()) {
+            // 1. Generate dynamics object, and unserialize dynamic data.
+            HierarchicUnserializer unserializer(buffer, posInBuffer);
+            Particle3D<double,DESCRIPTOR>* newParticle =
+                meta::particleRegistration3D<double,DESCRIPTOR>().generate(unserializer);
+            posInBuffer = unserializer.getCurrentPos();
+            newParticle->getPosition() += realAbsoluteOffset;
+            particleField.addParticle(domain, newParticle);
+        }
+    }
 }
 
 void HemoParticleDataTransfer3D::attribute (
@@ -159,8 +175,9 @@ void HemoParticleField3D::addParticle(Box3D domain, Particle3D<double,DESCRIPTOR
         //new entry
         particles.push_back(particle);
           particles_per_type[sparticle->get_celltype()].push_back(particle); //TODO, not accurate for already existing particles
-          lpc[sparticle->get_cellId()] = true;
-        //}
+          if(this->isContainedABS(pos, localDomain)) {
+            lpc[sparticle->get_cellId()] = true;
+          }
         insert_ppc(sparticle);
       }
       particle->setTag(-1);
@@ -213,13 +230,14 @@ bool HemoParticleField3D::isContainedABS(Array<double,3> pos, Box3D box) const {
            (y > box.y0-0.5) && (y <= box.y1+0.5) &&
            (z > box.z0-0.5) && (z <= box.z1+0.5);
 
-
 }
 
 void HemoParticleField3D::removeParticles(Box3D domain) {
 //Almost the same, but we save a lot of branching by making a seperate function
 // Dont allow palabos to delete things
-   return;
+ return;
+    if (!cellFields) return; //TODO shouldnt be necessary
+    if (!cellFields->hemocellfunction) return;
     std::vector<Particle3D<double,DESCRIPTOR>*> remainingParticles = particles;
     SurfaceParticle3D * sparticle;
     Box3D finalDomain;
@@ -272,7 +290,7 @@ void HemoParticleField3D::findParticles (
 }
 
 plint HemoParticleField3D::nearestCell(double const pos) const {
-  return floor(pos + 0.5);
+  return int(pos + 0.5);
 }
 
 void HemoParticleField3D::computeGridPosition (
@@ -320,7 +338,7 @@ void HemoParticleField3D::outputPositions(Box3D domain,vector<vector<double>>& o
   //DEBUG, deleteIncomplete Cells
   int out;
   while((out = deleteIncompleteCells(ctype)) > 0) {
-    cerr << "(outputPositions) WARNING, deleted " << out << " vertices for celltype " << ctype << "\n";
+    //cerr << "(outputPositions) WARNING, deleted " << out << " vertices for celltype " << ctype << "\n";
   }
   //Get positions only for whole cells
   name = "Position";
@@ -359,7 +377,7 @@ void HemoParticleField3D::outputTriangles(Box3D domain, vector<vector<plint>>& o
 
       //Do not add triangles over periodic boundaries
       bool toolarge = false;
-      for (pluint x = 0; x < 3; x++) {
+      /*for (pluint x = 0; x < 3; x++) {
         for (pluint y = x +1; y < 3; y++) {
           if ((abs(positions[triangle[x]][0] - positions[triangle[y]][0]) > 2.0) ||
               (abs(positions[triangle[x]][1] - positions[triangle[y]][1]) > 2.0) ||
@@ -369,7 +387,7 @@ void HemoParticleField3D::outputTriangles(Box3D domain, vector<vector<plint>>& o
             break;
           }
         }
-      }
+      }*/
       if (!toolarge) {
         output.push_back(triangle);
       }
@@ -381,12 +399,12 @@ void HemoParticleField3D::outputTriangles(Box3D domain, vector<vector<plint>>& o
 
 void HemoParticleField3D::setlocalDomain(Box3D & localDomain_) {
   localDomain = localDomain_;
-  localDomain.x0 -= this->getLocation().x+1;
-  localDomain.x1 -= this->getLocation().x+1;
-  localDomain.y0 -= this->getLocation().y+1;
-  localDomain.y1 -= this->getLocation().y+1;
-  localDomain.z0 -= this->getLocation().z+1;
-  localDomain.z1 -= this->getLocation().z+1;
+  localDomain.x0 -= this->getLocation().x;
+  localDomain.x1 -= this->getLocation().x;
+  localDomain.y0 -= this->getLocation().y;
+  localDomain.y1 -= this->getLocation().y;
+  localDomain.z0 -= this->getLocation().z;
+  localDomain.z1 -= this->getLocation().z;
 }
 
 void HemoParticleField3D::passthroughpass(int type, Box3D domain, vector<vector<double>>& output, pluint ctype, std::string & name) {
@@ -395,7 +413,13 @@ void HemoParticleField3D::passthroughpass(int type, Box3D domain, vector<vector<
   (this->*cancerpointer)(domain,output,ctype,name);
 }
 
-void HemoParticleField3D::advanceParticles(Box3D domain) {
+void HemoParticleField3D::advanceParticles() {
+  for(auto *particle:particles){
+    particle->advance();
+  }
+}
+
+void HemoParticleField3D::interpolateFluidVelocity(Box3D domain) {
   vector<Particle3D<double,DESCRIPTOR>*> localParticles;
   findParticles(domain,localParticles);
   //TODO, remove casting
@@ -403,6 +427,7 @@ void HemoParticleField3D::advanceParticles(Box3D domain) {
   //Prealloc is nice
   Array<double,3> velocity;
   Array<double,3> velocity_comp;
+
 
   for (pluint i = 0; i < localParticles.size(); i++ ) {
     sparticle = dynamic_cast<SurfaceParticle3D*>(localParticles[i]);
@@ -418,11 +443,15 @@ void HemoParticleField3D::advanceParticles(Box3D domain) {
       velocity += velocity_comp * sparticle->kernelWeights[j];
     }
     sparticle->v = velocity;
-    sparticle->advance();
+    /*
+    if (sparticle->kernelLocations.size() == 0) {
+      cerr << "Location: " << sparticle->getPosition()[0] << " " << sparticle->getPosition()[1] << " " << sparticle->getPosition()[2] << std::endl;
+    Box3D temp = getBoundingBox();
+    Dot3D tmp = getLocation();
+    cerr << "Box: " << temp.x0 << " " << temp.x1 << " " << temp.y0  << " "<< temp.y1  << " "<< temp.z0 <<" "<< temp.z1 <<std::endl;
+    cerr << "Loc: " << tmp.x << " " << tmp.y << " " << tmp.z << std::endl;
+    }*/
   }
-
-
-
 
 }
 

@@ -21,7 +21,6 @@ SurfaceParticle3D::SurfaceParticle3D (Array<double,3> const& position, plint cel
       celltype(celltype_),
       rank(getMpiProcessor())
 {
-
 }
 
 
@@ -32,10 +31,7 @@ void SurfaceParticle3D::advance(){
      *  2: Adams-Bashforth
      */
     #if HEMOCELL_MATERIAL_INTEGRATION == 1
-        	this->getPosition() += v;         
-          if (v[0] > 0) {
-            cerr << v[0];
-          }
+          this->getPosition() += v;         
 
     #elif HEMOCELL_MATERIAL_INTEGRATION == 2
             Array<double,3> dxyz = (1.5*v - 0.5*vPrevious);
@@ -44,6 +40,7 @@ void SurfaceParticle3D::advance(){
         	
         	vPrevious = v;  // Store velocity
     #endif
+    v = {0.0,0.0,0.0};
 }
 
 

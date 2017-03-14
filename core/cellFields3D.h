@@ -46,6 +46,7 @@ public:
 	CellFields3D(MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth);
     MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & getParticleField3D() { return *immersedParticles; };
     virtual void advanceParticles();
+    virtual void interpolateFluidVelocity();
     virtual void spreadForceIBM();
     virtual void interpolateVelocityIBM();
     virtual void applyConstitutiveModel();
@@ -76,17 +77,32 @@ public:
 	//MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * reductionParticles;
   double cellTimeStep;
   void synchronizeCellQuantities(SyncRequirements _dummy) {}
+  class HemoInterpolateFluidVelocity: public HemoCellFunctional {
+   void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+   HemoInterpolateFluidVelocity * clone() const { return new HemoInterpolateFluidVelocity(*this);}
+  };
   class HemoAdvanceParticles: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
    HemoAdvanceParticles * clone() const { return new HemoAdvanceParticles(*this);}
+  };
+  void syncEnvelopes();
+  class HemoSyncEnvelopes: public HemoCellFunctional {
+   void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+   HemoSyncEnvelopes * clone() const { return new HemoSyncEnvelopes(*this);}
+   void getTypeOfModification(std::vector<modif::ModifT>& modified) const {
+     for (pluint i = 0; i < modified.size(); i++) {
+       modified[i] = modif::dynamicVariables;
+   } }
 
   };
+  bool hemocellfunction = false; //true if we should allow things to communicate (under our sight, not palabos);
 };
 
 /*contains information about one particular cellfield, structlike*/
 class HemoCellField{
   static vector<int> default_output;
   public:
+
   HemoCellField(CellFields3D& cellFields_, Cell3D<double,DESCRIPTOR> cell3D_, TriangularSurfaceMesh<double>& meshElement_)
       :cellFields(cellFields_), desiredOutputVariables(default_output),
        cell3D(cell3D_), meshElement(meshElement_) {
@@ -114,6 +130,7 @@ class HemoCellField{
   int numVertex;
   bool outputTriangles = false;
   CellFields3D & cellFields;
+  cellMechanics & mechanics;
   vector<int> & desiredOutputVariables;
   Cell3D<double,DESCRIPTOR> & cell3D;
   vector<Array<plint,3>> triangle_list;

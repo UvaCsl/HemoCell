@@ -137,7 +137,7 @@ void WriteCellField3DInMultipleHDF5Files::getTypeOfModification (
         std::vector<modif::ModifT>& modified ) const
 {
     for (pluint i = 0; i < modified.size(); ++i) {
-        modified[i] = modif::dynamicVariables;
+        modified[i] = modif::nothing;
     }
 }
 
