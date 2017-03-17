@@ -130,7 +130,7 @@ class HemoCellField{
   int numVertex;
   bool outputTriangles = false;
   CellFields3D & cellFields;
-  cellMechanics & mechanics;
+  //cellMechanics & mechanics;
   vector<int> & desiredOutputVariables;
   Cell3D<double,DESCRIPTOR> & cell3D;
   vector<Array<plint,3>> triangle_list;

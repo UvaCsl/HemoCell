@@ -3,7 +3,7 @@
 
 //-----------------
 #include "hemocell.h"
-
+#include "rbcHO.cpp"
 typedef double T;
 
 // ----------------------- Copy from neighbour ------------------------------------

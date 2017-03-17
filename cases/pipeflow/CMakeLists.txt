@@ -88,6 +88,7 @@ INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/helper)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/config)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/core)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/models)
+INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/mechanics)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/tools/dynpacking)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/external)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/IO)
@@ -99,7 +100,8 @@ FILE(GLOB SRC_FILES "${HEMOCELL_BASE_DIR}/IO/*.cpp"
                     "${HEMOCELL_BASE_DIR}/extensions/*.cpp"
                     "${HEMOCELL_BASE_DIR}/external/*.cpp"
                     "${HEMOCELL_BASE_DIR}/helper/*.cpp"
-                    "${HEMOCELL_BASE_DIR}/models/*.cpp")
+                    "${HEMOCELL_BASE_DIR}/models/*.cpp"
+                    "${HEMOCELL_BASE_DIR}/mechanics/*.cpp")
 
 LIST(APPEND SRC_FILES_SRC ${PROJECT_SRC})
 
