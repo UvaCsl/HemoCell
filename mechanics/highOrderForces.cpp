@@ -24,7 +24,7 @@ class HighOrderForces :public CellMechanics {
       //Calculate Cell Values that need all particles (but do it most efficient
       //tailered to this class)
       double volume = 0.0;
-      double total_area = 0.0;
+      int triangle_n = 0;
       for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
         const Array<double,3> & v0 = cell[triangle[0]]->getPosition();
         const Array<double,3> & v1 = cell[triangle[1]]->getPosition();
@@ -50,9 +50,17 @@ class HighOrderForces :public CellMechanics {
         const double l3 = (v0[0]-v2[0])*(v0[0]-v2[0]) +
                           (v0[1]-v2[1])*(v0[1]-v2[1]) +
                           (v0[2]-v2[2])*(v0[2]-v2[2]);
-        const double area = (2*l1*l2 + 2*l2*l3 + 2*l1*l3 - l1*l1 - l2*l2 - l3*l3)/16.0
+        const double area = sqrt((2*l1*l2 + 2*l2*l3 + 2*l1*l3 - l1*l1 - l2*l2 - l3*l3)/16.0)
+
+        const double areaRatio = (area-cellConstants.triangle_area_eq_list[triangle_n])
+                                 /cellConstants.triangle_area_eq_list[triangle_n];
+        //Area Force per vertex calculation, TODO
+        //Unit vector pointing from the area
+        
 
 
+
+        triangle_n++;
       }
 
 

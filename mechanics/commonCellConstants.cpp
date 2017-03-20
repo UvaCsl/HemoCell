@@ -19,19 +19,23 @@ private:
 public:
   static CommonCellConstants CommonCellConstantsConstructor(HemoCellField & cellField_) {
     HemoCellField & cellField = cellField_;
+    //Calculate triangles
     vector<Array<plint,3>> triangle_list_ = cellField.triangle_list;
 
+    //Calculate edges
     vector<Array<plint,2>> edge_list_;
     const TriangularSurfaceMesh<double> constMesh = cellField.meshElement;
     for (const Edge & edge : constMesh.edges()) {
       edge_list_.push_back({edge.pv,edge.ne});
     }
 
+    //Calculate eq edges
     vector<double> edge_length_eq_list_;
     for (const Array<plint,2> & edge : edge_list_) {
       edge_length_eq_list_.push_back(cellField.meshElement.computeEdgeLength(edge[0],edge[1]));
     }
 
+    //Calculate eq edges angles
     vector<double> edge_angle_eq_list_;
     Array<double,3> x2;
     double angle;
@@ -58,6 +62,7 @@ public:
       edge_angle_eq_list_.push_back((angle > pi) ? angle - 2 * pi : angle);
     }
 
+    //Calculate triangle eq
     vector<double> triangle_area_eq_list_;
     for (pluint iTriangle ; iTriangle < cellField.triangle_list.size(); iTriangle++) {
       triangle_area_eq_list_.push_back(cellField.meshElement.computeTriangleArea(iTriangle));
