@@ -39,9 +39,11 @@ public:
     HemoParticleField3D* clone() const;
     void swap(HemoParticleField3D& rhs);
 public:
+    virtual void applyConstitutiveModel();
     virtual void addParticle(Box3D domain, Particle3D<double,DESCRIPTOR>* particle);
     virtual void removeParticles(Box3D domain);
     virtual void removeParticles(Box3D domain,plint tag);
+    virtual void removeParticles(plint tag);
     virtual void findParticles(Box3D domain,
                                std::vector<Particle3D<double,DESCRIPTOR>*>& found);
     void findParticles(Box3D domain,
@@ -49,8 +51,12 @@ public:
                                pluint type) const;
     virtual void advanceParticles();
     virtual void interpolateFluidVelocity(Box3D domain);
+    virtual void spreadParticleForce(Box3D domain);
+    void separateForceVectors();
+    void unifyForceVectors();
 
-    int deleteIncompleteCells(pluint ctype);
+    int deleteIncompleteCells(pluint ctype, bool twice=false);
+    int deleteIncompleteCells(bool twice=false);
     void syncEnvelopes() {};
 
     void setlocalDomain(Box3D & localDomain_);
@@ -64,6 +70,10 @@ public:
     //Ugly output functions:
     void outputPositions(Box3D,vector<vector<double>>&, pluint, std::string&); 
     void outputForces   (Box3D,vector<vector<double>>&, pluint, std::string&);
+    void outputForceVolume   (Box3D,vector<vector<double>>&, pluint, std::string&);
+    void outputForceArea   (Box3D,vector<vector<double>>&, pluint, std::string&);
+    void outputForceBending   (Box3D,vector<vector<double>>&, pluint, std::string&);
+    void outputForceInPlane   (Box3D,vector<vector<double>>&, pluint, std::string&);
     void outputTriangles   (Box3D,vector<vector<plint>>&, vector<vector<double>>&, pluint, std::string&);
     void AddOutputMap();
     map<int,void (HemoParticleField3D::*)(Box3D,vector<vector<double>>&,pluint,std::string&)> outputFunctionMap;

@@ -11,7 +11,7 @@ namespace plb {
 
 class SurfaceParticle3D : public Particle3D<double,DESCRIPTOR> {
 public:
-    SurfaceParticle3D(){}
+    SurfaceParticle3D();
     SurfaceParticle3D(Array<double,3> const& position, plint cellId_ = -1, plint vertexId_ = 0, pluint celltype_=0);
     SurfaceParticle3D* clone() const override;
 
@@ -58,8 +58,11 @@ public:
     vector<Cell<double,DESCRIPTOR>*> kernelLocations;
     vector<double>         kernelWeights;
     Array<double,3> v;
-private:
-    Array<double,3> force, vPrevious;
+    Array<double,3> force, force_total, vPrevious;
+    Array<double,3> *force_volume = &force;
+    Array<double,3> *force_bending = &force;
+    Array<double,3> *force_inplane = &force;
+    Array<double,3> *force_area = &force;; //Default to pointing to force, if output is desired, it can be stored seperately
 public:
     plint cellId;
     plint vertexId;

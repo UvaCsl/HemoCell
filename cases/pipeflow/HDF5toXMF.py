@@ -301,6 +301,7 @@ if __name__ == '__main__':
     fnameStrings.append(dirname + identifier + "." + iterString + ".p.%s.h5")
     pool = Pool(16)
     pool.map(createXDMF,[(fnameString,processorStrings) for fnameString in fnameStrings])
+    pool.close()
 
 
 

@@ -85,7 +85,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         if (cellField3D.desiredOutputVariables[i] == OUTPUT_POSITION) {
             positions = (*output);
         }
-        free(output);
+        delete output;
     }
      
     if (cellField3D.outputTriangles) { //Treat triangles seperately because of double/int issues
@@ -121,7 +121,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         
         long int nT = output->size();
         H5LTset_attribute_long (file_id, "/", "numberOfTriangles", &nT, 1);
-        free(output);
+        delete output;
 
      }
 

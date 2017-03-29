@@ -20,17 +20,19 @@ CellFields3D::CellFields3D( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, 
   immersedParticles = new MultiParticleField3D<HEMOCELL_PARTICLE_FIELD>(
             particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
   immersedParticles->periodicity().toggleAll(false);
+  immersedParticles->periodicity().toggle(0,true);
   immersedParticles->toggleInternalStatistics(false);
   InitAfterLoadCheckpoint();
 }
 
-void CellFields3D::addCellType(TriangularSurfaceMesh<double> & meshElement, double hematocrit, ShellModel3D<double> *cellmodel, std::string name_)
+HemoCellField * CellFields3D::addCellType(TriangularSurfaceMesh<double> & meshElement, double hematocrit, std::string name_)
 {
   HemoCellField * cf = new HemoCellField(*this, Cell3D<double,DESCRIPTOR>(meshElement), meshElement);
   cf->hematocrit = hematocrit;
   cf->name = name_;
   cf->ctype = cellFields.size();
-  cellFields.push_back(*cf);
+  cellFields.push_back(cf);
+  return cf;
 }
 
 unsigned int CellFields3D::size() 
@@ -40,7 +42,7 @@ unsigned int CellFields3D::size()
 
 HemoCellField * CellFields3D::operator[](unsigned int index)
 {
-  return &(cellFields[index]);
+  return cellFields[index];
 }
 //Initialization
 //vector <CellField3D<double, DESCRIPTOR>> CellFields3D::getLegacyCellFieldsVector() {
@@ -185,13 +187,81 @@ void CellFields3D::advanceParticles() {
   applyProcessingFunctional(new HemoAdvanceParticles(),immersedParticles->getBoundingBox(),wrapper);
 }
 
-void CellFields3D::spreadForceIBM() {
+void CellFields3D::HemoSpreadParticleForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->spreadParticleForce(domain);
+}
+void CellFields3D::spreadParticleForce() {
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  applyProcessingFunctional(new HemoSpreadParticleForce(),immersedParticles->getBoundingBox(),wrapper);
 }
 
-void CellFields3D::interpolateVelocityIBM() {
+void CellFields3D::HemoApplyConstitutiveModel::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->applyConstitutiveModel();
 }
-
 void CellFields3D::applyConstitutiveModel() {
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  applyProcessingFunctional(new HemoApplyConstitutiveModel(),immersedParticles->getBoundingBox(),wrapper);
+
+}
+
+void CellFields3D::HemoUnifyForceVectors::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->unifyForceVectors();
+}
+void CellFields3D::unify_force_vectors() {
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  applyProcessingFunctional(new HemoUnifyForceVectors(),immersedParticles->getBoundingBox(),wrapper);
+}
+
+void CellFields3D::HemoSeperateForceVectors::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->separateForceVectors();
+}
+void CellFields3D::separate_force_vectors() {
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  applyProcessingFunctional(new HemoSeperateForceVectors(),immersedParticles->getBoundingBox(),wrapper);
+
+}
+
+//HemoCellField
+HemoCellField::HemoCellField(CellFields3D& cellFields_, Cell3D<double,DESCRIPTOR> cell3D_, TriangularSurfaceMesh<double>& meshElement_)
+      :cellFields(cellFields_), desiredOutputVariables(default_output),
+       cell3D(cell3D_), meshElement(meshElement_) {
+         numVertex = meshElement.getNumVertices();
+         std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
+         if (it != desiredOutputVariables.end()) {
+            desiredOutputVariables.erase(it);
+            outputTriangles = true;
+         }
+
+        for (plint iTriangle = 0; iTriangle < meshElement.getNumTriangles(); iTriangle++) {
+          triangle_list.push_back({meshElement.getVertexId(iTriangle,0),
+                                   meshElement.getVertexId(iTriangle,1),
+                                   meshElement.getVertexId(iTriangle,2) 
+                                   });
+        }
+        meshmetric = new MeshMetrics<double>(meshElement_);
+
+       }
+
+
+void HemoCellField::setOutputVariables(const vector<int> & outputs) { desiredOutputVariables = outputs;
+         std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
+         if (it != desiredOutputVariables.end()) {
+            desiredOutputVariables.erase(it);
+            outputTriangles = true;
+         } else {
+           outputTriangles = false;
+         }
+  }
+
+void HemoCellField::statistics() {
+  cerr << "Cellfield  (+ material model) of " << name << std::endl;
+
+  mechanics->statistics();
+
 }
 
 #endif

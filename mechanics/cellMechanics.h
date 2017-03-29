@@ -1,3 +1,8 @@
+#ifndef HEMO_CELLMECHANICS
+#define HEMO_CELLMECHANICS
 class CellMechanics {
-  virtual void ParticleMechanics(map<int,vector<SurfaceParticle3D *>>,map<int,bool>) = 0;
+  public:
+  virtual void ParticleMechanics(map<int,vector<SurfaceParticle3D *>>,map<int,bool>, pluint ctype) = 0 ;
+  virtual void statistics() = 0;
 };
+#endif

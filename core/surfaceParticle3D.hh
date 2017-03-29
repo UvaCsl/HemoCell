@@ -11,6 +11,12 @@ namespace plb {
 /* *************** class ImmersedCellParticle3D ************************************ */
 
 
+SurfaceParticle3D::SurfaceParticle3D(){
+  force_volume = &force; //These pointers are only changed for nice outputs
+  force_area = &force; //These pointers are only changed for nice outputs
+  force_inplane = &force; //These pointers are only changed for nice outputs
+  force_bending = &force; //These pointers are only changed for nice outputs
+}
 SurfaceParticle3D::SurfaceParticle3D (Array<double,3> const& position, plint cellId_, plint vertexId_,pluint celltype_)
     : Particle3D<double,DESCRIPTOR>(-1, position), // The cellId initializor does nothing
       v(),
@@ -21,6 +27,10 @@ SurfaceParticle3D::SurfaceParticle3D (Array<double,3> const& position, plint cel
       celltype(celltype_),
       rank(getMpiProcessor())
 {
+  force_volume = &force; //These pointers are only changed for nice outputs
+  force_area = &force; //These pointers are only changed for nice outputs
+  force_inplane = &force; //These pointers are only changed for nice outputs
+  force_bending = &force; //These pointers are only changed for nice outputs
 }
 
 
@@ -85,11 +95,20 @@ void SurfaceParticle3D::unserialize(HierarchicUnserializer& unserializer)
     unserializer.readValue<plint>(cellId);
     unserializer.readValue<plint>(vertexId);
     unserializer.readValue<pluint>(celltype);
+    force_volume = &force; //These pointers are only changed for nice outputs
+    force_area = &force; //These pointers are only changed for nice outputs
+    force_inplane = &force; //These pointers are only changed for nice outputs
+    force_bending = &force; //These pointers are only changed for nice outputs
 }
 
 
 SurfaceParticle3D* SurfaceParticle3D::clone() const {
-    return new SurfaceParticle3D(*this);
+    SurfaceParticle3D* sparticle = new SurfaceParticle3D(*this);
+    sparticle->force_volume = &sparticle->force;
+    sparticle->force_bending = &sparticle->force;
+    sparticle->force_inplane = &sparticle->force;
+    sparticle->force_area = &sparticle->force;
+    return sparticle;
 }
 
 }  // namespace plb

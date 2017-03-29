@@ -3,7 +3,9 @@
 
 //-----------------
 #include "hemocell.h"
+#include "constantConversion.h"
 #include "rbcHO.cpp"
+#include "pltNOOP.cpp"
 typedef double T;
 
 // ----------------------- Copy from neighbour ------------------------------------
@@ -145,10 +147,6 @@ int main(int argc, char *argv[]) {
     T minForce, maxForce;
     T ppForceDistance;
     plint initIter = 0;
-    T dx, dt, dm, dNewton;
-    T tau, nu_lbm, u_lbm_max;
-    T nu_p, rho_p;
-    T cell_dt;
     plint cellStep;
     plint nx, ny, nz;
     T hematocrit;
@@ -177,10 +175,7 @@ int main(int argc, char *argv[]) {
     cfg["ibm"]["ppForceDistance"].read(ppForceDistance);
 
     cfg["domain"]["geometry"].read(meshFileName);
-    cfg["domain"]["rhoP"].read(rho_p);
-    cfg["domain"]["nuP"].read(nu_p);
-    cfg["domain"]["dx"].read(dx);
-    cfg["domain"]["dt"].read(dt);
+;
     cfg["domain"]["refDir"].read(refDir);
     cfg["domain"]["refDirN"].read(refDirN);
     cfg["domain"]["timeStepSize"].read(cellStep);
@@ -225,38 +220,7 @@ int main(int argc, char *argv[]) {
     nz = domainBox.getNz();
 
     // ---------------------------- Calc. LBM parameters -------------------------------------------------
-
-    if(dt < 0.0) { // e.g. == -1, set tau = 1 and calc. dt
-        tau = 1.0;
-        nu_lbm = 1./3. * (tau - 0.5);
-        dt = nu_lbm / nu_p * (dx * dx);
-        pcout << "(main) Tau is set to unity, and dt is derived from that! (For the fluid, this is the most numerically stable settings.)" << endl;
-    }
-    else{  // set dt directly and calculate corresponding tau
-        nu_lbm = nu_p * dt / (dx*dx); 
-        tau = 3.0 * nu_lbm + 0.5;
-    }
-
-    u_lbm_max = cfg["parameters"]["Re"].read<double>() * nu_lbm / ny;  // Approximate max. occuring numerical velocity >0.1 should never happen    
-    dm = rho_p * (dx * dx * dx);
-    dNewton = (dm * dx / (dt * dt));
-    //kBT = kBT_p / ( dNewton * dx );
-    //shearRate = shearRate_p * dt;
-    //stretchForceScalar = stretchForce_p / dNewton;
-
-
-    pcout << "(main) dx = " << dx << ", " <<
-    "dt = " << dt << ", " <<
-    "cell_dt = " << cellStep * dt << ", " <<
-    "dm = " << dm << ", " <<
-    "dN = " << dNewton << std::endl;
-    pcout << "(main) tau = " << tau << " Re = " << cfg["parameters"]["Re"].read<double>() << " u_lb_max(based on Re) = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
-    pcout << "(main) Re corresponds to u_max = " << (cfg["parameters"]["Re"].read<double>() * nu_p)/(ny*dx) << " [m/s]" << endl;
-
-    // Do a general check for suspiciosly off values.
-    checkParameterSanity(nu_lbm, u_lbm_max);
-    
-
+    param::lbm_parameters(cfg, domainBox);
     // ------------------------ Init lattice --------------------------------
 
     pcout << "(main) init lattice structure..."  << std::endl;
@@ -267,7 +231,7 @@ int main(int argc, char *argv[]) {
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
             defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
 #if HEMOCELL_CFD_DYNAMICS == 1
-            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/tau));
+            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
 #elif HEMOCELL_CFD_DYNAMICS == 2
             new GuoExternalForceMRTdynamics<T, DESCRIPTOR>(1.0/tau)); // Use with MRT dynamics!
 #endif
@@ -275,24 +239,20 @@ int main(int argc, char *argv[]) {
     defineDynamics(lattice, *flagMatrix, lattice.getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
 
     lattice.periodicity().toggleAll(true);
+    lattice.toggleInternalStatistics(false);
     initializeAtEquilibrium(lattice, lattice.getBoundingBox(), 1., Array<T, 3>(0., 0., 0.));
 
 
     // ----------------------- Define external driving force ---------------
 
     T rPipe = refDirN/2.0 ; // -1 for the wall width is not needed, BB nodes seem to be forced as well
-    T poiseuilleForce =  8 * nu_lbm * (u_lbm_max * 0.5) / rPipe / rPipe;
-    
-    // If no saving was set up give some sane default
-    if (tmeas == 0) {
-        tmeas = plint(ny * ny * 1.0 / (4 * nu_lbm * cfg["parameters"]["Re"].read<double>())) / 40;
-    }
-
+    double poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
+   
     setExternalVector(lattice, lattice.getBoundingBox(),
                       DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                       Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-
-
+    
+    
     lattice.initialize();
 
     extendedEnvelopeWidth = 20;
@@ -316,40 +276,43 @@ int main(int argc, char *argv[]) {
     plint shape = 1;    // shape: Sphere[0], RBC from sphere[1], Cell(defined)[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5]
     std::string cellPath = " "; // If particle is loaded from stl file.
 
-    TriangleBoundary3D<T> RBCCells = constructMeshElement(shape, (radius / dx) , minNumOfTriangles, dx, cellPath, eulerAngles);
+    TriangleBoundary3D<T> RBCCells = constructMeshElement(shape, (radius / param::dx) , minNumOfTriangles, param::dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> meshElement = RBCCells.getMesh();
     meshes.push_back(&meshElement);
+    eqVolumes.push_back(MeshMetrics<T>(meshElement).getVolume());
+
     MeshMetrics<T> meshmetric(meshElement);
     meshmetric.write();
-    eqVolumes.push_back(meshmetric.getVolume());
     plint numVerticesPerCell = meshElement.getNumVertices();
     /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
-    cellModels.push_back(
-             ShapeMemoryModel3D::RBCShapeMemoryModel3D(&cfg, dx, dt, dm, meshElement));
-    cellFields.addCellType(meshElement, hematocrit, cellModels[0], "RBC");
-
+    
+    HemoCellField * rbcfield = cellFields.addCellType(meshElement, hematocrit, "RBC");
+    
+    RbcHO rbcmechanics(cfg,*rbcfield);
+    rbcfield->mechanics = &rbcmechanics;
     
     // ----------------------- Init platelets ----------------------------
     // TODO - Collect material properties, don't just derive them from RBC
     // TODO - We can use a numerically cheaper model
 
     pcout << "(main)   * init PLT structures..."  << std::endl;
-    T pltRadius = 1.15e-6 / dx;
+    T pltRadius = 1.15e-6 / param::dx;
     T aspectRatio = 1.0 / 2.3;//(2 * pltRadius);
-    TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, (plint)ceil(minNumOfTriangles/9.0), dx, cellPath, eulerAngles, aspectRatio);
+    TriangleBoundary3D<T> PLTCells = constructMeshElement(6, pltRadius, (plint)ceil(minNumOfTriangles/9.0), param::dx, cellPath, eulerAngles, aspectRatio);
     TriangularSurfaceMesh<T> pltMeshElement = PLTCells.getMesh();
-    meshes.push_back(&pltMeshElement);
     eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
-    cellModels.push_back(
-            ShapeMemoryModel3D::PlateletShapeMemoryModel3D(&cfg, dx, dt, dm, pltMeshElement));
-    cellFields.addCellType(pltMeshElement, 0.0025 * hematocrit,
-                                                        cellModels[cellModels.size() - 1], "PLT");
+    HemoCellField * pltfield = cellFields.addCellType(pltMeshElement, 0.0025 * hematocrit, "PLT");
+    PltNOOP pltmechanics = PltNOOP();
+    pltfield->mechanics = &pltmechanics;
     
-    vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES};
+    
+    vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_INPLANE,OUTPUT_FORCE_AREA};
     cellFields[0]->setOutputVariables(outputs); //SET RBC OUTPUT
-    cellFields[1]->setOutputVariables(outputs); //SET PLT OUTPUT
+    vector<int> outputs2 = {OUTPUT_POSITION,OUTPUT_TRIANGLES};
 
+    cellFields[1]->setOutputVariables(outputs2); //SET PLT OUTPUT
 
+    cellFields[0]->statistics();
 
     // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
 
@@ -361,7 +324,7 @@ int main(int argc, char *argv[]) {
 
         //orderedPositionMultipleCellField3D(cellFields);
         //randomPositionMultipleCellField3D(cellFields, hematocrit, dx, maxPackIter);
-       readPositionsBloodCellField3D(cellFields, dx, particlePosFile.c_str());
+       readPositionsBloodCellField3D(cellFields, param::dx, particlePosFile.c_str());
        
         pcout << "(main) saving checkpoint..." << std::endl;
         cellFields.save(&documentXML, initIter);
@@ -372,9 +335,11 @@ int main(int argc, char *argv[]) {
     }
    
     // ------------------------- Output flow parameters ----------------------
+    plint domainVol = computeSum(*flagMatrix);
+
+    /*
     pcout << "(main) material model parameters: model: " << HEMOCELL_MATERIAL_MODEL <<  ", update scheme: " << HEMOCELL_MATERIAL_INTEGRATION << ", step-size: " << cellStep << " lt" << endl;
 
-    plint domainVol = computeSum(*flagMatrix);
     pcout << "(main) Number of fluid cells: " << domainVol << " / " << nx*ny*nz << " (" << domainVol * (dx * dx * dx * 1e18) << " um^3)" << std::endl;
     for (pluint iCell = 0; iCell < cellFields.size(); ++iCell) {
         plint nCells = cellFields[iCell]->getNumberOfCells_Global();
@@ -392,7 +357,7 @@ int main(int argc, char *argv[]) {
         pcout << "(main)   nCells (global) = " << nCells << ", pid: " << global::mpi().getRank();
         pcout << ", Cell volume = " << eqVolumes[iCell] * (dx * dx * dx * 1e18) << " um^3 (" <<  dynVolume * (dx * dx * dx * 1e18) << "  um^3)" << std::endl;
     }
-
+    */
     // ------------------------- Warming up fluid domain ------------------    
 
     if (initIter == 0)
@@ -401,21 +366,23 @@ int main(int argc, char *argv[]) {
         for (plint itrt = 0; itrt < cfg["parameters"]["warmup"].read<plint>(); ++itrt) { cellFields.setFluidExternalForce(poiseuilleForce); lattice.collideAndStream(); }
     }
 	T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
-	pcout << "(main) Mean velocity: " << meanVel  * (dx/dt) << " m/s; Apparent rel. viscosity: " << (u_lbm_max*0.5) / meanVel << std::endl;
+	pcout << "(main) Mean velocity: " << meanVel  * (param::dx/param::dt) << " m/s; Apparent rel. viscosity: " << (param::u_lbm_max*0.5) / meanVel << std::endl;
 
     // ------------------------ Starting main loop --------------------------
-    pcout << std::endl << "(main) * starting simulation at " << initIter << " of tmax=" << tmax << " iterations (" << tmax * dt << " s)..." << std::endl;
+    pcout << std::endl << "(main) * starting simulation at " << initIter << " of tmax=" << tmax << " iterations (" << tmax * param::dt << " s)..." << std::endl;
     for (plint iter = initIter; iter < tmax + 1; iter++) {
         cellFields.applyConstitutiveModel();    // Calculate Force on Vertices
-         
-        // ##### Bodyforce
-        cellFields.setFluidExternalForce(poiseuilleForce);
-        
+            
         // ##### Particle Force to Fluid ####
-        cellFields.spreadForceIBM();
+        cellFields.spreadParticleForce();
         
         // ##### 3 ##### LBM
         lattice.collideAndStream();
+        
+        // Reset Forces on the lattice, TODO do own efficient implementation
+        setExternalVector(lattice, lattice.getBoundingBox(),
+                      DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+                      Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
 
         // ##### 4 ##### IBM interpolation
         cellFields.interpolateFluidVelocity();
@@ -429,14 +396,27 @@ int main(int argc, char *argv[]) {
  
         //Output and checkpoint
         if ((iter % (tmeas)) == 0) {
-            writeCellField3D_HDF5(cellFields,dx,dt,iter);
+            //Repoint surfaceparticle forces for output
+            cellFields.separate_force_vectors();
+            
+            //Recalculate the forces
+            cellFields.applyConstitutiveModel();
+            
+            writeCellField3D_HDF5(cellFields,param::dx,param::dt,iter);
+            
+            //Repoint surfaceparticle forces for speed
+            cellFields.unify_force_vectors();
+            
             cellFields.save(&documentXML, iter);
             T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
-            pcout << "(main) Iteration:" << iter << "(" << iter * dt << " s)" << std::endl;
-            pcout << "(main) Mean velocity: " << meanVel * (dx/dt) << " m/s; Apparent rel. viscosity: " << (u_lbm_max*0.5) / meanVel << std::endl;  
+            pcout << "(main) Iteration:" << iter << "(" << iter * param::dt << " s)" << std::endl;
+            pcout << "(main) Mean velocity: " << meanVel * (param::dx/param::dt) << " m/s; Apparent rel. viscosity: " << (param::u_lbm_max*0.5) / meanVel << std::endl;  
         }
 
     }
 
     pcout << "(main) * simulation finished. :)" << std::endl;
 }
+#include "highOrderForces.cpp"
+#include "commonCellConstants.cpp"
+#include "constantConversion.cpp"

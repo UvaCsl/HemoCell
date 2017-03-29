@@ -1,10 +1,9 @@
-class CommonCellConstants {
-private:
-  CommonCellConstants(HemoCellField & cellField_,
+CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<Array<plint,3>> triangle_list_,
                       vector<Array<plint,2>> edge_list_,
                       vector<double> edge_length_eq_list_,
                       vector<double> edge_angle_eq_list_,
+                      vector<Array<plint,2>> edge_bending_triangles_list_,
                       vector<double> triangle_area_eq_list_,
                       double volume_eq_) :
     cellField(cellField_),
@@ -12,21 +11,24 @@ private:
     edge_list(edge_list_),
     edge_length_eq_list(edge_length_eq_list_),
     edge_angle_eq_list(edge_angle_eq_list_),
+    edge_bending_triangles_list(edge_bending_triangles_list_),
     triangle_area_eq_list(triangle_area_eq_list_),
     volume_eq(volume_eq_)
   {};
 
-public:
-  static CommonCellConstants CommonCellConstantsConstructor(HemoCellField & cellField_) {
+CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCellField & cellField_) {
     HemoCellField & cellField = cellField_;
     //Calculate triangles
     vector<Array<plint,3>> triangle_list_ = cellField.triangle_list;
 
-    //Calculate edges
+    //Calculate edges //TSM uses "directed edges", We dont care about memory, we
+    //just store them, so calculate all vertices here
+    //TODO, every edge is in here twice, clean that?
     vector<Array<plint,2>> edge_list_;
-    const TriangularSurfaceMesh<double> constMesh = cellField.meshElement;
-    for (const Edge & edge : constMesh.edges()) {
-      edge_list_.push_back({edge.pv,edge.ne});
+    for (const Array<plint,3> & triangle : triangle_list_) {
+      edge_list_.push_back({triangle[0],triangle[1]});
+      edge_list_.push_back({triangle[1],triangle[2]});
+      edge_list_.push_back({triangle[2],triangle[0]});
     }
 
     //Calculate eq edges
@@ -37,7 +39,7 @@ public:
 
     //Calculate eq edges angles
     vector<double> edge_angle_eq_list_;
-    Array<double,3> x2;
+    Array<double,3> x2 = {0.0,0.0,0.0};
     double angle;
     for (const Array<plint,2> & edge : edge_list_) {
       const vector<plint> adjacentTriangles = cellField.meshElement.getAdjacentTriangleIds(edge[0], edge[1]);
@@ -64,28 +66,23 @@ public:
 
     //Calculate triangle eq
     vector<double> triangle_area_eq_list_;
-    for (pluint iTriangle ; iTriangle < cellField.triangle_list.size(); iTriangle++) {
+    for (pluint iTriangle = 0 ; iTriangle < cellField.triangle_list.size(); iTriangle++) {
       triangle_area_eq_list_.push_back(cellField.meshElement.computeTriangleArea(iTriangle));
     }
 
     
     double volume_eq_ = MeshMetrics<double>(cellField.meshElement).getVolume();
 
-    CommonCellConstants CCC(cellField_,triangle_list_,edge_list_,edge_length_eq_list_,edge_angle_eq_list_,triangle_area_eq_list_,volume_eq_);
-    return CCC;
+
+    //store important points for bending calculation
+    vector<Array<plint,2>> edge_bending_triangles_;
+    for (const Array<plint,2> & edge : edge_list_) {
+      const vector<plint> adjacentTriangles = cellField.meshElement.getAdjacentTriangleIds(edge[0], edge[1]);
+      edge_bending_triangles_.push_back({adjacentTriangles[0],adjacentTriangles[1]});
+    }
 
     
-  };
-
-public:
-  HemoCellField & cellField;
-  const vector<Array<plint,3>> triangle_list;
-  const vector<Array<plint,2>> edge_list;
-
-  const vector<double> edge_length_eq_list;
-  const vector<double> edge_angle_eq_list;
-  const vector<double> triangle_area_eq_list;
-
-  const double volume_eq;
-
+    CommonCellConstants CCC(cellField_,triangle_list_,edge_list_,edge_length_eq_list_,edge_angle_eq_list_,edge_bending_triangles_,triangle_area_eq_list_,volume_eq_);
+    return CCC;
 };
+

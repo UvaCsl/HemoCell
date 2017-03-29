@@ -74,4 +74,11 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
  */
 #define OUTPUT_POSITION 1
 #define OUTPUT_FORCE 2
+#define OUTPUT_FORCE_VOLUME 21
+#define OUTPUT_FORCE_BENDING 22
+#define OUTPUT_FORCE_AREA 23
+#define OUTPUT_FORCE_INPLANE 24
 #define OUTPUT_TRIANGLES 3
+
+//==================== Not really an option but a nice shortcut
+#define param Parameters

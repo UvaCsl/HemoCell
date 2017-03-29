@@ -196,7 +196,7 @@ Array<T,3> computeVolumeConservationForce(
 *  Related publications: [Pivkin2008] and secondary [FedosovCaswellKarniadakis2010, FedosovCaswell2010b]
 */
     Array<T,3> tmp;
-    crossProduct(x2, x3, tmp);
+    crossProduct(x2-x1, x3-x1, tmp);
     return -cVolume * 1.0/6.0 * tmp;
 }
 
