@@ -170,20 +170,14 @@ void HemoParticleField3D::addParticle(Box3D domain, Particle3D<double,DESCRIPTOR
       if ((!(particles_per_cell.find(sparticle->get_cellId()) == 
            particles_per_cell.end())) && particles_per_cell[sparticle->get_cellId()][sparticle->getVertexId()]) {
         //We have the particle already, replace it
-        (*particles_per_cell[sparticle->get_cellId()][sparticle->getVertexId()]) = (*sparticle);
         local_sparticle =  particles_per_cell[sparticle->get_cellId()][sparticle->getVertexId()];
-        particles_per_cell[sparticle->get_cellId()][sparticle->getVertexId()] = sparticle;
-        for (unsigned int i = 0 ; i < particles.size(); i++) {
-          if (particles[i] == local_sparticle) {
-            particles[i] = sparticle;
-          }
+
+        local_sparticle->getPosition() = sparticle->getPosition();
+        if(!(sparticle==local_sparticle)) {
+          delete particle;
+          particle = local_sparticle;
+          sparticle = local_sparticle;
         }
-        for (unsigned int i = 0 ; i < particles_per_type[sparticle->get_celltype()].size(); i++) {
-          if (particles_per_type[sparticle->get_celltype()][i] == local_sparticle) {
-            particles_per_type[sparticle->get_celltype()][i] = sparticle;
-          }
-        }
-        delete local_sparticle;
       } else {
         //new entry
         particles.push_back(particle);
@@ -340,9 +334,9 @@ void HemoParticleField3D::computeGridPosition (
 int HemoParticleField3D::deleteIncompleteCells(pluint ctype, bool twice) {
   //Function must be called twice since addParticle can remove a particle
   //unintentionally, for now, catch it here; TODO, this can be done better
-  if (!twice) { deleteIncompleteCells(true); }
-
   int deleted = 0;
+  if (!twice) { deleted = deleteIncompleteCells(true); }
+
   //Warning, TODO, high complexity, should be rewritten 
   //For now abuse tagging and the remove function
   for ( const auto &lpc_it : particles_per_cell ) {
@@ -375,9 +369,9 @@ int HemoParticleField3D::deleteIncompleteCells(pluint ctype, bool twice) {
 int HemoParticleField3D::deleteIncompleteCells(bool twice) {
   //Function must be called twice since addParticle can remove a particle
   //unintentionally, for now, catch it here; TODO, this can be done better
-  if (!twice) { deleteIncompleteCells(true); }
-
   int deleted = 0;
+  if (!twice) {deleted = deleteIncompleteCells(true); }
+
   //Warning, TODO, high complexity, should be rewritten 
   //For now abuse tagging and the remove function
   for ( const auto &lpc_it : particles_per_cell ) {
