@@ -22,9 +22,9 @@ double guessRandomNumber() {
 template<typename T>
 void meshRandomRotation (TriangularSurfaceMesh<T> * mesh, Array<T,3> randomAngles=Array<T,3>(-1,-1,-1) ) {
     if (randomAngles[0]<0) {
-        randomAngles[0] = guessRandomNumber()* 2 * pi;
-        randomAngles[1] = guessRandomNumber()* pi;
-        randomAngles[2] = guessRandomNumber()* 2 * pi;
+        randomAngles[0] = guessRandomNumber()* 2 * PI;
+        randomAngles[1] = guessRandomNumber()* PI;
+        randomAngles[2] = guessRandomNumber()* 2 * PI;
     }
 
     const T pi = 4.*atan(1.);

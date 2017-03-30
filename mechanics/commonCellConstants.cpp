@@ -1,3 +1,7 @@
+#ifndef Hemo_CommonCellConstants_CPP
+#define Hemo_CommonCellConstants_CPP
+#include "commonCellConstants.h"
+
 CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<Array<plint,3>> triangle_list_,
                       vector<Array<plint,2>> edge_list_,
@@ -59,9 +63,9 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       angle = angleBetweenVectors(V1, V2);
       const plint sign = dot(x2-x1, V2) >= 0 ? 1 : -1;
       if (sign <= 0) {
-        angle = 2 * pi - angle;
+        angle = 2 * PI - angle;
       }
-      edge_angle_eq_list_.push_back((angle > pi) ? angle - 2 * pi : angle);
+      edge_angle_eq_list_.push_back((angle > PI) ? angle - 2 * PI : angle);
     }
 
     //Calculate triangle eq
@@ -86,3 +90,4 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     return CCC;
 };
 
+#endif

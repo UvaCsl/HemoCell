@@ -1,6 +1,7 @@
 #ifndef HEMO_highOrderForces
 #define HEMO_highOrderForces
 
+#include "hemocell.h"
 #include "cellMechanics.h"
 #include "commonCellConstants.h"
 

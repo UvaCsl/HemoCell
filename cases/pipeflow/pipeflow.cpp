@@ -3,11 +3,10 @@
 
 //-----------------
 #include "hemocell.h"
-#include "constantConversion.h"
-#include "rbcHO.cpp"
+#include "readPositionsBloodCells.h"
+#include "rbcHO.h"
 #include "pltNOOP.cpp"
-typedef double T;
-
+#include "meshGeneratingFunctions.h"
 // ----------------------- Copy from neighbour ------------------------------------
 
 template<typename Tp>
@@ -261,12 +260,11 @@ int main(int argc, char *argv[]) {
     pcout << "(main) init cell structures..."  << std::endl;
     T persistenceLengthFine = 7.5e-9; // In meters
 
-    std::vector<ShellModel3D<T> *> cellModels;
     CellFields3D  cellFields = CellFields3D(lattice,extendedEnvelopeWidth);
     std::vector<TriangularSurfaceMesh<T> *> meshes;
     std::vector<T> eqVolumes;
 
-    pcout << "(main) IBM kernel: " << HEMOCELL_KERNEL << endl;
+    //pcout << "(main) IBM kernel: " << HEMOCELL_KERNEL << endl;
     
     // ----------------------- Init RBCs ---------------------------------
 
@@ -363,7 +361,7 @@ int main(int argc, char *argv[]) {
     if (initIter == 0)
     {
         pcout << "(main) fresh start: warming up cell-free fluid domain for "  << cfg["parameters"]["warmup"].read<plint>() << " iterations..." << std::endl;
-        for (plint itrt = 0; itrt < cfg["parameters"]["warmup"].read<plint>(); ++itrt) { cellFields.setFluidExternalForce(poiseuilleForce); lattice.collideAndStream(); }
+        for (plint itrt = 0; itrt < cfg["parameters"]["warmup"].read<plint>(); ++itrt) { lattice.collideAndStream(); }
     }
 	T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
 	pcout << "(main) Mean velocity: " << meanVel  * (param::dx/param::dt) << " m/s; Apparent rel. viscosity: " << (param::u_lbm_max*0.5) / meanVel << std::endl;
@@ -417,6 +415,3 @@ int main(int argc, char *argv[]) {
 
     pcout << "(main) * simulation finished. :)" << std::endl;
 }
-#include "highOrderForces.cpp"
-#include "commonCellConstants.cpp"
-#include "constantConversion.cpp"

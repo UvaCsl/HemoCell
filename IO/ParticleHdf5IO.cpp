@@ -2,9 +2,6 @@
 #define FICSION_PARTICLE_HDF5IO_HH
 
 #include "ParticleHdf5IO.h"
-#include "ficsionInit.h"
-
-
 
 /* ******** WriteCellField3DInMultipleHDF5Files *********************************** */
 WriteCellField3DInMultipleHDF5Files::WriteCellField3DInMultipleHDF5Files (
@@ -154,7 +151,7 @@ void writeCellField3D_HDF5(CellFields3D& cellFields, double dx, double dt, plint
         WriteCellField3DInMultipleHDF5Files * bprf = new WriteCellField3DInMultipleHDF5Files(*cellFields[i], iter, identifier, dx, dt, i);
         vector<MultiBlock3D*> wrapper;
         wrapper.push_back(cellFields[i]->getParticleArg());
-        applyProcessingFunctional (bprf,cellFields[i]->getBoundingBox(), wrapper );
+        applyProcessingFunctional (bprf,cellFields[i]->getParticleField3D()->getBoundingBox(), wrapper );
     }
 }
 

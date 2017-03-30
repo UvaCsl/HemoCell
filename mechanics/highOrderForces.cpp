@@ -160,7 +160,7 @@ void HighOrderForces::ParticleMechanics(map<int,vector<SurfaceParticle3D *>> par
       double angle = angleBetweenVectors(V1, V2);
       const plint sign = dot(x2-v0, V2) >= 0 ? 1 : -1;
       if (sign <= 0) {
-        angle = 2 * pi - angle;
+        angle = 2 * PI - angle;
       }
 
       //calculate resulting bending force //todo go to 4 point bending force

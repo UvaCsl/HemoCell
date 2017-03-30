@@ -1,13 +1,8 @@
 #ifndef SURFACE_PARTICLE_3D_H
 #define SURFACE_PARTICLE_3D_H
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
-#include "particleHelperFunctions.h"
-#include <vector>
-
-
-namespace plb {
+class SurfaceParticle3D;
+#include "hemocell.h"
 
 class SurfaceParticle3D : public Particle3D<double,DESCRIPTOR> {
 public:
@@ -15,10 +10,10 @@ public:
     SurfaceParticle3D(Array<double,3> const& position, plint cellId_ = -1, plint vertexId_ = 0, pluint celltype_=0);
     SurfaceParticle3D* clone() const override;
 
-    void velocityToParticle(TensorField3D<double,3>& velocityField, double scaling=1.) override { }
-    void velocityToParticle(NTensorField3D<double>& velocityField, double scaling=1.) override { }
-    void rhoBarJtoParticle(NTensorField3D<double>& rhoBarJfield, bool velIsJ, double scaling=1.) override { }
-    void fluidToParticle(BlockLattice3D<double,DESCRIPTOR>& fluid, double scaling=1.) override { }
+    void velocityToParticle(TensorField3D<double,3>& velocityField, double scaling=1.) override;
+    void velocityToParticle(NTensorField3D<double>& velocityField, double scaling=1.) override;
+    void rhoBarJtoParticle(NTensorField3D<double>& rhoBarJfield, bool velIsJ, double scaling=1.) override;
+    void fluidToParticle(BlockLattice3D<double,DESCRIPTOR>& fluid, double scaling=1.) override;
 
     /// Implements Euler integration with velocity alone.
     void advance() override;
@@ -31,28 +26,28 @@ public:
 
     static int id;
     
-    int getId() const {return id;}
+    int getId() const;
 
-    Array<double,3> const& get_v() const { return v; }
-    Array<double,3> const& getVelocity() const { return get_v(); }
-    Array<double,3> const& get_vPrevious() const { return vPrevious; }
-    Array<double,3> const& get_force() const { return force; }
-    plint const& get_cellId() const { return cellId; }
-    pluint const& get_celltype() const { return celltype; }
-    plint const& getVertexId() const { return vertexId; }
+    Array<double,3> const& get_v() const;
+    Array<double,3> const& getVelocity() const; 
+    Array<double,3> const& get_vPrevious() const;
+    Array<double,3> const& get_force() const;
+    plint const& get_cellId() const;
+    pluint const& get_celltype() const;
+    plint const& getVertexId() const;
     // Difference between getVelocity and get_v:
     // get_v holds the actual interpolated velocity, while
     // getVelocity holds the velocity according to the
     // update of the position particle "method advance()".
-    Array<double,3>& get_v() { return v; }
+    Array<double,3>& get_v();
     //Array<T,3>& get_pbcPosition() { return pbcPosition; }
     //Array<T,3>& get_vPrevious() { return vPrevious; }
     //Array<T,3>& get_a() { return a;double}
-    Array<double,3>& get_force() { return force; }
+    Array<double,3>& get_force();
     //plint& get_cellId() { return cellId; }
     //plint& getVertexId() { return vertexId; }
     //plint& get_processor() { return processor; }
-    int getMpiProcessor() { MPI_Comm_rank(MPI_COMM_WORLD, &rank); return rank;}
+    int getMpiProcessor();
 
     //Is vector, optimize with array possible
     vector<Cell<double,DESCRIPTOR>*> kernelLocations;
@@ -72,16 +67,13 @@ private:
 
 //TODO, remove before production, now to let legacy code compile
 public:
-    std::vector<Dot3D> & getIBMcoordinates() { return cellPos; }
-    std::vector<double> & getIBMweights() { return weights; }
+   // std::vector<Dot3D> & getIBMcoordinates() { return cellPos; }
+  //  std::vector<double> & getIBMweights() { return weights; }
 private:
     std::vector<Dot3D> cellPos;
     std::vector<double> weights;
 };
 
-}  // namespace plb
-
-#include "surfaceParticle3D.hh"
 
 #endif  // SURFACE_PARTICLE_3D_H
 

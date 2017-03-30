@@ -198,8 +198,8 @@ TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint 
         sphere = constructSphere<T>(Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
     }
     sphere.rotate(
-            pi/2.0 + eulerAngles[0],
-            pi/2.0 + eulerAngles[1],
+            PI/2.0 + eulerAngles[0],
+            PI/2.0 + eulerAngles[1],
             0. + eulerAngles[2]);
     std::vector<typename TriangleSet<T>::Triangle> rbcTriangles = sphere.getTriangles();
     for (pluint var = 0; var < rbcTriangles.size(); ++var) {
@@ -210,8 +210,8 @@ TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint 
     TriangleSet<T> rbc(rbcTriangles);
     rbc.scale(radius);
     rbc.rotate(
-            pi/2.0 + eulerAngles[0],
-            pi/2.0 + eulerAngles[1],
+            PI/2.0 + eulerAngles[0],
+            PI/2.0 + eulerAngles[1],
             0. + eulerAngles[2]);
     rbc.translate(center);
     return rbc;
@@ -229,8 +229,8 @@ TriangleSet<T> constructEllipsoidFromSphere(Array<T,3> const& center, T radius, 
         sphere = constructSphere<T>(Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
     }
     sphere.rotate(
-            pi/2.0 + eulerAngles[0],
-            pi/2.0 + eulerAngles[1],
+            PI/2.0 + eulerAngles[0],
+            PI/2.0 + eulerAngles[1],
             0. + eulerAngles[2]);
     std::vector<typename TriangleSet<T>::Triangle> ellipsoidTriangles = sphere.getTriangles();
     for (pluint var = 0; var < ellipsoidTriangles.size(); ++var) {
@@ -240,8 +240,8 @@ TriangleSet<T> constructEllipsoidFromSphere(Array<T,3> const& center, T radius, 
     }
     TriangleSet<T> ellipsoid(ellipsoidTriangles);
     ellipsoid.rotate(
-            pi/2.0 + eulerAngles[0],
-            pi/2.0 + eulerAngles[1],
+            PI/2.0 + eulerAngles[0],
+            PI/2.0 + eulerAngles[1],
             0. + eulerAngles[2]);
     ellipsoid.translate(center);
     return ellipsoid;
@@ -257,8 +257,8 @@ TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cel
     T scaleFactor = std::max(dr[0],std::max(dr[1],dr[2]));
     Cell.scale(radius*2.0/scaleFactor);
     Cell.rotate(
-            pi/2.0 + eulerAngles[0],
-            pi/2.0 + eulerAngles[1],
+            PI/2.0 + eulerAngles[0],
+            PI/2.0 + eulerAngles[1],
             0. + eulerAngles[2]);
     Cell.translate(center);
     return Cell;

@@ -4,11 +4,14 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include <map>
-#include "computeCellForces3D.h"
 #include <vector>
 
 using namespace std;
 using namespace plb;
+
+
+template<typename T>
+T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plint jVertex) ;
 
 template<typename T>
 class ElementsOfTriangularSurfaceMesh {

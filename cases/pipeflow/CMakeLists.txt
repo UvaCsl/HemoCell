@@ -103,7 +103,7 @@ FILE(GLOB SRC_FILES "${HEMOCELL_BASE_DIR}/IO/*.cpp"
                     "${HEMOCELL_BASE_DIR}/models/*.cpp"
                     "${HEMOCELL_BASE_DIR}/mechanics/*.cpp")
 
-LIST(APPEND SRC_FILES_SRC ${PROJECT_SRC})
+LIST(APPEND SRC_FILES ${PROJECT_SRC})
 
 include(ExternalProject) 
 ExternalProject_Add("palabos" PREFIX ${PALABOS_DIR} SOURCE_DIR ${PALABOS_DIR}
@@ -111,7 +111,7 @@ ExternalProject_Add("palabos" PREFIX ${PALABOS_DIR} SOURCE_DIR ${PALABOS_DIR}
 
 
 #SET(CMAKE_EXE_LINKER_FLAGS "-static") !Good luck on finding statically linked mpi libraries, it should be possible though
-ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES_SRC})
+ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES})
 ADD_DEPENDENCIES(${PROJECT_NAME} "palabos")
 target_link_libraries(${PROJECT_NAME} ${PALABOS_DIR}/libpalabos.a)
 IF(NEEDHDF5)

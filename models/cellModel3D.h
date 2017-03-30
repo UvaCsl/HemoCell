@@ -32,7 +32,7 @@
 #include <map>
 #include "cellReductionTypes.hh"
 
-
+#if 0
 #ifndef KBT__
 #define KBT__
 const double kB_p = 1.3806503e-23; // In SI, m2 kg s-2 K-1 (or J/K)
@@ -45,6 +45,7 @@ double dNewton=0;
 #define PI__
 const double pi = 4.*atan(1.);
 #endif  // PI__
+#endif
 
 plint maximum(plint x1, plint x2) {
     return x1>x2?x1:x2;

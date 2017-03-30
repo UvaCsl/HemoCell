@@ -2,20 +2,10 @@
 #define CELLFIELDS3D_H
 
 class CellFields3D;
-#include "palabos3D.h"
-#include "constant_defaults.h"
-#include "palabos3D.hh"
-#include "cell3D.h"
-#include "cellModel3D.h"
-#include "cellMechanics.h"
+#include "hemocell.h"
 #include "hemoCellParticleField3D.h"
-#include "shapeMemoryModel3D.h"
-#include "cellReductionTypes.h"
-#include "cellFieldFunctionals3D.h"
-#include "cellCellForces3D.h"
 #include "fcnGenericFunctions.h"
 #include "HemoCellFunctional.h"
-#include "rbcHO.h"
 #include <sys/stat.h>
 #include <unistd.h>
 #include <set>
@@ -45,8 +35,8 @@ class HemoCellField;
 class CellFields3D
 {
 public:
-	CellFields3D(MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth);
-    MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & getParticleField3D() { return *immersedParticles; };
+    CellFields3D(MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth);
+    MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & getParticleField3D();
     virtual void advanceParticles();
     virtual void interpolateFluidVelocity();
     virtual void spreadParticleForce();
@@ -62,13 +52,13 @@ public:
     void save(XMLreader * documentXML, plint iter);
     void InitAfterLoadCheckpoint();
 
-    double getMaximumForce_Global() {return 0;}
+    //double getMaximumForce_Global() {return 0;}
 
     unsigned int size();
 
     HemoCellField * operator[](unsigned int index);
 
-    void setFluidExternalForce(double poiseuilleForce) {}
+    //void setFluidExternalForce(double poiseuilleForce);
 
 	MultiBlockLattice3D<double, DESCRIPTOR> & lattice;
   vector<HemoCellField *> cellFields;
@@ -76,80 +66,41 @@ public:
 	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles;
 	//MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * reductionParticles;
   double cellTimeStep;
-  void synchronizeCellQuantities(SyncRequirements _dummy) {}
+  //void synchronizeCellQuantities(SyncRequirements _dummy) {}
   void separate_force_vectors();
   void unify_force_vectors();
   class HemoSeperateForceVectors: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
-   HemoSeperateForceVectors * clone() const { return new HemoSeperateForceVectors(*this);}
+   HemoSeperateForceVectors * clone() const;
   };
   class HemoUnifyForceVectors: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
-   HemoUnifyForceVectors * clone() const { return new HemoUnifyForceVectors(*this);}
+   HemoUnifyForceVectors * clone() const;
   };
   class HemoSpreadParticleForce: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
-   HemoSpreadParticleForce * clone() const { return new HemoSpreadParticleForce(*this);}
+   HemoSpreadParticleForce * clone() const;
   };
   class HemoInterpolateFluidVelocity: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
-   HemoInterpolateFluidVelocity * clone() const { return new HemoInterpolateFluidVelocity(*this);}
+   HemoInterpolateFluidVelocity * clone() const;
   };
   class HemoAdvanceParticles: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
-   HemoAdvanceParticles * clone() const { return new HemoAdvanceParticles(*this);}
+   HemoAdvanceParticles * clone() const;
   };
   class HemoApplyConstitutiveModel: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
-   HemoApplyConstitutiveModel * clone() const { return new HemoApplyConstitutiveModel(*this);}
+   HemoApplyConstitutiveModel * clone() const;
   };
   virtual void applyConstitutiveModel();
   void syncEnvelopes();
   class HemoSyncEnvelopes: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
-   HemoSyncEnvelopes * clone() const { return new HemoSyncEnvelopes(*this);}
-   void getTypeOfModification(std::vector<modif::ModifT>& modified) const {
-     for (pluint i = 0; i < modified.size(); i++) {
-       modified[i] = modif::dynamicVariables;
-   } }
-
+   HemoSyncEnvelopes * clone() const;
+   void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
   };
   bool hemocellfunction = false; //true if we should allow things to communicate (under our sight, not palabos);
 };
 
-/*contains information about one particular cellfield, structlike*/
-class HemoCellField{
-  static vector<int> default_output;
-  public:
-
-  HemoCellField(CellFields3D& cellFields_, Cell3D<double,DESCRIPTOR> cell3D_, TriangularSurfaceMesh<double>& meshElement_);
-  double getVolumeFraction() { return hematocrit;}
-  double hematocrit;
-  ShellModel3D<double> * model;
-  TriangularSurfaceMesh<double> & getMesh() { return meshElement;}
-  std::string name;
-  int ctype;
-  int numVertex;
-  bool outputTriangles = false;
-  CellFields3D & cellFields;
-  vector<int> desiredOutputVariables;
-  Cell3D<double,DESCRIPTOR> & cell3D;
-  vector<Array<plint,3>> triangle_list;
-  TriangularSurfaceMesh<double> & meshElement;
-  void(*kernelMethod)(BlockLattice3D<double,DESCRIPTOR> const&,SurfaceParticle3D*) = interpolationCoefficientsPhi2;
-  MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D() {return cellFields.immersedParticles;}
-  MultiBlockLattice3D<double,DESCRIPTOR> * getFluidField3D() {return &(cellFields.lattice);}
-  int getNumberOfCells_Global() {return 0;}
-  std::string getIdentifier() {return name;}
-  Box3D getBoundingBox() { return cellFields.immersedParticles->getBoundingBox(); }
-  MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg() { return cellFields.immersedParticles; }
-  std::map<plint, Cell3D<double,DESCRIPTOR>* > getCellIdToCell3D() { std::map<plint,Cell3D<double,DESCRIPTOR>* > tmp; return tmp ;}
-  void synchronizeSyncRequirements(SyncRequirements _dummy) {}
-  void setOutputVariables(const vector<int> &);
-  CellMechanics * mechanics;
-  void statistics();
-  MeshMetrics<double> * meshmetric;
-};
-
-vector<int> HemoCellField::default_output ({OUTPUT_POSITION});
 #endif

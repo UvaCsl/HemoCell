@@ -43,7 +43,7 @@ int renameFileToDotOld(std::string fName);
 */
 // http://stackoverflow.com/questions/675039/how-can-i-create-directory-tree-in-c-linux
 
-static int do_mkdir(const char *path, mode_t mode);
+int do_mkdir(const char *path, mode_t mode);
 
 /**
 ** mkpath - ensure all directories in path exist
@@ -55,6 +55,4 @@ static int do_mkdir(const char *path, mode_t mode);
 int mkpath(const char *path, mode_t mode);
 
 
-
-#include "fcnGenericFunctions.hh"
 #endif // FCN_GENERIC_FUNCTIONS_HH

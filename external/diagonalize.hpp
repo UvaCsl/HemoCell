@@ -110,6 +110,4 @@ void getLambdasAndAngles(vector<T> inputTensor,
                          vector<T> & returnLambdas, vector<T> & returnAnglesRad,
                          double & difference);
 
-#include "diagonalize.cpp"
-
 #endif

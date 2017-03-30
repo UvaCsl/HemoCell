@@ -5,19 +5,8 @@
  * Heavily depends on triangularSurfaceMesh
  */
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
-#include "surfaceParticle3D.h"
-#include "cellReductionTypes.h"
-#include <vector>
-#include <map>
-#include <set>
-#include <string>
-#include "meshMetrics.h"
 
-using namespace std;
-using namespace plb;
-
+#if 0 
 template<typename T>
 class CellQuantityHolder
 {
@@ -114,14 +103,13 @@ public:
 
 };
 
-
-
-template<typename T, template<typename U> class Descriptor>
-class Cell3D ;
-
+#endif
 
 template<typename T, template<typename U> class Descriptor>
-void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T, Descriptor> * cell, plint iVertex);
+class Cell3D {};
+#if 0
+//template<typename T, template<typename U> class Descriptor>
+//void computeCCRQuantities(plint ccrId, BlockStatisticsCCR<T> & reducer, Cell3D<T, Descriptor> * cell, plint iVertex);
 
 /* An interface class between Particles and Cells */
 template<typename T, template<typename U> class Descriptor>
@@ -260,4 +248,4 @@ private:
 
 #include "cell3D.hh"
 #endif  // CELL_3D_HH
-
+#endif

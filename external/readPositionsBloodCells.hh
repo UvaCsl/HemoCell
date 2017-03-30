@@ -56,7 +56,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
         for (plint i = 0; i < Np[j]; i++) {
             fIn >> packPositions[j][i][0] >> packPositions[j][i][1] >> packPositions[j][i][2] >> packAngles[j][i][0]
                 >> packAngles[j][i][1] >> packAngles[j][i][2];
-            packAngles[j][i] *= pi/180.0; // Deg to Rad
+            packAngles[j][i] *= PI/180.0; // Deg to Rad
             packAngles[j][i] *= -1.0;  // Right- to left-handed coordinate system
 
         }

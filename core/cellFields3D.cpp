@@ -1,6 +1,5 @@
 #ifndef CELLFIELDS3D_CPP
 #define CELLFIELDS3D_CPP
-#include "shellModel3D.h"
 #include "cellFields3D.h"
 
 
@@ -27,7 +26,7 @@ CellFields3D::CellFields3D( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, 
 
 HemoCellField * CellFields3D::addCellType(TriangularSurfaceMesh<double> & meshElement, double hematocrit, std::string name_)
 {
-  HemoCellField * cf = new HemoCellField(*this, Cell3D<double,DESCRIPTOR>(meshElement), meshElement);
+  HemoCellField * cf = new HemoCellField(*this, Cell3D<double,DESCRIPTOR>(), meshElement);
   cf->hematocrit = hematocrit;
   cf->name = name_;
   cf->ctype = cellFields.size();
@@ -225,44 +224,21 @@ void CellFields3D::separate_force_vectors() {
 
 }
 
-//HemoCellField
-HemoCellField::HemoCellField(CellFields3D& cellFields_, Cell3D<double,DESCRIPTOR> cell3D_, TriangularSurfaceMesh<double>& meshElement_)
-      :cellFields(cellFields_), desiredOutputVariables(default_output),
-       cell3D(cell3D_), meshElement(meshElement_) {
-         numVertex = meshElement.getNumVertices();
-         std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
-         if (it != desiredOutputVariables.end()) {
-            desiredOutputVariables.erase(it);
-            outputTriangles = true;
-         }
+CellFields3D::HemoSeperateForceVectors * CellFields3D::HemoSeperateForceVectors::clone() const { return new CellFields3D::HemoSeperateForceVectors(*this);}
+CellFields3D::HemoUnifyForceVectors *    CellFields3D::HemoUnifyForceVectors::clone() const    { return new CellFields3D::HemoUnifyForceVectors(*this);}
+CellFields3D::HemoSpreadParticleForce *  CellFields3D::HemoSpreadParticleForce::clone() const { return new CellFields3D::HemoSpreadParticleForce(*this);}
+CellFields3D::HemoInterpolateFluidVelocity * CellFields3D::HemoInterpolateFluidVelocity::clone() const { return new CellFields3D::HemoInterpolateFluidVelocity(*this);}
+CellFields3D::HemoAdvanceParticles *     CellFields3D::HemoAdvanceParticles::clone() const { return new CellFields3D::HemoAdvanceParticles(*this);}
+CellFields3D::HemoApplyConstitutiveModel * CellFields3D::HemoApplyConstitutiveModel::clone() const { return new CellFields3D::HemoApplyConstitutiveModel(*this);}
+CellFields3D::HemoSyncEnvelopes *        CellFields3D::HemoSyncEnvelopes::clone() const { return new CellFields3D::HemoSyncEnvelopes(*this);}
 
-        for (plint iTriangle = 0; iTriangle < meshElement.getNumTriangles(); iTriangle++) {
-          triangle_list.push_back({meshElement.getVertexId(iTriangle,0),
-                                   meshElement.getVertexId(iTriangle,1),
-                                   meshElement.getVertexId(iTriangle,2) 
-                                   });
-        }
-        meshmetric = new MeshMetrics<double>(meshElement_);
-
-       }
-
-
-void HemoCellField::setOutputVariables(const vector<int> & outputs) { desiredOutputVariables = outputs;
-         std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
-         if (it != desiredOutputVariables.end()) {
-            desiredOutputVariables.erase(it);
-            outputTriangles = true;
-         } else {
-           outputTriangles = false;
-         }
-  }
-
-void HemoCellField::statistics() {
-  cerr << "Cellfield  (+ material model) of " << name << std::endl;
-
-  mechanics->statistics();
-
+void CellFields3D::HemoSyncEnvelopes::getTypeOfModification(std::vector<modif::ModifT>& modified) const {
+   for (pluint i = 0; i < modified.size(); i++) {
+       modified[i] = modif::dynamicVariables;
+   }
 }
+
+MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & CellFields3D::getParticleField3D() { return *immersedParticles; };
 
 #endif
 

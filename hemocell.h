@@ -23,65 +23,71 @@ using namespace plb;
 
 using namespace std;
 
-#include "fcnGenericFunctions.h"
-#include "simpleProfiler.cpp"
-#include "config.cpp"
+//#include "fcnGenericFunctions.h"
+//#include "simpleProfiler.cpp"
+//#include "config.cpp"
+#include "config.h"
 
-#include "ficsionInit.h"
-#include "ficsionInit.hh"
+//#include "ficsionInit.h"
+//#include "ficsionInit.hh"
 /* CORE libs */
+
 #include "HemoCellFunctional.h"
-#include "hemoCellParticleField3D.cpp"
-#include "cellFields3D.cpp"
-#include "cellField3D.h"
-#include "cellParticle3D.h"
+#include "meshMetrics.h"
+
 #include "surfaceParticle3D.h"
-#include "helperFunctionals.h"
-#include "checkPoint.h"
+#include "cell3D.h"
+//#include "helperFunctionals.h"
+//#include "checkPoint.h"
 #include "genericTools.h"
 
-#include "cellCellForces3D.h"
-#include "proximityDynamics3D.h"
-#include "cellForceChecking3D.h"
-#include "cellReductionTypes.h"
-#include "computeCellForces3D.h"
-#include "immersedBoundaryMethod3D.h"
-#include "meshGeneratingFunctions.h"
+//#include "cellCellForces3D.h"
+//#include "proximityDynamics3D.h"
+//#include "cellForceChecking3D.h"
+//#include "cellReductionTypes.h"
+//#include "computeCellForces3D.h"
+//#include "immersedBoundaryMethod3D.h"
+//#include "meshGeneratingFunctions.h"
 
 /* IO */ //IO is FUBAR
 //#include "hdf5IO.h"
-#include "ParticleHdf5IO.h"
 //#include "CellHdf5IO.h"
 //#include "ParticleField3DHdf5IO.h"
 //#include "config.h"
 
 
 /* MODELS */
-#include "shellModel3D.h"
-#include "cellModel3D.h"
-#include "shapeMemoryModel3D.h"
-#include "restModel3D.h"
-#include "intermediateModel3D.h"
+//#include "shellModel3D.h"
+//#include "cellModel3D.h"
+//#include "shapeMemoryModel3D.h"
+//#include "restModel3D.h"
+//#include "intermediateModel3D.h"
+
+#include "cellMechanics.h"
+
+#include "cellFields3D.h"
+#include "hemoCellField.h"
+
+#include "ParticleHdf5IO.h"
 
 /* EXTENSIONS */
-#include "cellStretching3D.h"
+//#include "cellStretching3D.h"
 //#include "cellInShearFlow3D.h"
 //#include "cellStretchingForces3D.h"
 //#include "rbcDisaggregation.h"
 
 /* HELPERS */
-#include "immersedCellParticleFunctional3D.h"
-#include "meshMetrics.h"
+//#include "immersedCellParticleFunctional3D.h"
 
 
 /* EXTERNALS */
 #include "diagonalize.hpp"
 
 /* Particle position initialisation method */
-#include "external/orderedPositionsMultipleCells.h"
-#include "external/randomPositionsMultipleCells.h"
-#include "external/readPositionsBloodCells.h"
+//#include "external/orderedPositionsMultipleCells.h"
+//#include "external/randomPositionsMultipleCells.h"
+//#include "external/readPositionsBloodCells.h"
 
-
+#include "constantConversion.h"
 
 #endif // HEMOCELL_H

@@ -1,8 +1,7 @@
 #ifndef IMMERSEDBOUNDARYMETHOD_3D_H
 #define IMMERSEDBOUNDARYMETHOD_3D_H
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
+#include "hemocell.h"
 #include <vector>
 
 namespace plb {
@@ -55,7 +54,5 @@ void curateInterpolationCoefficients (BlockLattice3D<T,Descriptor>& fluid,
 
 
 }
-
-#include "immersedBoundaryMethod3D.hh"
 #endif  // IMMERSEDBOUNDARYMETHOD_3D_H
 

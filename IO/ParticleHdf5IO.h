@@ -2,15 +2,13 @@
 #define FICSION_PARTICLE_HDF5IO_H
 
 #include <limits>
-#include "palabos3D.h"
+#include "hemocell.h"
 #include "surfaceParticle3D.h"
-#include "cellField3D.h"
 
 #include <vector>
 #include <string>
 #include <hdf5.h>
 #include <hdf5_hl.h>
-#include "cellFields3D.h"
 
 using namespace plb;
 using namespace std;
@@ -39,10 +37,5 @@ private:
     double dt;
     int ctype;
 };
-
-
-
-
-#include "ParticleHdf5IO.cpp"
 #endif  // FICSION_PARTICLE_HDF5IO_H
 

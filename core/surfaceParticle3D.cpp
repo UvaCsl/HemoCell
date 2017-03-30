@@ -6,8 +6,6 @@
 
 
 
-namespace plb {
-
 /* *************** class ImmersedCellParticle3D ************************************ */
 
 
@@ -111,8 +109,28 @@ SurfaceParticle3D* SurfaceParticle3D::clone() const {
     return sparticle;
 }
 
-}  // namespace plb
+void SurfaceParticle3D::velocityToParticle(TensorField3D<double,3>& velocityField, double scaling) { }
+void SurfaceParticle3D::velocityToParticle(NTensorField3D<double>& velocityField, double scaling) { }
+void SurfaceParticle3D::rhoBarJtoParticle(NTensorField3D<double>& rhoBarJfield, bool velIsJ, double scaling) { }
+void SurfaceParticle3D::fluidToParticle(BlockLattice3D<double,DESCRIPTOR>& fluid, double scaling) { }
+   int SurfaceParticle3D::getId() const {return id;}
+
+Array<double,3> const& SurfaceParticle3D::get_v() const { return v; }
+Array<double,3>& SurfaceParticle3D::get_v() {return v;}
+Array<double,3>& SurfaceParticle3D::get_force() {return force;}
+
+
+
+Array<double,3> const& SurfaceParticle3D::getVelocity() const { return get_v(); }
+Array<double,3> const& SurfaceParticle3D::get_vPrevious() const { return vPrevious; }
+Array<double,3> const& SurfaceParticle3D::get_force() const { return force; }
+plint const& SurfaceParticle3D::get_cellId() const { return cellId; }
+pluint const& SurfaceParticle3D::get_celltype() const { return celltype; }
+plint const& SurfaceParticle3D::getVertexId() const { return vertexId; }
+int SurfaceParticle3D::getMpiProcessor() { MPI_Comm_rank(MPI_COMM_WORLD, &rank); return rank;}
 
 int SurfaceParticle3D::id = meta::registerGenericParticle3D<double,DESCRIPTOR,SurfaceParticle3D>("SurfaceParticle3D");
+
+
 
 #endif  // SURFACE_PARTICLE_3D_HH

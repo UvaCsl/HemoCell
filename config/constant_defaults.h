@@ -1,3 +1,5 @@
+#ifndef CONSTANT_DEFAULTS_H
+#define CONSTANT_DEFAULTS_H
 // ============== Compile time options - Set these
 
 /*
@@ -66,6 +68,7 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
  */
 #ifndef HEMOCELL_PARTICLE_FIELD
 #define HEMOCELL_PARTICLE_FIELD HemoParticleField3D
+class HemoParticleField3D;
 #endif
 
 
@@ -82,3 +85,13 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
 
 //==================== Not really an option but a nice shortcut
 #define param Parameters
+
+#ifndef T
+typedef double T;
+#endif
+
+#ifndef PI
+#define PI 3.14159265358979323846
+#endif
+
+#endif
