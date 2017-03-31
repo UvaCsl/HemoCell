@@ -1,7 +1,7 @@
 #ifndef IMMERSEDBOUNDARYMETHOD_3D_H
 #define IMMERSEDBOUNDARYMETHOD_3D_H
 
-#include "hemocell.h"
+#include "hemocell_internal.h"
 #include <vector>
 
 namespace plb {

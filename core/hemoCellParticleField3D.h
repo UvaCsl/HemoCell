@@ -1,8 +1,9 @@
 #ifndef HEMOCELLParticleField3D
 #define HEMOCELLParticleField3D
 
-#include "hemocell.h"
-
+#include "hemocell_internal.h"
+#include "surfaceParticle3D.h"
+#include "cellFields3D.h"
 
 class HemoParticleDataTransfer3D : public BlockDataTransfer3D {
 public:

@@ -1,10 +1,10 @@
 #ifndef HEMO_highOrderForces
 #define HEMO_highOrderForces
 
-#include "hemocell.h"
+#include "hemocell_internal.h"
 #include "cellMechanics.h"
 #include "commonCellConstants.h"
-
+#include "cellFields3D.h"
 class HighOrderForces : public CellMechanics {
 
   public:

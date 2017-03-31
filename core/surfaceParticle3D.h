@@ -2,7 +2,7 @@
 #define SURFACE_PARTICLE_3D_H
 
 class SurfaceParticle3D;
-#include "hemocell.h"
+#include "hemocell_internal.h"
 
 class SurfaceParticle3D : public Particle3D<double,DESCRIPTOR> {
 public:

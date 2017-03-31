@@ -1,12 +1,11 @@
 #ifndef FICSION_PARTICLE_HDF5IO_H
 #define FICSION_PARTICLE_HDF5IO_H
 
-#include <limits>
-#include "hemocell.h"
+#include "hemocell_internal.h"
 #include "surfaceParticle3D.h"
+#include "cellFields3D.h"
+#include "hemoCellField.h"
 
-#include <vector>
-#include <string>
 #include <hdf5.h>
 #include <hdf5_hl.h>
 

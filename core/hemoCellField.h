@@ -1,9 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /* 
  * File:   hemoCellField.h
  * Author: vikko
@@ -14,7 +8,11 @@
 #ifndef HEMOCELLFIELD_H
 #define HEMOCELLFIELD_H
 class HemoCellField;
-#include "hemocell.h"
+#include "hemocell_internal.h"
+#include "cell3D.h"
+#include "cellMechanics.h"
+#include "meshMetrics.h"
+#include "cellFields3D.h"
 
 /*contains information about one particular cellfield, structlike*/
 class HemoCellField{

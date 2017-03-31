@@ -2,21 +2,14 @@
 #define CELLFIELDS3D_H
 
 class CellFields3D;
-#include "hemocell.h"
+#include "hemocell_internal.h"
 #include "hemoCellParticleField3D.h"
 #include "fcnGenericFunctions.h"
 #include "HemoCellFunctional.h"
-#include <sys/stat.h>
+#include "hemoCellField.h"
+#include "cell3D.h"
 #include <unistd.h>
-#include <set>
-#include <string>
-#include <algorithm>    // std::sort
 
-
-using namespace std;
-using namespace plb;
-
-class HemoCellField;
 
 /*
  * This class can contain many cellfields, it keeps track of all the particles

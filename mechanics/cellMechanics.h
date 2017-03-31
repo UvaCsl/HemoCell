@@ -2,7 +2,8 @@
 #define HEMO_CELLMECHANICS
 
 class CellMechanics;
-#include "hemocell.h"
+#include "hemocell_internal.h"
+#include "surfaceParticle3D.h"
 
 class CellMechanics {
   public:

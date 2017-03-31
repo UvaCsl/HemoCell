@@ -4,7 +4,7 @@
 template<typename T>
 class MeshMetrics;
 
-#include "hemocell.h"
+#include "hemocell_internal.h"
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include <map>

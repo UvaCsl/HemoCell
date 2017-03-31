@@ -1,7 +1,7 @@
 #ifndef GENERIC_TOOLS_CPP
 #define GENERIC_TOOLS_CPP
 
-#include "hemocell.h"
+#include "hemocell_internal.h"
 
 void checkParameterSanity(T nu_lbm, T u_max_lbm)
 {

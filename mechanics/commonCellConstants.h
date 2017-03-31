@@ -1,7 +1,8 @@
 #ifndef Hemo_CommonCellConstants_H
 #define Hemo_CommonCellConstants_H
 
-#include "hemocell.h"
+#include "hemocell_internal.h"
+#include "hemoCellField.h"
 
 //Forward declaration:
 class HemoCellField;
