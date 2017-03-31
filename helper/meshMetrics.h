@@ -1,6 +1,10 @@
 #ifndef MESH_METRICS_H
 #define MESH_METRICS_H
 
+template<typename T>
+class MeshMetrics;
+
+#include "hemocell.h"
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include <map>
@@ -10,8 +14,6 @@ using namespace std;
 using namespace plb;
 
 
-template<typename T>
-T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plint jVertex) ;
 
 template<typename T>
 class ElementsOfTriangularSurfaceMesh {

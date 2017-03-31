@@ -12,6 +12,7 @@
  */
 
 #include "hemoCellField.h"
+#include "immersedBoundaryMethod3D.h"
 
 //HemoCellField
 HemoCellField::HemoCellField(CellFields3D& cellFields_, Cell3D<double,DESCRIPTOR> cell3D_, TriangularSurfaceMesh<double>& meshElement_)

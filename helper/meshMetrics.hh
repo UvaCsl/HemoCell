@@ -2,9 +2,56 @@
 #define MESH_METRICS_HH
 
 #include "meshMetrics.h"
+/*
+ * Helper function, calculates the angle between -pi and pi.
+ * The edge is iVertex-jVertex.
+ */
+template<typename T>
+T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plint jVertex, plint & kVertex, plint & lVertex) {
+    Array<T,3> x1 = mesh.getVertex(iVertex), x2(0.,0.,0.), x3(0.,0.,0.), x4(0.,0.,0.);
+
+    std::vector<plint> adjacentTriangles = mesh.getAdjacentTriangleIds(iVertex, jVertex);
+	plint iTriangle=adjacentTriangles[0], jTriangle=adjacentTriangles[1];
+    x3 = mesh.getVertex(jVertex);
+    T foundVertices=0;
+    for (pluint id = 0; id < 3; ++id) {
+        kVertex = mesh.getVertexId(iTriangle,id);
+        if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
+            x2 = mesh.getVertex(kVertex);
+            foundVertices += 1;
+            break;
+        }
+    }
+    for (pluint id = 0; id < 3; ++id) {
+        lVertex = mesh.getVertexId(jTriangle,id);
+        if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
+            x4 = mesh.getVertex(lVertex);
+            foundVertices += 1;
+            break;
+        }
+    }
+    PLB_ASSERT(foundVertices == 2); //Assert if some particles are outside of the domain
+
+    Array<T,3> V1 = mesh.computeTriangleNormal(iTriangle);
+    Array<T,3> V2 = mesh.computeTriangleNormal(jTriangle);
+    T angle = angleBetweenVectors(V1, V2);
+	plint sign = dot(x2-x1, V2) >= 0?1:-1;
+	if (sign <= 0) {
+		angle = 2*PI-angle;
+	}
+	angle = (angle > PI)?angle-2*PI:angle;
+	return angle;
+}
 
 
-
+/*
+ *  * Helper function, calculates the angle between -pi and pi
+ *   */
+template<typename T>
+T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plint jVertex) {
+    plint kVertex, lVertex;
+      return calculateSignedAngle(mesh, iVertex, jVertex, kVertex, lVertex);
+}
 
 template<typename T>
 MeshMetrics<T>::MeshMetrics(MeshMetrics<T> const& rhs) : mesh(rhs.mesh)  {

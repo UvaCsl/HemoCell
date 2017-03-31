@@ -703,4 +703,6 @@ std::string HemoParticleField3D::getBlockName() {
     return std::string("HemoParticleField3D");
 }
 
+CellFields3D* HemoParticleField3D::cellFields=0;
+
 #endif

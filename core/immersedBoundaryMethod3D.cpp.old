@@ -1,13 +1,16 @@
 #ifndef IMMERSEDBOUNDARYMETHOD_3D_HH
 #define IMMERSEDBOUNDARYMETHOD_3D_HH
 
+
+#include "hemocell.h"
+#include "immersedBoundaryMethod3D.h"
+#include "surfaceParticle3D.h"
+#include <cmath>
+
 #ifndef PI__
 #define PI__
 const double pi = 4.*atan(1.);
 #endif  // PI__
-
-#include "immersedBoundaryMethod3D.h"
-#include "surfaceParticle3D.h"
 
 namespace plb {
 

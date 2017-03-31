@@ -98,6 +98,5 @@ private:
     Box3D localDomain;
 
 };
-CellFields3D* HemoParticleField3D::cellFields=0;
 
 #endif

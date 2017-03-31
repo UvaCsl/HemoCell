@@ -24,9 +24,9 @@ inline bool file_exists (const std::string& name) {
 
 
 int renameFileToDotOld(std::string fName) {
-    plint renameStatus = 0;
+    int renameStatus = 0;
     if (file_exists(fName)) {
-        plint renameStatus = rename(fName.c_str(), (fName + ".old").c_str());
+        int renameStatus = rename(fName.c_str(), (fName + ".old").c_str());
         if (renameStatus != 0) {
             pcout << fName << " error." << std::endl;
         }
@@ -36,7 +36,7 @@ int renameFileToDotOld(std::string fName) {
 
 
 
-static int do_mkdir(const char *path, mode_t mode)
+int do_mkdir(const char *path, mode_t mode)
 {
     Stat            st;
     int             status = 0;

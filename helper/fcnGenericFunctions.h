@@ -1,6 +1,7 @@
 #ifndef FCN_GENERIC_FUNCTIONS_H
 #define FCN_GENERIC_FUNCTIONS_H
 
+#include "hemocell.h"
 #include <sys/stat.h>
 #include <vector>
 #include <string>

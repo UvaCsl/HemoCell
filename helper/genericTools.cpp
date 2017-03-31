@@ -1,6 +1,8 @@
 #ifndef GENERIC_TOOLS_CPP
 #define GENERIC_TOOLS_CPP
 
+#include "hemocell.h"
+
 void checkParameterSanity(T nu_lbm, T u_max_lbm)
 {
 	// Check lattice viscosity [0.01, 0.45]

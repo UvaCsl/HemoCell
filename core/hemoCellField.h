@@ -15,7 +15,6 @@
 #define HEMOCELLFIELD_H
 class HemoCellField;
 #include "hemocell.h"
-#include "immersedBoundaryMethod3D.h"
 
 /*contains information about one particular cellfield, structlike*/
 class HemoCellField{
