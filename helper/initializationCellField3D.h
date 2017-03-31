@@ -3,7 +3,7 @@
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
-#include "cellField3D.h"
+//#include "cellField3D.h"
 #include "hemoCellParticleField3D.h"
 #include "meshMetrics.h"
 #include <stdlib.h>     /* srand, rand */
