@@ -181,10 +181,10 @@ void HighOrderForces::ParticleMechanics(map<int,vector<SurfaceParticle3D *>> par
 };
 
 void HighOrderForces::statistics() {
-    cerr << "High Order forces for " << cellField.name << " cellfield" << std::endl;
-    cerr << "k_volume: " << k_volume << std::endl; 
-    cerr << "k_area:   " << k_area << std::endl; 
-    cerr << "k_inPlane:" << k_inPlane << std::endl; 
-    cerr << "k_bend: : " << k_bend << std::endl; 
+    pcout << "High Order forces for " << cellField.name << " cellfield" << std::endl;
+    pcout << "k_volume: " << k_volume << std::endl; 
+    pcout << "k_area:   " << k_area << std::endl; 
+    pcout << "k_inPlane:" << k_inPlane << std::endl; 
+    pcout << "k_bend: : " << k_bend << std::endl; 
 };
 

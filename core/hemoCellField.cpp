@@ -50,7 +50,7 @@ void HemoCellField::setOutputVariables(const vector<int> & outputs) { desiredOut
   }
 
 void HemoCellField::statistics() {
-  cerr << "Cellfield  (+ material model) of " << name << std::endl;
+  pcout << "Cellfield  (+ material model) of " << name << std::endl;
 
   mechanics->statistics();
 
