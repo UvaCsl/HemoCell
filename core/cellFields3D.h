@@ -86,6 +86,11 @@ public:
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
    HemoApplyConstitutiveModel * clone() const;
   };
+  class HemoRepulsionForce: public HemoCellFunctional {
+   void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+   HemoRepulsionForce * clone() const;
+  };
+  void calculateRepulsionForce();
   virtual void applyConstitutiveModel();
   void syncEnvelopes();
   class HemoSyncEnvelopes: public HemoCellFunctional {

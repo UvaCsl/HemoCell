@@ -46,6 +46,7 @@ public:
                                std::vector<Particle3D<double,DESCRIPTOR> *>& found,
                                pluint type) const;
     virtual void advanceParticles();
+    void applyRepulsionForce();
     virtual void interpolateFluidVelocity(Box3D domain);
     virtual void spreadParticleForce(Box3D domain);
     void separateForceVectors();
@@ -59,7 +60,8 @@ public:
 
     void computeGridPosition ( Array<double,3> const& position,
                     plint& iX, plint& iY, plint& iZ ) const;
-    
+    inline void computeGridPosition ( Array<double,3> const& position,
+                    plint* iX, plint* iY, plint* iZ ) const;
     
     bool isContainedABS(Array<double,3> pos, Box3D domain) const;
 
@@ -94,6 +96,8 @@ private:
     std::vector<std::vector<Particle3D<double,DESCRIPTOR>*>> particles_per_type;
     std::map<int,std::vector<SurfaceParticle3D*>> particles_per_cell;
     std::map<int,bool> lpc;
+    
+    vector<vector<vector<vector<SurfaceParticle3D*>>>> particle_grid; //maybe better to make custom data structure, But that would be slower
     void insert_ppc(SurfaceParticle3D* particle);
     HemoParticleDataTransfer3D dataTransfer;
     Box3D localDomain;
