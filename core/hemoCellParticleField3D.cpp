@@ -192,7 +192,9 @@ void HemoParticleField3D::addParticle(Box3D domain, Particle3D<double,DESCRIPTOR
         local_sparticle =  particles_per_cell[sparticle->get_cellId()][sparticle->getVertexId()];
         
         //Also put it in the correct bin for repulsion 
-        computeGridPosition(local_sparticle->getPosition(),&x,&y,&z);          
+        x = local_sparticle->grid_pos[0];
+        y = local_sparticle->grid_pos[1];
+        z = local_sparticle->grid_pos[2];
         for (unsigned int i = 0; i < particle_grid[x][y][z].size(); i++) {
           if (particle_grid[x][y][z][i] == local_sparticle) {
               particle_grid[x][y][z][i] = particle_grid[x][y][z].back();
@@ -220,7 +222,8 @@ void HemoParticleField3D::addParticle(Box3D domain, Particle3D<double,DESCRIPTOR
 
       computeGridPosition(pos,&x,&y,&z);          
       particle_grid[x][y][z].push_back(sparticle);
-      particle->setTag(-1);
+      sparticle->grid_pos = {x,y,z};
+      sparticle->setTag(-1);
     }
     else {
         delete particle;
@@ -240,24 +243,27 @@ void HemoParticleField3D::removeParticles(plint tag) {
 //Almost the same, but we save a lot of branching by manking a seperate function
     std::vector<Particle3D<double,DESCRIPTOR>*> remainingParticles = particles;
     SurfaceParticle3D * sparticle;
+    plint x,y,z;
     for (pluint i=0; i < particles_per_type.size(); i++) {
       particles_per_type[i].clear();
     }
     particles_per_cell.clear();
     lpc.clear();
     particles.clear();
-    particle_grid.clear();
-    particle_grid.resize(getNx());
-    for (auto & particlesnx : particle_grid) {
-        particlesnx.resize(getNy());
-        for (auto & particlesny : particlesnx) {
-            particlesny.resize(getNz());
-        }
-    }
 
     for (pluint i=0; i<remainingParticles.size(); ++i) {
        if (remainingParticles[i]->getTag() == tag) {
-            delete remainingParticles[i];
+         sparticle = dynamic_cast<SurfaceParticle3D*>(remainingParticles[i]);
+         x = sparticle->grid_pos[0];
+         y = sparticle->grid_pos[1];
+         z = sparticle->grid_pos[2];
+         for (unsigned int i = 0; i < particle_grid[x][y][z].size(); i++) {
+           if (particle_grid[x][y][z][i] == remainingParticles[i]) {
+              particle_grid[x][y][z][i] = particle_grid[x][y][z].back();
+              particle_grid[x][y][z].pop_back();
+           }
+         }
+         delete remainingParticles[i];
        }
        else {
            addParticle(this->getBoundingBox(), remainingParticles[i]);
@@ -269,6 +275,7 @@ void HemoParticleField3D::removeParticles(Box3D domain, plint tag) {
 //Almost the same, but we save a lot of branching by manking a seperate function
     std::vector<Particle3D<double,DESCRIPTOR>*> remainingParticles = particles;
     SurfaceParticle3D * sparticle;
+    plint x,y,z;
     Box3D finalDomain;
     Array<double,3> pos; 
     for (pluint i=0; i < particles_per_type.size(); i++) {
@@ -277,37 +284,27 @@ void HemoParticleField3D::removeParticles(Box3D domain, plint tag) {
     particles_per_cell.clear();
     lpc.clear();
     particles.clear();
-    particle_grid.clear();
-    particle_grid.resize(getNx());
-    for (auto & particlesnx : particle_grid) {
-        particlesnx.resize(getNy());
-        for (auto & particlesny : particlesnx) {
-            particlesny.resize(getNz());
-        }
-    }
     
     for (pluint i=0; i<remainingParticles.size(); ++i) {
        pos = remainingParticles[i]->getPosition();
        intersect(domain, this->getBoundingBox(), finalDomain);
        if (this->isContainedABS(pos,finalDomain) && remainingParticles[i]->getTag() == tag) {
-            delete remainingParticles[i];
+         sparticle = dynamic_cast<SurfaceParticle3D*>(remainingParticles[i]);
+         x = sparticle->grid_pos[0];
+         y = sparticle->grid_pos[1];
+         z = sparticle->grid_pos[2];
+         for (unsigned int i = 0; i < particle_grid[x][y][z].size(); i++) {
+           if (particle_grid[x][y][z][i] == remainingParticles[i]) {
+              particle_grid[x][y][z][i] = particle_grid[x][y][z].back();
+              particle_grid[x][y][z].pop_back();
+           }
+         }
+         delete remainingParticles[i];
        }
        else {
            addParticle(this->getBoundingBox(), remainingParticles[i]);
        }
     }
-}
-
-bool HemoParticleField3D::isContainedABS(Array<double,3> pos, Box3D box) const {
-		Dot3D const& location = this->getLocation();
-    double x = pos[0]-location.x;
-    double y = pos[1]-location.y;
-    double z = pos[2]-location.z;
-
-    return (x > box.x0-0.5) && (x <= box.x1+0.5) &&
-           (y > box.y0-0.5) && (y <= box.y1+0.5) &&
-           (z > box.z0-0.5) && (z <= box.z1+0.5);
-
 }
 
 void HemoParticleField3D::removeParticles(Box3D domain) {
@@ -318,6 +315,7 @@ void HemoParticleField3D::removeParticles(Box3D domain) {
     if (!cellFields->hemocellfunction) return;
     std::vector<Particle3D<double,DESCRIPTOR>*> remainingParticles = particles;
     SurfaceParticle3D * sparticle;
+    plint x,y,z;
     Box3D finalDomain;
     Array<double,3> pos; 
     for (pluint i=0; i < particles_per_type.size(); i++) {
@@ -326,20 +324,22 @@ void HemoParticleField3D::removeParticles(Box3D domain) {
     particles_per_cell.clear();
     lpc.clear();
     particles.clear();
-    particle_grid.clear();
-    particle_grid.resize(getNx());
-    for (auto & particlesnx : particle_grid) {
-        particlesnx.resize(getNy());
-        for (auto & particlesny : particlesnx) {
-            particlesny.resize(getNz());
-        }
-    }
     
     for (pluint i=0; i<remainingParticles.size(); ++i) {
        pos = remainingParticles[i]->getPosition();
        intersect(domain, this->getBoundingBox(), finalDomain);
        if (this->isContainedABS(pos,finalDomain)) {
-            delete remainingParticles[i];
+         sparticle = dynamic_cast<SurfaceParticle3D*>(remainingParticles[i]);
+         x = sparticle->grid_pos[0];
+         y = sparticle->grid_pos[1];
+         z = sparticle->grid_pos[2];
+         for (unsigned int i = 0; i < particle_grid[x][y][z].size(); i++) {
+           if (particle_grid[x][y][z][i] == remainingParticles[i]) {
+              particle_grid[x][y][z][i] = particle_grid[x][y][z].back();
+              particle_grid[x][y][z].pop_back();
+           }
+         }
+         delete remainingParticles[i];
        }
        else {
            addParticle(this->getBoundingBox(), remainingParticles[i]);
@@ -374,6 +374,18 @@ void HemoParticleField3D::findParticles (
         }
     }
     
+}
+
+bool HemoParticleField3D::isContainedABS(Array<double,3> pos, Box3D box) const {
+		Dot3D const& location = this->getLocation();
+    double x = pos[0]-location.x;
+    double y = pos[1]-location.y;
+    double z = pos[2]-location.z;
+
+    return (x > box.x0-0.5) && (x <= box.x1+0.5) &&
+           (y > box.y0-0.5) && (y <= box.y1+0.5) &&
+           (z > box.z0-0.5) && (z <= box.z1+0.5);
+
 }
 
 inline plint HemoParticleField3D::nearestCell(double const pos) const {
@@ -639,8 +651,18 @@ void HemoParticleField3D::passthroughpass(int type, Box3D domain, vector<vector<
 }
 
 void HemoParticleField3D::advanceParticles() {
+//  particle_grid.clear()
+//  particle_grid.resize(getNx());
+//  for (auto & particlesnx : particle_grid) {
+//      particlesnx.resize(getNy());
+//      for (auto & particlesny : particlesnx) {
+//          particlesny.resize(getNz());
+//      }
+//  }
+
   for(auto *particle:particles){
     particle->advance();
+
   }
 }
 

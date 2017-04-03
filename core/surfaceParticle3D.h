@@ -52,6 +52,7 @@ public:
     //Is vector, optimize with array possible
     vector<Cell<double,DESCRIPTOR>*> kernelLocations;
     vector<double>         kernelWeights;
+    Array<plint,3> grid_pos;
     Array<double,3> v;
     Array<double,3> force, force_total, vPrevious;
     Array<double,3> *force_volume = &force;
