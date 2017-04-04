@@ -6,48 +6,85 @@ class SurfaceParticle3D;
 
 class SurfaceParticle3D : public Particle3D<double,DESCRIPTOR> {
 public:
-    SurfaceParticle3D();
-    SurfaceParticle3D(Array<double,3> const& position, plint cellId_ = -1, plint vertexId_ = 0, pluint celltype_=0);
-    SurfaceParticle3D* clone() const override;
+    SurfaceParticle3D(){
+      force_volume = &force; //These pointers are only changed for nice outputs
+      force_area = &force; //These pointers are only changed for nice outputs
+      force_inplane = &force; //These pointers are only changed for nice outputs
+      force_bending = &force; //These pointers are only changed for nice outputs
+    }
+    SurfaceParticle3D (Array<double,3> const& position, plint cellId_, plint vertexId_,pluint celltype_)
+        : Particle3D<double,DESCRIPTOR>(-1, position), // The cellId initializor does nothing
+          v(),
+          force(),
+          vPrevious(),
+          cellId(cellId_), 
+          vertexId(vertexId_),
+          celltype(celltype_)
+    {
+      force_volume = &force; //These pointers are only changed for nice outputs
+      force_area = &force; //These pointers are only changed for nice outputs
+      force_inplane = &force; //These pointers are only changed for nice outputs
+      force_bending = &force; //These pointers are only changed for nice outputs
+    }
+    SurfaceParticle3D* clone() const override {
+        SurfaceParticle3D* sparticle = new SurfaceParticle3D(*this);
+        sparticle->force_volume = &sparticle->force;
+        sparticle->force_bending = &sparticle->force;
+        sparticle->force_inplane = &sparticle->force;
+        sparticle->force_area = &sparticle->force;
+        return sparticle;
+    }
 
-    void velocityToParticle(TensorField3D<double,3>& velocityField, double scaling=1.) override;
-    void velocityToParticle(NTensorField3D<double>& velocityField, double scaling=1.) override;
-    void rhoBarJtoParticle(NTensorField3D<double>& rhoBarJfield, bool velIsJ, double scaling=1.) override;
-    void fluidToParticle(BlockLattice3D<double,DESCRIPTOR>& fluid, double scaling=1.) override;
+    void velocityToParticle(TensorField3D<double,3>& velocityField, double scaling=1.) override {}
+    void velocityToParticle(NTensorField3D<double>& velocityField, double scaling=1.) override {}
+    void rhoBarJtoParticle(NTensorField3D<double>& rhoBarJfield, bool velIsJ, double scaling=1.) override {}
+    void fluidToParticle(BlockLattice3D<double,DESCRIPTOR>& fluid, double scaling=1.) override {}
 
     /// Implements Euler integration with velocity alone.
-    void advance() override;
-    void serialize(HierarchicSerializer& serializer) const override;
-    void unserialize(HierarchicUnserializer& unserializer) override;
+    void advance() override{
 
-    void reset(Array<double,3> const& position, Array<double,3> const& velocity_);
-    void reset(Array<double,3> const& position) override;
-    void resetForces();
+        /* scheme:
+         *  1: Euler
+         *  2: Adams-Bashforth
+         */
+        #if HEMOCELL_MATERIAL_INTEGRATION == 1
+              this->getPosition() += v;         
+
+        #elif HEMOCELL_MATERIAL_INTEGRATION == 2
+                Array<double,3> dxyz = (1.5*v - 0.5*vPrevious);
+              this->getPosition() +=  dxyz;
+              vPrevious = v;  // Store velocity
+        #endif
+        v = {0.0,0.0,0.0};
+    }
+    void serialize(HierarchicSerializer& serializer) const override
+    {
+        Particle3D<double,DESCRIPTOR>::serialize(serializer);
+        serializer.addValues<double,3>(v);
+        serializer.addValues<double,3>(force);
+        serializer.addValues<double,3>(vPrevious);
+        serializer.addValue<plint>(cellId);
+        serializer.addValue<plint>(vertexId);
+        serializer.addValue<pluint>(celltype);
+    }
+    void unserialize(HierarchicUnserializer& unserializer) override
+    {
+        Particle3D<double,DESCRIPTOR>::unserialize(unserializer);
+        unserializer.readValues<double,3>(v);
+        unserializer.readValues<double,3>(force);
+        unserializer.readValues<double,3>(vPrevious);
+        unserializer.readValue<plint>(cellId);
+        unserializer.readValue<plint>(vertexId);
+        unserializer.readValue<pluint>(celltype);
+        //These pointers are only changed for nice outputs
+        force_volume = &force; 
+        force_area = &force; 
+        force_inplane = &force;
+        force_bending = &force;
+    }
 
     static int id;
-    
-    int getId() const;
-
-    Array<double,3> const& get_v() const;
-    Array<double,3> const& getVelocity() const; 
-    Array<double,3> const& get_vPrevious() const;
-    Array<double,3> const& get_force() const;
-    plint const& get_cellId() const;
-    pluint const& get_celltype() const;
-    plint const& getVertexId() const;
-    // Difference between getVelocity and get_v:
-    // get_v holds the actual interpolated velocity, while
-    // getVelocity holds the velocity according to the
-    // update of the position particle "method advance()".
-    Array<double,3>& get_v();
-    //Array<T,3>& get_pbcPosition() { return pbcPosition; }
-    //Array<T,3>& get_vPrevious() { return vPrevious; }
-    //Array<T,3>& get_a() { return a;double}
-    Array<double,3>& get_force();
-    //plint& get_cellId() { return cellId; }
-    //plint& getVertexId() { return vertexId; }
-    //plint& get_processor() { return processor; }
-    int getMpiProcessor();
+    inline int getId() const override {return id;}
 
     //Is vector, optimize with array possible
     vector<Cell<double,DESCRIPTOR>*> kernelLocations;
@@ -62,14 +99,8 @@ public:
 public:
     plint cellId;
     plint vertexId;
-private:
     pluint celltype;
-    int rank;
 
-//TODO, remove before production, now to let legacy code compile
-public:
-   // std::vector<Dot3D> & getIBMcoordinates() { return cellPos; }
-  //  std::vector<double> & getIBMweights() { return weights; }
 private:
     std::vector<Dot3D> cellPos;
     std::vector<double> weights;

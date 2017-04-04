@@ -207,7 +207,7 @@ void RandomPositionCellParticlesForGrowth3D<T,Descriptor>::processGenericBlocks 
     for (pluint iP = 0; iP < particles.size(); ++iP) {
         SurfaceParticle3D* particle =
             dynamic_cast<SurfaceParticle3D*> (particles[iP]);
-        cellIdToNumberOfVertices[particle->get_cellId()]++;
+        cellIdToNumberOfVertices[particle->cellId]++;
     }
     plint cellsDeleted=0;
     typename std::map<plint, plint >::iterator itrt;

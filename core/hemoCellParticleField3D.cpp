@@ -178,7 +178,7 @@ void HemoParticleField3D::addParticle(Box3D domain, Particle3D<double,DESCRIPTOR
     SurfaceParticle3D * local_sparticle;
     Array<double,3> pos = particle->getPosition();
 
-    while (particles_per_type.size()<=sparticle->get_celltype()) {
+    while (particles_per_type.size()<=sparticle->celltype) {
       particles_per_type.push_back(std::vector<Particle3D<double,DESCRIPTOR>*>());
     }
 
@@ -186,10 +186,10 @@ void HemoParticleField3D::addParticle(Box3D domain, Particle3D<double,DESCRIPTOR
     {
       //check if we have particle already, if so, we must overwrite but not
       //forget to delete the old entry
-      if ((!(particles_per_cell.find(sparticle->get_cellId()) == 
-           particles_per_cell.end())) && particles_per_cell[sparticle->get_cellId()][sparticle->getVertexId()]) {
+      if ((!(particles_per_cell.find(sparticle->cellId) == 
+           particles_per_cell.end())) && particles_per_cell[sparticle->cellId][sparticle->vertexId]) {
         //We have the particle already, replace it
-        local_sparticle =  particles_per_cell[sparticle->get_cellId()][sparticle->getVertexId()];
+        local_sparticle =  particles_per_cell[sparticle->cellId][sparticle->vertexId];
         
         //Also put it in the correct bin for repulsion 
         x = local_sparticle->grid_pos[0];
@@ -212,9 +212,9 @@ void HemoParticleField3D::addParticle(Box3D domain, Particle3D<double,DESCRIPTOR
       } else {
         //new entry
         particles.push_back(particle);
-          particles_per_type[sparticle->get_celltype()].push_back(particle); //TODO, not accurate for already existing particles
+          particles_per_type[sparticle->celltype].push_back(particle); //TODO, not accurate for already existing particles
           if(this->isContainedABS(pos, localDomain)) {
-            lpc[sparticle->get_cellId()] = true;
+            lpc[sparticle->cellId] = true;
           }
           
         insert_ppc(sparticle);
@@ -231,10 +231,10 @@ void HemoParticleField3D::addParticle(Box3D domain, Particle3D<double,DESCRIPTOR
 }
 
 void HemoParticleField3D::insert_ppc(SurfaceParticle3D* sparticle) {
-  if (particles_per_cell.find(sparticle->get_cellId()) == particles_per_cell.end()) {
-    particles_per_cell[sparticle->get_cellId()].resize((*cellFields)[sparticle->get_celltype()]->numVertex);
+  if (particles_per_cell.find(sparticle->cellId) == particles_per_cell.end()) {
+    particles_per_cell[sparticle->cellId].resize((*cellFields)[sparticle->celltype]->numVertex);
   }
-  particles_per_cell[sparticle->get_cellId()][sparticle->getVertexId()] = sparticle;
+  particles_per_cell[sparticle->cellId][sparticle->vertexId] = sparticle;
 
 }
 
@@ -433,7 +433,7 @@ int HemoParticleField3D::deleteIncompleteCells(pluint ctype, bool twice) {
     //actually add to tobedeleted list
     for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
       if (particles_per_cell[cellid][i] == NULL) {continue;}
-      if (particles_per_cell[cellid][i]->get_celltype() != ctype) {break;} //certainly a entry, therefore we check here if it is the right type, if not, exit
+      if (particles_per_cell[cellid][i]->celltype != ctype) {break;} //certainly a entry, therefore we check here if it is the right type, if not, exit
 
       particles_per_cell[cellid][i]->setTag(1);
       deleted++;
@@ -487,7 +487,7 @@ void HemoParticleField3D::outputPositions(Box3D domain,vector<vector<double>>& o
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->get_celltype()) continue;
+    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
       sparticle = particles_per_cell[cellid][i];
 
@@ -508,7 +508,7 @@ void HemoParticleField3D::outputForceBending(Box3D domain,vector<vector<double>>
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->get_celltype()) continue;
+    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
       sparticle = particles_per_cell[cellid][i];
 
@@ -527,7 +527,7 @@ void HemoParticleField3D::outputForceArea(Box3D domain,vector<vector<double>>& o
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->get_celltype()) continue;
+    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
       sparticle = particles_per_cell[cellid][i];
 
@@ -546,7 +546,7 @@ void HemoParticleField3D::outputForceInPlane(Box3D domain,vector<vector<double>>
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->get_celltype()) continue;
+    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
       sparticle = particles_per_cell[cellid][i];
 
@@ -565,7 +565,7 @@ void HemoParticleField3D::outputForceVolume(Box3D domain,vector<vector<double>>&
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->get_celltype()) continue;
+    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
       sparticle = particles_per_cell[cellid][i];
 
@@ -585,7 +585,7 @@ void HemoParticleField3D::outputForces(Box3D domain,vector<vector<double>>& outp
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->get_celltype()) continue;
+    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
       sparticle = particles_per_cell[cellid][i];
 
@@ -605,7 +605,7 @@ void HemoParticleField3D::outputTriangles(Box3D domain, vector<vector<plint>>& o
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->get_celltype()) continue;
+    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
 
     for (pluint i = 0; i < (*cellFields)[ctype]->triangle_list.size(); i++) {
       vector<plint> triangle = {(*cellFields)[ctype]->triangle_list[i][0] + counter,
@@ -737,7 +737,7 @@ void HemoParticleField3D::spreadParticleForce(Box3D domain) {
   for (pluint i = 0; i < localParticles.size(); i++ ) {
     sparticle = dynamic_cast<SurfaceParticle3D*>(localParticles[i]);
     //Clever trick to allow for different kernels for different particle types.
-    (*cellFields)[sparticle->get_celltype()]->kernelMethod(*atomicLattice,sparticle);
+    (*cellFields)[sparticle->celltype]->kernelMethod(*atomicLattice,sparticle);
 
     //Directly change the force on a node , Palabos developers hate this one
     //quick non-functional trick.
@@ -764,7 +764,7 @@ void HemoParticleField3D::interpolateFluidVelocity(Box3D domain) {
   for (pluint i = 0; i < localParticles.size(); i++ ) {
     sparticle = dynamic_cast<SurfaceParticle3D*>(localParticles[i]);
     //Clever trick to allow for different kernels for different particle types.
-    (*cellFields)[sparticle->get_celltype()]->kernelMethod(*atomicLattice,sparticle);
+    (*cellFields)[sparticle->celltype]->kernelMethod(*atomicLattice,sparticle);
 
     //We have the kernels, now calculate the velocity of the particles.
     //Palabos developers, sorry for not using a functional...

@@ -10,7 +10,7 @@ void HighOrderForces::ParticleMechanics(map<int,vector<SurfaceParticle3D *>> par
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;
     vector<SurfaceParticle3D*> & cell = particles_per_cell[cid];
-    if (cell[0]->get_celltype() != ctype) continue; //only execute on correct particles
+    if (cell[0]->celltype != ctype) continue; //only execute on correct particles
 
     //Calculate Cell Values that need all particles (but do it most efficient
     //tailered to this class)
