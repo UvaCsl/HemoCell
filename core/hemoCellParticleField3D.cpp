@@ -160,10 +160,9 @@ HemoParticleField3D::HemoParticleField3D(HemoParticleField3D const& rhs)
 }
 
 HemoParticleField3D& HemoParticleField3D::operator=(HemoParticleField3D const& rhs){
- HemoParticleField3D copy(rhs);
- this->~HemoParticleField3D();
- *this = copy;
-  return *this;
+ HemoParticleField3D *copy = new HemoParticleField3D(rhs);
+ delete this;
+  return *copy;
 }
 
 HemoParticleField3D* HemoParticleField3D::clone() const

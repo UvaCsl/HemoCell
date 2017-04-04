@@ -68,7 +68,7 @@ ENDIF(NEEDVTK)
 IF (NOT CMAKE_CXX_FLAGS)
   #If flags are not set, add default flags
   SET(CMAKE_BUILD_TYPE ${BUILD_TYPE})
-  SET(CMAKE_CXX_FLAGS  " -Wall -Wextra -Wno-unused-parameter -g -Wformat -Wformat-security -Werror=format-security -O3 -march=native")
+  SET(CMAKE_CXX_FLAGS  " -Wall -Wextra -Wno-unused-parameter -g -Wformat -Wformat-security -Werror=format-security -O3 -march=native -fsanitize=leak")
 ENDIF (NOT CMAKE_CXX_FLAGS)
 
 #=======================================

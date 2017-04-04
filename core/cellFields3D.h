@@ -30,6 +30,7 @@ class CellFields3D
 public:
     CellFields3D(MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth);
     MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & getParticleField3D();
+    ~CellFields3D();
     virtual void advanceParticles();
     virtual void interpolateFluidVelocity();
     virtual void spreadParticleForce();

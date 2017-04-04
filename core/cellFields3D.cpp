@@ -249,7 +249,9 @@ void CellFields3D::HemoSyncEnvelopes::getTypeOfModification(std::vector<modif::M
 }
 
 MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & CellFields3D::getParticleField3D() { return *immersedParticles; };
-
+CellFields3D::~CellFields3D() {
+    delete immersedParticles;
+}
 #endif
 
 
