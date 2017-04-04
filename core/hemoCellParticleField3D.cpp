@@ -651,14 +651,14 @@ void HemoParticleField3D::passthroughpass(int type, Box3D domain, vector<vector<
 }
 
 void HemoParticleField3D::advanceParticles() {
-//  particle_grid.clear()
-//  particle_grid.resize(getNx());
-//  for (auto & particlesnx : particle_grid) {
-//      particlesnx.resize(getNy());
-//      for (auto & particlesny : particlesnx) {
-//          particlesny.resize(getNz());
-//      }
-//  }
+  particle_grid.swap(vector<vector<vector<vector<SurfaceParticle3D*>>>>());
+  particle_grid.resize(getNx());
+  for (auto & particlesnx : particle_grid) {
+      particlesnx.resize(getNy());
+      for (auto & particlesny : particlesnx) {
+          particlesny.resize(getNz());
+      }
+  }
 
   for(auto *particle:particles){
     particle->advance();
