@@ -237,7 +237,8 @@ int main(int argc, char *argv[]) {
 
     defineDynamics(lattice, *flagMatrix, lattice.getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
 
-    lattice.periodicity().toggleAll(true);
+    lattice.periodicity().toggleAll(false);
+    lattice.periodicity().toggle(0,true);
     lattice.toggleInternalStatistics(false);
     initializeAtEquilibrium(lattice, lattice.getBoundingBox(), 1., Array<T, 3>(0., 0., 0.));
 
