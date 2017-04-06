@@ -78,7 +78,7 @@ inline void interpolationCoefficientsPhi2 (
 
                     if (weight>0) {
                         particle->kernelWeights.push_back(weight);
-                        particle->kernelLocations.push_back(block.getPointer(posInBlock[0],posInBlock[1],posInBlock[2]));
+                        particle->kernelLocations.push_back(&block.grid[posInBlock[0]][posInBlock[1]][posInBlock[2]]);
                     }
                 }
             }

@@ -7,7 +7,7 @@
 
 class HemoParticleDataTransfer3D : public BlockDataTransfer3D {
 public:
-    HemoParticleDataTransfer3D(HemoParticleField3D& particleField_);
+    HemoParticleDataTransfer3D();
     virtual plint staticCellSize() const;
     virtual void send(Box3D domain, std::vector<char>& buffer, modif::ModifT kind) const;
     virtual void receive(Box3D domain, std::vector<char> const& buffer, modif::ModifT kind);
@@ -17,12 +17,18 @@ public:
     {
         receive(domain, buffer, kind);
     }
+    virtual void setBlock(AtomicBlock3D& block);
+    virtual void setConstBlock(AtomicBlock3D const& block) ;
+    virtual HemoParticleDataTransfer3D* clone() const {
+      return new HemoParticleDataTransfer3D(*this);
+    }
     virtual void attribute(Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
                            AtomicBlock3D const& from, modif::ModifT kind);
     virtual void attribute(Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
                            AtomicBlock3D const& from, modif::ModifT kind, Dot3D absoluteOffset);
 private:
-    HemoParticleField3D& particleField;
+    HemoParticleField3D* particleField;
+    HemoParticleField3D const * constParticleField;
 };
 
 class HemoParticleField3D : public AtomicBlock3D {

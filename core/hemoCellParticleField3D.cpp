@@ -5,10 +5,7 @@
 
 /* *************** class HemoParticleDataTransfer3D ************************ */
 
-HemoParticleDataTransfer3D::HemoParticleDataTransfer3D (
-        HemoParticleField3D& particleField_)
-    : particleField(particleField_)
-{ }
+HemoParticleDataTransfer3D::HemoParticleDataTransfer3D () {};
 
 plint HemoParticleDataTransfer3D::staticCellSize() const {
     return 0;  // Particle containers have only dynamic data.
@@ -26,7 +23,7 @@ void HemoParticleDataTransfer3D::send (
          (kind==modif::dataStructure) )
     {
         std::vector<Particle3D<double,DESCRIPTOR>*> foundParticles;
-        particleField.findParticles(domain, foundParticles);
+        particleField->findParticles(domain, foundParticles);
         for (pluint iParticle=0; iParticle<foundParticles.size(); ++iParticle) {
         // The serialize function automatically reallocates memory for buffer.
         serialize(*foundParticles[iParticle], buffer);
@@ -37,10 +34,10 @@ void HemoParticleDataTransfer3D::send (
 void HemoParticleDataTransfer3D::receive (
         Box3D domain, std::vector<char> const& buffer, modif::ModifT kind )
 {
-    PLB_PRECONDITION(contained(domain, particleField.getBoundingBox()));
+    PLB_PRECONDITION(contained(domain, particleField->getBoundingBox()));
 
     // Clear the existing data before introducing the new data.
-    particleField.removeParticles(domain);
+    particleField->removeParticles(domain);
     // Particles, by definition, are dynamic data, and they need to
     //   be reconstructed in any case. Therefore, the receive procedure
     //   is run whenever kind is one of the dynamic types.
@@ -55,7 +52,7 @@ void HemoParticleDataTransfer3D::receive (
             Particle3D<double,DESCRIPTOR>* newParticle =
                 meta::particleRegistration3D<double,DESCRIPTOR>().generate(unserializer);
             posInBuffer = unserializer.getCurrentPos();
-            particleField.addParticle(domain, newParticle);
+            particleField->addParticle(domain, newParticle);
         }
     }
 }
@@ -66,7 +63,7 @@ void HemoParticleDataTransfer3D::receive (
         //Particle Locations should always be ABSOULUTE, an offset thus makes no
         //sense
         Array<T,3> realAbsoluteOffset((T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z);
-    particleField.removeParticles(domain);
+    particleField->removeParticles(domain);
     if ( (kind==modif::dynamicVariables) ||
          (kind==modif::allVariables) ||
          (kind==modif::dataStructure) )
@@ -79,9 +76,19 @@ void HemoParticleDataTransfer3D::receive (
                 meta::particleRegistration3D<double,DESCRIPTOR>().generate(unserializer);
             posInBuffer = unserializer.getCurrentPos();
             newParticle->getPosition() += realAbsoluteOffset;
-            particleField.addParticle(domain, newParticle);
+            particleField->addParticle(domain, newParticle);
         }
     }
+}
+
+void HemoParticleDataTransfer3D::setBlock(AtomicBlock3D& block) {
+   particleField = dynamic_cast<HemoParticleField3D*>(&block);
+   PLB_ASSERT(particleField);
+   constParticleField = particleField;
+}
+
+void HemoParticleDataTransfer3D::setConstBlock(AtomicBlock3D const& block) {
+          constParticleField = dynamic_cast<HemoParticleField3D const*>(&block);
 }
 
 void HemoParticleDataTransfer3D::attribute (
@@ -121,8 +128,9 @@ void HemoParticleField3D::AddOutputMap() {
 }
 
 HemoParticleField3D::HemoParticleField3D(plint nx, plint ny, plint nz)
-    : AtomicBlock3D(nx,ny,nz), dataTransfer(*this)
+    : AtomicBlock3D(nx,ny,nz, &this->dataTransfer)
 { 
+    dataTransfer.setBlock(*this);
     particle_grid.resize(getNx());
     for (auto & particlesnx : particle_grid) {
         particlesnx.resize(getNy());
@@ -136,15 +144,16 @@ HemoParticleField3D::HemoParticleField3D(plint nx, plint ny, plint nz)
 
 HemoParticleField3D::~HemoParticleField3D()
 {
+  AtomicBlock3D::dataTransfer = new HemoParticleDataTransfer3D();
     for (pluint i=0; i<particles.size(); ++i) {
         delete particles[i];
     }
 }
 
 HemoParticleField3D::HemoParticleField3D(HemoParticleField3D const& rhs)
-    : AtomicBlock3D(rhs),
-      dataTransfer(*this)
+    : AtomicBlock3D(rhs)
 {
+    dataTransfer.setBlock(*this);
     particle_grid.resize(getNx());
     for (auto & particlesnx : particle_grid) {
         particlesnx.resize(getNy());
