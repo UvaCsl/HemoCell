@@ -316,7 +316,6 @@ int main(int argc, char *argv[]) {
     // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
 
     //FcnCheckpoint<T, DESCRIPTOR> checkpointer(documentXML);
-    cellFields.load(&documentXML, initIter);
 
     if (not cfg.checkpointed) {
         pcout << "(main) initializing particle positions from " << particlePosFile << "..." << std::endl;
@@ -324,7 +323,9 @@ int main(int argc, char *argv[]) {
         //orderedPositionMultipleCellField3D(cellFields);
         //randomPositionMultipleCellField3D(cellFields, hematocrit, dx, maxPackIter);
        readPositionsBloodCellField3D(cellFields, param::dx, particlePosFile.c_str());
-        pcout << "(main) saving checkpoint..." << std::endl;
+       cellFields.syncEnvelopes();
+       cellFields.deleteIncompleteCells();
+       pcout << "(main) saving checkpoint..." << std::endl;
         cellFields.save(&documentXML, initIter);
        
         pcout << "Initial output ..." << std::endl;
@@ -340,6 +341,7 @@ int main(int argc, char *argv[]) {
             cellFields.unify_force_vectors();
     }
     else {
+        cellFields.load(&documentXML, initIter);
     	pcout << "(main) particle positions read from checkpoint." << std::endl;
     }
    

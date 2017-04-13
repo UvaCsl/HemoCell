@@ -232,6 +232,15 @@ void CellFields3D::separate_force_vectors() {
   applyProcessingFunctional(new HemoSeperateForceVectors(),immersedParticles->getBoundingBox(),wrapper);
 
 }
+void CellFields3D::HemoDeleteIncompleteCells::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->deleteIncompleteCells();
+}
+void CellFields3D::deleteIncompleteCells() {
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  applyProcessingFunctional(new HemoDeleteIncompleteCells(),immersedParticles->getBoundingBox(),wrapper);
+
+}
 
 CellFields3D::HemoSeperateForceVectors * CellFields3D::HemoSeperateForceVectors::clone() const { return new CellFields3D::HemoSeperateForceVectors(*this);}
 CellFields3D::HemoUnifyForceVectors *    CellFields3D::HemoUnifyForceVectors::clone() const    { return new CellFields3D::HemoUnifyForceVectors(*this);}
@@ -241,6 +250,7 @@ CellFields3D::HemoAdvanceParticles *     CellFields3D::HemoAdvanceParticles::clo
 CellFields3D::HemoApplyConstitutiveModel * CellFields3D::HemoApplyConstitutiveModel::clone() const { return new CellFields3D::HemoApplyConstitutiveModel(*this);}
 CellFields3D::HemoSyncEnvelopes *        CellFields3D::HemoSyncEnvelopes::clone() const { return new CellFields3D::HemoSyncEnvelopes(*this);}
 CellFields3D::HemoRepulsionForce *        CellFields3D::HemoRepulsionForce::clone() const { return new CellFields3D::HemoRepulsionForce(*this);}
+CellFields3D::HemoDeleteIncompleteCells *        CellFields3D::HemoDeleteIncompleteCells::clone() const { return new CellFields3D::HemoDeleteIncompleteCells(*this);}
 
 void CellFields3D::HemoSyncEnvelopes::getTypeOfModification(std::vector<modif::ModifT>& modified) const {
    for (pluint i = 0; i < modified.size(); i++) {

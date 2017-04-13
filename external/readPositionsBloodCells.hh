@@ -98,7 +98,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
             //randomAngles[i][j] = Array<T, 3>(1.0,0.0,0.0);
             randomAngles[i][j] = Array<T, 3>(packAngles[i][j][0], packAngles[i][j][1], packAngles[i][j][2]);
             positions[i][j] =Array<T,3>(packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]);
-            cellIds[i][j] = ni + 1000*mpiRank;
+            cellIds[i][j] = ni;
 
             // Rotate mesh
 

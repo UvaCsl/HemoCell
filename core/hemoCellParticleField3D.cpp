@@ -241,6 +241,9 @@ void HemoParticleField3D::addParticle(Box3D domain, Particle3D<double,DESCRIPTOR
 void HemoParticleField3D::insert_ppc(SurfaceParticle3D* sparticle) {
   if (particles_per_cell.find(sparticle->cellId) == particles_per_cell.end()) {
     particles_per_cell[sparticle->cellId].resize((*cellFields)[sparticle->celltype]->numVertex);
+    for (unsigned int i = 0; i < particles_per_cell[sparticle->cellId].size(); i++) {
+      particles_per_cell[sparticle->cellId][i] = NULL;
+    }
   }
   particles_per_cell[sparticle->cellId][sparticle->vertexId] = sparticle;
 

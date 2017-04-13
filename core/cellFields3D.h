@@ -92,6 +92,11 @@ public:
    HemoRepulsionForce * clone() const;
   };
   void calculateRepulsionForce();
+  class HemoDeleteIncompleteCells: public HemoCellFunctional {
+   void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+   HemoDeleteIncompleteCells * clone() const;
+  };
+  void deleteIncompleteCells();
   virtual void applyConstitutiveModel();
   void syncEnvelopes();
   class HemoSyncEnvelopes: public HemoCellFunctional {
