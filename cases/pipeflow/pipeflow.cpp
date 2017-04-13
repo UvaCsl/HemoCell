@@ -324,9 +324,21 @@ int main(int argc, char *argv[]) {
         //orderedPositionMultipleCellField3D(cellFields);
         //randomPositionMultipleCellField3D(cellFields, hematocrit, dx, maxPackIter);
        readPositionsBloodCellField3D(cellFields, param::dx, particlePosFile.c_str());
-       
         pcout << "(main) saving checkpoint..." << std::endl;
         cellFields.save(&documentXML, initIter);
+       
+        pcout << "Initial output ..." << std::endl;
+            //Repoint surfaceparticle forces for output
+            cellFields.separate_force_vectors();
+            
+            //Recalculate the forces
+            cellFields.applyConstitutiveModel();
+            
+            writeCellField3D_HDF5(cellFields,param::dx,param::dt,initIter);
+            
+            //Repoint surfaceparticle forces for speed
+            cellFields.unify_force_vectors();
+            
         exit(0);
     }
     else {

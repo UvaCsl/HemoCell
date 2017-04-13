@@ -14,17 +14,8 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
                                             std::vector<std::vector<Array<T,3> > > & randomAngles,
                                             const char* positionsFileName)
 {
-    PLB_PRECONDITION( meshes.size() == 2 );
 
-
-    if(global::mpi().getSize()>1)
-    {
-        pcout << "*** WARNING! (readPositionsBloodCels) You should run this type of initialisation in a single process!" << endl
-             << "*** WARNING! If you need multiprocessor initialisation use (randomPositionsMultipleCells)!"
-             << endl << "*** WARNING! You should cancel this run (unless you are really sure you want this), as only the master will be initialised this way!" << endl;
-    }
-
-    pcout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
+    cout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
 
 
     vector<vector3> packPositions[2];
@@ -33,20 +24,20 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
     // Reading data from file
 
-    plb_ifstream fIn;
-    fIn.open(positionsFileName);
+    cout << positionsFileName << endl;
+    fstream fIn;
+    fIn.open(positionsFileName, fstream::in);
 
     if(!fIn.is_open())
     {
-        pcout << "*** WARNING! particle positions input file does not exist!" << endl;
+        cout << "*** WARNING! particle positions input file does not exist!" << endl;
     }
 
-    //uint nCell[2];
     Np.resize(2);
 
     fIn >> Np[0] >> Np[1];
 
-    pcout << "(readPositionsBloodCels) Particle count (RBCs, PLTs): " << Np[0] << ", " << Np[1] << endl;
+    cout << "(readPositionsBloodCels) Particle count (RBCs, PLTs): " << Np[0] << ", " << Np[1] << endl;
 
     // TODO: proper try-catch
     for(pluint j = 0; j < 2; j++) {
@@ -63,9 +54,9 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
     }
     //
 
-    pcout << "(readPositionsBloodCels) Reading done." << std::endl;
+    cout << "(readPositionsBloodCels) Reading done." << std::endl;
 
-    pcout << "(readPositionsBloodCels) Domain: " << (int)realDomain.getNx() << " " << (int)realDomain.getNy() << " " << (int)realDomain.getNz() << endl;
+    cout << "(readPositionsBloodCels) Domain: " << (int)realDomain.getNx() << " " << (int)realDomain.getNy() << " " << (int)realDomain.getNz() << endl;
 
     vector<int> domainSize;
     domainSize.push_back((int)realDomain.getNx());
@@ -119,7 +110,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
             ni++;
         }
     }
-
+    fIn.close();
 }
 
 
@@ -137,7 +128,6 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     std::vector<double> volumeFractions(numberOfCellFields);
     std::vector<TriangularSurfaceMesh<double>* > meshes(numberOfCellFields);
     std::vector<ElementsOfTriangularSurfaceMesh<double> > emptyEoTSM(numberOfCellFields);
-    std::vector<Box3D> relativeDomains(numberOfCellFields);
     std::vector<plint> Np(numberOfCellFields);
 
     double totalVolumeFraction=0;
@@ -165,11 +155,6 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         totalVolumeFraction += volumes[iCF];
         particleFields[iCF] = ( dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[iCF+1]) );
         particleFields[iCF]->removeParticles(particleFields[iCF]->getBoundingBox());
-        Dot3D relativeDisplacement = computeRelativeDisplacement(fluid, *(particleFields[iCF]));
-        relativeDomains[iCF] = ( Box3D(
-                domain.x0 + relativeDisplacement.x, domain.x1 + relativeDisplacement.x,
-                domain.y0 + relativeDisplacement.y, domain.y1 + relativeDisplacement.y,
-                domain.z0 + relativeDisplacement.z, domain.z1 + relativeDisplacement.z ) );
     }
    
 
@@ -182,7 +167,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
 
     // Change positions to match dx (it is in um originally)
     double posRatio = 1e-6/dx;
-    double wallWidth = 1.5; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
+    double wallWidth = 0; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
     
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
@@ -204,10 +189,10 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         // DELETE CELLS THAT ARE NOT WHOLE
         plint nVertices=meshes[iCF]->getNumVertices();
         cout << "MPI rank: " << global::mpi().getRank();
-        plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells(iCF);
+        plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells(iCF)/(float)nVertices;
         std::vector<Particle3D<double,DESCRIPTOR>*> particles;
-        //particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(),   particles, iCF);
-        cout    << " (deleted vertices:" << cellsDeleted << ") for particleId:" << iCF << std::endl;
+        particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);
+        cout    << " Total cells: " << particles.size()/(float)nVertices << " (deleted cells:" << cellsDeleted << ") for particleId:" << iCF << std::endl;
 //delete meshes[iCF];
     }
    

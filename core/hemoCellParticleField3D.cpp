@@ -375,11 +375,13 @@ void HemoParticleField3D::findParticles (
     found.clear();
     PLB_ASSERT( contained(domain, this->getBoundingBox()) );
     Array<double,3> pos; 
+    if (!(particles_per_type.size() > type)) {return;} else {
     for (pluint i=0; i<particles_per_type[type].size(); ++i) {
         pos = particles_per_type[type][i]->getPosition();
         if (this->isContainedABS(pos,domain)) {
             found.push_back(particles_per_type[type][i]);
         }
+    }
     }
     
 }
