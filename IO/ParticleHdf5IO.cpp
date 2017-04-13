@@ -59,7 +59,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         int outputextra = 0;
         if (output->size() > 1000) { outputextra = output->size()%1000; };
         
-        double output_formatted[dimVertices[0] * dimVertices[1] + outputextra * dimVertices[1]] = {0.0};
+        double* output_formatted = new double[dimVertices[0] * dimVertices[1] + outputextra * dimVertices[1]];
         
         int fmt_cnt = 0;
         for (pluint x=0; x< dimVertices[0];x++) {
@@ -102,7 +102,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         int outputextra = 0;
         if (output->size() > 1000) { outputextra = output->size()%1000; };
         
-        int output_formatted[dimVertices[0] * dimVertices[1] + outputextra * dimVertices[1]] = {0};
+        int* output_formatted = new int[dimVertices[0] * dimVertices[1] + outputextra * dimVertices[1]];
         int fmt_cnt = 0;
         for (pluint x=0; x< dimVertices[0];x++) {
             for (pluint y=0; y < dimVertices[1] ; y++) {
