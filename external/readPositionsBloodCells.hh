@@ -58,10 +58,6 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
     cout << "(readPositionsBloodCels) Domain: " << (int)realDomain.getNx() << " " << (int)realDomain.getNy() << " " << (int)realDomain.getNz() << endl;
 
-    vector<int> domainSize;
-    domainSize.push_back((int)realDomain.getNx());
-    domainSize.push_back((int)realDomain.getNy());
-    domainSize.push_back((int)realDomain.getNz());
 
     vector<vector3> diameters;
     vector<int> nPartsPerComponent;
@@ -89,7 +85,6 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
     plint ni=0;
     int mpiRank = global::mpi().getRank();
-    Array<T,3> rdomain(realDomain.x0, realDomain.y0, realDomain.z0);
 
     for (pluint i = 0; i < Np.size(); ++i)
     {
@@ -102,7 +97,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
             // Store mesh positions and rotations
             //randomAngles[i][j] = Array<T, 3>(1.0,0.0,0.0);
             randomAngles[i][j] = Array<T, 3>(packAngles[i][j][0], packAngles[i][j][1], packAngles[i][j][2]);
-            positions[i][j] = rdomain + Array<T,3>(packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]);
+            positions[i][j] =Array<T,3>(packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]);
             cellIds[i][j] = ni + 1000*mpiRank;
 
             // Rotate mesh
@@ -179,17 +174,18 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     	    
             meshRotation (meshCopy, randomAngles[iCF][c]);
             
-            cellFields.hemocellfunction=true;
             positionCellInParticleField(*(particleFields[iCF]), fluid,
                                          meshCopy, positions[iCF][c]*posRatio+wallWidth, cellIds[iCF][c], iCF); 
-            cellFields.hemocellfunction=false;
 			delete meshCopy;
         }
 
+        
+        //SYNC THEM ENVELOPES
+        //cellFields.syncEnvelopes();
         // DELETE CELLS THAT ARE NOT WHOLE
         plint nVertices=meshes[iCF]->getNumVertices();
         cout << "MPI rank: " << global::mpi().getRank();
-        plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells(iCF)/(float)nVertices;
+        plint cellsDeleted = 0;//particleFields[iCF]->deleteIncompleteCells(iCF)/(float)nVertices;
         std::vector<Particle3D<double,DESCRIPTOR>*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);
         cout    << " Total cells: " << particles.size()/(float)nVertices << " (deleted cells:" << cellsDeleted << ") for particleId:" << iCF << std::endl;

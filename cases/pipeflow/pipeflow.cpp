@@ -338,8 +338,6 @@ int main(int argc, char *argv[]) {
             
             //Repoint surfaceparticle forces for speed
             cellFields.unify_force_vectors();
-            
-        exit(0);
     }
     else {
     	pcout << "(main) particle positions read from checkpoint." << std::endl;
@@ -417,7 +415,8 @@ int main(int argc, char *argv[]) {
             
             //Repoint surfaceparticle forces for speed
             cellFields.unify_force_vectors();
-            
+                    pcout << "(main) saving checkpoint..." << std::endl;
+
             cellFields.save(&documentXML, iter);
             T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
             pcout << "(main) Iteration:" << iter << "(" << iter * param::dt << " s)" << std::endl;
