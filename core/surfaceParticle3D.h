@@ -7,6 +7,13 @@ class SurfaceParticle3D;
 class SurfaceParticle3D : public Particle3D<double,DESCRIPTOR> {
 public:
     SurfaceParticle3D(){
+      v = {0.0,0.0,0.0};
+      force = {0.0,0.0,0.0};
+      vPrevious = {0.0,0.0,0.0};
+      cellId = 0;
+      vertexId = 0;
+      celltype = 0;
+      getPosition() = {0.0,0.0,0.0};
       force_volume = &force; //These pointers are only changed for nice outputs
       force_area = &force; //These pointers are only changed for nice outputs
       force_inplane = &force; //These pointers are only changed for nice outputs

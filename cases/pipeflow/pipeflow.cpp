@@ -3,7 +3,6 @@
 
 //-----------------
 #include "hemocell.h"
-#include "readPositionsBloodCells.h"
 #include "rbcHO.h"
 #include "pltNOOP.cpp"
 #include "meshGeneratingFunctions.h"
@@ -325,8 +324,8 @@ int main(int argc, char *argv[]) {
        readPositionsBloodCellField3D(cellFields, param::dx, particlePosFile.c_str());
        cellFields.syncEnvelopes();
        cellFields.deleteIncompleteCells();
-       pcout << "(main) saving checkpoint..." << std::endl;
-        cellFields.save(&documentXML, initIter);
+       //pcout << "(main) saving checkpoint..." << std::endl;
+       // cellFields.save(&documentXML, initIter);
        
         pcout << "Initial output ..." << std::endl;
             //Repoint surfaceparticle forces for output
@@ -381,7 +380,7 @@ int main(int argc, char *argv[]) {
 
     // ------------------------ Starting main loop --------------------------
     pcout << std::endl << "(main) * starting simulation at " << initIter << " of tmax=" << tmax << " iterations (" << tmax * param::dt << " s)..." << std::endl;
-    for (plint iter = initIter; iter < tmax + 1; iter++) {
+    for (plint iter = initIter; iter < tmax; iter++) {
         cellFields.applyConstitutiveModel();    // Calculate Force on Vertices
             
         // ##### Particle Force to Fluid ####
@@ -406,7 +405,7 @@ int main(int argc, char *argv[]) {
  
  
         //Output and checkpoint
-        if ((iter % (tmeas)) == 0) {
+        if ((iter + 1 % tmeas) == 0) {
             //Repoint surfaceparticle forces for output
             cellFields.separate_force_vectors();
             
@@ -419,7 +418,7 @@ int main(int argc, char *argv[]) {
             cellFields.unify_force_vectors();
                     pcout << "(main) saving checkpoint..." << std::endl;
 
-            cellFields.save(&documentXML, iter);
+         //   cellFields.save(&documentXML, iter);
             T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
             pcout << "(main) Iteration:" << iter << "(" << iter * param::dt << " s)" << std::endl;
             pcout << "(main) Mean velocity: " << meanVel * (param::dx/param::dt) << " m/s; Apparent rel. viscosity: " << (param::u_lbm_max*0.5) / meanVel << std::endl;  

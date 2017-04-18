@@ -2,6 +2,16 @@
 #define READ_POSISIONS_OF_MULTIPLE_CELLS_CPP
 
 #include "readPositionsBloodCells.h"
+#include "geometry.h"
+
+inline void meshRotation (TriangularSurfaceMesh<double> * mesh, Array<double,3> rotationAngles) {
+    Array<double,2> xRange, yRange, zRange;
+    mesh->computeBoundingBox (xRange, yRange, zRange);
+    Array<double,3> meshCenter = Array<double,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
+    mesh->translate(-1.0 * meshCenter);
+    mesh->rotateXYZ(rotationAngles[0], rotationAngles[1], rotationAngles[2]);
+    mesh->translate(meshCenter);
+}
 
 inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, BlockLattice3D<double,DESCRIPTOR>& fluid,
                                             TriangularSurfaceMesh<double> * mesh, Array<double,3> startingPoint, plint cellId, pluint celltype) {
@@ -61,19 +71,19 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
                                             std::vector<std::vector<Array<double,3> > > & positions,
                                             std::vector<std::vector<plint> > & cellIds,
                                             std::vector<std::vector<Array<double,3> > > & randomAngles,
-                                            const char* positionsFileName)
+                                            const char* positionsFileName, double dx)
 {
 
-    cout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
+    pcout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
 
 
     vector<vector3> packPositions[2];
     vector<vector3> packAngles[2];
+    vector<plint> cellIdss[2];
 
 
     // Reading data from file
 
-    cout << positionsFileName << endl;
     fstream fIn;
     fIn.open(positionsFileName, fstream::in);
 
@@ -86,54 +96,52 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
     fIn >> Np[0] >> Np[1];
 
-    cout << "(readPositionsBloodCels) Particle count (RBCs, PLTs): " << Np[0] << ", " << Np[1] << endl;
+    pcout << "(readPositionsBloodCels) Particle count (RBCs, PLTs): " << Np[0] << ", " << Np[1] << endl;
 
+    int cellid = 0;
     // TODO: proper try-catch
     for(pluint j = 0; j < 2; j++) {
 
-        packPositions[j].resize(Np[j]); packAngles[j].resize(Np[j]);
-
+        packPositions[j].resize(Np[j]); packAngles[j].resize(Np[j]);cellIdss[j].resize(Np[j]);
+        int less = 0;
         for (plint i = 0; i < Np[j]; i++) {
-            fIn >> packPositions[j][i][0] >> packPositions[j][i][1] >> packPositions[j][i][2] >> packAngles[j][i][0]
-                >> packAngles[j][i][1] >> packAngles[j][i][2];
-            packAngles[j][i] *= PI/180.0; // Deg to Rad
-            packAngles[j][i] *= -1.0;  // Right- to left-handed coordinate system
+            fIn >> 
+              packPositions[j][i-less][0] >> packPositions[j][i-less][1] >> packPositions[j][i-less][2] >> 
+              packAngles[j][i-less][0] >> packAngles[j][i-less][1] >> packAngles[j][i-less][2];
+            packAngles[j][i-less] *= PI/180.0; // Deg to Rad
+            packAngles[j][i-less] *= -1.0;  // Right- to left-handed coordinate system
+            cellIdss[j][i-less] = cellid;
+
+            //Check if it actually fits (mostly) in this atomic block
+            if (packPositions[j][i-less][0]*dx < realDomain.x0 ||
+                packPositions[j][i-less][0]*dx > realDomain.x1 ||
+                packPositions[j][i-less][1]*dx < realDomain.y0 ||
+                packPositions[j][i-less][1]*dx > realDomain.y1 ||
+                packPositions[j][i-less][2]*dx < realDomain.z0 ||
+                packPositions[j][i-less][2]*dx > realDomain.z1 ) {
+              less ++;
+            }
+            cellid++;
 
         }
+        //Destroy unwanted particles and adjust list size;
+        Np[j] -= less;
+        packPositions[j].resize(Np[j]);
+        packAngles[j].resize(Np[j]);
+        cellIdss[j].resize(Np[j]);
     }
-    //
-
-    cout << "(readPositionsBloodCels) Reading done." << std::endl;
-
-    cout << "(readPositionsBloodCels) Domain: " << (int)realDomain.getNx() << " " << (int)realDomain.getNy() << " " << (int)realDomain.getNz() << endl;
-
-
-    vector<vector3> diameters;
-    vector<int> nPartsPerComponent;
-
-    nPartsPerComponent.clear(); nPartsPerComponent.resize(Np.size());
-    diameters.clear(); diameters.resize(Np.size());
-
-    for(unsigned int i = 0; i < Np.size(); i++)
-    {
-        double dx, dy, dz;
-        Array<double,2> xRange, yRange, zRange;
-        meshes[i]->computeBoundingBox (xRange, yRange, zRange);
-        dx = (xRange[1] - xRange[0]);
-        dy = (yRange[1] - yRange[0]);
-        dz = (zRange[1] - zRange[0]);
-
-        diameters[i] = vector3(dx,dy,dz);
-        nPartsPerComponent[i] = Np[i];
-    }
+    
+    //cout << "Realdomain " << realDomain.x0 << " " << realDomain.x1 << " "
+    //  << realDomain.y0 << " " << realDomain.y1 << " " << realDomain.z0 << " "
+    //  << realDomain.z1 << endl;
+    // cout << "Readed Cells " << Np[0] << " " << Np[1] << endl;
+    pcout << "(readPositionsBloodCels) Reading done." << std::endl;
 
     // Copy results of packing to appropriate arrays for ficsion
     positions.clear();	positions.resize(Np.size());
     randomAngles.clear(); randomAngles.resize(Np.size());
     cellIds.clear();	cellIds.resize(Np.size());
 
-    plint ni=0;
-    int mpiRank = global::mpi().getRank();
 
     for (pluint i = 0; i < Np.size(); ++i)
     {
@@ -147,11 +155,8 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
             //randomAngles[i][j] = Array<T, 3>(1.0,0.0,0.0);
             randomAngles[i][j] = Array<double, 3>(packAngles[i][j][0], packAngles[i][j][1], packAngles[i][j][2]);
             positions[i][j] =Array<double,3>(packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]);
-            cellIds[i][j] = ni;
+            cellIds[i][j] = cellIdss[i][j];
 
-            // Rotate mesh
-
-            ni++;
         }
     }
     fIn.close();
@@ -207,10 +212,10 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     std::vector<std::vector<Array<double,3> > > randomAngles;
 
     // Note: this method uses the center of the particles for location
-    getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, positionsFileName);
+    double posRatio = 1e-6/dx;
+    getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, positionsFileName, posRatio);
 
     // Change positions to match dx (it is in um originally)
-    double posRatio = 1e-6/dx;
     double wallWidth = 0; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
     
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
@@ -234,7 +239,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         // DELETE CELLS THAT ARE NOT WHOLE
         plint nVertices=meshes[iCF]->getNumVertices();
         cout << "MPI rank: " << global::mpi().getRank();
-        plint cellsDeleted = 0;//particleFields[iCF]->deleteIncompleteCells(iCF)/(float)nVertices;
+        plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells(iCF)/(float)nVertices;
         std::vector<Particle3D<double,DESCRIPTOR>*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);
         cout    << " Total cells: " << particles.size()/(float)nVertices << " (deleted cells:" << cellsDeleted << ") for particleId:" << iCF << std::endl;

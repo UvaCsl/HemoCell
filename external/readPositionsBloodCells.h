@@ -1,24 +1,17 @@
 #ifndef READ_POSISIONS_OF_BLOOD_CELLS_H
 #define READ_POSISIONS_OF_BLOOD_CELLS_H
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
-#include <vector>
-#include "initializationCellField3D.h"
-#include "initializationCellField3D.hh"
-
-using namespace std;
-using namespace plb;
+#include "hemocell_internal.h"
+#include "cellFields3D.h"
 
 void readPositionsBloodCellField3D(CellFields3D & cellFields, double dx, const char* positionsFileName);
 
-template<typename T>
 void getReadPositionsBloodCellsVector(Box3D realDomain,
-                                           std::vector<TriangularSurfaceMesh<T>* > & meshes,
+                                           std::vector<TriangularSurfaceMesh<double>* > & meshes,
                                            std::vector<plint> & Np,
-                                           std::vector<std::vector<Array<T,3> > > & positions,
+                                           std::vector<std::vector<Array<double,3> > > & positions,
                                            std::vector<std::vector<plint> > & cellIds,
-                                           std::vector<std::vector<Array<T,3> > > & randomAngles,
+                                           std::vector<std::vector<Array<double,3> > > & randomAngles,
                                            const char* positionsFileName);
 
 class ReadPositionsBloodCellField3D : public BoxProcessingFunctional3D
@@ -37,6 +30,4 @@ public:
     CellFields3D & cellFields;
 };
 
-
-#include "readPositionsBloodCells.hh"
 #endif
