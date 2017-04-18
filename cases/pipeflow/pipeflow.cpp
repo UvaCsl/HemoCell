@@ -324,8 +324,8 @@ int main(int argc, char *argv[]) {
        readPositionsBloodCellField3D(cellFields, param::dx, particlePosFile.c_str());
        cellFields.syncEnvelopes();
        cellFields.deleteIncompleteCells();
-       //pcout << "(main) saving checkpoint..." << std::endl;
-       // cellFields.save(&documentXML, initIter);
+       pcout << "(main) saving checkpoint..." << std::endl;
+       cellFields.save(&documentXML, initIter);
        
         pcout << "Initial output ..." << std::endl;
             //Repoint surfaceparticle forces for output
@@ -418,7 +418,7 @@ int main(int argc, char *argv[]) {
             cellFields.unify_force_vectors();
                     pcout << "(main) saving checkpoint..." << std::endl;
 
-         //   cellFields.save(&documentXML, iter);
+            cellFields.save(&documentXML, iter);
             T meanVel = computeSum(*computeVelocityNorm(lattice)) / domainVol;
             pcout << "(main) Iteration:" << iter << "(" << iter * param::dt << " s)" << std::endl;
             pcout << "(main) Mean velocity: " << meanVel * (param::dx/param::dt) << " m/s; Apparent rel. viscosity: " << (param::u_lbm_max*0.5) / meanVel << std::endl;  
