@@ -52,7 +52,7 @@ inline void interpolationCoefficientsPhi2 (
     const Array<plint,3> relLoc = {tmpDot.x, tmpDot.y, tmpDot.z};
 
     //Get position, relative
-    const Array<double,3> position_tmp = particle->getPosition();
+    const Array<double,3> position_tmp = particle->position;
     const Array<double,3> position = {position_tmp[0] -relLoc[0], position_tmp[1]-relLoc[1],position_tmp[2]-relLoc[2]};
 
     //Get our reference node (0,0)

@@ -245,7 +245,7 @@ int main(int argc, char *argv[]) {
     // ----------------------- Define external driving force ---------------
 
     T rPipe = refDirN/2.0 ; // -1 for the wall width is not needed, BB nodes seem to be forced as well
-    double poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
+    double poiseuilleForce = 8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
    
     setExternalVector(lattice, lattice.getBoundingBox(),
                       DESCRIPTOR<T>::ExternalField::forceBeginsAt,
@@ -253,8 +253,10 @@ int main(int argc, char *argv[]) {
     
     
     lattice.initialize();
+    
 
-    extendedEnvelopeWidth = 20;
+
+    extendedEnvelopeWidth = 30;
     // ----------------------- Init cell models --------------------------
 
     pcout << "(main) init cell structures..."  << std::endl;
@@ -303,13 +305,15 @@ int main(int argc, char *argv[]) {
     PltNOOP pltmechanics = PltNOOP();
     pltfield->mechanics = &pltmechanics;
     
-    
     vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_INPLANE,OUTPUT_FORCE_AREA};
     cellFields[0]->setOutputVariables(outputs); //SET RBC OUTPUT
     vector<int> outputs2 = {OUTPUT_POSITION,OUTPUT_TRIANGLES};
 
     cellFields[1]->setOutputVariables(outputs2); //SET PLT OUTPUT
 
+    cellFields.desiredFluidOutputVariables = {OUTPUT_VELOCITY};
+
+    
     cellFields[0]->statistics();
 
     // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
@@ -335,6 +339,8 @@ int main(int argc, char *argv[]) {
             cellFields.applyConstitutiveModel();
             
             writeCellField3D_HDF5(cellFields,param::dx,param::dt,initIter);
+            
+            writeFluidField_HDF5(cellFields,param::dx,param::dt,initIter);
             
             //Repoint surfaceparticle forces for speed
             cellFields.unify_force_vectors();
@@ -405,7 +411,7 @@ int main(int argc, char *argv[]) {
  
  
         //Output and checkpoint
-        if ((iter + 1 % tmeas) == 0) {
+        if (((iter + 1) % tmeas) == 0) {
             //Repoint surfaceparticle forces for output
             cellFields.separate_force_vectors();
             

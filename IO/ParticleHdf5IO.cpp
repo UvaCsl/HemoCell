@@ -21,6 +21,9 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
       HemoParticleField3D& particleField =
         *dynamic_cast<HemoParticleField3D*>(blocks[0]);
    
+      if (cellField3D.desiredOutputVariables.size() == 0) {
+          return; //No output desired, no problem
+      }
     /************************************************************/
     /**            Initialise HDF5 file                        **/
    /************************************************************/

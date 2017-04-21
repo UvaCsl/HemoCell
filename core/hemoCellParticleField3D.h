@@ -42,14 +42,14 @@ public:
     void swap(HemoParticleField3D& rhs);
 public:
     virtual void applyConstitutiveModel();
-    virtual void addParticle(Box3D domain, Particle3D<double,DESCRIPTOR>* particle);
+    virtual void addParticle(Box3D domain, SurfaceParticle3D* particle);
     virtual void removeParticles(Box3D domain);
     virtual void removeParticles(Box3D domain,plint tag);
     virtual void removeParticles(plint tag);
     virtual void findParticles(Box3D domain,
-                               std::vector<Particle3D<double,DESCRIPTOR>*>& found);
+                               std::vector<SurfaceParticle3D*>& found);
     void findParticles(Box3D domain,
-                               std::vector<Particle3D<double,DESCRIPTOR> *>& found,
+                               std::vector<SurfaceParticle3D*>& found,
                                pluint type) const;
     virtual void advanceParticles();
     void applyRepulsionForce();
@@ -97,9 +97,10 @@ public:
     static std::string descriptorType() {
       return std::string(DESCRIPTOR<double>::name);
     }
-private:
-    std::vector<Particle3D<double,DESCRIPTOR>*> particles;
-    std::vector<std::vector<Particle3D<double,DESCRIPTOR>*>> particles_per_type;
+    std::vector<SurfaceParticle3D*> particles;
+    private:
+
+    std::vector<std::vector<SurfaceParticle3D*>> particles_per_type;
     std::map<int,std::vector<SurfaceParticle3D*>> particles_per_cell;
     std::map<int,bool> lpc;
     

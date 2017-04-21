@@ -22,7 +22,7 @@ void HemoParticleDataTransfer3D::send (
          (kind==modif::allVariables) ||
          (kind==modif::dataStructure) )
     {
-        std::vector<Particle3D<double,DESCRIPTOR>*> foundParticles;
+        std::vector<SurfaceParticle3D*> foundParticles;
         particleField->findParticles(domain, foundParticles);
         for (pluint iParticle=0; iParticle<foundParticles.size(); ++iParticle) {
         // The serialize function automatically reallocates memory for buffer.
@@ -37,7 +37,7 @@ void HemoParticleDataTransfer3D::receive (
     PLB_PRECONDITION(contained(domain, particleField->getBoundingBox()));
 
     // Clear the existing data before introducing the new data.
-    particleField->removeParticles(domain);
+    //particleField->removeParticles(domain);
     // Particles, by definition, are dynamic data, and they need to
     //   be reconstructed in any case. Therefore, the receive procedure
     //   is run whenever kind is one of the dynamic types.
@@ -49,8 +49,8 @@ void HemoParticleDataTransfer3D::receive (
         while (posInBuffer < buffer.size()) {
             // 1. Generate dynamics object, and unserialize dynamic data.
             HierarchicUnserializer unserializer(buffer, posInBuffer);
-            Particle3D<double,DESCRIPTOR>* newParticle =
-                meta::particleRegistration3D<double,DESCRIPTOR>().generate(unserializer);
+            SurfaceParticle3D* newParticle = new SurfaceParticle3D();
+            newParticle->unserialize(unserializer);
             posInBuffer = unserializer.getCurrentPos();
             particleField->addParticle(domain, newParticle);
         }
@@ -63,7 +63,7 @@ void HemoParticleDataTransfer3D::receive (
         //Particle Locations should always be ABSOULUTE, an offset thus makes no
         //sense
         Array<T,3> realAbsoluteOffset((T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z);
-    particleField->removeParticles(domain);
+    //particleField->removeParticles(domain);
     if ( (kind==modif::dynamicVariables) ||
          (kind==modif::allVariables) ||
          (kind==modif::dataStructure) )
@@ -72,10 +72,10 @@ void HemoParticleDataTransfer3D::receive (
         while (posInBuffer < buffer.size()) {
             // 1. Generate dynamics object, and unserialize dynamic data.
             HierarchicUnserializer unserializer(buffer, posInBuffer);
-            Particle3D<double,DESCRIPTOR>* newParticle =
-                meta::particleRegistration3D<double,DESCRIPTOR>().generate(unserializer);
+            SurfaceParticle3D* newParticle = new SurfaceParticle3D();
+            newParticle->unserialize(unserializer);
             posInBuffer = unserializer.getCurrentPos();
-            newParticle->getPosition() += realAbsoluteOffset;
+            newParticle->position += realAbsoluteOffset;
             particleField->addParticle(domain, newParticle);
         }
     }
@@ -179,59 +179,57 @@ HemoParticleField3D* HemoParticleField3D::clone() const
     return new HemoParticleField3D(*this);
 }
 
-void HemoParticleField3D::addParticle(Box3D domain, Particle3D<double,DESCRIPTOR>* particle) {
+void HemoParticleField3D::addParticle(Box3D domain, SurfaceParticle3D* particle) {
     Box3D finalDomain;
     plint x,y,z;
-    SurfaceParticle3D * sparticle = dynamic_cast<SurfaceParticle3D*>(particle);
     SurfaceParticle3D * local_sparticle;
-    Array<double,3> pos = particle->getPosition();
+    Array<double,3> pos = particle->position;
 
-    while (particles_per_type.size()<=sparticle->celltype) {
-      particles_per_type.push_back(std::vector<Particle3D<double,DESCRIPTOR>*>());
+
+    while (particles_per_type.size()<=particle->celltype) {
+      particles_per_type.push_back(std::vector<SurfaceParticle3D*>());
     }
 
     if( this->isContainedABS(pos, this->getBoundingBox()) )
     {
       //check if we have particle already, if so, we must overwrite but not
       //forget to delete the old entry
-      if ((!(particles_per_cell.find(sparticle->cellId) == 
-           particles_per_cell.end())) && particles_per_cell[sparticle->cellId][sparticle->vertexId]) {
-        //We have the particle already, replace it
-        local_sparticle =  particles_per_cell[sparticle->cellId][sparticle->vertexId];
-        
-        //Also put it in the correct bin for repulsion 
-        x = local_sparticle->grid_pos[0];
-        y = local_sparticle->grid_pos[1];
-        z = local_sparticle->grid_pos[2];
-        for (unsigned int i = 0; i < particle_grid[x][y][z].size(); i++) {
-          if (particle_grid[x][y][z][i] == local_sparticle) {
-              particle_grid[x][y][z][i] = particle_grid[x][y][z].back();
-              particle_grid[x][y][z].pop_back();
+      if ((!(particles_per_cell.find(particle->cellId) == 
+           particles_per_cell.end())) && particles_per_cell[particle->cellId][particle->vertexId]) {
+          local_sparticle =  particles_per_cell[particle->cellId][particle->vertexId];
+          //We have the particle already, replace it
+          //Also put it in the correct bin for repulsion 
+          x = local_sparticle->grid_pos[0];
+          y = local_sparticle->grid_pos[1];
+          z = local_sparticle->grid_pos[2];
+          for (unsigned int i = 0; i < particle_grid[x][y][z].size(); i++) {
+            if (particle_grid[x][y][z][i] == local_sparticle) {
+                particle_grid[x][y][z][i] = particle_grid[x][y][z].back();
+                particle_grid[x][y][z].pop_back();
+            }
+              
           }
-            
-        }
-
-        local_sparticle->getPosition() = sparticle->getPosition();
-        if(!(sparticle==local_sparticle)) {
-          delete particle;
-          particle = local_sparticle;
-          sparticle = local_sparticle;
-        }
+          *local_sparticle = *particle;
+          if(!(particle==local_sparticle)) {
+            delete particle;
+            particle = local_sparticle;
+            particle->repoint_force_vectors();
+          }
       } else {
         //new entry
         particles.push_back(particle);
-          particles_per_type[sparticle->celltype].push_back(particle); //TODO, not accurate for already existing particles
+          particles_per_type[particle->celltype].push_back(particle); //TODO, not accurate for already existing particles
           if(this->isContainedABS(pos, localDomain)) {
-            lpc[sparticle->cellId] = true;
+            lpc[particle->cellId] = true;
           }
           
-        insert_ppc(sparticle);
+        insert_ppc(particle);
       }
 
       computeGridPosition(pos,&x,&y,&z);          
-      particle_grid[x][y][z].push_back(sparticle);
-      sparticle->grid_pos = {x,y,z};
-      sparticle->setTag(-1);
+      particle_grid[x][y][z].push_back(particle);
+      particle->grid_pos = {x,y,z};
+      particle->setTag(-1);
     }
     else {
         delete particle;
@@ -252,7 +250,7 @@ void HemoParticleField3D::insert_ppc(SurfaceParticle3D* sparticle) {
 
 void HemoParticleField3D::removeParticles(plint tag) {
 //Almost the same, but we save a lot of branching by manking a seperate function
-    std::vector<Particle3D<double,DESCRIPTOR>*> remainingParticles = particles;
+    std::vector<SurfaceParticle3D*> remainingParticles = particles;
     SurfaceParticle3D * sparticle;
     plint x,y,z;
     for (pluint i=0; i < particles_per_type.size(); i++) {
@@ -264,7 +262,7 @@ void HemoParticleField3D::removeParticles(plint tag) {
 
     for (pluint i=0; i<remainingParticles.size(); ++i) {
        if (remainingParticles[i]->getTag() == tag) {
-         sparticle = dynamic_cast<SurfaceParticle3D*>(remainingParticles[i]);
+         sparticle = remainingParticles[i];
          x = sparticle->grid_pos[0];
          y = sparticle->grid_pos[1];
          z = sparticle->grid_pos[2];
@@ -284,7 +282,7 @@ void HemoParticleField3D::removeParticles(plint tag) {
 
 void HemoParticleField3D::removeParticles(Box3D domain, plint tag) {
 //Almost the same, but we save a lot of branching by manking a seperate function
-    std::vector<Particle3D<double,DESCRIPTOR>*> remainingParticles = particles;
+    std::vector<SurfaceParticle3D*> remainingParticles = particles;
     SurfaceParticle3D * sparticle;
     plint x,y,z;
     Box3D finalDomain;
@@ -297,7 +295,7 @@ void HemoParticleField3D::removeParticles(Box3D domain, plint tag) {
     particles.clear();
     
     for (pluint i=0; i<remainingParticles.size(); ++i) {
-       pos = remainingParticles[i]->getPosition();
+       pos = remainingParticles[i]->position;
        intersect(domain, this->getBoundingBox(), finalDomain);
        if (this->isContainedABS(pos,finalDomain) && remainingParticles[i]->getTag() == tag) {
          sparticle = dynamic_cast<SurfaceParticle3D*>(remainingParticles[i]);
@@ -324,7 +322,7 @@ void HemoParticleField3D::removeParticles(Box3D domain) {
  return;
     if (!cellFields) return; //TODO shouldnt be necessary
     if (!cellFields->hemocellfunction) return;
-    std::vector<Particle3D<double,DESCRIPTOR>*> remainingParticles = particles;
+    std::vector<SurfaceParticle3D*> remainingParticles = particles;
     SurfaceParticle3D * sparticle;
     plint x,y,z;
     Box3D finalDomain;
@@ -337,7 +335,7 @@ void HemoParticleField3D::removeParticles(Box3D domain) {
     particles.clear();
     
     for (pluint i=0; i<remainingParticles.size(); ++i) {
-       pos = remainingParticles[i]->getPosition();
+       pos = remainingParticles[i]->position;
        intersect(domain, this->getBoundingBox(), finalDomain);
        if (this->isContainedABS(pos,finalDomain)) {
          sparticle = dynamic_cast<SurfaceParticle3D*>(remainingParticles[i]);
@@ -359,20 +357,20 @@ void HemoParticleField3D::removeParticles(Box3D domain) {
 }
 
 void HemoParticleField3D::findParticles (
-        Box3D domain, std::vector<Particle3D<double,DESCRIPTOR>*>& found ) 
+        Box3D domain, std::vector<SurfaceParticle3D*>& found ) 
 {
     found.clear();
     PLB_ASSERT( contained(domain, this->getBoundingBox()) );
     Array<double,3> pos; 
     for (pluint i=0; i<particles.size(); ++i) {
-        pos = particles[i]->getPosition();
+        pos = particles[i]->position;
         if (this->isContainedABS(pos,domain)) {
             found.push_back(particles[i]);
         }
     }
 }
 void HemoParticleField3D::findParticles (
-        Box3D domain, std::vector<Particle3D<double,DESCRIPTOR> *>& found, pluint type) const
+        Box3D domain, std::vector<SurfaceParticle3D*>& found, pluint type) const
 {
     
     found.clear();
@@ -380,7 +378,7 @@ void HemoParticleField3D::findParticles (
     Array<double,3> pos; 
     if (!(particles_per_type.size() > type)) {return;} else {
     for (pluint i=0; i<particles_per_type[type].size(); ++i) {
-        pos = particles_per_type[type][i]->getPosition();
+        pos = particles_per_type[type][i]->position;
         if (this->isContainedABS(pos,domain)) {
             found.push_back(particles_per_type[type][i]);
         }
@@ -394,6 +392,12 @@ bool HemoParticleField3D::isContainedABS(Array<double,3> pos, Box3D box) const {
     double x = pos[0]-location.x;
     double y = pos[1]-location.y;
     double z = pos[2]-location.z;
+    if (box.z1 < -10000) {
+      exit(0);
+    } 
+    if (location.x < -10000) {
+      exit(0);
+    } 
 
     return (x > box.x0-0.5) && (x <= box.x1+0.5) &&
            (y > box.y0-0.5) && (y <= box.y1+0.5) &&
@@ -505,9 +509,9 @@ void HemoParticleField3D::outputPositions(Box3D domain,vector<vector<double>>& o
       sparticle = particles_per_cell[cellid][i];
 
       vector<double> pbv;
-      pbv.push_back(sparticle->getPosition()[0]);
-      pbv.push_back(sparticle->getPosition()[1]);
-      pbv.push_back(sparticle->getPosition()[2]);
+      pbv.push_back(sparticle->position[0]);
+      pbv.push_back(sparticle->position[1]);
+      pbv.push_back(sparticle->position[2]);
       output.push_back(pbv); //TODO, memory copy
 
     }
@@ -664,20 +668,10 @@ void HemoParticleField3D::passthroughpass(int type, Box3D domain, vector<vector<
 }
 
 void HemoParticleField3D::advanceParticles() {
-  vector<vector<vector<vector<SurfaceParticle3D*>>>> new_grid; 
-  particle_grid.swap(new_grid);
-  particle_grid.resize(getNx());
-  for (auto & particlesnx : particle_grid) {
-      particlesnx.resize(getNy());
-      for (auto & particlesny : particlesnx) {
-          particlesny.resize(getNz());
-      }
-  }
-
-  for(auto *particle:particles){
+  for(SurfaceParticle3D* particle:particles){
     particle->advance();
-
   }
+  removeParticles(1);
 }
 
 void HemoParticleField3D::separateForceVectors() {
@@ -686,9 +680,7 @@ void HemoParticleField3D::separateForceVectors() {
   applyConstitutiveModel();
   
 
-  SurfaceParticle3D* sparticle;
-  for (Particle3D<double,DESCRIPTOR>* particle : particles) {
-    sparticle = dynamic_cast<SurfaceParticle3D*>(particle);
+  for (SurfaceParticle3D* sparticle : particles) {
     //Save Total Force
     sparticle->force_total = sparticle->force;
 
@@ -708,19 +700,14 @@ void HemoParticleField3D::separateForceVectors() {
 }
 
 void HemoParticleField3D::unifyForceVectors() {
-  SurfaceParticle3D* sparticle;
-  for (Particle3D<double,DESCRIPTOR>* particle : particles) {
-    sparticle = dynamic_cast<SurfaceParticle3D*>(particle);
+  for (SurfaceParticle3D* sparticle : particles) {
     //Just repoint all possible outputs for now //TODO only repoint the ones we
     //want
     delete sparticle->force_volume;
     delete sparticle->force_inplane;
     delete sparticle->force_area;
     delete sparticle->force_bending;
-    sparticle->force_volume = &(sparticle->force);
-    sparticle->force_inplane = &(sparticle->force);
-    sparticle->force_area = &(sparticle->force);
-    sparticle->force_bending = &(sparticle->force);
+    sparticle->repoint_force_vectors();
   }
 
 
@@ -728,8 +715,8 @@ void HemoParticleField3D::unifyForceVectors() {
 }
 
 void HemoParticleField3D::applyConstitutiveModel() {
-  for (Particle3D<double,DESCRIPTOR>* particle : particles) {
-    dynamic_cast<SurfaceParticle3D*>(particle)->force = {0.0,0.0,0.0};
+  for (SurfaceParticle3D* particle : particles) {
+    particle->force = {0.0,0.0,0.0};
   }
   deleteIncompleteCells();
   for (pluint ctype = 0; ctype < (*cellFields).size(); ctype++) {
@@ -744,12 +731,12 @@ void HemoParticleField3D::applyRepulsionForce() {
 
 
 void HemoParticleField3D::spreadParticleForce(Box3D domain) {
-  vector<Particle3D<double,DESCRIPTOR>*> localParticles;
+  vector<SurfaceParticle3D*> localParticles;
   findParticles(domain,localParticles);
   SurfaceParticle3D * sparticle;
 
   for (pluint i = 0; i < localParticles.size(); i++ ) {
-    sparticle = dynamic_cast<SurfaceParticle3D*>(localParticles[i]);
+    sparticle = localParticles[i];
     //Clever trick to allow for different kernels for different particle types.
     (*cellFields)[sparticle->celltype]->kernelMethod(*atomicLattice,sparticle);
 
@@ -766,7 +753,7 @@ void HemoParticleField3D::spreadParticleForce(Box3D domain) {
 }
 
 void HemoParticleField3D::interpolateFluidVelocity(Box3D domain) {
-  vector<Particle3D<double,DESCRIPTOR>*> localParticles;
+  vector<SurfaceParticle3D*> localParticles;
   findParticles(domain,localParticles);
   //TODO, remove casting
   SurfaceParticle3D * sparticle;
@@ -776,7 +763,7 @@ void HemoParticleField3D::interpolateFluidVelocity(Box3D domain) {
 
 
   for (pluint i = 0; i < localParticles.size(); i++ ) {
-    sparticle = dynamic_cast<SurfaceParticle3D*>(localParticles[i]);
+    sparticle = localParticles[i];
     //Clever trick to allow for different kernels for different particle types.
     (*cellFields)[sparticle->celltype]->kernelMethod(*atomicLattice,sparticle);
 
@@ -791,7 +778,7 @@ void HemoParticleField3D::interpolateFluidVelocity(Box3D domain) {
     sparticle->v = velocity;
     /*
     if (sparticle->kernelLocations.size() == 0) {
-      cerr << "Location: " << sparticle->getPosition()[0] << " " << sparticle->getPosition()[1] << " " << sparticle->getPosition()[2] << std::endl;
+      cerr << "Location: " << sparticle->position[0] << " " << sparticle->position[1] << " " << sparticle->position[2] << std::endl;
     Box3D temp = getBoundingBox();
     Dot3D tmp = getLocation();
     cerr << "Box: " << temp.x0 << " " << temp.x1 << " " << temp.y0  << " "<< temp.y1  << " "<< temp.z0 <<" "<< temp.z1 <<std::endl;

@@ -50,8 +50,8 @@
 </domain>
 
 <sim>
-    <tmax> 10 </tmax> <!-- total number of iterations -->
-    <tmeas> 10 </tmeas> <!-- interval after which data is written --> 
+    <tmax> 500 </tmax> <!-- total number of iterations -->
+    <tmeas> 1 </tmeas> <!-- interval after which data is written --> 
     <hematocrit> 40 </hematocrit> <!-- Hematocrit  > -->
     <particlePosFile> cells.pos </particlePosFile>
 </sim>

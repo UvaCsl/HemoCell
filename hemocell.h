@@ -69,6 +69,8 @@ using namespace std;
 #include "hemoCellField.h"
 
 #include "ParticleHdf5IO.h"
+#include "FluidHdf5IO.h"
+
 
 /* EXTENSIONS */
 //#include "cellStretching3D.h"

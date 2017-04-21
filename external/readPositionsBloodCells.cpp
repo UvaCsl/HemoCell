@@ -113,12 +113,12 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
             cellIdss[j][i-less] = cellid;
 
             //Check if it actually fits (mostly) in this atomic block
-            if (packPositions[j][i-less][0]*dx < realDomain.x0 ||
-                packPositions[j][i-less][0]*dx > realDomain.x1 ||
-                packPositions[j][i-less][1]*dx < realDomain.y0 ||
-                packPositions[j][i-less][1]*dx > realDomain.y1 ||
-                packPositions[j][i-less][2]*dx < realDomain.z0 ||
-                packPositions[j][i-less][2]*dx > realDomain.z1 ) {
+            if (packPositions[j][i-less][0]*dx < realDomain.x0 - 20 ||
+                packPositions[j][i-less][0]*dx > realDomain.x1 + 20 ||
+                packPositions[j][i-less][1]*dx < realDomain.y0 - 20 ||
+                packPositions[j][i-less][1]*dx > realDomain.y1 + 20 ||
+                packPositions[j][i-less][2]*dx < realDomain.z0 - 20 ||
+                packPositions[j][i-less][2]*dx > realDomain.z1 + 20 ) {
               less ++;
             }
             cellid++;
@@ -240,7 +240,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         plint nVertices=meshes[iCF]->getNumVertices();
         cout << "MPI rank: " << global::mpi().getRank();
         plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells(iCF)/(float)nVertices;
-        std::vector<Particle3D<double,DESCRIPTOR>*> particles;
+        std::vector<SurfaceParticle3D*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);
         cout    << " Total cells: " << particles.size()/(float)nVertices << " (deleted cells:" << cellsDeleted << ") for particleId:" << iCF << std::endl;
 //delete meshes[iCF];

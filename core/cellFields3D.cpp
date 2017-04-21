@@ -19,7 +19,7 @@ CellFields3D::CellFields3D( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, 
   immersedParticles = new MultiParticleField3D<HEMOCELL_PARTICLE_FIELD>(
             particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
   immersedParticles->periodicity().toggleAll(false);
-  immersedParticles->periodicity().toggle(0,true);
+//  immersedParticles->periodicity().toggle(0,true);
   immersedParticles->toggleInternalStatistics(false);
   InitAfterLoadCheckpoint();
 }

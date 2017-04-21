@@ -55,6 +55,7 @@ public:
     //void setFluidExternalForce(double poiseuilleForce);
 
 	MultiBlockLattice3D<double, DESCRIPTOR> & lattice;
+  vector<int> desiredFluidOutputVariables;
   vector<HemoCellField *> cellFields;
   pluint envelopeSize;
 	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles;

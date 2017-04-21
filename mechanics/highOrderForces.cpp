@@ -21,9 +21,9 @@ void HighOrderForces::ParticleMechanics(map<int,vector<SurfaceParticle3D *>> par
 
 
     for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
-      const Array<double,3> & v0 = cell[triangle[0]]->getPosition();
-      const Array<double,3> & v1 = cell[triangle[1]]->getPosition();
-      const Array<double,3> & v2 = cell[triangle[2]]->getPosition();
+      const Array<double,3> & v0 = cell[triangle[0]]->position;
+      const Array<double,3> & v1 = cell[triangle[1]]->position;
+      const Array<double,3> & v2 = cell[triangle[2]]->position;
       
       //Volume
       const double v210 = v2[0]*v1[1]*v0[2];
@@ -104,8 +104,8 @@ void HighOrderForces::ParticleMechanics(map<int,vector<SurfaceParticle3D *>> par
     //Edges
     int edge_n=0;
     for (const Array<plint,2> & edge : cellConstants.edge_list) {
-      const Array<double,3> & v0 = cell[edge[0]]->getPosition();
-      const Array<double,3> & v1 = cell[edge[1]]->getPosition();
+      const Array<double,3> & v0 = cell[edge[0]]->position;
+      const Array<double,3> & v1 = cell[edge[1]]->position;
 
       //In Plane force
       const Array<double,3> edge_v = v1-v0;
@@ -135,13 +135,13 @@ void HighOrderForces::ParticleMechanics(map<int,vector<SurfaceParticle3D *>> par
       const plint b0 = cellConstants.edge_bending_triangles_list[edge_n][0];
       const plint b1 = cellConstants.edge_bending_triangles_list[edge_n][1];
 
-      const Array<double,3> b00 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,0)]->getPosition();
-      const Array<double,3> b01 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,1)]->getPosition();
-      const Array<double,3> b02 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,2)]->getPosition();
+      const Array<double,3> b00 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,0)]->position;
+      const Array<double,3> b01 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,1)]->position;
+      const Array<double,3> b02 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,2)]->position;
       
-      const Array<double,3> b10 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,0)]->getPosition();
-      const Array<double,3> b11 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,1)]->getPosition();
-      const Array<double,3> b12 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,2)]->getPosition();
+      const Array<double,3> b10 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,0)]->position;
+      const Array<double,3> b11 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,1)]->position;
+      const Array<double,3> b12 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,2)]->position;
 
       const Array<double,3> V1 = plb::computeTriangleNormal(b00,b01,b02, false);
       const Array<double,3> V2 = plb::computeTriangleNormal(b10,b11,b12, false);
@@ -151,7 +151,7 @@ void HighOrderForces::ParticleMechanics(map<int,vector<SurfaceParticle3D *>> par
       for (pluint id = 0 ; id < 3 ; id ++ ) {
         const plint kVertex = cellField.meshElement.getVertexId(b0,id);
         if (kVertex != edge[0] && kVertex != edge[1]) {
-          x2 = cell[kVertex]->getPosition();
+          x2 = cell[kVertex]->position;
           break;
         }
       }

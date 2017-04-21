@@ -73,7 +73,7 @@ class HemoParticleField3D;
 
 
 /*
- * Defines for desired output per celltype, can save space/time etc. etc.
+ * Defines for desired output per celltype, can save space/time etc. etc. also works for specific fluid ones (vel, force etc)
  */
 #define OUTPUT_POSITION 1
 #define OUTPUT_FORCE 2
@@ -82,6 +82,7 @@ class HemoParticleField3D;
 #define OUTPUT_FORCE_AREA 23
 #define OUTPUT_FORCE_INPLANE 24
 #define OUTPUT_TRIANGLES 3
+#define OUTPUT_VELOCITY 4
 
 //==================== Not really an option but a nice shortcut
 #define param Parameters
