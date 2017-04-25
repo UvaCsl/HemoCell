@@ -2,9 +2,10 @@
 #define READ_POSISIONS_OF_BLOOD_CELLS_H
 
 #include "hemocell_internal.h"
-#include "cellFields3D.h"
+#include "hemoCellFields.h"
+#include "config.h"
 
-void readPositionsBloodCellField3D(CellFields3D & cellFields, double dx, const char* positionsFileName);
+void readPositionsBloodCellField3D(hemoCellFields & cellFields, double dx, const char* positionsFileName, Config & cfg);
 
 void getReadPositionsBloodCellsVector(Box3D realDomain,
                                            std::vector<TriangularSurfaceMesh<double>* > & meshes,
@@ -12,13 +13,13 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
                                            std::vector<std::vector<Array<double,3> > > & positions,
                                            std::vector<std::vector<plint> > & cellIds,
                                            std::vector<std::vector<Array<double,3> > > & randomAngles,
-                                           const char* positionsFileName);
+                                           const char* positionsFileName, Config & cfg);
 
 class ReadPositionsBloodCellField3D : public BoxProcessingFunctional3D
 {
 public:
-    ReadPositionsBloodCellField3D (CellFields3D & cellFields_, double dx_, const char* positionsFileName_)
-            : cellFields(cellFields_) {dx = dx_; positionsFileName=positionsFileName_;}
+    ReadPositionsBloodCellField3D (hemoCellFields & cellFields_, double dx_, const char* positionsFileName_, Config & cfg_)
+            : cellFields(cellFields_), cfg(cfg_) {dx = dx_; positionsFileName=positionsFileName_;}
     /// Arguments: [0] Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
     virtual ReadPositionsBloodCellField3D* clone() const;
@@ -27,7 +28,8 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
     const char* positionsFileName;
     double dx;
-    CellFields3D & cellFields;
+    hemoCellFields & cellFields;
+    Config & cfg;
 };
 
 #endif

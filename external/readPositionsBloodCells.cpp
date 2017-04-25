@@ -71,7 +71,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
                                             std::vector<std::vector<Array<double,3> > > & positions,
                                             std::vector<std::vector<plint> > & cellIds,
                                             std::vector<std::vector<Array<double,3> > > & randomAngles,
-                                            const char* positionsFileName, double dx)
+                                            const char* positionsFileName, double dx, Config & cfg)
 {
 
     pcout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
@@ -113,12 +113,12 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
             cellIdss[j][i-less] = cellid;
 
             //Check if it actually fits (mostly) in this atomic block
-            if (packPositions[j][i-less][0]*dx < realDomain.x0 - 20 ||
-                packPositions[j][i-less][0]*dx > realDomain.x1 + 20 ||
-                packPositions[j][i-less][1]*dx < realDomain.y0 - 20 ||
-                packPositions[j][i-less][1]*dx > realDomain.y1 + 20 ||
-                packPositions[j][i-less][2]*dx < realDomain.z0 - 20 ||
-                packPositions[j][i-less][2]*dx > realDomain.z1 + 20 ) {
+            if (packPositions[j][i-less][0]*dx < realDomain.x0 - cfg["domain"]["particleEnvelope"].read<int>() ||
+                packPositions[j][i-less][0]*dx > realDomain.x1 + cfg["domain"]["particleEnvelope"].read<int>() ||
+                packPositions[j][i-less][1]*dx < realDomain.y0 - cfg["domain"]["particleEnvelope"].read<int>() ||
+                packPositions[j][i-less][1]*dx > realDomain.y1 + cfg["domain"]["particleEnvelope"].read<int>() ||
+                packPositions[j][i-less][2]*dx < realDomain.z0 - cfg["domain"]["particleEnvelope"].read<int>() ||
+                packPositions[j][i-less][2]*dx > realDomain.z1 + cfg["domain"]["particleEnvelope"].read<int>()) {
               less ++;
             }
             cellid++;
@@ -213,7 +213,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
 
     // Note: this method uses the center of the particles for location
     double posRatio = 1e-6/dx;
-    getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, positionsFileName, posRatio);
+    getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, positionsFileName, posRatio, cfg);
 
     // Change positions to match dx (it is in um originally)
     double wallWidth = 0; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
@@ -277,7 +277,7 @@ BlockDomain::DomainT ReadPositionsBloodCellField3D::appliesTo() const {
 
 
 
-void readPositionsBloodCellField3D(CellFields3D & cellFields, double dx, const char* positionsFileName) {
+void readPositionsBloodCellField3D(hemoCellFields & cellFields, double dx, const char* positionsFileName, Config & cfg) {
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
     fluidAndParticleFieldsArg.push_back(&(cellFields.lattice));
@@ -287,7 +287,7 @@ void readPositionsBloodCellField3D(CellFields3D & cellFields, double dx, const c
     }
 
     applyProcessingFunctional(
-            new ReadPositionsBloodCellField3D(cellFields, dx, positionsFileName),
+            new ReadPositionsBloodCellField3D(cellFields, dx, positionsFileName,cfg),
             cellFields.lattice.getBoundingBox(), fluidAndParticleFieldsArg);
 
 }

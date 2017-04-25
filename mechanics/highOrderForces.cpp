@@ -65,9 +65,9 @@ void HighOrderForces::ParticleMechanics(map<int,vector<SurfaceParticle3D *>> par
       //area force magnitude
       const double afm = -k_area *(areaRatio+areaRatio/(0.04-areaRatio*areaRatio));
       //push back area force
-      *cell[triangle[0]]->force_area += afm*avu0;
-      *cell[triangle[1]]->force_area += afm*avu1;
-      *cell[triangle[2]]->force_area += afm*avu2;
+      //*cell[triangle[0]]->force_area += afm*avu0;
+      //*cell[triangle[1]]->force_area += afm*avu1;
+      //*cell[triangle[2]]->force_area += afm*avu2;
 
 
       //Calculate triangle normal while we're busy with this
@@ -128,7 +128,6 @@ void HighOrderForces::ParticleMechanics(map<int,vector<SurfaceParticle3D *>> par
       }
 
       //TODO dissapative forces
-      //TODO Bending Force
       
       // calculate triangle normals, this should be in a function
 

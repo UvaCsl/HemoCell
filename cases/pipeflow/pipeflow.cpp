@@ -6,101 +6,7 @@
 #include "rbcHO.h"
 #include "pltNOOP.cpp"
 #include "meshGeneratingFunctions.h"
-// ----------------------- Copy from neighbour ------------------------------------
 
-template<typename Tp>
-class CopyFromNeighbor : public BoxProcessingFunctional3D_S<Tp> {
-public:
-    CopyFromNeighbor(Array<plint, 3> offset_) : offset(offset_) { };
-
-    virtual void process(Box3D domain, ScalarField3D<Tp> &field1);
-
-    virtual CopyFromNeighbor<Tp> *clone() const;
-
-    virtual void getTypeOfModification(std::vector<modif::ModifT> &modified) const;
-
-    virtual BlockDomain::DomainT appliesTo() const;
-
-private:
-    Array<plint, 3> offset;
-};
-
-template<typename Tp>
-void CopyFromNeighbor<Tp>::process(
-        Box3D domain, ScalarField3D<Tp> &field1) {
-    for (plint iX = domain.x0; iX <= domain.x1; ++iX) {
-        for (plint iY = domain.y0; iY <= domain.y1; ++iY) {
-            for (plint iZ = domain.z0; iZ <= domain.z1; ++iZ) {
-                field1.get(iX, iY, iZ) = field1.get(iX + offset[0], iY + offset[1], iZ + offset[2]);
-            }
-        }
-    }
-}
-
-template<typename Tp>
-CopyFromNeighbor<Tp> *CopyFromNeighbor<Tp>::clone() const {
-    return new CopyFromNeighbor<Tp>(*this);
-}
-
-template<typename Tp>
-void CopyFromNeighbor<Tp>::getTypeOfModification(std::vector<modif::ModifT> &modified) const {
-    modified[0] = modif::allVariables;
-}
-
-template<typename Tp>
-BlockDomain::DomainT CopyFromNeighbor<Tp>::appliesTo() const {
-    return BlockDomain::bulk;
-}
-
-
-// ---------------------- Read in STL geometry ---------------------------------
-
-void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint refDirLength, plint refDir,
-                          VoxelizedDomain3D<T> *&voxelizedDomain, MultiScalarField3D<int> *&flagMatrix, plint blockSize) {
-    plint extraLayer = 0;   // Make the bounding box larger; for visualization purposes
-                            //   only. For the simulation, it is OK to have extraLayer=0.
-    plint borderWidth = 1;  // Because the Guo boundary condition acts in a one-cell layer.
-    
-    // Requirement: margin>=borderWidth.
-    plint margin = 1;  // Extra margin of allocated cells around the obstacle.
-
-    TriangleSet<T> *triangleSet = new TriangleSet<T>(meshFileName, DBL);
-
-    DEFscaledMesh<T> *defMesh =
-            new DEFscaledMesh<T>(*triangleSet, refDirLength, refDir, margin, extraLayer);
-    TriangleBoundary3D<T> boundary(*defMesh);
-    delete defMesh;
-    boundary.getMesh().inflate();
-
-    voxelizedDomain = new VoxelizedDomain3D<T>(
-            boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, blockSize);
-    
-    // Print out some info
-    pcout << "(main) Voxelisation is done. Resulting domain parameters are: " << endl;
-    pcout << getMultiBlockInfo(voxelizedDomain->getVoxelMatrix()) << std::endl;
-
-
-    flagMatrix = new MultiScalarField3D<int>((MultiBlock3D &) voxelizedDomain->getVoxelMatrix());
-
-    setToConstant(*flagMatrix, voxelizedDomain->getVoxelMatrix(),
-                  voxelFlag::inside, flagMatrix->getBoundingBox(), 1);
-    setToConstant(*flagMatrix, voxelizedDomain->getVoxelMatrix(),
-                  voxelFlag::innerBorder, flagMatrix->getBoundingBox(), 1);
-
-
-	// Since the domain is closed, open up the two ends by copying the slice before it.
-    Box3D domainBox = flagMatrix->getBoundingBox();
-    plint nx = domainBox.getNx();
-    plint ny = domainBox.getNy();
-    plint nz = domainBox.getNz();
-
-    Box3D domain(0, 1, 0, ny - 1, 0, nz - 1);
-    applyProcessingFunctional(new CopyFromNeighbor<int>(Array<plint, 3>(1, 0, 0)), domain, *flagMatrix);
-
-    domain = Box3D(nx - 2, nx - 1, 0, ny - 1, 0, nz - 1);
-    applyProcessingFunctional(new CopyFromNeighbor<int>(Array<plint, 3>(-1, 0, 0)), domain, *flagMatrix);
-
-}
 
 
 // --------------------- main --------------------------------------------------
@@ -146,7 +52,6 @@ int main(int argc, char *argv[]) {
     T ppForceDistance;
     plint initIter = 0;
     plint cellStep;
-    plint nx, ny, nz;
     T hematocrit;
     T radius;
     plint minNumOfTriangles;
@@ -213,10 +118,6 @@ int main(int argc, char *argv[]) {
     }
     Box3D domainBox = flagMatrix->getBoundingBox();
     
-    nx = domainBox.getNx();
-    ny = domainBox.getNy();
-    nz = domainBox.getNz();
-
     // ---------------------------- Calc. LBM parameters -------------------------------------------------
     param::lbm_parameters(cfg, domainBox);
     // ------------------------ Init lattice --------------------------------
@@ -256,13 +157,13 @@ int main(int argc, char *argv[]) {
     
 
 
-    extendedEnvelopeWidth = 30;
+    extendedEnvelopeWidth = cfg["domain"]["particleEnvelope"].read<int>();
     // ----------------------- Init cell models --------------------------
 
     pcout << "(main) init cell structures..."  << std::endl;
     T persistenceLengthFine = 7.5e-9; // In meters
 
-    CellFields3D  cellFields = CellFields3D(lattice,extendedEnvelopeWidth);
+    hemoCellFields  cellFields = hemoCellFields(lattice,extendedEnvelopeWidth);
     std::vector<TriangularSurfaceMesh<T> *> meshes;
     std::vector<T> eqVolumes;
 
@@ -325,7 +226,7 @@ int main(int argc, char *argv[]) {
 
         //orderedPositionMultipleCellField3D(cellFields);
         //randomPositionMultipleCellField3D(cellFields, hematocrit, dx, maxPackIter);
-       readPositionsBloodCellField3D(cellFields, param::dx, particlePosFile.c_str());
+       readPositionsBloodCellField3D(cellFields, param::dx, particlePosFile.c_str(), cfg);
        cellFields.syncEnvelopes();
        cellFields.deleteIncompleteCells();
        pcout << "(main) saving checkpoint..." << std::endl;
@@ -419,6 +320,9 @@ int main(int argc, char *argv[]) {
             cellFields.applyConstitutiveModel();
             
             writeCellField3D_HDF5(cellFields,param::dx,param::dt,iter);
+            
+            writeFluidField_HDF5(cellFields,param::dx,param::dt,iter);
+
             
             //Repoint surfaceparticle forces for speed
             cellFields.unify_force_vectors();

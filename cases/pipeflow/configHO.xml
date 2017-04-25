@@ -43,15 +43,16 @@
     <minForce>1e-3</minForce> <!-- Point of increase for integration steps -->
     <maxForce>2e-3</maxForce> <!-- Point of decrease for integration steps -->
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
-    <refDirN> 64 </refDirN>  <!-- Number of numerical cell in the reference direction -->
+    <refDirN> 40 </refDirN>  <!-- Number of numerical cell in the reference direction -->
     <blockSize> -1 </blockSize>
     <kBT>4.100531391e-21</kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
     <Re> 10 </Re>   <!--Reynolds number-->
+    <particleEnvelope>20</particleEnvelope>
 </domain>
 
 <sim>
-    <tmax> 500 </tmax> <!-- total number of iterations -->
-    <tmeas> 1 </tmeas> <!-- interval after which data is written --> 
+    <tmax> 700 </tmax> <!-- total number of iterations -->
+    <tmeas> 10 </tmeas> <!-- interval after which data is written --> 
     <hematocrit> 40 </hematocrit> <!-- Hematocrit  > -->
     <particlePosFile> cells.pos </particlePosFile>
 </sim>

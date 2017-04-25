@@ -4,7 +4,7 @@
 #include "hemocell_internal.h"
 #include "cellMechanics.h"
 #include "commonCellConstants.h"
-#include "cellFields3D.h"
+#include "hemoCellFields.h"
 class HighOrderForces : public CellMechanics {
 
   public:

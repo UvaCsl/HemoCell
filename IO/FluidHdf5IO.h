@@ -2,18 +2,18 @@
 #define FLUID_HDF5_IO_H
 
 #include "hemocell_internal.h"
-#include "cellFields3D.h"
+#include "hemoCellFields.h"
 
 #include <hdf5.h>
 #include <hdf5_hl.h>
 
-void writeFluidField_HDF5(CellFields3D& cellFields, double dx, double dt, plint iter, string preString="");
+void writeFluidField_HDF5(hemoCellFields& cellFields, double dx, double dt, plint iter, string preString="");
 
 class WriteFluidField : public BoxProcessingFunctional3D
 {
 public:
     WriteFluidField (
-            CellFields3D& cellfields,
+            hemoCellFields& cellfields,
 						MultiBlockLattice3D<double,DESCRIPTOR>& fluid,
             plint iter_, string identifier_,
             double dx_, double dt_);
@@ -23,7 +23,7 @@ public:
     virtual void getTypeOfModification(vector<modif::ModifT>& modified) const;
     virtual BlockDomain::DomainT appliesTo() const;
 private:
-    CellFields3D& cellfields;
+    hemoCellFields& cellfields;
     MultiBlockLattice3D<double,DESCRIPTOR>& fluid;
     plint iter;
     string identifier;

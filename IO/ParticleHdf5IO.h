@@ -2,14 +2,14 @@
 #define FICSION_PARTICLE_HDF5IO_H
 
 #include "hemocell_internal.h"
-#include "surfaceParticle3D.h"
-#include "cellFields3D.h"
-#include "hemoCellField.h"
+#include "hemoCellParticle.h"
+#include "hemoCellFields.h"
+#include "hemoCellParticleType.h"
 
 #include <hdf5.h>
 #include <hdf5_hl.h>
 
-void writeCellField3D_HDF5(CellFields3D& cellFields, double dx, double dt, plint iter, std::string preString="");
+void writeCellField3D_HDF5(hemoCellFields& cellFields, double dx, double dt, plint iter, std::string preString="");
 
 
 class WriteCellField3DInMultipleHDF5Files : public BoxProcessingFunctional3D

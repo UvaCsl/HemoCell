@@ -59,7 +59,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         chunk[0] = chunk[0] > 1 ? chunk[0] : 1;
         chunk[1] = chunk[1] > 1 ? chunk[1] : 1;
 
-        double* output_formatted = new double[dimVertices[0] * dimVertices[1]];
+        float* output_formatted = new float[dimVertices[0] * dimVertices[1]];
         
         int fmt_cnt = 0;
         for (pluint x=0; x< dimVertices[0];x++) {
@@ -72,8 +72,8 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         int plist_id = H5Pcreate (H5P_DATASET_CREATE);
         H5Pset_chunk(plist_id, 2, chunk); 
         H5Pset_deflate(plist_id, 7);
-        int did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_DOUBLE,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
-        H5Dwrite(did,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,output_formatted);
+        int did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+        H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output_formatted);
         H5Dclose(did);
         H5Sclose(sid);
             
@@ -146,7 +146,7 @@ BlockDomain::DomainT WriteCellField3DInMultipleHDF5Files::appliesTo () const {
 
 
 
-void writeCellField3D_HDF5(CellFields3D& cellFields, double dx, double dt, plint iter, std::string preString)
+void writeCellField3D_HDF5(hemoCellFields& cellFields, double dx, double dt, plint iter, std::string preString)
 {
     for (pluint i = 0; i < cellFields.size(); i++) {
 	std::string identifier = preString + cellFields[i]->getIdentifier();

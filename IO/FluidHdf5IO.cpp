@@ -3,7 +3,7 @@
 
 #include "FluidHdf5IO.h"
 
-void writeFluidField_HDF5(CellFields3D& cellfields, double dx, double dt, plint iter, string preString) {
+void writeFluidField_HDF5(hemoCellFields& cellfields, double dx, double dt, plint iter, string preString) {
   WriteFluidField * wff = new WriteFluidField(cellfields, cellfields.lattice,iter,"Fluid",dx,dt);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(&cellfields.lattice);
@@ -25,7 +25,7 @@ void WriteFluidField::getTypeOfModification ( vector<modif::ModifT>& modified ) 
   }
 }
 
-WriteFluidField::WriteFluidField(CellFields3D& cellfields_,
+WriteFluidField::WriteFluidField(hemoCellFields& cellfields_,
                                  MultiBlockLattice3D<double,DESCRIPTOR>& fluid_,
                                  plint iter_, string identifier_, 
                                  double dx_, double dt_) :
@@ -52,35 +52,37 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
 	H5LTset_attribute_long (file_id, "/", "iteration", &iterHDF5, 1);
 	H5LTset_attribute_int (file_id, "/", "processorId", &id, 1);
 
-  hsize_t Nx = domain.x1 - domain.x0;
-  hsize_t Ny = domain.y1 - domain.y0;
-  hsize_t Nz = domain.z1 - domain.z0;
-  int subdomainSize[]  = {int(Nx), int(Ny), int(Nz)};
+  hsize_t Nx = domain.x1 - domain.x0+1 +2;//+1 for = and <=, +2 for an envelope of 1 on each side for paraview
+  hsize_t Ny = domain.y1 - domain.y0+1 +2;
+  hsize_t Nz = domain.z1 - domain.z0+1 +2;
   hsize_t nCells = Nx*Ny*Nz;
   this->nCells = &nCells;
+  int ncells = Nx*Ny*Nz;
   Dot3D rp_temp = blocks[0]->getLocation();
-  long int relativePosition[3] = {rp_temp.x,rp_temp.y,rp_temp.z};
+  int subdomainSize[]  = {int(Nz), int(Ny), int(Nx)}; //Reverse for paraview
+  long int relativePosition[3] = {rp_temp.z+domain.z0,rp_temp.y+domain.y0,rp_temp.x+domain.x0}; //Reverse for paraview
 
+	H5LTset_attribute_int (file_id, "/", "numberOfCells", &ncells, 1);
 	H5LTset_attribute_int (file_id, "/", "subdomainSize", subdomainSize, 3);
   H5LTset_attribute_long(file_id, "/", "relativePosition", relativePosition, 3);
 
   //Also compute chunking here
   hsize_t chunk[4];
-  chunk[0] = 1000 < Nx ? 1000 : Nx;
+  chunk[2] = 1000 < Nx ? 1000 : Nx;
   chunk[1] = 1000 < Ny ? 1000 : Ny;
-  chunk[2] = 1000 < Nz ? 1000 : Nz;
+  chunk[0] = 1000 < Nz ? 1000 : Nz;
 
   //I could do fancy schmancy function pointer lookup like with the particles, but it
   //takes time, just do it here
   for (int outputVariable : cellfields.desiredFluidOutputVariables) {
     //These variables should be set by the functions:
     float * output = 0;
-    hsize_t dim[] = {Nx,Ny,Nz,0};
+    hsize_t dim[] = {Nz,Ny,Nx,0};
     string name;
     
     switch(outputVariable) {
       case OUTPUT_VELOCITY:
-        outputVelocity(output);
+        output = outputVelocity();
         name = "Velocity";
         dim[3] = 3;
         break;
@@ -107,13 +109,13 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
   H5Fclose(file_id);
 }
 
-void WriteFluidField::outputVelocity(float * output) {
-  output = new float [(*nCells)*3];
+float * WriteFluidField::outputVelocity() {
+  float * output = new float [(*nCells)*3];
   unsigned int n = 0;
   Array<double,3> vel;
-  for (plint iX=odomain->x0; iX<odomain->x1; ++iX) {
-    for (plint iY=odomain->y0; iY<odomain->y1; ++iY) {
-      for (plint iZ=odomain->z0; iZ<odomain->z1; ++iZ) {
+  for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
+		for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
+      for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
 
         ablock->grid[iX][iY][iZ].computeVelocity(vel);
         output[n] = vel[0];
@@ -123,5 +125,6 @@ void WriteFluidField::outputVelocity(float * output) {
       }
     }
   }
+  return output;
 }
 #endif

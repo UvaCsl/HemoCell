@@ -3,7 +3,7 @@
 
 class CellMechanics;
 #include "hemocell_internal.h"
-#include "surfaceParticle3D.h"
+#include "hemoCellParticle.h"
 
 class CellMechanics {
   public:
