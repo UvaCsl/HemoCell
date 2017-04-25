@@ -9,7 +9,7 @@
 #include <hdf5.h>
 #include <hdf5_hl.h>
 
-void writeCellField3D_HDF5(hemoCellFields& cellFields, double dx, double dt, plint iter, std::string preString="");
+void writeCellField3D_HDF5(HemoCellFields& cellFields, double dx, double dt, plint iter, std::string preString="");
 
 
 class WriteCellField3DInMultipleHDF5Files : public BoxProcessingFunctional3D

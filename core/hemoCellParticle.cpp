@@ -8,6 +8,6 @@
 
 /* *************** class ImmersedCellParticle3D ************************************ */
 
-int SurfaceParticle3D::id = 0; //meta::registerGenericParticle3D<double,DESCRIPTOR,SurfaceParticle3D>("SurfaceParticle3D");
+int HemoCellParticle::id = 0; //meta::registerGenericParticle3D<double,DESCRIPTOR,SurfaceParticle3D>("SurfaceParticle3D");
 
 #endif  // SURFACE_PARTICLE_3D_HH

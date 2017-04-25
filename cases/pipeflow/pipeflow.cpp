@@ -4,7 +4,7 @@
 //-----------------
 #include "hemocell.h"
 #include "rbcHO.h"
-#include "pltNOOP.cpp"
+#include "NoOp.h"
 #include "meshGeneratingFunctions.h"
 
 
@@ -20,11 +20,7 @@ int main(int argc, char *argv[]) {
     }
 
     plbInit(&argc, &argv);
-
     printHeader();
-
-    global::timer("hemocell_init").start();
-
     global::directories().setOutputDir("./tmp/");
     global::directories().setLogOutDir("./log/");
     global::directories().setInputDir("./");
@@ -163,7 +159,7 @@ int main(int argc, char *argv[]) {
     pcout << "(main) init cell structures..."  << std::endl;
     T persistenceLengthFine = 7.5e-9; // In meters
 
-    hemoCellFields  cellFields = hemoCellFields(lattice,extendedEnvelopeWidth);
+    HemoCellFields  cellFields = HemoCellFields(lattice,extendedEnvelopeWidth);
     std::vector<TriangularSurfaceMesh<T> *> meshes;
     std::vector<T> eqVolumes;
 
@@ -203,7 +199,7 @@ int main(int argc, char *argv[]) {
     TriangularSurfaceMesh<T> pltMeshElement = PLTCells.getMesh();
     eqVolumes.push_back(MeshMetrics<T>(pltMeshElement).getVolume());
     HemoCellField * pltfield = cellFields.addCellType(pltMeshElement, 0.0025 * hematocrit, "PLT");
-    PltNOOP pltmechanics = PltNOOP();
+    NoOp pltmechanics = NoOp();
     pltfield->mechanics = &pltmechanics;
     
     vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_INPLANE,OUTPUT_FORCE_AREA};

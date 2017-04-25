@@ -33,7 +33,16 @@
 #include "external/readPositionsBloodCells.h"
 
 class HemoCell {
-  HemoCell(string configFileName);
+  public:
+  //Unfortunately, due to palabos regulations, it is required to pass the
+  //commandline arguments
+  HemoCell(char * configFileName, int argc, char* argv[]);
+
+  //Set all the fluid nodes to these values
+  void latticeEquilibrium(double rho, Array<double, 3> vel);
+
+  MultiBlockLattice3D<double, DESCRIPTOR> * lattice;
+	Config * cfg;
 };
 
 #endif // HEMOCELL_H

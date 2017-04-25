@@ -1,7 +1,7 @@
 #ifndef CELLFIELDS3D_H
 #define CELLFIELDS3D_H
 
-class hemoCellFields;
+class HemoCellFields;
 #include "hemocell_internal.h"
 #include "hemoCellParticleField.h"
 #include "fcnGenericFunctions.h"
@@ -24,12 +24,12 @@ class hemoCellFields;
  * TODO: light and heavy (tracking cellfield arrays to particles or not)
  *
  */
-class hemoCellFields
+class HemoCellFields
 {
 public:
-    hemoCellFields(MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth);
+    HemoCellFields(MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth);
     MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & getParticleField3D();
-    ~hemoCellFields();
+    ~HemoCellFields();
     virtual void advanceParticles();
     virtual void interpolateFluidVelocity();
     virtual void spreadParticleForce();

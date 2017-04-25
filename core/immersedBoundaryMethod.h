@@ -38,7 +38,7 @@ void interpolationCoefficientsPhi1 (
         std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 inline void interpolationCoefficientsPhi2 (
-        BlockLattice3D<double,DESCRIPTOR> const& block, SurfaceParticle3D * particle)
+        BlockLattice3D<double,DESCRIPTOR> const& block, HemoCellParticle * particle)
 {
     //Clean current
     particle->kernelWeights.clear();

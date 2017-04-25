@@ -60,7 +60,7 @@ inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, 
        //     break; 
 
         // Finally, if all checks are passed, add the particle.
-        particleField.addParticle(particleField.getBoundingBox(), new SurfaceParticle3D(vertex, cellId, iVertex,celltype));
+        particleField.addParticle(particleField.getBoundingBox(), new HemoCellParticle(vertex, cellId, iVertex,celltype));
 
     }
 }
@@ -240,7 +240,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         plint nVertices=meshes[iCF]->getNumVertices();
         cout << "MPI rank: " << global::mpi().getRank();
         plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells(iCF)/(float)nVertices;
-        std::vector<SurfaceParticle3D*> particles;
+        std::vector<HemoCellParticle*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);
         cout    << " Total cells: " << particles.size()/(float)nVertices << " (deleted cells:" << cellsDeleted << ") for particleId:" << iCF << std::endl;
 //delete meshes[iCF];
@@ -277,7 +277,7 @@ BlockDomain::DomainT ReadPositionsBloodCellField3D::appliesTo() const {
 
 
 
-void readPositionsBloodCellField3D(hemoCellFields & cellFields, double dx, const char* positionsFileName, Config & cfg) {
+void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, const char* positionsFileName, Config & cfg) {
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
     fluidAndParticleFieldsArg.push_back(&(cellFields.lattice));

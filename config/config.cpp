@@ -1,7 +1,7 @@
 #include "config.h"
 
 Config::Config(std::string paramXmlFileName) : plb::XMLreader(paramXmlFileName)
-{ 
+{  
 
  // Check if it is a fresh start or a checkpointed run 
  std::string firstField = (*(this->getChildren(this->getFirstId())[0])).getName(); 

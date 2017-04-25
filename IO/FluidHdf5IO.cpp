@@ -3,7 +3,7 @@
 
 #include "FluidHdf5IO.h"
 
-void writeFluidField_HDF5(hemoCellFields& cellfields, double dx, double dt, plint iter, string preString) {
+void writeFluidField_HDF5(HemoCellFields& cellfields, double dx, double dt, plint iter, string preString) {
   WriteFluidField * wff = new WriteFluidField(cellfields, cellfields.lattice,iter,"Fluid",dx,dt);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(&cellfields.lattice);
@@ -25,7 +25,7 @@ void WriteFluidField::getTypeOfModification ( vector<modif::ModifT>& modified ) 
   }
 }
 
-WriteFluidField::WriteFluidField(hemoCellFields& cellfields_,
+WriteFluidField::WriteFluidField(HemoCellFields& cellfields_,
                                  MultiBlockLattice3D<double,DESCRIPTOR>& fluid_,
                                  plint iter_, string identifier_, 
                                  double dx_, double dt_) :
@@ -36,7 +36,7 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
 
   int id = global::mpi().getRank();
 	ablock = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
-  int blockid = dynamic_cast<HemoParticleField3D*>(blocks[1])->atomicBlockId; //Nasty trick to prevent us from having to overload the fluid field ( palabos domain)
+  int blockid = dynamic_cast<HemoCellParticleField*>(blocks[1])->atomicBlockId; //Nasty trick to prevent us from having to overload the fluid field ( palabos domain)
 
   this->odomain = &domain; //Access for output functions
   if (cellfields.desiredFluidOutputVariables.size() == 0 ) {

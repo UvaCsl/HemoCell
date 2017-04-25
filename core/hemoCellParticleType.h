@@ -18,7 +18,7 @@ class HemoCellField{
   static vector<int> default_output;
   public:
 
-  HemoCellField(hemoCellFields& cellFields_, TriangularSurfaceMesh<double>& meshElement_);
+  HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<double>& meshElement_);
   double getVolumeFraction();
   double hematocrit;
   //ShellModel3D<double> * model;
@@ -27,11 +27,11 @@ class HemoCellField{
   int ctype;
   int numVertex;
   bool outputTriangles = false;
-  hemoCellFields & cellFields;
+  HemoCellFields & cellFields;
   vector<int> desiredOutputVariables;
   vector<Array<plint,3>> triangle_list;
   TriangularSurfaceMesh<double> & meshElement;
-  void(*kernelMethod)(BlockLattice3D<double,DESCRIPTOR> const&,SurfaceParticle3D*);
+  void(*kernelMethod)(BlockLattice3D<double,DESCRIPTOR> const&,HemoCellParticle*);
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D();
   MultiBlockLattice3D<double,DESCRIPTOR> * getFluidField3D();
   int getNumberOfCells_Global();

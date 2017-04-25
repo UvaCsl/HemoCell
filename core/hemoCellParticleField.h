@@ -2,54 +2,27 @@
 #define HEMOCELLParticleField3D
 
 #include "hemocell_internal.h"
-#include "hemoCellParticle.h"
 #include "hemoCellFields.h"
+#include "hemoCellParticleDataTransfer.h"
+#include "hemoCellParticle.h"
 
-class HemoParticleDataTransfer3D : public BlockDataTransfer3D {
+class HemoCellParticleField : public AtomicBlock3D {
 public:
-    HemoParticleDataTransfer3D();
-    virtual plint staticCellSize() const;
-    virtual void send(Box3D domain, std::vector<char>& buffer, modif::ModifT kind) const;
-    virtual void receive(Box3D domain, std::vector<char> const& buffer, modif::ModifT kind);
-    virtual void receive(Box3D domain, std::vector<char> const& buffer, modif::ModifT kind, Dot3D absoluteOffset);
-    virtual void receive( Box3D domain, std::vector<char> const& buffer,
-                          modif::ModifT kind, std::map<int,std::string> const& foreignIds )
-    {
-        receive(domain, buffer, kind);
-    }
-    virtual void setBlock(AtomicBlock3D& block);
-    virtual void setConstBlock(AtomicBlock3D const& block) ;
-    virtual HemoParticleDataTransfer3D* clone() const {
-      return new HemoParticleDataTransfer3D(*this);
-    }
-    virtual void attribute(Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
-                           AtomicBlock3D const& from, modif::ModifT kind);
-    virtual void attribute(Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
-                           AtomicBlock3D const& from, modif::ModifT kind, Dot3D absoluteOffset);
-private:
-    HemoParticleField3D* particleField;
-    HemoParticleField3D const * constParticleField;
-};
-
-class HemoParticleField3D : public AtomicBlock3D {
-public:
-public:
-    HemoParticleField3D(plint nx, plint ny, plint nz);
-    virtual ~HemoParticleField3D();
-    HemoParticleField3D(HemoParticleField3D const& rhs);
-    HemoParticleField3D& operator=(HemoParticleField3D const& rhs);
-    HemoParticleField3D* clone() const;
-    void swap(HemoParticleField3D& rhs);
-public:
+    HemoCellParticleField(plint nx, plint ny, plint nz);
+    virtual ~HemoCellParticleField();
+    HemoCellParticleField(HemoCellParticleField const& rhs);
+    HemoCellParticleField& operator=(HemoCellParticleField const& rhs);
+    HemoCellParticleField* clone() const;
+    void swap(HemoCellParticleField& rhs);
     virtual void applyConstitutiveModel();
-    virtual void addParticle(Box3D domain, SurfaceParticle3D* particle);
+    virtual void addParticle(Box3D domain, HemoCellParticle* particle);
     virtual void removeParticles(Box3D domain);
     virtual void removeParticles(Box3D domain,plint tag);
     virtual void removeParticles(plint tag);
     virtual void findParticles(Box3D domain,
-                               std::vector<SurfaceParticle3D*>& found);
+                               std::vector<HemoCellParticle*>& found);
     void findParticles(Box3D domain,
-                               std::vector<SurfaceParticle3D*>& found,
+                               std::vector<HemoCellParticle*>& found,
                                pluint type) const;
     virtual void advanceParticles();
     void applyRepulsionForce();
@@ -80,14 +53,14 @@ public:
     void outputForceInPlane   (Box3D,vector<vector<double>>&, pluint, std::string&);
     void outputTriangles   (Box3D,vector<vector<plint>>&, vector<vector<double>>&, pluint, std::string&);
     void AddOutputMap();
-    map<int,void (HemoParticleField3D::*)(Box3D,vector<vector<double>>&,pluint,std::string&)> outputFunctionMap;
+    map<int,void (HemoCellParticleField::*)(Box3D,vector<vector<double>>&,pluint,std::string&)> outputFunctionMap;
     void passthroughpass(int,Box3D,vector<vector<double>>&,pluint,std::string&);
 
 public:
-    virtual HemoParticleDataTransfer3D& getDataTransfer();
-    virtual HemoParticleDataTransfer3D const& getDataTransfer() const;
+    virtual HemoCellParticleDataTransfer& getDataTransfer();
+    virtual HemoCellParticleDataTransfer const& getDataTransfer() const;
     static std::string getBlockName();
-    static hemoCellFields* cellFields;
+    static HemoCellFields* cellFields;
     pluint atomicBlockId;
     BlockLattice3D<double, DESCRIPTOR> * atomicLattice;
     pluint envelopeSize;
@@ -97,16 +70,16 @@ public:
     static std::string descriptorType() {
       return std::string(DESCRIPTOR<double>::name);
     }
-    std::vector<SurfaceParticle3D*> particles;
+    std::vector<HemoCellParticle*> particles;
     private:
 
-    std::vector<std::vector<SurfaceParticle3D*>> particles_per_type;
-    std::map<int,std::vector<SurfaceParticle3D*>> particles_per_cell;
+    std::vector<std::vector<HemoCellParticle*>> particles_per_type;
+    std::map<int,std::vector<HemoCellParticle*>> particles_per_cell;
     std::map<int,bool> lpc;
     
-    vector<vector<vector<vector<SurfaceParticle3D*>>>> particle_grid; //maybe better to make custom data structure, But that would be slower
-    void insert_ppc(SurfaceParticle3D* particle);
-    HemoParticleDataTransfer3D dataTransfer;
+    vector<vector<vector<vector<HemoCellParticle*>>>> particle_grid; //maybe better to make custom data structure, But that would be slower
+    void insert_ppc(HemoCellParticle* particle);
+    HemoCellParticleDataTransfer dataTransfer;
     Box3D localDomain;
 
 };

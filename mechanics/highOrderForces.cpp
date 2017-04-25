@@ -5,11 +5,11 @@ HighOrderForces::HighOrderForces(HemoCellField & cellField_, double k_volume_, d
                   cellField(cellField_), k_volume(k_volume_), k_area(k_area_), k_inPlane(k_inPlane_), k_bend(k_bend_)
   { };
 
-void HighOrderForces::ParticleMechanics(map<int,vector<SurfaceParticle3D *>> particles_per_cell, map<int,bool> lpc, pluint ctype) {
+void HighOrderForces::ParticleMechanics(map<int,vector<HemoCellParticle *>> particles_per_cell, map<int,bool> lpc, pluint ctype) {
 
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;
-    vector<SurfaceParticle3D*> & cell = particles_per_cell[cid];
+    vector<HemoCellParticle*> & cell = particles_per_cell[cid];
     if (cell[0]->celltype != ctype) continue; //only execute on correct particles
 
     //Calculate Cell Values that need all particles (but do it most efficient

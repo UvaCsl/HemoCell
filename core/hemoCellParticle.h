@@ -1,11 +1,11 @@
 #ifndef SURFACE_PARTICLE_3D_H
 #define SURFACE_PARTICLE_3D_H
 
-class SurfaceParticle3D;
+class HemoCellParticle;
 #include "hemocell_internal.h"
 
 
-class SurfaceParticle3D {
+class HemoCellParticle {
   //VARIABLES
 public:
     //Is vector, optimize with array possible
@@ -28,7 +28,7 @@ private:
     std::vector<double> weights;
 
 public:
-    SurfaceParticle3D(){
+    HemoCellParticle(){
       grid_pos = {0,0,0};
       position = {0.0,0.0,0.0};
       v = {0.0,0.0,0.0};
@@ -43,7 +43,7 @@ public:
       force_inplane = &force; //These pointers are only changed for nice outputs
       force_bending = &force; //These pointers are only changed for nice outputs
     }
-    SurfaceParticle3D (Array<double,3> position_, plint cellId_, plint vertexId_,pluint celltype_) :
+    HemoCellParticle (Array<double,3> position_, plint cellId_, plint vertexId_,pluint celltype_) :
           grid_pos(),
           position(position_),
           force(),
@@ -63,8 +63,8 @@ public:
       force_bending = &force; //These pointers are only changed for nice outputs
     }
 
-    SurfaceParticle3D* clone() const {
-        SurfaceParticle3D* sparticle = new SurfaceParticle3D(*this);
+    HemoCellParticle* clone() const {
+        HemoCellParticle* sparticle = new HemoCellParticle(*this);
         sparticle->force_volume = &sparticle->force;
         sparticle->force_bending = &sparticle->force;
         sparticle->force_inplane = &sparticle->force;
@@ -137,8 +137,8 @@ public:
 };
 
 //TODO better way to override this function
-inline void serialize(SurfaceParticle3D& particle, vector<char>& data) {
-  HierarchicSerializer serializer(data, SurfaceParticle3D::id);
+inline void serialize(HemoCellParticle& particle, vector<char>& data) {
+  HierarchicSerializer serializer(data, HemoCellParticle::id);
   particle.serialize(serializer);
 }
 

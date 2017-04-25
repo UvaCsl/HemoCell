@@ -7,13 +7,13 @@
 #include <hdf5.h>
 #include <hdf5_hl.h>
 
-void writeFluidField_HDF5(hemoCellFields& cellFields, double dx, double dt, plint iter, string preString="");
+void writeFluidField_HDF5(HemoCellFields& cellFields, double dx, double dt, plint iter, string preString="");
 
 class WriteFluidField : public BoxProcessingFunctional3D
 {
 public:
     WriteFluidField (
-            hemoCellFields& cellfields,
+            HemoCellFields& cellfields,
 						MultiBlockLattice3D<double,DESCRIPTOR>& fluid,
             plint iter_, string identifier_,
             double dx_, double dt_);
@@ -23,7 +23,7 @@ public:
     virtual void getTypeOfModification(vector<modif::ModifT>& modified) const;
     virtual BlockDomain::DomainT appliesTo() const;
 private:
-    hemoCellFields& cellfields;
+    HemoCellFields& cellfields;
     MultiBlockLattice3D<double,DESCRIPTOR>& fluid;
     plint iter;
     string identifier;

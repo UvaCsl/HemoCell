@@ -7,7 +7,7 @@ class CellMechanics;
 
 class CellMechanics {
   public:
-  virtual void ParticleMechanics(map<int,vector<SurfaceParticle3D *>>,map<int,bool>, pluint ctype) = 0 ;
+  virtual void ParticleMechanics(map<int,vector<HemoCellParticle *>>,map<int,bool>, pluint ctype) = 0 ;
   virtual void statistics() = 0;
 };
 #endif

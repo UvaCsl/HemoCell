@@ -15,7 +15,7 @@
 #include "immersedBoundaryMethod.h"
 
 //HemoCellField
-HemoCellField::HemoCellField(hemoCellFields& cellFields_, TriangularSurfaceMesh<double>& meshElement_)
+HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<double>& meshElement_)
       :cellFields(cellFields_), desiredOutputVariables(default_output), meshElement(meshElement_) {
          numVertex = meshElement.getNumVertices();
          std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);

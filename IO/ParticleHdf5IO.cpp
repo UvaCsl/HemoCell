@@ -18,8 +18,8 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
     int id = global::mpi().getRank();
     long int size = global::mpi().getSize();
 
-      HemoParticleField3D& particleField =
-        *dynamic_cast<HemoParticleField3D*>(blocks[0]);
+      HemoCellParticleField& particleField =
+        *dynamic_cast<HemoCellParticleField*>(blocks[0]);
    
       if (cellField3D.desiredOutputVariables.size() == 0) {
           return; //No output desired, no problem
@@ -146,7 +146,7 @@ BlockDomain::DomainT WriteCellField3DInMultipleHDF5Files::appliesTo () const {
 
 
 
-void writeCellField3D_HDF5(hemoCellFields& cellFields, double dx, double dt, plint iter, std::string preString)
+void writeCellField3D_HDF5(HemoCellFields& cellFields, double dx, double dt, plint iter, std::string preString)
 {
     for (pluint i = 0; i < cellFields.size(); i++) {
 	std::string identifier = preString + cellFields[i]->getIdentifier();

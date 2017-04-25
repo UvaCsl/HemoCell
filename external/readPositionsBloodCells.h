@@ -5,7 +5,7 @@
 #include "hemoCellFields.h"
 #include "config.h"
 
-void readPositionsBloodCellField3D(hemoCellFields & cellFields, double dx, const char* positionsFileName, Config & cfg);
+void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, const char* positionsFileName, Config & cfg);
 
 void getReadPositionsBloodCellsVector(Box3D realDomain,
                                            std::vector<TriangularSurfaceMesh<double>* > & meshes,
@@ -18,7 +18,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 class ReadPositionsBloodCellField3D : public BoxProcessingFunctional3D
 {
 public:
-    ReadPositionsBloodCellField3D (hemoCellFields & cellFields_, double dx_, const char* positionsFileName_, Config & cfg_)
+    ReadPositionsBloodCellField3D (HemoCellFields & cellFields_, double dx_, const char* positionsFileName_, Config & cfg_)
             : cellFields(cellFields_), cfg(cfg_) {dx = dx_; positionsFileName=positionsFileName_;}
     /// Arguments: [0] Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
@@ -28,7 +28,7 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
     const char* positionsFileName;
     double dx;
-    hemoCellFields & cellFields;
+    HemoCellFields & cellFields;
     Config & cfg;
 };
 

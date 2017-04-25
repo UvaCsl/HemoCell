@@ -3,131 +3,9 @@
 
 #include "hemoCellParticleField.h"
 
-/* *************** class HemoParticleDataTransfer3D ************************ */
-
-HemoParticleDataTransfer3D::HemoParticleDataTransfer3D () {};
-
-plint HemoParticleDataTransfer3D::staticCellSize() const {
-    return 0;  // Particle containers have only dynamic data.
-}
-
-void HemoParticleDataTransfer3D::send (
-        Box3D domain, std::vector<char>& buffer, modif::ModifT kind ) const
-{
-    buffer.clear();
-    // Particles, by definition, are dynamic data, and they need to
-    //   be reconstructed in any case. Therefore, the send procedure
-    //   is run whenever kind is one of the dynamic types.
-    if ( (kind==modif::dynamicVariables) ||
-         (kind==modif::allVariables) ||
-         (kind==modif::dataStructure) )
-    {
-        std::vector<SurfaceParticle3D*> foundParticles;
-        particleField->findParticles(domain, foundParticles);
-        for (pluint iParticle=0; iParticle<foundParticles.size(); ++iParticle) {
-        // The serialize function automatically reallocates memory for buffer.
-        serialize(*foundParticles[iParticle], buffer);
-        }
-    }
-}
-
-void HemoParticleDataTransfer3D::receive (
-        Box3D domain, std::vector<char> const& buffer, modif::ModifT kind )
-{
-    PLB_PRECONDITION(contained(domain, particleField->getBoundingBox()));
-
-    // Clear the existing data before introducing the new data.
-    particleField->removeParticles(domain);
-    // Particles, by definition, are dynamic data, and they need to
-    //   be reconstructed in any case. Therefore, the receive procedure
-    //   is run whenever kind is one of the dynamic types.
-    if ( (kind==modif::dynamicVariables) ||
-         (kind==modif::allVariables) ||
-         (kind==modif::dataStructure) )
-    {
-        pluint posInBuffer = 0;
-        while (posInBuffer < buffer.size()) {
-            // 1. Generate dynamics object, and unserialize dynamic data.
-            HierarchicUnserializer unserializer(buffer, posInBuffer);
-            SurfaceParticle3D* newParticle = new SurfaceParticle3D();
-            newParticle->unserialize(unserializer);
-            posInBuffer = unserializer.getCurrentPos();
-            particleField->addParticle(domain, newParticle);
-        }
-    }
-}
-
-void HemoParticleDataTransfer3D::receive (
-        Box3D domain, std::vector<char> const& buffer, modif::ModifT kind, Dot3D absoluteOffset )
-{
-        //Particle Locations should always be ABSOULUTE, an offset thus makes no
-        //sense
-        Array<T,3> realAbsoluteOffset((T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z);
-    particleField->removeParticles(domain);
-    if ( (kind==modif::dynamicVariables) ||
-         (kind==modif::allVariables) ||
-         (kind==modif::dataStructure) )
-    {
-        pluint posInBuffer = 0;
-        while (posInBuffer < buffer.size()) {
-            // 1. Generate dynamics object, and unserialize dynamic data.
-            HierarchicUnserializer unserializer(buffer, posInBuffer);
-            SurfaceParticle3D* newParticle = new SurfaceParticle3D();
-            newParticle->unserialize(unserializer);
-            posInBuffer = unserializer.getCurrentPos();
-            newParticle->position += realAbsoluteOffset;
-            particleField->addParticle(domain, newParticle);
-        }
-    }
-}
-
-void HemoParticleDataTransfer3D::setBlock(AtomicBlock3D& block) {
-   particleField = dynamic_cast<HemoParticleField3D*>(&block);
-   PLB_ASSERT(particleField);
-   constParticleField = particleField;
-}
-
-void HemoParticleDataTransfer3D::setConstBlock(AtomicBlock3D const& block) {
-          constParticleField = dynamic_cast<HemoParticleField3D const*>(&block);
-}
-
-void HemoParticleDataTransfer3D::attribute (
-        Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
-        AtomicBlock3D const& from, modif::ModifT kind )
-{
-    Box3D fromDomain(toDomain.shift(deltaX,deltaY,deltaZ));
-    std::vector<char> buffer;
-    HemoParticleField3D const& fromParticleField =
-        dynamic_cast<HemoParticleField3D const&>(from);
-    fromParticleField.getDataTransfer().send(fromDomain, buffer, kind);
-    receive(toDomain, buffer, kind);
-}
-
-void HemoParticleDataTransfer3D::attribute (
-        Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
-        AtomicBlock3D const& from, modif::ModifT kind, Dot3D absoluteOffset )
-{
-    Box3D fromDomain(toDomain.shift(deltaX,deltaY,deltaZ));
-    std::vector<char> buffer;
-    HemoParticleField3D const& fromParticleField =
-        dynamic_cast<HemoParticleField3D const&>(from);
-    fromParticleField.getDataTransfer().send(fromDomain, buffer, kind);
-    receive(toDomain, buffer, kind, absoluteOffset);
-}
-
-
 /* *************** class HemoParticleField3D ********************** */
-void HemoParticleField3D::AddOutputMap() {
-  outputFunctionMap[OUTPUT_POSITION] = &HemoParticleField3D::outputPositions;
-  outputFunctionMap[OUTPUT_FORCE] = &HemoParticleField3D::outputForces;
-  outputFunctionMap[OUTPUT_FORCE_VOLUME] = &HemoParticleField3D::outputForceVolume;
-  outputFunctionMap[OUTPUT_FORCE_AREA] = &HemoParticleField3D::outputForceArea;
-  outputFunctionMap[OUTPUT_FORCE_INPLANE] = &HemoParticleField3D::outputForceInPlane;
-  outputFunctionMap[OUTPUT_FORCE_BENDING] = &HemoParticleField3D::outputForceBending;
-  
-}
 
-HemoParticleField3D::HemoParticleField3D(plint nx, plint ny, plint nz)
+HemoCellParticleField::HemoCellParticleField(plint nx, plint ny, plint nz)
     : AtomicBlock3D(nx,ny,nz, &this->dataTransfer)
 { 
     dataTransfer.setBlock(*this);
@@ -139,18 +17,9 @@ HemoParticleField3D::HemoParticleField3D(plint nx, plint ny, plint nz)
         }
     }
     AddOutputMap(); 
-
 }
 
-HemoParticleField3D::~HemoParticleField3D()
-{
-  AtomicBlock3D::dataTransfer = new HemoParticleDataTransfer3D();
-    for (pluint i=0; i<particles.size(); ++i) {
-        delete particles[i];
-    }
-}
-
-HemoParticleField3D::HemoParticleField3D(HemoParticleField3D const& rhs)
+HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
     : AtomicBlock3D(rhs)
 {
     dataTransfer.setBlock(*this);
@@ -168,26 +37,34 @@ HemoParticleField3D::HemoParticleField3D(HemoParticleField3D const& rhs)
     AddOutputMap();
 }
 
-HemoParticleField3D& HemoParticleField3D::operator=(HemoParticleField3D const& rhs){
- HemoParticleField3D *copy = new HemoParticleField3D(rhs);
+HemoCellParticleField::~HemoCellParticleField()
+{
+  AtomicBlock3D::dataTransfer = new HemoCellParticleDataTransfer();
+    for (pluint i=0; i<particles.size(); ++i) {
+        delete particles[i];
+    }
+}
+
+HemoCellParticleField& HemoCellParticleField::operator=(HemoCellParticleField const& rhs){
+ HemoCellParticleField *copy = new HemoCellParticleField(rhs);
  delete this;
   return *copy;
 }
 
-HemoParticleField3D* HemoParticleField3D::clone() const
+HemoCellParticleField* HemoCellParticleField::clone() const
 {
-    return new HemoParticleField3D(*this);
+    return new HemoCellParticleField(*this);
 }
 
-void HemoParticleField3D::addParticle(Box3D domain, SurfaceParticle3D* particle) {
+void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle) {
     Box3D finalDomain;
     plint x,y,z;
-    SurfaceParticle3D * local_sparticle;
+    HemoCellParticle * local_sparticle;
     Array<double,3> pos = particle->position;
 
 
     while (particles_per_type.size()<=particle->celltype) {
-      particles_per_type.push_back(std::vector<SurfaceParticle3D*>());
+      particles_per_type.push_back(std::vector<HemoCellParticle*>());
     }
 
     if( this->isContainedABS(pos, this->getBoundingBox()) )
@@ -243,7 +120,7 @@ void HemoParticleField3D::addParticle(Box3D domain, SurfaceParticle3D* particle)
     }
 }
 
-void HemoParticleField3D::insert_ppc(SurfaceParticle3D* sparticle) {
+void HemoCellParticleField::insert_ppc(HemoCellParticle* sparticle) {
   if (particles_per_cell.find(sparticle->cellId) == particles_per_cell.end()) {
     particles_per_cell[sparticle->cellId].resize((*cellFields)[sparticle->celltype]->numVertex);
     for (unsigned int i = 0; i < particles_per_cell[sparticle->cellId].size(); i++) {
@@ -255,10 +132,10 @@ void HemoParticleField3D::insert_ppc(SurfaceParticle3D* sparticle) {
 }
 
 
-void HemoParticleField3D::removeParticles(plint tag) {
+void HemoCellParticleField::removeParticles(plint tag) {
 //Almost the same, but we save a lot of branching by manking a seperate function
-    std::vector<SurfaceParticle3D*> remainingParticles = particles;
-    SurfaceParticle3D * sparticle;
+    std::vector<HemoCellParticle*> remainingParticles = particles;
+    HemoCellParticle * sparticle;
     plint x,y,z;
     for (pluint i=0; i < particles_per_type.size(); i++) {
       particles_per_type[i].clear();
@@ -287,10 +164,10 @@ void HemoParticleField3D::removeParticles(plint tag) {
     }
 }
 
-void HemoParticleField3D::removeParticles(Box3D domain, plint tag) {
+void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
 //Almost the same, but we save a lot of branching by manking a seperate function
-    std::vector<SurfaceParticle3D*> remainingParticles = particles;
-    SurfaceParticle3D * sparticle;
+    std::vector<HemoCellParticle*> remainingParticles = particles;
+    HemoCellParticle * sparticle;
     plint x,y,z;
     Box3D finalDomain;
     Array<double,3> pos; 
@@ -305,7 +182,7 @@ void HemoParticleField3D::removeParticles(Box3D domain, plint tag) {
        pos = remainingParticles[i]->position;
        intersect(domain, this->getBoundingBox(), finalDomain);
        if (this->isContainedABS(pos,finalDomain) && remainingParticles[i]->getTag() == tag) {
-         sparticle = dynamic_cast<SurfaceParticle3D*>(remainingParticles[i]);
+         sparticle = dynamic_cast<HemoCellParticle*>(remainingParticles[i]);
          x = sparticle->grid_pos[0];
          y = sparticle->grid_pos[1];
          z = sparticle->grid_pos[2];
@@ -323,14 +200,14 @@ void HemoParticleField3D::removeParticles(Box3D domain, plint tag) {
     }
 }
 
-void HemoParticleField3D::removeParticles(Box3D domain) {
+void HemoCellParticleField::removeParticles(Box3D domain) {
 //Almost the same, but we save a lot of branching by making a seperate function
 // Dont allow palabos to delete things
     //return;
     //if (!cellFields) return; //TODO shouldnt be necessary
     //if (!cellFields->hemocellfunction) return;
-    std::vector<SurfaceParticle3D*> remainingParticles = particles;
-    SurfaceParticle3D * sparticle;
+    std::vector<HemoCellParticle*> remainingParticles = particles;
+    HemoCellParticle * sparticle;
     plint x,y,z;
     Box3D finalDomain;
     Array<double,3> pos; 
@@ -345,7 +222,7 @@ void HemoParticleField3D::removeParticles(Box3D domain) {
        pos = remainingParticles[i]->position;
        intersect(domain, this->getBoundingBox(), finalDomain);
        if (this->isContainedABS(pos,finalDomain)) {
-         sparticle = dynamic_cast<SurfaceParticle3D*>(remainingParticles[i]);
+         sparticle = dynamic_cast<HemoCellParticle*>(remainingParticles[i]);
          x = sparticle->grid_pos[0];
          y = sparticle->grid_pos[1];
          z = sparticle->grid_pos[2];
@@ -363,8 +240,8 @@ void HemoParticleField3D::removeParticles(Box3D domain) {
     }
 }
 
-void HemoParticleField3D::findParticles (
-        Box3D domain, std::vector<SurfaceParticle3D*>& found ) 
+void HemoCellParticleField::findParticles (
+        Box3D domain, std::vector<HemoCellParticle*>& found ) 
 {
     found.clear();
     PLB_ASSERT( contained(domain, this->getBoundingBox()) );
@@ -376,8 +253,8 @@ void HemoParticleField3D::findParticles (
         }
     }
 }
-void HemoParticleField3D::findParticles (
-        Box3D domain, std::vector<SurfaceParticle3D*>& found, pluint type) const
+void HemoCellParticleField::findParticles (
+        Box3D domain, std::vector<HemoCellParticle*>& found, pluint type) const
 {
     
     found.clear();
@@ -394,7 +271,7 @@ void HemoParticleField3D::findParticles (
     
 }
 
-bool HemoParticleField3D::isContainedABS(Array<double,3> pos, Box3D box) const {
+bool HemoCellParticleField::isContainedABS(Array<double,3> pos, Box3D box) const {
 		Dot3D const& location = this->getLocation();
     double x = pos[0]-location.x;
     double y = pos[1]-location.y;
@@ -412,11 +289,11 @@ bool HemoParticleField3D::isContainedABS(Array<double,3> pos, Box3D box) const {
 
 }
 
-inline plint HemoParticleField3D::nearestCell(double const pos) const {
+inline plint HemoCellParticleField::nearestCell(double const pos) const {
   return int(pos + 0.5);
 }
 
-inline void HemoParticleField3D::computeGridPosition (
+inline void HemoCellParticleField::computeGridPosition (
             Array<double,3> const& position,
                     plint* iX, plint* iY, plint* iZ ) const
 {
@@ -425,7 +302,8 @@ inline void HemoParticleField3D::computeGridPosition (
       *iY = nearestCell(position[1]) - location.y;
       *iZ = nearestCell(position[2]) - location.z;
 }
-void HemoParticleField3D::computeGridPosition (
+
+void HemoCellParticleField::computeGridPosition (
             Array<double,3> const& position,
                     plint& iX, plint& iY, plint& iZ ) const
 {
@@ -435,7 +313,7 @@ void HemoParticleField3D::computeGridPosition (
       iZ = nearestCell(position[2]) - location.z;
 }
 
-int HemoParticleField3D::deleteIncompleteCells(pluint ctype, bool twice) {
+int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool twice) {
   //Function must be called twice since addParticle can remove a particle
   //unintentionally, for now, catch it here; TODO, this can be done better
   int deleted = 0;
@@ -470,7 +348,7 @@ int HemoParticleField3D::deleteIncompleteCells(pluint ctype, bool twice) {
   return deleted; 
 }
 
-int HemoParticleField3D::deleteIncompleteCells(bool twice) {
+int HemoCellParticleField::deleteIncompleteCells(bool twice) {
   //Function must be called twice since addParticle can remove a particle
   //unintentionally, for now, catch it here; TODO, this can be done better
   int deleted = 0;
@@ -503,162 +381,7 @@ int HemoParticleField3D::deleteIncompleteCells(bool twice) {
   return deleted; 
 }
 
-void HemoParticleField3D::outputPositions(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
-  deleteIncompleteCells(ctype);
-  name = "Position";
-  output.clear();
-  SurfaceParticle3D * sparticle;
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
-    for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
-
-      vector<double> pbv;
-      pbv.push_back(sparticle->position[0]);
-      pbv.push_back(sparticle->position[1]);
-      pbv.push_back(sparticle->position[2]);
-      output.push_back(pbv); //TODO, memory copy
-
-    }
-  }
-}
-
-void HemoParticleField3D::outputForceBending(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
-  name = "Bending Force";
-  output.clear();
-  SurfaceParticle3D * sparticle;
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
-    for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
-
-      vector<double> tf;
-      tf.push_back((*sparticle->force_bending)[0]);
-      tf.push_back((*sparticle->force_bending)[1]);
-      tf.push_back((*sparticle->force_bending)[2]);
-      output.push_back(tf);
-    }
-  }
-}
-void HemoParticleField3D::outputForceArea(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
-  name = "Area Force";
-  output.clear();
-  SurfaceParticle3D * sparticle;
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
-    for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
-
-      vector<double> tf;
-      tf.push_back((*sparticle->force_area)[0]);
-      tf.push_back((*sparticle->force_area)[1]);
-      tf.push_back((*sparticle->force_area)[2]);
-      output.push_back(tf);
-    }
-  }
-}
-void HemoParticleField3D::outputForceInPlane(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
-  name = "In Plane Force";
-  output.clear();
-  SurfaceParticle3D * sparticle;
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
-    for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
-
-      vector<double> tf;
-      tf.push_back((*sparticle->force_inplane)[0]);
-      tf.push_back((*sparticle->force_inplane)[1]);
-      tf.push_back((*sparticle->force_inplane)[2]);
-      output.push_back(tf);
-    }
-  }
-}
-void HemoParticleField3D::outputForceVolume(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
-  name = "Volume Force";
-  output.clear();
-  SurfaceParticle3D * sparticle;
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
-    for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
-
-      vector<double> tf;
-      tf.push_back((*sparticle->force_volume)[0]);
-      tf.push_back((*sparticle->force_volume)[1]);
-      tf.push_back((*sparticle->force_volume)[2]);
-      output.push_back(tf);
-    }
-  }
-}
-
-void HemoParticleField3D::outputForces(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
-  name = "Total Force";
-  output.clear();
-  SurfaceParticle3D * sparticle;
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
-    for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
-
-      vector<double> tf;
-      tf.push_back(sparticle->force_total[0]);
-      tf.push_back(sparticle->force_total[1]);
-      tf.push_back(sparticle->force_total[2]);
-      output.push_back(tf);
-    }
-  }
-}
-
-void HemoParticleField3D::outputTriangles(Box3D domain, vector<vector<plint>>& output, vector<vector<double>> & positions, pluint ctype, std::string & name) {
-  name = "Triangles";
-  output.clear();
-  int counter = 0;
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
-
-    for (pluint i = 0; i < (*cellFields)[ctype]->triangle_list.size(); i++) {
-      vector<plint> triangle = {(*cellFields)[ctype]->triangle_list[i][0] + counter,
-                          (*cellFields)[ctype]->triangle_list[i][1] + counter,
-                          (*cellFields)[ctype]->triangle_list[i][2] + counter};
-
-      //Do not add triangles over periodic boundaries
-      bool toolarge = false;
-      /*for (pluint x = 0; x < 3; x++) {
-        for (pluint y = x +1; y < 3; y++) {
-          if ((abs(positions[triangle[x]][0] - positions[triangle[y]][0]) > 2.0) ||
-              (abs(positions[triangle[x]][1] - positions[triangle[y]][1]) > 2.0) ||
-              (abs(positions[triangle[x]][2] - positions[triangle[y]][2]) > 2.0))
-          {
-            toolarge = true;
-            break;
-          }
-        }
-      }*/
-      if (!toolarge) {
-        output.push_back(triangle);
-      }
-    }
-    counter += (*cellFields)[ctype]->numVertex;
-  }
-   
-}
-
-void HemoParticleField3D::setlocalDomain(Box3D & localDomain_) {
+void HemoCellParticleField::setlocalDomain(Box3D & localDomain_) {
   localDomain = localDomain_;
   localDomain.x0 -= this->getLocation().x;
   localDomain.x1 -= this->getLocation().x;
@@ -668,26 +391,20 @@ void HemoParticleField3D::setlocalDomain(Box3D & localDomain_) {
   localDomain.z1 -= this->getLocation().z;
 }
 
-void HemoParticleField3D::passthroughpass(int type, Box3D domain, vector<vector<double>>& output, pluint ctype, std::string & name) {
-  //Too Much c++ will give you cancer like this function
-  void (HemoParticleField3D::*cancerpointer)(Box3D,vector<vector<double>>&, pluint, std::string&) = outputFunctionMap[type];
-  (this->*cancerpointer)(domain,output,ctype,name);
-}
 
-void HemoParticleField3D::advanceParticles() {
-  for(SurfaceParticle3D* particle:particles){
+void HemoCellParticleField::advanceParticles() {
+  for(HemoCellParticle* particle:particles){
     particle->advance();
   }
   removeParticles(1);
 }
 
-void HemoParticleField3D::separateForceVectors() {
+void HemoCellParticleField::separateForceVectors() {
   deleteIncompleteCells();
   //Also save the total force, therfore recalculate in advance
   applyConstitutiveModel();
-  
 
-  for (SurfaceParticle3D* sparticle : particles) {
+  for (HemoCellParticle* sparticle : particles) {
     //Save Total Force
     sparticle->force_total = sparticle->force;
 
@@ -701,13 +418,10 @@ void HemoParticleField3D::separateForceVectors() {
     sparticle->force_bending = new Array<double,3>(0.0,0.0,0.0);
 
   }
-
-
-
 }
 
-void HemoParticleField3D::unifyForceVectors() {
-  for (SurfaceParticle3D* sparticle : particles) {
+void HemoCellParticleField::unifyForceVectors() {
+  for (HemoCellParticle* sparticle : particles) {
     //Just repoint all possible outputs for now //TODO only repoint the ones we
     //want
     delete sparticle->force_volume;
@@ -716,14 +430,11 @@ void HemoParticleField3D::unifyForceVectors() {
     delete sparticle->force_bending;
     sparticle->repoint_force_vectors();
   }
-
-
-
 }
 
-void HemoParticleField3D::applyConstitutiveModel() {
+void HemoCellParticleField::applyConstitutiveModel() {
   deleteIncompleteCells();
-  for (SurfaceParticle3D* particle : particles) {
+  for (HemoCellParticle* particle : particles) {
     particle->force = {0.0,0.0,0.0};
   }
   for (pluint ctype = 0; ctype < (*cellFields).size(); ctype++) {
@@ -732,15 +443,15 @@ void HemoParticleField3D::applyConstitutiveModel() {
   
 }
 
-void HemoParticleField3D::applyRepulsionForce() {
+void HemoCellParticleField::applyRepulsionForce() {
     
 }
 
 
-void HemoParticleField3D::spreadParticleForce(Box3D domain) {
-  vector<SurfaceParticle3D*> localParticles;
+void HemoCellParticleField::spreadParticleForce(Box3D domain) {
+  vector<HemoCellParticle*> localParticles;
   findParticles(domain,localParticles);
-  SurfaceParticle3D * sparticle;
+  HemoCellParticle * sparticle;
 
   for (pluint i = 0; i < localParticles.size(); i++ ) {
     sparticle = localParticles[i];
@@ -759,11 +470,11 @@ void HemoParticleField3D::spreadParticleForce(Box3D domain) {
   }
 }
 
-void HemoParticleField3D::interpolateFluidVelocity(Box3D domain) {
-  vector<SurfaceParticle3D*> localParticles;
+void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
+  vector<HemoCellParticle*> localParticles;
   findParticles(domain,localParticles);
   //TODO, remove casting
-  SurfaceParticle3D * sparticle;
+  HemoCellParticle * sparticle;
   //Prealloc is nice
   Array<double,3> velocity;
   Array<double,3> velocity_comp;
@@ -795,17 +506,17 @@ void HemoParticleField3D::interpolateFluidVelocity(Box3D domain) {
 
 }
 
-HemoParticleDataTransfer3D& HemoParticleField3D::getDataTransfer() {
+HemoCellParticleDataTransfer& HemoCellParticleField::getDataTransfer() {
     return dataTransfer;
 }
-HemoParticleDataTransfer3D const& HemoParticleField3D::getDataTransfer() const {
+HemoCellParticleDataTransfer const& HemoCellParticleField::getDataTransfer() const {
     return dataTransfer;
 }
 
-std::string HemoParticleField3D::getBlockName() {
+std::string HemoCellParticleField::getBlockName() {
     return std::string("HemoParticleField3D");
 }
 
-hemoCellFields* HemoParticleField3D::cellFields=0;
+HemoCellFields* HemoCellParticleField::cellFields=0;
 
 #endif

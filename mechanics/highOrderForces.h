@@ -20,7 +20,7 @@ class HighOrderForces : public CellMechanics {
   //Constructor
   public:
   HighOrderForces(HemoCellField & cellField_, double k_volume_, double k_area_, double k_inPlane_, double k_bend_) ;
-  void ParticleMechanics(map<int,vector<SurfaceParticle3D *>> particles_per_cell, map<int,bool> lpc, pluint ctype) ;
+  void ParticleMechanics(map<int,vector<HemoCellParticle *>> particles_per_cell, map<int,bool> lpc, pluint ctype) ;
 
   void statistics();
 };
