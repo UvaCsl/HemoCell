@@ -7,7 +7,7 @@ HemoCellFields::HemoCellFields( MultiBlockLattice3D<double, DESCRIPTOR> & lattic
   lattice(lattice_)
 {   
   envelopeSize=particleEnvelopeWidth;
-  pcout << "(CellField3D) particle envelope SHOULD BE larger then largest celldiameter [lu]: " << particleEnvelopeWidth << std::endl;
+  pcout << "(Hemocell) (HemoCellFields) (Init) particle envelope: " << particleEnvelopeWidth << " [lu]" << std::endl;
 
   MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
@@ -42,6 +42,16 @@ unsigned int HemoCellFields::size()
 HemoCellField * HemoCellFields::operator[](unsigned int index)
 {
   return cellFields[index];
+}
+
+HemoCellField * HemoCellFields::operator[](string name)
+{
+  for (unsigned int i = 0; i < cellFields.size(); i++) {
+      if (cellFields[i]->name == name) {
+          return cellFields[i];
+      }
+  } 
+  return NULL;
 }
 //Initialization
 //vector <CellField3D<double, DESCRIPTOR>> CellFields3D::getLegacyCellFieldsVector() {
@@ -100,7 +110,7 @@ void HemoCellFields::InitAfterLoadCheckpoint()
   }
 }
 
-void HemoCellFields::load(XMLreader * documentXML, plint & iter)
+void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter)
 {
 
     std::string outDir = global::directories().getOutputDir();
@@ -117,7 +127,7 @@ void HemoCellFields::load(XMLreader * documentXML, plint & iter)
     }
 }
 
-void HemoCellFields::save(XMLreader * documentXML, plint iter)
+void HemoCellFields::save(XMLreader * documentXML, unsigned int iter)
 {
     XMLreader xmlr = *documentXML;
     XMLwriter xmlw;

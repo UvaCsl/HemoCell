@@ -4,6 +4,8 @@
 class NoOp : public CellMechanics {
   public:
   NoOp() :CellMechanics() {};
+  NoOp(Config & cfg, HemoCellField & cellfield) :CellMechanics() {};
+
 
   inline void ParticleMechanics(map<int,vector<HemoCellParticle *>>,map<int,bool>, pluint ctype) {} ;
   inline void statistics () {

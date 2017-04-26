@@ -17,6 +17,7 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
 
   pcout << "(HemoCell) (Config) reading " << configFileName << endl;
   cfg = new Config(configFileName);
+  documentXML = new XMLreader(configFileName);
 }
 
 void HemoCell::latticeEquilibrium(double rho, Array<double, 3> vel) {
@@ -24,5 +25,81 @@ void HemoCell::latticeEquilibrium(double rho, Array<double, 3> vel) {
   initializeAtEquilibrium(*lattice, (*lattice).getBoundingBox(), rho, vel);
 }
 
+void HemoCell::initializeCellfield() {
+  cellfields = new HemoCellFields(*lattice,(*cfg)["domain"]["particleEnvelope"].read<int>());
+}
+
+void HemoCell::setOutputs(string name, vector<int> outputs) {
+  pcout << "(HemoCell) (CellField) Setting output variables for " << name << " cells" << endl;
+  vector<int> outputs_c = outputs;
+  (*cellfields)[name]->setOutputVariables(outputs_c);
+}
+
+void HemoCell::setFluidOutputs(vector<int> outputs) {
+  pcout << "(HemoCell) (Fluid) Setting output variables for Fluid" << endl;
+  vector<int> outputs_c = outputs;
+  cellfields->desiredFluidOutputVariables = outputs_c;
+}
+
+void HemoCell::loadParticles(string filename) {
+  pcout << "(HemoCell) (CellField) Loading particle positions from " << filename  << endl;
+  readPositionsBloodCellField3D(*cellfields, param::dx, filename.c_str(), *cfg);
+  cellfields->syncEnvelopes();
+  cellfields->deleteIncompleteCells();
+}
+
+void HemoCell::loadCheckPoint() {
+  pcout << "(HemoCell) (Saving Functions) Loading Checkpoint"  << endl;
+  cellfields->load(documentXML, iter);
+}
+
+void HemoCell::saveCheckPoint() {
+  pcout << "(HemoCell) (Saving Functions) Saving Checkpoint at timestep " << iter << endl;
+  cellfields->save(documentXML, iter);
+}
+
+void HemoCell::writeOutput() {
+	pcout << "(HemoCell) (Output) writing desired output at timestep " << iter << endl;
+	//Repoint surfaceparticle forces for output
+	cellfields->separate_force_vectors();
+
+	//Recalculate the forces
+	cellfields->applyConstitutiveModel();
+
+	//Write Output
+	writeCellField3D_HDF5(*cellfields,param::dx,param::dt,iter);
+	writeFluidField_HDF5(*cellfields,param::dx,param::dt,iter);
+
+	//Repoint surfaceparticle forces for speed
+	cellfields->unify_force_vectors();
+
+}
+
+void HemoCell::iterate() {
+	cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
+
+	// ##### Particle Force to Fluid ####
+	cellfields->spreadParticleForce();
+
+	// ##### 3 ##### LBM
+	lattice->collideAndStream();
+
+
+	// ##### 4 ##### IBM interpolation
+	cellfields->interpolateFluidVelocity();
+
+	//### 6 ### Might be together with interpolation
+	cellfields->syncEnvelopes();
+
+	//### 7 ### 
+	cellfields->advanceParticles();
+
+	// Reset Forces on the lattice, TODO do own efficient implementation
+	setExternalVector(*lattice, (*lattice).getBoundingBox(),
+		DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+		Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
+
+  iter++;
+}
 
 #endif

@@ -71,6 +71,11 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
 class HemoCellParticleField;
 #endif
 
+/*
+ * Used for defining the shape of the cells through constructMeshElement function
+ */
+#define RBC_FROM_SPHERE 1
+#define ELLIPSOID_FROM_SPHERE 6
 
 /*
  * Defines for desired output per celltype, can save space/time etc. etc. also works for specific fluid ones (vel, force etc)

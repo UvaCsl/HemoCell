@@ -37,7 +37,7 @@ TriangleSet<T> constructEllipsoidFromSphere(Array<T,3> const& center, T radius, 
 
 
 template<typename T>
-TriangleBoundary3D<T> constructMeshElement(plint shape, T radius, plint cellNumTriangles, T dx, std::string& cellPath, Array<T,3> const& eulerAngles, T aspectRatio=0.3) {
+TriangleBoundary3D<T> constructMeshElement(plint shape, T radius, plint cellNumTriangles, T dx, std::string cellPath, Array<T,3> const& eulerAngles, T aspectRatio=0.3) {
     Array<T,3> center(0.0, 0.0, 0.0);
     std::vector<TriangleSet<T> > allTriangles;
     TriangleSet<T> wholeTriangleSet;

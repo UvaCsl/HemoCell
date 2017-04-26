@@ -41,8 +41,8 @@ public:
     /*Checkpoint functions*/
     void copyXMLreader2XMLwriter(XMLreader const& reader, XMLwriter & writer);
     void copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwriter & writer);
-    void load(XMLreader * documentXML, plint & iter);
-    void save(XMLreader * documentXML, plint iter);
+    void load(XMLreader * documentXML, unsigned int & iter);
+    void save(XMLreader * documentXML, unsigned int iter);
     void InitAfterLoadCheckpoint();
 
     //double getMaximumForce_Global() {return 0;}
@@ -50,6 +50,8 @@ public:
     unsigned int size();
 
     HemoCellField * operator[](unsigned int index);
+    HemoCellField * operator[](string name);
+
 
     //void setFluidExternalForce(double poiseuilleForce);
 

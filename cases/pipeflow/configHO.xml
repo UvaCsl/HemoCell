@@ -15,7 +15,12 @@
     <kRest> 0.0e-4 </kRest> <!--Resting modulus (in N/m) [0.0, 1.0e-4]-->
     <kStretch> 0.0e-10 </kStretch> <!--spring modulus (in N) [0.0]-->
     <persistenceLengthFine> 7.5e-9 </persistenceLengthFine>
+    <minNumTriangles> 600 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
   </RBC>
+  <PLT>
+    <aspectRatio>0.434782608696</aspectRatio>
+    <minNumTriangles>66</minNumTriangles>
+  </PLT>
 </MaterialModel>
 
 <parameters>
@@ -28,12 +33,12 @@
     <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5] -->
     <cellPath> ./lib/RBC.stl </cellPath>
     <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
-    <minNumOfTriangles> 600 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
     <ppForceDistance> 0.75 </ppForceDistance> <!-- Particle-particle force intaraction cut-off [um]. -->
 </ibm>
 
 <domain>
     <geometry>tube.stl</geometry>
+    <fluidEnvelope>1</fluidEnvelope>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
     <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
