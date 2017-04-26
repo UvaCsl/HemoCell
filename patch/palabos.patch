@@ -1,7 +1,116 @@
-diff -ru palabos-v1.5r1/src/offLattice/triangularSurfaceMesh.h palabos/src/offLattice/triangularSurfaceMesh.h
---- palabos-v1.5r1/src/offLattice/triangularSurfaceMesh.h	2015-01-10 19:21:32.000000000 +0100
-+++ palabos/src/offLattice/triangularSurfaceMesh.h	2016-11-07 14:52:32.424652763 +0100
-@@ -145,6 +145,12 @@
+diff --git a/src/atomicBlock/atomicBlock3D.h b/src/atomicBlock/atomicBlock3D.h
+index c14e7a8..6e4fdd1 100644
+--- a/src/atomicBlock/atomicBlock3D.h
++++ b/src/atomicBlock/atomicBlock3D.h
+@@ -174,6 +174,7 @@ private:
+     StatSubscriber3D statisticsSubscriber;
+     DataProcessorVector explicitInternalProcessors;
+     DataProcessorVector automaticInternalProcessors;
++public:
+     mutable BlockDataTransfer3D* dataTransfer;
+ };
+ 
+diff --git a/src/atomicBlock/blockLattice3D.h b/src/atomicBlock/blockLattice3D.h
+index 35412f6..780bd30 100644
+--- a/src/atomicBlock/blockLattice3D.h
++++ b/src/atomicBlock/blockLattice3D.h
+@@ -191,6 +191,7 @@ private:
+ private:
+     Dynamics<T,Descriptor>* backgroundDynamics;
+     Cell<T,Descriptor>     *rawData;
++public:
+     Cell<T,Descriptor>   ***grid;
+ public:
+     static CachePolicy3D& cachePolicy();
+diff --git a/src/core/cell.h b/src/core/cell.h
+index bed151b..ca7a2bd 100644
+--- a/src/core/cell.h
++++ b/src/core/cell.h
+@@ -49,7 +49,7 @@ public:
+         PLB_PRECONDITION( index < ExternalField::numScalars );
+         return data+index;
+     }
+-private:
++public:
+     T data[ExternalField::numScalars];
+ };
+ 
+@@ -371,7 +371,9 @@ private:
+     void iniExternal();
+ private:
+     Array<T,Descriptor<T>::numPop> f;         ///< distribution functions
++public:
+     External                       external;  ///< external scalars
++private:
+     bool                           takesStat; ///< is statistics taken?
+     Dynamics<T,Descriptor>*        dynamics;  ///< local LB dynamics
+ };
+diff --git a/src/libraryInterfaces/TINYXML_xmlIO.cpp b/src/libraryInterfaces/TINYXML_xmlIO.cpp
+index aff55bc..36c6a50 100644
+--- a/src/libraryInterfaces/TINYXML_xmlIO.cpp
++++ b/src/libraryInterfaces/TINYXML_xmlIO.cpp
+@@ -167,13 +167,13 @@ XMLreader::XMLreader() {
+ }
+ 
+ XMLreader::~XMLreader() {
+-    std::map<plint,Data>::iterator it = data_map.begin();
+-    for (; it != data_map.end(); ++it) {
+-        std::vector<XMLreader*>& children = it->second.children;
+-        for (pluint iNode=0; iNode<children.size(); ++iNode) {
+-            delete children[iNode];
+-        }
+-    }
++    //std::map<plint,Data>::iterator it = data_map.begin();
++    //for (; it != data_map.end(); ++it) {
++    //    std::vector<XMLreader*>& children = it->second.children;
++    //    for (pluint iNode=0; iNode<children.size(); ++iNode) {
++    //        delete children[iNode];
++    //    }
++    //}
+ }
+ 
+ void XMLreader::print(int indent) const {
+diff --git a/src/libraryInterfaces/TINYXML_xmlIO.h b/src/libraryInterfaces/TINYXML_xmlIO.h
+index 39d7949..25741c7 100644
+--- a/src/libraryInterfaces/TINYXML_xmlIO.h
++++ b/src/libraryInterfaces/TINYXML_xmlIO.h
+@@ -76,6 +76,7 @@ public:
+     XMLreaderProxy(XMLreader const* reader_);
+     XMLreaderProxy(XMLreader const* reader_, plint id_);
+     template <typename T> void read(T& values) const;
++    template <typename T> T read() const;
+     template <typename T> bool readNoThrow(T& values) const;
+     template <typename T> void read(std::vector<T>& values) const;
+     template <typename T> bool readNoThrow(std::vector<T>& values) const;
+diff --git a/src/libraryInterfaces/TINYXML_xmlIO.hh b/src/libraryInterfaces/TINYXML_xmlIO.hh
+index cbe9bd6..0e50bf0 100644
+--- a/src/libraryInterfaces/TINYXML_xmlIO.hh
++++ b/src/libraryInterfaces/TINYXML_xmlIO.hh
+@@ -52,6 +52,19 @@ void XMLreaderProxy::read(T& value) const {
+     value = tmp;
+ }
+ 
++template <typename T>
++T XMLreaderProxy::read() const {
++    if (!reader) {
++        plbIOError(std::string("XMLreaderProxy has no reader"));
++    }
++    std::stringstream valueStr(reader->getText(id));
++    T tmp = T();
++    if (!(valueStr>>tmp)) {
++        plbIOError(std::string("Cannot read value from XML element ") + reader->getName());
++    }
++    return tmp;
++}
++
+ template <>
+ inline void XMLreaderProxy::read<bool>(bool& value) const {
+     if (!reader) return;
+diff --git a/src/offLattice/triangularSurfaceMesh.h b/src/offLattice/triangularSurfaceMesh.h
+index b78c7c2..13c0262 100644
+--- a/src/offLattice/triangularSurfaceMesh.h
++++ b/src/offLattice/triangularSurfaceMesh.h
+@@ -146,6 +146,12 @@ public:
      ///   3.] The third rotation is by an angle psi about the new z-axis.
      void rotate(T phi, T theta, T psi);
  
@@ -14,10 +123,11 @@ diff -ru palabos-v1.5r1/src/offLattice/triangularSurfaceMesh.h palabos/src/offLa
      /// Smooth the surface mesh.
      ///   The triangular surface mesh is smoothed by using a spatial
      ///   averaging algorithm. Interior vertices are treated differently
-diff -ru palabos-v1.5r1/src/offLattice/triangularSurfaceMesh.hh palabos/src/offLattice/triangularSurfaceMesh.hh
---- palabos-v1.5r1/src/offLattice/triangularSurfaceMesh.hh	2015-01-13 15:05:09.000000000 +0100
-+++ palabos/src/offLattice/triangularSurfaceMesh.hh	2016-11-07 14:52:32.428652873 +0100
-@@ -286,6 +286,82 @@
+diff --git a/src/offLattice/triangularSurfaceMesh.hh b/src/offLattice/triangularSurfaceMesh.hh
+index 5f2c9b0..cdb22b0 100644
+--- a/src/offLattice/triangularSurfaceMesh.hh
++++ b/src/offLattice/triangularSurfaceMesh.hh
+@@ -284,6 +284,82 @@ void TriangularSurfaceMesh<T>::rotate(T phi, T theta, T psi)
  }
  
  template<typename T>
@@ -100,10 +210,11 @@ diff -ru palabos-v1.5r1/src/offLattice/triangularSurfaceMesh.hh palabos/src/offL
  void TriangularSurfaceMesh<T>::smooth(plint maxiter, T relax, bool isMeasureWeighted)
  {
      PLB_ASSERT(maxiter >= 0);
-diff -ru palabos-v1.5r1/src/particles/particleField3D.h palabos/src/particles/particleField3D.h
---- palabos-v1.5r1/src/particles/particleField3D.h	2015-01-10 19:21:32.000000000 +0100
-+++ palabos/src/particles/particleField3D.h	2016-11-07 14:52:32.432652984 +0100
-@@ -68,6 +68,7 @@
+diff --git a/src/particles/particleField3D.h b/src/particles/particleField3D.h
+index 5245d30..cb4283a 100644
+--- a/src/particles/particleField3D.h
++++ b/src/particles/particleField3D.h
+@@ -70,6 +70,7 @@ public:
  public:
      /// Helper function: returns if a given particle is situated in the indicated (local) domain.
      bool isContained(Array<T,3> const& particlePos, Box3D box) const;
@@ -111,10 +222,11 @@ diff -ru palabos-v1.5r1/src/particles/particleField3D.h palabos/src/particles/pa
      void computeGridPosition (
              Array<T,3> const& position,
              plint& iX, plint& iY, plint& iZ ) const;
-diff -ru palabos-v1.5r1/src/particles/particleField3D.hh palabos/src/particles/particleField3D.hh
---- palabos-v1.5r1/src/particles/particleField3D.hh	2015-01-10 19:21:32.000000000 +0100
-+++ palabos/src/particles/particleField3D.hh	2016-11-07 14:52:32.436653094 +0100
-@@ -40,6 +40,20 @@
+diff --git a/src/particles/particleField3D.hh b/src/particles/particleField3D.hh
+index c0cbd23..5d1916d 100644
+--- a/src/particles/particleField3D.hh
++++ b/src/particles/particleField3D.hh
+@@ -40,6 +40,20 @@ ParticleField3D<T,Descriptor>::ParticleField3D(plint nx, plint ny, plint nz, Blo
  
  template<typename T, template<typename U> class Descriptor>
  bool ParticleField3D<T,Descriptor>::isContained (
@@ -135,7 +247,7 @@ diff -ru palabos-v1.5r1/src/particles/particleField3D.hh palabos/src/particles/p
          Array<T,3> const& particlePos, Box3D box ) const
  {
      Dot3D const& location = this->getLocation();
-@@ -661,8 +675,10 @@
+@@ -711,8 +725,10 @@ void LightParticleField3D<T,Descriptor>::swap(LightParticleField3D<T,Descriptor>
  template<typename T, template<typename U> class Descriptor>
  void LightParticleField3D<T,Descriptor>::addParticle(Box3D domain, Particle3D<T,Descriptor>* particle) {
      Box3D finalDomain;
@@ -147,7 +259,7 @@ diff -ru palabos-v1.5r1/src/particles/particleField3D.hh palabos/src/particles/p
      {
          particles.push_back(particle);
      }
-@@ -675,10 +691,12 @@
+@@ -725,10 +741,12 @@ template<typename T, template<typename U> class Descriptor>
  void LightParticleField3D<T,Descriptor>::removeParticles(Box3D domain) {
      std::vector<Particle3D<T,Descriptor>*> remainingParticles;
      Box3D finalDomain;
@@ -161,7 +273,7 @@ diff -ru palabos-v1.5r1/src/particles/particleField3D.hh palabos/src/particles/p
                  delete particles[i];
              }
              else {
-@@ -695,8 +713,10 @@
+@@ -745,8 +763,10 @@ void LightParticleField3D<T,Descriptor>::removeParticles(Box3D domain, plint tag
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
@@ -173,7 +285,7 @@ diff -ru palabos-v1.5r1/src/particles/particleField3D.hh palabos/src/particles/p
                  particles[i]->getTag() == tag )
              {
                  delete particles[i];
-@@ -715,8 +735,10 @@
+@@ -765,8 +785,10 @@ void LightParticleField3D<T,Descriptor>::findParticles (
  {
      found.clear();
      PLB_ASSERT( contained(domain, this->getBoundingBox()) );
@@ -185,7 +297,7 @@ diff -ru palabos-v1.5r1/src/particles/particleField3D.hh palabos/src/particles/p
              found.push_back(particles[i]);
          }
      }
-@@ -728,8 +750,11 @@
+@@ -778,8 +800,11 @@ void LightParticleField3D<T,Descriptor>::findParticles (
  {
      found.clear();
      PLB_ASSERT( contained(domain, this->getBoundingBox()) );
@@ -198,7 +310,7 @@ diff -ru palabos-v1.5r1/src/particles/particleField3D.hh palabos/src/particles/p
              found.push_back(particles[i]);
          }
      }
-@@ -742,8 +767,10 @@
+@@ -792,8 +817,10 @@ void LightParticleField3D<T,Descriptor>::velocityToParticleCoupling (
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
@@ -210,7 +322,7 @@ diff -ru palabos-v1.5r1/src/particles/particleField3D.hh palabos/src/particles/p
                  particles[i]->velocityToParticle(velocityField, scaling);
              }
          }
-@@ -757,8 +784,10 @@
+@@ -822,8 +849,10 @@ void LightParticleField3D<T,Descriptor>::rhoBarJtoParticleCoupling (
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
@@ -222,7 +334,7 @@ diff -ru palabos-v1.5r1/src/particles/particleField3D.hh palabos/src/particles/p
                  particles[i]->rhoBarJtoParticle(rhoBarJfield, velIsJ, scaling);
              }
          }
-@@ -772,8 +801,10 @@
+@@ -837,8 +866,10 @@ void LightParticleField3D<T,Descriptor>::fluidToParticleCoupling (
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
@@ -234,7 +346,7 @@ diff -ru palabos-v1.5r1/src/particles/particleField3D.hh palabos/src/particles/p
                  particles[i]->fluidToParticle(lattice, scaling);
              }
          }
-@@ -786,13 +817,16 @@
+@@ -851,13 +882,16 @@ void LightParticleField3D<T,Descriptor>::advanceParticles(Box3D domain, T cutOff
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {

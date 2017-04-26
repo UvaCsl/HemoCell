@@ -1,2 +1,2 @@
 #!/bin/bash
-patch -d ../ -p0 < ./newPatch.patch
+patch -d ../palabos -p1 < ./palabos.patch
