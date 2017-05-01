@@ -4,6 +4,8 @@
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 1
 
+class HemoCell;
+
 //Load Constants
 #include "constant_defaults.h"
 #include "hemocell_internal.h"
@@ -25,6 +27,7 @@
 #include "meshMetrics.h"
 #include "voxelizeDomain.h"
 #include "meshGeneratingFunctions.h"
+#include "loadBalancer.h"
 
 /* MECHANICS */
 #include "cellMechanics.h"
@@ -85,10 +88,16 @@ class HemoCell {
   void writeOutput();
   void iterate();
 
+  //Load balancing library functions
+  double calculateFractionalLoadImbalance();
+  void doLoadBalance();
+  LoadBalancer * loadBalancer;
+
   MultiBlockLattice3D<double, DESCRIPTOR> * lattice;
 	Config * cfg;
   HemoCellFields * cellfields;
   unsigned int iter = 0;
+
   private:
   XMLreader * documentXML; //Needed for legacy checkpoint reading TODO fix
 };

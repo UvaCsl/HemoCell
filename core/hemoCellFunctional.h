@@ -33,5 +33,22 @@ public:
     }
 };
 
+class HemoCellReductiveFunctional : public plb::ReductiveBoxProcessingFunctional3D {
+public:
+    HemoCellFunctional(){}
+    void getModificationPattern(std::vector<bool>& isWritten) const {
+        for (pluint i = 0; i < isWritten.size(); i++) {
+            isWritten[i] = false;       
+        }
+    }
+    BlockDomain::DomainT appliesTo() const { return BlockDomain::bulk; }
+    void getTypeOfModification(std::vector<modif::ModifT>& modified) const {
+        for (pluint i = 0; i < modified.size(); i++) {
+            modified[i] = modif::nothing;       
+        }
+        
+    }
+};
+
 #endif /* HEMOCELLFUNCTIONAL_H */
 

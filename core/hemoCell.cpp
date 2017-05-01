@@ -18,6 +18,8 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   pcout << "(HemoCell) (Config) reading " << configFileName << endl;
   cfg = new Config(configFileName);
   documentXML = new XMLreader(configFileName);
+
+  loadBalancer = new LoadBalancer(*this);
 }
 
 void HemoCell::latticeEquilibrium(double rho, Array<double, 3> vel) {
@@ -101,5 +103,15 @@ void HemoCell::iterate() {
 
   iter++;
 }
+
+double HemoCell::calculateFractionalLoadImbalance() {
+  return loadBalancer->calculateFractionalLoadImbalance();
+}
+
+void HemoCell::doLoadBalance() {
+  loadBalancer->doLoadBalance();
+}
+
+
 
 #endif
