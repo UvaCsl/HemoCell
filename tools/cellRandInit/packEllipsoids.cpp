@@ -862,15 +862,15 @@ void Packing::saveBloodCellPositions()
 
 	int speciesCounter = 0;
 
-	for (int i = 0; i < 3; i++){
+	for (int j = 0; j < 3; j++){
 
-		ofstream cellsFile (fileNames[i].c_str());
+		ofstream cellsFile (fileNames[j].c_str());
 
 		//cellsFile << No_cells_x << " " << No_cells_y << " " << No_cells_z << endl; // Dimensions
 
-		cellsFile << species[i]->getn() << endl; // Num. of cells of this type
+		cellsFile << species[j]->getn() << endl; // Num. of cells of this type
 
-		for(int i = speciesCounter; i < species[i]->getn(); i++)
+		for(int i = speciesCounter; i < (speciesCounter+species[j]->getn() ); i++)
 		{
 			Ellipsoid *pi = parts[i];
 
@@ -886,7 +886,7 @@ void Packing::saveBloodCellPositions()
 		}
 
 		cellsFile.close();
-		speciesCounter += species[i]->getn();
+		speciesCounter += species[j]->getn();
 	}
 
 }
@@ -1045,7 +1045,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-	string cellsFileName = "cells.pos";
     string povFileName = "cells.pov";
 
     double scale = 0.3; // Default scale for blood is 0.3
