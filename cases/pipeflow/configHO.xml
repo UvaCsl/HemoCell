@@ -24,7 +24,7 @@
 </MaterialModel>
 
 <parameters>
-    <warmup> 10 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <warmup> 0 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
 </parameters>
 
@@ -57,7 +57,7 @@
 
 <sim>
     <tmax> 2 </tmax> <!-- total number of iterations -->
-    <tmeas> 1 </tmeas> <!-- interval after which data is written --> 
+    <tmeas> 2 </tmeas> <!-- interval after which data is written --> 
     <tbalance> 1 </tbalance> <!-- interval after which balance is performed --> 
     <hematocrit> 40 </hematocrit> <!-- Hematocrit  > -->
     <particlePosFile> cells.pos </particlePosFile>

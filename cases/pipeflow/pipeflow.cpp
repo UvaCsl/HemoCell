@@ -40,18 +40,18 @@ int main(int argc, char *argv[]) {
   hemocell.lattice->toggleInternalStatistics(false);
   hemocell.lattice->periodicity().toggleAll(false);
   hemocell.lattice->periodicity().toggle(0,true);
-	hemocell.latticeEquilibrium(1.,Array<double, 3>(0.,0.,0.));
+  hemocell.latticeEquilibrium(1.,Array<double, 3>(0.,0.,0.));
 
   //Driving Force
   pcout << "(PipeFlow) (Fluid) Setting up driving Force" << endl; 
   param::lbm_parameters((*cfg),flagMatrix->getBoundingBox());
   double rPipe = (*cfg)["domain"]["refDirN"].read<int>()/2.0;
   double poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
+  hemocell.lattice->initialize();	
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                     DESCRIPTOR<double>::ExternalField::forceBeginsAt,
                     Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
 
-  hemocell.lattice->initialize();	
 
   //Adding all the cells
   hemocell.initializeCellfield();
@@ -89,23 +89,26 @@ int main(int argc, char *argv[]) {
 
   while (hemocell.iter < tmax ) {
 
-    hemocell.iterate();
     //Set force as required after each iteration
-    setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
-				DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-				Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+    //setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
+//				DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+//				Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
 
     //if (hemocell.iter % tbalance == 0) {
     //    if(hemocell.calculateFractionalLoadImbalance() > 3) {
     //        hemocell.doLoadBalance();
     //    }
     //}
+        hemocell.lattice->collideAndStream();
+
     if (hemocell.iter % tmeas == 0) {
       hemocell.writeOutput();
     }
-    if (hemocell.iter % (tmeas*10) == 0) {
-      hemocell.saveCheckPoint();
-    }
+    //hemocell.iterate();
+    hemocell.iter++;
+    //if (hemocell.iter % (tmeas*10) == 0) {
+    //  hemocell.saveCheckPoint();
+    //}
   }
 
   return 0;

@@ -101,7 +101,6 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
           }
       } else {
         //new entry
-        pcout << "its added!" << endl;
         particles.push_back(particle);
           particles_per_type[particle->celltype].push_back(particle); //TODO, not accurate for already existing particles
           if(this->isContainedABS(pos, localDomain)) {
@@ -117,7 +116,6 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
       particle->setTag(-1);
     }
     else {
-      pcout << "itsremoved" << endl;
         delete particle;
     }
 }
@@ -161,7 +159,6 @@ void HemoCellParticleField::removeParticles(plint tag) {
          delete remainingParticles[i];
        }
        else {
-            pcout << "adding particle " << endl;
            addParticle(this->getBoundingBox(), remainingParticles[i]);
        }
     }
@@ -397,13 +394,10 @@ void HemoCellParticleField::setlocalDomain(Box3D & localDomain_) {
 
 void HemoCellParticleField::advanceParticles() {
   pcout << particles.size() << endl;
-  for(unsigned int i = 0 ; i < particles.size() ; i++) {
-    particles[i]->advance();
-   
-  } 
-  pcout << particles.size() << endl;
+  for(HemoCellParticle* particle:particles){
+    particle->advance();
+  }
   removeParticles(1);
-  pcout << particles.size() << endl;
 }
 
 void HemoCellParticleField::separateForceVectors() {
@@ -440,7 +434,6 @@ void HemoCellParticleField::unifyForceVectors() {
 }
 
 void HemoCellParticleField::applyConstitutiveModel() {
-  pcout << particles.size() << endl;
   deleteIncompleteCells();
   for (HemoCellParticle* particle : particles) {
     particle->force = {0.0,0.0,0.0};
