@@ -1,7 +1,9 @@
 #ifndef RND_UTILS_H
 #define RND_UTILS_H
 
-const double PI_ = 3.141592653589793;
+#ifndef PI
+	#define PI 3.141592653589793
+#endif
 
 // Misc utils ---------------------------
 

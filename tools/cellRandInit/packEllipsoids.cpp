@@ -55,6 +55,7 @@ class Packing {
     //double rbcA = 9.0, rbcB = 4.4, rbcC = 9.0; // Inreased to cover biconcave shape of RBCs
     double rbcA = 8.4, rbcB = 4.4, rbcC = 8.4; // Inreased to cover biconcave shape of RBCs
     double plateletA = 2.4 , plateletB = 1.05, plateletC = 2.4;
+    double wbcA = 8.4, wbcB = 8.4, wbcC = 8.4;
 
 
     double Sizing = 1.0;
@@ -114,11 +115,11 @@ public:
 	void execute();
 
     // Initialise blood suspension with RBCs and platelets
-    void initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing);
-    void initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing, double rPlatelet);
+    void initBlood(int nRBC, int nPlatelet, int nWBC, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing);
+    void initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing, double rPlatelet, int wbcNumber);
 	void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps, double sizing);
-    void savePov(const char * fileName, int sx, int sy, int sz);
-    void saveBloodCellPositions(const char* cellsFileName);
+    void savePov(const char * fileName, int sx, int sy, int sz, int wbcNumber);
+    void saveBloodCellPositions();
     void getOutput(vector<vector<vector3> > &positions, vector<vector<vector3> > &angles);
     void testOutput();
     void setRndRotation(bool rndRotation_) {rndRotation = rndRotation_;}
@@ -176,11 +177,11 @@ void Packing::execute() {
 
 
 // Takes dimensions in um!
-void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing = 1.0)
+void Packing::initBlood(int nRBC, int nPlatelet, int nWBC, float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing = 1.0)
 {
 
-    No_parts = nRBC + nPlatelet;
-    No_species = 2;
+    No_parts = nRBC + nPlatelet + nWBC;
+    No_species = 3;
     Epsilon = 0.1;
     Eps_rot = 3.0;
 
@@ -195,6 +196,9 @@ void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float
     plateletA *= Sizing;
     plateletB *= Sizing;
     plateletC *= Sizing;
+    wbcA *= Sizing;
+    wbcB *= Sizing;
+    wbcC *= Sizing;
 
     No_cells_x = ceil(sizeX); // in the same quantity as cell diameters (umeter)
     No_cells_y = ceil(sizeY);
@@ -209,14 +213,16 @@ void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float
     species = new Species*[No_species];
     species[0] = new Species (nRBC, vector3(rbcA, rbcB, rbcC)); // RBCs (# of cells, diameters)
     species[1] = new Species (nPlatelet, vector3(plateletA, plateletB, plateletC)); // Plateletss (# of cells, diameters)
+    species[2] = new Species (nWBC, vector3(wbcA, wbcB, wbcC)); // WBCs (# of cells, diameters)
 
     // Calc nominal packing density
     double domainVol = sizeX * sizeY * sizeZ;
     double rbcVol = 4./3. * PI * rbcA/2. * rbcB/2. * rbcC/2.;
     double plateletVol = 4./3. * PI * plateletA/2. * plateletB/2. * plateletC/2.;
+    double wbcVol = 4./3. * PI * wbcA/2. * wbcB/2. * wbcC/2.;
 
     // Get nominal volume ratio
-    Pnom0 = (rbcVol * nRBC + plateletVol * nPlatelet) / domainVol;
+    Pnom0 = (rbcVol * nRBC + plateletVol * nPlatelet + wbcVol * nWBC) / domainVol;
 
     if (Pnom0 > 0.7){
     	cout << "*** WARNING ***" << endl;
@@ -235,33 +241,32 @@ void Packing::initBlood(int nRBC, int nPlatelet, float sizeX, float sizeY, float
     cout << "Number of maximal iterations: " << Max_steps << endl;
     cout << "Rotation happens every nth step: " << Nrot_step << endl;
     cout << "Number of bins: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
-    cout << "Number of cells to pack:  " << endl;
     cout << "Hematocrit: " << Pnom0 * 100.0 << "%." << endl;
-    
+    cout << "Number of cells to pack:  " << endl;
     cout << "    RBCs: " << nRBC <<endl; //<< " Resized volume(for ellipsoids): " << rbcVol << " Dimensions: " << rbcA << "x" << rbcB << "x"<< rbcC << endl;
     cout << "    Platelets: " << nPlatelet <<endl; //<< " Resized volume(for ellipsoids): "<< plateletVol << endl;
+    cout << "    WBCs: " << nWBC <<endl;
 }
 
 // Takes dimensions in um!
-void Packing::initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ, int maxSteps = 25000, double sizing = 1.0, double rPlatelet = 0.07)
+void Packing::initBlood(float hematocrit, float sizeX, float sizeY, float sizeZ, int maxSteps = 25000, double sizing = 1.0, double rPlatelet = 0.07, int wbcNumber = 0)
 {
     // Calc. volumes
     double domainVol = sizeX * sizeY * sizeZ;
 
     double rbcVolNominal = 90.0; // This is set to match the model used in ficsion! //4./3. * PI * rbcA/2. * rbcB/2. * rbcC/2.;
 
-    int nRBC = (int)round( hematocrit * domainVol / rbcVolNominal );
-    int nPlatelets = (int)round(nRBC * rPlatelet); // the typical platelet count is about 5-8% of the RBC count
+    int nRBC = (int)round( ( hematocrit * domainVol / rbcVolNominal) - wbcNumber );
+    int nPlatelets = (int)round( (nRBC + wbcNumber) * rPlatelet); // the typical platelet count is about 5-8% of the RBC count
 
-
-    initBlood(nRBC, nPlatelets, sizeX, sizeY, sizeZ, maxSteps, sizing);
+    initBlood(nRBC, nPlatelets, wbcNumber, sizeX, sizeY, sizeZ, maxSteps, sizing);
 
 }
 
 void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps = 25000, double sizing = 1.0)
 {
     No_parts = 0;
-    for(unsigned int i = 0; i < nPartsPerComponent.size(); i++)
+    for(int i = 0; i < nPartsPerComponent.size(); i++)
         No_parts += nPartsPerComponent[i];
 
     No_species = nPartsPerComponent.size();
@@ -770,19 +775,20 @@ void Packing::getOutput(vector<vector<vector3> > &positions, vector<vector<vecto
     }
 }
 
-void Packing::savePov(const char *fileName, int sx, int sy, int sz)
+void Packing::savePov(const char *fileName, int sx, int sy, int sz, int wbcNumber)
 {
     ofstream povf (fileName);
     povf.setf (ios::fixed, ios::floatfield);
     povf.precision (6);
     
     // Povray header
+    /*
     povf << "#version  3.7;" << endl;
     povf << "#include \"colors.inc\"" << endl;
     povf << "global_settings{assumed_gamma 1.0}" << endl;
     povf << "#default{ finish{ ambient 0.1 diffuse 0.65 phong 0.05 phong_size 50 roughness 0.1 }}" << endl;
     povf << "#default{ pigment { color Red }}" << endl << endl;
-    povf << " background { color MediumBlue }" << endl;
+    povf << " background { color White }" << endl;
     povf << " camera {" << endl;
     povf << "    location <" << 2*sx <<", " << 2*sy << ", " << sz <<">" << endl;
     povf << "    look_at  <" << sx/2.0 <<", " << sy/2.0 << ", " << sz/2.0 << ">" << endl;
@@ -797,8 +803,9 @@ void Packing::savePov(const char *fileName, int sx, int sy, int sz)
     povf << "// Use RBC.pov for biconcave shape" << endl;
     povf << "//#include \"RBC.pov\"" << endl;
     povf << "#declare RBC = sphere {<0, 0, 0>, 1}" << endl;
-    povf << "#declare PLT = sphere {<0, 0, 0>, 1}" << endl << endl;
-
+    povf << "#declare PLT = sphere {<0, 0, 0>, 1}" << endl;
+    povf << "#declare WBC = sphere {<0, 0, 0>, 1}" << endl << endl;
+*/
     // Write out ellipsoids
     for (int i = 0; i < No_parts; i++) {
         Ellipsoid *pi = parts[i];
@@ -809,6 +816,8 @@ void Packing::savePov(const char *fileName, int sx, int sy, int sz)
 
         if(i < k->getn())
         	povf << "object { RBC" << endl;
+        else if(k->getn() == wbcNumber)
+            povf << "object { WBC" << endl;
         else
             povf << "object { PLT" << endl;
 
@@ -833,7 +842,9 @@ void Packing::savePov(const char *fileName, int sx, int sy, int sz)
         {
             povf << "pigment { color ";
             if(i < k->getn())
-                povf << "Red";
+                povf << "Red";                
+            else if(k->getn() == wbcNumber)
+                povf << "White";
             else
                 povf << "Yellow";
             povf << " }" << endl;
@@ -845,33 +856,39 @@ void Packing::savePov(const char *fileName, int sx, int sy, int sz)
     povf.close();
 }
 
-void Packing::saveBloodCellPositions(const char* cellsFileName)
+void Packing::saveBloodCellPositions()
 {
+	string fileNames[] = {"RBC.pos", "PLT.pos", "WBC.pos"};
 
-    ofstream cellsFile (cellsFileName);
+	int speciesCounter = 0;
 
-    //cellsFile << No_cells_x << " " << No_cells_y << " " << No_cells_z << endl; // Dimensions
+	for (int i = 0; i < 3; i++){
 
-    cellsFile << species[0]->getn() << endl; // Num. of RBCs
-    cellsFile << species[1]->getn() << endl; // Num. of PLTs
+		ofstream cellsFile (fileNames[i].c_str());
 
+		//cellsFile << No_cells_x << " " << No_cells_y << " " << No_cells_z << endl; // Dimensions
 
-    for(int i = 0; i < No_parts; i++)
-    {
-        Ellipsoid *pi = parts[i];
+		cellsFile << species[i]->getn() << endl; // Num. of cells of this type
 
-        vector3 pos = pi->get_pos() * (1./Sizing);
-        matrix33 Q = pi->get_q().countQ();
-        vector3 euler(atan2(Q(1,2),Q(2,2)), -asin(Q(0,2)), atan2(Q(0,1),Q(0,0)));
-        euler *= 180 / PI; //Rad to Deg
+		for(int i = speciesCounter; i < species[i]->getn(); i++)
+		{
+			Ellipsoid *pi = parts[i];
 
-        //if(i < species[0]->getn())
-        cellsFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2] << endl;
-        //else
-        //    pltFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2] << endl;
-    }
+			vector3 pos = pi->get_pos() * (1./Sizing);
+			matrix33 Q = pi->get_q().countQ();
+			vector3 euler(atan2(Q(1,2),Q(2,2)), -asin(Q(0,2)), atan2(Q(0,1),Q(0,0)));
+			euler *= 180 / PI; //Rad to Deg
 
-    cellsFile.close();
+			//if(i < species[0]->getn())
+			cellsFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2] << endl;
+			//else
+			//    pltFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2] << endl;
+		}
+
+		cellsFile.close();
+		speciesCounter += species[i]->getn();
+	}
+
 }
 
 void Packing::testOutput()
@@ -884,9 +901,9 @@ void Packing::testOutput()
     ofstream of;
     of.open("test_coord.txt");
 
-    for(unsigned int i = 0; i < positions.size(); i++)
+    for(int i = 0; i < positions.size(); i++)
     {
-    	for(unsigned int j = 0; j < positions[i].size(); j++)
+    	for(int j = 0; j < positions[i].size(); j++)
     	{
     		of << positions[i][j][0] << " " << positions[i][j][1] << " " << positions[i][j][2] << " " << angles[i][j][0] << " " << angles[i][j][1] << " " << angles[i][j][2] << endl;
     	}	
@@ -1021,15 +1038,15 @@ double Packing::zeroin(Ellipsoid_2& ell, double ax, double bx) {
 #ifdef STANDALONE
 int main(int argc, char *argv[]) 
 {
-    if (argc < 7) {
-        cout << "Usage: " << argv[0] << " hematocrit[0;1] sX[um] sY[um] sZ[um] maxIter[2500] allowRotation[0/1] <scale_for_binning=0.3>" << endl;
+    if (argc < 8) {
+        cout << "Usage: " << argv[0] << " hematocrit[0;1] sX[um] sY[um] sZ[um] maxIter[2500] allowRotation[0/1] wbcNumber[int] <scale_for_binning=0.3>" << endl;
         cout << "Output: cells.pos for ficsion and cells.pov for visualisation." << endl;
         cout << "Note that the unity in the unit of domain will be used as bin size withouth scaling. Bin-size heavily influences cutoff distance and thus performance." << endl;
         return 1;
     }
 
 	string cellsFileName = "cells.pos";
-    string povFileName = "ellipsoids.pov";
+    string povFileName = "cells.pov";
 
     double scale = 0.3; // Default scale for blood is 0.3
     double plt_ratio = 0.07;
@@ -1044,9 +1061,10 @@ int main(int argc, char *argv[])
     int maxIter = atoi(argv[5]);
 
     bool doRotate = atoi(argv[6]);
+    int wbcNumber = atoi(argv[7]);
 
-    if(argc > 7)
-        scale = atof(argv[7]);
+    if(argc > 8)
+        scale = atof(argv[8]);
 
     cout << "Rotation: " << (bool)doRotate << endl;
 
@@ -1054,12 +1072,12 @@ int main(int argc, char *argv[])
 
     pack.setRndRotation(doRotate); // This needs to be set first!
 
-    pack.initBlood(hematocrit, sX, sY, sZ, maxIter, scale, plt_ratio);
+    pack.initBlood(hematocrit, sX, sY, sZ, maxIter, scale, plt_ratio, wbcNumber);
     
 	pack.execute();
 
-    pack.saveBloodCellPositions(cellsFileName.c_str());
-    pack.savePov(povFileName.c_str(), sX, sY, sZ);
+    pack.saveBloodCellPositions();
+    pack.savePov(povFileName.c_str(), sX, sY, sZ, wbcNumber);
 
     return 0;
 }
