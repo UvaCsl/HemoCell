@@ -10,8 +10,9 @@ LoadBalancer::LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_) {
 
 void LoadBalancer::GatherNumberOfLSPs::processGenericBlocks(Box3D domain, vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
-  pcout << pf->particles.size();
-  //gatherValues[pf->atomicBlockId] = particles.size();
+  vector<HemoCellParticle *> found;
+  pf->findParticles(pf->localDomain,found);
+  gatherValues[pf->atomicBlockId] = found.size();
 }
 
 double LoadBalancer::calculateFractionalLoadImbalance() {

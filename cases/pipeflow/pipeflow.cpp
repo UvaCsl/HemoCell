@@ -1,16 +1,15 @@
 #include "hemocell.h"
 #include "rbcHO.h"
 #include "NoOp.h"
-
+#include <fenv.h>
 int main(int argc, char *argv[]) {
-	if(argc < 2)
-	{
-			cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
-			return -1;
-	}
+  if(argc < 2) {
+    cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
+    return -1;
+  }
 
-	HemoCell hemocell(argv[1], argc, argv);
-	Config * cfg = hemocell.cfg;
+  HemoCell hemocell(argv[1], argc, argv);
+  Config * cfg = hemocell.cfg;
 
   pcout << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl; 
   MultiScalarField3D<int> *flagMatrix = 0; 
@@ -21,7 +20,10 @@ int main(int argc, char *argv[]) {
                        (*cfg)["domain"]["refDir"].read<int>(),  
                        voxelizedDomain, flagMatrix,  
                        (*cfg)["domain"]["blockSize"].read<int>()); 
-
+     
+  pcout << "(PipeFlow) (Parameters) calculating flow parameters" << endl;
+  param::lbm_parameters((*cfg),flagMatrix->getBoundingBox());
+  
   pcout << "(PipeFlow) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
             voxelizedDomain->getMultiBlockManagement(),
@@ -44,14 +46,13 @@ int main(int argc, char *argv[]) {
 
   //Driving Force
   pcout << "(PipeFlow) (Fluid) Setting up driving Force" << endl; 
-  param::lbm_parameters((*cfg),flagMatrix->getBoundingBox());
   double rPipe = (*cfg)["domain"]["refDirN"].read<int>()/2.0;
   double poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
-  hemocell.lattice->initialize();	
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                     DESCRIPTOR<double>::ExternalField::forceBeginsAt,
                     Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
 
+  hemocell.lattice->initialize();	
 
   //Adding all the cells
   hemocell.initializeCellfield();
@@ -88,27 +89,26 @@ int main(int argc, char *argv[]) {
   unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
   while (hemocell.iter < tmax ) {
-
+    
+    hemocell.iterate();
+    
     //Set force as required after each iteration
-    //setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
-//				DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-//				Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+    setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
+				DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+				Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
 
-    //if (hemocell.iter % tbalance == 0) {
-    //    if(hemocell.calculateFractionalLoadImbalance() > 3) {
-    //        hemocell.doLoadBalance();
-    //    }
-    //}
-        hemocell.lattice->collideAndStream();
-
+    if (hemocell.iter % tbalance == 0) {
+      if(hemocell.calculateFractionalLoadImbalance() > 3) {
+        hemocell.doLoadBalance();
+      }
+    }
+   
     if (hemocell.iter % tmeas == 0) {
       hemocell.writeOutput();
     }
-    //hemocell.iterate();
-    hemocell.iter++;
-    //if (hemocell.iter % (tmeas*10) == 0) {
-    //  hemocell.saveCheckPoint();
-    //}
+    if (hemocell.iter % (tmeas*10) == 0) {
+      hemocell.saveCheckPoint();
+    }
   }
 
   return 0;

@@ -393,7 +393,6 @@ void HemoCellParticleField::setlocalDomain(Box3D & localDomain_) {
 
 
 void HemoCellParticleField::advanceParticles() {
-  pcout << particles.size() << endl;
   for(HemoCellParticle* particle:particles){
     particle->advance();
   }
