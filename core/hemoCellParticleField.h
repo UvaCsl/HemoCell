@@ -80,6 +80,7 @@ public:
     vector<vector<vector<vector<HemoCellParticle*>>>> particle_grid; //maybe better to make custom data structure, But that would be slower
     void insert_ppc(HemoCellParticle* particle);
     HemoCellParticleDataTransfer dataTransfer;
+public:
     Box3D localDomain;
 
 };

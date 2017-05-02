@@ -105,13 +105,14 @@ void HemoCell::iterate() {
 }
 
 double HemoCell::calculateFractionalLoadImbalance() {
+	pcout << "(HemoCell) (LoadBalancer) Calculating Fractional Load Imbalance at timestep " << iter << endl;
   return loadBalancer->calculateFractionalLoadImbalance();
 }
 
 void HemoCell::doLoadBalance() {
+	pcout << "(HemoCell) (LoadBalancer) Balancing Atomic Block over mpi processes" << endl;
   loadBalancer->doLoadBalance();
 }
-
 
 
 #endif
