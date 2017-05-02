@@ -1,2 +1,0 @@
-all:
-	./test.sh newMesh/cellModel3D.h

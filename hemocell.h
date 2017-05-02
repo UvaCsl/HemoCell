@@ -18,6 +18,7 @@
 /* IO */
 #include "ParticleHdf5IO.h"
 #include "FluidHdf5IO.h"
+#include "readPositionsBloodCells.h"
 
 /* HELPERS */
 #include "genericTools.h"
@@ -31,7 +32,7 @@
 
 /* EXTERNALS */
 #include "diagonalize.hpp"
-#include "external/readPositionsBloodCells.h"
+
 
 class HemoCell {
   public:

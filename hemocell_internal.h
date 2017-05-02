@@ -1,5 +1,5 @@
 #ifndef HEMOCELL_INTERNAL_H
-#define HEMOCELL__INTERNAL_H
+#define HEMOCELL_INTERNAL_H
 
 //Load Constants
 #include "constant_defaults.h"

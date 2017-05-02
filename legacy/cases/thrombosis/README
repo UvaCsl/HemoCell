@@ -1,8 +1,0 @@
-twoPlateletsApart -- works fine --  this is a case, that we use for calibration of adhesive forces between platelets. Put two platelets at a certain distance, let the bonds attach, then pull platelets apart with a certain force. Observe the dynamics = for which value of the external force the bonds would break.
-
-onePlateletNearWall -- works fine -- the testcase to see platelet tumbling in shear flow near plane wall. This case is supposed to include adhesive interactions between wall and platelet, yet this type of bonds is still (March 2016) in development.
-
-plateletWithRBCsNearWall -- NOW it works (April 2016) - I've fixed some bugs (AVB) -- the same as onePlateletNearWall, but with RBCs. Here, we want to see how the RBCs collide with platelet, and how these collisions would influence the adhesion of a platelet. 
------ IMPORTANT: to use this example, one needs to put orderedPositionsMultipleCellsWithSpace.h and orderedPositionsMultipleCellsWithSpace.hh to ficsion/external. These src files contain the functional for filling the system with RBC with a small space for one platelet. 
-
-                         
