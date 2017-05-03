@@ -10,10 +10,10 @@ void HighOrderForces::ParticleMechanics(map<int,vector<HemoCellParticle *>> part
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;
     vector<HemoCellParticle*> & cell = particles_per_cell[cid];
-    if (cell[0]->celltype != ctype) continue; //only execute on correct particles
+    if (cell[0]->celltype != ctype) continue; //only execute on correct particle
 
     //Calculate Cell Values that need all particles (but do it most efficient
-    //tailered to this class)
+    //tailored to this class)
     double volume = 0.0;
     int triangle_n = 0;
     vector<double> triangle_areas;

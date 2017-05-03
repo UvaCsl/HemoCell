@@ -17,6 +17,11 @@
 #include "hemocell_internal.h"
 #include "mpi.h"
 
+void applyTimedProcessingFunctional(BoxProcessingFunctional3D* functional,
+                               Box3D domain, std::vector<MultiBlock3D*> multiBlocks);
+void executeTimedDataProcessor( DataProcessorGenerator3D const& generator,
+                           std::vector<MultiBlock3D*> multiBlocks );
+
 class HemoCellFunctional : public plb::BoxProcessingFunctional3D {
 public:
     HemoCellFunctional(){}
@@ -33,8 +38,6 @@ public:
         
     }
 };
-
-
 
 template<class GatherType>
 class HemoCellGatheringFunctional : public plb::BoxProcessingFunctional3D {
@@ -112,7 +115,7 @@ public:
         }
         
     }
-    
+        
     //This map should be set in the processingGenericBlocks function and is local to the mpi processor;
     map<int,GatherType> & gatherValues; 
 };

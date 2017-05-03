@@ -1,12 +1,22 @@
 diff --git a/src/atomicBlock/atomicBlock3D.h b/src/atomicBlock/atomicBlock3D.h
-index c14e7a8..6e4fdd1 100644
+index c14e7a8..e7580c6 100644
 --- a/src/atomicBlock/atomicBlock3D.h
 +++ b/src/atomicBlock/atomicBlock3D.h
-@@ -174,6 +174,7 @@ private:
+@@ -31,6 +31,7 @@
+ #include "core/block3D.h"
+ #include "core/blockStatistics.h"
+ #include "core/geometry3D.h"
++#include "core/plbTimer.h"
+ #include "atomicBlock/dataProcessorWrapper3D.h"
+ #include "atomicBlock/reductiveDataProcessorWrapper3D.h"
+ #include <algorithm>
+@@ -174,6 +175,9 @@ private:
      StatSubscriber3D statisticsSubscriber;
      DataProcessorVector explicitInternalProcessors;
      DataProcessorVector automaticInternalProcessors;
 +public:
++    //Only used in combination with the applyTimedProcessingFunctional class to calculate load imbalance
++    global::PlbTimer timer;
      mutable BlockDataTransfer3D* dataTransfer;
  };
  
@@ -106,6 +116,97 @@ index cbe9bd6..0e50bf0 100644
  template <>
  inline void XMLreaderProxy::read<bool>(bool& value) const {
      if (!reader) return;
+diff --git a/src/multiBlock/multiBlockLattice3D.h b/src/multiBlock/multiBlockLattice3D.h
+index 3aa64f7..09beee4 100644
+--- a/src/multiBlock/multiBlockLattice3D.h
++++ b/src/multiBlock/multiBlockLattice3D.h
+@@ -108,6 +108,7 @@ public:
+     virtual void externalStream();
+     virtual void collideAndStream(Box3D domain);
+     virtual void collideAndStream();
++    virtual void timedCollideAndStream();
+     void externalCollideAndStream();
+     virtual void incrementTime();
+     virtual void resetTime(pluint value);
+@@ -130,6 +131,7 @@ public:
+     static std::string descriptorType();
+ private:
+     void collideAndStreamImplementation();
++    void timedCollideAndStreamImplementation();
+     void streamImplementation();
+     void allocateAndInitialize();
+     void eliminateStatisticsInEnvelope();
+diff --git a/src/multiBlock/multiBlockLattice3D.hh b/src/multiBlock/multiBlockLattice3D.hh
+index f106b83..0fd55ed 100644
+--- a/src/multiBlock/multiBlockLattice3D.hh
++++ b/src/multiBlock/multiBlockLattice3D.hh
+@@ -345,6 +345,19 @@ void MultiBlockLattice3D<T,Descriptor>::collideAndStream() {
+ }
+ 
+ template<typename T, template<typename U> class Descriptor>
++void MultiBlockLattice3D<T,Descriptor>::timedCollideAndStream() {
++    global::profiler().start("cycle");
++    timedCollideAndStreamImplementation();
++    this->executeInternalProcessors();
++    this->evaluateStatistics();
++    this->incrementTime();
++    global::profiler().stop("cycle");
++    if (global::profiler().cyclingIsAutomatic()) {
++        global::profiler().cycle();
++    }
++}
++
++template<typename T, template<typename U> class Descriptor>
+ void MultiBlockLattice3D<T,Descriptor>::externalCollideAndStream() {
+     global::profiler().start("cycle");
+     collideAndStreamImplementation();
+@@ -391,6 +404,46 @@ void MultiBlockLattice3D<T,Descriptor>::collideAndStreamImplementation() {
+ }
+ 
+ template<typename T, template<typename U> class Descriptor>
++void MultiBlockLattice3D<T,Descriptor>::timedCollideAndStreamImplementation() {
++    ThreadAttribution const& threadAttribution=this->getMultiBlockManagement().getThreadAttribution();
++    if (threadAttribution.hasCoProcessors()) {
++        for ( typename BlockMap::iterator it = blockLattices.begin();
++              it != blockLattices.end(); ++it )
++        {
++            plint blockId = it->first;
++            int handle = threadAttribution.getCoProcessorHandle(blockId);
++            if (handle>=0) {
++                 global::defaultCoProcessor3D<T>().collideAndStream(handle);
++            }
++            else {
++                SmartBulk3D bulk(this->getMultiBlockManagement(), blockId);
++                // CollideAndStream must be applied to full domain,
++                //   including currently active envelopes.
++                Box3D domain = extendPeriodic(bulk.computeNonPeriodicEnvelope(),
++                                              this->getMultiBlockManagement().getEnvelopeWidth());
++                it->second->timer.start();
++                it->second -> collideAndStream( bulk.toLocal(domain) );
++                it->second->timer.stop();
++            }
++        }
++    }
++    else  {
++        for ( typename BlockMap::iterator it = blockLattices.begin();
++              it != blockLattices.end(); ++it)
++        {
++            SmartBulk3D bulk(this->getMultiBlockManagement(), it->first);
++            // CollideAndStream must be applied to full domain,
++            //   including currently active envelopes.
++            Box3D domain = extendPeriodic(bulk.computeNonPeriodicEnvelope(),
++                                          this->getMultiBlockManagement().getEnvelopeWidth());
++            it->second->timer.start();
++            it->second -> collideAndStream( bulk.toLocal(domain) );
++            it->second->timer.stop();
++        }
++    }
++}
++
++template<typename T, template<typename U> class Descriptor>
+ void MultiBlockLattice3D<T,Descriptor>::incrementTime() {
+     for ( typename BlockMap::iterator it = blockLattices.begin();
+           it != blockLattices.end(); ++it)
 diff --git a/src/offLattice/triangularSurfaceMesh.h b/src/offLattice/triangularSurfaceMesh.h
 index b78c7c2..13c0262 100644
 --- a/src/offLattice/triangularSurfaceMesh.h

@@ -317,7 +317,7 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool twice) {
   //Function must be called twice since addParticle can remove a particle
   //unintentionally, for now, catch it here; TODO, this can be done better
   int deleted = 0;
-  if (!twice) { deleted = deleteIncompleteCells(true); }
+  //if (!twice) { deleted = deleteIncompleteCells(true); }
 
   //Warning, TODO, high complexity, should be rewritten 
   //For now abuse tagging and the remove function
@@ -352,7 +352,7 @@ int HemoCellParticleField::deleteIncompleteCells(bool twice) {
   //Function must be called twice since addParticle can remove a particle
   //unintentionally, for now, catch it here; TODO, this can be done better
   int deleted = 0;
-  if (!twice) {deleted = deleteIncompleteCells(true); }
+  //if (!twice) {deleted = deleteIncompleteCells(true); }
 
   //Warning, TODO, high complexity, should be rewritten 
   //For now abuse tagging and the remove function
@@ -400,7 +400,6 @@ void HemoCellParticleField::advanceParticles() {
 }
 
 void HemoCellParticleField::separateForceVectors() {
-  deleteIncompleteCells();
   //Also save the total force, therfore recalculate in advance
   applyConstitutiveModel();
 

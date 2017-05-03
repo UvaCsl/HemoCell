@@ -84,7 +84,7 @@ void HemoCell::iterate() {
 	cellfields->spreadParticleForce();
 
 	// ##### 3 ##### LBM
-	lattice->collideAndStream();
+	lattice->timedCollideAndStream();
 
 
 	// ##### 4 ##### IBM interpolation

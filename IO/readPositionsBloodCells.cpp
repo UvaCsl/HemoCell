@@ -238,7 +238,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         //cellFields.syncEnvelopes();
         // DELETE CELLS THAT ARE NOT WHOLE
         plint nVertices=meshes[iCF]->getNumVertices();
-        cout << "MPI rank: " << global::mpi().getRank();
+        cout << "Atomic Block ID: " << particleFields[iCF]->atomicBlockId;
         plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells(iCF)/(float)nVertices;
         std::vector<HemoCellParticle*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);
