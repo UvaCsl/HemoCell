@@ -24,6 +24,7 @@ MESSAGE( STATUS "PALABOS_DIR:         " ${PALABOS_DIR} )
 
 SET(ENABLE_MPI 1)  
 SET(NEEDTXML 0)  # Set to 1 to enable external TinyXml libs (Palabos 1.5.0+)
+SET(NEEDPARMETIS 1)  
 SET(NEEDHDF5 1)  # For highlevel HDF5 routines
 #SET(HDF5_USE_STATIC_LIBRARIES ON) #does not work anyway :(
 
@@ -48,6 +49,34 @@ ENDIF (NOT CMAKE_CXX_FLAGS)
 #SET (CMAKE_CXX_STANDARD 11)
 
 #=======================================
+IF(NEEDPARMETIS)
+    #
+    # Find the PARMETIS includes and libraries
+    #
+    # ParMETIS is an MPI-based parallel library that implements a variety of
+# algorithms for 
+    # partitioning unstructured graphs, meshes, and for computing fill-reducing
+# orderings of 
+    # sparse matrices. It can be found at:
+    #   http://www-users.cs.umn.edu/~karypis/metis/parmetis/index.html
+    #
+    # PARMETIS_INCLUDE_DIR - where to find autopack.h
+    # PARMETIS_LIBRARIES   - List of fully qualified libraries to link against.
+    # PARMETIS_FOUND       - Do not attempt to use if "no" or undefined.
+    FIND_PATH(PARMETIS_INCLUDE_DIR parmetis.h /usr/local/include /usr/include)
+    FIND_LIBRARY(PARMETIS_LIBRARY parmetis /usr/local/lib /usr/lib) 
+    IF(PARMETIS_INCLUDE_DIR)
+      IF(PARMETIS_LIBRARY)
+        SET( PARMETIS_LIBRARIES ${PARMETIS_LIBRARY} ${METIS_LIBRARY})
+        SET( PARMETIS_FOUND "YES" )
+      ENDIF(PARMETIS_LIBRARY)
+    ENDIF(PARMETIS_INCLUDE_DIR)
+  
+  MESSAGE( STATUS "PARMETIS DIR:       " ${PARMETIS_INCLUDE_DIR})
+  MESSAGE( STATUS "PARMETIS LIBRARIES: " ${PARMETIS_LIBRARIES})
+  INCLUDE_DIRECTORIES(${PARMETIS_INCLUDE_DIR})
+ENDIF(NEEDPARMETIS)
+
 IF(NEEDTXML)
   FIND_PACKAGE(TinyXML REQUIRED HINTS ${HEMOCELL_BASE_DIR}/cmake )
   INCLUDE_DIRECTORIES(${TINYXML_INCLUDE_DIR})
@@ -122,5 +151,8 @@ IF(NEEDHDF5)
     TARGET_LINK_LIBRARIES(${PROJECT_NAME} hdf5_hl hdf5)
   ENDIF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.0)
 ENDIF(NEEDHDF5)
+IF(NEEDPARMETIS)
+  target_link_libraries(${PROJECT_NAME} ${PARMETIS_LIBRARIES})
+ENDIF(NEEDPARMETIS)
 
 
