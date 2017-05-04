@@ -9,13 +9,13 @@ HemoCellParticleField::HemoCellParticleField(plint nx, plint ny, plint nz)
     : AtomicBlock3D(nx,ny,nz, &this->dataTransfer)
 { 
     dataTransfer.setBlock(*this);
-    particle_grid.resize(getNx());
+    /*particle_grid.resize(getNx());
     for (auto & particlesnx : particle_grid) {
         particlesnx.resize(getNy());
         for (auto & particlesny : particlesnx) {
             particlesny.resize(getNz());
         }
-    }
+    }*/
     AddOutputMap(); 
 }
 
@@ -23,13 +23,13 @@ HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
     : AtomicBlock3D(rhs)
 {
     dataTransfer.setBlock(*this);
-    particle_grid.resize(getNx());
+    /*particle_grid.resize(getNx());
     for (auto & particlesnx : particle_grid) {
         particlesnx.resize(getNy());
         for (auto & particlesny : particlesnx) {
             particlesny.resize(getNz());
         }
-    }
+    }*/
 
     for (pluint i=0; i<rhs.particles.size(); ++i) {
         addParticle(this->getBoundingBox(),rhs.particles[i]->clone());
@@ -75,7 +75,7 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
            particles_per_cell.end())) && particles_per_cell[particle->cellId][particle->vertexId]) {
           local_sparticle =  particles_per_cell[particle->cellId][particle->vertexId];
           //Remove from bin as we finally add it back anyway
-          x = local_sparticle->grid_pos[0];
+          /*x = local_sparticle->grid_pos[0];
           y = local_sparticle->grid_pos[1];
           z = local_sparticle->grid_pos[2];
           for (unsigned int i = 0; i < particle_grid[x][y][z].size(); i++) {
@@ -84,11 +84,12 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
                 particle_grid[x][y][z].pop_back();
             }
               
-          }
+          }*/
 
           //If our particle is local, do not replace it, envelopes are less important
           if (isContainedABS(local_sparticle->position, getBoundingBox())) {
-
+            //update position to old particle
+            //pos = local_sparticle->position;
           } else {
             //We have the particle already, replace it
             *local_sparticle = *particle;
@@ -110,9 +111,9 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
         insert_ppc(particle);
       }
 
-      computeGridPosition(pos,&x,&y,&z);          
+      /*computeGridPosition(pos,&x,&y,&z);          
       particle_grid[x][y][z].push_back(particle);
-      particle->grid_pos = {x,y,z};
+      particle->grid_pos = {x,y,z};*/
       particle->setTag(-1);
     }
     else {
@@ -134,28 +135,22 @@ void HemoCellParticleField::insert_ppc(HemoCellParticle* sparticle) {
 
 void HemoCellParticleField::removeParticles(plint tag) {
 //Almost the same, but we save a lot of branching by manking a seperate function
-    std::vector<HemoCellParticle*> remainingParticles = particles;
-    HemoCellParticle * sparticle;
-    plint x,y,z;
-    for (pluint i=0; i < particles_per_type.size(); i++) {
-      particles_per_type[i].clear();
-    }
+    vector<HemoCellParticle*> remainingParticles = particles;
+
+    particles_per_type.clear();
     particles_per_cell.clear();
     lpc.clear();
     particles.clear();
+    /*for (vector<vector<vector<HemoCellParticle*>>> x : particle_grid) {
+      for (vector<vector<HemoCellParticle*>> y : x) {
+        for (vector<HemoCellParticle*> z : y) {
+          z.clear();
+        }
+      }
+    }*/
 
     for (pluint i=0; i<remainingParticles.size(); ++i) {
        if (remainingParticles[i]->getTag() == tag) {
-         sparticle = remainingParticles[i];
-         x = sparticle->grid_pos[0];
-         y = sparticle->grid_pos[1];
-         z = sparticle->grid_pos[2];
-         for (unsigned int i = 0; i < particle_grid[x][y][z].size(); i++) {
-           if (particle_grid[x][y][z][i] == remainingParticles[i]) {
-              particle_grid[x][y][z][i] = particle_grid[x][y][z].back();
-              particle_grid[x][y][z].pop_back();
-           }
-         }
          delete remainingParticles[i];
        }
        else {
@@ -167,31 +162,25 @@ void HemoCellParticleField::removeParticles(plint tag) {
 void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
 //Almost the same, but we save a lot of branching by manking a seperate function
     std::vector<HemoCellParticle*> remainingParticles = particles;
-    HemoCellParticle * sparticle;
-    plint x,y,z;
     Box3D finalDomain;
     Array<double,3> pos; 
-    for (pluint i=0; i < particles_per_type.size(); i++) {
-      particles_per_type[i].clear();
-    }
+
+    particles_per_type.clear();
     particles_per_cell.clear();
     lpc.clear();
     particles.clear();
+    /*for (vector<vector<vector<HemoCellParticle*>>> x : particle_grid) {
+      for (vector<vector<HemoCellParticle*>> y : x) {
+        for (vector<HemoCellParticle*> z : y) {
+          z.clear();
+        }
+      }
+    }*/
     
     for (pluint i=0; i<remainingParticles.size(); ++i) {
        pos = remainingParticles[i]->position;
        intersect(domain, this->getBoundingBox(), finalDomain);
        if (this->isContainedABS(pos,finalDomain) && remainingParticles[i]->getTag() == tag) {
-         sparticle = dynamic_cast<HemoCellParticle*>(remainingParticles[i]);
-         x = sparticle->grid_pos[0];
-         y = sparticle->grid_pos[1];
-         z = sparticle->grid_pos[2];
-         for (unsigned int i = 0; i < particle_grid[x][y][z].size(); i++) {
-           if (particle_grid[x][y][z][i] == remainingParticles[i]) {
-              particle_grid[x][y][z][i] = particle_grid[x][y][z].back();
-              particle_grid[x][y][z].pop_back();
-           }
-         }
          delete remainingParticles[i];
        }
        else {
@@ -203,35 +192,26 @@ void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
 void HemoCellParticleField::removeParticles(Box3D domain) {
 //Almost the same, but we save a lot of branching by making a seperate function
 // Dont allow palabos to delete things
-    //return;
-    //if (!cellFields) return; //TODO shouldnt be necessary
-    //if (!cellFields->hemocellfunction) return;
     std::vector<HemoCellParticle*> remainingParticles = particles;
-    HemoCellParticle * sparticle;
-    plint x,y,z;
     Box3D finalDomain;
     Array<double,3> pos; 
-    for (pluint i=0; i < particles_per_type.size(); i++) {
-      particles_per_type[i].clear();
-    }
+
+    particles_per_type.clear();
     particles_per_cell.clear();
     lpc.clear();
     particles.clear();
+    /*for (vector<vector<vector<HemoCellParticle*>>> x : particle_grid) {
+      for (vector<vector<HemoCellParticle*>> y : x) {
+        for (vector<HemoCellParticle*> z : y) {
+          z.clear();
+        }
+      }
+    }*/
     
     for (pluint i=0; i<remainingParticles.size(); ++i) {
        pos = remainingParticles[i]->position;
        intersect(domain, this->getBoundingBox(), finalDomain);
        if (this->isContainedABS(pos,finalDomain)) {
-         sparticle = dynamic_cast<HemoCellParticle*>(remainingParticles[i]);
-         x = sparticle->grid_pos[0];
-         y = sparticle->grid_pos[1];
-         z = sparticle->grid_pos[2];
-         for (unsigned int i = 0; i < particle_grid[x][y][z].size(); i++) {
-           if (particle_grid[x][y][z][i] == remainingParticles[i]) {
-              particle_grid[x][y][z][i] = particle_grid[x][y][z].back();
-              particle_grid[x][y][z].pop_back();
-           }
-         }
          delete remainingParticles[i];
        }
        else {
@@ -376,6 +356,7 @@ int HemoCellParticleField::deleteIncompleteCells(bool twice) {
   } 
 
   //We have our list, now abuse the removeall function
+
   removeParticles(1);
 
   return deleted; 

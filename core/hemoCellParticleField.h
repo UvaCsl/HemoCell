@@ -77,7 +77,7 @@ public:
     std::map<int,std::vector<HemoCellParticle*>> particles_per_cell;
     std::map<int,bool> lpc;
     
-    vector<vector<vector<vector<HemoCellParticle*>>>> particle_grid; //maybe better to make custom data structure, But that would be slower
+    //vector<vector<vector<vector<HemoCellParticle*>>>> particle_grid; //maybe better to make custom data structure, But that would be slower
     void insert_ppc(HemoCellParticle* particle);
     HemoCellParticleDataTransfer dataTransfer;
 public:
