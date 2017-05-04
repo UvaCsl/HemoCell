@@ -34,7 +34,7 @@ class HemoCell;
 #include "constantConversion.h"
 
 /* EXTERNALS */
-#include "diagonalize.hpp"
+#include "diagonalize.hpp"  // TODO: Do we need this file?
 
 
 class HemoCell {
@@ -59,19 +59,21 @@ class HemoCell {
   */
   template<class Mechanics>
   void addCellType(string name, int constructType) {
+    string materialXML = name + ".xml";
+    Config *materialCfg = new Config(materialXML.c_str());
+
     double aspectRatio = 0.3;
     if (constructType == ELLIPSOID_FROM_SPHERE) {
-      aspectRatio = (*cfg)["MaterialModel"][name]["aspectRatio"].read<double>();
+      aspectRatio = (*materialCfg)["MaterialModel"]["aspectRatio"].read<double>();
     }
     TriangleBoundary3D<double> * boundaryElement = new TriangleBoundary3D<double>(constructMeshElement(constructType, 
-                           (*cfg)["ibm"]["radius"].read<double>()/param::dx, 
-                           (*cfg)["MaterialModel"][name]["minNumTriangles"].read<double>(), param::dx, 
-                           string(""), Array<double,3>(0.,0.,0.),aspectRatio));
+                           (*materialCfg)["MaterialModel"]["radius"].read<double>()/param::dx, 
+                           (*materialCfg)["MaterialModel"]["minNumTriangles"].read<double>(), param::dx, 
+                           string(""), Array<double,3>(0.,0.,0.), aspectRatio));
     TriangularSurfaceMesh<double>  *meshElement = new TriangularSurfaceMesh<double>(boundaryElement->getMesh());
 
-    //TODO correctly give hematocrit
-    HemoCellField * cellfield = cellfields->addCellType(*meshElement, 0., name);
-    Mechanics * mechanics = new Mechanics((*cfg), *cellfield,name);
+    HemoCellField * cellfield = cellfields->addCellType(*meshElement, name);
+    Mechanics * mechanics = new Mechanics((*materialCfg), *cellfield);
     cellfield->mechanics = mechanics;
     mechanics->statistics();
   }

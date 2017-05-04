@@ -1,0 +1,13 @@
+<hemocell>
+<MaterialModel>
+    <comment>Parameters for the platelet constitutive model.</comment>
+    <name>PLT</name>
+    <aspectRatio>0.434782608696</aspectRatio>
+    <kBend> 100 </kBend> <!-- Bending force modulus (in k_BT units, 4.142e-21 N m) -->
+    <kVolume> 800.0 </kVolume> <!-- Volume conservation coefficient (dimensionless) [600, 6000] --> 
+    <kArea> 80.0e0 </kArea> <!--Local area conservation coefficient (dimensionless) [0, 10, 100] --> 
+    <kLink> 1.0 </kLink> <!-- Link force coefficient (dimensionless) [1.0] -->
+    <minNumTriangles> 66 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
+    <radius> 1.25e-6 </radius> <!-- Radius of the PLT in [um] -->
+</MaterialModel>
+</hemocell>

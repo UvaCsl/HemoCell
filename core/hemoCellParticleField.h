@@ -50,7 +50,7 @@ public:
     void outputForceVolume   (Box3D,vector<vector<double>>&, pluint, std::string&);
     void outputForceArea   (Box3D,vector<vector<double>>&, pluint, std::string&);
     void outputForceBending   (Box3D,vector<vector<double>>&, pluint, std::string&);
-    void outputForceInPlane   (Box3D,vector<vector<double>>&, pluint, std::string&);
+    void outputForceLink   (Box3D,vector<vector<double>>&, pluint, std::string&);
     void outputTriangles   (Box3D,vector<vector<plint>>&, vector<vector<double>>&, pluint, std::string&);
     void AddOutputMap();
     map<int,void (HemoCellParticleField::*)(Box3D,vector<vector<double>>&,pluint,std::string&)> outputFunctionMap;

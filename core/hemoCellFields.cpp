@@ -24,10 +24,9 @@ HemoCellFields::HemoCellFields( MultiBlockLattice3D<double, DESCRIPTOR> & lattic
   InitAfterLoadCheckpoint();
 }
 
-HemoCellField * HemoCellFields::addCellType(TriangularSurfaceMesh<double> & meshElement, double hematocrit, std::string name_)
+HemoCellField * HemoCellFields::addCellType(TriangularSurfaceMesh<double> & meshElement, std::string name_)
 {
   HemoCellField * cf = new HemoCellField(*this, meshElement);
-  cf->hematocrit = hematocrit;
   cf->name = name_;
   cf->ctype = cellFields.size();
   cellFields.push_back(cf);

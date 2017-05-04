@@ -6,8 +6,8 @@ Config::Config(std::string paramXmlFileName) : plb::XMLreader(paramXmlFileName)
  // Check if it is a fresh start or a checkpointed run 
  std::string firstField = (*(this->getChildren(this->getFirstId())[0])).getName(); 
 
- if (firstField == "hemocell") { checkpointed = 0; } //If the first field is not checkpoint but hemocell
- else { checkpointed = 1; }
+ if (firstField == "Checkpoint") { checkpointed = 1; } //If the first field is not checkpoint but hemocell
+ else { checkpointed = 0; }
 
 
 }

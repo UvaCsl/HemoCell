@@ -20,7 +20,6 @@ class HemoCellField{
 
   HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<double>& meshElement_);
   double getVolumeFraction();
-  double hematocrit;
   //ShellModel3D<double> * model;
   TriangularSurfaceMesh<double> & getMesh();
   std::string name;

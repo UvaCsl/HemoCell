@@ -174,7 +174,6 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
             *dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
     std::vector<HEMOCELL_PARTICLE_FIELD* > particleFields(numberOfCellFields);
     std::vector<double> volumes(numberOfCellFields);
-    std::vector<double> volumeFractions(numberOfCellFields);
     std::vector<TriangularSurfaceMesh<double>* > meshes(numberOfCellFields);
     std::vector<ElementsOfTriangularSurfaceMesh<double> > emptyEoTSM(numberOfCellFields);
     std::vector<plint> Np(numberOfCellFields);
@@ -191,10 +190,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     Array<double,2> xRange, yRange, zRange;
 
     for (pluint iCF = 0; iCF < cellFields.size(); ++iCF) {
-        double vf = cellFields[iCF]->getVolumeFraction();
-        if (vf > 1.0) { vf /= 100; }
-        volumeFractions[iCF] = vf;
-
+        
         TriangularSurfaceMesh<double> * mesh = copyTriangularSurfaceMesh(cellFields[iCF]->getMesh(), emptyEoTSM[iCF]);
         mesh->computeBoundingBox (xRange, yRange, zRange);
         mesh->translate(Array<double,3>(-(xRange[0]+xRange[1])/2.0, -(yRange[0]+yRange[1])/2.0, -(zRange[0]+zRange[1])/2.0));

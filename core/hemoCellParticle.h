@@ -17,7 +17,7 @@ public:
     Array<double,3> force, force_total, vPrevious;
     Array<double,3> *force_volume = &force;
     Array<double,3> *force_bending = &force;
-    Array<double,3> *force_inplane = &force;
+    Array<double,3> *force_link = &force;
     Array<double,3> *force_area = &force; //Default to pointing to force, if output is desired, it can be stored seperately
     plint tag;
     plint cellId;
@@ -40,7 +40,7 @@ public:
       celltype = 0;
       force_volume = &force; //These pointers are only changed for nice outputs
       force_area = &force; //These pointers are only changed for nice outputs
-      force_inplane = &force; //These pointers are only changed for nice outputs
+      force_link = &force; //These pointers are only changed for nice outputs
       force_bending = &force; //These pointers are only changed for nice outputs
     }
     HemoCellParticle (Array<double,3> position_, plint cellId_, plint vertexId_,pluint celltype_) :
@@ -59,7 +59,7 @@ public:
       tag = -1;
       force_volume = &force; //These pointers are only changed for nice outputs
       force_area = &force; //These pointers are only changed for nice outputs
-      force_inplane = &force; //These pointers are only changed for nice outputs
+      force_link = &force; //These pointers are only changed for nice outputs
       force_bending = &force; //These pointers are only changed for nice outputs
     }
 
@@ -67,7 +67,7 @@ public:
         HemoCellParticle* sparticle = new HemoCellParticle(*this);
         sparticle->force_volume = &sparticle->force;
         sparticle->force_bending = &sparticle->force;
-        sparticle->force_inplane = &sparticle->force;
+        sparticle->force_link = &sparticle->force;
         sparticle->force_area = &sparticle->force;
         return sparticle;
     }
@@ -75,7 +75,7 @@ public:
     inline void repoint_force_vectors() {
       force_volume = &force;
       force_bending = &force;
-      force_inplane = &force;
+      force_link = &force;
       force_area = &force;
     }
 
@@ -92,10 +92,11 @@ public:
          *  2: Adams-Bashforth
          */
         #if HEMOCELL_MATERIAL_INTEGRATION == 1
-              position += v;         
+              position += v;    
+              vPrevious = v;    // Store previous velocity for viscosity terms     
 
         #elif HEMOCELL_MATERIAL_INTEGRATION == 2
-                Array<double,3> dxyz = (1.5*v - 0.5*vPrevious);
+              Array<double,3> dxyz = (1.5*v - 0.5*vPrevious);
               position +=  dxyz;
               vPrevious = v;  // Store velocity
         #endif
@@ -123,7 +124,7 @@ public:
         //These pointers are only changed for nice outputs
         force_volume = &force; 
         force_area = &force; 
-        force_inplane = &force;
+        force_link = &force;
         force_bending = &force;
     }
 

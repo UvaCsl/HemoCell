@@ -24,37 +24,12 @@ void Parameters::lbm_parameters(Config & cfg, Box3D domainBox) {
     dm = rho_p * (dx * dx *dx);
     df = dm * dx / (dt * dt);
 
+    // TODO: This is only true for a pipe set along the x-axis.
+    //       Make some document note, that Re is calculated using Ny!
     u_lbm_max = re * nu_lbm / domainBox.getNy();
 
     kBT_lbm = kBT_p/(df*dx);
 };
-
-double Parameters::calculate_kBend(Config & cfg, std::string  cellname ){
-  return cfg["MaterialModel"][cellname]["kBend"].read<double>() * kBT_lbm;
-};
-
-double Parameters::calculate_kVolume(Config & cfg, std::string  cellname, MeshMetrics<double> & meshmetric){
-  double kVolume =  cfg["MaterialModel"][cellname]["kVolume"].read<double>();
-  double eqLength = meshmetric.getMeanLength();
-  kVolume *= kBT_lbm/(eqLength*eqLength*eqLength);
-  return kVolume;
-};
-
-double Parameters::calculate_kArea(Config & cfg, std::string  cellname, MeshMetrics<double> & meshmetric){
-  double kArea =  cfg["MaterialModel"][cellname]["kShear"].read<double>();
-  double eqLength = meshmetric.getMeanLength();
-  kArea *= kBT_lbm/(eqLength*eqLength);
-  return kArea;
-}
-
-double Parameters::calculate_kInPlane(Config & cfg, std::string  cellname, MeshMetrics<double> & meshmetric){
-  double kInPlane = cfg["MaterialModel"][cellname]["kWLC"].read<double>();
-  double plf = cfg["MaterialModel"][cellname]["persistenceLengthFine"].read<double>();
-  double plc = plf/dx * sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kanadiakis magic
-  kInPlane *= kBT_lbm/(4.0*plc);
-  return kInPlane;
-}
-
 
 double Parameters::dt = 0.0;
 double Parameters::dx = 0.0;

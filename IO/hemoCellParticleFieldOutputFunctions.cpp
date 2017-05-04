@@ -8,7 +8,7 @@ void HemoCellParticleField::AddOutputMap() {
   outputFunctionMap[OUTPUT_FORCE] = &HemoCellParticleField::outputForces;
   outputFunctionMap[OUTPUT_FORCE_VOLUME] = &HemoCellParticleField::outputForceVolume;
   outputFunctionMap[OUTPUT_FORCE_AREA] = &HemoCellParticleField::outputForceArea;
-  outputFunctionMap[OUTPUT_FORCE_INPLANE] = &HemoCellParticleField::outputForceInPlane;
+  outputFunctionMap[OUTPUT_FORCE_LINK] = &HemoCellParticleField::outputForceLink;
   outputFunctionMap[OUTPUT_FORCE_BENDING] = &HemoCellParticleField::outputForceBending;
   
 }
@@ -81,7 +81,7 @@ void HemoCellParticleField::outputForceArea(Box3D domain,vector<vector<double>>&
   }
 }
 
-void HemoCellParticleField::outputForceInPlane(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputForceLink(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
   name = "In Plane Force";
   output.clear();
   HemoCellParticle * sparticle;
@@ -93,9 +93,9 @@ void HemoCellParticleField::outputForceInPlane(Box3D domain,vector<vector<double
       sparticle = particles_per_cell[cellid][i];
 
       vector<double> tf;
-      tf.push_back((*sparticle->force_inplane)[0]);
-      tf.push_back((*sparticle->force_inplane)[1]);
-      tf.push_back((*sparticle->force_inplane)[2]);
+      tf.push_back((*sparticle->force_link)[0]);
+      tf.push_back((*sparticle->force_link)[1]);
+      tf.push_back((*sparticle->force_link)[2]);
       output.push_back(tf);
     }
   }

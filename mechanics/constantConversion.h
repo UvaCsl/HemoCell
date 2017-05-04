@@ -15,9 +15,5 @@ class Parameters {
 
 
   static void lbm_parameters(Config & cfg, Box3D domainBox);
-  static double calculate_kBend(Config & cfg, std::string );
-  static double calculate_kVolume(Config & cfg, std::string , MeshMetrics<double> &);
-  static double calculate_kArea(Config & cfg, std::string , MeshMetrics<double> &);
-  static double calculate_kInPlane(Config & cfg, std::string , MeshMetrics<double> &);
 };
 #endif

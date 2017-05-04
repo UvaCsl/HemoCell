@@ -34,7 +34,7 @@ public:
     virtual void interpolateFluidVelocity();
     virtual void spreadParticleForce();
 
-    HemoCellField * addCellType(TriangularSurfaceMesh<double> & meshElement, double hematocrit,  std::string name_);
+    HemoCellField * addCellType(TriangularSurfaceMesh<double> & meshElement, std::string name_);
 	  void setParticleUpdateScheme (double _cellTimeStep=1.0); //For decoupled update schemes 
 
     void readPositionsCellFields(std::string particlePosFile);

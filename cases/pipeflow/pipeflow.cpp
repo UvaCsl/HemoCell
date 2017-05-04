@@ -1,7 +1,8 @@
 #include "hemocell.h"
-#include "highOrderForces.h"
-#include "cheapForces.h"
+#include "rbcHighOrderModel.h"
+#include "pltSimpleModel.h"
 #include <fenv.h>
+
 int main(int argc, char *argv[]) {
   if(argc < 2) {
     cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
@@ -57,11 +58,11 @@ int main(int argc, char *argv[]) {
   //Adding all the cells
   hemocell.initializeCellfield();
 
-  hemocell.addCellType<HighOrderForcesXML>("RBC", RBC_FROM_SPHERE);
-  hemocell.addCellType<CheapForcesXML>("PLT", ELLIPSOID_FROM_SPHERE);
+  hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
+  hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
 
-  vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_INPLANE,OUTPUT_FORCE_AREA};
-  hemocell.setOutputs("RBC", outputs);
+  vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA};
+  hemocell.setOutputs("RBC_HO", outputs);
   outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES};
   hemocell.setOutputs("PLT", outputs);
 

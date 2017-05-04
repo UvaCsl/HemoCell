@@ -393,7 +393,7 @@ void HemoCellParticleField::separateForceVectors() {
     ////TODO this can leak if particle is deleted between seperate and unify,
     //rewrite to reference
     sparticle->force_volume = new Array<double,3>(0.0,0.0,0.0);
-    sparticle->force_inplane = new Array<double,3>(0.0,0.0,0.0);
+    sparticle->force_link = new Array<double,3>(0.0,0.0,0.0);
     sparticle->force_area = new Array<double,3>(0.0,0.0,0.0);
     sparticle->force_bending = new Array<double,3>(0.0,0.0,0.0);
 
@@ -405,7 +405,7 @@ void HemoCellParticleField::unifyForceVectors() {
     //Just repoint all possible outputs for now //TODO only repoint the ones we
     //want
     delete sparticle->force_volume;
-    delete sparticle->force_inplane;
+    delete sparticle->force_link;
     delete sparticle->force_area;
     delete sparticle->force_bending;
     sparticle->repoint_force_vectors();

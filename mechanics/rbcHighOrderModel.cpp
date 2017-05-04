@@ -1,11 +1,14 @@
-#include "highOrderForces.h"
+#include "rbcHighOrderModel.h"
 
-HighOrderForces::HighOrderForces(HemoCellField & cellField_, double k_volume_, double k_area_, double k_inPlane_, double k_bend_) : CellMechanics(),
-                  cellConstants(CommonCellConstants::CommonCellConstantsConstructor(cellField_)),
-                  cellField(cellField_), k_volume(k_volume_), k_area(k_area_), k_inPlane(k_inPlane_), k_bend(k_bend_)
-  { };
+RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(),
+                  cellConstants(CommonCellConstants::CommonCellConstantsConstructor(cellField_)), cellField(cellField_),
+                  k_volume( RbcHighOrderModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
+                  k_area( RbcHighOrderModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
+                  k_link( RbcHighOrderModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
+                  k_bend( RbcHighOrderModel::calculate_kBend(modelCfg_) )
+    {};
 
-void HighOrderForces::ParticleMechanics(map<int,vector<HemoCellParticle *>> particles_per_cell, map<int,bool> lpc, pluint ctype) {
+void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> particles_per_cell, map<int,bool> lpc, pluint ctype) {
 
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;
@@ -17,7 +20,7 @@ void HighOrderForces::ParticleMechanics(map<int,vector<HemoCellParticle *>> part
     double volume = 0.0;
     int triangle_n = 0;
     vector<double> triangle_areas;
-    vector<Array<double,3>> triangle_normals;
+    vector<Array<double,3>> triangle_normals; 
 
 
     for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
@@ -64,6 +67,9 @@ void HighOrderForces::ParticleMechanics(map<int,vector<HemoCellParticle *>> part
       const Array<double,3> avu2 = av2/avl2;
       //area force magnitude
       const double afm = -k_area *(areaRatio+areaRatio/(0.04-areaRatio*areaRatio));
+      
+      // TODO: Add area force viscosity based on the bilipid membrane
+
       //push back area force
       //*cell[triangle[0]]->force_area += afm*avu0;
       //*cell[triangle[1]]->force_area += afm*avu1;
@@ -101,33 +107,31 @@ void HighOrderForces::ParticleMechanics(map<int,vector<HemoCellParticle *>> part
     }
 
 
-    //Edges
+    // Edges
     int edge_n=0;
     for (const Array<plint,2> & edge : cellConstants.edge_list) {
       const Array<double,3> & v0 = cell[edge[0]]->position;
       const Array<double,3> & v1 = cell[edge[1]]->position;
 
-      //In Plane force
+      // Link force
       const Array<double,3> edge_v = v1-v0;
       const double edge_length = sqrt(edge_v[0]*edge_v[0]+edge_v[1]*edge_v[1]+edge_v[2]*edge_v[2]);
       const Array<double,3> edge_uv = edge_v/edge_length;
       const double edge_frac = (edge_length-cellConstants.edge_length_eq_list[edge_n])/cellConstants.edge_length_eq_list[edge_n];
       
       if (edge_frac > 0) {
-        const double edge_force_scalar = k_inPlane * ( edge_frac + edge_frac/(0.64-edge_frac*edge_frac));   // allows at max. 80% stretch
+        const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(0.64-edge_frac*edge_frac));   // allows at max. 80% stretch
         const Array<double,3> force = edge_uv*edge_force_scalar;
-        *cell[edge[0]]->force_inplane += force;
-        *cell[edge[1]]->force_inplane -= force;
+        *cell[edge[0]]->force_link += force;
+        *cell[edge[1]]->force_link -= force;
       } else{
          // less stiff compression resistance -> let compression be dominated
          // by area conservation force
-        const double edge_force_scalar = k_inPlane * edge_frac * edge_frac * edge_frac;
+        const double edge_force_scalar = k_link * edge_frac * edge_frac * edge_frac;
         const Array<double,3> force = edge_uv*edge_force_scalar;
-        *cell[edge[0]]->force_inplane += force;
-        *cell[edge[1]]->force_inplane -= force;
+        *cell[edge[0]]->force_link += force;
+        *cell[edge[1]]->force_link -= force;
       }
-
-      //TODO dissapative forces
       
       // calculate triangle normals, this should be in a function
 
@@ -162,28 +166,58 @@ void HighOrderForces::ParticleMechanics(map<int,vector<HemoCellParticle *>> part
         angle = 2 * PI - angle;
       }
 
-      //calculate resulting bending force //todo go to 4 point bending force
+      //calculate resulting bending force // TODO: go to 4 point bending force
       const double angle_frac = cellConstants.edge_angle_eq_list[edge_n] - angle;
 
       const double force_magnitude = - k_bend * (angle_frac + angle_frac / ( 0.62 - (angle_frac * angle_frac)));
 
-      //TODO bending force differs with area
+      //TODO bending force differs with area - That is intentional, and necessary!
       const Array<double,3> bending_force = force_magnitude*(V1 + V2)*0.5;
       *cell[edge[0]]->force_bending += bending_force;
       *cell[edge[1]]->force_bending += bending_force;
 
+      // TODO: add bending viscosity -> new parameter to match periodic stretching tests
+
       edge_n++;
     }
-
 
   } 
 };
 
-void HighOrderForces::statistics() {
+void RbcHighOrderModel::statistics() {
     pcout << "High Order forces for " << cellField.name << " cellfield" << std::endl;
     pcout << "k_volume: " << k_volume << std::endl; 
     pcout << "k_area:   " << k_area << std::endl; 
-    pcout << "k_inPlane:" << k_inPlane << std::endl; 
+    pcout << "k_link:   " << k_link << std::endl; 
     pcout << "k_bend: : " << k_bend << std::endl; 
 };
 
+
+// Provide methods to calculate and scale to coefficients from here
+
+double RbcHighOrderModel::calculate_kBend(Config & cfg ){
+  return cfg["MaterialModel"]["kBend"].read<double>() * param::kBT_lbm;
+};
+
+double RbcHighOrderModel::calculate_kVolume(Config & cfg, MeshMetrics<double> & meshmetric){
+  double kVolume =  cfg["MaterialModel"]["kVolume"].read<double>();
+  double eqLength = meshmetric.getMeanLength();
+  kVolume *= param::kBT_lbm/(eqLength*eqLength*eqLength);
+  return kVolume;
+};
+
+double RbcHighOrderModel::calculate_kArea(Config & cfg, MeshMetrics<double> & meshmetric){
+  double kArea =  cfg["MaterialModel"]["kArea"].read<double>();
+  double eqLength = meshmetric.getMeanLength();
+  kArea *= param::kBT_lbm/(eqLength*eqLength);
+  return kArea;
+}
+
+double RbcHighOrderModel::calculate_kLink(Config & cfg, MeshMetrics<double> & meshmetric){
+  double kLink = cfg["MaterialModel"]["kLink"].read<double>();
+  double persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
+  // TODO: this is a fixed number, no need to calculate it like this
+  double plc = persistenceLengthFine/param::dx * sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kaniadakis magic
+  kLink *= param::kBT_lbm/(4.0*plc);
+  return kLink;
+}
