@@ -71,8 +71,9 @@ class HemoCell {
 
     //TODO correctly give hematocrit
     HemoCellField * cellfield = cellfields->addCellType(*meshElement, 0., name);
-    Mechanics * mechanics = new Mechanics((*cfg), *cellfield);
+    Mechanics * mechanics = new Mechanics((*cfg), *cellfield,name);
     cellfield->mechanics = mechanics;
+    mechanics->statistics();
   }
 
   //Set the output of a celltype

@@ -1,6 +1,6 @@
 #include "hemocell.h"
-#include "rbcHO.h"
-#include "NoOp.h"
+#include "highOrderForces.h"
+#include "cheapForces.h"
 #include <fenv.h>
 int main(int argc, char *argv[]) {
   if(argc < 2) {
@@ -57,8 +57,8 @@ int main(int argc, char *argv[]) {
   //Adding all the cells
   hemocell.initializeCellfield();
 
-  hemocell.addCellType<RbcHO>("RBC", RBC_FROM_SPHERE);
-  hemocell.addCellType<NoOp>("PLT", ELLIPSOID_FROM_SPHERE);
+  hemocell.addCellType<HighOrderForcesXML>("RBC", RBC_FROM_SPHERE);
+  hemocell.addCellType<CheapForcesXML>("PLT", ELLIPSOID_FROM_SPHERE);
 
   vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_INPLANE,OUTPUT_FORCE_AREA};
   hemocell.setOutputs("RBC", outputs);
