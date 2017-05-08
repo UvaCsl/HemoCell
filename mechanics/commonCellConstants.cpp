@@ -8,6 +8,7 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<double> edge_length_eq_list_,
                       vector<double> edge_angle_eq_list_,
                       vector<Array<plint,2>> edge_bending_triangles_list_,
+                      vector<Array<plint,2>> edge_bending_triangles_outer_points_,
                       vector<double> triangle_area_eq_list_,
                       double volume_eq_) :
     cellField(cellField_),
@@ -16,6 +17,7 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
     edge_length_eq_list(edge_length_eq_list_),
     edge_angle_eq_list(edge_angle_eq_list_),
     edge_bending_triangles_list(edge_bending_triangles_list_),
+    edge_bending_triangles_outer_points(edge_bending_triangles_outer_points_),
     triangle_area_eq_list(triangle_area_eq_list_),
     volume_eq(volume_eq_)
   {};
@@ -80,13 +82,24 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
 
     //store important points for bending calculation
     vector<Array<plint,2>> edge_bending_triangles_;
+    vector<Array<plint,2>> edge_bending_triangles_outer_points_;
     for (const Array<plint,2> & edge : edge_list_) {
       const vector<plint> adjacentTriangles = cellField.meshElement.getAdjacentTriangleIds(edge[0], edge[1]);
       edge_bending_triangles_.push_back({adjacentTriangles[0],adjacentTriangles[1]});
+      Array<plint,2> op;
+      for (int i = 0; i < 3; i++) {
+        if ((triangle_list_[adjacentTriangles[0]][i] != edge[0]) && (triangle_list_[adjacentTriangles[0]][i] != edge[1])) {
+          op[0] = triangle_list_[adjacentTriangles[0]][i];
+        }
+        if ((triangle_list_[adjacentTriangles[1]][i] != edge[0]) && (triangle_list_[adjacentTriangles[1]][i] != edge[1])) {
+          op[1] = triangle_list_[adjacentTriangles[1]][i];
+        }
+      }
+      edge_bending_triangles_outer_points_.push_back(op);
     }
 
     
-    CommonCellConstants CCC(cellField_,triangle_list_,edge_list_,edge_length_eq_list_,edge_angle_eq_list_,edge_bending_triangles_,triangle_area_eq_list_,volume_eq_);
+    CommonCellConstants CCC(cellField_,triangle_list_,edge_list_,edge_length_eq_list_,edge_angle_eq_list_,edge_bending_triangles_,edge_bending_triangles_outer_points_,triangle_area_eq_list_,volume_eq_);
     return CCC;
 };
 

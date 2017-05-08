@@ -169,15 +169,19 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
         angle -= 2*PI; 
       }
 
-      //calculate resulting bending force // TODO: go to 4 point bending force
+      //calculate resulting bending force
       const double angle_frac = cellConstants.edge_angle_eq_list[edge_n] - angle;
 
       const double force_magnitude = - k_bend * (angle_frac + angle_frac / ( 0.62 - (angle_frac * angle_frac)));
 
       //TODO bending force differs with area - That is intentional, and necessary!
       const Array<double,3> bending_force = force_magnitude*(V1 + V2)*0.5;
-      *cell[edge[0]]->force_bending += bending_force;
-      *cell[edge[1]]->force_bending += bending_force;
+      *cell[edge[0]]->force_bending += bending_force*0.5;
+      *cell[edge[1]]->force_bending += bending_force*0.5;
+      //TODO Negate the force with 4 point bending
+      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= bending_force;
+      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= bending_force;
+
 
       // TODO: add bending viscosity -> new parameter to match periodic stretching tests
 
