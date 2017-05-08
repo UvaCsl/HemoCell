@@ -165,6 +165,9 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       if (sign <= 0) {
         angle = 2 * PI - angle;
       }
+      if (angle > PI) {
+        angle -= 2*PI; 
+      }
 
       //calculate resulting bending force // TODO: go to 4 point bending force
       const double angle_frac = cellConstants.edge_angle_eq_list[edge_n] - angle;
