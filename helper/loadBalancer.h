@@ -5,6 +5,7 @@ class LoadBalancer;
 
 #include "hemocell_internal.h"
 #include "hemocell.h"
+#include <parmetis.h>
 
 class LoadBalancer {
   public:
@@ -13,17 +14,13 @@ class LoadBalancer {
   void doLoadBalance();
 
   //Functionals for gathering data
-  class GatherNumberOfLSPs : public HemoCellGatheringFunctional<int> {
-  public:  
-    using HemoCellGatheringFunctional<int>::HemoCellGatheringFunctional; //Inherit Constructor
-    void processGenericBlocks(Box3D, vector<AtomicBlock3D*>);
-    GatherNumberOfLSPs * clone() const;
-  };
-
   struct TOAB_t{
     double fluid_time;
     double particle_time;
+    int n_lsp;
     int mpi_proc;
+    int n_neighbours;
+    int neighbours[HEMOCELL_MAX_NEIGHBOURS];
   };
   class GatherTimeOfAtomicBlocks : public HemoCellGatheringFunctional<TOAB_t> {
   public:  
@@ -32,6 +29,8 @@ class LoadBalancer {
     GatherTimeOfAtomicBlocks * clone() const;
   };
   private:
+  bool FLI_iscalled = false;
+  map<int,TOAB_t> gatherValues;
   HemoCell & hemocell;
 };
 

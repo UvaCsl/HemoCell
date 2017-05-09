@@ -11,6 +11,14 @@ Phi1 [1], Phi2 [2] - Default, Phi3 [3], Phi4 [4],  Phi4c [5]
 #endif
 
 /*
+ * Maximum number of neighbours, a sane setting is 27 (3x3) but you should increase it accordingly with crazy with small blocks and large envelopes
+ * Used in the loadbalancing library
+ */
+#ifndef HEMOCELL_MAX_NEIGHBOURS
+#define HEMOCELL_MAX_NEIGHBOURS 27
+#endif
+
+/*
 Choose material model.
 1 - Dao/Suresh model (+Fedosov 2010 improvements)
 2 - HO model (Under testing)

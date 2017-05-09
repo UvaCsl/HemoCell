@@ -106,6 +106,14 @@ void HemoCellFields::InitAfterLoadCheckpoint()
     immersedParticles->getComponent(blocks[iBlock]).atomicBlockId = blocks[iBlock];
     immersedParticles->getComponent(blocks[iBlock]).atomicLattice = &lattice.getComponent(blocks[iBlock]);
     immersedParticles->getComponent(blocks[iBlock]).envelopeSize = envelopeSize;
+    
+    //Calculate neighbours 
+    immersedParticles->getSparseBlockStructure().findNeighbors(blocks[iBlock], envelopeSize,
+                           immersedParticles->getComponent(blocks[iBlock]).neighbours);
+  if (immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > HEMOCELL_MAX_NEIGHBOURS) {
+    cerr << "More neighbours of atomic block than allowed, exiting ...";
+    exit(0);
+  }
   }
 }
 

@@ -63,6 +63,7 @@ public:
     static HemoCellFields* cellFields;
     pluint atomicBlockId;
     BlockLattice3D<double, DESCRIPTOR> * atomicLattice;
+    vector<plint> neighbours;
     pluint envelopeSize;
     pluint getsize() { return particles.size();}
     plint nearestCell(double const) const;
