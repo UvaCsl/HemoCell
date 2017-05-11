@@ -19,8 +19,10 @@ void LoadBalancer::GatherTimeOfAtomicBlocks::processGenericBlocks(Box3D domain, 
   pf->findParticles(pf->localDomain,found);
   gatherValues[pf->atomicBlockId].n_lsp = found.size();
   
+  gatherValues[pf->atomicBlockId].location[0] = pf->getLocation().x;
+  gatherValues[pf->atomicBlockId].location[1] = pf->getLocation().y;
+  gatherValues[pf->atomicBlockId].location[2] = pf->getLocation().z;
 
- 
   gatherValues[pf->atomicBlockId].n_neighbours = pf->neighbours.size();
   for (unsigned int i = 0 ; i < pf->neighbours.size(); i++) {
     gatherValues[pf->atomicBlockId].neighbours[i] = pf->neighbours[i];
@@ -61,27 +63,61 @@ void LoadBalancer::doLoadBalance() {
     exit(0);
   }
   
-  //Unfortunately, due to inconsequent atomic block naming, it is easier to start everything on the root process
   //Variable naming according to Parmetis Manual
-  vector<idx_t> vtxdist(global::mpi().getSize()+1);
+  idx_t wgtflag = 2;
+  idx_t numflag = 0;
+  idx_t ndims = 3;
+  idx_t ncon = 1;
+  idx_t nparts = global::mpi().getSize();
+  idx_t options[3] = {0,0,0};
+  idx_t edgecut = 0;
+  vector<idx_t> part(gatherValues.size());
+  MPI_Comm mc = MPI_COMM_WORLD;
+  unsigned int remainder = gatherValues.size()%nparts;
+  unsigned int partsize = gatherValues.size()/nparts;
+  unsigned int rank = global::mpi().getRank();
+  
+  vector<idx_t> vtxdist(nparts+1);
   for (unsigned int i = 1 ; i < vtxdist.size(); i++){
-    vtxdist[i] = gatherValues.size(); 
+    vtxdist[i] = vtxdist[i-1] + partsize;
+    if (i <= remainder) {
+      vtxdist[i]++;
+    }
   }
   
-  if (global::mpi().getRank()) {
-    goto parmetis; // Do not do anything if not ROOT
+  unsigned int nv = vtxdist[rank+1] - vtxdist[rank];
+  unsigned int ofs= vtxdist[rank];
+  
+  vector<idx_t> xadj(nv+1);
+  xadj[0] = 0;
+  for (unsigned int i = 0 ; i + 1 < xadj.size() ; i ++) {
+    xadj[i+1] = xadj[i] + gatherValues[ofs+i].n_neighbours;
   }
+
+  vector<idx_t> adjncy(xadj.back());
+  unsigned int entry = 0;
+  for (unsigned int i = 0 ; i < nv ; i ++) {
+    for (int j = 0 ; j < gatherValues[ofs+i].n_neighbours; j++) {
+      adjncy[entry] = gatherValues[ofs+i].neighbours[j];
+      entry++;
+    }
+  }
+
+  vector<real_t> xyz(nv*ndims);
+  for (unsigned int i = 0 ; i < xyz.size()/ndims ; i++) {
+    for (int j = 0 ; j < ndims ; j++ ) {
+      xyz[i*ndims + j] = gatherValues[ofs+i].location[j];
+    }
+  }
+
+  vector<idx_t> vwgt(nv,1);
   
-    
-  
-  parmetis: //LABEL PARMETIS
+  vector<real_t> tpwghts(ncon*nparts,1.0/(nparts*ncon));
+  vector<real_t> ubvec(ncon,1.05);
+
+  ParMETIS_V3_PartGeomKway(&vtxdist[0], &xadj[0], &adjncy[0], &vwgt[0], NULL, &wgtflag, &numflag,  &ndims, &xyz[0], 
+                           &ncon, &nparts, &tpwghts[0], &ubvec[0], &options[0],&edgecut, &part[0], &mc);
   return;
- /*idx_t  
-  int ret = ParMETIS_V3_PartGeomKway(
-       idx_t *vtxdist, idx_t *xadj, idx_t *adjncy, idx_t *vwgt, 
-       idx_t *adjwgt, idx_t *wgtflag, idx_t *numflag, idx_t *ndims, real_t *xyz, 
-       idx_t *ncon, idx_t *nparts, real_t *tpwgts, real_t *ubvec, idx_t *options, 
-       idx_t *edgecut, idx_t *part, MPI_Comm *comm);*/
 }
 
 //Necessary C++ crap

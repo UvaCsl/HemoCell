@@ -20,6 +20,7 @@ class LoadBalancer {
     int n_lsp;
     int mpi_proc;
     int n_neighbours;
+    int location[3];
     int neighbours[HEMOCELL_MAX_NEIGHBOURS];
   };
   class GatherTimeOfAtomicBlocks : public HemoCellGatheringFunctional<TOAB_t> {
