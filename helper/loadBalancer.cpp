@@ -88,7 +88,6 @@ void LoadBalancer::doLoadBalance() {
   unsigned int ofs= vtxdist[rank];
   vector<idx_t> part(nv);
 
-  
   vector<idx_t> xadj(nv+1);
   xadj[0] = 0;
   for (unsigned int i = 0 ; i + 1 < xadj.size() ; i ++) {
@@ -163,7 +162,7 @@ void LoadBalancer::doLoadBalance() {
   hemocell.cellfields->createParticleField();
   
   hemocell.loadCheckPoint();
-  pcout << "(LoadBalancer) Continuing simulation with rebalanced application" << endl;
+  pcout << "(LoadBalancer) Continuing simulation with balanced application" << endl;
 
   return;
 }

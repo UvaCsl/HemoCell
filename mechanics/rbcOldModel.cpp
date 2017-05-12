@@ -65,7 +65,16 @@ vector<plint> getAdjacentTriangleIds(plint iV, plint jV) {
   return (*glob_cf).meshElement.getAdjacentTriangleIds(iV, jV);
 }
 
-inline double computeSignedAngle(plint iVertex, plint jVertex, plint & kVertex, plint & lVertex, bool& found, plint edgeId,vector<Array<plint,3>> & triangles) {
+inline Array<double,3> computeTriangleNormal(Array<double,3> v0, Array<double,3> v1, Array<double,3> v2) {
+  Array<double,3> e01 = v1 - v0;
+  Array<double,3> e02 = v2 - v0;
+  Array<double,3> n;
+  crossProduct(e01,e02,n);
+  n /= norm(n);
+  return n;
+}
+
+inline double computeSignedAngle(plint iVertex, plint jVertex, plint & kVertex, plint & lVertex, bool& found, plint edgeId,const vector<Array<plint,3>> & triangles) {
   found = true;
     Array<double,3> x1 = getVertex(iVertex), x2(0.,0.,0.), x3(0.,0.,0.), x4(0.,0.,0.);
 
@@ -94,15 +103,15 @@ inline double computeSignedAngle(plint iVertex, plint jVertex, plint & kVertex, 
 //this.. TODO fixit
   if (not found) { /*signedAngles.erase(edgeId);*/  return 0.0; }
   //if (signedAngles.count(edgeId) == 0) {
-      Array<double,3> V1 = computeTriangleNormal(iTriangle);
-      Array<double,3> V2 = computeTriangleNormal(jTriangle);
+      Array<double,3> V1 = computeTriangleNormal(getVertex(triangles[iTriangle][0]),getVertex(triangles[iTriangle][1]),getVertex(triangles[iTriangle][2]));
+      Array<double,3> V2 = computeTriangleNormal(getVertex(triangles[jTriangle][0]),getVertex(triangles[jTriangle][1]),getVertex(triangles[jTriangle][2]));
       double angle = angleBetweenVectors(V1, V2);
     plint sign = dot(x2-x1, V2) >= 0?1:-1;
 
     if (sign <= 0) {
-      angle = 2*pi-angle;
+      angle = 2*PI-angle;
     }
-    angle = (angle > pi)?angle-2*pi:angle;
+    angle = (angle > PI)?angle-2*PI:angle;
    // signedAngles[edgeId] = angle;
   //}
   return angle;
@@ -130,11 +139,11 @@ inline Array<double,3> computeBendingForce4p (Array<double,3> const& xi, Array<d
          
     plint sign = dot(xk-xi, nTl) > 0?1:-1; 
     if (sign <= 0) { 
-        edgeAngle = 2*pi-edgeAngle; 
+        edgeAngle = 2*PI-edgeAngle; 
     } 
-    edgeAngle = (edgeAngle > pi)?edgeAngle-2*pi:edgeAngle; 
-    eqAngle = (eqAngle > 2*pi)?eqAngle-2*pi:eqAngle; 
-    eqAngle = (eqAngle > pi)?eqAngle-2*pi:eqAngle; 
+    edgeAngle = (edgeAngle > PI)?edgeAngle-2*PI:edgeAngle; 
+    eqAngle = (eqAngle > 2*PI)?eqAngle-2*PI:eqAngle; 
+    eqAngle = (eqAngle > PI)?eqAngle-2*PI:eqAngle; 
  
     // WARNING: sign is mixed up! (Clockwise vs. anti-clockwise problem) 
     //dAngle = (edgeAngle-eqAngle); 
@@ -172,7 +181,7 @@ void RbcOldModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> particle
     const int & cid = pair.first;
     vector<HemoCellParticle*> & cell = particles_per_cell[cid];
     glob_cell = &cell;
-    glob_cf = &cellfield;
+    glob_cf = &cellField;
     if (cell[0]->celltype != ctype) continue; //only execute on correct particle
 
     //Calculate Cell Values that need all particles (but do it most efficient
@@ -203,7 +212,7 @@ void RbcOldModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> particle
       const Array<double,3> e02 = v2 - v0;
       Array<double,3> triangle_normal;
       crossProduct(e01, e02, triangle_normal);
-      const double normN = norm(n);
+      const double normN = norm(triangle_normal);
       triangle_normal /= normN;
       const double triangle_area = normN * 0.5;
         
@@ -225,9 +234,9 @@ void RbcOldModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> particle
       const Array<double,3> & v0 = cell[triangle[0]]->position;
       const Array<double,3> & v1 = cell[triangle[1]]->position;
       const Array<double,3> & v2 = cell[triangle[2]]->position;
-      *cell[triangle[0]]->force_volume += computeVolumeConservationForce(v0,v1,v2,volume_force)
-      *cell[triangle[1]]->force_volume += computeVolumeConservationForce(v1,v2,v0,volume_force)
-      *cell[triangle[2]]->force_volume += computeVolumeConservationForce(v2,v0,v1,volume_force)
+      *cell[triangle[0]]->force_volume += computeVolumeConservationForce(v0,v1,v2,volume_force);
+      *cell[triangle[1]]->force_volume += computeVolumeConservationForce(v1,v2,v0,volume_force);
+      *cell[triangle[2]]->force_volume += computeVolumeConservationForce(v2,v0,v1,volume_force);
 
     }
 
@@ -239,27 +248,27 @@ void RbcOldModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> particle
       const Array<double,3> & v1 = cell[edge[1]]->position;
 
       // Link force
-      const l_force = computeInPlaneHighOrderForce(v0,v1,cellConstants.edge_length_eq_list[edge_n],k_link);
+      const Array<double,3> l_force = computeInPlaneHighOrderForce(v0,v1,cellConstants.edge_length_eq_list[edge_n],k_link);
       *cell[edge[0]]->force_link += l_force;
       *cell[edge[1]]->force_link -= l_force;
       
 			//Bending
 			bool angleFound;
 			plint kVertex, lVertex;
-			const edgeAngle = computeSignedAngle(edge[0],edge[1],kVertex lVertex, angleFound,edge_n,commonCellConstants.triangle_list);
+			const double edgeAngle = computeSignedAngle(edge[0],edge[1],kVertex, lVertex, angleFound,edge_n,cellConstants.triangle_list);
 
 			if (angleFound) {
-				Array<double,3> iNormal = computeTriangleNormal(edge[0],edge[1],kVertex);
-				Array<double,3> jNormal = computeTriangleNormal(edge[0],edge[1],lVertex);
-        double Ai = computeTriangleArea(edge[0],edge[1],kVertex);
-        double Aj = computeTriangleArea(edge[0],edge[1],lVertex);
+				Array<double,3> iNormal = computeTriangleNormal(getVertex(edge[0]),getVertex(edge[1]),getVertex(kVertex));
+				Array<double,3> jNormal = computeTriangleNormal(getVertex(edge[0]),getVertex(edge[1]),getVertex(lVertex));
+        double Ai = computeTriangleArea(getVertex(edge[0]),getVertex(edge[1]),getVertex(kVertex));
+        double Aj = computeTriangleArea(getVertex(edge[0]),getVertex(edge[1]),getVertex(lVertex));
 
         Array<double,3> fi,fj,fk,fl;
         //OKAY... eqArea is actually the mean area of all triangles, this is
-        //like MEGA-WRONG
+        //like MEGA-WRONG. lol
         fi = computeBendingForce4p (v0,v1,cell[kVertex]->position, cell[lVertex]->position, iNormal, jNormal, 
-                                    mean_eq_area, commonCellConstants.edge_length_eq_list[edge_n], 
-                                    commonCellConstants.edge_angle_eq_list[edge_n], k_bend, fi, fj, fk, fl);
+                                    cellConstants.area_mean_eq, cellConstants.edge_length_eq_list[edge_n], 
+                                    cellConstants.edge_angle_eq_list[edge_n], k_bend, fi, fj, fk, fl);
 
                                     
         *cell[edge[0]]->force_bending += fi;

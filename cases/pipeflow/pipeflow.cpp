@@ -1,6 +1,7 @@
 #include "hemocell.h"
 #include "rbcHighOrderModel.h"
 #include "pltSimpleModel.h"
+#include "rbcOldModel.h"
 #include <fenv.h>
 
 int main(int argc, char *argv[]) {
