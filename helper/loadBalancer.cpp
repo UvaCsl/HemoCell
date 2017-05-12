@@ -69,9 +69,8 @@ void LoadBalancer::doLoadBalance() {
   idx_t ndims = 3;
   idx_t ncon = 1;
   idx_t nparts = global::mpi().getSize();
-  idx_t options[3] = {0,0,0};
+  idx_t options[3] = {1,PARMETIS_DBGLVL_TIME|PARMETIS_DBGLVL_INFO|PARMETIS_DBGLVL_PROGRESS,0};
   idx_t edgecut = 0;
-  vector<idx_t> part(gatherValues.size());
   MPI_Comm mc = MPI_COMM_WORLD;
   unsigned int remainder = gatherValues.size()%nparts;
   unsigned int partsize = gatherValues.size()/nparts;
@@ -87,6 +86,8 @@ void LoadBalancer::doLoadBalance() {
   
   unsigned int nv = vtxdist[rank+1] - vtxdist[rank];
   unsigned int ofs= vtxdist[rank];
+  vector<idx_t> part(nv);
+
   
   vector<idx_t> xadj(nv+1);
   xadj[0] = 0;
@@ -110,13 +111,60 @@ void LoadBalancer::doLoadBalance() {
     }
   }
 
-  vector<idx_t> vwgt(nv,1);
+  vector<idx_t> vwgt(nv);
+  for (unsigned int i = 0 ; i < vwgt.size() ; i++) {
+    vwgt[i] = gatherValues[ofs+i].n_lsp;
+  }
   
   vector<real_t> tpwghts(ncon*nparts,1.0/(nparts*ncon));
   vector<real_t> ubvec(ncon,1.05);
 
   ParMETIS_V3_PartGeomKway(&vtxdist[0], &xadj[0], &adjncy[0], &vwgt[0], NULL, &wgtflag, &numflag,  &ndims, &xyz[0], 
                            &ncon, &nparts, &tpwghts[0], &ubvec[0], &options[0],&edgecut, &part[0], &mc);
+  
+  map<int,plint> newProc; //Gather the results to all mpi processes, we can use the gathering functional for that as well!
+  for (unsigned int i = 0 ; i < part.size() ; i++){
+    newProc[ofs+i] = part[i];
+  }
+  int numAtomicBlock = hemocell.lattice->getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
+  HemoCellGatheringFunctional<plint>::gather(newProc,numAtomicBlock);
+  
+  for (auto & pair : newProc) {
+    pcout << "Atomic block " << pair.first << " is assigned to processor " << pair.second << endl;
+  }
+  
+  hemocell.saveCheckPoint(); // Save Checkpoint
+  pcout << "(LoadBalancer) Recreating Fluid field with new Distribution of Atomic Blocks" << endl;
+
+  map<plint,plint> nTA; //Conversion is necessary for next function
+  for (auto & pair : newProc) { nTA[pair.first] = pair.second; }
+  ThreadAttribution* newThreadAttribution = new ExplicitThreadAttribution(nTA);        
+  MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
+                MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
+                hemocell.lattice->getSparseBlockStructure(),
+                newThreadAttribution,
+                //hemocell.lattice->getMultiBlockManagement().getThreadAttribution().clone(),
+                hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth(),
+                hemocell.lattice->getMultiBlockManagement().getRefinementLevel() ),
+                hemocell.lattice->getBlockCommunicator().clone(),
+                hemocell.lattice->getCombinedStatistics().clone(),
+                defaultMultiBlockPolicy3D().getMultiCellAccess<double,DESCRIPTOR>(),
+                hemocell.lattice->getBackgroundDynamics().clone() );
+  newlattice->periodicity().toggle(0, hemocell.lattice->periodicity().get(0));
+  newlattice->periodicity().toggle(1, hemocell.lattice->periodicity().get(1));
+  newlattice->periodicity().toggle(2, hemocell.lattice->periodicity().get(2));
+  newlattice->toggleInternalStatistics(hemocell.lattice->isInternalStatisticsOn());
+
+  delete hemocell.lattice;
+  hemocell.lattice = newlattice;
+  hemocell.cellfields->lattice = newlattice;
+  
+  delete hemocell.cellfields->immersedParticles;
+  hemocell.cellfields->createParticleField();
+  
+  hemocell.loadCheckPoint();
+  pcout << "(LoadBalancer) Continuing simulation with rebalanced application" << endl;
+
   return;
 }
 

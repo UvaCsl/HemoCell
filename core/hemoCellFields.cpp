@@ -4,16 +4,20 @@
 
 
 HemoCellFields::HemoCellFields( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth) :
-  lattice(lattice_)
+  lattice(&lattice_)
 {   
   envelopeSize=particleEnvelopeWidth;
   pcout << "(Hemocell) (HemoCellFields) (Init) particle envelope: " << particleEnvelopeWidth << " [lu]" << std::endl;
 
-  MultiBlockManagement3D const& latticeManagement(lattice.getMultiBlockManagement());
+  createParticleField();
+}
+
+void HemoCellFields::createParticleField() {
+  MultiBlockManagement3D const& latticeManagement(lattice->getMultiBlockManagement());
 	MultiBlockManagement3D particleManagement (
             latticeManagement.getSparseBlockStructure(),
             latticeManagement.getThreadAttribution().clone(),
-            particleEnvelopeWidth,
+            envelopeSize,
             latticeManagement.getRefinementLevel() );
 
   immersedParticles = new MultiParticleField3D<HEMOCELL_PARTICLE_FIELD>(
@@ -104,7 +108,7 @@ void HemoCellFields::InitAfterLoadCheckpoint()
     immersedParticles->getComponent(blocks[iBlock]).setlocalDomain(blk);
     immersedParticles->getComponent(blocks[iBlock]).cellFields = this;
     immersedParticles->getComponent(blocks[iBlock]).atomicBlockId = blocks[iBlock];
-    immersedParticles->getComponent(blocks[iBlock]).atomicLattice = &lattice.getComponent(blocks[iBlock]);
+    immersedParticles->getComponent(blocks[iBlock]).atomicLattice = &lattice->getComponent(blocks[iBlock]);
     immersedParticles->getComponent(blocks[iBlock]).envelopeSize = envelopeSize;
     
     //Calculate neighbours 
@@ -124,13 +128,21 @@ void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter)
     std::string firstField = (*(documentXML->getChildren( documentXML->getFirstId() )[0])).getName();
     bool isCheckpointed = (firstField=="Checkpoint");
     if (isCheckpointed) {
-    hemocellfunction = true;
-        (*documentXML)["Checkpoint"]["General"]["Iteration"].read(iter);
-        parallelIO::load(outDir + "lattice", lattice, true);
-        parallelIO::load(outDir + "particleField", *immersedParticles, true);
+      hemocellfunction = true;
+      (*documentXML)["Checkpoint"]["General"]["Iteration"].read(iter);
+      parallelIO::load(outDir + "lattice", *lattice, true);
+      parallelIO::load(outDir + "particleField", *immersedParticles, true);
 
-        InitAfterLoadCheckpoint();
-    hemocellfunction = false;
+      InitAfterLoadCheckpoint();
+      hemocellfunction = false;
+    } else {
+      pcout << "(HemoCell) (CellFields) loading checkpoint from non-checkpoint Config" << endl;
+      hemocellfunction = true;
+      parallelIO::load(outDir + "lattice", *lattice, true);
+      parallelIO::load(outDir + "particleField", *immersedParticles, true);
+
+      InitAfterLoadCheckpoint();
+      hemocellfunction = false;
     }
 }
 
@@ -157,7 +169,7 @@ void HemoCellFields::save(XMLreader * documentXML, unsigned int iter)
     /* Save XML & Data */
     xmlw["Checkpoint"]["General"]["Iteration"].set(iter);
     xmlw.print(outDir + "checkpoint.xml");
-    parallelIO::save(lattice, "lattice", true);
+    parallelIO::save(*lattice, "lattice", true);
     parallelIO::save(*immersedParticles, "particleField", true);
     // Upon success, save xml and rename files!
 

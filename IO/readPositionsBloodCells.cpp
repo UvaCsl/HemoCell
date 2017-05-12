@@ -276,7 +276,7 @@ BlockDomain::DomainT ReadPositionsBloodCellField3D::appliesTo() const {
 void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, const char* positionsFileName, Config & cfg) {
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
-    fluidAndParticleFieldsArg.push_back(&(cellFields.lattice));
+    fluidAndParticleFieldsArg.push_back(cellFields.lattice);
 
     for (pluint icf = 0; icf < cellFields.size(); ++icf) {
         fluidAndParticleFieldsArg.push_back(cellFields[icf]->getParticleField3D());
@@ -284,7 +284,7 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, const
 
     applyProcessingFunctional(
             new ReadPositionsBloodCellField3D(cellFields, dx, positionsFileName,cfg),
-            cellFields.lattice.getBoundingBox(), fluidAndParticleFieldsArg);
+            cellFields.lattice->getBoundingBox(), fluidAndParticleFieldsArg);
 
 }
 

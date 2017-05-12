@@ -87,6 +87,7 @@ int main(int argc, char *argv[]) {
 
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
+  unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
   unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
   while (hemocell.iter < tmax ) {
@@ -107,7 +108,7 @@ int main(int argc, char *argv[]) {
     if (hemocell.iter % tmeas == 0) {
       hemocell.writeOutput();
     }
-    if (hemocell.iter % (tmeas*10) == 0) {
+    if (hemocell.iter % tcheckpoint == 0) {
       hemocell.saveCheckPoint();
     }
   }

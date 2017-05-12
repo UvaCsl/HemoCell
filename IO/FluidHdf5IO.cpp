@@ -4,11 +4,11 @@
 #include "FluidHdf5IO.h"
 
 void writeFluidField_HDF5(HemoCellFields& cellfields, double dx, double dt, plint iter, string preString) {
-  WriteFluidField * wff = new WriteFluidField(cellfields, cellfields.lattice,iter,"Fluid",dx,dt);
+  WriteFluidField * wff = new WriteFluidField(cellfields, *cellfields.lattice,iter,"Fluid",dx,dt);
   vector<MultiBlock3D*> wrapper;
-  wrapper.push_back(&cellfields.lattice);
+  wrapper.push_back(cellfields.lattice);
   wrapper.push_back(cellfields.immersedParticles); //Needed for the atomicblock id, nothing else
-  applyProcessingFunctional(wff,cellfields.lattice.getBoundingBox(),wrapper);
+  applyProcessingFunctional(wff,cellfields.lattice->getBoundingBox(),wrapper);
 }
 
 BlockDomain::DomainT WriteFluidField::appliesTo () const {

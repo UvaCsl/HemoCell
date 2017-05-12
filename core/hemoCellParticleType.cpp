@@ -60,6 +60,6 @@ MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * HemoCellField::getParticleArg() 
   std::string HemoCellField::getIdentifier() {return name;}
 vector<int> HemoCellField::default_output ({OUTPUT_POSITION});
  MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * HemoCellField::getParticleField3D() {return cellFields.immersedParticles;}
-  MultiBlockLattice3D<double,DESCRIPTOR> * HemoCellField::getFluidField3D() {return &(cellFields.lattice);}
+  MultiBlockLattice3D<double,DESCRIPTOR> * HemoCellField::getFluidField3D() {return cellFields.lattice;}
   TriangularSurfaceMesh<double> & HemoCellField::getMesh() { return meshElement;}
   //double HemoCellField::getVolumeFraction() { return hematocrit;}   // no need to keep track of the hematocrit

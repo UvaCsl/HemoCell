@@ -70,6 +70,7 @@
 <sim>
     <tmax> 100 </tmax> <!-- total number of iterations -->
     <tmeas> 10 </tmeas> <!-- interval after which data is written --> 
+    <tcheckpoint> 10 </tcheckpoint> 
     <tbalance> 20 </tbalance> <!-- interval after which balance is performed --> 
     <hematocrit> 40 </hematocrit> <!-- Hematocrit  > -->
     <particlePosFile> cells.pos </particlePosFile>

@@ -29,6 +29,7 @@ class HemoCellFields
 public:
     HemoCellFields(MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth);
     MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & getParticleField3D();
+    void createParticleField();
     ~HemoCellFields();
     virtual void advanceParticles();
     virtual void interpolateFluidVelocity();
@@ -55,7 +56,7 @@ public:
 
     //void setFluidExternalForce(double poiseuilleForce);
 
-	MultiBlockLattice3D<double, DESCRIPTOR> & lattice;
+	MultiBlockLattice3D<double, DESCRIPTOR> * lattice;
   vector<int> desiredFluidOutputVariables;
   vector<HemoCellField *> cellFields;
   pluint envelopeSize;
