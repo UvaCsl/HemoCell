@@ -63,17 +63,17 @@ void HemoCell::saveCheckPoint() {
 void HemoCell::writeOutput() {
 	pcout << "(HemoCell) (Output) writing desired output at timestep " << iter << endl;
 	//Repoint surfaceparticle forces for output
-	//cellfields->separate_force_vectors();
+	cellfields->separate_force_vectors();
 
 	//Recalculate the forces
-	//cellfields->applyConstitutiveModel();
+	cellfields->applyConstitutiveModel();
 
 	//Write Output
-	//writeCellField3D_HDF5(*cellfields,param::dx,param::dt,iter);
+	writeCellField3D_HDF5(*cellfields,param::dx,param::dt,iter);
 	writeFluidField_HDF5(*cellfields,param::dx,param::dt,iter);
 
 	//Repoint surfaceparticle forces for speed
-	//cellfields->unify_force_vectors();
+	cellfields->unify_force_vectors();
 
 }
 
