@@ -93,7 +93,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
 
     //Volume
     const double volume_frac = (volume-cellConstants.volume_eq)/cellConstants.volume_eq;
-    const double volume_force = k_volume * volume_frac/(0.01-volume_frac*volume_frac);
+    const double volume_force = -k_volume * volume_frac/(0.01-volume_frac*volume_frac);
 
     triangle_n = 0;
 

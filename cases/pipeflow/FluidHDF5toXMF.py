@@ -62,7 +62,7 @@ def createH5TopologyAndGeometryFluid(xmlInt=XMLIndentation()):
   h5TopologyAndGeometry = ""
   h5TopologyAndGeometry += xmlInt.inc() + '<Geometry GeometryType="ORIGIN_DXDYDZ">\n'
   h5TopologyAndGeometry += xmlInt.inc() + '<DataItem DataType="Float" Dimensions="3" Format="XML">\n'
-  h5TopologyAndGeometry += xmlInt.cur() + '%(rPX)d %(rPY)d %(rPZ)d\n'
+  h5TopologyAndGeometry += xmlInt.cur() + '%(rPX)f %(rPY)f %(rPZ)f\n'
   h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
   h5TopologyAndGeometry += xmlInt.inc() + '<DataItem DataType="Float" Dimensions="3" Format="XML">\n'
   h5TopologyAndGeometry += xmlInt.cur() + '1 1 1\n'
@@ -111,9 +111,9 @@ def updateDictForXDMFStrings(h5File, h5dict):
   ---------
     h5dict: Dictionary with the meta-information of the HDF5 file (no data contained)
   """
-  h5dict['sdSX'] = h5dict["subdomainSize"][0]
-  h5dict['sdSY'] = h5dict["subdomainSize"][1]
-  h5dict['sdSZ'] = h5dict["subdomainSize"][2]
+  h5dict['sdSX'] = h5dict["subdomainSize"][0]+1
+  h5dict['sdSY'] = h5dict["subdomainSize"][1]+1
+  h5dict['sdSZ'] = h5dict["subdomainSize"][2]+1
   h5dict['rPX'] = h5dict["relativePosition"][0]
   h5dict['rPY'] = h5dict["relativePosition"][1]
   h5dict['rPZ'] = h5dict["relativePosition"][2]

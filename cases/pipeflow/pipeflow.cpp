@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
                        (*cfg)["domain"]["blockSize"].read<int>()); 
      
   pcout << "(PipeFlow) (Parameters) calculating flow parameters" << endl;
-  param::lbm_parameters((*cfg),flagMatrix->getBoundingBox());
+  param::lbm_pipe_parameters((*cfg),flagMatrix->getBoundingBox());
   
   pcout << "(PipeFlow) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(

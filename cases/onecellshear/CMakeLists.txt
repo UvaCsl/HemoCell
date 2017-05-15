@@ -24,6 +24,7 @@ MESSAGE( STATUS "PALABOS_DIR:         " ${PALABOS_DIR} )
 
 SET(ENABLE_MPI 1)  
 SET(NEEDTXML 0)  # Set to 1 to enable external TinyXml libs (Palabos 1.5.0+)
+SET(NEEDPARMETIS 1)  
 SET(NEEDHDF5 1)  # For highlevel HDF5 routines
 #SET(HDF5_USE_STATIC_LIBRARIES ON) #does not work anyway :(
 
@@ -43,11 +44,39 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
 IF (NOT CMAKE_CXX_FLAGS)
   #If flags are not set, add default flags
   SET(CMAKE_BUILD_TYPE ${BUILD_TYPE})
-  SET(CMAKE_CXX_FLAGS  "-Wno-unknown-pragmas -Wno-unused-result -Wno-unused-parameter -Wall -Wextra -g -Wformat -Wformat-security -Werror=format-security -O3 -march=native")
+  SET(CMAKE_CXX_FLAGS  "-Wno-empty-body -Wno-unused-variable -Wno-deprecated-declarations -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-result -Wall -Wextra -ggdb -Wformat -Wformat-security -Werror=format-security -O3 -march=native -std=c++11")
 ENDIF (NOT CMAKE_CXX_FLAGS)
 #SET (CMAKE_CXX_STANDARD 11)
 
 #=======================================
+IF(NEEDPARMETIS)
+    #
+    # Find the PARMETIS includes and libraries
+    #
+    # ParMETIS is an MPI-based parallel library that implements a variety of
+# algorithms for 
+    # partitioning unstructured graphs, meshes, and for computing fill-reducing
+# orderings of 
+    # sparse matrices. It can be found at:
+    #   http://www-users.cs.umn.edu/~karypis/metis/parmetis/index.html
+    #
+    # PARMETIS_INCLUDE_DIR - where to find autopack.h
+    # PARMETIS_LIBRARIES   - List of fully qualified libraries to link against.
+    # PARMETIS_FOUND       - Do not attempt to use if "no" or undefined.
+    FIND_PATH(PARMETIS_INCLUDE_DIR parmetis.h /usr/local/include /usr/include)
+    FIND_LIBRARY(PARMETIS_LIBRARY parmetis /usr/local/lib /usr/lib) 
+    IF(PARMETIS_INCLUDE_DIR)
+      IF(PARMETIS_LIBRARY)
+        SET( PARMETIS_LIBRARIES ${PARMETIS_LIBRARY} ${METIS_LIBRARY})
+        SET( PARMETIS_FOUND "YES" )
+      ENDIF(PARMETIS_LIBRARY)
+    ENDIF(PARMETIS_INCLUDE_DIR)
+  
+  MESSAGE( STATUS "PARMETIS DIR:       " ${PARMETIS_INCLUDE_DIR})
+  MESSAGE( STATUS "PARMETIS LIBRARIES: " ${PARMETIS_LIBRARIES})
+  INCLUDE_DIRECTORIES(${PARMETIS_INCLUDE_DIR})
+ENDIF(NEEDPARMETIS)
+
 IF(NEEDTXML)
   FIND_PACKAGE(TinyXML REQUIRED HINTS ${HEMOCELL_BASE_DIR}/cmake )
   INCLUDE_DIRECTORIES(${TINYXML_INCLUDE_DIR})
@@ -88,6 +117,8 @@ INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/helper)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/config)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/core)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/models)
+INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/mechanics)
+INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/tools/cellRandInit)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/external)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/IO)
 INCLUDE_DIRECTORIES(${HEMOCELL_BASE_DIR}/extensions)
@@ -98,9 +129,10 @@ FILE(GLOB SRC_FILES "${HEMOCELL_BASE_DIR}/IO/*.cpp"
                     "${HEMOCELL_BASE_DIR}/extensions/*.cpp"
                     "${HEMOCELL_BASE_DIR}/external/*.cpp"
                     "${HEMOCELL_BASE_DIR}/helper/*.cpp"
-                    "${HEMOCELL_BASE_DIR}/models/*.cpp")
+                    "${HEMOCELL_BASE_DIR}/models/*.cpp"
+                    "${HEMOCELL_BASE_DIR}/mechanics/*.cpp")
 
-LIST(APPEND SRC_FILES_SRC ${PROJECT_SRC})
+LIST(APPEND SRC_FILES ${PROJECT_SRC})
 
 include(ExternalProject) 
 ExternalProject_Add("palabos" PREFIX ${PALABOS_DIR} SOURCE_DIR ${PALABOS_DIR}
@@ -108,7 +140,7 @@ ExternalProject_Add("palabos" PREFIX ${PALABOS_DIR} SOURCE_DIR ${PALABOS_DIR}
 
 
 #SET(CMAKE_EXE_LINKER_FLAGS "-static") !Good luck on finding statically linked mpi libraries, it should be possible though
-ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES_SRC})
+ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES})
 ADD_DEPENDENCIES(${PROJECT_NAME} "palabos")
 target_link_libraries(${PROJECT_NAME} ${PALABOS_DIR}/libpalabos.a)
 IF(NEEDHDF5)
@@ -119,5 +151,8 @@ IF(NEEDHDF5)
     TARGET_LINK_LIBRARIES(${PROJECT_NAME} hdf5_hl hdf5)
   ENDIF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.0)
 ENDIF(NEEDHDF5)
+IF(NEEDPARMETIS)
+  target_link_libraries(${PROJECT_NAME} ${PARMETIS_LIBRARIES})
+ENDIF(NEEDPARMETIS)
 
 

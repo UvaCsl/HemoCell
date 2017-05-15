@@ -48,6 +48,12 @@ void HemoCellField::setOutputVariables(const vector<int> & outputs) { desiredOut
          }
   }
 
+/* position is in micrometers, so we still have to convert it*/
+void HemoCellField::addSingleCell(Array<double,3> position, plint cellId) {
+  pcerr << "(HemoCell) (ParticleType) addSingleCell not implemented, but might definitely be nice to have" << endl;
+  exit(0);  
+}
+
 void HemoCellField::statistics() {
   pcout << "Cellfield  (+ material model) of " << name << std::endl;
 

@@ -11,9 +11,10 @@ class Parameters {
   static double dt,dx,dm,df;
   static double nu_p,rho_p,kBT_p;
   static double tau,re;
-  static double nu_lbm, u_lbm_max, kBT_lbm;
+  static double nu_lbm, u_lbm_max, kBT_lbm, shearrate_lbm;
 
 
-  static void lbm_parameters(Config & cfg, Box3D domainBox);
+  static void lbm_pipe_parameters(Config & cfg, Box3D domainBox);
+  static void lbm_shear_parameters(Config & cfg, double nx);
 };
 #endif

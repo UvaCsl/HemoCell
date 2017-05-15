@@ -1,285 +1,125 @@
-//-------------
-//Definitions override here
-
-//-------------------
 #include "hemocell.h"
-//#include "cellStretching3D.hh"
-
-typedef double T;
-typedef Array<T,3> Velocity;
+#include "rbcHighOrderModel.h"
+#include "helper/hemocellInit.hh"
 
 
 int main(int argc, char* argv[])
 {   
-    if(argc < 2)
-    {
-        cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
-        return -1;
-    }
+	if(argc < 2)
+	{
+			cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
+			return -1;
+	}
 
-    plbInit(&argc, &argv);
+	HemoCell hemocell(argv[1], argc, argv);
+	Config * cfg = hemocell.cfg;
 
-    printHeader();
-    
-    global::timer("hemocell_init").start();
+	
+	// ------------------------- Read in config file ------------------------------------------------
 
-    global::directories().setOutputDir("./tmp/");
-    global::directories().setLogOutDir("./log/");
-    global::directories().setInputDir("./");
+/*	std::vector<T> ea;
+	document["parameters"]["eulerAngles"].read(ea);
+	if (ea.size() != 3) { ea.resize(3, 0.0); }
+	eulerAngles = Array<T,3>(ea[0], ea[1], ea[2]);
+	for(int i =0; i < 3; i++)
+			eulerAngles[i] *= pi/180.;
+*/
 
-    global::IOpolicy().activateParallelIO(true);
-    global::IOpolicy().setStlFilesHaveLowerBound(false);
-//    global::IOpolicy().setLowerBoundForStlFiles(-1.);
-
-    std::string outputDir = global::directories().getOutputDir();
-    std::string inputDir = global::directories().getInputDir();
-    std::string logOutDir = global::directories().getLogOutDir();
-    mkpath((outputDir + "/hdf5/").c_str(), 0777);
-    mkpath(logOutDir.c_str(), 0777);
-
-    // ------------------------ Variable declarations here -----------------------------------------
-
-    bool checkpointed = 0;
-    plint initIter = 0;
-    plint warmup = 0;
-    T Re;
-    T dx, dt, dm, dNewton;
-    plint cellStep;
-    T tau, nu_lbm, u_lbm_max;
-    T nu_p, rho_p;
-    plint nx, ny, nz;
-    T lx, ly, lz;
-    T shearRate_p, shearRate;
-    T shellDensity, eqLengthRatio, radius;
-    T k_WLC, k_rep, k_rest, k_elastic, k_bend, k_volume, k_surface, k_shear, k_stretch, eta_m;
-    plint minNumOfTriangles;
-    plint rbcModel;
-    // plint materialModel;
-    // plint ibmKernel, ibmScheme;
-    Array<T, 3> eulerAngles;
-    plint tmax, tmeas;
-    std::string meshFileName;
-
-
-    // ------------------------- Read in config file ------------------------------------------------
-
-    pcout << "(main) reading config xml..." << std::endl;
-
-    string paramXmlFileName;
-    global::argv(1).read(paramXmlFileName);
-    XMLreader documentXML(paramXmlFileName);
-    Config cfg(paramXmlFileName);
-
-    // Check if it is a fresh start or a checkpointed run
-    std::string firstField = (*(documentXML.getChildren(
-            documentXML.getFirstId())[0])).getName(); // VERY COMPLICATED! Hope I could find sth easier!
-    if (firstField == "hemocell") { checkpointed = 0; }
-    else { checkpointed = 1; }
-
-    XMLreaderProxy document = checkpointed ? documentXML["Checkpoint"]["hemocell"] : documentXML["hemocell"];
-   
-    document["parameters"]["shearrate"].read(shearRate_p);
-    document["parameters"]["warmup"].read(warmup);
-
-    std::vector<T> ea;
-    document["parameters"]["eulerAngles"].read(ea);
-    if (ea.size() != 3) { ea.resize(3, 0.0); }
-    eulerAngles = Array<T,3>(ea[0], ea[1], ea[2]);
-    for(int i =0; i < 3; i++)
-        eulerAngles[i] *= pi/180.;
-
-    document["cellModel"]["rbcModel"].read(rbcModel);
-    // document["cellModel"]["materialModel"].read(materialModel);
-    document["cellModel"]["shellDensity"].read(shellDensity);
-    document["cellModel"]["kWLC"].read(k_WLC);
-    document["cellModel"]["eqLengthRatio"].read(eqLengthRatio);
-    document["cellModel"]["kRep"].read(k_rep);
-    document["cellModel"]["kElastic"].read(k_elastic);
-    document["cellModel"]["kBend"].read(k_bend);
-    document["cellModel"]["kVolume"].read(k_volume);
-    document["cellModel"]["kSurface"].read(k_surface);
-    document["cellModel"]["etaM"].read(eta_m);
-    document["cellModel"]["kRest"].read(k_rest);
-    document["cellModel"]["kShear"].read(k_shear);
-    document["cellModel"]["kStretch"].read(k_stretch);
-
-    // document["ibm"]["ibmKernel"].read(ibmKernel);
-    // document["ibm"]["ibmScheme"].read(ibmScheme);
-    document["ibm"]["radius"].read(radius);
-    document["ibm"]["minNumOfTriangles"].read(minNumOfTriangles);
-
-    // Set lx, ly, lz --or nx, ny, nz
-    lx = 20 * radius;
-    ly = 20 * radius;
-    lz = 20 * radius;
-
-    document["domain"]["rhoP"].read(rho_p);
-    document["domain"]["nuP"].read(nu_p);
-    // document["domain"]["tau"].read(tau);
-    document["domain"]["dx"].read(dx);
-    document["domain"]["dt"].read(dt);
-    document["domain"]["timeStepSize"].read(cellStep);
-
-    document["sim"]["tmax"].read(tmax);
-    document["sim"]["tmeas"].read(tmeas);
-
-// ---------------------------- Define geometry ------------------------------------------------
-
-    Re = (ly * (shearRate_p * (ly*0.5)) ) / nu_p;
-    nx = (int)(lx / dx);
-    ny = (int)(ly / dx);
-    nz = (int)(lz / dx);
 
 // ---------------------------- Calc. LBM parameters -------------------------------------------------
+	pcout << "(OneCellShear) (Parameters) calculating shear flow parameters" << endl;
+	double nxyz = 20*(1e-6/(*cfg)["domain"]["dx"].read<double>());
+  param::lbm_shear_parameters((*cfg),nxyz);
 
-    if(dt < 0.0) { // e.g. == -1, set tau = 1 and calc. dt
-        tau = 1.0;
-        nu_lbm = 1./3. * (tau - 0.5);
-        dt = nu_lbm / nu_p * (dx * dx);
-    }
-    else{  // set dt directly and calculate corresponding tau
-        nu_lbm = nu_p * dt / (dx*dx); 
-        tau = 3.0 * nu_lbm + 0.5;
-    }
+	// ------------------------ Init lattice --------------------------------
 
-    u_lbm_max = Re * nu_lbm / nx;
-    dm = rho_p * (dx * dx * dx);
-    dNewton = (dm * dx / (dt * dt));
-    //kBT = kBT_p / ( dNewton * dx );
-    shearRate = shearRate_p * dt;
-    
-    
-    pcout << "(main) dx = " << dx << ", " <<
-        "dt = " << dt << ", " <<
-        "cell_dt" << cellStep * dt <<
-        "dm = " << dm << ", " <<
-        "dN = " << dNewton << ", " <<
-        "shear rate = " << shearRate << ", " <<
-        //"kT = " << kBT <<
-        std::endl;
+	pcout << "(OneCellShear) Initializing lattice: " << nxyz << "x, y and z (cube)" << std::endl;
 
-    pcout << "(main) tau = " << tau << " Re = " << Re << " u_lb_max(based on Re) = " << u_lbm_max << " nu_lb = " << nu_lbm << endl;
-    pcout << "(main) Re corresponds to u_max = " << (Re * nu_p)/(ny*dx) << " [m/s]" << endl;
+	plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
 
-    checkParameterSanity(nu_lbm, u_lbm_max);
+			hemocell.lattice = new MultiBlockLattice3D<double,DESCRIPTOR>(
+					defaultMultiBlockPolicy3D().getMultiBlockManagement(nxyz, nxyz, nxyz, extendedEnvelopeWidth),
+					defaultMultiBlockPolicy3D().getBlockCommunicator(),
+					defaultMultiBlockPolicy3D().getCombinedStatistics(),
+					defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+	#if HEMOCELL_CFD_DYNAMICS == 1
+					new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+	#elif HEMOCELL_CFD_DYNAMICS == 2
+					new GuoExternalForceMRTdynamics<T, DESCRIPTOR>(1.0/param::tau)); // Use with MRT dynamics!
+	#endif
 
-    // Debug line
-    // pcout << "(main) tau = " << parameters.getTau() << " Re = " << parameters.getRe() << " u_lb = " << u_lbm_max << " nu_lb = " << parameters.getLatticeNu() << endl;
+	pcout << "(OneCellShear) dx = " << param::dx << ", " <<
+			"dt = " << param::dt << ", " <<
+			"dm = " << param::dm << ", " <<
+			"dN = " << param::df << ", " <<
+			"shear rate = " << param::shearrate_lbm << ", " <<
+			std::endl;
 
-    // ------------------------ Init lattice --------------------------------
+	pcout << "(OneCellShear) tau = " << param::tau << " Re = " << param::re << " u_lb_max(based on Re) = " << param::u_lbm_max << " nu_lb = " << param::nu_lbm << endl;
+	pcout << "(main) Re corresponds to u_max = " << (param::re * param::nu_p)/(hemocell.lattice->getBoundingBox().getNy()*param::dx) << " [m/s]" << endl;
+	// -------------------------- Define boundary conditions ---------------------
 
-    pcout << std::endl << "Initializing lattice: " << nx << "x" << ny << "x" << nz << ": tau=" << tau << std::endl;
+	OnLatticeBoundaryCondition3D<double,DESCRIPTOR>* boundaryCondition
+			= createLocalBoundaryCondition3D<double,DESCRIPTOR>();
 
-    plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
+	hemocell.lattice->toggleInternalStatistics(false);
 
-    #if HEMOCELL_CFD_DYNAMICS == 1
-        MultiBlockLattice3D<T, DESCRIPTOR> lattice(
-            defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
-            defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/tau));
-    #elif HEMOCELL_CFD_DYNAMICS == 2
-        MultiBlockLattice3D<T, DESCRIPTOR> lattice(
-            defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
-            defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-            new GuoExternalForceMRTdynamics<T, DESCRIPTOR>(1.0/tau)); // Use with MRT dynamics!
-    #endif
+	iniLatticeSquareCouette(*hemocell.lattice, nxyz, nxyz, nxyz, *boundaryCondition, param::shearrate_lbm);
 
+	hemocell.lattice->initialize();
 
-    // -------------------------- Define boundary conditions ---------------------
+	// ----------------------- Init cell models --------------------------
+	
+	hemocell.initializeCellfield();
+	hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
+	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA}; 
+	hemocell.setOutputs("RBC_HO", outputs);
 
-    OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
-        = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
-
-    lattice.toggleInternalStatistics(false);
-
-    iniLatticeSquareCouette(lattice, nx, ny, nz, *boundaryCondition, shearRate);
-
-
-    // ----------------------- Init cell models --------------------------
-
-    pcout << "(main) init cell structures..."  << std::endl;
-    /* The Maximum length of two vertices should be less than 2.0 LU (or not)*/
-    T persistenceLengthFine = 7.5e-9; // In meters
-    T eqVolume = 0;
-    plint shape = 1;    // shape: Sphere[0], RBC from sphere[1], Cell(defined)[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5]
-    std::string cellPath = " "; // If particle is loaded from stl file.
-
-    ConstitutiveModel<T, DESCRIPTOR> *cellModel;
-    std::vector<CellField3D<T, DESCRIPTOR> *> cellFields;
-
-
-    
-    // ----------------------- Init RBCs ---------------------------------
-
-    pcout << "(main)   init RBC structure..."  << std::endl;
-
-    TriangleBoundary3D<T> Cells = constructMeshElement(shape, radius / dx, minNumOfTriangles, dx, cellPath, eulerAngles);
-    TriangularSurfaceMesh<T> meshElement = Cells.getMesh();
-    MeshMetrics<T> meshmetric(meshElement);    
-    meshmetric.write();
-    eqVolume = meshmetric.getVolume();
-    plint numVerticesPerCell = meshElement.getNumVertices();
-
-    if (rbcModel == 0) {
-        pcout << "(main) Using ShapeMemoryModel3D. " << std::endl;
-        cellModel = ShapeMemoryModel3D::RBCShapeMemoryModel3D(&cfg, eqLengthRatio, dx, dt, dm,meshElement);
-    } else if (rbcModel==1) {
-        pcout << "(main) Using CellModel3D. " << std::endl;
-        cellModel = new CellModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-         persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
-    } else {
-        pcout << "(main) Using IntermediateModel3D. " << std::endl;
-        cellModel = new IntermediateModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
-             persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
-    }
-
-    // Giving artificial hematocrit of 0.01, since it does not matter here
-    CellField3D<T, DESCRIPTOR> RBCField(lattice, meshElement, 0.01, cellModel, "RBC");
-    cellFields.push_back(&RBCField);
-
+	outputs = {OUTPUT_VELOCITY};
+	hemocell.setFluidOutputs(outputs);
 
 // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
 
-    FcnCheckpoint<T, DESCRIPTOR> checkpointer(documentXML);
-    checkpointer.load(documentXML, lattice, cellFields, initIter);
-    if (not checkpointer.wasCheckpointed()) {
-        pcout << "(main) initializing"<< std::endl;
-        std::vector<Array<T,3> > cellsOrigin;
-        cellsOrigin.push_back( Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
-        RBCField.initialize(cellsOrigin);
-        checkpointer.save(lattice, cellFields, initIter);
+	//loading the cellfield
+  if (not cfg->checkpointed) {
+    hemocell.loadParticles((*cfg)["sim"]["particlePosFile"].read<string>());
+    hemocell.writeOutput();
+  } else {
+    hemocell.loadCheckPoint();
+  }
+
+
+  if (hemocell.iter == 0) { 
+    pcout << "(PipeFlow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl; 
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {  
+      hemocell.lattice->collideAndStream();  
+    } 
+  }
+
+  unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
+  unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
+  unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
+
+  while (hemocell.iter < tmax ) {
+    
+    hemocell.iterate();
+    
+    //Set force as required after each iteration
+    //setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
+    //    DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+    //    Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+
+    if (hemocell.iter % tmeas == 0) {
+      hemocell.writeOutput();
     }
-
-    // Update integration scheme and time step for surfaceParticles
-    RBCField.setParticleUpdateScheme((T)cellStep);
-
-    plint nCells = RBCField.getNumberOfCells_Global();
-    pcout << std::endl ;
-    pcout << "(main) Volume ratio [x100%]: " << nCells*eqVolume*100.0/(nx*ny*nz) << std::endl;
-    pcout << "(main) nCells (global) = " << nCells << ", pid: " << global::mpi().getRank() << std::endl;
-
-//    MultiParticleField3D<LightParticleField3D<T,DESCRIPTOR> > * boundaryParticleField3D =
-//                                                        createBoundaryParticleField3D(lattice);
-
-    /* Repulsive force */
-    //T k_int = 0.00025, DeltaX=1.0, R=0.75, k=1.5;
-    //PowerLawForce<T> PLF(k_int, DeltaX, R, k);
-
-
-    // --------------------- Warming up the fluid field ---------------------
-
-    if (initIter == 0)
-    {
-        pcout << "(main) fresh start: warming up fluid domain for "  << warmup << " iterations..." << std::endl;
-        for (plint itrt = 0; itrt < warmup; ++itrt) { lattice.collideAndStream(); }
+    if (hemocell.iter % tcheckpoint == 0) {
+      hemocell.saveCheckPoint();
     }
+  }
 
-    // -------------------------- Initial output --------------------------
-
+  return 0;
+}
+/*
     pcout << std::endl << "(main) Starting simulation i=" << initIter  << ", tmeas = " << tmeas << std::endl;
 
     global::timer("HDFOutput").start();
@@ -291,72 +131,23 @@ int main(int argc, char* argv[])
     simpleProfiler.writeInitial(nx, ny, nz, nCells, numVerticesPerCell);
 
     plb_ofstream fOut("stretch.log");
-    Array<T,3> stretch = RBCField[0]->get3D(CCR_POSITION_MAX) - RBCField[0]->get3D(CCR_POSITION_MIN); // ***** Added by Britt
-    pcout << "dx: " << stretch[0] << "dy: " << stretch[1]<<  "dz: " << stretch[2] << endl; // *****
-    fOut << 1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
+    //Array<T,3> stretch = RBCField[0]->get3D(CCR_POSITION_MAX) - RBCField[0]->get3D(CCR_POSITION_MIN); // ***** Added by Britt
+    //pcout << "dx: " << stretch[0] << "dy: " << stretch[1]<<  "dz: " << stretch[2] << endl; // *****
+    //fOut << 1 << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
 
 
     // ------------------------ Starting main loop --------------------------
     
-    global::timer("mainLoop").start();
-    //global::profiler().turnOn();
 
-    for (pluint iter=initIter; iter<tmax+1; iter+=cellStep) {
-        // #1# Membrane Model
-        RBCField.applyConstitutiveModel();
         
-        // Inner iteration cycle of fluid
-        for(int innerIt = 0; innerIt < cellStep; innerIt++){
-            
-            // #2# IBM Spreading
-            RBCField.setFluidExternalForce(0); 
-            RBCField.spreadForceIBM();
-        
-            // #3# LBM
-            global::timer("LBM").start();
-            lattice.collideAndStream();
-            global::timer("LBM").stop();
-        }
-
-        // #4# IBM Interpolation
-        RBCField.interpolateVelocityIBM();
-        
-        // #5# Position Update
-        RBCField.advanceParticles();
-        
-        // #6# Output
         if ((iter%tmeas)==0) {
-            SyncRequirements everyCCR(allReductions);
-            RBCField.synchronizeCellQuantities(everyCCR);
-
-            global::timer("HDFOutput").start();
-            // writeHDF5(lattice, dx, dt, iter+1);
-            writeCellField3D_HDF5(RBCField, dx, dt, iter);
-            writeCell3D_HDF5(RBCField, dx, dt, iter);
-            global::timer("HDFOutput").stop();
-
-            if ((iter%(2*tmeas))==0) {
-                global::timer("Checkpoint").start();
-                checkpointer.save(lattice, cellFields, iter);
-                global::timer("Checkpoint").stop();
-            }
-
-            T dtIteration = global::timer("mainLoop").stop();
-            simpleProfiler.writeIteration(iter);
             //global::profiler().writeReport();
             pcout << "(main) Iteration:" << iter << "; time/it: "<< dtIteration*1.0/tmeas << " physical time: " << iter*dt << " s;";
-            Array<T,3> stretch = RBCField[0]->get3D(CCR_POSITION_MAX) - RBCField[0]->get3D(CCR_POSITION_MIN); 
-            pcout << " dx: " << stretch[0] << " dy: " << stretch[1]<<  " dz: " << stretch[2] << endl; 
-            fOut << iter << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
-            RBCField[0]->saveMesh("stretchedCell.stl");
-
-        } else {
-            RBCField.synchronizeCellQuantities();
-        }
+            //Array<T,3> stretch = RBCField[0]->get3D(CCR_POSITION_MAX) - RBCField[0]->get3D(CCR_POSITION_MIN); 
+            //pcout << " dx: " << stretch[0] << " dy: " << stretch[1]<<  " dz: " << stretch[2] << endl; 
+            //fOut << iter << " " << stretch[0] << " " << stretch[1] << " " << stretch[2] << endl;
+            //RBCField[0]->saveMesh("stretchedCell.stl");
 
     }
-    RBCField[0]->saveMesh("stretchedCell.stl");
-    simpleProfiler.writeIteration(tmax+1);
-    //global::profiler().writeReport();
     pcout << "(main) Simulation finished." << std::endl;
-}
+}*/

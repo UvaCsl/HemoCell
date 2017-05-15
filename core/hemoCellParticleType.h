@@ -12,6 +12,7 @@ class HemoCellField;
 #include "cellMechanics.h"
 #include "meshMetrics.h"
 #include "hemoCellFields.h"
+#include "readPositionsBloodCells.h"
 
 /*contains information about one particular cellfield, structlike*/
 class HemoCellField{
@@ -39,6 +40,8 @@ class HemoCellField{
   void setOutputVariables(const vector<int> &);
   CellMechanics * mechanics;
   void statistics();
+  /* position is in micrometers, so we still have to convert it*/
+  void addSingleCell(Array<double,3> position, plint cellId);
   MeshMetrics<double> * meshmetric;
 };
 

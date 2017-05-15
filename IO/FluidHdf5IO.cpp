@@ -60,7 +60,7 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
   int ncells = Nx*Ny*Nz;
   Dot3D rp_temp = blocks[0]->getLocation();
   int subdomainSize[]  = {int(Nz), int(Ny), int(Nx)}; //Reverse for paraview
-  long int relativePosition[3] = {rp_temp.z+domain.z0,rp_temp.y+domain.y0,rp_temp.x+domain.x0}; //Reverse for paraview
+  long int relativePosition[3] = {rp_temp.z+domain.z0-1,rp_temp.y+domain.y0-1,rp_temp.x+domain.x0-1}; //Reverse for paraview
 
 	H5LTset_attribute_int (file_id, "/", "numberOfCells", &ncells, 1);
 	H5LTset_attribute_int (file_id, "/", "subdomainSize", subdomainSize, 3);
