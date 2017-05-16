@@ -33,9 +33,16 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     //TODO, every edge is in here twice, clean that?
     vector<Array<plint,2>> edge_list_;
     for (const Array<plint,3> & triangle : triangle_list_) {
-      edge_list_.push_back({triangle[0],triangle[1]});
-      edge_list_.push_back({triangle[1],triangle[2]});
-      edge_list_.push_back({triangle[2],triangle[0]});
+    //FIX by allowing only incremental edges
+      if(triangle[0] < triangle[1]) {
+        edge_list_.push_back({triangle[0],triangle[1]});
+      }
+      if(triangle[1] < triangle[2]) {
+        edge_list_.push_back({triangle[1],triangle[2]});
+      }
+      if (triangle[2] < triangle[0]) {
+        edge_list_.push_back({triangle[2],triangle[0]});
+      }
     }
 
     //Calculate eq edges
@@ -64,11 +71,18 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       const Array<double,3> V2 = cellField.meshElement.computeTriangleNormal(adjacentTriangles[1]);
 
       angle = angleBetweenVectors(V1, V2);
+
+      ///TODO does this gives us a correct "sign"?
       const plint sign = dot(x2-x1, V2) >= 0 ? 1 : -1;
       if (sign <= 0) {
         angle = 2 * PI - angle;
       }
-      edge_angle_eq_list_.push_back((angle > PI) ? angle - 2 * PI : angle);
+      
+      if (angle > PI) {
+        angle = angle - 2*PI;
+      }
+      
+      edge_angle_eq_list_.push_back(angle);
     }
 
     //Calculate triangle eq

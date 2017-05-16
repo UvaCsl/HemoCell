@@ -60,12 +60,12 @@ int main(int argc, char *argv[]) {
   hemocell.initializeCellfield();
 
   hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
-  hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
+  //hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
 
   vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA};
   hemocell.setOutputs("RBC_HO", outputs);
   outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES};
-  hemocell.setOutputs("PLT", outputs);
+  //hemocell.setOutputs("PLT", outputs);
 
   outputs = {OUTPUT_VELOCITY};
   hemocell.setFluidOutputs(outputs);
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
 				Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
 
     if (hemocell.iter % tbalance == 0) {
-      if(hemocell.calculateFractionalLoadImbalance() < 3) {
+      if(hemocell.calculateFractionalLoadImbalance() > 3) {
         hemocell.doLoadBalance();
       }
     }

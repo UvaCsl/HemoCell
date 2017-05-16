@@ -38,25 +38,15 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       volume += (1.0/6.0)*(-v210+v120+v201-v021-v102+v012);
       
       //Area
-      //With herons formula, rewritten for speed
-      const double l1 = (v0[0]-v1[0])*(v0[0]-v1[0]) +
-                        (v0[1]-v1[1])*(v0[1]-v1[1]) +
-                        (v0[2]-v1[2])*(v0[2]-v1[2]);
-      const double l2 = (v2[0]-v1[0])*(v2[0]-v1[0]) +
-                        (v2[1]-v1[1])*(v2[1]-v1[1]) +
-                        (v2[2]-v1[2])*(v2[2]-v1[2]);
-      const double l3 = (v0[0]-v2[0])*(v0[0]-v2[0]) +
-                        (v0[1]-v2[1])*(v0[1]-v2[1]) +
-                        (v0[2]-v2[2])*(v0[2]-v2[2]);
-      const double area = sqrt((2*l1*l2 + 2*l2*l3 + 2*l1*l3 - l1*l1 - l2*l2 - l3*l3)/16.0);
+      const double area = computeTriangleArea(v0,v1,v2);
 
       const double areaRatio = (area-cellConstants.triangle_area_eq_list[triangle_n])
                                /cellConstants.triangle_area_eq_list[triangle_n];
       //Area Force per vertex calculation
       //Unit vector pointing from the area
-      const Array<double,3> av0 = {v0[0] - (v1[0]-v2[0])*0.5,v0[1] - (v1[1]-v2[1])*0.5,v0[2] - (v1[2]-v2[2])*0.5};
-      const Array<double,3> av1 = {v1[0] - (v0[0]-v2[0])*0.5,v1[1] - (v0[1]-v2[1])*0.5,v1[2] - (v0[2]-v2[2])*0.5};
-      const Array<double,3> av2 = {v2[0] - (v1[0]-v0[0])*0.5,v2[1] - (v1[1]-v0[1])*0.5,v2[2] - (v1[2]-v0[2])*0.5};
+      const Array<double,3> av0 = {v0[0] - (v1[0]+v2[0])*0.5,v0[1] - (v1[1]+v2[1])*0.5,v0[2] - (v1[2]+v2[2])*0.5};
+      const Array<double,3> av1 = {v1[0] - (v0[0]+v2[0])*0.5,v1[1] - (v0[1]+v2[1])*0.5,v1[2] - (v0[2]+v2[2])*0.5};
+      const Array<double,3> av2 = {v2[0] - (v1[0]+v0[0])*0.5,v2[1] - (v1[1]+v0[1])*0.5,v2[2] - (v1[2]+v0[2])*0.5};
       //length of vector
       const double avl0 = sqrt(av0[0]*av0[0]+av0[1]*av0[1]+av0[2]*av0[2]);
       const double avl1 = sqrt(av1[0]*av1[0]+av1[1]*av1[1]+av1[2]*av1[2]);
@@ -71,9 +61,9 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       // TODO: Add area force viscosity based on the bilipid membrane
 
       //push back area force
-      //*cell[triangle[0]]->force_area += afm*avu0;
-      //*cell[triangle[1]]->force_area += afm*avu1;
-      //*cell[triangle[2]]->force_area += afm*avu2;
+      *cell[triangle[0]]->force_area += afm*avu0;
+      *cell[triangle[1]]->force_area += afm*avu1;
+      *cell[triangle[2]]->force_area += afm*avu2;
 
 
       //Calculate triangle normal while we're busy with this
@@ -149,15 +139,8 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       const Array<double,3> V1 = plb::computeTriangleNormal(b00,b01,b02, false);
       const Array<double,3> V2 = plb::computeTriangleNormal(b10,b11,b12, false);
 
-      //TODO this can be precalculated
-      Array<double,3> x2 = {0.0,0.0,0.0};
-      for (pluint id = 0 ; id < 3 ; id ++ ) {
-        const plint kVertex = cellField.meshElement.getVertexId(b0,id);
-        if (kVertex != edge[0] && kVertex != edge[1]) {
-          x2 = cell[kVertex]->position;
-          break;
-        }
-      }
+     
+      const Array<double,3> x2 = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
 
       //calculate angle
       double angle = angleBetweenVectors(V1, V2);
@@ -166,18 +149,18 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
         angle = 2 * PI - angle;
       }
       if (angle > PI) {
-        angle -= 2*PI; 
+        angle = angle - 2*PI; 
       }
 
       //calculate resulting bending force
-      const double angle_frac = cellConstants.edge_angle_eq_list[edge_n] - angle;
+      const double angle_frac = /*cellConstants.edge_angle_eq_list[edge_n]*/ - angle;
 
       const double force_magnitude = - k_bend * (angle_frac + angle_frac / ( 0.62 - (angle_frac * angle_frac)));
 
       //TODO bending force differs with area - That is intentional, and necessary!
       const Array<double,3> bending_force = force_magnitude*(V1 + V2)*0.5;
-      *cell[edge[0]]->force_bending += bending_force*0.5;
-      *cell[edge[1]]->force_bending += bending_force*0.5;
+      *cell[edge[0]]->force_bending += bending_force;
+      *cell[edge[1]]->force_bending += bending_force;
       //TODO Negate the force with 4 point bending
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= bending_force;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= bending_force;

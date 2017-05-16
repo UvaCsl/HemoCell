@@ -1,42 +1,8 @@
 <?xml version="1.0" ?>
 <hemocell>
-<MaterialModel>
-  <RBC>
-    <shellDensity> 1.0 </shellDensity>
-    <kBend> 100 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
-    <kVolume> 800.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
-    <kSurface> 0.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
-    <kShear> 80.0e0 </kShear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
-    <etaM> 0.022e-14 </etaM> <!-- NOT WORKING ATM --> <!--membrane viscosity (in N s/m^2 (Pa s) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
-    <kWLC> 1.0 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
-    <eqLengthRatio> 2.2 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
-    <kRep> 1.0e0 </kRep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
-    <kElastic> 0.0e0 </kElastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->
-    <kRest> 0.0e-4 </kRest> <!--Resting modulus (in N/m) [0.0, 1.0e-4]-->
-    <kStretch> 0.0e-10 </kStretch> <!--spring modulus (in N) [0.0]-->
-    <persistenceLengthFine> 7.5e-9 </persistenceLengthFine>
-    <minNumTriangles> 600 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
-  </RBC>
-  <PLT>
-    <aspectRatio>0.434782608696</aspectRatio>
-    <minNumTriangles>66</minNumTriangles>
-    <kBend> 100 </kBend> <!--bending modulus (in k_BT units, 4.142e-21 N m) [75, 25-171, 200, 69, 1000, 4000] {KruegerThesis2011, FedosovCaswell2010b}-->
-    <kVolume> 800.0 </kVolume> <!--volume conservation coefficient (dimensionless) [600, 6000] {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
-    <kSurface> 0.0 </kSurface> <!--surface conservation coefficient (dimensionless) [600, 5900]     {FedosovCaswell2010b, Pivkin2008, LiJ2005}--> 
-    <kShear> 80.0e0 </kShear> <!--local area constrain coefficient (dimensionless) [0, 10, 100]--> 
-    <etaM> 0.022e-14 </etaM> <!-- NOT WORKING ATM --> <!--membrane viscosity (in N s/m^2 (Pa s) units ) [0.022e-6, 0.022e-7] {FedosovFedosovCaswell2010}-->
-    <kWLC> 1.0 </kWLC> <!--Worm-like chain modulus coefficient (dimensionless) [1.0] -->
-    <eqLengthRatio> 2.2 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) [3.17 Pivkin2008, 2.2 FedosovFedosovCaswell2010] -->
-    <kRep> 1.0e0 </kRep> <!--Repulsive coefficient for WLC modulus (dimensionless) [1.0] -->
-    <kElastic> 0.0e0 </kElastic> <!--WLC elastic modulus coefficient, q=1 (dimensionless) [0.0] -->
-    <kRest> 0.0e-4 </kRest> <!--Resting modulus (in N/m) [0.0, 1.0e-4]-->
-    <kStretch> 0.0e-10 </kStretch> <!--spring modulus (in N) [0.0]-->
-    <persistenceLengthFine> 7.5e-9 </persistenceLengthFine>
-  </PLT>
-</MaterialModel>
 
 <parameters>
-    <warmup> 1 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <warmup> 100 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
 </parameters>
 
@@ -60,19 +26,18 @@
     <minForce>1e-3</minForce> <!-- Point of increase for integration steps -->
     <maxForce>2e-3</maxForce> <!-- Point of decrease for integration steps -->
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
-    <refDirN> 40 </refDirN>  <!-- Number of numerical cell in the reference direction -->
-    <blockSize> 20 </blockSize>
+    <refDirN> 64 </refDirN>  <!-- Number of numerical cell in the reference direction -->
+    <blockSize> -1 </blockSize>
     <kBT>4.100531391e-21</kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
     <Re> 10 </Re>   <!--Reynolds number-->
     <particleEnvelope>20</particleEnvelope>
 </domain>
 
 <sim>
-    <tmax> 100 </tmax> <!-- total number of iterations -->
-    <tmeas> 10 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint> 10 </tcheckpoint> 
-    <tbalance> 20 </tbalance> <!-- interval after which balance is performed --> 
-    <hematocrit> 40 </hematocrit> <!-- Hematocrit  > -->
+    <tmax> 1000 </tmax> <!-- total number of iterations -->
+    <tmeas> 100 </tmeas> <!-- interval after which data is written --> 
+    <tcheckpoint> 2000 </tcheckpoint> 
+    <tbalance> 100000 </tbalance> <!-- interval after which balance is performed --> 
     <particlePosFile> cells.pos </particlePosFile>
 </sim>
 
