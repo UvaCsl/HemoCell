@@ -43,35 +43,58 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       const double areaRatio = (area-cellConstants.triangle_area_eq_list[triangle_n])
                                /cellConstants.triangle_area_eq_list[triangle_n];
       //Area Force per vertex calculation
-      //Unit vector pointing from the area
-      const Array<double,3> av0 = {v0[0] - (v1[0]+v2[0])*0.5,v0[1] - (v1[1]+v2[1])*0.5,v0[2] - (v1[2]+v2[2])*0.5};
-      const Array<double,3> av1 = {v1[0] - (v0[0]+v2[0])*0.5,v1[1] - (v0[1]+v2[1])*0.5,v1[2] - (v0[2]+v2[2])*0.5};
-      const Array<double,3> av2 = {v2[0] - (v1[0]+v0[0])*0.5,v2[1] - (v1[1]+v0[1])*0.5,v2[2] - (v1[2]+v0[2])*0.5};
-      //length of vector
-      const double avl0 = sqrt(av0[0]*av0[0]+av0[1]*av0[1]+av0[2]*av0[2]);
-      const double avl1 = sqrt(av1[0]*av1[0]+av1[1]*av1[1]+av1[2]*av1[2]);
-      const double avl2 = sqrt(av2[0]*av2[0]+av2[1]*av2[1]+av2[2]*av2[2]);
-      //unit vector
-      const Array<double,3> avu0 = av0/avl0;
-      const Array<double,3> avu1 = av1/avl1;
-      const Array<double,3> avu2 = av2/avl2;
-      //area force magnitude
-      const double afm = -k_area *(areaRatio+areaRatio/(0.04-areaRatio*areaRatio));
-      
-      // TODO: Add area force viscosity based on the bilipid membrane
-
-      //push back area force
-      *cell[triangle[0]]->force_area += afm*avu0;
-      *cell[triangle[1]]->force_area += afm*avu1;
-      *cell[triangle[2]]->force_area += afm*avu2;
-
-
       //Calculate triangle normal while we're busy with this
       Array<double,3> t_normal;
       crossProduct(v1-v0,v2-v0,t_normal); //crossproduct with correct reference point //tODO, swap arg 1 and 2 maybe
       //set normal to unit length
       const double t_normal_l = sqrt(t_normal[0]*t_normal[0]+t_normal[1]*t_normal[1]+t_normal[2]*t_normal[2]);
       t_normal = t_normal/t_normal_l;
+      
+      
+      
+      //unit vector perpendicular to opposing edge:
+      Array<double,3> av0;
+      crossProduct(v1-v2,t_normal,av0);
+      Array<double,3> av1;
+      crossProduct(v2-v0,t_normal,av1);
+      Array<double,3> av2;
+      crossProduct(v0-v1,t_normal,av2);
+      //const Array<double,3> av0 = {v0[0] - (v1[0]+v2[0])*0.5,v0[1] - (v1[1]+v2[1])*0.5,v0[2] - (v1[2]+v2[2])*0.5};
+      //const Array<double,3> av1 = {v1[0] - (v0[0]+v2[0])*0.5,v1[1] - (v0[1]+v2[1])*0.5,v1[2] - (v0[2]+v2[2])*0.5};
+      //const Array<double,3> av2 = {v2[0] - (v1[0]+v0[0])*0.5,v2[1] - (v1[1]+v0[1])*0.5,v2[2] - (v1[2]+v0[2])*0.5};
+      //length of vector
+      //const double avl0 = sqrt(av0[0]*av0[0]+av0[1]*av0[1]+av0[2]*av0[2]);
+      //const double avl1 = sqrt(av1[0]*av1[0]+av1[1]*av1[1]+av1[2]*av1[2]);
+      //const double avl2 = sqrt(av2[0]*av2[0]+av2[1]*av2[1]+av2[2]*av2[2]);
+      //unit vector
+      //const Array<double,3> avu0 = av0/avl0;
+      //const Array<double,3> avu1 = av1/avl1;
+      //const Array<double,3> avu2 = av2/avl2;
+      //Area scales with opposing edge length, to zero-sum the force
+      //const double edg0 = sqrt((v1[0]-v2[0])*(v1[0]-v2[0])+
+      //                         (v1[1]-v2[1])*(v1[1]-v2[1])+
+      //                         (v1[2]-v2[2])*(v1[2]-v2[2]));
+      //const double edg1 = sqrt((v0[0]-v2[0])*(v0[0]-v2[0])+
+      //                         (v0[1]-v2[1])*(v0[1]-v2[1])+
+      //                         (v0[2]-v2[2])*(v0[2]-v2[2]));
+      //const double edg2 = sqrt((v1[0]-v0[0])*(v1[0]-v0[0])+
+      //                         (v1[1]-v0[1])*(v1[1]-v0[1])+
+      //                         (v1[2]-v0[2])*(v1[2]-v0[2]));
+      
+      //area force magnitude
+      const double afm = -k_area *(areaRatio+areaRatio/(0.04-areaRatio*areaRatio));
+      
+      // TODO: Add area force viscosity based on the bilipid membrane
+
+      //Area scales with edge length, because other
+      
+      //push back area force
+      *cell[triangle[0]]->force_area += afm*av0;
+      *cell[triangle[1]]->force_area += afm*av1;
+      *cell[triangle[2]]->force_area += afm*av2;
+
+
+
 
 
       //Store values necessary later
