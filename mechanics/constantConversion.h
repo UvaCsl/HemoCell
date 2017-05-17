@@ -12,6 +12,7 @@ class Parameters {
   static double nu_p,rho_p,kBT_p;
   static double tau,re;
   static double nu_lbm, u_lbm_max, kBT_lbm, shearrate_lbm;
+  static double ef_lbm; //used in cellStretching
 
 
   static void lbm_pipe_parameters(Config & cfg, Box3D domainBox);

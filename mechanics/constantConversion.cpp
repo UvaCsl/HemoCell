@@ -78,4 +78,5 @@ double Parameters::shearrate_lbm = 0.0;
 
 double Parameters::kBT_lbm = 0.0;
 double Parameters::kBT_p = 0.0;
+double Parameters::ef_lbm = 0.0;
 #endif

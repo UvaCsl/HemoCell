@@ -75,7 +75,9 @@ public:
     private:
 
     std::vector<std::vector<HemoCellParticle*>> particles_per_type;
+    public:
     std::map<int,std::vector<HemoCellParticle*>> particles_per_cell;
+    private:
     std::map<int,bool> lpc;
     
     //vector<vector<vector<vector<HemoCellParticle*>>>> particle_grid; //maybe better to make custom data structure, But that would be slower

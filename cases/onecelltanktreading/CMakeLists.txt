@@ -2,8 +2,8 @@
 # Build settings. Set these.
 
 # Project setup
-SET(PROJECT_NAME cellstretch)
-SET(PROJECT_SRC "cellStretch.cpp")
+SET(PROJECT_NAME onecelltanktreading)
+SET(PROJECT_SRC "oneCellTankTreading.cpp")
 
 # HemoCell location relative to CMakelists.txt
 SET(HEMOCELL_BASE_DIR "./../../")

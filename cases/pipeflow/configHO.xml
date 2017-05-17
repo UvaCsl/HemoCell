@@ -29,14 +29,14 @@
     <refDirN> 64 </refDirN>  <!-- Number of numerical cell in the reference direction -->
     <blockSize> -1 </blockSize>
     <kBT>4.100531391e-21</kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
-    <Re> 10 </Re>   <!--Reynolds number-->
+    <Re> 1 </Re>   <!--Reynolds number-->
     <particleEnvelope>20</particleEnvelope>
 </domain>
 
 <sim>
-    <tmax> 1000 </tmax> <!-- total number of iterations -->
-    <tmeas> 100 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint> 2000 </tcheckpoint> 
+    <tmax> 10000 </tmax> <!-- total number of iterations -->
+    <tmeas>  100 </tmeas> <!-- interval after which data is written --> 
+    <tcheckpoint> 1000 </tcheckpoint> 
     <tbalance> 100000 </tbalance> <!-- interval after which balance is performed --> 
     <particlePosFile> cells.pos </particlePosFile>
 </sim>
