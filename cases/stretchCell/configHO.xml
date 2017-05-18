@@ -3,7 +3,7 @@
 
 <parameters>
     <warmup> 50 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
-    <prctForced>0.01</prctForced>
+    <prctForced>0.05</prctForced>
     <stretchForce> 37.899 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. -->
 </parameters>
 

@@ -4,10 +4,11 @@
 #include "hemocell_internal.h"
 #include "hemoCellFields.h"
 
-#include <hdf5.h>
-#include <hdf5_hl.h>
-
 void writeFluidField_HDF5(HemoCellFields& cellFields, double dx, double dt, plint iter, string preString="");
+
+#ifndef hsize_t
+typedef long long unsigned int hsize_t;
+#endif
 
 class WriteFluidField : public BoxProcessingFunctional3D
 {

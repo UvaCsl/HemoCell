@@ -2,7 +2,7 @@
 #define HEMOCELL_CONFIG_H
 
 #include "hemocell_internal.h"
-#include "TINYXML_xmlIO.h"
+#include "libraryInterfaces/TINYXML_xmlIO.h"
 #include <string.h>
 
 class Config : public plb::XMLreader {

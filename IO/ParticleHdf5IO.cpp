@@ -3,6 +3,9 @@
 
 #include "ParticleHdf5IO.h"
 
+#include <hdf5.h>
+#include <hdf5_hl.h>
+
 /* ******** WriteCellField3DInMultipleHDF5Files *********************************** */
 WriteCellField3DInMultipleHDF5Files::WriteCellField3DInMultipleHDF5Files (
         HemoCellField & cellField3D_,

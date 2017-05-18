@@ -1,4 +1,6 @@
 #include "rbcHighOrderModel.h"
+//TODO Make all inner array variables constant as well
+
 
 RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(),
                   cellConstants(CommonCellConstants::CommonCellConstantsConstructor(cellField_)), cellField(cellField_),
@@ -59,28 +61,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       crossProduct(v2-v0,t_normal,av1);
       Array<double,3> av2;
       crossProduct(v0-v1,t_normal,av2);
-      //const Array<double,3> av0 = {v0[0] - (v1[0]+v2[0])*0.5,v0[1] - (v1[1]+v2[1])*0.5,v0[2] - (v1[2]+v2[2])*0.5};
-      //const Array<double,3> av1 = {v1[0] - (v0[0]+v2[0])*0.5,v1[1] - (v0[1]+v2[1])*0.5,v1[2] - (v0[2]+v2[2])*0.5};
-      //const Array<double,3> av2 = {v2[0] - (v1[0]+v0[0])*0.5,v2[1] - (v1[1]+v0[1])*0.5,v2[2] - (v1[2]+v0[2])*0.5};
-      //length of vector
-      //const double avl0 = sqrt(av0[0]*av0[0]+av0[1]*av0[1]+av0[2]*av0[2]);
-      //const double avl1 = sqrt(av1[0]*av1[0]+av1[1]*av1[1]+av1[2]*av1[2]);
-      //const double avl2 = sqrt(av2[0]*av2[0]+av2[1]*av2[1]+av2[2]*av2[2]);
-      //unit vector
-      //const Array<double,3> avu0 = av0/avl0;
-      //const Array<double,3> avu1 = av1/avl1;
-      //const Array<double,3> avu2 = av2/avl2;
-      //Area scales with opposing edge length, to zero-sum the force
-      //const double edg0 = sqrt((v1[0]-v2[0])*(v1[0]-v2[0])+
-      //                         (v1[1]-v2[1])*(v1[1]-v2[1])+
-      //                         (v1[2]-v2[2])*(v1[2]-v2[2]));
-      //const double edg1 = sqrt((v0[0]-v2[0])*(v0[0]-v2[0])+
-      //                         (v0[1]-v2[1])*(v0[1]-v2[1])+
-      //                         (v0[2]-v2[2])*(v0[2]-v2[2]));
-      //const double edg2 = sqrt((v1[0]-v0[0])*(v1[0]-v0[0])+
-      //                         (v1[1]-v0[1])*(v1[1]-v0[1])+
-      //                         (v1[2]-v0[2])*(v1[2]-v0[2]));
-      
+       
       //area force magnitude
       const double afm = -k_area *(areaRatio+areaRatio/(0.04-areaRatio*areaRatio));
       

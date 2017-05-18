@@ -2,7 +2,7 @@
 #define READ_POSISIONS_OF_MULTIPLE_CELLS_CPP
 
 #include "readPositionsBloodCells.h"
-#include "geometry.h"
+#include "tools/cellRandInit/geometry.h"
 
 inline void meshRotation (TriangularSurfaceMesh<double> * mesh, Array<double,3> rotationAngles) {
     Array<double,2> xRange, yRange, zRange;

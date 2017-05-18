@@ -1,0 +1,119 @@
+#=======================================
+# Build settings. Set these.
+
+# Project setup
+SET(PROJECT_NAME hemocell)
+
+# HemoCell location relative to CMakelists.txt
+SET(HEMOCELL_BASE_DIR "./../..")
+SET(PALABOS_DIR "${HEMOCELL_BASE_DIR}/palabos")
+
+# Build settings
+SET(ENABLE_MPI 1)
+SET(ENABLE_POSIX 1)
+SET(SMP_PARALLEL 1)
+SET(BUILD_TYPE Release)  # Debug or Release
+
+# Required additional external libraries
+
+MESSAGE( STATUS "HEMOCELL_DIR:         " ${HEMOCELL_BASE_DIR} )
+MESSAGE( STATUS "PALABOS_DIR:         " ${PALABOS_DIR} )
+
+### Workaround for building with external cmake (e.g., when using an IDE with built in cmake):
+# Access system wide libraries in ubuntu 14.04 in case one uses an external cmake ditribution (e.g., CLion)
+#SET(CMAKE_MODULE_PATH /usr/share/cmake-2.8/Modules)  # Needed to find installed libraries on the system with the bundled cmake
+
+#=======================================
+##### Beginning of build script
+##### No need to edit beyond this point
+
+PROJECT(${PROJECT_NAME} CXX)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+SET(CMAKE_VERBOSE_MAKEFILE 1)
+
+INCLUDE(GNUInstallDirs)
+
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
+
+#=======================================
+# Set up cmake environment
+
+FIND_PACKAGE(MPI REQUIRED)
+INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
+
+#=======================================
+
+IF (NOT CMAKE_CXX_FLAGS)
+  #If flags are not set, add default flags
+  SET(CMAKE_BUILD_TYPE ${BUILD_TYPE})
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -std=c++11")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-empty-body")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -Wformat -Wformat-security")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=format-security")
+ENDIF (NOT CMAKE_CXX_FLAGS)
+
+ADD_DEFINITIONS("-DPLB_MPI_PARALLEL")
+ADD_DEFINITIONS("-DPLB_USE_POSIX")
+ADD_DEFINITIONS("-DPLB_SMP_PARALLEL")
+IF(APPLE)
+    ADD_DEFINITIONS("-DPLB_MAC_OS_X")
+ENDIF(APPLE)
+
+#=======================================
+
+SET(DEFAULT ON CACHE INTERNAL "Default value for enabled by default options")
+OPTION(ENABLE_MPI "Enable MPI" ${DEFAULT})
+INCLUDE(FindMPI)
+IF(MPI_CXX_FOUND)
+  SET(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
+ELSE(MPI_CXX_FOUND)
+  MESSAGE(FATAL_ERROR "MPI-COMPILER NOT found!")
+ENDIF(MPI_CXX_FOUND)
+FIND_PACKAGE(HDF5 COMPONENTS C HL)
+INCLUDE_DIRECTORIES(AFTER ${HDF5_INCLUDE_DIRS})
+
+
+FIND_PATH(PARMETIS_INCLUDE_DIR parmetis.h /usr/local/include /usr/include)
+MESSAGE( STATUS "PARMETIS DIR:       " ${PARMETIS_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${PARMETIS_INCLUDE_DIR})
+
+
+FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/config/*.cpp")
+SET(SRC_FILES ${SRC_FILES} ${SRC_FILES_SRC}) 
+FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/core/*.cpp")
+SET(SRC_FILES ${SRC_FILES} ${SRC_FILES_SRC}) 
+FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/external/*.cpp")
+SET(SRC_FILES ${SRC_FILES} ${SRC_FILES_SRC}) 
+FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/helper/*.cpp")
+SET(SRC_FILES ${SRC_FILES} ${SRC_FILES_SRC}) 
+FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/IO/*.cpp")
+SET(SRC_FILES ${SRC_FILES} ${SRC_FILES_SRC}) 
+FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/mechanics/*.cpp")
+SET(SRC_FILES ${SRC_FILES} ${SRC_FILES_SRC}) 
+FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/src/*.cpp")
+SET(SRC_FILES ${SRC_FILES} ${SRC_FILES_SRC})
+FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/src/*.cpp")
+SET(SRC_FILES ${SRC_FILES} ${SRC_FILES_SRC})
+
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/config)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/core)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/external)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/helper)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/IO)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/mechanics)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/palabos/src)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/palabos/externalLibraries)
+
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries)
+LIST(APPEND SRC_FILES ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxml.cpp)
+LIST(APPEND SRC_FILES ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlerror.cpp)
+LIST(APPEND SRC_FILES ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlparser.cpp)
+
+ADD_library(${PROJECT_NAME} STATIC ${SRC_FILES})

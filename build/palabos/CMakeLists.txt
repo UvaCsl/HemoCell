@@ -68,7 +68,7 @@ ENDIF(NEEDVTK)
 IF (NOT CMAKE_CXX_FLAGS)
   #If flags are not set, add default flags
   SET(CMAKE_BUILD_TYPE ${BUILD_TYPE})
-  SET(CMAKE_CXX_FLAGS  " -Wall -Wextra -Wno-unused-parameter -g -Wformat -Wformat-security -Werror=format-security -O3 -march=native")
+  SET(CMAKE_CXX_FLAGS  " -Wall -Wextra -Wno-unused-parameter -ggdb -Wformat -Wformat-security -Werror=format-security -O3 -march=native")
 ENDIF (NOT CMAKE_CXX_FLAGS)
 
 #=======================================
@@ -122,17 +122,19 @@ IF(NOT NEEDEIGEN)
 ENDIF(NOT NEEDEIGEN)
 
 FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/src/*.cpp")
+SET(SRC_FILES ${SRC_FILES} ${SRC_FILES_SRC})
+FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/src/*.cpp")
+SET(SRC_FILES ${SRC_FILES} ${SRC_FILES_SRC})
 
-IF(NOT NEEDTXML)
-  INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries)
-  LIST(APPEND SRC_FILES_SRC ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxml.cpp)
-  LIST(APPEND SRC_FILES_SRC ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlerror.cpp)
-  LIST(APPEND SRC_FILES_SRC ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlparser.cpp)
-ENDIF(NOT NEEDTXML)
+
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries)
+LIST(APPEND SRC_FILES ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxml.cpp)
+LIST(APPEND SRC_FILES ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlerror.cpp)
+LIST(APPEND SRC_FILES ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlparser.cpp)
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/src)
 
-ADD_library(${PROJECT_NAME} STATIC ${SRC_FILES_SRC})
+ADD_library(${PROJECT_NAME} SHARED ${SRC_FILES})
 
 IF(NEEDTXML)
   TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${TINYXML_LIBRARIES})
