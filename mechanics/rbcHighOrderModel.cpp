@@ -74,10 +74,6 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       *cell[triangle[1]]->force_area += afm*av1;
       *cell[triangle[2]]->force_area += afm*av2;
 
-
-
-
-
       //Store values necessary later
       triangle_areas.push_back(area);
       triangle_normals.push_back(t_normal);
@@ -92,10 +88,11 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
     triangle_n = 0;
 
     for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
-      //TODO volume force per area
-      *cell[triangle[0]]->force_volume += volume_force*1.0/6.0*triangle_normals[triangle_n];
-      *cell[triangle[1]]->force_volume += volume_force*1.0/6.0*triangle_normals[triangle_n];
-      *cell[triangle[2]]->force_volume += volume_force*1.0/6.0*triangle_normals[triangle_n];
+      //Fixed volume force per area
+      const Array<double, 3> local_volume_force = (volume_force*1.0/6.0*triangle_normals[triangle_n])*(triangle_areas[triangle_n]/cellConstants.area_mean_eq);
+      *cell[triangle[0]]->force_volume += local_volume_force;
+      *cell[triangle[1]]->force_volume += local_volume_force;
+      *cell[triangle[2]]->force_volume += local_volume_force;
 
       triangle_n++;
     }
