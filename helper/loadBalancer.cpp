@@ -35,6 +35,7 @@ void LoadBalancer::GatherTimeOfAtomicBlocks::processGenericBlocks(Box3D domain, 
 double LoadBalancer::calculateFractionalLoadImbalance() {
   //set FLI_iscalled
   FLI_iscalled = true;
+  int size = global::mpi().getSize();
   //We need the total number of atomic blocks for the Gather Functional
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell.cellfields->immersedParticles);
@@ -46,14 +47,51 @@ double LoadBalancer::calculateFractionalLoadImbalance() {
   map<int,TOAB_t> gatherValues;
   applyProcessingFunctional(new GatherTimeOfAtomicBlocks(gatherValues),hemocell.cellfields->immersedParticles->getBoundingBox(), wrapper);
   HemoCellGatheringFunctional<TOAB_t>::gather(gatherValues,numAtomicBlock);
-
+  
+  vector<double> times(size);
+  vector<double> lsps(size);
+  
   for (auto const & entry : gatherValues) {
     pcout << "Atomic block " << entry.first << " is on proc " << entry.second.mpi_proc << " spent " << entry.second.particle_time << " for the particle field, spent " << entry.second.fluid_time << " for the fluid field" << endl;
   }
 
   this->gatherValues = gatherValues;
+  
+  for (auto const & entry : gatherValues) {
+    times[entry.second.mpi_proc] += entry.second.particle_time + entry.second.fluid_time;
+    lsps[entry.second.mpi_proc] += entry.second.n_lsp;
+  }
+  
+  // lsps.
+  double sum = 0;
+  double average = 0;
+  double max = 0;
+  double fli = 0;
+  
+  // this one is for time
+  double sum2 = 0;
+  double average2 = 0;
+  double max2 = 0;
+  double fli2 = 0;
+  
+  for (unsigned int i = 0 ; i < times.size(); i++){
+      sum = sum + times[i];
+      sum2 = sum2 + lsps[i];
+  }
+  
+  average = sum / size ;
+  max = *std::max_element(times.begin(),times.end());
 
-  return 0.;
+  fli = (max/average)-1;
+  
+  average2 = sum2 / size ;
+  max2 = *std::max_element(lsps.begin(),lsps.end());
+
+  fli2 = (max2/average2)-1;
+  
+  pcout << "fli (time):  " << fli << " fli (lsp): "<< fli2 << std::endl;
+  
+  return fli;
 }
 
 
