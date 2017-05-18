@@ -43,7 +43,7 @@ HemoCellStretch::HemoCellStretch(HemoCellField & cellfield_, unsigned int n_forc
                 : cellfield(cellfield_)
 {
   n_forced_lsps = n_forced_lsps_;
-  external_force = external_force_;
+  external_force = external_force_/n_forced_lsps;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(cellfield.getParticleField3D());
   applyProcessingFunctional(new FindForcedLsps(),cellfield.getParticleField3D()->getBoundingBox(),wrapper);
