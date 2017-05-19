@@ -267,7 +267,7 @@ void HemoCellFields::HemoDeleteIncompleteCells::processGenericBlocks(Box3D domai
 void HemoCellFields::deleteIncompleteCells() {
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
-  applyProcessingFunctional(new HemoDeleteIncompleteCells(),immersedParticles->getBoundingBox(),wrapper);
+  applyTimedProcessingFunctional(new HemoDeleteIncompleteCells(),immersedParticles->getBoundingBox(),wrapper);
 
 }
 
