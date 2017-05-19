@@ -5,7 +5,7 @@
     <name>RBC</name>
     <kBend> 100 </kBend> <!-- Bending force modulus (in k_BT units, 4.142e-21 N m) -->
     <kVolume> 80.0 </kVolume> <!-- Volume conservation coefficient (dimensionless) [600, 6000] --> 
-    <kArea> 80.0e0 </kArea> <!--Local area conservation coefficient (dimensionless) [0, 10, 100] --> 
+    <kArea> 800.0e0 </kArea> <!--Local area conservation coefficient (dimensionless) [0, 10, 100] --> 
     <kLink> 0.001 </kLink> <!-- Link force coefficient (dimensionless) [1.0] -->
     <eqLengthRatio> 2.2 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) -->
     <minNumTriangles> 600 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
