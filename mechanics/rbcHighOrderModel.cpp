@@ -70,9 +70,12 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       //Area scales with edge length, because other
       
       //push back area force
-      *cell[triangle[0]]->force_area += afm*av0;
-      *cell[triangle[1]]->force_area += afm*av1;
-      *cell[triangle[2]]->force_area += afm*av2;
+      *cell[triangle[0]]->force_area -= afm*av1*0.5;
+      *cell[triangle[0]]->force_area -= afm*av2*0.5;
+      *cell[triangle[1]]->force_area -= afm*av0*0.5;
+      *cell[triangle[1]]->force_area -= afm*av2*0.5;
+      *cell[triangle[2]]->force_area -= afm*av0*0.5;
+      *cell[triangle[2]]->force_area -= afm*av1*0.5;
 
       //Store values necessary later
       triangle_areas.push_back(area);
