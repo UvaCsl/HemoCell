@@ -71,36 +71,33 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
                                             std::vector<std::vector<Array<double,3> > > & positions,
                                             std::vector<std::vector<plint> > & cellIds,
                                             std::vector<std::vector<Array<double,3> > > & randomAngles,
-                                            const char* positionsFileName, double dx, Config & cfg)
+                                            const char* positionsFileName, double dx, Config & cfg, HemoCellFields & cellFields)
 {
 
     pcout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
 
 
-    vector<vector3> packPositions[2];
-    vector<vector3> packAngles[2];
-    vector<plint> cellIdss[2];
+    vector<vector3> packPositions[cellFields.size()];
+    vector<vector3> packAngles[cellFields.size()];
+    vector<plint> cellIdss[cellFields.size()];
 
-
-    // Reading data from file
-
-    fstream fIn;
-    fIn.open(positionsFileName, fstream::in);
-
-    if(!fIn.is_open())
-    {
-        cout << "*** WARNING! particle positions input file does not exist!" << endl;
-    }
-
-    Np.resize(2);
-
-    fIn >> Np[0] >> Np[1];
-
-    pcout << "(readPositionsBloodCels) Particle count (RBCs, PLTs): " << Np[0] << ", " << Np[1] << endl;
+    Np.resize(cellFields.size());
 
     int cellid = 0;
     // TODO: proper try-catch
-    for(pluint j = 0; j < 2; j++) {
+    for(pluint j = 0; j < Np.size(); j++) {
+        // Reading data from file
+
+        fstream fIn;
+        fIn.open(cellFields[j]->name + ".pos", fstream::in);
+
+        if(!fIn.is_open())
+        {
+            cout << "*** WARNING! particle positions input file " << cellFields[j]->name << ".pos does not exist!" << endl;
+        }
+
+        fIn >> Np[j];
+        pcout << "(readPositionsBloodCels) Particle count (" << cellFields[j]->name << "): " << Np[j] << "." << endl;
 
         packPositions[j].resize(Np[j]); packAngles[j].resize(Np[j]);cellIdss[j].resize(Np[j]);
         int less = 0;
@@ -129,6 +126,8 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
         packPositions[j].resize(Np[j]);
         packAngles[j].resize(Np[j]);
         cellIdss[j].resize(Np[j]);
+
+        fIn.close();
     }
     
     //cout << "Realdomain " << realDomain.x0 << " " << realDomain.x1 << " "
@@ -159,7 +158,6 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
         }
     }
-    fIn.close();
 }
 
 
@@ -209,7 +207,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
 
     // Note: this method uses the center of the particles for location
     double posRatio = 1e-6/dx;
-    getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, positionsFileName, posRatio, cfg);
+    getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, positionsFileName, posRatio, cfg, cellFields);
 
     // Change positions to match dx (it is in um originally)
     double wallWidth = 0; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
@@ -238,7 +236,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells(iCF)/(float)nVertices;
         std::vector<HemoCellParticle*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);
-        cout    << " Total cells: " << particles.size()/(float)nVertices << " (deleted cells:" << cellsDeleted << ") for particleId:" << iCF << std::endl;
+        cout    << " Total cells: " << particles.size()/(float)nVertices << " (deleted cells:" << cellsDeleted << ") CT: " << cellFields[iCF]->name << std::endl;
 //delete meshes[iCF];
     }
    
