@@ -42,6 +42,14 @@ IF (NOT CMAKE_CXX_FLAGS)
 ENDIF (NOT CMAKE_CXX_FLAGS)
 
 #=======================================
+
+ADD_DEFINITIONS("-DPLB_MPI_PARALLEL")
+ADD_DEFINITIONS("-DPLB_USE_POSIX")
+ADD_DEFINITIONS("-DPLB_SMP_PARALLEL")
+IF(APPLE)
+  ADD_DEFINITIONS("-DPLB_MAC_OS_X")
+ENDIF(APPLE)
+
 #Parmetis
 FIND_PATH(PARMETIS_INCLUDE_DIR parmetis.h /usr/local/include /usr/include)
 FIND_LIBRARY(PARMETIS_LIBRARY parmetis /usr/local/lib /usr/lib) 
