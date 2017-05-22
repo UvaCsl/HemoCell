@@ -167,7 +167,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
     int numberOfCellFields = blocks.size() -1;
-    double ratio;
+    //double ratio;
     BlockLattice3D<double,DESCRIPTOR>& fluid =
             *dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
     std::vector<HEMOCELL_PARTICLE_FIELD* > particleFields(numberOfCellFields);
@@ -178,7 +178,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
 
     double totalVolumeFraction=0;
 
-    double Vdomain = domain.getNx() * domain.getNy() * domain.getNz();
+    //double Vdomain = domain.getNx() * domain.getNy() * domain.getNz();
 
     Dot3D fLocation(fluid.getLocation());
     Box3D realDomain(

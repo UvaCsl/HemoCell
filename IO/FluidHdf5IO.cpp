@@ -97,7 +97,7 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
 
     //We can calulate nvalues through the dims
     chunk[3] = dim[3];
-    unsigned int nvalues = dim[0]*dim[1]*dim[2]*dim[3];
+    //unsigned int nvalues = dim[0]*dim[1]*dim[2]*dim[3];
 
     int sid = H5Screate_simple(4,dim,NULL);
       int plist_id = H5Pcreate (H5P_DATASET_CREATE);

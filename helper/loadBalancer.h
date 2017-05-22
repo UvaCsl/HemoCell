@@ -5,7 +5,6 @@ class LoadBalancer;
 
 #include "hemocell_internal.h"
 #include "hemocell.h"
-#include <parmetis.h>
 
 class LoadBalancer {
   public:

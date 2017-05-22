@@ -109,10 +109,11 @@ double HemoCell::calculateFractionalLoadImbalance() {
   return loadBalancer->calculateFractionalLoadImbalance();
 }
 
+#ifdef HEMO_PARMETIS
 void HemoCell::doLoadBalance() {
 	pcout << "(HemoCell) (LoadBalancer) Balancing Atomic Block over mpi processes" << endl;
   loadBalancer->doLoadBalance();
 }
-
+#endif
 
 #endif

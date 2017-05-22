@@ -2,6 +2,9 @@
 #define LOADBALANCER_CPP
 
 #include "loadBalancer.h"
+#ifdef HEMO_PARMETIS
+#include <parmetis.h>
+#endif
 
 LoadBalancer::LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_) {
 
@@ -94,7 +97,7 @@ double LoadBalancer::calculateFractionalLoadImbalance() {
   return fli;
 }
 
-
+#ifdef HEMO_PARMETIS
 void LoadBalancer::doLoadBalance() {
   if(!FLI_iscalled) {
     pcerr << "You did not calculate the fractional load imbalance before trying to balance, this is required! Exiting...";
@@ -204,6 +207,7 @@ void LoadBalancer::doLoadBalance() {
 
   return;
 }
+#endif
 
 //Necessary C++ crap
 LoadBalancer::GatherTimeOfAtomicBlocks * LoadBalancer::GatherTimeOfAtomicBlocks::clone() const { return new LoadBalancer::GatherTimeOfAtomicBlocks(*this); }

@@ -9,31 +9,20 @@ SET(HEMOCELL_BASE_DIR "./../..")
 SET(PALABOS_DIR "${HEMOCELL_BASE_DIR}/palabos")
 
 # Build settings
-SET(ENABLE_MPI 1)
-SET(ENABLE_POSIX 1)
-SET(SMP_PARALLEL 1)
+SET(ENABLE_MPI 1) # For windows builds set to zero
+SET(ENABLE_PARMETIS 1) # Do we enable load_balancing stuff? 
 SET(BUILD_TYPE Release)  # Debug or Release
 
-# Required additional external libraries
 
 MESSAGE( STATUS "HEMOCELL_DIR:         " ${HEMOCELL_BASE_DIR} )
 MESSAGE( STATUS "PALABOS_DIR:         " ${PALABOS_DIR} )
 
-### Workaround for building with external cmake (e.g., when using an IDE with built in cmake):
-# Access system wide libraries in ubuntu 14.04 in case one uses an external cmake ditribution (e.g., CLion)
-#SET(CMAKE_MODULE_PATH /usr/share/cmake-2.8/Modules)  # Needed to find installed libraries on the system with the bundled cmake
-
 #=======================================
-##### Beginning of build script
-##### No need to edit beyond this point
-
 PROJECT(${PROJECT_NAME} CXX)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 SET(CMAKE_VERBOSE_MAKEFILE 1)
-
 INCLUDE(GNUInstallDirs)
-
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
 
 #=======================================
@@ -58,6 +47,10 @@ IF (NOT CMAKE_CXX_FLAGS)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=format-security")
 ENDIF (NOT CMAKE_CXX_FLAGS)
 
+SET(DEFAULT ON CACHE INTERNAL "Default value for enabled by default options")
+
+#===================================
+#Pasumo options 
 ADD_DEFINITIONS("-DPLB_MPI_PARALLEL")
 ADD_DEFINITIONS("-DPLB_USE_POSIX")
 ADD_DEFINITIONS("-DPLB_SMP_PARALLEL")
@@ -67,7 +60,6 @@ ENDIF(APPLE)
 
 #=======================================
 
-SET(DEFAULT ON CACHE INTERNAL "Default value for enabled by default options")
 OPTION(ENABLE_MPI "Enable MPI" ${DEFAULT})
 INCLUDE(FindMPI)
 IF(MPI_CXX_FOUND)
@@ -75,14 +67,42 @@ IF(MPI_CXX_FOUND)
 ELSE(MPI_CXX_FOUND)
   MESSAGE(FATAL_ERROR "MPI-COMPILER NOT found!")
 ENDIF(MPI_CXX_FOUND)
+
+#===================================
+SET(HDF5_USE_STATIC_LIBRARIES 1)
 FIND_PACKAGE(HDF5 COMPONENTS C HL)
+if(NOT ${HDF5_FOUND})
+  message(fatal_error "Hdf5 Libraries not found!")
+endif(NOT ${HDF5_FOUND})
 INCLUDE_DIRECTORIES(AFTER ${HDF5_INCLUDE_DIRS})
+message(STATUS "HDF5 Include dir:     ${HDF5_INCLUDE_DIRS}")
+#===================================
 
+IF(ENABLE_PARMETIS)
+FIND_PATH(PARMETIS_INCLUDE_DIR parmetis.h)
+IF(NOT PARMETIS_INCLUDE_DIR)
+  MESSAGE(FATAL_ERROR "Parmetis include path not found!")
+ENDIF(NOT PARMETIS_INCLUDE_DIR)
+MESSAGE( STATUS "PARMETIS INCLUDE DIR:       " ${PARMETIS_INCLUDE_DIR})
 
-FIND_PATH(PARMETIS_INCLUDE_DIR parmetis.h /usr/local/include /usr/include)
-MESSAGE( STATUS "PARMETIS DIR:       " ${PARMETIS_INCLUDE_DIR})
-INCLUDE_DIRECTORIES(${PARMETIS_INCLUDE_DIR})
+FIND_LIBRARY(PARMETIS_LIBRARY libparmetis.a HINTS
+    ${HEMOCELL_BASE_DIR}/external/parmetis-4.0.3/build/*/*) 
+IF(PARMETIS_LIBRARY STREQUAL "PARMETIS_LIBRARY-NOTFOUND")
+  MESSAGE(FATAL_ERROR "Parmetis Library not found, try compiling
+  external/parmetis-4.0.3?!")
+ENDIF(PARMETIS_LIBRARY STREQUAL "PARMETIS_LIBRARY-NOTFOUND")
+MESSAGE( STATUS "PARMETIS LIBRARY DIR:       " ${PARMETIS_LIBRARY})
 
+FIND_LIBRARY(METIS_LIBRARY libmetis.a HINTS
+    ${HEMOCELL_BASE_DIR}/external/parmetis-4.0.3/build/*/*) 
+IF(METIS_LIBRARY STREQUAL "METIS_LIBRARY-NOTFOUND")
+  MESSAGE(FATAL_ERROR "Metis Library not found,try compiling
+  external/parmetis-4.0.3? ")
+ENDIF(METIS_LIBRARY STREQUAL "METIS_LIBRARY-NOTFOUND")
+MESSAGE( STATUS "METIS LIBRARY DIR:       " ${METIS_LIBRARY})
+
+ADD_DEFINITIONS("-DHEMO_PARMETIS")
+ENDIF(ENABLE_PARMETIS)
 
 FILE(GLOB_RECURSE SRC_FILES_SRC "${CMAKE_SOURCE_DIR}/${HEMOCELL_BASE_DIR}/config/*.cpp")
 SET(SRC_FILES ${SRC_FILES} ${SRC_FILES_SRC}) 
@@ -116,4 +136,24 @@ LIST(APPEND SRC_FILES ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyx
 LIST(APPEND SRC_FILES ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlerror.cpp)
 LIST(APPEND SRC_FILES ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml/tinyxmlparser.cpp)
 
-ADD_library(${PROJECT_NAME} STATIC ${SRC_FILES})
+ADD_library("${PROJECT_NAME}_pre_all_deps" STATIC ${SRC_FILES})
+
+add_custom_target(hemocell_pre_finalize ALL 
+  COMMAND rm lib${PROJECT_NAME}.a)
+
+IF(ENABLE_PARMETIS)
+  add_custom_target(hemocell_with_parmetis ALL 
+    COMMAND ${CMAKE_AR} crsT lib${PROJECT_NAME}.a
+    $<TARGET_FILE:${PROJECT_NAME}_pre_all_deps> ${PARMETIS_LIBRARY}
+    ${METIS_LIBRARY})
+ENDIF(ENABLE_PARMETIS)
+    
+#might work someday, not now, must be linked in the case
+#add_custom_target(hemocell_with_hdf5 ALL 
+#  COMMAND ${CMAKE_AR} crsT lib${PROJECT_NAME}.a
+#  $<TARGET_FILE:${PROJECT_NAME}_pre_all_deps> ${HDF5_LIBRARIES})
+
+#finalize library
+add_custom_target(hemocell_finalize ALL 
+  COMMAND ${CMAKE_AR} crsT lib${PROJECT_NAME}.a
+  $<TARGET_FILE:${PROJECT_NAME}_pre_all_deps>)
