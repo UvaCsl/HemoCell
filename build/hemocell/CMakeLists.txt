@@ -139,6 +139,7 @@ LIST(APPEND SRC_FILES ${CMAKE_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyx
 ADD_library("${PROJECT_NAME}_pre_all_deps" STATIC ${SRC_FILES})
 
 add_custom_target(hemocell_pre_finalize ALL 
+  COMMAND touch lib${PROJECT_NAME}.a
   COMMAND rm lib${PROJECT_NAME}.a)
 
 IF(ENABLE_PARMETIS)

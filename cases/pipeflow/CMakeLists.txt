@@ -75,8 +75,8 @@ LIST(APPEND SRC_FILES ${PROJECT_SRC})
 include(ExternalProject) 
 ExternalProject_Add("hemocell" PREFIX ${HEMOCELL_DIR} SOURCE_DIR ${HEMOCELL_DIR}
     BINARY_DIR ${HEMOCELL_DIR} INSTALL_COMMAND "")
-ExternalProject_Add_Step("hemocell" update_custom COMMAND cd ${HEMOCELL_DIR} &&
-    make  ALWAYS 1)
+ExternalProject_Add_Step("hemocell" update_custom COMMAND cd ${HEMOCELL_DIR} 
+    && ${CMAKE_COMMAND} . && $(MAKE)  ALWAYS 1)
 
 ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES})
 ADD_DEPENDENCIES(${PROJECT_NAME} "hemocell")
