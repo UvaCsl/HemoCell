@@ -77,6 +77,10 @@ class HemoCell {
 
   //Set the output of a celltype
   void setOutputs(string name, vector<int> outputs);
+
+  //Set the timescale separation of the particles of a particle type
+  void setMaterialTimeScaleSeperation(string name, unsigned int separation);
+  
   //Set the output of the fluid field
   void setFluidOutputs(vector<int> outputs);
 

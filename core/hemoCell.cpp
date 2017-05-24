@@ -28,7 +28,7 @@ void HemoCell::latticeEquilibrium(double rho, Array<double, 3> vel) {
 }
 
 void HemoCell::initializeCellfield() {
-  cellfields = new HemoCellFields(*lattice,(*cfg)["domain"]["particleEnvelope"].read<int>());
+  cellfields = new HemoCellFields(*lattice,(*cfg)["domain"]["particleEnvelope"].read<int>(),*this);
 }
 
 void HemoCell::setOutputs(string name, vector<int> outputs) {
@@ -115,6 +115,13 @@ double HemoCell::calculateFractionalLoadImbalance() {
 	pcout << "(HemoCell) (LoadBalancer) Calculating Fractional Load Imbalance at timestep " << iter << endl;
   return loadBalancer->calculateFractionalLoadImbalance();
 }
+
+void HemoCell::setMaterialTimeScaleSeperation(string name, unsigned int separation){
+  pcout << "(HemoCell) (Timescale Seperation) Setting seperation of " << name << " to " << separation << " timesteps"<<endl;
+  pcout << "(HemoCell) WARNING if the timescale separation is not dividable by tmeasure, checkpointing is non deterministic!"<<endl;
+  (*cellfields)[name]->timescale = separation;
+}
+
 
 #ifdef HEMO_PARMETIS
 void HemoCell::doLoadBalance() {

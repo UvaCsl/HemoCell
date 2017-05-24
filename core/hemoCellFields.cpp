@@ -3,8 +3,8 @@
 #include "hemoCellFields.h"
 
 
-HemoCellFields::HemoCellFields( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth) :
-  lattice(&lattice_)
+HemoCellFields::HemoCellFields( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth, HemoCell & hemocell_) :
+  lattice(&lattice_), hemocell(hemocell_)
 {   
   envelopeSize=particleEnvelopeWidth;
   pcout << "(Hemocell) (HemoCellFields) (Init) particle envelope: " << particleEnvelopeWidth << " [lu]" << std::endl;

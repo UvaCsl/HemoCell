@@ -9,7 +9,7 @@ class HemoCellFields;
 #include "hemoCellParticleType.h"
 #include <unistd.h>
 
-
+class HemoCell;
 /*
  * This class can contain many cellfields, it keeps track of all the particles
  * in all the cellfields. The option exists to get exclusive access to a single
@@ -27,7 +27,7 @@ class HemoCellFields;
 class HemoCellFields
 {
 public:
-    HemoCellFields(MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth);
+    HemoCellFields(MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth,HemoCell &);
     MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & getParticleField3D();
     void createParticleField();
     ~HemoCellFields();
@@ -58,6 +58,7 @@ public:
 
 	MultiBlockLattice3D<double, DESCRIPTOR> * lattice;
   vector<int> desiredFluidOutputVariables;
+  HemoCell & hemocell;
   vector<HemoCellField *> cellFields;
   pluint envelopeSize;
 	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles;

@@ -26,6 +26,7 @@ class HemoCellField{
   std::string name;
   int ctype;
   int numVertex;
+  unsigned int timescale;
   bool outputTriangles = false;
   HemoCellFields & cellFields;
   vector<int> desiredOutputVariables;

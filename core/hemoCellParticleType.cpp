@@ -33,7 +33,8 @@ HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<
         meshmetric = new MeshMetrics<double>(meshElement_);
 
         kernelMethod = interpolationCoefficientsPhi2;
-
+        
+        timescale = 1;
         
        }
 

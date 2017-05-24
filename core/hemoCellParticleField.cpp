@@ -2,6 +2,7 @@
 #define HEMOCELL_PARTICLE_FIELD_CPP
 
 #include "hemoCellParticleField.h"
+#include "hemocell.h"
 
 /* *************** class HemoParticleField3D ********************** */
 
@@ -414,11 +415,16 @@ void HemoCellParticleField::unifyForceVectors() {
 
 void HemoCellParticleField::applyConstitutiveModel() {
   deleteIncompleteCells();
-  for (HemoCellParticle* particle : particles) {
-    particle->force = {0.0,0.0,0.0};
-  }
+  
   for (pluint ctype = 0; ctype < (*cellFields).size(); ctype++) {
-    (*cellFields)[ctype]->mechanics->ParticleMechanics(particles_per_cell,lpc,ctype);
+    if ((*cellFields)[ctype]->timescale % (*cellFields).hemocell.iter == 0) {
+      vector<HemoCellParticle*> found;
+      findParticles(getBoundingBox(),found,ctype);
+      for (HemoCellParticle* particle : found) {
+        particle->force = {0.,0.,0.};
+      }
+      (*cellFields)[ctype]->mechanics->ParticleMechanics(particles_per_cell,lpc,ctype);
+    }
   }
   
 }
