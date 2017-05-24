@@ -99,12 +99,13 @@ int main(int argc, char *argv[]) {
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
 				DESCRIPTOR<T>::ExternalField::forceBeginsAt,
 				Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-
-    if (hemocell.iter % tbalance == 0) {
-      if(hemocell.calculateFractionalLoadImbalance() > 3) {
-        hemocell.doLoadBalance();
-      }
-    }
+    
+// Only enable if PARMETIS build is available
+//    if (hemocell.iter % tbalance == 0) {
+//      if(hemocell.calculateFractionalLoadImbalance() > 3) {
+//        hemocell.doLoadBalance();
+//      }
+//    }
    
     if (hemocell.iter % tmeas == 0) {
       hemocell.writeOutput();

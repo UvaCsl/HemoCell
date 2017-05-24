@@ -15,8 +15,8 @@ void HemoCellParticleField::AddOutputMap() {
 
 void HemoCellParticleField::passthroughpass(int type, Box3D domain, vector<vector<double>>& output, pluint ctype, std::string & name) {
   //Too Much c++ will give you cancer like this function
-  void (HemoCellParticleField::*cancerpointer)(Box3D,vector<vector<double>>&, pluint, std::string&) = outputFunctionMap[type];
-  (this->*cancerpointer)(domain,output,ctype,name);
+  void (HemoCellParticleField::*badideapointer)(Box3D,vector<vector<double>>&, pluint, std::string&) = outputFunctionMap[type];
+  (this->*badideapointer)(domain,output,ctype,name);
 }
 
 void HemoCellParticleField::outputPositions(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
@@ -42,7 +42,7 @@ void HemoCellParticleField::outputPositions(Box3D domain,vector<vector<double>>&
 }
 
 void HemoCellParticleField::outputForceBending(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
-  name = "Bending Force";
+  name = "Bending force";
   output.clear();
   HemoCellParticle * sparticle;
   for ( const auto &lpc_it : lpc ) {
@@ -62,7 +62,7 @@ void HemoCellParticleField::outputForceBending(Box3D domain,vector<vector<double
 }
 
 void HemoCellParticleField::outputForceArea(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
-  name = "Area Force";
+  name = "Area force";
   output.clear();
   HemoCellParticle * sparticle;
   for ( const auto &lpc_it : lpc ) {
@@ -82,7 +82,7 @@ void HemoCellParticleField::outputForceArea(Box3D domain,vector<vector<double>>&
 }
 
 void HemoCellParticleField::outputForceLink(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
-  name = "In Plane Force";
+  name = "Link force";
   output.clear();
   HemoCellParticle * sparticle;
   for ( const auto &lpc_it : lpc ) {
@@ -101,7 +101,7 @@ void HemoCellParticleField::outputForceLink(Box3D domain,vector<vector<double>>&
   }
 }
 void HemoCellParticleField::outputForceVolume(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
-  name = "Volume Force";
+  name = "Volume force";
   output.clear();
   HemoCellParticle * sparticle;
   for ( const auto &lpc_it : lpc ) {
@@ -121,7 +121,7 @@ void HemoCellParticleField::outputForceVolume(Box3D domain,vector<vector<double>
 }
 
 void HemoCellParticleField::outputForces(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
-  name = "Total Force";
+  name = "Total force";
   output.clear();
   HemoCellParticle * sparticle;
   for ( const auto &lpc_it : lpc ) {
