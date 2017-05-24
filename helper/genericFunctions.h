@@ -55,5 +55,7 @@ int do_mkdir(const char *path, mode_t mode);
 // mkpath(argv[i], 0777);
 int mkpath(const char *path, mode_t mode);
 
+std::string zeroPadNumber(int num);
+
 
 #endif // FCN_GENERIC_FUNCTIONS_HH

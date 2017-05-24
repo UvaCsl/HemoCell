@@ -46,7 +46,7 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
     return; //No output needed? ok
   }
 
-  std::string fileName = global::directories().getOutputDir() + "/hdf5/" + createFileName((identifier+".").c_str(),iter,8) + createFileName(".p.", blockid,3) + ".h5";
+  std::string fileName = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) + '/'  + createFileName((identifier+".").c_str(),iter,8) + createFileName(".p.", blockid,3) + ".h5";
   hid_t file_id;
   file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);

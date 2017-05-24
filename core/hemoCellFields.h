@@ -4,7 +4,7 @@
 class HemoCellFields;
 #include "hemocell_internal.h"
 #include "hemoCellParticleField.h"
-#include "fcnGenericFunctions.h"
+#include "genericFunctions.h"
 #include "hemoCellFunctional.h"
 #include "hemoCellParticleType.h"
 #include <unistd.h>

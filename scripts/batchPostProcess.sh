@@ -11,10 +11,11 @@ echo ${scriptsDir}
 [[ -z $1 ]] || ( echo "Clearing XDMF files..."; rm -rf tmp/*.xmf )
 cd tmp; 
 
+
 # Fluid
 ${scriptsDir}/HDF5toXMF.py; 
 # Cells
-${scriptsDir}/CellHDF5toXMF.py PLT RBC SickledRBC TumorCell ; 
+${scriptsDir}/CellHDF5toXMF.py PLT RBC_HO RBC_SU WBC SickledRBC TumorCell ; 
 
 # Boundary particles
 ${scriptsDir}/ParticleField3D_HDF5toXMF.py BoundaryParticles; 

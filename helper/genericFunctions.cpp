@@ -1,6 +1,6 @@
 #ifndef FCN_GENERIC_FUNCTIONS_HH
 #define FCN_GENERIC_FUNCTIONS_HH
-#include "fcnGenericFunctions.h"
+#include "genericFunctions.h"
 
 
 void weakScaling(int Nx, int Ny, int Nz, int numberOfProcesses, vector<int> & newNxNyNz) {
@@ -89,5 +89,11 @@ int mkpath(const char *path, mode_t mode)
     return (status);
 }
 
+std::string zeroPadNumber(int num)
+{
+    std::ostringstream ss;
+    ss << std::setw( 8 ) << std::setfill( '0' ) << num;
+    return ss.str();
+}
 
 #endif // FCN_GENERIC_FUNCTIONS_HH
