@@ -58,14 +58,15 @@ def createH5TopologyAndGeometryCell(xmlInt=XMLIndentation()):
             relativePositionX, relativePositionY, relativePositionZ
             dx (not used)
     """
-    h5TopologyAndGeometry  = xmlInt.cur() + '<Topology TopologyType="Triangle" Dimensions="%(numberOfTriangles)d">\n'
-    h5TopologyAndGeometry += xmlInt.inc() + ' <DataItem Dimensions="%(numberOfTriangles)d 3" NumberType="Int" Precision="8" Format="HDF">\n'
-    h5TopologyAndGeometry += xmlInt.cur() + '%(pathToHDF5)s:/triangles\n'
+    h5TopologyAndGeometry = ""
+    h5TopologyAndGeometry += xmlInt.inc() + '<Topology TopologyType="Triangle" NumberOfElements="%(numberOfTriangles)d">\n'
+    h5TopologyAndGeometry += xmlInt.inc() + '<DataItem Dimensions="%(numberOfTriangles)d 3" Format="HDF">\n'
+    h5TopologyAndGeometry += xmlInt.cur() + '%(pathToHDF5)s:/Triangles\n'
     h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
     h5TopologyAndGeometry += xmlInt.dec() + '</Topology>\n'
     h5TopologyAndGeometry += xmlInt.inc() + '<Geometry GeometryType="XYZ">\n'
-    h5TopologyAndGeometry += xmlInt.inc() + ' <DataItem Dimensions="%(numberOfParticles)d 3" NumberType="Float" Precision="4" Format="HDF">\n'
-    h5TopologyAndGeometry += xmlInt.cur() + '%(pathToHDF5)s:/pbcPosition\n'
+    h5TopologyAndGeometry += xmlInt.inc() +  '<DataItem Dimensions="%(numberOfParticles)d 3" Format="HDF">\n'
+    h5TopologyAndGeometry += xmlInt.cur() + '%(pathToHDF5)s:/Position\n'
     h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
     h5TopologyAndGeometry += xmlInt.dec() + '</Geometry>\n'
     return h5TopologyAndGeometry
@@ -114,28 +115,23 @@ def updateDictForXDMFStringsCell(h5File, h5dict):
     def getAttributeTypeAndRankStringFromObjectsShape(obj_shape):
         dimObjShape = len(obj_shape)
         if dimObjShape==1:
-            attributeType, rankString = "Scalar", ""
+          attributeType, rankString = "Scalar", ""
         elif dimObjShape==2 and obj_shape[-1] == 3:
-            attributeType, rankString = "Vector", "3"
-        elif dimObjShape==2 and obj_shape[-1] == 6:
-            attributeType, rankString = "Tensor6", "6"
-        elif dimObjShape==2 and obj_shape[-1] == 9:
-            attributeType, rankString = "Tensor", "9"
+          attributeType, rankString = "Vector", "3"
         else:
-            attributeType, rankString = "Matrix", " ".join(obj_shape[1:])
+          attributeType, rankString = "Matrix", " ".join(obj_shape[3:])
         return attributeType, rankString 
-        
+  
     def dictFromObject(obj):
         d = {
         "attributeName": obj[0], 
-        "objectSubdomainSize": obj[1].shape,
+        "objectSubdomainSize": obj[1],
         "AttributeType": getAttributeTypeAndRankStringFromObjectsShape(obj[1].shape)[0],
         "rankString":getAttributeTypeAndRankStringFromObjectsShape(obj[1].shape)[1],
         }
         return d
-    #if key not in ('triangles',):
-    h5ListObjects = filter(lambda x: x[0] not in ('triangles',), h5File.items())
-    h5dict['DataSets'] =  map(dictFromObject,  h5ListObjects)
+
+    h5dict['DataSets'] =  map(dictFromObject,  h5File.items())
     return h5dict
 
 
@@ -160,7 +156,7 @@ def readH5FileToDictionary(h5fname, close=True):
 
     h5dict = {}
     h5File = h5.File(h5fname, 'r')
-    h5dict['pathToHDF5'] = h5fname
+    h5dict['pathToHDF5'] = h5fname.replace('//','/')
     for key, val in h5File.attrs.iteritems():
         h5dict[key] = val[0] if len(val) == 1 else val
     updateDictForXDMFStringsCell(h5File, h5dict)
@@ -244,7 +240,8 @@ class HDF5toXDMF_Cell(object):
         self.openGrid(gridName + pId)
         stringToWrite = createH5TopologyAndGeometryCell(self.xmlInt)%(h5dict)
         for datasetDict in iteratePossibleDataSetsDict(h5dict):
-            stringToWrite += createH5AttibuteCell(self.xmlInt)%(datasetDict)
+            if not datasetDict['attributeName'] == "Triangles":
+                stringToWrite += createH5AttibuteCell(self.xmlInt)%(datasetDict)
         self.xdmfFile.write(stringToWrite)
         self.closeGrid()
         return -1
@@ -279,21 +276,19 @@ def createXDMF(fnameString, processorStrings, iterDir):
     p = processorStrings[0]
     if not os.path.isfile(fnameString%(p,)) : fnameString = fnameString.replace('.p.','.pgz.')
     h5dict = readH5FileToDictionary(fnameString%(p,))
-    xdmfFile.writeSubDomain(h5dict)
-    numberOfProcessors = h5dict['numberOfProcessors']
-    for p in processorStrings[1:numberOfProcessors]:
+    #xdmfFile.writeSubDomain(h5dict)
+    numberOfProcessors = len(processorStrings)
+    for p in processorStrings[0:numberOfProcessors]:
         h5dict = readH5FileToDictionary(fnameString%(p,))
-        xdmfFile.writeSubDomain(h5dict)
+        xdmfFile.writeSubDomain(h5dict, "Subdomain " + p)
     xdmfFile.closeCollection()
     xdmfFile.close()
-    return fnameToSave
-
-
+    print "Created file:", fnameToSave
 
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        sys.argv += ['RBC']
+        sys.argv += ['RBC_HO']
     for identifier in sys.argv[1:]:
         try:
             if os.environ["ABSPATH"] == "1":
@@ -312,8 +307,9 @@ if __name__ == '__main__':
                 iterationStrings, processorStrings = map(lambda l: sorted(set(l)), (iterationStrings, processorStrings))
                 for iterString in iterationStrings:
                     fnameString = dirname + '/' + iterDir + '/' + identifier + "." + iterString + ".p.%s.h5"
-                    print "Created file:", createXDMF(fnameString, processorStrings, iterDir)
+                    createXDMF(fnameString, processorStrings, iterDir)
         except (ValueError, TypeError, NameError) as e:
             print '## WARNING ## There are no', identifier, 'to unpack. ', e
 
 
+                                                                                                                                                                                                                                                                                                              

@@ -89,7 +89,6 @@ def createH5AttibuteFluid(xmlInt=XMLIndentation()):
     return h5Attribute
 
 
-
 def updateDictForXDMFStrings(h5File, h5dict):
     """
         Updates the h5dict in order to be used with the above strings.
@@ -163,7 +162,7 @@ def readH5FileToDictionary(h5fname, close=True):
 
     h5dict = {}
     h5File = h5.File(h5fname, 'r')
-    h5dict['pathToHDF5'] = h5fname
+    h5dict['pathToHDF5'] = h5fname.replace('//','/')
     for key, val in h5File.attrs.iteritems():
         h5dict[key] = val[0] if len(val) == 1 else val
     updateDictForXDMFStrings(h5File, h5dict)
@@ -311,7 +310,8 @@ if __name__ == '__main__':
         iterationStrings, processorStrings = map(lambda l: sorted(set(l)), (iterationStrings, processorStrings))
         for iterString in iterationStrings:
             fnameString = dirname + '/' + iterDir + '/' + identifier + "." + iterString + ".p.%s.h5"
-            print "Created file:", createXDMF(fnameString, processorStrings, iterDir)
+            createXDMF(fnameString, processorStrings, iterDir)
 
 
 
+                                       

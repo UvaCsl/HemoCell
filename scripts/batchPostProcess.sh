@@ -13,8 +13,9 @@ cd tmp;
 
 
 # Fluid
-${scriptsDir}/HDF5toXMF.py; 
-# Cells
+${scriptsDir}/FluidHDF5toXMF.py; 
+
+# Cells of different types
 ${scriptsDir}/CellHDF5toXMF.py PLT RBC_HO RBC_SU WBC SickledRBC TumorCell ; 
 
 # Boundary particles
