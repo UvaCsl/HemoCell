@@ -47,7 +47,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       //Area Force per vertex calculation
       //Calculate triangle normal while we're busy with this
       Array<double,3> t_normal;
-      crossProduct(v1-v0,v2-v0,t_normal); //crossproduct with correct reference point //tODO, swap arg 1 and 2 maybe
+      crossProduct(v1-v0,v2-v0,t_normal); //crossproduct with correct reference point //TODO, swap arg 1 and 2 maybe
       //set normal to unit length
       const double t_normal_l = sqrt(t_normal[0]*t_normal[0]+t_normal[1]*t_normal[1]+t_normal[2]*t_normal[2]);
       t_normal = t_normal/t_normal_l;
@@ -179,11 +179,11 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
 };
 
 void RbcHighOrderModel::statistics() {
-    pcout << "High Order forces for " << cellField.name << " cellfield" << std::endl;
-    pcout << "k_volume: " << k_volume << std::endl; 
-    pcout << "k_area:   " << k_area << std::endl; 
-    pcout << "k_link:   " << k_link << std::endl; 
-    pcout << "k_bend: : " << k_bend << std::endl; 
+    pcout << "(Cell-mechanics model) High Order model parameters for " << cellField.name << " cellfield" << std::endl; 
+    pcout << "\t k_link:   " << k_link << std::endl; 
+    pcout << "\t k_area:   " << k_area << std::endl; 
+    pcout << "\t k_bend: : " << k_bend << std::endl; 
+    pcout << "\t k_volume: " << k_volume << std::endl;
 };
 
 
@@ -211,7 +211,8 @@ double RbcHighOrderModel::calculate_kLink(Config & cfg, MeshMetrics<double> & me
   double kLink = cfg["MaterialModel"]["kLink"].read<double>();
   double persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
   // TODO: this is a fixed number, no need to calculate it like this
-  double plc = persistenceLengthFine/param::dx * sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kaniadakis magic
-  kLink *= param::kBT_lbm/(4.0*plc);
+  // TODO2: What is more, this is WRONG scaling of the persistence Length
+  double plc = persistenceLengthFine/param::dx * 0.655; //* sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kaniadakis magic
+  kLink *= param::kBT_lbm/plc;
   return kLink;
 }

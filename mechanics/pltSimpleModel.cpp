@@ -173,11 +173,11 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> parti
   }
 
 void PltSimpleModel::statistics() {
-    pcout << "Cheap forces for " << cellField.name << " cellfield" << std::endl;
-    pcout << "k_volume: " << k_volume << std::endl; 
+    pcout << "(Cell-mechanics model) Reduced-model parameters for " << cellField.name << " cellfield" << std::endl;
+    pcout << "\t k_bend: : " << k_bend << std::endl; 
+    pcout << "\t k_volume: " << k_volume << std::endl; 
     //pcout << "k_area:   " << k_area << std::endl; 
     //pcout << "k_link:   " << k_link << std::endl; 
-    pcout << "k_bend: : " << k_bend << std::endl; 
   };
 
 
