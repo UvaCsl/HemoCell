@@ -108,12 +108,12 @@ int main(int argc, char* argv[])
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
 
-  while (hemocell.iter < tmax ) {
-    
+  while (hemocell.iter < tmax ) {  
+
     hemocell.cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
 
     cellStretch.applyForce(); //IMPORTANT, not done normally in hemocell.iterate()
-
+    
     hemocell.cellfields->spreadParticleForce();
     hemocell.lattice->timedCollideAndStream();
     hemocell.cellfields->interpolateFluidVelocity();

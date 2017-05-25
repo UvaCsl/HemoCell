@@ -88,7 +88,7 @@ public:
     void advance() {
 
         /* scheme:
-         *  1: Euler
+         *  1: Euler 
          *  2: Adams-Bashforth
          */
         #if HEMOCELL_MATERIAL_INTEGRATION == 1

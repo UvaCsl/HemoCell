@@ -68,7 +68,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       
       // TODO: Add area force viscosity based on the bilipid membrane
 
-      //Area scales with edge length, because other
+      //Area scales with edge length, because other (Wait, wut? - Gabor)
       
       //push back area force
       *cell[triangle[0]]->force_area -= afm*av1*0.5;
@@ -115,20 +115,27 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       const double edge_frac = (edge_length - /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n])
                                / /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n];
       
-      if (edge_frac > 0) {
+      //if (edge_frac > 0) {
         const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(0.64-edge_frac*edge_frac));   // allows at max. 80% stretch
         const Array<double,3> force = edge_uv*edge_force_scalar;
         *cell[edge[0]]->force_link += force;
         *cell[edge[1]]->force_link -= force;
-      } else{
-         // less stiff compression resistance -> let compression be dominated
-         // by area conservation force
-        const double edge_force_scalar = k_link * edge_frac * edge_frac * edge_frac;
-        const Array<double,3> force = edge_uv*edge_force_scalar;
-        *cell[edge[0]]->force_link += force;
-        *cell[edge[1]]->force_link -= force;
-      }
+      // } else{
+      //    // less stiff compression resistance -> let compression be dominated
+      //    // by area conservation force
+      //   const double edge_force_scalar = k_link * edge_frac * edge_frac * edge_frac;
+      //   const Array<double,3> force = edge_uv*edge_force_scalar;
+      //   *cell[edge[0]]->force_link += force;
+      //   *cell[edge[1]]->force_link -= force;
+      // }
       
+      // Add viscosity along edges
+      const Array<double,3> vertex_rel_vel = cell[edge[1]]->vPrevious - cell[edge[0]]->vPrevious;
+      const double edge_rel_vel = dot(vertex_rel_vel, edge_v) / edge_length;
+      const Array<double,3> edge_visc_force = 0.1 * edge_rel_vel * edge_uv;
+      *cell[edge[0]]->force_area += edge_visc_force;
+      *cell[edge[1]]->force_area -= edge_visc_force;
+
       // calculate triangle normals, this should be in a function
 
       const plint b0 = cellConstants.edge_bending_triangles_list[edge_n][0];
@@ -168,15 +175,18 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       *cell[edge[0]]->force_bending += bending_force;
       *cell[edge[1]]->force_bending += bending_force;
       //TODO Negate the force with 4 point bending
-      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= bending_force;
-      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= bending_force;
-
+      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= bending_force * 0.5;
+      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= bending_force * 0.5;
 
       // TODO: add bending viscosity -> new parameter to match periodic stretching tests
-
+      
       edge_n++;
     }
 
+    // BAD viscoelastic stuff, only for testing out damping effects
+    // for(const auto & c : cell) {
+    //   c->force *= 0.2;  
+    // }
   } 
 };
 
