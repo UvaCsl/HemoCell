@@ -10,7 +10,8 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<Array<plint,2>> edge_bending_triangles_list_,
                       vector<Array<plint,2>> edge_bending_triangles_outer_points_,
                       vector<double> triangle_area_eq_list_,
-                      double volume_eq_, double area_mean_eq_) :
+                      double volume_eq_, double area_mean_eq_, 
+                      double edge_mean_eq_, double angle_mean_eq_) :
     cellField(cellField_),
     triangle_list(triangle_list_),
     edge_list(edge_list_),
@@ -20,7 +21,9 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
     edge_bending_triangles_outer_points(edge_bending_triangles_outer_points_),
     triangle_area_eq_list(triangle_area_eq_list_),
     volume_eq(volume_eq_),
-    area_mean_eq(area_mean_eq_)
+    area_mean_eq(area_mean_eq_),
+    edge_mean_eq(edge_mean_eq_),
+    angle_mean_eq(angle_mean_eq_)
   {};
 
 CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCellField & cellField_) {
@@ -113,14 +116,28 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       edge_bending_triangles_outer_points_.push_back(op);
     }
 
-    //Calculate for faulty Old Model
+    //Calculate mean face areas
     double mean_area_eq_ = 0.;
     for (const double & area : triangle_area_eq_list_) {
       mean_area_eq_ += area;
     }
     mean_area_eq_ /= triangle_area_eq_list_.size();
     
-    CommonCellConstants CCC(cellField_,triangle_list_,edge_list_,edge_length_eq_list_,edge_angle_eq_list_,edge_bending_triangles_,edge_bending_triangles_outer_points_,triangle_area_eq_list_,volume_eq_,mean_area_eq_);
+    // Calculate mean edge lengths
+    double mean_edge_eq_ = 0;
+    for(const double & edge : edge_length_eq_list_) {
+      mean_edge_eq_ += edge;
+    }
+    mean_edge_eq_ /= edge_length_eq_list_.size();
+
+    // Calculate mean edge angles
+    double mean_angle_eq_ = 0;
+    for(const double & angle : edge_angle_eq_list_) {
+      mean_angle_eq_ += angle;
+    }
+    mean_angle_eq_ /= edge_angle_eq_list_.size();
+
+    CommonCellConstants CCC(cellField_,triangle_list_,edge_list_,edge_length_eq_list_,edge_angle_eq_list_,edge_bending_triangles_,edge_bending_triangles_outer_points_,triangle_area_eq_list_,volume_eq_,mean_area_eq_, mean_edge_eq_, mean_angle_eq_);
     return CCC;
 };
 

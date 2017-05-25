@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
      
   pcout << "(PipeFlow) (Parameters) calculating flow parameters" << endl;
   param::lbm_pipe_parameters((*cfg),flagMatrix->getBoundingBox());
+  param::printParameters();
   
   pcout << "(PipeFlow) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(

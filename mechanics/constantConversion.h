@@ -17,5 +17,6 @@ class Parameters {
 
   static void lbm_pipe_parameters(Config & cfg, Box3D domainBox);
   static void lbm_shear_parameters(Config & cfg, double nx);
+  static void printParameters();
 };
 #endif

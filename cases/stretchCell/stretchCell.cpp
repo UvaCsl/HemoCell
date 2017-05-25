@@ -23,15 +23,16 @@ int main(int argc, char* argv[])
   (*cfg)["domain"]["kBT"].read(param::kBT_p);
   (*cfg)["domain"]["rhoP"].read(param::rho_p);
   param::tau = 3.0 * (param::nu_p * param::dt / (param::dx * param::dx)) + 0.5;
+  param::nu_lbm = 1.0/3.0 * (param::tau - 0.5);
   param::dm = param::rho_p * (param::dx * param::dx * param::dx);
   param::df = param::dm * param::dx / (param::dt * param::dt);
-  param::ef_lbm = param::df*(*cfg)["parameters"]["stretchForce"].read<double>();
+  param::ef_lbm = (*cfg)["parameters"]["stretchForce"].read<double>()*1e-12 / param::df;
   param::kBT_lbm = param::kBT_p/(param::df*param::dx);
-
+  param::printParameters();
   
 	// ------------------------ Init lattice --------------------------------
 
-	pcout << "(CellStretch) Initializing lattice: " << nxyz << "x, y and z (cube)" << std::endl;
+	pcout << "(CellStretch) Initializing lattice: " << nxyz << "^3 [lu] cube" << std::endl;
 
 	plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
 
@@ -101,7 +102,7 @@ int main(int argc, char* argv[])
   unsigned int n_forced_lsps = ((*hemocell.cellfields)["RBC_HO"]->numVertex*(*cfg)["parameters"]["prctForced"].read<double>())/2;
   HemoCellStretch cellStretch(*(*hemocell.cellfields)["RBC_HO"],n_forced_lsps, param::ef_lbm);
   
-  pcout << "External force (lbm): " << param::ef_lbm << endl;
+  pcout << "(CellStretch) External stretching force [flb]: " << param::ef_lbm << endl;
     
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();

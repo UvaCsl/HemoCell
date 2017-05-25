@@ -1,14 +1,14 @@
 #ifndef HEMOCELL_INTERNAL_H
 #define HEMOCELL_INTERNAL_H
 
+#define VERSION_MAJOR 0
+#define VERSION_MINOR 2
+
 //Load Constants
 #include "constant_defaults.h"
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
-
-#define VERSION_MAJOR 0
-#define VERSION_MINOR 1
 
 using namespace plb;
 

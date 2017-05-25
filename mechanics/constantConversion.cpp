@@ -15,7 +15,7 @@ void Parameters::lbm_pipe_parameters(Config & cfg, Box3D domainBox) {
       tau = 1.0;
       nu_lbm = 1.0/3.0 * (tau - 0.5);
       dt = nu_lbm /nu_p * (dx*dx);
-      cerr << "(main) Tau is set to unity, and dt is derived from that!" << std::endl;
+      pcout << "(HemoCell) dt is set to *auto*. Tau will be set to 1!" << std::endl;
     } else { //dt is set, this means we must set tau
       nu_lbm = nu_p * dt/ (dx*dx);
       tau = 3.0 * nu_lbm + 0.5;
@@ -46,7 +46,7 @@ void Parameters::lbm_shear_parameters(Config & cfg,double nx) {
     tau = 1.0;
     nu_lbm = 1.0/3.0 * (tau - 0.5);
     dt = nu_lbm /nu_p * (dx*dx);
-    cerr << "(main) Tau is set to unity, and dt is derived from that!" << std::endl;
+    pcout << "(HemoCell) dt is set to *auto*. Tau will be set to 1!" << std::endl;
   } else {
     nu_lbm = nu_p * dt/ (dx*dx);
     tau = 3.0 * nu_lbm + 0.5;
@@ -62,6 +62,17 @@ void Parameters::lbm_shear_parameters(Config & cfg,double nx) {
   shearrate_lbm = shearrate_p*dt;
   kBT_lbm = kBT_p/(df*dx);
 
+}
+
+void Parameters::printParameters() {
+  pcout << "(HemoCell) System parameters:" << std::endl;
+  pcout << "\t dx: \t" << dx << std::endl;
+  pcout << "\t dt: \t" << dt << std::endl;
+  pcout << "\t dm: \t" << dm << std::endl;
+  pcout << "\t dN: \t" << df << std::endl;
+  pcout << "\t tau: \t" << tau << std::endl;
+  pcout << "\t nu_lbm: \t" << nu_lbm << std::endl;
+  pcout << "\t u_lb_max: \t" << u_lbm_max << std::endl;
 }
 
 double Parameters::dt = 0.0;

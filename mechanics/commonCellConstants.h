@@ -17,7 +17,8 @@ class CommonCellConstants {
                       vector<Array<plint,2>> edge_bending_triangles_list_,
                       vector<Array<plint,2>> edge_bending_triangles_outer_points_,
                       vector<double> triangle_area_eq_list_,
-                      double volume_eq_, double area_mean_eq_);
+                      double volume_eq_, double area_mean_eq_,
+                      double edge_mean_eq_, double angle_mean_eq_);
   public: 
   static CommonCellConstants CommonCellConstantsConstructor(HemoCellField &);
 
@@ -34,6 +35,8 @@ class CommonCellConstants {
 
   const double volume_eq;
   const double area_mean_eq;
+  const double edge_mean_eq;
+  const double angle_mean_eq;
 
 };
 #endif
