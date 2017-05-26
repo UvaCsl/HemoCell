@@ -417,7 +417,7 @@ void HemoCellParticleField::applyConstitutiveModel() {
   deleteIncompleteCells();
   
   for (pluint ctype = 0; ctype < (*cellFields).size(); ctype++) {
-    if ((*cellFields)[ctype]->timescale % (*cellFields).hemocell.iter == 0) {
+    if ((*cellFields).hemocell.iter % (*cellFields)[ctype]->timescale == 0) {
       vector<HemoCellParticle*> found;
       findParticles(getBoundingBox(),found,ctype);
       for (HemoCellParticle* particle : found) {
