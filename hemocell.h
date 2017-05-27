@@ -81,9 +81,14 @@ class HemoCell {
   //Set the timescale separation of the particles of a particle type
   void setMaterialTimeScaleSeperation(string name, unsigned int separation);
   
+  //Set the minimum distance of the particles of a type to the solid, must be called BEFORE loadparticles
+  void setMinimumDistanceFromSolid(string name, double distance);
+  
   //Set the output of the fluid field
   void setFluidOutputs(vector<int> outputs);
 
+  //Load the particles
+  bool loadParticlesIsCalled = false;
   void loadParticles(string name);
 
   void loadCheckPoint();

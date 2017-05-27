@@ -37,7 +37,7 @@
     <tmax> 10000 </tmax> <!-- total number of iterations -->
     <tmeas>  100 </tmeas> <!-- interval after which data is written --> 
     <tcheckpoint> 1000 </tcheckpoint> 
-    <tbalance> 100000 </tbalance> <!-- interval after which balance is performed --> 
+    <tbalance> 1000 </tbalance> <!-- interval after which balance is performed --> 
     <particlePosFile> cells.pos </particlePosFile>
 </sim>
 

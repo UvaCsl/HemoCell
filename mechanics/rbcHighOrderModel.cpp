@@ -48,7 +48,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       //Area Force per vertex calculation
       //Calculate triangle normal while we're busy with this
       Array<double,3> t_normal;
-      crossProduct(v1-v0,v2-v0,t_normal); //crossproduct with correct reference point //TODO, swap arg 1 and 2 maybe
+      crossProduct(v1-v0,v2-v0,t_normal); //crossproduct with correct reference point //TODO inline function
       //set normal to unit length
       const double t_normal_l = sqrt(t_normal[0]*t_normal[0]+t_normal[1]*t_normal[1]+t_normal[2]*t_normal[2]);
       t_normal = t_normal/t_normal_l;
@@ -68,15 +68,16 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       
       // TODO: Add area force viscosity based on the bilipid membrane
 
-      //Area scales with edge length, because other (Wait, wut? - Gabor)
+      //Area force scales with edge length, to keep zero sum force, 
+      //(this results already from the crossProduct, no need to do anything)
       
       //push back area force
-      *cell[triangle[0]]->force_area -= afm*av1*0.5;
+      *cell[triangle[0]]->force_area -= afm*av1*0.5; //av1 edge force is divided over two neighbouring edges
       *cell[triangle[0]]->force_area -= afm*av2*0.5;
       *cell[triangle[1]]->force_area -= afm*av0*0.5;
       *cell[triangle[1]]->force_area -= afm*av2*0.5;
       *cell[triangle[2]]->force_area -= afm*av0*0.5;
-      *cell[triangle[2]]->force_area -= afm*av1*0.5;
+      *cell[triangle[2]]->force_area -= afm*av1*0.5; //av1 edge force is divided over two neighbouring edges
 
       //Store values necessary later
       triangle_areas.push_back(area);

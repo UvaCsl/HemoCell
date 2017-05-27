@@ -45,6 +45,7 @@ void HemoCell::setFluidOutputs(vector<int> outputs) {
 
 void HemoCell::loadParticles(string filename) {
   pcout << "(HemoCell) (CellField) Loading particle positions from " << filename  << endl;
+  loadParticlesIsCalled = true;
   readPositionsBloodCellField3D(*cellfields, param::dx, filename.c_str(), *cfg);
   cellfields->syncEnvelopes();
   cellfields->deleteIncompleteCells();
@@ -122,6 +123,13 @@ void HemoCell::setMaterialTimeScaleSeperation(string name, unsigned int separati
   (*cellfields)[name]->timescale = separation;
 }
 
+void HemoCell::setMinimumDistanceFromSolid(string name, double distance) {
+  pcout << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << "micrometer for " << name << endl; 
+  if (!loadParticlesIsCalled) {
+    pcout << "(HemoCell) (Set Distance) WARNING: this function is called after the particles are loaded, so it probably has no effect" << endl;
+  }
+  (*cellfields)[name]->minimumDistanceFromSolid = distance;
+}
 
 #ifdef HEMO_PARMETIS
 void HemoCell::doLoadBalance() {

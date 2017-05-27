@@ -17,6 +17,8 @@ inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, 
                                             TriangularSurfaceMesh<double> * mesh, Array<double,3> startingPoint, plint cellId, pluint celltype) {
     plint nVertices=mesh->getNumVertices();
     Box3D fluidbb = fluid.getBoundingBox();
+    Dot3D rrelfluidloc; // used later;
+    int denyLayerSize; // used later;
     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
         Array<double,3> vertex = startingPoint + mesh->getVertex(iVertex);
         
@@ -33,35 +35,30 @@ inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, 
             relfluidloc.z < fluidbb.z0 || relfluidloc.z > fluidbb.z1)) {
               // Test when particle is inside if in a boundary -> dont add this particle
             if (fluid.get(relfluidloc.x,relfluidloc.y,relfluidloc.z).getDynamics().isBoundary()) {
-        	continue;
+        	goto no_add;
             }
-        }
+        } 
+            
+      //bool neighboringBoundariesAnywhere = false;  
+      // Deny particles that are in the outer most layer, aka. the "shear layer"    
+      denyLayerSize = ((*particleField.cellFields)[celltype]->minimumDistanceFromSolid*1e-6)/param::dx;
+      for (int px = -denyLayerSize; px <= denyLayerSize; ++px) {  
+        for (int py = -denyLayerSize; py <= denyLayerSize; ++py) { 
+          for (int pz = -denyLayerSize; pz <= denyLayerSize; ++pz) {
+            rrelfluidloc = {relfluidloc.x+px,relfluidloc.y+py,relfluidloc.z+pz};
+            if (!(rrelfluidloc.x < fluidbb.x0 || rrelfluidloc.x > fluidbb.x1 ||
+                  rrelfluidloc.y < fluidbb.y0 || rrelfluidloc.y > fluidbb.y1 ||
+                  rrelfluidloc.z < fluidbb.z0 || rrelfluidloc.z > fluidbb.z1)) {
+              if (fluid.get(rrelfluidloc.x,rrelfluidloc.y,rrelfluidloc.z).getDynamics().isBoundary()) {
+        	goto no_add;
+              }
+            }
+          }  
+        }  
+      }
         
-      
-        
-        
-        // If all neighbours are boundaries or denied cells
-        //bool neighboringBoundariesAnywhere = false;  
-
-        // Deny particles that are in the outer most layer, aka. the "shear layer"
-        //int denyLayerSize = 1; // Size of the outer shear layer to deny particles from (= create a starting CFL). This should scale with dx and be <= 1um.    
-        //for (int px = -denyLayerSize; px <= denyLayerSize; ++px) {  for (int py = -denyLayerSize; py <= denyLayerSize; ++py) { for (int pz = -denyLayerSize; pz <= denyLayerSize; ++pz) {
-        //            bool isInsideDomain = (fluidDomainCell.x+px >= 0 and fluidDomainCell.y+py >= 0 and fluidDomainCell.z+pz >= 0) and
-        //                (fluidDomainCell.x+px < maxNx and fluidDomainCell.y+py < maxNy and fluidDomainCell.z+pz < maxNz);
-        //            if(isInsideDomain) {
-        //                neighboringBoundariesAnywhere = neighboringBoundariesAnywhere or fluid.get(fluidDomainCell.x+px, fluidDomainCell.y+py, fluidDomainCell.z+pz).getDynamics().isBoundary();
-        //            }
-        //        }  
-        //    }  
-        //}
-        
-        // This cell does not satisfy all requirements.
-       // if(neighboringBoundariesAnywhere)
-       //     break; 
-
-        // Finally, if all checks are passed, add the particle.
-        particleField.addParticle(particleField.getBoundingBox(), new HemoCellParticle(vertex, cellId, iVertex,celltype));
-
+      particleField.addParticle(particleField.getBoundingBox(), new HemoCellParticle(vertex, cellId, iVertex,celltype));
+no_add:;
     }
 }
 

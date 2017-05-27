@@ -4,7 +4,7 @@
 #include "hemocell_internal.h"
 #include "hemoCellFields.h"
 #include "config.h"
-
+#include "constantConversion.h"
 void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, const char* positionsFileName, Config & cfg);
 
 void getReadPositionsBloodCellsVector(Box3D realDomain,
