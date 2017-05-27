@@ -7,7 +7,9 @@ RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellFie
                   k_volume( RbcHighOrderModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
                   k_area( RbcHighOrderModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
                   k_link( RbcHighOrderModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
-                  k_bend( RbcHighOrderModel::calculate_kBend(modelCfg_) )
+                  k_bend( RbcHighOrderModel::calculate_kBend(modelCfg_) ),
+                  eta_m( RbcHighOrderModel::calculate_etaM(modelCfg_) ),
+                  eta_b( RbcHighOrderModel::calculate_etaB(modelCfg_) )
     {};
 
 void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> particles_per_cell, map<int,bool> lpc, pluint ctype) {
@@ -117,10 +119,12 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
                                / /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n];
       
       //if (edge_frac > 0) {
-        const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(0.64-edge_frac*edge_frac));   // allows at max. 80% stretch
-        const Array<double,3> force = edge_uv*edge_force_scalar;
-        *cell[edge[0]]->force_link += force;
-        *cell[edge[1]]->force_link -= force;
+      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(0.64-edge_frac*edge_frac));   // allows at max. 80% stretch
+      const Array<double,3> force = edge_uv*edge_force_scalar;
+      *cell[edge[0]]->force_link += force;
+      *cell[edge[1]]->force_link -= force;
+      //TODO: for proper contraction a different tau_link might be needed (e.g. > 1.0)
+      //      instead of making it softer
       // } else{
       //    // less stiff compression resistance -> let compression be dominated
       //    // by area conservation force
@@ -130,10 +134,10 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       //   *cell[edge[1]]->force_link -= force;
       // }
       
-      // Add viscosity along edges
+      // Membrane viscosity - acts as viscosity along edges
       const Array<double,3> vertex_rel_vel = cell[edge[1]]->vPrevious - cell[edge[0]]->vPrevious;
       const double edge_rel_vel = dot(vertex_rel_vel, edge_v) / edge_length;
-      const Array<double,3> edge_visc_force = 0.1 * edge_rel_vel * edge_uv;
+      const Array<double,3> edge_visc_force = eta_m * edge_rel_vel * edge_v;
       *cell[edge[0]]->force_area += edge_visc_force;
       *cell[edge[1]]->force_area -= edge_visc_force;
 
@@ -176,11 +180,20 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       *cell[edge[0]]->force_bending += bending_force;
       *cell[edge[1]]->force_bending += bending_force;
       //TODO Negate the force with 4 point bending
-      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= bending_force * 0.5;
-      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= bending_force * 0.5;
+      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= force_magnitude * V1;
+      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= force_magnitude * V2;
 
-      // TODO: add bending viscosity -> new parameter to match periodic stretching tests
-      
+      // Bending viscosity -> new parameter to match periodic stretching tests
+      const Array<double,3> outer_end_rel_vel = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->vPrevious 
+                                              - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->vPrevious;
+      const Array<double,3> section = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->position 
+                                    - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
+      const double section_length = sqrt(section[0]*section[0]+section[1]*section[1]+section[2]*section[2]);
+      const double section_rel_vel = dot(outer_end_rel_vel, section) / section_length;
+      const Array<double,3> bend_visc_force = eta_b * section_rel_vel * section;
+      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending += bend_visc_force;
+      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= bend_visc_force;                                  
+
       edge_n++;
     }
 
@@ -197,10 +210,20 @@ void RbcHighOrderModel::statistics() {
     pcout << "\t k_area:   " << k_area << std::endl; 
     pcout << "\t k_bend: : " << k_bend << std::endl; 
     pcout << "\t k_volume: " << k_volume << std::endl;
+    pcout << "\t eta_m:    " << eta_m << std::endl;
+    pcout << "\t eta_b:    " << eta_b << std::endl;
 };
 
 
 // Provide methods to calculate and scale to coefficients from here
+
+double RbcHighOrderModel::calculate_etaM(Config & cfg ){
+  return cfg["MaterialModel"]["eta_m"].read<double>() * param::dx * param::dt / param::dm;
+};
+
+double RbcHighOrderModel::calculate_etaB(Config & cfg ){
+  return cfg["MaterialModel"]["eta_b"].read<double>() * param::dx * param::dt / param::dm;
+};
 
 double RbcHighOrderModel::calculate_kBend(Config & cfg ){
   return cfg["MaterialModel"]["kBend"].read<double>() * param::kBT_lbm;
@@ -223,9 +246,8 @@ double RbcHighOrderModel::calculate_kArea(Config & cfg, MeshMetrics<double> & me
 double RbcHighOrderModel::calculate_kLink(Config & cfg, MeshMetrics<double> & meshmetric){
   double kLink = cfg["MaterialModel"]["kLink"].read<double>();
   double persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
-  // TODO: this is a fixed number, no need to calculate it like this
-  // TODO2: What is more, this is WRONG scaling of the persistence Length
-  double plc = persistenceLengthFine/param::dx * 0.655; //* sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kaniadakis magic
+  //TODO: It should scale with the number of surface points!
+  double plc = persistenceLengthFine/param::dx; //* sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kaniadakis magic
   kLink *= param::kBT_lbm/plc;
   return kLink;
 }

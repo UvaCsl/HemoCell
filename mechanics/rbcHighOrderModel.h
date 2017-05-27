@@ -18,6 +18,8 @@ class RbcHighOrderModel : public CellMechanics {
   const double k_area;
   const double k_link;
   const double k_bend;
+  const double eta_m;
+  const double eta_b;
 
   public:
   RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) ;
@@ -30,6 +32,8 @@ class RbcHighOrderModel : public CellMechanics {
   static double calculate_kVolume(Config & cfg, MeshMetrics<double> &);
   static double calculate_kArea(Config & cfg, MeshMetrics<double> &);
   static double calculate_kLink(Config & cfg, MeshMetrics<double> &);
+  static double calculate_etaM(Config & cfg );
+  static double calculate_etaB(Config & cfg );
 
 };
 
