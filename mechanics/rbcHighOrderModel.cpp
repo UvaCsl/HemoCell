@@ -48,28 +48,21 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
 
       const double areaRatio = (area - /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n])
                                / /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n];      
-      
-      //unit vector perpendicular to opposing edge:
-      Array<double,3> av0;
-      crossProduct(v1-v2,t_normal,av0);
-      Array<double,3> av1;
-      crossProduct(v2-v0,t_normal,av1);
-      Array<double,3> av2;
-      crossProduct(v0-v1,t_normal,av2);
        
       //area force magnitude
-      const double afm = -k_area *(areaRatio+areaRatio/(0.04-areaRatio*areaRatio));
+      const double afm = -k_area * (areaRatio+areaRatio/(0.04-areaRatio*areaRatio));
 
-      //Area force scales with edge length, to keep zero sum force, 
-      //(this results already from the crossProduct, no need to do anything)
-      
-      //push back area force
-      *cell[triangle[0]]->force_area -= afm*av1*0.5; //av1 edge force is divided over two neighbouring edges
-      *cell[triangle[0]]->force_area -= afm*av2*0.5;
-      *cell[triangle[1]]->force_area -= afm*av0*0.5;
-      *cell[triangle[1]]->force_area -= afm*av2*0.5;
-      *cell[triangle[2]]->force_area -= afm*av0*0.5;
-      *cell[triangle[2]]->force_area -= afm*av1*0.5; //av1 edge force is divided over two neighbouring edges
+      Array<double,3> centroid;
+      centroid[0] = (v0[0]+v1[0]+v2[0])/3.0;
+      centroid[1] = (v0[1]+v1[1]+v2[1])/3.0;
+      centroid[2] = (v0[2]+v1[2]+v2[2])/3.0;
+      Array<double,3> av0 = centroid - v0;
+	  Array<double,3> av1 = centroid - v1;
+	  Array<double,3> av2 = centroid - v2;
+
+      *cell[triangle[0]]->force_area -= afm*av0;
+      *cell[triangle[1]]->force_area -= afm*av1;
+      *cell[triangle[2]]->force_area -= afm*av2;
 
       //Store values necessary later
       triangle_areas.push_back(area);
