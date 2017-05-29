@@ -42,20 +42,12 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       volume += (1.0/6.0)*(-v210+v120+v201-v021-v102+v012);
       
       //Area
-      const double area = computeTriangleArea(v0,v1,v2);
-      
+      double area; 
+      Array<double,3> t_normal;
+      computeTriangleAreaAndUnitNormal(v0, v1, v2, area, t_normal);
+
       const double areaRatio = (area - /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n])
                                / /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n];      
-      
-      //Area Force per vertex calculation
-      //Calculate triangle normal while we're busy with this
-      Array<double,3> t_normal;
-      crossProduct(v1-v0,v2-v0,t_normal); //crossproduct with correct reference point //TODO inline function
-      //set normal to unit length
-      const double t_normal_l = sqrt(t_normal[0]*t_normal[0]+t_normal[1]*t_normal[1]+t_normal[2]*t_normal[2]);
-      t_normal = t_normal/t_normal_l;
-      
-      
       
       //unit vector perpendicular to opposing edge:
       Array<double,3> av0;
@@ -67,8 +59,6 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
        
       //area force magnitude
       const double afm = -k_area *(areaRatio+areaRatio/(0.04-areaRatio*areaRatio));
-      
-      // TODO: Add area force viscosity based on the bilipid membrane
 
       //Area force scales with edge length, to keep zero sum force, 
       //(this results already from the crossProduct, no need to do anything)
