@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
   }
 
 // Setting up the stretching
-  unsigned int n_forced_lsps = ((*hemocell.cellfields)["RBC_HO"]->numVertex*(*cfg)["parameters"]["prctForced"].read<double>())/2;
+  unsigned int n_forced_lsps = 7;
   HemoCellStretch cellStretch(*(*hemocell.cellfields)["RBC_HO"],n_forced_lsps, param::ef_lbm);
   
   pcout << "(CellStretch) External stretching force [flb]: " << param::ef_lbm << endl;
