@@ -65,6 +65,24 @@ void CellInformationFunctionals::CellPosition::processGenericBlocks(Box3D domain
     info_per_cell[cid].position = position/double(cell.size());
   }
 }
+void CellInformationFunctionals::CellStretch::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+  HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
+  
+  for (const auto & pair : pf->lpc) {
+    double max_stretch = 0.;
+    const int & cid = pair.first;
+    const vector<HemoCellParticle*> & cell = pf->particles_per_cell[cid];
+    for (unsigned int i = 0 ; i < cell.size() - 1 ; i++ ) {
+      for (unsigned int j = i + 1 ; j < cell.size() ; j ++) {
+        double distance = sqrt( pow(cell[i]->position[0]-cell[j]->position[0],2) +
+                                pow(cell[i]->position[1]-cell[j]->position[1],2) +
+                                pow(cell[i]->position[2]-cell[j]->position[2],2));
+        max_stretch = max_stretch < distance ? distance : max_stretch;
+      }
+    }
+    info_per_cell[cid].stretch = max_stretch;
+  }
+}
 
 void CellInformationFunctionals::getCellVolume(HemoCell * hemocell_) {
   hemocell = hemocell_;
@@ -84,10 +102,17 @@ void CellInformationFunctionals::getCellPosition(HemoCell * hemocell_) {
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellPosition(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
+void CellInformationFunctionals::getCellStretch(HemoCell * hemocell_) {
+  hemocell = hemocell_;
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(hemocell->cellfields->immersedParticles);
+  applyTimedProcessingFunctional(new CellStretch(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
+}
 
 CellInformationFunctionals::CellVolume * CellInformationFunctionals::CellVolume::clone() const { return new CellInformationFunctionals::CellVolume(*this);}
 CellInformationFunctionals::CellArea * CellInformationFunctionals::CellArea::clone() const { return new CellInformationFunctionals::CellArea(*this);}
 CellInformationFunctionals::CellPosition * CellInformationFunctionals::CellPosition::clone() const { return new CellInformationFunctionals::CellPosition(*this);}
+CellInformationFunctionals::CellStretch * CellInformationFunctionals::CellStretch::clone() const { return new CellInformationFunctionals::CellStretch(*this);}
 
 map<int,CellInformation> CellInformationFunctionals::info_per_cell = map<int,CellInformation>();
 HemoCell * CellInformationFunctionals::hemocell = 0;

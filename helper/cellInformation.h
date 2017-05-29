@@ -20,6 +20,7 @@ struct CellInformation {
   Array<double,3> position;
   double volume;
   double area;
+  double stretch;
 };
 
 class CellInformationFunctionals {
@@ -38,14 +39,19 @@ class CellInformationFunctionals {
   void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
     CellPosition * clone() const;
   };
+  class CellStretch: public HemoCellFunctional {
+  void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+    CellStretch * clone() const;
+  };
   
 public:
   static map<int,CellInformation> info_per_cell;
   static void clear_list();
-  static void calculate_all(HemoCell *);
+  static void calculate_all(HemoCell *); /*This excludes Stretch, since it is compute intensive!*/
   static void getCellVolume(HemoCell *);
   static void getCellArea(HemoCell *);
   static void getCellPosition(HemoCell *);
+  static void getCellStretch(HemoCell *);
 };
 
 #endif

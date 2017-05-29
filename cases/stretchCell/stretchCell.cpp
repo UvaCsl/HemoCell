@@ -131,6 +131,8 @@ int main(int argc, char* argv[])
       CellInformationFunctionals::getCellPosition(&hemocell);
       Array<double,3> position = CellInformationFunctionals::info_per_cell[0].position/(1e-6/param::dx);
       pcout << "Our cells center is at:   {"<<position[0]<<","<<position[1]<<","<<position[2] << "} µm" <<endl;
+      CellInformationFunctionals::getCellStretch(&hemocell);
+      pcout << "Our Cell has a stretch of "<<(CellInformationFunctionals::info_per_cell[0].stretch)/(1e-6/param::dx) << " µm" <<endl;
       
       CellInformationFunctionals::clear_list();
 
