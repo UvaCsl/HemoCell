@@ -12,7 +12,6 @@ class RbcHighOrderModel : public CellMechanics {
 
   public:
   //Variables
-  const CommonCellConstants cellConstants;
   HemoCellField & cellField;
   const double k_volume;
   const double k_area;

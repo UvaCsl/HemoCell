@@ -71,14 +71,13 @@ public:
     static std::string descriptorType() {
       return std::string(DESCRIPTOR<double>::name);
     }
-    std::vector<HemoCellParticle*> particles;
+    vector<HemoCellParticle*> particles;
     private:
 
-    std::vector<std::vector<HemoCellParticle*>> particles_per_type;
+    vector<vector<HemoCellParticle*>> particles_per_type;
     public:
-    std::map<int,std::vector<HemoCellParticle*>> particles_per_cell;
-    private:
-    std::map<int,bool> lpc;
+    map<int,vector<HemoCellParticle*>> particles_per_cell;
+    map<int,bool> lpc;
     
     //vector<vector<vector<vector<HemoCellParticle*>>>> particle_grid; //maybe better to make custom data structure, But that would be slower
     void insert_ppc(HemoCellParticle* particle);

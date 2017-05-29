@@ -58,8 +58,8 @@ HemoCellParticleField* HemoCellParticleField::clone() const
 }
 
 void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle) {
-    Box3D finalDomain;
-    plint x,y,z;
+    //Box3D finalDomain;
+    //plint x,y,z;
     HemoCellParticle * local_sparticle;
     Array<double,3> pos = particle->position;
 
@@ -135,7 +135,7 @@ void HemoCellParticleField::insert_ppc(HemoCellParticle* sparticle) {
 
 
 void HemoCellParticleField::removeParticles(plint tag) {
-//Almost the same, but we save a lot of branching by manking a seperate function
+//Almost the same, but we save a lot of branching by making a seperate function
     vector<HemoCellParticle*> remainingParticles = particles;
 
     particles_per_type.clear();
@@ -161,7 +161,7 @@ void HemoCellParticleField::removeParticles(plint tag) {
 }
 
 void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
-//Almost the same, but we save a lot of branching by manking a seperate function
+//Almost the same, but we save a lot of branching by making a seperate function
     std::vector<HemoCellParticle*> remainingParticles = particles;
     Box3D finalDomain;
     Array<double,3> pos; 
@@ -192,7 +192,6 @@ void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
 
 void HemoCellParticleField::removeParticles(Box3D domain) {
 //Almost the same, but we save a lot of branching by making a seperate function
-// Dont allow palabos to delete things
     std::vector<HemoCellParticle*> remainingParticles = particles;
     Box3D finalDomain;
     Array<double,3> pos; 

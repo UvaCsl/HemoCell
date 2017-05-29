@@ -41,8 +41,8 @@
 </domain>
 
 <sim>
-    <tmax> 150000 </tmax> <!-- total number of iterations -->
-    <tmeas> 1000 </tmeas> <!-- interval after which data is written --> 
+    <tmax> 1000000 </tmax> <!-- total number of iterations -->
+    <tmeas>  1000 </tmeas> <!-- interval after which data is written --> 
     <tcheckpoint>10000</tcheckpoint>
     <particlePosFile> cells.pos </particlePosFile>
 </sim>

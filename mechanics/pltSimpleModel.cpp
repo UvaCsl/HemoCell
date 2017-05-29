@@ -1,7 +1,7 @@
 #include "pltSimpleModel.h"
 
-PltSimpleModel::PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(),
-                  cellConstants(CommonCellConstants::CommonCellConstantsConstructor(cellField_)), cellField(cellField_),
+PltSimpleModel::PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_), 
+                  cellField(cellField_),
                   k_volume( PltSimpleModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
                   //k_area( PltSimpleModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
                   k_link( PltSimpleModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 

@@ -1,8 +1,9 @@
 #ifndef Hemo_CommonCellConstants_H
 #define Hemo_CommonCellConstants_H
 
+class CommonCellConstants;
+
 #include "hemocell_internal.h"
-#include "hemoCellParticleType.h"
 
 //Forward declaration:
 class HemoCellField;

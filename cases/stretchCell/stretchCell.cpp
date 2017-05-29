@@ -1,6 +1,7 @@
 #include "hemocell.h"
 #include "rbcHighOrderModel.h"
 #include "helper/hemoCellStretch.h"
+#include "helper/cellInformation.h"
 
 
 int main(int argc, char* argv[])
@@ -123,6 +124,17 @@ int main(int argc, char* argv[])
     
     if (hemocell.iter % tmeas == 0) {
       hemocell.writeOutput();
+      CellInformationFunctionals::getCellVolume(&hemocell);
+      pcout << "Our Cell has a volume of: " << (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3) << " µm^3" <<endl;
+      CellInformationFunctionals::getCellArea(&hemocell);
+      pcout << "Our Cell has an area of:  " << (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2) << " µm^2" <<endl;
+      CellInformationFunctionals::getCellPosition(&hemocell);
+      Array<double,3> position = CellInformationFunctionals::info_per_cell[0].position/(1e-6/param::dx);
+      pcout << "Our cells center is at:   {"<<position[0]<<","<<position[1]<<","<<position[2] << "} µm" <<endl;
+      
+      CellInformationFunctionals::clear_list();
+
+
     }
     if (hemocell.iter % tcheckpoint == 0) {
       hemocell.saveCheckPoint();

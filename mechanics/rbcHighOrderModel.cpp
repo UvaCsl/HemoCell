@@ -2,8 +2,8 @@
 //TODO Make all inner array variables constant as well
 
 
-RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(),
-                  cellConstants(CommonCellConstants::CommonCellConstantsConstructor(cellField_)), cellField(cellField_),
+RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_),
+                  cellField(cellField_),
                   k_volume( RbcHighOrderModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
                   k_area( RbcHighOrderModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
                   k_link( RbcHighOrderModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
@@ -43,7 +43,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       
       //Area
       const double area = computeTriangleArea(v0,v1,v2);
-
+      
       const double areaRatio = (area - /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n])
                                / /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n];      
       
@@ -87,7 +87,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
 
       triangle_n++;
     }
-
+    
     //Volume
     const double volume_frac = (volume-cellConstants.volume_eq)/cellConstants.volume_eq;
     const double volume_force = -k_volume * volume_frac/(0.01-volume_frac*volume_frac);

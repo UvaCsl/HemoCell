@@ -3,8 +3,7 @@
 vector<HemoCellParticle*> * glob_cell;
 HemoCellField * glob_cf;
 
-RbcOldModel::RbcOldModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(),
-                  cellConstants(CommonCellConstants::CommonCellConstantsConstructor(cellField_)), cellField(cellField_),
+RbcOldModel::RbcOldModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_), cellField(cellField_),
                   k_volume( RbcOldModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
                   k_area( RbcOldModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
                   k_link( RbcOldModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
