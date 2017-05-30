@@ -117,6 +117,7 @@ class HemoCell {
 
   private:
   XMLreader * documentXML; //Needed for legacy checkpoint reading TODO fix
+  int lastOutputAt;  // Store the last time (iteration) output occured
 };
 
 #endif // HEMOCELL_H
