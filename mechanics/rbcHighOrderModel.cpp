@@ -50,19 +50,30 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
                                / /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n];      
        
       //area force magnitude
-      const double afm = -k_area * (areaRatio+areaRatio/(0.04-areaRatio*areaRatio));
+      const double afm = k_area * (areaRatio+areaRatio/(0.04-areaRatio*areaRatio));
 
       Array<double,3> centroid;
       centroid[0] = (v0[0]+v1[0]+v2[0])/3.0;
       centroid[1] = (v0[1]+v1[1]+v2[1])/3.0;
       centroid[2] = (v0[2]+v1[2]+v2[2])/3.0;
       Array<double,3> av0 = centroid - v0;
-	  Array<double,3> av1 = centroid - v1;
-	  Array<double,3> av2 = centroid - v2;
+	    Array<double,3> av1 = centroid - v1;
+	    Array<double,3> av2 = centroid - v2;
 
-      *cell[triangle[0]]->force_area -= afm*av0;
-      *cell[triangle[1]]->force_area -= afm*av1;
-      *cell[triangle[2]]->force_area -= afm*av2;
+	    if(afm > 0) { // We need to contract the face
+	    	*cell[triangle[0]]->force_area += afm*av0;
+        *cell[triangle[1]]->force_area += afm*av1;
+        *cell[triangle[2]]->force_area += afm*av2;
+	    }
+	    else { // We need to expand it, so we reverse their length, the farthest vertex is forced the least
+	    	double l0 = norm(av0);
+	    	double l1 = norm(av1);
+	    	double l2 = norm(av2);
+	  	  double sum_l = l0+l1+l2;  
+	  	  *cell[triangle[0]]->force_area += afm / l0 * (sum_l-(l1+l2)) * av0;
+        *cell[triangle[1]]->force_area += afm / l1 * (sum_l-(l0+l2)) * av1;
+        *cell[triangle[2]]->force_area += afm / l2 * (sum_l-(l0+l1)) * av2;
+	    }
 
       //Store values necessary later
       triangle_areas.push_back(area);
@@ -166,16 +177,17 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= force_magnitude * V1;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= force_magnitude * V2;
 
+      // TODO: this should be based on angular velocity -> We need previous angle for that! (like vPrevious for stretching viscosity)
       // Bending viscosity -> new parameter to match periodic stretching tests
-      const Array<double,3> outer_end_rel_vel = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->vPrevious 
-                                              - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->vPrevious;
-      const Array<double,3> section = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->position 
-                                    - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
-      const double section_length = sqrt(section[0]*section[0]+section[1]*section[1]+section[2]*section[2]);
-      const double section_rel_vel = dot(outer_end_rel_vel, section) / section_length;
-      const Array<double,3> bend_visc_force = eta_b * section_rel_vel * section;
-      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending += bend_visc_force;
-      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= bend_visc_force;                                  
+      // const Array<double,3> outer_end_rel_vel = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->vPrevious 
+      //                                         - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->vPrevious;
+      // const Array<double,3> section = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->position 
+      //                               - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
+      // const double section_length = sqrt(section[0]*section[0]+section[1]*section[1]+section[2]*section[2]);
+      // const double section_rel_vel = dot(outer_end_rel_vel, section) / section_length;
+      // const Array<double,3> bend_visc_force = eta_b * section_rel_vel * section;
+      // *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending += bend_visc_force;
+      // *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= bend_visc_force;                                  
 
       edge_n++;
     }

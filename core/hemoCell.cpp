@@ -38,15 +38,15 @@ void HemoCell::setOutputs(string name, vector<int> outputs) {
 }
 
 void HemoCell::setFluidOutputs(vector<int> outputs) {
-  pcout << "(HemoCell) (Fluid) Setting output variables for Fluid" << endl;
+  pcout << "(HemoCell) (Fluid) Setting output variables for fluid field" << endl;
   vector<int> outputs_c = outputs;
   cellfields->desiredFluidOutputVariables = outputs_c;
 }
 
-void HemoCell::loadParticles(string filename) {
-  pcout << "(HemoCell) (CellField) Loading particle positions from " << filename  << endl;
+void HemoCell::loadParticles() {
+  pcout << "(HemoCell) (CellField) Loading particle positions "  << endl;
   loadParticlesIsCalled = true;
-  readPositionsBloodCellField3D(*cellfields, param::dx, filename.c_str(), *cfg);
+  readPositionsBloodCellField3D(*cellfields, param::dx, *cfg);
   cellfields->syncEnvelopes();
   cellfields->deleteIncompleteCells();
 }
@@ -62,9 +62,9 @@ void HemoCell::saveCheckPoint() {
 }
 
 void HemoCell::writeOutput() {
-  pcout << "(HemoCell) (Output) writing desired output at timestep " << iter << endl;
-  //Repoint surfaceparticle forces for output
-  cellfields->separate_force_vectors();
+	pcout << "(HemoCell) (Output) writing output at timestep " << iter << "(" << param::dt * iter<< " s)" << endl;
+	//Repoint surfaceparticle forces for output
+	cellfields->separate_force_vectors();
 
   //Recalculate the forces
   cellfields->applyConstitutiveModel(true);

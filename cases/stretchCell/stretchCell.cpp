@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
 
 	//loading the cellfield
   if (not cfg->checkpointed) {
-    hemocell.loadParticles((*cfg)["sim"]["particlePosFile"].read<string>());
+    hemocell.loadParticles();
     hemocell.writeOutput();
   } else {
     hemocell.loadCheckPoint();
@@ -108,6 +108,20 @@ int main(int argc, char* argv[])
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
+
+  // Get undeformed values
+  CellInformationFunctionals::getCellVolume(&hemocell);
+  CellInformationFunctionals::getCellArea(&hemocell);
+  double volume_eq = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
+  double surface_eq = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
+
+  // Creating output log file
+  plb_ofstream fOut;
+  if(cfg->checkpointed)
+    fOut.open("stretch.log", std::ofstream::app);
+  else
+    fOut.open("stretch.log");
+
 
   while (hemocell.iter < tmax ) {  
 
@@ -124,29 +138,35 @@ int main(int argc, char* argv[])
     
     if (hemocell.iter % tmeas == 0) {
       hemocell.writeOutput();
+
+      // Fill up the static info structure with desired data
       CellInformationFunctionals::getCellVolume(&hemocell);
-      pcout << "Our Cell has a volume of: " << (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3) << " µm^3" <<endl;
       CellInformationFunctionals::getCellArea(&hemocell);
-      pcout << "Our Cell has an area of:  " << (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2) << " µm^2" <<endl;
       CellInformationFunctionals::getCellPosition(&hemocell);
-      Array<double,3> position = CellInformationFunctionals::info_per_cell[0].position/(1e-6/param::dx);
-      pcout << "Our cells center is at:   {"<<position[0]<<","<<position[1]<<","<<position[2] << "} µm" <<endl;
       CellInformationFunctionals::getCellStretch(&hemocell);
-      pcout << "Our Cell has a stretch of:"<<(CellInformationFunctionals::info_per_cell[0].stretch)/(1e-6/param::dx) << " µm" <<endl;
       CellInformationFunctionals::getCellBoundingBox(&hemocell);
+
+      double volume = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
+      double surface = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
+      Array<double,3> position = CellInformationFunctionals::info_per_cell[0].position/(1e-6/param::dx);
       Array<double,6> bbox = CellInformationFunctionals::info_per_cell[0].bbox/(1e-6/param::dx);
-      pcout << "Our Cell has a bbox of:   x: {"<< bbox[0] << "," << bbox[1] << "}" << endl;
-      pcout << "                          y: {"<< bbox[2] << "," << bbox[3] << "}" << endl;
-      pcout << "                          z: {"<< bbox[4] << "," << bbox[5] << "} µm" <<endl;
+      double largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch)/(1e-6/param::dx);
+
+      pcout << "\t Cell center at: {" <<position[0]<<","<<position[1]<<","<<position[2] << "} µm" <<endl;  
+      pcout << "\t Diameters: {" << bbox[1]-bbox[0] <<", " << bbox[3]-bbox[2] <<", " << bbox[5]-bbox[4] <<"}  µm" << endl;
+      pcout << "\t Surface: " << surface << " µm^2" << " (" << surface / surface_eq * 100.0 << "%)" << "  Volume: " << volume << " µm^3" << " (" << volume / volume_eq * 100.0 << "%)"<<endl;
       
+      fOut << hemocell.iter << " " << bbox[1]-bbox[0] << " " << bbox[3]-bbox[2] << " " << bbox[5]-bbox[4] << " " << volume / volume_eq * 100.0 << " " << surface / surface_eq * 100.0 << endl;
+
       CellInformationFunctionals::clear_list();
-
-
     }
     if (hemocell.iter % tcheckpoint == 0) {
       hemocell.saveCheckPoint();
     }
   }
+
+  fOut.close();
+  pcout << "(CellStretch) Simulation finished :)" << std::endl;
 
   return 0;
 }

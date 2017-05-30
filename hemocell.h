@@ -97,7 +97,7 @@ class HemoCell {
 
   //Load the particles
   bool loadParticlesIsCalled = false;
-  void loadParticles(string name);
+  void loadParticles();
 
   void loadCheckPoint();
   void saveCheckPoint();

@@ -4,7 +4,7 @@
 <parameters>
     <warmup> 50 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <prctForced>0.05</prctForced>
-    <stretchForce> 37.899 </stretchForce>   <!--Stretch Force using the X direction (in pN). [100]. -->
+    <stretchForce> 173 </stretchForce>   <!--Stretch Force using the X direction (in pN). [37.899, 87, 173]. -->
 </parameters>
 
 
@@ -26,9 +26,8 @@
 
 <sim>
     <tmax> 10000 </tmax> <!-- total number of iterations -->
-    <tmeas> 100 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint>1000</tcheckpoint>
-    <particlePosFile> cells.pos </particlePosFile>
+    <tmeas> 500 </tmeas> <!-- interval after which data is written --> 
+    <tcheckpoint>5000</tcheckpoint>
 </sim>
 
 </hemocell>

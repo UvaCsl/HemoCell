@@ -68,7 +68,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
                                             std::vector<std::vector<Array<double,3> > > & positions,
                                             std::vector<std::vector<plint> > & cellIds,
                                             std::vector<std::vector<Array<double,3> > > & randomAngles,
-                                            const char* positionsFileName, double dx, Config & cfg, HemoCellFields & cellFields)
+                                            double dx, Config & cfg, HemoCellFields & cellFields)
 {
 
     pcout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
@@ -204,7 +204,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
 
     // Note: this method uses the center of the particles for location
     double posRatio = 1e-6/dx;
-    getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, positionsFileName, posRatio, cfg, cellFields);
+    getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, posRatio, cfg, cellFields);
 
     // Change positions to match dx (it is in um originally)
     double wallWidth = 0; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
@@ -268,7 +268,7 @@ BlockDomain::DomainT ReadPositionsBloodCellField3D::appliesTo() const {
 
 
 
-void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, const char* positionsFileName, Config & cfg) {
+void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, Config & cfg) {
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
     fluidAndParticleFieldsArg.push_back(cellFields.lattice);
@@ -278,7 +278,7 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, const
     }
 
     applyProcessingFunctional(
-            new ReadPositionsBloodCellField3D(cellFields, dx, positionsFileName,cfg),
+            new ReadPositionsBloodCellField3D(cellFields, dx, cfg),
             cellFields.lattice->getBoundingBox(), fluidAndParticleFieldsArg);
 
 }
