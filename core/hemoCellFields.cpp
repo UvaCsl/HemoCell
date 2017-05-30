@@ -225,13 +225,14 @@ void HemoCellFields::spreadParticleForce() {
 }
 
 void HemoCellFields::HemoApplyConstitutiveModel::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->applyConstitutiveModel();
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->applyConstitutiveModel(forced);
 }
-void HemoCellFields::applyConstitutiveModel() {
+void HemoCellFields::applyConstitutiveModel(bool forced) {
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
-  applyTimedProcessingFunctional(new HemoApplyConstitutiveModel(),immersedParticles->getBoundingBox(),wrapper);
-
+  HemoApplyConstitutiveModel * fnct = new HemoApplyConstitutiveModel();
+  fnct->forced = forced;
+  applyTimedProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
 }
 
 void HemoCellFields::HemoUnifyForceVectors::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -244,12 +245,14 @@ void HemoCellFields::unify_force_vectors() {
 }
 
 void HemoCellFields::HemoRepulsionForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->applyRepulsionForce();
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->applyRepulsionForce(forced);
 }
-void HemoCellFields::calculateRepulsionForce() {
+void HemoCellFields::applyRepulsionForce(bool forced) {
     vector<MultiBlock3D*>wrapper;
     wrapper.push_back(immersedParticles);
-    applyTimedProcessingFunctional(new HemoRepulsionForce(),immersedParticles->getBoundingBox(),wrapper);
+    HemoRepulsionForce * fnct = new HemoRepulsionForce();
+    fnct->forced = forced;
+    applyTimedProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
 }
 
 void HemoCellFields::HemoSeperateForceVectors::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {

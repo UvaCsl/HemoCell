@@ -3,10 +3,12 @@
 <MaterialModel>
     <comment>Parameters for the HO RBC constitutive model.</comment>
     <name>RBC</name>
-    <kBend> 100 </kBend> <!-- Bending force modulus (in k_BT units, 4.142e-21 N m) -->
-    <kVolume> 800.0 </kVolume> <!-- Volume conservation coefficient (dimensionless) [600, 6000] --> 
-    <kArea> 80.0 </kArea> <!--Local area conservation coefficient (dimensionless) [0, 10, 100] --> 
-    <kLink> 1.0 </kLink> <!-- Link force coefficient (dimensionless) [1.0] -->
+    <eta_m>0.0015</eta_m> <!-- Membrane viscosity acting along the edges [Pa s] -->
+    <eta_b>0.001</eta_b> <!-- Bending viscosity (for cytoskeleton) acting between outer vertices around angle edges [Pa s] -->
+    <kBend> 200 </kBend> <!-- Bending force modulus (in k_BT units, 4.142e-21 N m) -->
+    <kVolume> 1600.0 </kVolume> <!-- Volume conservation coefficient (dimensionless) [600, 6000] --> 
+    <kArea> 160.0 </kArea> <!--Local area conservation coefficient (dimensionless) [0, 10, 100] --> 
+    <kLink> 3.0 </kLink> <!-- Link force coefficient (dimensionless) [1.0] -->
     <eqLengthRatio> 2.2 </eqLengthRatio> <!--Ratio of equilibrium and maximum length used in WLC chain (dimensionless) -->
     <minNumTriangles> 600 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
     <radius> 3.91e-6 </radius> <!-- Radius of the RBC in [um] -->

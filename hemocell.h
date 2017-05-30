@@ -77,9 +77,16 @@ class HemoCell {
 
   //Set the output of a celltype
   void setOutputs(string name, vector<int> outputs);
+  
+  //Sets the repulsion constant and cutoff distance, also enables repulsion
+  bool repulsionEnabled = false;
+  void setRepulsion(double repulsionConstant, double repulsionCutoff);
 
   //Set the timescale separation of the particles of a particle type
   void setMaterialTimeScaleSeperation(string name, unsigned int separation);
+  
+  //Set the timescale separation of the repulsion force for all particles
+  void setRepulsionTimeScaleSeperation(unsigned int separation);
   
   //Set the minimum distance of the particles of a type to the solid, must be called BEFORE loadparticles
   void setMinimumDistanceFromSolid(string name, double distance);

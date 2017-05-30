@@ -14,7 +14,7 @@ public:
     HemoCellParticleField& operator=(HemoCellParticleField const& rhs);
     HemoCellParticleField* clone() const;
     void swap(HemoCellParticleField& rhs);
-    virtual void applyConstitutiveModel();
+    virtual void applyConstitutiveModel(bool forced = false);
     virtual void addParticle(Box3D domain, HemoCellParticle* particle);
     virtual void removeParticles(Box3D domain);
     virtual void removeParticles(Box3D domain,plint tag);
@@ -25,7 +25,7 @@ public:
                                std::vector<HemoCellParticle*>& found,
                                pluint type) const;
     virtual void advanceParticles();
-    void applyRepulsionForce();
+    void applyRepulsionForce(bool forced = false);
     virtual void interpolateFluidVelocity(Box3D domain);
     virtual void spreadParticleForce(Box3D domain);
     void separateForceVectors();

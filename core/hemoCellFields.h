@@ -64,6 +64,9 @@ public:
 	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles;
 	//MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * reductionParticles;
   double cellTimeStep;
+  double repulsionCutoff = 0.0;
+  double repulsionConstant = 0.0;
+  pluint repulsionTimescale = 1;
   //void synchronizeCellQuantities(SyncRequirements _dummy) {}
   void separate_force_vectors();
   void unify_force_vectors();
@@ -90,18 +93,22 @@ public:
   class HemoApplyConstitutiveModel: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
    HemoApplyConstitutiveModel * clone() const;
+  public:
+   bool forced = false;
   };
   class HemoRepulsionForce: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
    HemoRepulsionForce * clone() const;
+  public:
+   bool forced = false;
   };
-  void calculateRepulsionForce();
+  void applyRepulsionForce(bool forced = false);
   class HemoDeleteIncompleteCells: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
    HemoDeleteIncompleteCells * clone() const;
   };
   void deleteIncompleteCells();
-  virtual void applyConstitutiveModel();
+  virtual void applyConstitutiveModel(bool forced = false);
   void syncEnvelopes();
   class HemoSyncEnvelopes: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);

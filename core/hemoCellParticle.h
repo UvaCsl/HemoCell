@@ -18,6 +18,7 @@ public:
     Array<double,3> *force_volume = &force;
     Array<double,3> *force_bending = &force;
     Array<double,3> *force_link = &force;
+    Array<double,3> force_repulsion;
     Array<double,3> *force_area = &force; //Default to pointing to force, if output is desired, it can be stored seperately
     plint tag;
     plint cellId;
@@ -48,6 +49,7 @@ public:
           position(position_),
           force(),
           vPrevious(),
+          force_repulsion(),
           cellId(cellId_), 
           vertexId(vertexId_),
           celltype(celltype_)
@@ -55,6 +57,7 @@ public:
       grid_pos = {0,0,0};
       v = {0.0,0.0,0.0};
       force = {0.0,0.0,0.0};
+      force_repulsion = {0.,0.,0.};
       vPrevious = {0.0,0.0,0.0};
       tag = -1;
       force_volume = &force; //These pointers are only changed for nice outputs
@@ -79,11 +82,6 @@ public:
       force_area = &force;
     }
 
-    //void velocityToParticle(TensorField3D<double,3>& velocityField, double scaling=1.) override {}
-    //void velocityToParticle(NTensorField3D<double>& velocityField, double scaling=1.) override {}
-    //void rhoBarJtoParticle(NTensorField3D<double>& rhoBarJfield, bool velIsJ, double scaling=1.) override {}
-    //void fluidToParticle(BlockLattice3D<double,DESCRIPTOR>& fluid, double scaling=1.) override {}
-
     /// Implements Euler integration with velocity alone.
     void advance() {
 
@@ -107,6 +105,7 @@ public:
         serializer.addValues<double,3>(position);
         serializer.addValues<double,3>(v);
         serializer.addValues<double,3>(force);
+        serializer.addValues<double,3>(force_repulsion);
         serializer.addValues<double,3>(vPrevious);
         serializer.addValue<plint>(cellId);
         serializer.addValue<plint>(vertexId);
@@ -117,6 +116,7 @@ public:
         unserializer.readValues<double,3>(position);
         unserializer.readValues<double,3>(v);
         unserializer.readValues<double,3>(force);
+        unserializer.readValues<double,3>(force_repulsion);
         unserializer.readValues<double,3>(vPrevious);
         unserializer.readValue<plint>(cellId);
         unserializer.readValue<plint>(vertexId);

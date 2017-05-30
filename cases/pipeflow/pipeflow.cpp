@@ -61,14 +61,18 @@ int main(int argc, char *argv[]) {
   hemocell.initializeCellfield();
 
   hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
-  hemocell.setMaterialTimeScaleSeperation("RBC_HO", 10);
+  //hemocell.setMaterialTimeScaleSeperation("RBC_HO", 10);
   hemocell.setMinimumDistanceFromSolid("RBC_HO", 4); //Micrometer! not LU
-  hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
+
+  //hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
+
+  hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<double>(), (*cfg)["domain"]["RepCutoff"].read<double>());
+  hemocell.setRepulsionTimeScaleSeperation(1);
 
   vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA};
   hemocell.setOutputs("RBC_HO", outputs);
-  outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES};
-  hemocell.setOutputs("PLT", outputs);
+  //outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES};
+  //hemocell.setOutputs("PLT", outputs);
 
   outputs = {OUTPUT_VELOCITY};
   hemocell.setFluidOutputs(outputs);
@@ -95,7 +99,6 @@ int main(int argc, char *argv[]) {
   unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
   while (hemocell.iter < tmax ) {
-    
     hemocell.iterate();
     
     //Set force as required after each iteration
@@ -104,11 +107,11 @@ int main(int argc, char *argv[]) {
 				Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
     
 // Only enable if PARMETIS build is available
-//    if (hemocell.iter % tbalance == 0) {
-//      if(hemocell.calculateFractionalLoadImbalance() > 3) {
-//        hemocell.doLoadBalance();
-//      }
-//    }
+    if (hemocell.iter % tbalance == 0) {
+      if(hemocell.calculateFractionalLoadImbalance() > 3) {
+       // hemocell.doLoadBalance();
+      }
+    }
    
     if (hemocell.iter % tmeas == 0) {
       hemocell.writeOutput();

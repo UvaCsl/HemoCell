@@ -62,52 +62,61 @@ void HemoCell::saveCheckPoint() {
 }
 
 void HemoCell::writeOutput() {
-	pcout << "(HemoCell) (Output) writing desired output at timestep " << iter << endl;
-	//Repoint surfaceparticle forces for output
-	cellfields->separate_force_vectors();
+  pcout << "(HemoCell) (Output) writing desired output at timestep " << iter << endl;
+  //Repoint surfaceparticle forces for output
+  cellfields->separate_force_vectors();
 
-	//Recalculate the forces
-	cellfields->applyConstitutiveModel();
+  //Recalculate the forces
+  cellfields->applyConstitutiveModel(true);
 
-  // Creatkng a new directory per save
+  if(repulsionEnabled) {
+    cellfields->applyRepulsionForce(true);
+  }
+
+  // Creating a new directory per save
   if (global::mpi().isMainProcessor()) {
         std::string folder = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) ;
         mkpath(folder.c_str(), 0777);
   }
   global::mpi().barrier();
 
-	//Write Output
-	writeCellField3D_HDF5(*cellfields,param::dx,param::dt,iter);
-	writeFluidField_HDF5(*cellfields,param::dx,param::dt,iter);
+  //Write Output
+  writeCellField3D_HDF5(*cellfields,param::dx,param::dt,iter);
+  writeFluidField_HDF5(*cellfields,param::dx,param::dt,iter);
 
-	//Repoint surfaceparticle forces for speed
-	cellfields->unify_force_vectors();
+  //Repoint surfaceparticle forces for speed
+  cellfields->unify_force_vectors();
 
 }
 
 void HemoCell::iterate() {
-	cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
+  cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
 
-	// ##### Particle Force to Fluid ####
-	cellfields->spreadParticleForce();
+  // Calculate repulsion Force
+  if(repulsionEnabled) {
+    cellfields->applyRepulsionForce();
+  }
 
-	// ##### 3 ##### LBM
-	lattice->timedCollideAndStream();
+  // ##### Particle Force to Fluid ####
+  cellfields->spreadParticleForce();
+
+  // ##### 3 ##### LBM
+  lattice->timedCollideAndStream();
 
 
-	// ##### 4 ##### IBM interpolation
-	cellfields->interpolateFluidVelocity();
+  // ##### 4 ##### IBM interpolation
+  cellfields->interpolateFluidVelocity();
 
-	//### 6 ### Might be together with interpolation
-	cellfields->syncEnvelopes();
+  //### 6 ### Might be together with interpolation
+  cellfields->syncEnvelopes();
 
-	//### 7 ### 
-	cellfields->advanceParticles();
+  //### 7 ### 
+  cellfields->advanceParticles();
 
-	// Reset Forces on the lattice, TODO do own efficient implementation
-	setExternalVector(*lattice, (*lattice).getBoundingBox(),
-		DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-		Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
+  // Reset Forces on the lattice, TODO do own efficient implementation
+  setExternalVector(*lattice, (*lattice).getBoundingBox(),
+          DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+          Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
 
   iter++;
 }
@@ -123,6 +132,12 @@ void HemoCell::setMaterialTimeScaleSeperation(string name, unsigned int separati
   (*cellfields)[name]->timescale = separation;
 }
 
+void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
+  pcout << "(HemoCell) (Repulsion Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
+  pcout << "(HemoCell) WARNING if the timescale separation is not dividable by tmeasure, checkpointing is non deterministic!"<<endl;
+  cellfields->repulsionTimescale = separation;
+}
+
 void HemoCell::setMinimumDistanceFromSolid(string name, double distance) {
   pcout << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << "micrometer for " << name << endl; 
   if (!loadParticlesIsCalled) {
@@ -130,6 +145,15 @@ void HemoCell::setMinimumDistanceFromSolid(string name, double distance) {
   }
   (*cellfields)[name]->minimumDistanceFromSolid = distance;
 }
+
+void HemoCell::setRepulsion(double repulsionConstant, double repulsionCutoff) {
+  pcout << "(HemoCell) (Repulsion) Setting repulsion constant to " << repulsionConstant << ". repulsionCutoff to" << repulsionCutoff << " µm" << endl;
+  pcout << "(HemoCell) (Repulsion) Enabling repulsion" << endl;
+  cellfields->repulsionConstant = repulsionConstant;
+  cellfields->repulsionCutoff = repulsionCutoff*(1e-6/param::dx);
+  repulsionEnabled = true;
+}
+
 
 #ifdef HEMO_PARMETIS
 void HemoCell::doLoadBalance() {

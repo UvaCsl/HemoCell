@@ -10,13 +10,6 @@ HemoCellParticleField::HemoCellParticleField(plint nx, plint ny, plint nz)
     : AtomicBlock3D(nx,ny,nz, &this->dataTransfer)
 { 
     dataTransfer.setBlock(*this);
-    /*particle_grid.resize(getNx());
-    for (auto & particlesnx : particle_grid) {
-        particlesnx.resize(getNy());
-        for (auto & particlesny : particlesnx) {
-            particlesny.resize(getNz());
-        }
-    }*/
     AddOutputMap(); 
 }
 
@@ -24,14 +17,6 @@ HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
     : AtomicBlock3D(rhs)
 {
     dataTransfer.setBlock(*this);
-    /*particle_grid.resize(getNx());
-    for (auto & particlesnx : particle_grid) {
-        particlesnx.resize(getNy());
-        for (auto & particlesny : particlesnx) {
-            particlesny.resize(getNz());
-        }
-    }*/
-
     for (pluint i=0; i<rhs.particles.size(); ++i) {
         addParticle(this->getBoundingBox(),rhs.particles[i]->clone());
     }
@@ -75,22 +60,10 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
       if ((!(particles_per_cell.find(particle->cellId) == 
            particles_per_cell.end())) && particles_per_cell[particle->cellId][particle->vertexId]) {
           local_sparticle =  particles_per_cell[particle->cellId][particle->vertexId];
-          //Remove from bin as we finally add it back anyway
-          /*x = local_sparticle->grid_pos[0];
-          y = local_sparticle->grid_pos[1];
-          z = local_sparticle->grid_pos[2];
-          for (unsigned int i = 0; i < particle_grid[x][y][z].size(); i++) {
-            if (particle_grid[x][y][z][i] == local_sparticle) {
-                particle_grid[x][y][z][i] = particle_grid[x][y][z].back();
-                particle_grid[x][y][z].pop_back();
-            }
-              
-          }*/
 
           //If our particle is local, do not replace it, envelopes are less important
           if (isContainedABS(local_sparticle->position, getBoundingBox())) {
-            //update position to old particle
-            //pos = local_sparticle->position;
+           
           } else {
             //We have the particle already, replace it
             *local_sparticle = *particle;
@@ -112,9 +85,6 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
         insert_ppc(particle);
       }
 
-      /*computeGridPosition(pos,&x,&y,&z);          
-      particle_grid[x][y][z].push_back(particle);
-      particle->grid_pos = {x,y,z};*/
       particle->setTag(-1);
     }
     else {
@@ -142,13 +112,6 @@ void HemoCellParticleField::removeParticles(plint tag) {
     particles_per_cell.clear();
     lpc.clear();
     particles.clear();
-    /*for (vector<vector<vector<HemoCellParticle*>>> x : particle_grid) {
-      for (vector<vector<HemoCellParticle*>> y : x) {
-        for (vector<HemoCellParticle*> z : y) {
-          z.clear();
-        }
-      }
-    }*/
 
     for (pluint i=0; i<remainingParticles.size(); ++i) {
        if (remainingParticles[i]->getTag() == tag) {
@@ -170,13 +133,6 @@ void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
     particles_per_cell.clear();
     lpc.clear();
     particles.clear();
-    /*for (vector<vector<vector<HemoCellParticle*>>> x : particle_grid) {
-      for (vector<vector<HemoCellParticle*>> y : x) {
-        for (vector<HemoCellParticle*> z : y) {
-          z.clear();
-        }
-      }
-    }*/
     
     for (pluint i=0; i<remainingParticles.size(); ++i) {
        pos = remainingParticles[i]->position;
@@ -200,14 +156,7 @@ void HemoCellParticleField::removeParticles(Box3D domain) {
     particles_per_cell.clear();
     lpc.clear();
     particles.clear();
-    /*for (vector<vector<vector<HemoCellParticle*>>> x : particle_grid) {
-      for (vector<vector<HemoCellParticle*>> y : x) {
-        for (vector<HemoCellParticle*> z : y) {
-          z.clear();
-        }
-      }
-    }*/
-    
+
     for (pluint i=0; i<remainingParticles.size(); ++i) {
        pos = remainingParticles[i]->position;
        intersect(domain, this->getBoundingBox(), finalDomain);
@@ -297,7 +246,6 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool twice) {
   //Function must be called twice since addParticle can remove a particle
   //unintentionally, for now, catch it here; TODO, this can be done better
   int deleted = 0;
-  //if (!twice) { deleted = deleteIncompleteCells(true); }
 
   //Warning, TODO, high complexity, should be rewritten 
   //For now abuse tagging and the remove function
@@ -332,7 +280,6 @@ int HemoCellParticleField::deleteIncompleteCells(bool twice) {
   //Function must be called twice since addParticle can remove a particle
   //unintentionally, for now, catch it here; TODO, this can be done better
   int deleted = 0;
-  //if (!twice) {deleted = deleteIncompleteCells(true); }
 
   //Warning, TODO, high complexity, should be rewritten 
   //For now abuse tagging and the remove function
@@ -386,7 +333,7 @@ void HemoCellParticleField::separateForceVectors() {
 
   for (HemoCellParticle* sparticle : particles) {
     //Save Total Force
-    sparticle->force_total = sparticle->force;
+    sparticle->force_total = sparticle->force + sparticle->force_repulsion;
 
     //Just repoint all possible outputs for now //TODO only repoint the ones we
     //want
@@ -396,7 +343,6 @@ void HemoCellParticleField::separateForceVectors() {
     sparticle->force_link = new Array<double,3>(0.0,0.0,0.0);
     sparticle->force_area = new Array<double,3>(0.0,0.0,0.0);
     sparticle->force_bending = new Array<double,3>(0.0,0.0,0.0);
-
   }
 }
 
@@ -412,11 +358,11 @@ void HemoCellParticleField::unifyForceVectors() {
   }
 }
 
-void HemoCellParticleField::applyConstitutiveModel() {
+void HemoCellParticleField::applyConstitutiveModel(bool forced) {
   deleteIncompleteCells();
   
   for (pluint ctype = 0; ctype < (*cellFields).size(); ctype++) {
-    if ((*cellFields).hemocell.iter % (*cellFields)[ctype]->timescale == 0) {
+    if ((*cellFields).hemocell.iter % (*cellFields)[ctype]->timescale == 0 || forced) {
       vector<HemoCellParticle*> found;
       findParticles(getBoundingBox(),found,ctype);
       for (HemoCellParticle* particle : found) {
@@ -428,10 +374,36 @@ void HemoCellParticleField::applyConstitutiveModel() {
   
 }
 
-void HemoCellParticleField::applyRepulsionForce() {
+void HemoCellParticleField::applyRepulsionForce(bool forced) {
+  const double r_const = cellFields->repulsionConstant;
+  const double r_cutoff = cellFields->repulsionCutoff;
+  
+  vector<HemoCellParticle *> found;
+  Box3D localDomainplusOne = localDomain;
+  localDomainplusOne.enlarge(1);
+  findParticles(localDomainplusOne,found);
+  
+  if (cellFields->hemocell.iter % cellFields->repulsionTimescale == 0 || forced) {  
+    for (HemoCellParticle * particle : found) {
+      particle->force_repulsion = {0.,0.,0.};
+    }
     
+    if (found.size() > 1) {
+      for (unsigned int i = 0 ; i < found.size() - 1 ; i ++) {
+        for (unsigned int j = i + 1 ; j < found.size() ; j++ ) {
+          if (found[i]->cellId == found[j]->cellId) { continue; } //No incell repulsion
+          const Array<double,3> dv = found[i]->position - found[j]->position;
+          const double distance = sqrt(dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2]);
+          if (distance < r_cutoff) {
+            const Array<double, 3> rfm = r_const * (1/(distance/r_cutoff))  * (dv/distance);
+            found[i]->force_repulsion = found[i]->force_repulsion + rfm;
+            found[j]->force_repulsion = found[j]->force_repulsion - rfm;
+          } 
+        }
+      }
+    }
+  }
 }
-
 
 void HemoCellParticleField::spreadParticleForce(Box3D domain) {
   vector<HemoCellParticle*> localParticles;
@@ -447,9 +419,9 @@ void HemoCellParticleField::spreadParticleForce(Box3D domain) {
     //quick non-functional trick.
     for (pluint j = 0; j < sparticle->kernelLocations.size(); j++) {
       //Yay for direct access
-      sparticle->kernelLocations[j]->external.data[0] += (sparticle->force[0] * sparticle->kernelWeights[j]);
-      sparticle->kernelLocations[j]->external.data[1] += (sparticle->force[1] * sparticle->kernelWeights[j]);
-      sparticle->kernelLocations[j]->external.data[2] += (sparticle->force[2] * sparticle->kernelWeights[j]);
+      sparticle->kernelLocations[j]->external.data[0] += ((sparticle->force_repulsion[0] + sparticle->force[0]) * sparticle->kernelWeights[j]);
+      sparticle->kernelLocations[j]->external.data[1] += ((sparticle->force_repulsion[1] + sparticle->force[1]) * sparticle->kernelWeights[j]);
+      sparticle->kernelLocations[j]->external.data[2] += ((sparticle->force_repulsion[2] + sparticle->force[2]) * sparticle->kernelWeights[j]);
     }
 
   }
@@ -479,14 +451,6 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
       velocity += velocity_comp * sparticle->kernelWeights[j];
     }
     sparticle->v = velocity;
-    /*
-    if (sparticle->kernelLocations.size() == 0) {
-      cerr << "Location: " << sparticle->position[0] << " " << sparticle->position[1] << " " << sparticle->position[2] << std::endl;
-    Box3D temp = getBoundingBox();
-    Dot3D tmp = getLocation();
-    cerr << "Box: " << temp.x0 << " " << temp.x1 << " " << temp.y0  << " "<< temp.y1  << " "<< temp.z0 <<" "<< temp.z1 <<std::endl;
-    cerr << "Loc: " << tmp.x << " " << tmp.y << " " << tmp.z << std::endl;
-    }*/
   }
 
 }
