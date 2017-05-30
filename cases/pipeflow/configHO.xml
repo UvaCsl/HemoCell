@@ -9,8 +9,8 @@
 
 <ibm>
     <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5] -->
-    <cellPath> ./lib/RBC.stl </cellPath>
     <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
+    <stepMaterialEvery>20</stepMaterialEvery>
 </ibm>
 
 <domain>
@@ -35,11 +35,10 @@
 </domain>
 
 <sim>
-    <tmax> 1000 </tmax> <!-- total number of iterations -->
-    <tmeas>  10 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint> 1000 </tcheckpoint> 
+    <tmax> 1000000 </tmax> <!-- total number of iterations -->
+    <tmeas>  5000 </tmeas> <!-- interval after which data is written --> 
+    <tcheckpoint> 10000 </tcheckpoint> 
     <tbalance> 10 </tbalance> <!-- interval after which balance is performed --> 
-    <particlePosFile> cells.pos </particlePosFile>
 </sim>
 
 </hemocell>

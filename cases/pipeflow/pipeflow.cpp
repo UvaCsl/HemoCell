@@ -1,7 +1,7 @@
 #include "hemocell.h"
 #include "rbcHighOrderModel.h"
 #include "pltSimpleModel.h"
-#include "rbcOldModel.h"
+//#include "rbcOldModel.h"
 #include <fenv.h>
 
 int main(int argc, char *argv[]) {
@@ -61,18 +61,19 @@ int main(int argc, char *argv[]) {
   hemocell.initializeCellfield();
 
   hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
-  //hemocell.setMaterialTimeScaleSeperation("RBC_HO", 10);
-  hemocell.setMinimumDistanceFromSolid("RBC_HO", 4); //Micrometer! not LU
+  hemocell.setMaterialTimeScaleSeperation("RBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  hemocell.setMinimumDistanceFromSolid("RBC_HO", 1); //Micrometer! not LU
 
-  //hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
+  hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
+  hemocell.setMaterialTimeScaleSeperation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
 
-  hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<double>(), (*cfg)["domain"]["RepCutoff"].read<double>());
-  hemocell.setRepulsionTimeScaleSeperation(1);
+  //hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<double>(), (*cfg)["domain"]["RepCutoff"].read<double>());
+  //hemocell.setRepulsionTimeScaleSeperation((*cfg)["ibm"]["stepMaterialEvery"].read<int>());
 
   vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA};
   hemocell.setOutputs("RBC_HO", outputs);
-  //outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES};
-  //hemocell.setOutputs("PLT", outputs);
+  outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES};
+  hemocell.setOutputs("PLT", outputs);
 
   outputs = {OUTPUT_VELOCITY};
   hemocell.setFluidOutputs(outputs);
@@ -81,7 +82,7 @@ int main(int argc, char *argv[]) {
   
   //loading the cellfield
   if (not cfg->checkpointed) {
-    hemocell.loadParticles((*cfg)["sim"]["particlePosFile"].read<string>());
+    hemocell.loadParticles();
   } else {
     hemocell.loadCheckPoint();
   }
@@ -106,12 +107,12 @@ int main(int argc, char *argv[]) {
 				DESCRIPTOR<T>::ExternalField::forceBeginsAt,
 				Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
     
-// Only enable if PARMETIS build is available
-    if (hemocell.iter % tbalance == 0) {
-      if(hemocell.calculateFractionalLoadImbalance() > 3) {
-       // hemocell.doLoadBalance();
-      }
-    }
+    // Only enable if PARMETIS build is available
+    // if (hemocell.iter % tbalance == 0) {
+    //   if(hemocell.calculateFractionalLoadImbalance() > 3) {
+    //    // hemocell.doLoadBalance();
+    //   }
+    // }
    
     if (hemocell.iter % tmeas == 0) {
       hemocell.writeOutput();

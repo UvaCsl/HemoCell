@@ -20,6 +20,10 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   documentXML = new XMLreader(configFileName);
 
   loadBalancer = new LoadBalancer(*this);
+
+  // start clock for basic performance feedback
+  lastOutputAt = 0;
+  global::timer("atOutput").start();
 }
 
 void HemoCell::latticeEquilibrium(double rho, Array<double, 3> vel) {
@@ -62,7 +66,12 @@ void HemoCell::saveCheckPoint() {
 }
 
 void HemoCell::writeOutput() {
-	pcout << "(HemoCell) (Output) writing output at timestep " << iter << "(" << param::dt * iter<< " s)" << endl;
+  // Very naive performance approximation
+  double dtSinceLastOutput = global::timer("atOutput").stop();
+  double timePerIter = dtSinceLastOutput / (iter - lastOutputAt);
+  lastOutputAt = iter;
+
+	pcout << "(HemoCell) (Output) writing output at timestep " << iter << " (" << param::dt * iter<< " s). Approx. performance: " << timePerIter << " s / iteration." << endl;
 	//Repoint surfaceparticle forces for output
 	cellfields->separate_force_vectors();
 
@@ -90,6 +99,8 @@ void HemoCell::writeOutput() {
   //Repoint surfaceparticle forces for speed
   cellfields->unify_force_vectors();
 
+  // Continue with performance measurement
+  global::timer("atOutput").restart();
 }
 
 void HemoCell::iterate() {
@@ -131,13 +142,13 @@ double HemoCell::calculateFractionalLoadImbalance() {
 
 void HemoCell::setMaterialTimeScaleSeperation(string name, unsigned int separation){
   pcout << "(HemoCell) (Timescale Seperation) Setting seperation of " << name << " to " << separation << " timesteps"<<endl;
-  pcout << "(HemoCell) WARNING if the timescale separation is not dividable by tmeasure, checkpointing is non deterministic!"<<endl;
+  pcout << "(HemoCell) WARNING if the timescale separation is not dividable by tmeasure, checkpointing is non-deterministic!"<<endl;
   (*cellfields)[name]->timescale = separation;
 }
 
 void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
   pcout << "(HemoCell) (Repulsion Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
-  pcout << "(HemoCell) WARNING if the timescale separation is not dividable by tmeasure, checkpointing is non deterministic!"<<endl;
+  pcout << "(HemoCell) WARNING if the timescale separation is not dividable by tmeasure, checkpointing is non-deterministic!"<<endl;
   cellfields->repulsionTimescale = separation;
 }
 
