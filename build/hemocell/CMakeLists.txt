@@ -146,7 +146,10 @@ IF(ENABLE_PARMETIS)
   add_custom_target(hemocell_with_parmetis ALL 
     COMMAND ${CMAKE_AR} crsT lib${PROJECT_NAME}.a
     $<TARGET_FILE:${PROJECT_NAME}_pre_all_deps> ${PARMETIS_LIBRARY}
-    ${METIS_LIBRARY})
+    ${METIS_LIBRARY}
+    DEPENDS hemocell_pre_finalize)
+ELSE(ENABLE_PARMETIS)
+  add_custom_target(hemocell_with_parmetis ALL)
 ENDIF(ENABLE_PARMETIS)
     
 #might work someday, not now, must be linked in the case
@@ -157,4 +160,5 @@ ENDIF(ENABLE_PARMETIS)
 #finalize library
 add_custom_target(hemocell_finalize ALL 
   COMMAND ${CMAKE_AR} crsT lib${PROJECT_NAME}.a
-  $<TARGET_FILE:${PROJECT_NAME}_pre_all_deps>)
+  $<TARGET_FILE:${PROJECT_NAME}_pre_all_deps>
+  DEPENDS hemocell_pre_finalize hemocell_with_parmetis)

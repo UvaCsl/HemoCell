@@ -17,6 +17,7 @@ class HemoCell;
 /* IO */
 #include "ParticleHdf5IO.h"
 #include "FluidHdf5IO.h"
+#include "writeCellInfoCSV.h"
 #include "readPositionsBloodCells.h"
 
 /* HELPERS */

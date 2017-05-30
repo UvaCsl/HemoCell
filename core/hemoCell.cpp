@@ -75,14 +75,17 @@ void HemoCell::writeOutput() {
 
   // Creating a new directory per save
   if (global::mpi().isMainProcessor()) {
-        std::string folder = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) ;
-        mkpath(folder.c_str(), 0777);
+    string folder = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) ;
+    mkpath(folder.c_str(), 0777);
+    folder = global::directories().getOutputDir() + "/csv/" + zeroPadNumber(iter) ;
+    mkpath(folder.c_str(), 0777);
   }
   global::mpi().barrier();
 
   //Write Output
   writeCellField3D_HDF5(*cellfields,param::dx,param::dt,iter);
   writeFluidField_HDF5(*cellfields,param::dx,param::dt,iter);
+  writeCellInfo_CSV(this);
 
   //Repoint surfaceparticle forces for speed
   cellfields->unify_force_vectors();
