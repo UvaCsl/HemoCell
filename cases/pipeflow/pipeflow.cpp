@@ -1,6 +1,7 @@
 #include "hemocell.h"
 #include "rbcHighOrderModel.h"
 #include "pltSimpleModel.h"
+#include "cellInformation.h"
 //#include "rbcOldModel.h"
 #include <fenv.h>
 
@@ -115,6 +116,7 @@ int main(int argc, char *argv[]) {
     // }
    
     if (hemocell.iter % tmeas == 0) {
+      pcout << "Total number of Cells in the simulation: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell) << endl;
       hemocell.writeOutput();
     }
     if (hemocell.iter % tcheckpoint == 0) {

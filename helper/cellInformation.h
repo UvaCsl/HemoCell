@@ -4,7 +4,7 @@
 #include "hemocell_internal.h"
 #include "hemoCellFunctional.h"
 #include "hemocell.h"
-
+/* THIS CLASS IS NOT THREAD SAFE!*/
 /* Calculate and store Cell-Specific Information
  * 
  * call the static members for the information you need 
@@ -24,6 +24,7 @@ struct CellInformation {
   Array<double,6> bbox;
   pluint blockId;
   pluint cellType;
+  bool centerLocal;
 };
 
 class CellInformationFunctionals {
@@ -70,7 +71,7 @@ public:
   static void getCellBoundingBox(HemoCell *);
   static void getCellAtomicBlock(HemoCell *);
   static void getCellType(HemoCell *);
-
+  static pluint getTotalNumberOfCells(HemoCell *);
 };
 
 #endif
