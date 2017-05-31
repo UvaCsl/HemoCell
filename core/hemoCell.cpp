@@ -153,7 +153,7 @@ void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
 }
 
 void HemoCell::setMinimumDistanceFromSolid(string name, double distance) {
-  pcout << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << "micrometer for " << name << endl; 
+  pcout << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << " micrometer for " << name << endl; 
   if (!loadParticlesIsCalled) {
     pcout << "(HemoCell) (Set Distance) WARNING: this function is called after the particles are loaded, so it probably has no effect" << endl;
   }

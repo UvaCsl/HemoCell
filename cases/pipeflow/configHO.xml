@@ -35,10 +35,10 @@
 </domain>
 
 <sim>
-    <tmax> 1000000 </tmax> <!-- total number of iterations -->
-    <tmeas>  5000 </tmeas> <!-- interval after which data is written --> 
+    <tmax> 1000 </tmax> <!-- total number of iterations -->
+    <tmeas>  100 </tmeas> <!-- interval after which data is written --> 
     <tcheckpoint> 10000 </tcheckpoint> 
-    <tbalance> 10 </tbalance> <!-- interval after which balance is performed --> 
+    <tbalance> 100 </tbalance> <!-- interval after which balance is performed --> 
 </sim>
 
 </hemocell>

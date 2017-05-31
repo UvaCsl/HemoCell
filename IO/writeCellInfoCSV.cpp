@@ -1,9 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /* 
  * File:   writeCellInfoCSV.cpp
  * Author: vikko
@@ -12,15 +6,28 @@
  */
 
 #include "writeCellInfoCSV.h"
+#include "cellInformation.h"
 
 void writeCellInfo_CSV(HemoCell * hemocell) {
-  WriteCellInfoCSV * wcic = new WriteCellInfoCSV();
-  vector<MultiBlock3D*> wrapper;
-  wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyProcessingFunctional(wcic,hemocell->lattice->getBoundingBox(),wrapper);
+  
+  CellInformationFunctionals::clear_list();
+  CellInformationFunctionals::calculate_vol_pos_area(hemocell);
+  CellInformationFunctionals::getCellAtomicBlock(hemocell);
+  
+  std::string fileName = global::directories().getOutputDir() + "/csv/" + zeroPadNumber(hemocell->iter) + '/'  + createFileName("CellInfo.",global::mpi().getRank(),3) + ".csv";
+  ofstream csvFile;
+  csvFile.open(fileName.c_str(), ofstream::trunc);
+  
+  csvFile << "X,Y,Z,area,volume,atomic_block,cellId" << endl;
+  
+  for (const auto & pair : CellInformationFunctionals::info_per_cell) {
+    const pluint cid = pair.first;
+    const CellInformation & cinfo = pair.second;
+    
+    csvFile << cinfo.position[0] << "," << cinfo.position[1] << "," << cinfo.position[2] << ",";
+    csvFile << cinfo.area << "," << cinfo.volume << "," << cinfo.blockId << "," << cid << endl;
+  }
+  csvFile.close();
+  
+  CellInformationFunctionals::clear_list();
 }
-
-void WriteCellInfoCSV::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
-}
-WriteCellInfoCSV * WriteCellInfoCSV::clone() const { return new WriteCellInfoCSV(*this);}

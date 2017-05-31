@@ -13,10 +13,5 @@
 
 void writeCellInfo_CSV(HemoCell *);
 
-class WriteCellInfoCSV : public HemoCellFunctional {
-  void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
-  WriteCellInfoCSV * clone() const;
-};
-
 #endif /* WRITECELLINFOCSV_H */
 

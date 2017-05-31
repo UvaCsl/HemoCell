@@ -22,6 +22,7 @@ struct CellInformation {
   double area;
   double stretch;
   Array<double,6> bbox;
+  pluint blockId;
 };
 
 class CellInformationFunctionals {
@@ -48,6 +49,10 @@ class CellInformationFunctionals {
   void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
     CellBoundingBox * clone() const;
   };
+  class CellAtomicBlock: public HemoCellFunctional {
+  void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+    CellAtomicBlock * clone() const;
+  };
   
 public:
   static map<int,CellInformation> info_per_cell;
@@ -58,6 +63,7 @@ public:
   static void getCellPosition(HemoCell *);
   static void getCellStretch(HemoCell *);
   static void getCellBoundingBox(HemoCell *);
+  static void getCellAtomicBlock(HemoCell *);
 
 };
 
