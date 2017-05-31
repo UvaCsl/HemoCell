@@ -119,6 +119,15 @@ void CellInformationFunctionals::CellAtomicBlock::processGenericBlocks(Box3D dom
     info_per_cell[cid].blockId = pf->atomicBlockId;
   }
 }
+void CellInformationFunctionals::CellType::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+  HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
+  
+  for (const auto & pair : pf->lpc) {
+    const int & cid = pair.first;
+
+    info_per_cell[cid].cellType = pf->particles_per_cell[cid][0]->celltype;
+  }
+}
 
 void CellInformationFunctionals::getCellVolume(HemoCell * hemocell_) {
   hemocell = hemocell_;
@@ -156,6 +165,12 @@ void CellInformationFunctionals::getCellAtomicBlock(HemoCell* hemocell_) {
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellAtomicBlock(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
+void CellInformationFunctionals::getCellType(HemoCell* hemocell_) {
+  hemocell = hemocell_;
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(hemocell->cellfields->immersedParticles);
+  applyTimedProcessingFunctional(new CellType(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
+}
 
 CellInformationFunctionals::CellVolume * CellInformationFunctionals::CellVolume::clone() const { return new CellInformationFunctionals::CellVolume(*this);}
 CellInformationFunctionals::CellArea * CellInformationFunctionals::CellArea::clone() const { return new CellInformationFunctionals::CellArea(*this);}
@@ -163,6 +178,7 @@ CellInformationFunctionals::CellPosition * CellInformationFunctionals::CellPosit
 CellInformationFunctionals::CellStretch * CellInformationFunctionals::CellStretch::clone() const { return new CellInformationFunctionals::CellStretch(*this);}
 CellInformationFunctionals::CellBoundingBox * CellInformationFunctionals::CellBoundingBox::clone() const { return new CellInformationFunctionals::CellBoundingBox(*this);}
 CellInformationFunctionals::CellAtomicBlock * CellInformationFunctionals::CellAtomicBlock::clone() const { return new CellInformationFunctionals::CellAtomicBlock(*this);}
+CellInformationFunctionals::CellType * CellInformationFunctionals::CellType::clone() const { return new CellInformationFunctionals::CellType(*this);}
 
 
 map<int,CellInformation> CellInformationFunctionals::info_per_cell = map<int,CellInformation>();
