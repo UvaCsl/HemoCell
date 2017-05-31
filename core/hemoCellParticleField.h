@@ -31,8 +31,8 @@ public:
     void separateForceVectors();
     void unifyForceVectors();
 
-    int deleteIncompleteCells(pluint ctype, bool twice=false);
-    int deleteIncompleteCells(bool twice=false);
+    int deleteIncompleteCells(pluint ctype, bool verbose=true);
+    int deleteIncompleteCells(bool verbose=true);
     void syncEnvelopes() {};
 
     void setlocalDomain(Box3D & localDomain_);

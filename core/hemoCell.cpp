@@ -52,7 +52,7 @@ void HemoCell::loadParticles() {
   loadParticlesIsCalled = true;
   readPositionsBloodCellField3D(*cellfields, param::dx, *cfg);
   cellfields->syncEnvelopes();
-  cellfields->deleteIncompleteCells();
+  cellfields->deleteIncompleteCells(false);
 }
 
 void HemoCell::loadCheckPoint() {

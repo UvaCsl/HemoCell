@@ -242,7 +242,7 @@ void HemoCellParticleField::computeGridPosition (
       iZ = nearestCell(position[2]) - location.z;
 }
 
-int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool twice) {
+int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
   //Function must be called twice since addParticle can remove a particle
   //unintentionally, for now, catch it here; TODO, this can be done better
   int deleted = 0;
@@ -264,7 +264,9 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool twice) {
     for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
       if (particles_per_cell[cellid][i] == NULL) {continue;}
       if (particles_per_cell[cellid][i]->celltype != ctype) {break;} //certainly a entry, therefore we check here if it is the right type, if not, exit
-
+      if (isContainedABS(particles_per_cell[cellid][i]->position,localDomain) && verbose) {
+        pcout << "(HemoCell) (Delete Cells) Warning! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
+      }
       particles_per_cell[cellid][i]->setTag(1);
       deleted++;
     }
@@ -276,7 +278,7 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool twice) {
   return deleted; 
 }
 
-int HemoCellParticleField::deleteIncompleteCells(bool twice) {
+int HemoCellParticleField::deleteIncompleteCells(bool verbose) {
   //Function must be called twice since addParticle can remove a particle
   //unintentionally, for now, catch it here; TODO, this can be done better
   int deleted = 0;
@@ -297,6 +299,9 @@ int HemoCellParticleField::deleteIncompleteCells(bool twice) {
     //actually add to tobedeleted list
     for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
       if (particles_per_cell[cellid][i] == NULL) {continue;}
+      if (isContainedABS(particles_per_cell[cellid][i]->position,localDomain) && verbose) {
+        pcout << "(HemoCell) (Delete Cells) Warning! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
+      }
       particles_per_cell[cellid][i]->setTag(1);
       deleted++;
     }

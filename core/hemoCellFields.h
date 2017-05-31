@@ -106,8 +106,10 @@ public:
   class HemoDeleteIncompleteCells: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
    HemoDeleteIncompleteCells * clone() const;
+  public:
+    bool verbose;
   };
-  void deleteIncompleteCells();
+  void deleteIncompleteCells(bool verbose = true);
   virtual void applyConstitutiveModel(bool forced = false);
   void syncEnvelopes();
   class HemoSyncEnvelopes: public HemoCellFunctional {

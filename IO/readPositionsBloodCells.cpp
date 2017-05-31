@@ -230,7 +230,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         // DELETE CELLS THAT ARE NOT WHOLE
         plint nVertices=meshes[iCF]->getNumVertices();
         cout << "Atomic Block ID: " << particleFields[iCF]->atomicBlockId;
-        plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells(iCF)/(float)nVertices;
+        plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells(iCF,false)/(float)nVertices;
         std::vector<HemoCellParticle*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);
         cout    << " Total cells: " << particles.size()/(float)nVertices << " (deleted cells:" << cellsDeleted << ") CT: " << cellFields[iCF]->name << std::endl;

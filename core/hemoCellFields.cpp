@@ -265,12 +265,14 @@ void HemoCellFields::separate_force_vectors() {
 
 }
 void HemoCellFields::HemoDeleteIncompleteCells::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->deleteIncompleteCells();
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->deleteIncompleteCells(verbose);
 }
-void HemoCellFields::deleteIncompleteCells() {
+void HemoCellFields::deleteIncompleteCells(bool verbose) {
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
-  applyTimedProcessingFunctional(new HemoDeleteIncompleteCells(),immersedParticles->getBoundingBox(),wrapper);
+  HemoDeleteIncompleteCells * fnct = new HemoDeleteIncompleteCells();
+  fnct->verbose = verbose;
+  applyTimedProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
 
 }
 
