@@ -6,14 +6,15 @@
  */
 
 #include "writeCellInfoCSV.h"
-#include "cellInformation.h"
+#include "cellInfo.h"
+#include "hemocell.h"
 
 void writeCellInfo_CSV(HemoCell * hemocell) {
   
   CellInformationFunctionals::clear_list();
   CellInformationFunctionals::calculate_vol_pos_area(hemocell);
-  CellInformationFunctionals::getCellAtomicBlock(hemocell);
-  CellInformationFunctionals::getCellType(hemocell);
+  CellInformationFunctionals::calculateCellAtomicBlock(hemocell);
+  CellInformationFunctionals::calculateCellType(hemocell);
 
   
   vector<std::string> fileNames = vector<std::string>(hemocell->cellfields->size());

@@ -1,12 +1,13 @@
-#include "cellInformation.h"
+#include "cellInfo.h"
+#include "hemocell.h"
 
 void CellInformationFunctionals::clear_list() {
   info_per_cell.clear();
 }
 void CellInformationFunctionals::calculate_vol_pos_area(HemoCell* hemocell) {
-  getCellArea(hemocell);
-  getCellVolume(hemocell);
-  getCellPosition(hemocell);
+  calculateCellArea(hemocell);
+  calculateCellVolume(hemocell);
+  calculateCellPosition(hemocell);
 }
 
 void CellInformationFunctionals::CellVolume::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -130,43 +131,43 @@ void CellInformationFunctionals::CellType::processGenericBlocks(Box3D domain, st
   }
 }
 
-void CellInformationFunctionals::getCellVolume(HemoCell * hemocell_) {
+void CellInformationFunctionals::calculateCellVolume(HemoCell * hemocell_) {
   hemocell = hemocell_;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellVolume(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
-void CellInformationFunctionals::getCellArea(HemoCell * hemocell_) {
+void CellInformationFunctionals::calculateCellArea(HemoCell * hemocell_) {
   hemocell = hemocell_;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellArea(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
-void CellInformationFunctionals::getCellPosition(HemoCell * hemocell_) {
+void CellInformationFunctionals::calculateCellPosition(HemoCell * hemocell_) {
   hemocell = hemocell_;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellPosition(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
-void CellInformationFunctionals::getCellStretch(HemoCell * hemocell_) {
+void CellInformationFunctionals::calculateCellStretch(HemoCell * hemocell_) {
   hemocell = hemocell_;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellStretch(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
-void CellInformationFunctionals::getCellBoundingBox(HemoCell * hemocell_) {
+void CellInformationFunctionals::calculateCellBoundingBox(HemoCell * hemocell_) {
   hemocell = hemocell_;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellBoundingBox(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
-void CellInformationFunctionals::getCellAtomicBlock(HemoCell* hemocell_) {
+void CellInformationFunctionals::calculateCellAtomicBlock(HemoCell* hemocell_) {
   hemocell = hemocell_;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellAtomicBlock(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
-void CellInformationFunctionals::getCellType(HemoCell* hemocell_) {
+void CellInformationFunctionals::calculateCellType(HemoCell* hemocell_) {
   hemocell = hemocell_;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
@@ -174,7 +175,7 @@ void CellInformationFunctionals::getCellType(HemoCell* hemocell_) {
 }
 pluint CellInformationFunctionals::getTotalNumberOfCells(HemoCell* hemocell) {
   info_per_cell.clear(); //TODO thread safe n such
-  getCellPosition(hemocell); //Any functional will do
+  calculateCellPosition(hemocell); //Any functional will do
   pluint localCells = 0;
   for (const auto & pair : info_per_cell) {
     const CellInformation & cinfo = pair.second;

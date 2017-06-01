@@ -3,7 +3,7 @@
 
 #include "hemocell_internal.h"
 #include "hemoCellFunctional.h"
-#include "hemocell.h"
+
 /* THIS CLASS IS NOT THREAD SAFE!*/
 /* Calculate and store Cell-Specific Information
  * 
@@ -64,13 +64,13 @@ public:
   static map<int,CellInformation> info_per_cell;
   static void clear_list();
   static void calculate_vol_pos_area(HemoCell *); /*This excludes Stretch, since it is compute intensive!*/
-  static void getCellVolume(HemoCell *);
-  static void getCellArea(HemoCell *);
-  static void getCellPosition(HemoCell *);
-  static void getCellStretch(HemoCell *);
-  static void getCellBoundingBox(HemoCell *);
-  static void getCellAtomicBlock(HemoCell *);
-  static void getCellType(HemoCell *);
+  static void calculateCellVolume(HemoCell *);
+  static void calculateCellArea(HemoCell *);
+  static void calculateCellPosition(HemoCell *);
+  static void calculateCellStretch(HemoCell *);
+  static void calculateCellBoundingBox(HemoCell *);
+  static void calculateCellAtomicBlock(HemoCell *);
+  static void calculateCellType(HemoCell *);
   static pluint getTotalNumberOfCells(HemoCell *);
 };
 

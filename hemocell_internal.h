@@ -22,4 +22,6 @@ using namespace plb;
 #include <map>
 
 using namespace std;
+
+class HemoCell;
 #endif // HEMOCELL_H

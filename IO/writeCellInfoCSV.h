@@ -9,7 +9,7 @@
 #define WRITECELLINFOCSV_H
 
 #include "hemocell_internal.h"
-#include "hemocell.h"
+
 
 void writeCellInfo_CSV(HemoCell *);
 

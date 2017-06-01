@@ -1,7 +1,7 @@
 #include "hemocell.h"
 #include "rbcHighOrderModel.h"
 #include "helper/hemoCellStretch.h"
-#include "helper/cellInformation.h"
+#include "helper/cellInfo.h"
 
 
 int main(int argc, char* argv[])
@@ -110,8 +110,8 @@ int main(int argc, char* argv[])
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
 
   // Get undeformed values
-  CellInformationFunctionals::getCellVolume(&hemocell);
-  CellInformationFunctionals::getCellArea(&hemocell);
+  CellInformationFunctionals::calculateCellVolume(&hemocell);
+  CellInformationFunctionals::calculateCellArea(&hemocell);
   double volume_eq = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
   double surface_eq = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
 
@@ -140,11 +140,11 @@ int main(int argc, char* argv[])
       hemocell.writeOutput();
 
       // Fill up the static info structure with desired data
-      CellInformationFunctionals::getCellVolume(&hemocell);
-      CellInformationFunctionals::getCellArea(&hemocell);
-      CellInformationFunctionals::getCellPosition(&hemocell);
-      CellInformationFunctionals::getCellStretch(&hemocell);
-      CellInformationFunctionals::getCellBoundingBox(&hemocell);
+      CellInformationFunctionals::calculateCellVolume(&hemocell);
+      CellInformationFunctionals::calculateCellArea(&hemocell);
+      CellInformationFunctionals::calculateCellPosition(&hemocell);
+      CellInformationFunctionals::calculateCellStretch(&hemocell);
+      CellInformationFunctionals::calculateCellBoundingBox(&hemocell);
 
       double volume = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
       double surface = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);

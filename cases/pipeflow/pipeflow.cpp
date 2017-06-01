@@ -1,7 +1,9 @@
 #include "hemocell.h"
 #include "rbcHighOrderModel.h"
 #include "pltSimpleModel.h"
-#include "cellInformation.h"
+#include "cellInfo.h"
+#include "fluidInfo.h"
+#include "particleInfo.h"
 //#include "rbcOldModel.h"
 #include <fenv.h>
 
@@ -117,6 +119,18 @@ int main(int argc, char *argv[]) {
    
     if (hemocell.iter % tmeas == 0) {
       pcout << "Total number of Cells in the simulation: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell) << endl;
+      FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell);
+      pcout << "Fluid velocity, Minimum: " << finfo.min << " Maximum: " << finfo.max << " Average: " << finfo.avg << endl;
+      finfo = FluidInfo::calculateForceStatistics(&hemocell);
+      //Set force as required after this function;
+      setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
+				DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+				Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+      pcout << "Fluid force, Minimum: " << finfo.min << " Maximum: " << finfo.max << " Average: " << finfo.avg << endl;
+      ParticleStatistics pinfo = ParticleInfo::calculateVelocityStatistics(&hemocell);
+      pcout << "Particle velocity, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << endl;
+      pinfo = ParticleInfo::calculateForceStatistics(&hemocell);
+      pcout << "Particle force, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << endl;
       hemocell.writeOutput();
     }
     if (hemocell.iter % tcheckpoint == 0) {

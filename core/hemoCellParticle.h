@@ -98,7 +98,7 @@ public:
               position +=  dxyz;
               vPrevious = v;  // Store velocity
         #endif
-        v = {0.0,0.0,0.0};
+        //v = {0.0,0.0,0.0};
     }
     void serialize(HierarchicSerializer& serializer) const 
     {
