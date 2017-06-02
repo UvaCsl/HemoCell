@@ -10,7 +10,7 @@ SET(PALABOS_DIR "${HEMOCELL_BASE_DIR}/palabos")
 
 # Build settings
 SET(ENABLE_MPI 1) # For windows builds set to zero
-SET(ENABLE_PARMETIS 1) # Do we enable load_balancing stuff? 
+SET(ENABLE_PARMETIS 0) # Do we enable load_balancing stuff? 
 SET(BUILD_TYPE Release)  # Debug or Release
 
 

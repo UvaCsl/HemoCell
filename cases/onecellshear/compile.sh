@@ -13,7 +13,8 @@ if [ ! -d "./build" ]; then
 fi
 
 echo "* Compiling..."
-cd build; make -j 4 2>&1 >/dev/null | grep 'Error\|error\|\*\*\*'; cd ..
+#cd build; make -j 4 2>&1 >/dev/null | grep 'Error\|error\|\*\*\*'; cd ..
+cd build; make -j 12
 
 date
 echo "=========== Done ==========="
