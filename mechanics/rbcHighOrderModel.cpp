@@ -129,7 +129,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       // }
       
       // Membrane viscosity - acts as viscosity along edges
-      const Array<double,3> vertex_rel_vel = cell[edge[1]]->vPrevious - cell[edge[0]]->vPrevious;
+      const Array<double,3> vertex_rel_vel = cell[edge[1]]->v - cell[edge[0]]->v;
       const double edge_rel_vel = dot(vertex_rel_vel, edge_v) / edge_length;
       const Array<double,3> edge_visc_force = eta_m * edge_rel_vel * edge_v;
       *cell[edge[0]]->force_area += edge_visc_force;
@@ -177,10 +177,10 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= force_magnitude * V1;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= force_magnitude * V2;
 
-      // TODO: this should be based on angular velocity -> We need previous angle for that! (like vPrevious for stretching viscosity)
+      // TODO: this should be based on angular velocity -> We need previous angle for that! (like v for stretching viscosity)
       // Bending viscosity -> new parameter to match periodic stretching tests
-      // const Array<double,3> outer_end_rel_vel = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->vPrevious 
-      //                                         - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->vPrevious;
+      // const Array<double,3> outer_end_rel_vel = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->v 
+      //                                         - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->v;
       // const Array<double,3> section = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->position 
       //                               - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
       // const double section_length = sqrt(section[0]*section[0]+section[1]*section[1]+section[2]*section[2]);
