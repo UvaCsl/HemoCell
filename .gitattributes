@@ -1,0 +1,6 @@
+*.h diff
+*.hh diff
+*.cpp diff
+*.txt diff
+*.xml diff
+*.sh diff
