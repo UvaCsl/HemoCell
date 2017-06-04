@@ -20,6 +20,7 @@ public:
     Array<double,3> *force_link = &force;
     Array<double,3> force_repulsion;
     Array<double,3> *force_area = &force; //Default to pointing to force, if output is desired, it can be stored seperately
+    Array<double,3> *force_visc = &force;
     plint tag;
     plint cellId;
     plint vertexId;
@@ -43,6 +44,7 @@ public:
       force_area = &force; //These pointers are only changed for nice outputs
       force_link = &force; //These pointers are only changed for nice outputs
       force_bending = &force; //These pointers are only changed for nice outputs
+      force_visc = &force;
     }
     HemoCellParticle (Array<double,3> position_, plint cellId_, plint vertexId_,pluint celltype_) :
           grid_pos(),
@@ -72,6 +74,7 @@ public:
         sparticle->force_bending = &sparticle->force;
         sparticle->force_link = &sparticle->force;
         sparticle->force_area = &sparticle->force;
+        sparticle->force_visc = &sparticle->force;
         return sparticle;
     }
 
@@ -80,6 +83,7 @@ public:
       force_bending = &force;
       force_link = &force;
       force_area = &force;
+      force_visc = &force;
     }
 
     /// Implements Euler integration with velocity alone.
@@ -126,6 +130,7 @@ public:
         force_area = &force; 
         force_link = &force;
         force_bending = &force;
+        force_visc = &force;
     }
 
     static int id;

@@ -139,7 +139,7 @@ Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R) {
         r2 =1 ;
     }
     //T C0 = 0.0135805, C2 = 1.001279, C4 = -0.561381;
-    T C0 = 0.0407427, C2 = 1.001279, C4 = -0.561381;
+    T C0 = 0.054322, C2 = 1.001279, C4 = -0.561381;
     rbcPoint[2] = sign * R * sqrt(1-r2) * (C0 + C2*r2 + C4*r2*r2);
     return rbcPoint;
 }

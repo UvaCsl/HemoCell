@@ -261,11 +261,13 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
     if (!broken) {continue;}
 
     //actually add to tobedeleted list
+    bool warningIssued = false;
     for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
       if (particles_per_cell[cellid][i] == NULL) {continue;}
       if (particles_per_cell[cellid][i]->celltype != ctype) {break;} //certainly a entry, therefore we check here if it is the right type, if not, exit
-      if (isContainedABS(particles_per_cell[cellid][i]->position,localDomain) && verbose) {
-        pcout << "(HemoCell) (Delete Cells) Warning! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
+      if (isContainedABS(particles_per_cell[cellid][i]->position,localDomain) && verbose && !warningIssued) {
+        pcout << "(HemoCell) (Delete Cells) WARNING! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
+        warningIssued = true;
       }
       particles_per_cell[cellid][i]->setTag(1);
       deleted++;
@@ -297,10 +299,12 @@ int HemoCellParticleField::deleteIncompleteCells(bool verbose) {
     if (!broken) {continue;}
 
     //actually add to tobedeleted list
+    bool warningIssued = false;
     for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
       if (particles_per_cell[cellid][i] == NULL) {continue;}
-      if (isContainedABS(particles_per_cell[cellid][i]->position,localDomain) && verbose) {
-        pcout << "(HemoCell) (Delete Cells) Warning! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
+      if (isContainedABS(particles_per_cell[cellid][i]->position,localDomain) && verbose && !warningIssued) {
+        pcout << "(HemoCell) (Delete Cells) WARNING! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
+        warningIssued = true;
       }
       particles_per_cell[cellid][i]->setTag(1);
       deleted++;
@@ -348,6 +352,7 @@ void HemoCellParticleField::separateForceVectors() {
     sparticle->force_link = new Array<double,3>(0.0,0.0,0.0);
     sparticle->force_area = new Array<double,3>(0.0,0.0,0.0);
     sparticle->force_bending = new Array<double,3>(0.0,0.0,0.0);
+    sparticle->force_visc = new Array<double,3>(0.0,0.0,0.0);
   }
 }
 
@@ -359,6 +364,7 @@ void HemoCellParticleField::unifyForceVectors() {
     delete sparticle->force_link;
     delete sparticle->force_area;
     delete sparticle->force_bending;
+    delete sparticle->force_visc;
     sparticle->repoint_force_vectors();
   }
 }

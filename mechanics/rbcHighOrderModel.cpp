@@ -8,8 +8,7 @@ RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellFie
                   k_area( RbcHighOrderModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
                   k_link( RbcHighOrderModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
                   k_bend( RbcHighOrderModel::calculate_kBend(modelCfg_) ),
-                  eta_m( RbcHighOrderModel::calculate_etaM(modelCfg_) ),
-                  eta_b( RbcHighOrderModel::calculate_etaB(modelCfg_) )
+                  eta( RbcHighOrderModel::calculate_eta(modelCfg_) )
     {};
 
 void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> particles_per_cell, map<int,bool> lpc, pluint ctype) {
@@ -52,28 +51,53 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       //area force magnitude
       const double afm = k_area * (areaRatio+areaRatio/(0.04-areaRatio*areaRatio));
 
-      Array<double,3> centroid;
-      centroid[0] = (v0[0]+v1[0]+v2[0])/3.0;
-      centroid[1] = (v0[1]+v1[1]+v2[1])/3.0;
-      centroid[2] = (v0[2]+v1[2]+v2[2])/3.0;
-      Array<double,3> av0 = centroid - v0;
-	    Array<double,3> av1 = centroid - v1;
-	    Array<double,3> av2 = centroid - v2;
+        Array<double,3> centroid;
+        centroid[0] = (v0[0]+v1[0]+v2[0])/3.0;
+        centroid[1] = (v0[1]+v1[1]+v2[1])/3.0;
+        centroid[2] = (v0[2]+v1[2]+v2[2])/3.0;
+        Array<double,3> av0 = centroid - v0;
+        Array<double,3> av1 = centroid - v1;
+        Array<double,3> av2 = centroid - v2;
 
-	    if(afm > 0) { // We need to contract the face
-	    	*cell[triangle[0]]->force_area += afm*av0;
+      // if(afm > 0) { // We need to contract the face
+        *cell[triangle[0]]->force_area += afm*av0;
         *cell[triangle[1]]->force_area += afm*av1;
         *cell[triangle[2]]->force_area += afm*av2;
-	    }
-	    else { // We need to expand it, so we reverse their length, the farthest vertex is forced the least
-	    	double l0 = norm(av0);
-	    	double l1 = norm(av1);
-	    	double l2 = norm(av2);
-	  	  double sum_l = l0+l1+l2;  
-	  	  *cell[triangle[0]]->force_area += afm / l0 * (sum_l-(l1+l2)) * av0;
-        *cell[triangle[1]]->force_area += afm / l1 * (sum_l-(l0+l2)) * av1;
-        *cell[triangle[2]]->force_area += afm / l2 * (sum_l-(l0+l1)) * av2;
-	    }
+      // }
+      // else { // We need to expand it, so we reverse their length, the farthest vertex is forced the least
+      //   // One possible expansion
+      //   double l0 = norm(av0);
+      //   double l1 = norm(av1);
+      //   double l2 = norm(av2);
+      //   double sum_l = l0+l1+l2;  
+      //   *cell[triangle[0]]->force_area += afm / l0 * (sum_l-(l1+l2)) * av0;
+      //   *cell[triangle[1]]->force_area += afm / l1 * (sum_l-(l0+l2)) * av1;
+      //   *cell[triangle[2]]->force_area += afm / l2 * (sum_l-(l0+l1)) * av2;
+        
+        // Another version
+        // double l0 = norm(v1-v2);
+        // double l1 = norm(v2-v0);
+        // double l2 = norm(v0-v1);
+        // double sum_l = l0+l1+l2;
+        // *cell[triangle[0]]->force_area += afm / sum_l * l0 * av0;
+        // *cell[triangle[1]]->force_area += afm / sum_l * l1 * av1;
+        // *cell[triangle[2]]->force_area += afm / sum_l * l2 * av2;
+
+        // Yet another version
+        // Array<double,3> av0;
+        // crossProduct(v1-v2,t_normal,av0);
+        // Array<double,3> av1;
+        // crossProduct(v2-v0,t_normal,av1);
+        // Array<double,3> av2;
+        // crossProduct(v0-v1,t_normal,av2);
+        // *cell[triangle[0]]->force_area -= afm*av1*0.5; //av1 edge force is divided over two neighbouring edges
+        // *cell[triangle[0]]->force_area -= afm*av2*0.5;
+        // *cell[triangle[1]]->force_area -= afm*av0*0.5;
+        // *cell[triangle[1]]->force_area -= afm*av2*0.5;
+        // *cell[triangle[2]]->force_area -= afm*av0*0.5;
+        // *cell[triangle[2]]->force_area -= afm*av1*0.5; //av1 edge force is divided over two neighbouring edges
+      //}
+
 
       //Store values necessary later
       triangle_areas.push_back(area);
@@ -90,7 +114,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
 
     for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
       //Fixed volume force per area
-      const Array<double, 3> local_volume_force = (volume_force*1.0/6.0*triangle_normals[triangle_n])*(triangle_areas[triangle_n]/cellConstants.area_mean_eq);
+      const Array<double, 3> local_volume_force = (volume_force*triangle_normals[triangle_n])*(triangle_areas[triangle_n]/cellConstants.area_mean_eq);
       *cell[triangle[0]]->force_volume += local_volume_force;
       *cell[triangle[1]]->force_volume += local_volume_force;
       *cell[triangle[2]]->force_volume += local_volume_force;
@@ -107,13 +131,13 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
 
       // Link force
       const Array<double,3> edge_v = v1-v0;
-      const double edge_length = sqrt(edge_v[0]*edge_v[0]+edge_v[1]*edge_v[1]+edge_v[2]*edge_v[2]);
+      const double edge_length = norm(edge_v);
       const Array<double,3> edge_uv = edge_v/edge_length;
       const double edge_frac = (edge_length - /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n])
                                / /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n];
       
       //if (edge_frac > 0) {
-      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(0.64-edge_frac*edge_frac));   // allows at max. 80% stretch
+      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(1.0-edge_frac*edge_frac));   // allows at max. 120% stretch
       const Array<double,3> force = edge_uv*edge_force_scalar;
       *cell[edge[0]]->force_link += force;
       *cell[edge[1]]->force_link -= force;
@@ -127,13 +151,6 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       //   *cell[edge[0]]->force_link += force;
       //   *cell[edge[1]]->force_link -= force;
       // }
-      
-      // Membrane viscosity - acts as viscosity along edges
-      const Array<double,3> vertex_rel_vel = cell[edge[1]]->v - cell[edge[0]]->v;
-      const double edge_rel_vel = dot(vertex_rel_vel, edge_v) / edge_length;
-      const Array<double,3> edge_visc_force = eta_m * edge_rel_vel * edge_v;
-      *cell[edge[0]]->force_area += edge_visc_force;
-      *cell[edge[1]]->force_area -= edge_visc_force;
 
       // calculate triangle normals, this should be in a function
 
@@ -170,32 +187,29 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       const double force_magnitude = - k_bend * (angle_frac + angle_frac / ( 0.62 - (angle_frac * angle_frac)));
 
       //TODO bending force differs with area - That is intentional, and necessary!
-      const Array<double,3> bending_force = force_magnitude*(V1 + V2)*0.5;
+      const Array<double,3> v1v2 = (V1 + V2)*0.5; 
+      const Array<double,3> bending_force = force_magnitude*v1v2;
       *cell[edge[0]]->force_bending += bending_force;
       *cell[edge[1]]->force_bending += bending_force;
       //TODO Negate the force with 4 point bending
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= force_magnitude * V1;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= force_magnitude * V2;
 
-      // TODO: this should be based on angular velocity -> We need previous angle for that! (like v for stretching viscosity)
-      // Bending viscosity -> new parameter to match periodic stretching tests
-      // const Array<double,3> outer_end_rel_vel = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->v 
-      //                                         - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->v;
-      // const Array<double,3> section = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->position 
-      //                               - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
-      // const double section_length = sqrt(section[0]*section[0]+section[1]*section[1]+section[2]*section[2]);
-      // const double section_rel_vel = dot(outer_end_rel_vel, section) / section_length;
-      // const Array<double,3> bend_visc_force = eta_b * section_rel_vel * section;
-      // *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending += bend_visc_force;
-      // *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= bend_visc_force;                                  
+
+      // Viscosity based on relative vertex velocity
+      const Array<double,3> outer_end_rel_vel = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->v 
+                                              - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->v;
+      const Array<double,3> section = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->position 
+                                    - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
+      const Array<double,3> section_dir = section / norm(section);
+      const double norm_vel = dot(outer_end_rel_vel, section_dir); // relative velocity magn. between the points
+      const double visc_mag = eta * norm_vel * 0.5;
+      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_visc +=  visc_mag * section_dir;
+      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_visc -=  visc_mag * section_dir;                            
 
       edge_n++;
     }
 
-    // BAD viscoelastic stuff, only for testing out damping effects
-    // for(const auto & c : cell) {
-    //   c->force *= 0.2;  
-    // }
   } 
 };
 
@@ -205,19 +219,14 @@ void RbcHighOrderModel::statistics() {
     pcout << "\t k_area:   " << k_area << std::endl; 
     pcout << "\t k_bend: : " << k_bend << std::endl; 
     pcout << "\t k_volume: " << k_volume << std::endl;
-    pcout << "\t eta_m:    " << eta_m << std::endl;
-    pcout << "\t eta_b:    " << eta_b << std::endl;
+    pcout << "\t eta:      " << eta << std::endl;
 };
 
 
 // Provide methods to calculate and scale to coefficients from here
 
-double RbcHighOrderModel::calculate_etaM(Config & cfg ){
-  return cfg["MaterialModel"]["eta_m"].read<double>() * param::dx * param::dt / param::dm;
-};
-
-double RbcHighOrderModel::calculate_etaB(Config & cfg ){
-  return cfg["MaterialModel"]["eta_b"].read<double>() * param::dx * param::dt / param::dm;
+double RbcHighOrderModel::calculate_eta(Config & cfg ){
+  return cfg["MaterialModel"]["eta"].read<double>() * param::dx * param::dt / param::dm;
 };
 
 double RbcHighOrderModel::calculate_kBend(Config & cfg ){
@@ -228,6 +237,7 @@ double RbcHighOrderModel::calculate_kVolume(Config & cfg, MeshMetrics<double> & 
   double kVolume =  cfg["MaterialModel"]["kVolume"].read<double>();
   double eqLength = meshmetric.getMeanLength();
   kVolume *= param::kBT_lbm/(eqLength*eqLength*eqLength);
+  //kVolume /= meshmetric.getNumVertices();
   return kVolume;
 };
 

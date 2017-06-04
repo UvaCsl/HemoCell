@@ -94,6 +94,7 @@ class HemoCellParticleField;
 #define OUTPUT_FORCE_BENDING 22
 #define OUTPUT_FORCE_AREA 23
 #define OUTPUT_FORCE_LINK 24
+#define OUTPUT_FORCE_VISC 25
 #define OUTPUT_TRIANGLES 3
 #define OUTPUT_VELOCITY 4
 

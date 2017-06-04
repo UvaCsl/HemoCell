@@ -10,6 +10,7 @@ void HemoCellParticleField::AddOutputMap() {
   outputFunctionMap[OUTPUT_FORCE_AREA] = &HemoCellParticleField::outputForceArea;
   outputFunctionMap[OUTPUT_FORCE_LINK] = &HemoCellParticleField::outputForceLink;
   outputFunctionMap[OUTPUT_FORCE_BENDING] = &HemoCellParticleField::outputForceBending;
+  outputFunctionMap[OUTPUT_FORCE_VISC] = &HemoCellParticleField::outputForceVisc;
   
 }
 
@@ -115,6 +116,26 @@ void HemoCellParticleField::outputForceVolume(Box3D domain,vector<vector<double>
       tf.push_back((*sparticle->force_volume)[0]);
       tf.push_back((*sparticle->force_volume)[1]);
       tf.push_back((*sparticle->force_volume)[2]);
+      output.push_back(tf);
+    }
+  }
+}
+
+void HemoCellParticleField::outputForceVisc(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
+  name = "Viscous force";
+  output.clear();
+  HemoCellParticle * sparticle;
+  for ( const auto &lpc_it : lpc ) {
+    int cellid = lpc_it.first;
+    if (!particles_per_cell[cellid][0]) { continue; }
+    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
+    for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
+      sparticle = particles_per_cell[cellid][i];
+
+      vector<double> tf;
+      tf.push_back((*sparticle->force_visc)[0]);
+      tf.push_back((*sparticle->force_visc)[1]);
+      tf.push_back((*sparticle->force_visc)[2]);
       output.push_back(tf);
     }
   }
