@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
                     DESCRIPTOR<double>::ExternalField::forceBeginsAt,
                     Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
 
-  hemocell.lattice->initialize();	
+  hemocell.lattice->initialize();   
 
   //Adding all the cells
   hemocell.initializeCellfield();
@@ -107,8 +107,8 @@ int main(int argc, char *argv[]) {
     
     //Set force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
-				DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-				Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+                DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+                Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
     
     // Only enable if PARMETIS build is available
     // if (hemocell.iter % tbalance == 0) {
@@ -118,19 +118,21 @@ int main(int argc, char *argv[]) {
     // }
    
     if (hemocell.iter % tmeas == 0) {
-      pcout << "Total number of Cells in the simulation: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell) << endl;
-      FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell);
-      pcout << "Fluid velocity, Minimum: " << finfo.min << " Maximum: " << finfo.max << " Average: " << finfo.avg << endl;
-      finfo = FluidInfo::calculateForceStatistics(&hemocell);
+      pcout << "(main) Total number of Cells in the simulation: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell) << endl;
+      
+      // Useful stats, if needed
+      //FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell);
+      //pcout << "Fluid velocity, Minimum: " << finfo.min << " Maximum: " << finfo.max << " Average: " << finfo.avg << endl;
+      //finfo = FluidInfo::calculateForceStatistics(&hemocell);
       //Set force as required after this function;
-      setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
-				DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-				Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-      pcout << "Fluid force, Minimum: " << finfo.min << " Maximum: " << finfo.max << " Average: " << finfo.avg << endl;
-      ParticleStatistics pinfo = ParticleInfo::calculateVelocityStatistics(&hemocell);
-      pcout << "Particle velocity, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << endl;
-      pinfo = ParticleInfo::calculateForceStatistics(&hemocell);
-      pcout << "Particle force, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << endl;
+      // setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
+      //           DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+      //           Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+      // pcout << "Fluid force, Minimum: " << finfo.min << " Maximum: " << finfo.max << " Average: " << finfo.avg << endl;
+      // ParticleStatistics pinfo = ParticleInfo::calculateVelocityStatistics(&hemocell);
+      // pcout << "Particle velocity, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << endl;
+      ParticleStatistics pinfo = ParticleInfo::calculateForceStatistics(&hemocell);
+      pcout << "(main) Force on particle - min.: " << pinfo.min << ", max.: " << pinfo.max << ", avg.: " << pinfo.avg << endl;
       hemocell.writeOutput();
     }
     if (hemocell.iter % tcheckpoint == 0) {
