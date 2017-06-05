@@ -49,7 +49,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
                                / /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n];      
        
       //area force magnitude
-      const double afm = k_area * (areaRatio+areaRatio/(0.04-areaRatio*areaRatio));
+      const double afm = k_area * (areaRatio+areaRatio/(0.09-areaRatio*areaRatio));
 
         Array<double,3> centroid;
         centroid[0] = (v0[0]+v1[0]+v2[0])/3.0;
@@ -96,7 +96,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
         // *cell[triangle[1]]->force_area -= afm*av2*0.5;
         // *cell[triangle[2]]->force_area -= afm*av0*0.5;
         // *cell[triangle[2]]->force_area -= afm*av1*0.5; //av1 edge force is divided over two neighbouring edges
-      //}
+      // }
 
 
       //Store values necessary later
@@ -136,20 +136,24 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       const double edge_frac = (edge_length - /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n])
                                / /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n];
       
-      //if (edge_frac > 0) {
-      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(1.0-edge_frac*edge_frac));   // allows at max. 120% stretch
-      const Array<double,3> force = edge_uv*edge_force_scalar;
-      *cell[edge[0]]->force_link += force;
-      *cell[edge[1]]->force_link -= force;
-      //TODO: for proper contraction a different tau_link might be needed (e.g. > 1.0)
+      // if (edge_frac > 0) {
+        const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(9.0-edge_frac*edge_frac));   // allows at max. 120% stretch
+        const Array<double,3> force = edge_uv*edge_force_scalar;
+        *cell[edge[0]]->force_link += force;
+        *cell[edge[1]]->force_link -= force;
+      // TODO: for proper contraction a different tau_link might be needed (e.g. > 1.0)
       //      instead of making it softer
       // } else{
+      //     const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(100.0-edge_frac*edge_frac));   // allows at max. 120% stretch
+      //     const Array<double,3> force = edge_uv*edge_force_scalar;
+      //     *cell[edge[0]]->force_link += force;
+      //     *cell[edge[1]]->force_link -= force;
       //    // less stiff compression resistance -> let compression be dominated
       //    // by area conservation force
-      //   const double edge_force_scalar = k_link * edge_frac * edge_frac * edge_frac;
-      //   const Array<double,3> force = edge_uv*edge_force_scalar;
-      //   *cell[edge[0]]->force_link += force;
-      //   *cell[edge[1]]->force_link -= force;
+      //   // const double edge_force_scalar = k_link * edge_frac * edge_frac * edge_frac;
+      //   // const Array<double,3> force = edge_uv*edge_force_scalar;
+      //   // *cell[edge[0]]->force_link += force;
+      //   // *cell[edge[1]]->force_link -= force;
       // }
 
       // calculate triangle normals, this should be in a function
@@ -184,7 +188,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
       //calculate resulting bending force
       const double angle_frac = cellConstants.edge_angle_eq_list[edge_n]/*cellConstants.angle_mean_eq*/ - angle;
 
-      const double force_magnitude = - k_bend * (angle_frac + angle_frac / ( 0.62 - (angle_frac * angle_frac)));
+      const double force_magnitude = - k_bend * (angle_frac + angle_frac / ( 2.467 - (angle_frac * angle_frac)));
 
       //TODO bending force differs with area - That is intentional, and necessary!
       const Array<double,3> v1v2 = (V1 + V2)*0.5; 

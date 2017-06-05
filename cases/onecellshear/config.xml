@@ -2,7 +2,7 @@
 <hemocell>
 
 <parameters>
-    <warmup> 50 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <warmup> 0 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
 </parameters>
 
 

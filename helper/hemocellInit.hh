@@ -53,7 +53,8 @@ void iniLatticeSquareCouette( MultiBlockLattice3D<T,Descriptor>& lattice,
     setExternalVector( lattice, lattice.getBoundingBox(),
             Descriptor<T>::ExternalField::forceBeginsAt, Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
 
-    initializeAtEquilibrium(lattice, lattice.getBoundingBox(), CouetteDensityAndVelocity<T>(shearRate, (ny-1)*0.5 ));
+    // For shearing test this results in a dirac delta in force -> viscous force will not like it
+    //initializeAtEquilibrium(lattice, lattice.getBoundingBox(), CouetteDensityAndVelocity<T>(shearRate, (ny-1)*0.5 ));
 
     lattice.initialize();
 }
