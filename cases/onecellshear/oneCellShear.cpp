@@ -21,17 +21,20 @@ int main(int argc, char* argv[])
 
 // ---------------------------- Calc. LBM parameters -------------------------------------------------
 	pcout << "(OneCellShear) (Parameters) calculating shear flow parameters" << endl;
-	double nxyz = 20.0*(1e-6/(*cfg)["domain"]["dx"].read<double>());
-  param::lbm_shear_parameters((*cfg),nxyz);
+	//double nxyz = 20.0*(1e-6/(*cfg)["domain"]["dx"].read<double>());
+  plint nx = 40;
+  plint ny = 40;
+  plint nz = 20;
+  param::lbm_shear_parameters((*cfg),ny);
 
 	// ------------------------ Init lattice --------------------------------
 
-	pcout << "(CellStretch) Initializing lattice: " << nxyz << "^3 [lu] cube" << std::endl;
+	pcout << "(CellStretch) Initializing lattice: " << nx <<"x" << ny <<"x" << nz << " [lu]" << std::endl;
 
 	plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
 
 			hemocell.lattice = new MultiBlockLattice3D<double,DESCRIPTOR>(
-					defaultMultiBlockPolicy3D().getMultiBlockManagement(nxyz, nxyz, nxyz, extendedEnvelopeWidth),
+					defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
 					defaultMultiBlockPolicy3D().getBlockCommunicator(),
 					defaultMultiBlockPolicy3D().getCombinedStatistics(),
 					defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
@@ -57,7 +60,7 @@ int main(int argc, char* argv[])
 
 	hemocell.lattice->toggleInternalStatistics(false);
 
-	iniLatticeSquareCouette(*hemocell.lattice, nxyz, nxyz, nxyz, *boundaryCondition, param::shearrate_lbm);
+	iniLatticeSquareCouette(*hemocell.lattice, nx, ny, nz, *boundaryCondition, param::shearrate_lbm);
 
 	hemocell.lattice->initialize();
 
