@@ -61,7 +61,7 @@ def createH5TopologyAndGeometryFluid(xmlInt=XMLIndentation()):
     h5TopologyAndGeometry  = xmlInt.cur() + '<Topology TopologyType="3DCoRectMesh" NumberOfElements="%(subDomainNx)d %(subDomainNy)d %(subDomainNz)d"/>\n'
     h5TopologyAndGeometry += xmlInt.inc() + '<Geometry GeometryType="Origin_DxDyDz">\n'
     h5TopologyAndGeometry += xmlInt.inc() + '<DataItem Dimensions="3" NumberType="Float" Precision="4" Format="XML">\n'
-    h5TopologyAndGeometry += xmlInt.cur() + '%(relativePositionX)d %(relativePositionY)d %(relativePositionZ)d\n'
+    h5TopologyAndGeometry += xmlInt.cur() + '%(relativePositionX)f %(relativePositionY)f %(relativePositionZ)f\n'
     h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
     h5TopologyAndGeometry += xmlInt.inc() + '<DataItem Dimensions="3" NumberType="Float" Precision="4" Format="XML">\n'
 # Use for SI units #    h5TopologyAndGeometry += xmlInt.inc() + '%(dx)f %(dx)f %(dx)f\n'
