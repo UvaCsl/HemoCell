@@ -94,6 +94,8 @@ int main(int argc, char* argv[])
 
 	outputs = {OUTPUT_VELOCITY};
 	hemocell.setFluidOutputs(outputs);
+        
+        hemocell.outputInSiUnits = true; //HDF5 output in SI units (except location (so fluid location, particle location is still in LU)
 
 // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
 

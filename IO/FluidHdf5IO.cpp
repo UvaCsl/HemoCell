@@ -2,6 +2,7 @@
 #define FLUID_HDF5_IO_CPP
 
 #include "FluidHdf5IO.h"
+#include "hemocell.h"
 
 #include <hdf5.h>
 #include <hdf5_hl.h>
@@ -130,6 +131,13 @@ float * WriteFluidField::outputVelocity() {
       }
     }
   }
+  
+  if (cellfields.hemocell.outputInSiUnits) {
+    for (unsigned int i = 0 ; i < (*nCells)*3 ; i++) {
+      output[i] = output[i]*param::dx/param::dt;
+    }
+  }
+  
   return output;
 }
 #endif

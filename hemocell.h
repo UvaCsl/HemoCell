@@ -94,12 +94,15 @@ class HemoCell {
   void setFluidOutputs(vector<int> outputs);
 
   //Load the particles
+private:
   bool loadParticlesIsCalled = false;
+public:
   void loadParticles();
 
   void loadCheckPoint();
   void saveCheckPoint();
 
+  bool outputInSiUnits = false;
   void writeOutput();
   void iterate();
 
