@@ -174,7 +174,7 @@ inline Array<double,3> computeBendingForce4p (Array<double,3> const& xi, Array<d
  
 
 
-void RbcOldModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> particles_per_cell, map<int,bool> lpc, pluint ctype) {
+void RbcOldModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, map<int,bool> & lpc, pluint ctype) {
 
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;

@@ -8,7 +8,7 @@ PltSimpleModel::PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_) :
                   k_bend( PltSimpleModel::calculate_kBend(modelCfg_) )
   { };
 
-void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> particles_per_cell, map<int,bool> lpc, pluint ctype) {
+void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, map<int,bool> & lpc, pluint ctype) {
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;
     vector<HemoCellParticle*> & cell = particles_per_cell[cid];

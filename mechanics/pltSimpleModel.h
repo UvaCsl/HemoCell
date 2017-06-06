@@ -23,7 +23,7 @@ class PltSimpleModel : public CellMechanics {
   public:
   PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_);
 
-  void ParticleMechanics(map<int,vector<HemoCellParticle *>> particles_per_cell, map<int,bool> lpc, pluint ctype);
+  void ParticleMechanics(map<int,vector<HemoCellParticle *>> &particles_per_cell, map<int,bool> &lpc, pluint ctype);
 
   void statistics();
 

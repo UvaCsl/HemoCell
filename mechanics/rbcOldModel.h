@@ -21,7 +21,7 @@ class RbcOldModel : public CellMechanics {
   public:
   RbcOldModel(Config & modelCfg_, HemoCellField & cellField_) ;
 
-  void ParticleMechanics(map<int,vector<HemoCellParticle *>> particles_per_cell, map<int,bool> lpc, pluint ctype) ;
+  void ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, map<int,bool> & lpc, pluint ctype) ;
 
   void statistics();
 

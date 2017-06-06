@@ -382,15 +382,15 @@ void HemoCellParticleField::unifyForceVectors() {
 
 void HemoCellParticleField::applyConstitutiveModel(bool forced) {
   deleteIncompleteCells();
-  map<int,vector<HemoCellParticle*>> ppc_new;
+  map<int,vector<HemoCellParticle*>> * ppc_new = new map<int,vector<HemoCellParticle*>>();
   
   //Fill it here, probably needs optimization, ah well ...
   for (const auto & pair : particles_per_cell) {
     const int & cid = pair.first;
     const vector<int> & cell = pair.second; 
-    ppc_new[cid] = vector<HemoCellParticle*>(cell.size());
-    for (const int & pid : cell) {
-      ppc_new[cid][pid] = &particles[pid];
+    (*ppc_new)[cid].resize(cell.size());
+    for (unsigned int i = 0 ; i < cell.size() ; i++) {
+      (*ppc_new)[cid][i] = &particles[cell[i]];
     }
   }
   
@@ -401,9 +401,11 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
       for (HemoCellParticle* particle : found) {
         particle->force = {0.,0.,0.};        
       }
-      (*cellFields)[ctype]->mechanics->ParticleMechanics(ppc_new,lpc,ctype);
+      (*cellFields)[ctype]->mechanics->ParticleMechanics(*ppc_new,lpc,ctype);
     }
   }
+  
+  delete ppc_new;
   
 }
 
