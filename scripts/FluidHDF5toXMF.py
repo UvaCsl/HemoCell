@@ -61,11 +61,11 @@ def createH5TopologyAndGeometryFluid(xmlInt=XMLIndentation()):
     h5TopologyAndGeometry  = xmlInt.cur() + '<Topology TopologyType="3DCoRectMesh" NumberOfElements="%(subDomainNx)d %(subDomainNy)d %(subDomainNz)d"/>\n'
     h5TopologyAndGeometry += xmlInt.inc() + '<Geometry GeometryType="Origin_DxDyDz">\n'
     h5TopologyAndGeometry += xmlInt.inc() + '<DataItem Dimensions="3" NumberType="Float" Precision="4" Format="XML">\n'
-    h5TopologyAndGeometry += xmlInt.cur() + '%(relativePositionX)f %(relativePositionY)f %(relativePositionZ)f\n'
+    h5TopologyAndGeometry += xmlInt.cur() + '%(relativePositionX)G %(relativePositionY)G %(relativePositionZ)G\n'
     h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
     h5TopologyAndGeometry += xmlInt.inc() + '<DataItem Dimensions="3" NumberType="Float" Precision="4" Format="XML">\n'
 # Use for SI units #    h5TopologyAndGeometry += xmlInt.inc() + '%(dx)f %(dx)f %(dx)f\n'
-    h5TopologyAndGeometry += xmlInt.cur() + '1 1 1 \n'
+    h5TopologyAndGeometry += xmlInt.cur() + '%(dX)G %(dY)G %(dZ)G\n'
     h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
     h5TopologyAndGeometry += xmlInt.dec() + '</Geometry>\n'
     return h5TopologyAndGeometry
@@ -113,6 +113,9 @@ def updateDictForXDMFStrings(h5File, h5dict):
     h5dict['subDomainNx'] = h5dict["subdomainSize"][0]
     h5dict['subDomainNy'] = h5dict["subdomainSize"][1]
     h5dict['subDomainNz'] = h5dict["subdomainSize"][2]
+    h5dict['dX'] = h5dict["dxdydz"][0]
+    h5dict['dY'] = h5dict["dxdydz"][1]
+    h5dict['dZ'] = h5dict["dxdydz"][2]
     h5dict['relativePositionX'] = h5dict["relativePosition"][0]
     h5dict['relativePositionY'] = h5dict["relativePosition"][1]
     h5dict['relativePositionZ'] = h5dict["relativePosition"][2]

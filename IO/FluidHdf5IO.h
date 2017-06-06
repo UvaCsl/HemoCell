@@ -35,6 +35,8 @@ private:
     hsize_t * nCells;
 
     float * outputVelocity();
+    float * outputForce();
+
 };
 
 #endif

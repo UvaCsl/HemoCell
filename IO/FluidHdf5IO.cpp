@@ -64,13 +64,24 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
   int ncells = Nx*Ny*Nz;
   Dot3D rp_temp = blocks[0]->getLocation();
   int subdomainSize[]  = {int(Nz), int(Ny), int(Nx)}; //Reverse for paraview
+  float dxdydz[3] = {1.,1.,1.};
   float relativePosition[3] = {float(rp_temp.z+domain.z0-1.5),
                                float(rp_temp.y+domain.y0-1.5),
                                float(rp_temp.x+domain.x0-1.5)}; //Reverse for paraview
 
+  if (cellfields.hemocell.outputInSiUnits) {
+    relativePosition[0] *= param::dx;
+    relativePosition[1] *= param::dx;
+    relativePosition[2] *= param::dx;
+    dxdydz[0] = param::dx;
+    dxdydz[1] = param::dx;
+    dxdydz[2] = param::dx;
+  }
+  
   H5LTset_attribute_int (file_id, "/", "numberOfCells", &ncells, 1);
   H5LTset_attribute_int (file_id, "/", "subdomainSize", subdomainSize, 3);
   H5LTset_attribute_float(file_id, "/", "relativePosition", relativePosition, 3);
+  H5LTset_attribute_float(file_id,"/","dxdydz",dxdydz,3);
 
   //Also compute chunking here
   hsize_t chunk[4];
@@ -90,6 +101,11 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
       case OUTPUT_VELOCITY:
         output = outputVelocity();
         name = "Velocity";
+        dim[3] = 3;
+        break;
+      case OUTPUT_FORCE:
+        output = outputForce();
+        name = "Force";
         dim[3] = 3;
         break;
       default:
@@ -120,7 +136,7 @@ float * WriteFluidField::outputVelocity() {
   unsigned int n = 0;
   Array<double,3> vel;
   for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
-		for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
+    for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
       for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
 
         ablock->grid[iX][iY][iZ].computeVelocity(vel);
@@ -135,6 +151,31 @@ float * WriteFluidField::outputVelocity() {
   if (cellfields.hemocell.outputInSiUnits) {
     for (unsigned int i = 0 ; i < (*nCells)*3 ; i++) {
       output[i] = output[i]*param::dx/param::dt;
+    }
+  }
+  
+  return output;
+}
+
+float * WriteFluidField::outputForce() {
+  float * output = new float [(*nCells)*3];
+  unsigned int n = 0;
+  Array<double,3> vel;
+  for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
+    for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
+      for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
+
+        output[n] = ablock->grid[iX][iY][iZ].external.data[0];
+        output[n+1] = ablock->grid[iX][iY][iZ].external.data[1];
+        output[n+2] = ablock->grid[iX][iY][iZ].external.data[2];
+        n += 3;
+      }
+    }
+  }
+  
+  if (cellfields.hemocell.outputInSiUnits) {
+    for (unsigned int i = 0 ; i < (*nCells)*3 ; i++) {
+      output[i] = output[i]*param::df;
     }
   }
   

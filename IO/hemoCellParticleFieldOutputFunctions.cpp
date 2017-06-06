@@ -40,6 +40,13 @@ void HemoCellParticleField::outputPositions(Box3D domain,vector<vector<double>>&
 
     }
   }
+  if(cellFields->hemocell.outputInSiUnits) {
+    for (vector<double> & tf : output) {
+      for (double & n : tf) {
+        n = n * param::dx;
+      }
+    }
+  }
 }
 
 void HemoCellParticleField::outputForceBending(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {

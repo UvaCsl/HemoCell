@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
 	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC}; 
 	hemocell.setOutputs("RBC_HO", outputs);
 
-	outputs = {OUTPUT_VELOCITY};
+	outputs = {OUTPUT_VELOCITY,OUTPUT_FORCE};
 	hemocell.setFluidOutputs(outputs);
         
         hemocell.outputInSiUnits = true; //HDF5 output in SI units (except location (so fluid location, particle location is still in LU)

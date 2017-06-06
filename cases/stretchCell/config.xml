@@ -23,7 +23,7 @@
 </domain>
 
 <sim>
-    <tmax> 20000 </tmax> <!-- total number of iterations -->
+    <tmax> 2000 </tmax> <!-- total number of iterations -->
     <tmeas> 500 </tmeas> <!-- interval after which data is written --> 
     <tcheckpoint>50000</tcheckpoint>
 </sim>
