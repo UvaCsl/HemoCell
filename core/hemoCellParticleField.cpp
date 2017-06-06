@@ -16,9 +16,11 @@ HemoCellParticleField::HemoCellParticleField(plint nx, plint ny, plint nz)
 HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
     : AtomicBlock3D(rhs)
 {
+    HemoCellParticle tmp;
     dataTransfer.setBlock(*this);
-    for (pluint i=0; i<rhs.particles.size(); ++i) {
-        addParticle(this->getBoundingBox(),rhs.particles[i]->clone());
+    for (const HemoCellParticle & particle : rhs.particles) {
+      tmp = particle;
+      addParticle(this->getBoundingBox(),&tmp);
     }
     AddOutputMap();
 }
@@ -26,9 +28,9 @@ HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
 HemoCellParticleField::~HemoCellParticleField()
 {
   AtomicBlock3D::dataTransfer = new HemoCellParticleDataTransfer();
-    for (pluint i=0; i<particles.size(); ++i) {
-        delete particles[i];
-    }
+    //for (pluint i=0; i<particles.size(); ++i) {
+    //    delete particles[i];
+    //}
 }
 
 HemoCellParticleField& HemoCellParticleField::operator=(HemoCellParticleField const& rhs){
@@ -50,7 +52,7 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
 
 
     while (particles_per_type.size()<=particle->celltype) {
-      particles_per_type.push_back(std::vector<HemoCellParticle*>());
+      particles_per_type.push_back(std::vector<unsigned int>());
     }
 
     if( this->isContainedABS(pos, this->getBoundingBox()) )
@@ -58,8 +60,8 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
       //check if we have particle already, if so, we must overwrite but not
       //forget to delete the old entry
       if ((!(particles_per_cell.find(particle->cellId) == 
-           particles_per_cell.end())) && particles_per_cell[particle->cellId][particle->vertexId]) {
-          local_sparticle =  particles_per_cell[particle->cellId][particle->vertexId];
+           particles_per_cell.end())) && particles_per_cell[particle->cellId][particle->vertexId] != -1) {
+          local_sparticle =  &particles[particles_per_cell[particle->cellId][particle->vertexId]];
 
           //If our particle is local, do not replace it, envelopes are less important
           if (isContainedABS(local_sparticle->position, getBoundingBox())) {
@@ -67,65 +69,69 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
           } else {
             //We have the particle already, replace it
             *local_sparticle = *particle;
-            local_sparticle->repoint_force_vectors();
           }
-          //If the pointers are the same we shouldn't delete either
-          if(!(particle==local_sparticle)) {
-            delete particle;
+          //If the pointers aren't the same repoint we shouldn't delete either
+          //if(!(particle==local_sparticle)) {
             particle = local_sparticle;
-          }
+          //}
       } else {
         //new entry
-        particles.push_back(particle);
-          particles_per_type[particle->celltype].push_back(particle); //TODO, not accurate for already existing particles
-          if(this->isContainedABS(pos, localDomain)) {
-            lpc[particle->cellId] = true;
-          }
+        particles.push_back(*particle);
+        //delete particle;
+        particle = &particles.back();
+        
+        particles_per_type[particle->celltype].push_back(particles.size()-1); //last entry
+        if(this->isContainedABS(pos, localDomain)) {
+          lpc[particle->cellId] = true;
+        }
           
-        insert_ppc(particle);
+        insert_ppc(particle, particles.size()-1);
       }
 
       particle->setTag(-1);
     }
     else {
-        delete particle;
+        //delete particle;
     }
 }
 
-void HemoCellParticleField::insert_ppc(HemoCellParticle* sparticle) {
+void HemoCellParticleField::insert_ppc(HemoCellParticle* sparticle, unsigned int index) {
   if (particles_per_cell.find(sparticle->cellId) == particles_per_cell.end()) {
     particles_per_cell[sparticle->cellId].resize((*cellFields)[sparticle->celltype]->numVertex);
     for (unsigned int i = 0; i < particles_per_cell[sparticle->cellId].size(); i++) {
-      particles_per_cell[sparticle->cellId][i] = NULL;
+      particles_per_cell[sparticle->cellId][i] = -1;
     }
   }
-  particles_per_cell[sparticle->cellId][sparticle->vertexId] = sparticle;
+  particles_per_cell[sparticle->cellId][sparticle->vertexId] = index;
 
 }
 
 
 void HemoCellParticleField::removeParticles(plint tag) {
 //Almost the same, but we save a lot of branching by making a seperate function
-    vector<HemoCellParticle*> remainingParticles = particles;
+    vector<HemoCellParticle> remainingParticles;
+    particles.swap(remainingParticles);
 
     particles_per_type.clear();
     particles_per_cell.clear();
     lpc.clear();
     particles.clear();
+    particles.reserve(remainingParticles.size());
 
     for (pluint i=0; i<remainingParticles.size(); ++i) {
-       if (remainingParticles[i]->getTag() == tag) {
-         delete remainingParticles[i];
+       if (remainingParticles[i].getTag() == tag) {
+         //delete remainingParticles[i];
        }
        else {
-           addParticle(this->getBoundingBox(), remainingParticles[i]);
+           addParticle(this->getBoundingBox(), &remainingParticles[i]);
        }
     }
 }
 
 void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
 //Almost the same, but we save a lot of branching by making a seperate function
-    std::vector<HemoCellParticle*> remainingParticles = particles;
+    vector<HemoCellParticle> remainingParticles;
+    particles.swap(remainingParticles);
     Box3D finalDomain;
     Array<double,3> pos; 
 
@@ -133,22 +139,25 @@ void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
     particles_per_cell.clear();
     lpc.clear();
     particles.clear();
+    particles.reserve(remainingParticles.size());
+
     
     for (pluint i=0; i<remainingParticles.size(); ++i) {
-       pos = remainingParticles[i]->position;
+       pos = remainingParticles[i].position;
        intersect(domain, this->getBoundingBox(), finalDomain);
-       if (this->isContainedABS(pos,finalDomain) && remainingParticles[i]->getTag() == tag) {
-         delete remainingParticles[i];
+       if (this->isContainedABS(pos,finalDomain) && remainingParticles[i].getTag() == tag) {
+         //delete remainingParticles[i];
        }
        else {
-           addParticle(this->getBoundingBox(), remainingParticles[i]);
+           addParticle(this->getBoundingBox(), &remainingParticles[i]);
        }
     }
 }
 
 void HemoCellParticleField::removeParticles(Box3D domain) {
 //Almost the same, but we save a lot of branching by making a seperate function
-    std::vector<HemoCellParticle*> remainingParticles = particles;
+    vector<HemoCellParticle> remainingParticles;
+    particles.swap(remainingParticles);
     Box3D finalDomain;
     Array<double,3> pos; 
 
@@ -156,15 +165,17 @@ void HemoCellParticleField::removeParticles(Box3D domain) {
     particles_per_cell.clear();
     lpc.clear();
     particles.clear();
+    particles.reserve(remainingParticles.size());
+
 
     for (pluint i=0; i<remainingParticles.size(); ++i) {
-       pos = remainingParticles[i]->position;
+       pos = remainingParticles[i].position;
        intersect(domain, this->getBoundingBox(), finalDomain);
        if (this->isContainedABS(pos,finalDomain)) {
-         delete remainingParticles[i];
+         //delete remainingParticles[i];
        }
        else {
-           addParticle(this->getBoundingBox(), remainingParticles[i]);
+           addParticle(this->getBoundingBox(), &remainingParticles[i]);
        }
     }
 }
@@ -176,14 +187,14 @@ void HemoCellParticleField::findParticles (
     PLB_ASSERT( contained(domain, this->getBoundingBox()) );
     Array<double,3> pos; 
     for (pluint i=0; i<particles.size(); ++i) {
-        pos = particles[i]->position;
+        pos = particles[i].position;
         if (this->isContainedABS(pos,domain)) {
-            found.push_back(particles[i]);
+            found.push_back(&particles[i]);
         }
     }
 }
 void HemoCellParticleField::findParticles (
-        Box3D domain, std::vector<HemoCellParticle*>& found, pluint type) const
+        Box3D domain, std::vector<HemoCellParticle*>& found, pluint type)
 {
     
     found.clear();
@@ -191,9 +202,9 @@ void HemoCellParticleField::findParticles (
     Array<double,3> pos; 
     if (!(particles_per_type.size() > type)) {return;} else {
     for (pluint i=0; i<particles_per_type[type].size(); ++i) {
-        pos = particles_per_type[type][i]->position;
+        pos = particles[particles_per_type[type][i]].position;
         if (this->isContainedABS(pos,domain)) {
-            found.push_back(particles_per_type[type][i]);
+            found.push_back(&(particles[particles_per_type[type][i]]));
         }
     }
     }
@@ -253,7 +264,7 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
     int cellid = lpc_it.first;
     bool broken = false;
     for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
-      if (!particles_per_cell[cellid][i]) {
+      if (particles_per_cell[cellid][i] == -1) {
         broken = true;
         break;
       }
@@ -263,13 +274,13 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
     //actually add to tobedeleted list
     bool warningIssued = false;
     for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
-      if (particles_per_cell[cellid][i] == NULL) {continue;}
-      if (particles_per_cell[cellid][i]->celltype != ctype) {break;} //certainly a entry, therefore we check here if it is the right type, if not, exit
-      if (isContainedABS(particles_per_cell[cellid][i]->position,localDomain) && verbose && !warningIssued) {
+      if (particles_per_cell[cellid][i] == -1) {continue;}
+      if (particles[particles_per_cell[cellid][i]].celltype != ctype) {break;} //certainly a entry, therefore we check here if it is the right type, if not, exit
+      if (isContainedABS(particles[particles_per_cell[cellid][i]].position,localDomain) && verbose && !warningIssued) {
         pcout << "(HemoCell) (Delete Cells) WARNING! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
         warningIssued = true;
       }
-      particles_per_cell[cellid][i]->setTag(1);
+      particles[particles_per_cell[cellid][i]].setTag(1);
       deleted++;
     }
   } 
@@ -291,7 +302,7 @@ int HemoCellParticleField::deleteIncompleteCells(bool verbose) {
     int cellid = lpc_it.first;
     bool broken = false;
     for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
-      if (!particles_per_cell[cellid][i]) {
+      if (particles_per_cell[cellid][i] == -1) {
         broken = true;
         break;
       }
@@ -301,12 +312,12 @@ int HemoCellParticleField::deleteIncompleteCells(bool verbose) {
     //actually add to tobedeleted list
     bool warningIssued = false;
     for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
-      if (particles_per_cell[cellid][i] == NULL) {continue;}
-      if (isContainedABS(particles_per_cell[cellid][i]->position,localDomain) && verbose && !warningIssued) {
+      if (particles_per_cell[cellid][i] == -1) {continue;}
+      if (isContainedABS(particles[particles_per_cell[cellid][i]].position,localDomain) && verbose && !warningIssued) {
         pcout << "(HemoCell) (Delete Cells) WARNING! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
         warningIssued = true;
       }
-      particles_per_cell[cellid][i]->setTag(1);
+      particles[particles_per_cell[cellid][i]].setTag(1);
       deleted++;
     }
   } 
@@ -330,8 +341,8 @@ void HemoCellParticleField::setlocalDomain(Box3D & localDomain_) {
 
 
 void HemoCellParticleField::advanceParticles() {
-  for(HemoCellParticle* particle:particles){
-    particle->advance();
+  for(HemoCellParticle & particle:particles){
+    particle.advance();
   }
   removeParticles(1);
 }
@@ -340,46 +351,57 @@ void HemoCellParticleField::separateForceVectors() {
   //Also save the total force, therfore recalculate in advance
   applyConstitutiveModel();
 
-  for (HemoCellParticle* sparticle : particles) {
+  for (HemoCellParticle & sparticle : particles) {
     //Save Total Force
-    sparticle->force_total = sparticle->force + sparticle->force_repulsion;
+    sparticle.force_total = sparticle.force + sparticle.force_repulsion;
 
     //Just repoint all possible outputs for now //TODO only repoint the ones we
     //want
     ////TODO this can leak if particle is deleted between seperate and unify,
     //rewrite to reference
-    sparticle->force_volume = new Array<double,3>(0.0,0.0,0.0);
-    sparticle->force_link = new Array<double,3>(0.0,0.0,0.0);
-    sparticle->force_area = new Array<double,3>(0.0,0.0,0.0);
-    sparticle->force_bending = new Array<double,3>(0.0,0.0,0.0);
-    sparticle->force_visc = new Array<double,3>(0.0,0.0,0.0);
+    sparticle.force_volume = new Array<double,3>(0.0,0.0,0.0);
+    sparticle.force_link = new Array<double,3>(0.0,0.0,0.0);
+    sparticle.force_area = new Array<double,3>(0.0,0.0,0.0);
+    sparticle.force_bending = new Array<double,3>(0.0,0.0,0.0);
+    sparticle.force_visc = new Array<double,3>(0.0,0.0,0.0);
   }
 }
 
 void HemoCellParticleField::unifyForceVectors() {
-  for (HemoCellParticle* sparticle : particles) {
+  for (HemoCellParticle& sparticle : particles) {
     //Just repoint all possible outputs for now //TODO only repoint the ones we
     //want
-    delete sparticle->force_volume;
-    delete sparticle->force_link;
-    delete sparticle->force_area;
-    delete sparticle->force_bending;
-    delete sparticle->force_visc;
-    sparticle->repoint_force_vectors();
+    delete sparticle.force_volume;
+    delete sparticle.force_link;
+    delete sparticle.force_area;
+    delete sparticle.force_bending;
+    delete sparticle.force_visc;
+    sparticle.repoint_force_vectors();
   }
 }
 
 void HemoCellParticleField::applyConstitutiveModel(bool forced) {
   deleteIncompleteCells();
+  map<int,vector<HemoCellParticle*>> ppc_new;
+  
+  //Fill it here, probably needs optimization, ah well ...
+  for (const auto & pair : particles_per_cell) {
+    const int & cid = pair.first;
+    const vector<int> & cell = pair.second; 
+    ppc_new[cid] = vector<HemoCellParticle*>(cell.size());
+    for (const int & pid : cell) {
+      ppc_new[cid][pid] = &particles[pid];
+    }
+  }
   
   for (pluint ctype = 0; ctype < (*cellFields).size(); ctype++) {
     if ((*cellFields).hemocell.iter % (*cellFields)[ctype]->timescale == 0 || forced) {
       vector<HemoCellParticle*> found;
       findParticles(getBoundingBox(),found,ctype);
       for (HemoCellParticle* particle : found) {
-        particle->force = {0.,0.,0.};
+        particle->force = {0.,0.,0.};        
       }
-      (*cellFields)[ctype]->mechanics->ParticleMechanics(particles_per_cell,lpc,ctype);
+      (*cellFields)[ctype]->mechanics->ParticleMechanics(ppc_new,lpc,ctype);
     }
   }
   

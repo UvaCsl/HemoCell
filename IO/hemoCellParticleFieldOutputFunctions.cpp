@@ -27,10 +27,10 @@ void HemoCellParticleField::outputPositions(Box3D domain,vector<vector<double>>&
   HemoCellParticle * sparticle;
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
+    if (particles_per_cell[cellid][0] == -1) { continue; }
+    if (ctype != particles[particles_per_cell[cellid][0]].celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
+      sparticle = &particles[particles_per_cell[cellid][i]];
 
       vector<double> pbv;
       pbv.push_back(sparticle->position[0]);
@@ -55,10 +55,10 @@ void HemoCellParticleField::outputForceBending(Box3D domain,vector<vector<double
   HemoCellParticle * sparticle;
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
+    if (particles_per_cell[cellid][0] == -1) { continue; }
+    if (ctype != particles[particles_per_cell[cellid][0]].celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
+      sparticle = &particles[particles_per_cell[cellid][i]];
 
       vector<double> tf;
       tf.push_back((*sparticle->force_bending)[0]);
@@ -82,10 +82,10 @@ void HemoCellParticleField::outputForceArea(Box3D domain,vector<vector<double>>&
   HemoCellParticle * sparticle;
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
+    if (particles_per_cell[cellid][0] == -1) { continue; }
+    if (ctype != particles[particles_per_cell[cellid][0]].celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
+      sparticle = &particles[particles_per_cell[cellid][i]];
 
       vector<double> tf;
       tf.push_back((*sparticle->force_area)[0]);
@@ -109,10 +109,10 @@ void HemoCellParticleField::outputForceLink(Box3D domain,vector<vector<double>>&
   HemoCellParticle * sparticle;
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
+    if (particles_per_cell[cellid][0] == -1) { continue; }
+    if (ctype != particles[particles_per_cell[cellid][0]].celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
+      sparticle = &particles[particles_per_cell[cellid][i]];
 
       vector<double> tf;
       tf.push_back((*sparticle->force_link)[0]);
@@ -135,10 +135,10 @@ void HemoCellParticleField::outputForceVolume(Box3D domain,vector<vector<double>
   HemoCellParticle * sparticle;
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
+    if (particles_per_cell[cellid][0] == -1) { continue; }
+    if (ctype != particles[particles_per_cell[cellid][0]].celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
+      sparticle = &particles[particles_per_cell[cellid][i]];
 
       vector<double> tf;
       tf.push_back((*sparticle->force_volume)[0]);
@@ -155,10 +155,10 @@ void HemoCellParticleField::outputForceVisc(Box3D domain,vector<vector<double>>&
   HemoCellParticle * sparticle;
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
+    if (particles_per_cell[cellid][0] == -1) { continue; }
+    if (ctype != particles[particles_per_cell[cellid][0]].celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
+      sparticle = &particles[particles_per_cell[cellid][i]];
 
       vector<double> tf;
       tf.push_back((*sparticle->force_visc)[0]);
@@ -182,10 +182,10 @@ void HemoCellParticleField::outputForces(Box3D domain,vector<vector<double>>& ou
   HemoCellParticle * sparticle;
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
+    if (particles_per_cell[cellid][0] == -1) { continue; }
+    if (ctype != particles[particles_per_cell[cellid][0]].celltype) continue;
     for (pluint i = 0; i < particles_per_cell[cellid].size(); i++) {
-      sparticle = particles_per_cell[cellid][i];
+      sparticle = &particles[particles_per_cell[cellid][i]];
 
       vector<double> tf;
       tf.push_back(sparticle->force_total[0]);
@@ -209,8 +209,8 @@ void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>>&
   int counter = 0;
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
-    if (!particles_per_cell[cellid][0]) { continue; }
-    if (ctype != particles_per_cell[cellid][0]->celltype) continue;
+    if (particles_per_cell[cellid][0] == -1) { continue; }
+    if (ctype != particles[particles_per_cell[cellid][0]].celltype) continue;
 
     for (pluint i = 0; i < (*cellFields)[ctype]->triangle_list.size(); i++) {
       vector<plint> triangle = {(*cellFields)[ctype]->triangle_list[i][0] + counter,

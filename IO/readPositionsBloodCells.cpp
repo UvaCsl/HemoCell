@@ -19,6 +19,8 @@ inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, 
     Box3D fluidbb = fluid.getBoundingBox();
     Dot3D rrelfluidloc; // used later;
     int denyLayerSize; // used later;
+    HemoCellParticle to_add_particle; // used_later
+
     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
         Array<double,3> vertex = startingPoint + mesh->getVertex(iVertex);
         
@@ -56,8 +58,9 @@ inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, 
           }  
         }  
       }
-        
-      particleField.addParticle(particleField.getBoundingBox(), new HemoCellParticle(vertex, cellId, iVertex,celltype));
+      
+      to_add_particle = HemoCellParticle(vertex,cellId,iVertex,celltype);
+      particleField.addParticle(particleField.getBoundingBox(), &to_add_particle);
 no_add:;
     }
 }

@@ -190,7 +190,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> pa
 
       const double force_magnitude = - k_bend * (angle_frac + angle_frac / ( 2.467 - (angle_frac * angle_frac)));
 
-      //TODO bending force differs with area - That is intentional, and necessary!
+      //TODO make bending force differ with area, V1 and V2 are unit vectors right now!
       const Array<double,3> v1v2 = (V1 + V2)*0.5; 
       const Array<double,3> bending_force = force_magnitude*v1v2;
       *cell[edge[0]]->force_bending += bending_force;

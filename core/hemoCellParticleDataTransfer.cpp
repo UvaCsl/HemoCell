@@ -47,13 +47,14 @@ void HemoCellParticleDataTransfer::receive (
          (kind==modif::dataStructure) )
     {
         pluint posInBuffer = 0;
+        
+        HemoCellParticle newParticle = HemoCellParticle();
         while (posInBuffer < buffer.size()) {
             // 1. Generate dynamics object, and unserialize dynamic data.
             HierarchicUnserializer unserializer(buffer, posInBuffer);
-            HemoCellParticle* newParticle = new HemoCellParticle();
-            newParticle->unserialize(unserializer);
+            newParticle.unserialize(unserializer);
             posInBuffer = unserializer.getCurrentPos();
-            particleField->addParticle(domain, newParticle);
+            particleField->addParticle(domain, &newParticle);
         }
     }
 }
@@ -70,14 +71,14 @@ void HemoCellParticleDataTransfer::receive (
          (kind==modif::dataStructure) )
     {
         pluint posInBuffer = 0;
+        HemoCellParticle newParticle = HemoCellParticle();
         while (posInBuffer < buffer.size()) {
             // 1. Generate dynamics object, and unserialize dynamic data.
             HierarchicUnserializer unserializer(buffer, posInBuffer);
-            HemoCellParticle* newParticle = new HemoCellParticle();
-            newParticle->unserialize(unserializer);
+            newParticle.unserialize(unserializer);
             posInBuffer = unserializer.getCurrentPos();
-            newParticle->position += realAbsoluteOffset;
-            particleField->addParticle(domain, newParticle);
+            newParticle.position += realAbsoluteOffset;
+            particleField->addParticle(domain, &newParticle);
         }
     }
 }

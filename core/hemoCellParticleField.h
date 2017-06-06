@@ -23,7 +23,7 @@ public:
                                std::vector<HemoCellParticle*>& found);
     void findParticles(Box3D domain,
                                std::vector<HemoCellParticle*>& found,
-                               pluint type) const;
+                               pluint type);
     virtual void advanceParticles();
     void applyRepulsionForce(bool forced = false);
     virtual void interpolateFluidVelocity(Box3D domain);
@@ -72,16 +72,16 @@ public:
     static std::string descriptorType() {
       return std::string(DESCRIPTOR<double>::name);
     }
-    vector<HemoCellParticle*> particles;
+    vector<HemoCellParticle> particles;
     private:
 
-    vector<vector<HemoCellParticle*>> particles_per_type;
+    vector<vector<unsigned int>> particles_per_type;
     public:
-    map<int,vector<HemoCellParticle*>> particles_per_cell;
+    map<int,vector<int>> particles_per_cell;
     map<int,bool> lpc;
     
     //vector<vector<vector<vector<HemoCellParticle*>>>> particle_grid; //maybe better to make custom data structure, But that would be slower
-    void insert_ppc(HemoCellParticle* particle);
+    void insert_ppc(HemoCellParticle* particle,unsigned int index);
     HemoCellParticleDataTransfer dataTransfer;
 public:
     Box3D localDomain;

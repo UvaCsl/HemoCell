@@ -16,12 +16,12 @@ void CellInformationFunctionals::CellVolume::processGenericBlocks(Box3D domain, 
   for (const auto & pair : pf->lpc) {
     double volume = 0.;
     const int & cid = pair.first;
-    const vector<HemoCellParticle*> & cell = pf->particles_per_cell[cid];
-    const pluint ctype = pf->particles_per_cell[cid][0]->celltype;
+    const vector<int> & cell = pf->particles_per_cell[cid];
+    const pluint ctype = pf->particles[cell[0]].celltype;
     for (Array<plint,3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
-      const Array<double,3> & v0 = cell[triangle[0]]->position;
-      const Array<double,3> & v1 = cell[triangle[1]]->position;
-      const Array<double,3> & v2 = cell[triangle[2]]->position;
+      const Array<double,3> & v0 = pf->particles[cell[triangle[0]]].position;
+      const Array<double,3> & v1 = pf->particles[cell[triangle[1]]].position;
+      const Array<double,3> & v2 = pf->particles[cell[triangle[2]]].position;
       
       //Volume
       const double v210 = v2[0]*v1[1]*v0[2];
@@ -41,13 +41,13 @@ void CellInformationFunctionals::CellArea::processGenericBlocks(Box3D domain, st
   for (const auto & pair : pf->lpc) {
     double total_area = 0.;
     const int & cid = pair.first;
-    const vector<HemoCellParticle*> & cell = pf->particles_per_cell[cid];
-    const pluint ctype = pf->particles_per_cell[cid][0]->celltype;
+    const vector<int> & cell = pf->particles_per_cell[cid];
+    const pluint ctype = pf->particles[cell[0]].celltype;
     for (Array<plint,3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
-      const Array<double,3> & v0 = cell[triangle[0]]->position;
-      const Array<double,3> & v1 = cell[triangle[1]]->position;
-      const Array<double,3> & v2 = cell[triangle[2]]->position;
-      
+      const Array<double,3> & v0 = pf->particles[cell[triangle[0]]].position;
+      const Array<double,3> & v1 = pf->particles[cell[triangle[1]]].position;
+      const Array<double,3> & v2 = pf->particles[cell[triangle[2]]].position;
+
       total_area += computeTriangleArea(v0,v1,v2);  
     }
     info_per_cell[cid].area = total_area;
@@ -59,9 +59,9 @@ void CellInformationFunctionals::CellPosition::processGenericBlocks(Box3D domain
   for (const auto & pair : pf->lpc) {
     Array<double,3> position = {0.,0.,0.};
     const int & cid = pair.first;
-    const vector<HemoCellParticle*> & cell = pf->particles_per_cell[cid];
-    for (const HemoCellParticle * particle : cell ) {
-      position += particle->position;
+    const vector<int> & cell = pf->particles_per_cell[cid];
+    for (const int pid : cell ) {
+      position += pf->particles[pid].position;
     }
     info_per_cell[cid].position = position/double(cell.size());
     info_per_cell[cid].centerLocal = pf->isContainedABS(info_per_cell[cid].position,pf->localDomain);
@@ -73,12 +73,12 @@ void CellInformationFunctionals::CellStretch::processGenericBlocks(Box3D domain,
   for (const auto & pair : pf->lpc) {
     double max_stretch = 0.;
     const int & cid = pair.first;
-    const vector<HemoCellParticle*> & cell = pf->particles_per_cell[cid];
+    const vector<int> & cell = pf->particles_per_cell[cid];
     for (unsigned int i = 0 ; i < cell.size() - 1 ; i++ ) {
       for (unsigned int j = i + 1 ; j < cell.size() ; j ++) {
-        double distance = sqrt( pow(cell[i]->position[0]-cell[j]->position[0],2) +
-                                pow(cell[i]->position[1]-cell[j]->position[1],2) +
-                                pow(cell[i]->position[2]-cell[j]->position[2],2));
+        double distance = sqrt( pow(pf->particles[cell[i]].position[0]-pf->particles[cell[j]].position[0],2) +
+                                pow(pf->particles[cell[i]].position[1]-pf->particles[cell[j]].position[1],2) +
+                                pow(pf->particles[cell[i]].position[2]-pf->particles[cell[j]].position[2],2));
         max_stretch = max_stretch < distance ? distance : max_stretch;
       }
     }
@@ -91,16 +91,18 @@ void CellInformationFunctionals::CellBoundingBox::processGenericBlocks(Box3D dom
   for (const auto & pair : pf->lpc) {
     Array<double,6> bbox;
     const int & cid = pair.first;
-    const vector<HemoCellParticle*> & cell = pf->particles_per_cell[cid];
+    const vector<int> & cell = pf->particles_per_cell[cid];
+    HemoCellParticle * particle = &pf->particles[cell[0]];
     
-    bbox[0] = cell[0]->position[0];
-    bbox[1] = cell[0]->position[0];
-    bbox[2] = cell[0]->position[1];
-    bbox[3] = cell[0]->position[1];
-    bbox[4] = cell[0]->position[2];
-    bbox[5] = cell[0]->position[2];
+    bbox[0] = particle->position[0];
+    bbox[1] = particle->position[0];
+    bbox[2] = particle->position[1];
+    bbox[3] = particle->position[1];
+    bbox[4] = particle->position[2];
+    bbox[5] = particle->position[2];
     
-    for (const HemoCellParticle * particle : cell ) {
+    for (const int pid : cell ) {
+      particle = &pf->particles[pid];
       bbox[0] = bbox[0] > particle->position[0] ? particle->position[0] : bbox[0];
       bbox[1] = bbox[1] < particle->position[0] ? particle->position[0] : bbox[1];
       bbox[2] = bbox[2] > particle->position[1] ? particle->position[1] : bbox[2];
@@ -127,7 +129,7 @@ void CellInformationFunctionals::CellType::processGenericBlocks(Box3D domain, st
   for (const auto & pair : pf->lpc) {
     const int & cid = pair.first;
 
-    info_per_cell[cid].cellType = pf->particles_per_cell[cid][0]->celltype;
+    info_per_cell[cid].cellType = pf->particles[pf->particles_per_cell[cid][0]].celltype;
   }
 }
 
