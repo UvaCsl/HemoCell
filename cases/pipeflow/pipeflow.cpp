@@ -121,11 +121,11 @@ int main(int argc, char *argv[]) {
    
     if (hemocell.iter % tmeas == 0) {
       pcout << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
-      pcout << "\t Total number of cells in the simulation: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell) << endl;
-      FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell);
-      pcout << "\t Fluid velocity - min.: " << finfo.min << ", max.: " << finfo.max << ", mean: " << finfo.avg << endl;
-      ParticleStatistics pinfo = ParticleInfo::calculateForceStatistics(&hemocell);
-      pcout << "\t Force on particle - min.: " << pinfo.min << ", max.: " << pinfo.max << ", mean: " << pinfo.avg << endl;
+      pcout << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell) << endl;
+      FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell); double toMpS = param::dx / param::dt;
+      pcout << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg << " m/s" << endl;
+      ParticleStatistics pinfo = ParticleInfo::calculateForceStatistics(&hemocell); double topN = param::df * 1.0e12;
+      pcout << "\t Force  -  min.: " << pinfo.min * topN << " pN, max.: " << pinfo.max * topN << " pN (" << pinfo.max << " lf), mean: " << pinfo.avg * topN << " pN" << endl;
 
       // Additional useful stats, if needed
       //finfo = FluidInfo::calculateForceStatistics(&hemocell);
