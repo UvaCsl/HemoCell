@@ -102,10 +102,12 @@ int main(int argc, char *argv[]) {
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
   unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
+  pcout << "(PipeFlow) Starting simulation..." << endl;
+
   while (hemocell.iter < tmax ) {
     hemocell.iterate();
     
-    //Set force as required after each iteration
+    //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                 Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
@@ -118,11 +120,14 @@ int main(int argc, char *argv[]) {
     // }
    
     if (hemocell.iter % tmeas == 0) {
-      pcout << "(main) Total number of Cells in the simulation: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell) << endl;
-      
-      // Useful stats, if needed
-      //FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell);
-      //pcout << "Fluid velocity, Minimum: " << finfo.min << " Maximum: " << finfo.max << " Average: " << finfo.avg << endl;
+      pcout << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
+      pcout << "\t Total number of cells in the simulation: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell) << endl;
+      FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell);
+      pcout << "\t Fluid velocity - min.: " << finfo.min << ", max.: " << finfo.max << ", mean: " << finfo.avg << endl;
+      ParticleStatistics pinfo = ParticleInfo::calculateForceStatistics(&hemocell);
+      pcout << "\t Force on particle - min.: " << pinfo.min << ", max.: " << pinfo.max << ", mean: " << pinfo.avg << endl;
+
+      // Additional useful stats, if needed
       //finfo = FluidInfo::calculateForceStatistics(&hemocell);
       //Set force as required after this function;
       // setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
@@ -131,14 +136,15 @@ int main(int argc, char *argv[]) {
       // pcout << "Fluid force, Minimum: " << finfo.min << " Maximum: " << finfo.max << " Average: " << finfo.avg << endl;
       // ParticleStatistics pinfo = ParticleInfo::calculateVelocityStatistics(&hemocell);
       // pcout << "Particle velocity, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << endl;
-      ParticleStatistics pinfo = ParticleInfo::calculateForceStatistics(&hemocell);
-      pcout << "(main) Force on particle - min.: " << pinfo.min << ", max.: " << pinfo.max << ", avg.: " << pinfo.avg << endl;
+
       hemocell.writeOutput();
     }
     if (hemocell.iter % tcheckpoint == 0) {
       hemocell.saveCheckPoint();
     }
   }
+
+  pcout << "(main) Simulation finished :) " << endl;
 
   return 0;
 }

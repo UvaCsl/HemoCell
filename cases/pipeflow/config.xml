@@ -10,34 +10,32 @@
 <ibm>
     <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5] -->
     <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
-    <stepMaterialEvery>20</stepMaterialEvery>
+    <stepMaterialEvery> 20 </stepMaterialEvery> <!-- Update particle material model after this many fluid time steps. -->
+    <minForceLimit> 1e-3 </minForceLimit> <!-- Point of increase for integration steps -->
+    <maxForceLimit> 2e-3 </maxForceLimit> <!-- Point of decrease for integration steps -->
 </ibm>
 
 <domain>
-    <geometry>tube.stl</geometry>
-    <fluidEnvelope>1</fluidEnvelope>
+    <geometry> tube.stl </geometry>
+    <fluidEnvelope> 1 </fluidEnvelope>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
-    <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
+    <nuP> 1.1e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
     <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
-    <dt> 5e-8 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
-    <timeStepSize> -50 </timeStepSize> <!-- Update particle material model after how many fluid time steps. Set it to a negative value to enable adaptive time steps, where the abs() will sign the max step size. [Integer] -->
-    <minTimeStepSize> 4 </minTimeStepSize> <!-- Dont allow membrane integration steps size to go below this. -->
-    <minForce>1e-3</minForce> <!-- Point of increase for integration steps -->
-    <maxForce>2e-3</maxForce> <!-- Point of decrease for integration steps -->
+    <dt> 2e-8 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
     <refDirN> 64 </refDirN>  <!-- Number of numerical cell in the reference direction -->
     <blockSize> -1 </blockSize>
-    <kBT>4.100531391e-21</kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
+    <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
     <Re> 1 </Re>   <!--Reynolds number-->
-    <particleEnvelope>20</particleEnvelope>
+    <particleEnvelope> 20 </particleEnvelope>
     <kRep> 2e-22 </kRep> <!-- Repulsion Constant -->
     <RepCutoff> 0.7 </RepCutoff> <!-- RepulsionCutoff -->
 </domain>
 
 <sim>
-    <tmax> 1000 </tmax> <!-- total number of iterations -->
-    <tmeas>  100 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint> 10000 </tcheckpoint> 
+    <tmax> 1000000 </tmax> <!-- total number of iterations -->
+    <tmeas>  5000 </tmeas> <!-- interval after which data is written --> 
+    <tcheckpoint> 20000 </tcheckpoint> 
     <tbalance> 100 </tbalance> <!-- interval after which balance is performed --> 
 </sim>
 

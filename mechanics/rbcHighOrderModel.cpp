@@ -25,7 +25,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
     vector<double> triangle_areas;
     vector<Array<double,3>> triangle_normals; 
 
-
+    // Per-triangle calculations
     for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
       const Array<double,3> & v0 = cell[triangle[0]]->position;
       const Array<double,3> & v1 = cell[triangle[1]]->position;
@@ -38,7 +38,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const double v021 = v0[0]*v2[1]*v1[2];
       const double v102 = v1[0]*v0[1]*v2[2];
       const double v012 = v0[0]*v1[1]*v2[2];
-      volume += (1.0/6.0)*(-v210+v120+v201-v021-v102+v012);
+      volume += (-v210+v120+v201-v021-v102+v012); // the factor of 1/6 moved to after the summation -> saves a few flops
       
       //Area
       double area; 
@@ -51,53 +51,17 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       //area force magnitude
       const double afm = k_area * (areaRatio+areaRatio/(0.09-areaRatio*areaRatio));
 
-        Array<double,3> centroid;
-        centroid[0] = (v0[0]+v1[0]+v2[0])/3.0;
-        centroid[1] = (v0[1]+v1[1]+v2[1])/3.0;
-        centroid[2] = (v0[2]+v1[2]+v2[2])/3.0;
-        Array<double,3> av0 = centroid - v0;
-        Array<double,3> av1 = centroid - v1;
-        Array<double,3> av2 = centroid - v2;
+      Array<double,3> centroid;
+      centroid[0] = (v0[0]+v1[0]+v2[0])/3.0;
+      centroid[1] = (v0[1]+v1[1]+v2[1])/3.0;
+      centroid[2] = (v0[2]+v1[2]+v2[2])/3.0;
+      Array<double,3> av0 = centroid - v0;
+      Array<double,3> av1 = centroid - v1;
+      Array<double,3> av2 = centroid - v2;
 
-      // if(afm > 0) { // We need to contract the face
-        *cell[triangle[0]]->force_area += afm*av0;
-        *cell[triangle[1]]->force_area += afm*av1;
-        *cell[triangle[2]]->force_area += afm*av2;
-      // }
-      // else { // We need to expand it, so we reverse their length, the farthest vertex is forced the least
-      //   // One possible expansion
-      //   double l0 = norm(av0);
-      //   double l1 = norm(av1);
-      //   double l2 = norm(av2);
-      //   double sum_l = l0+l1+l2;  
-      //   *cell[triangle[0]]->force_area += afm / l0 * (sum_l-(l1+l2)) * av0;
-      //   *cell[triangle[1]]->force_area += afm / l1 * (sum_l-(l0+l2)) * av1;
-      //   *cell[triangle[2]]->force_area += afm / l2 * (sum_l-(l0+l1)) * av2;
-        
-        // Another version
-        // double l0 = norm(v1-v2);
-        // double l1 = norm(v2-v0);
-        // double l2 = norm(v0-v1);
-        // double sum_l = l0+l1+l2;
-        // *cell[triangle[0]]->force_area += afm / sum_l * l0 * av0;
-        // *cell[triangle[1]]->force_area += afm / sum_l * l1 * av1;
-        // *cell[triangle[2]]->force_area += afm / sum_l * l2 * av2;
-
-        // Yet another version
-        // Array<double,3> av0;
-        // crossProduct(v1-v2,t_normal,av0);
-        // Array<double,3> av1;
-        // crossProduct(v2-v0,t_normal,av1);
-        // Array<double,3> av2;
-        // crossProduct(v0-v1,t_normal,av2);
-        // *cell[triangle[0]]->force_area -= afm*av1*0.5; //av1 edge force is divided over two neighbouring edges
-        // *cell[triangle[0]]->force_area -= afm*av2*0.5;
-        // *cell[triangle[1]]->force_area -= afm*av0*0.5;
-        // *cell[triangle[1]]->force_area -= afm*av2*0.5;
-        // *cell[triangle[2]]->force_area -= afm*av0*0.5;
-        // *cell[triangle[2]]->force_area -= afm*av1*0.5; //av1 edge force is divided over two neighbouring edges
-      // }
-
+      *cell[triangle[0]]->force_area += afm*av0;
+      *cell[triangle[1]]->force_area += afm*av1;
+      *cell[triangle[2]]->force_area += afm*av2;
 
       //Store values necessary later
       triangle_areas.push_back(area);
@@ -106,6 +70,8 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       triangle_n++;
     }
     
+    volume *= (1.0/6.0);
+
     //Volume
     const double volume_frac = (volume-cellConstants.volume_eq)/cellConstants.volume_eq;
     const double volume_force = -k_volume * volume_frac/(0.01-volume_frac*volume_frac);
@@ -113,7 +79,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
     triangle_n = 0;
 
     for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
-      //Fixed volume force per area
+      // Scale volume force with local face area
       const Array<double, 3> local_volume_force = (volume_force*triangle_normals[triangle_n])*(triangle_areas[triangle_n]/cellConstants.area_mean_eq);
       *cell[triangle[0]]->force_volume += local_volume_force;
       *cell[triangle[1]]->force_volume += local_volume_force;
@@ -123,7 +89,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
     }
 
 
-    // Edges
+    // Per-edge calculations
     int edge_n=0;
     for (const Array<plint,2> & edge : cellConstants.edge_list) {
       const Array<double,3> & v0 = cell[edge[0]]->position;
@@ -136,25 +102,11 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const double edge_frac = (edge_length - /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n])
                                / /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n];
       
-      // if (edge_frac > 0) {
-        const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(9.0-edge_frac*edge_frac));   // allows at max. 120% stretch
-        const Array<double,3> force = edge_uv*edge_force_scalar;
-        *cell[edge[0]]->force_link += force;
-        *cell[edge[1]]->force_link -= force;
-      // TODO: for proper contraction a different tau_link might be needed (e.g. > 1.0)
-      //      instead of making it softer
-      // } else{
-      //     const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(100.0-edge_frac*edge_frac));   // allows at max. 120% stretch
-      //     const Array<double,3> force = edge_uv*edge_force_scalar;
-      //     *cell[edge[0]]->force_link += force;
-      //     *cell[edge[1]]->force_link -= force;
-      //    // less stiff compression resistance -> let compression be dominated
-      //    // by area conservation force
-      //   // const double edge_force_scalar = k_link * edge_frac * edge_frac * edge_frac;
-      //   // const Array<double,3> force = edge_uv*edge_force_scalar;
-      //   // *cell[edge[0]]->force_link += force;
-      //   // *cell[edge[1]]->force_link -= force;
-      // }
+      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch
+      const Array<double,3> force = edge_uv*edge_force_scalar;
+      *cell[edge[0]]->force_link += force;
+      *cell[edge[1]]->force_link -= force;
+
 
       // calculate triangle normals, this should be in a function
 
@@ -188,14 +140,13 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       //calculate resulting bending force
       const double angle_frac = cellConstants.edge_angle_eq_list[edge_n]/*cellConstants.angle_mean_eq*/ - angle;
 
-      const double force_magnitude = - k_bend * (angle_frac + angle_frac / ( 2.467 - (angle_frac * angle_frac)));
+      const double force_magnitude = - k_bend * (angle_frac + angle_frac / ( 2.467 - (angle_frac * angle_frac))); // tau_b = pi/2
 
       //TODO make bending force differ with area, V1 and V2 are unit vectors right now!
       const Array<double,3> v1v2 = (V1 + V2)*0.5; 
       const Array<double,3> bending_force = force_magnitude*v1v2;
       *cell[edge[0]]->force_bending += bending_force;
       *cell[edge[1]]->force_bending += bending_force;
-      //TODO Negate the force with 4 point bending
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= force_magnitude * V1;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= force_magnitude * V2;
 
@@ -256,7 +207,7 @@ double RbcHighOrderModel::calculate_kLink(Config & cfg, MeshMetrics<double> & me
   double kLink = cfg["MaterialModel"]["kLink"].read<double>();
   double persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
   //TODO: It should scale with the number of surface points!
-  double plc = persistenceLengthFine/param::dx; //* sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kaniadakis magic
+  double plc = persistenceLengthFine/param::dx;
   kLink *= param::kBT_lbm/plc;
   return kLink;
 }
