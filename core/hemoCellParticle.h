@@ -30,6 +30,7 @@ private:
     std::vector<double> weights;
 
 public:
+  ~HemoCellParticle(){};
   HemoCellParticle(const HemoCellParticle & copy) {
     kernelLocations = copy.kernelLocations;
     kernelWeights = copy.kernelWeights;

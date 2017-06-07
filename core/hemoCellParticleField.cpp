@@ -45,54 +45,51 @@ HemoCellParticleField* HemoCellParticleField::clone() const
 }
 
 void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle) {
-    //Box3D finalDomain;
-    //plint x,y,z;
-    HemoCellParticle * local_sparticle;
-    Array<double,3> pos = particle->position;
+  //Box3D finalDomain;
+  //plint x,y,z;
+  HemoCellParticle * local_sparticle;
+  Array<double,3> pos = particle->position;
 
 
-    while (particles_per_type.size()<=particle->celltype) {
-      particles_per_type.push_back(std::vector<unsigned int>());
-    }
+  while (particles_per_type.size()<=particle->celltype) {
+    particles_per_type.push_back(std::vector<unsigned int>());
+  }
 
-    if( this->isContainedABS(pos, this->getBoundingBox()) )
-    {
-      //check if we have particle already, if so, we must overwrite but not
-      //forget to delete the old entry
-      if ((!(particles_per_cell.find(particle->cellId) == 
-           particles_per_cell.end())) && particles_per_cell[particle->cellId][particle->vertexId] != -1) {
-          local_sparticle =  &particles[particles_per_cell[particle->cellId][particle->vertexId]];
+  if( this->isContainedABS(pos, this->getBoundingBox()) )
+  {
+    //check if we have particle already, if so, we must overwrite but not
+    //forget to delete the old entry
+    if ((!(particles_per_cell.find(particle->cellId) == 
+      particles_per_cell.end())) && particles_per_cell[particle->cellId][particle->vertexId] != -1) {
+      local_sparticle =  &particles[particles_per_cell[particle->cellId][particle->vertexId]];
 
-          //If our particle is local, do not replace it, envelopes are less important
-          if (isContainedABS(local_sparticle->position, getBoundingBox())) {
-           
-          } else {
-            //We have the particle already, replace it
-            *local_sparticle = *particle;
-          }
-          //If the pointers aren't the same repoint we shouldn't delete either
-          //if(!(particle==local_sparticle)) {
-            particle = local_sparticle;
-          //}
+      //If our particle is local, do not replace it, envelopes are less important
+      if (isContainedABS(local_sparticle->position, localDomain)) {
+
       } else {
-        //new entry
-        particles.push_back(*particle);
-        //delete particle;
-        particle = &particles.back();
-        
-        particles_per_type[particle->celltype].push_back(particles.size()-1); //last entry
+        //We have the particle already, replace it
+        *local_sparticle = *particle;
+        particle = local_sparticle;
+
+        //Check if the cell is now  local (lpc array)
         if(this->isContainedABS(pos, localDomain)) {
           lpc[particle->cellId] = true;
         }
-          
-        insert_ppc(particle, particles.size()-1);
+      }
+    } else {
+      //new entry
+      particles.push_back(*particle);
+      particle = &particles.back();
+
+      particles_per_type[particle->celltype].push_back(particles.size()-1); //last entry
+      if(this->isContainedABS(pos, localDomain)) {
+        lpc[particle->cellId] = true;
       }
 
-      particle->setTag(-1);
+      insert_ppc(particle, particles.size()-1);
     }
-    else {
-        //delete particle;
-    }
+    particle->setTag(-1);
+  }
 }
 
 void HemoCellParticleField::insert_ppc(HemoCellParticle* sparticle, unsigned int index) {
@@ -118,13 +115,10 @@ void HemoCellParticleField::removeParticles(plint tag) {
     particles.clear();
     particles.reserve(remainingParticles.size());
 
-    for (pluint i=0; i<remainingParticles.size(); ++i) {
-       if (remainingParticles[i].getTag() == tag) {
-         //delete remainingParticles[i];
-       }
-       else {
-           addParticle(this->getBoundingBox(), &remainingParticles[i]);
-       }
+    for (HemoCellParticle & particle : remainingParticles) {
+      if (!(particle.getTag() == tag)) {
+        addParticle(this->getBoundingBox(), &particle);
+      }
     }
 }
 
@@ -141,16 +135,12 @@ void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
     particles.clear();
     particles.reserve(remainingParticles.size());
 
-    
-    for (pluint i=0; i<remainingParticles.size(); ++i) {
-       pos = remainingParticles[i].position;
-       intersect(domain, this->getBoundingBox(), finalDomain);
-       if (this->isContainedABS(pos,finalDomain) && remainingParticles[i].getTag() == tag) {
-         //delete remainingParticles[i];
-       }
-       else {
-           addParticle(this->getBoundingBox(), &remainingParticles[i]);
-       }
+    intersect(domain, this->getBoundingBox(), finalDomain);
+
+    for (HemoCellParticle & particle : remainingParticles) {
+      if (!(this->isContainedABS(particle.position,finalDomain) && particle.getTag() == tag)) {
+        addParticle(this->getBoundingBox(), &particle);
+      }
     }
 }
 
@@ -167,16 +157,12 @@ void HemoCellParticleField::removeParticles(Box3D domain) {
     particles.clear();
     particles.reserve(remainingParticles.size());
 
+    intersect(domain, this->getBoundingBox(), finalDomain);
 
-    for (pluint i=0; i<remainingParticles.size(); ++i) {
-       pos = remainingParticles[i].position;
-       intersect(domain, this->getBoundingBox(), finalDomain);
-       if (this->isContainedABS(pos,finalDomain)) {
-         //delete remainingParticles[i];
-       }
-       else {
-           addParticle(this->getBoundingBox(), &remainingParticles[i]);
-       }
+    for (HemoCellParticle & particle : remainingParticles) {
+      if (!(this->isContainedABS(particle.position,finalDomain))) {
+        addParticle(this->getBoundingBox(), &particle);
+      }
     }
 }
 
