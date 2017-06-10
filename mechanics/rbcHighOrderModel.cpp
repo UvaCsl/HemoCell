@@ -8,7 +8,8 @@ RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellFie
                   k_area( RbcHighOrderModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
                   k_link( RbcHighOrderModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
                   k_bend( RbcHighOrderModel::calculate_kBend(modelCfg_) ),
-                  eta( RbcHighOrderModel::calculate_eta(modelCfg_) )
+                  eta_m( RbcHighOrderModel::calculate_etaM(modelCfg_) ),
+                  eta_v( RbcHighOrderModel::calculate_etaV(modelCfg_) )
     {};
 
 void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, map<int,bool> & lpc, pluint ctype) {
@@ -92,13 +93,13 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
     // Per-edge calculations
     int edge_n=0;
     for (const Array<plint,2> & edge : cellConstants.edge_list) {
-      const Array<double,3> & v0 = cell[edge[0]]->position;
-      const Array<double,3> & v1 = cell[edge[1]]->position;
+      const Array<double,3> & p0 = cell[edge[0]]->position;
+      const Array<double,3> & p1 = cell[edge[1]]->position;
 
       // Link force
-      const Array<double,3> edge_v = v1-v0;
-      const double edge_length = norm(edge_v);
-      const Array<double,3> edge_uv = edge_v/edge_length;
+      const Array<double,3> edge_vec = p1-p0;
+      const double edge_length = norm(edge_vec);
+      const Array<double,3> edge_uv = edge_vec/edge_length;
       const double edge_frac = (edge_length - /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n])
                                / /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n];
       
@@ -107,9 +108,16 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       *cell[edge[0]]->force_link += force;
       *cell[edge[1]]->force_link -= force;
 
+      // Membrane viscosity of bilipid layer
+      // F = eta * (dv/l) * l. 
+      const Array<double,3> rel_vel = cell[edge[1]]->v - cell[edge[0]]->v;
+      const Array<double,3> rel_vel_projection = dot(rel_vel, edge_uv) * edge_uv;
+      const Array<double,3> Fvisc_memb = eta_m * rel_vel_projection;
+      *cell[edge[0]]->force_visc += Fvisc_memb;
+      *cell[edge[1]]->force_visc -= Fvisc_memb; 
+
 
       // calculate triangle normals, this should be in a function
-
       const plint b0 = cellConstants.edge_bending_triangles_list[edge_n][0];
       const plint b1 = cellConstants.edge_bending_triangles_list[edge_n][1];
 
@@ -129,7 +137,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 
       //calculate angle
       double angle = angleBetweenVectors(V1, V2);
-      const plint sign = dot(x2-v0, V2) >= 0 ? 1 : -1;
+      const plint sign = dot(x2-p0, V2) >= 0 ? 1 : -1;
       if (sign <= 0) {
         angle = 2 * PI - angle;
       }
@@ -139,7 +147,6 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 
       //calculate resulting bending force
       const double angle_frac = cellConstants.edge_angle_eq_list[edge_n]/*cellConstants.angle_mean_eq*/ - angle;
-
       const double force_magnitude = - k_bend * (angle_frac + angle_frac / ( 2.467 - (angle_frac * angle_frac))); // tau_b = pi/2
 
       //TODO make bending force differ with area, V1 and V2 are unit vectors right now!
@@ -151,16 +158,18 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= force_magnitude * V2;
 
 
-      // Viscosity based on relative vertex velocity
+      // Volume viscosity of cytoplasm based on relative outer vertex velocity
+      // F = eta * (dv/2l) * area. | area = sqrt(3)*l^2/4 => F = eta * dv * sqrt(3)/8 * l
       const Array<double,3> outer_end_rel_vel = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->v 
                                               - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->v;
       const Array<double,3> section = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->position 
                                     - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
       const Array<double,3> section_dir = section / norm(section);
-      const double norm_vel = dot(outer_end_rel_vel, section_dir); // relative velocity magn. between the points
-      const double visc_mag = eta * norm_vel * 0.5;
-      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_visc +=  visc_mag * section_dir;
-      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_visc -=  visc_mag * section_dir;                            
+      const Array<double,3> vel_projection = dot(outer_end_rel_vel, section_dir) * section_dir; // relative velocity magn. between the points projected on the line between them
+      const Array<double,3> vel_rejection = outer_end_rel_vel - vel_projection;
+      const Array<double,3> Fvisc_vol = eta_v * vel_rejection * 0.2165 * cellConstants.edge_mean_eq; // assuming similar triangle areas
+      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_visc +=  Fvisc_vol * 0.5 ;
+      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_visc -=  Fvisc_vol * 0.5;                            
 
       edge_n++;
     }
@@ -174,14 +183,19 @@ void RbcHighOrderModel::statistics() {
     pcout << "\t k_area:   " << k_area << std::endl; 
     pcout << "\t k_bend: : " << k_bend << std::endl; 
     pcout << "\t k_volume: " << k_volume << std::endl;
-    pcout << "\t eta:      " << eta << std::endl;
+    pcout << "\t eta_m:    " << eta_m << std::endl;
+    pcout << "\t eta_v:    " << eta_v << std::endl;
 };
 
 
 // Provide methods to calculate and scale to coefficients from here
 
-double RbcHighOrderModel::calculate_eta(Config & cfg ){
-  return cfg["MaterialModel"]["eta"].read<double>() * param::dx * param::dt / param::dm;
+double RbcHighOrderModel::calculate_etaV(Config & cfg ){
+  return cfg["MaterialModel"]["eta_v"].read<double>() * param::dx * param::dt / param::dm; //== dx^2/dN/dt
+};
+
+double RbcHighOrderModel::calculate_etaM(Config & cfg ){
+  return cfg["MaterialModel"]["eta_m"].read<double>() * param::dx / param::dt / param::df;
 };
 
 double RbcHighOrderModel::calculate_kBend(Config & cfg ){

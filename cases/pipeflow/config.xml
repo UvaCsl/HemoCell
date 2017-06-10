@@ -20,22 +20,22 @@
     <fluidEnvelope> 1 </fluidEnvelope>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.1e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
-    <dx> 7.5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
-    <dt> 2e-8 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
+    <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dt> 5e-8 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
     <refDirN> 64 </refDirN>  <!-- Number of numerical cell in the reference direction -->
     <blockSize> -1 </blockSize>
     <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
-    <Re> 1 </Re>   <!--Reynolds number-->
-    <particleEnvelope> 25 </particleEnvelope>
+    <Re> 0.5 </Re>   <!--Reynolds number-->
+    <particleEnvelope> 35 </particleEnvelope>
     <kRep> 2e-22 </kRep> <!-- Repulsion Constant -->
     <RepCutoff> 0.7 </RepCutoff> <!-- RepulsionCutoff -->
 </domain>
 
 <sim>
-    <tmax> 1000 </tmax> <!-- total number of iterations -->
-    <tmeas>  50 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint> 200 </tcheckpoint> 
+    <tmax> 500000 </tmax> <!-- total number of iterations -->
+    <tmeas>  2000 </tmeas> <!-- interval after which data is written --> 
+    <tcheckpoint> 10000 </tcheckpoint> 
     <tbalance> 100 </tbalance> <!-- interval after which balance is performed --> 
 </sim>
 
