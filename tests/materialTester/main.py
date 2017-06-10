@@ -42,11 +42,12 @@ def dynamic_stretch(force):
         if np.sqrt(np.inner(v,v))<v_eps:
             break
     
-    stretch_end = model.mesh.getVerticalStretch() * 0.5
-    
-    young = f_stretch * 1e6 * l_eq / (l_eq * (stretch_end - l_eq))
+    stretch_end = model.mesh.getVerticalStretch()
+    dfl = 2.0 * l_eq#2.0 * l_eq*np.cos(np.pi/6.0)
+    dl = stretch_end - 2.0 * l_eq                                           
+    young = force * 1e6 * 2.0*l_eq / (dfl * dl)
         
-    print "After ", iteration," iterations -> final stretch: ", stretch_end, " (", stretch_end / l_eq * 100.0 ,"%), force: ",  f_stretch    
+    print "After ", iteration," iterations -> final stretch: ", stretch_end, " (", stretch_end / (2.0*l_eq) * 100.0 ,"%), force: ",  f_stretch    
     print "Approx. Young mod. [uN/m]: ", young   
     return (timeStep, stretch, model.mesh.getPositions())
 
@@ -55,6 +56,7 @@ def static_stretch(disloc):
     
     # Constructing patch
     model = RbcHO(l_eq)
+    a0 = model.mesh.calcTotalArea()
     
     # Move verticies by disloc
     
@@ -64,6 +66,8 @@ def static_stretch(disloc):
     # Right side
     for i in range(4,7):
         model.mesh.nodes[i].position[0] += disloc
+
+    a = model.mesh.calcTotalArea()
                                           
     # Compute arising forces
     model.mesh.resetForces()
@@ -73,15 +77,22 @@ def static_stretch(disloc):
     for i in range(1,4):
         force += model.mesh.nodes[i].force
 
-    stretch_end = model.mesh.getVerticalStretch() * 0.5    
-                             
     force_mag = np.sqrt(np.inner(force,force))
-    compr = force_mag * 1e6 * l_eq / (l_eq * (stretch_end - l_eq))
     
-    print "Force resonse: ", force_mag, ", for stretch: ",  stretch_end
-    print "Approx. compression mod. [uN/m]: ", compr
+    dfl = 2.0 * l_eq*np.cos(np.pi/6.0) #2.0 * l_eq
+    da = a - a0
+    compr2d = force_mag * 1e6 * a0 / (dfl * da)
+    
+    print "Approx. 2D compression mod. [uN/m]: ", compr2d 
+    
+#    stretch_end = model.mesh.getVerticalStretch()                             
+#    dl = stretch_end - 2.0 * l_eq                                           
+#    compr = force_mag * 1e6 * 2.0*l_eq / (2.0 * l_eq * dl)  
+#    print "Force resonse: ", force_mag, ", for stretch: ",  stretch_end
+#    print "Approx. lin. compression mod. [uN/m]: ", compr
+                                   
                               
-    return (young, force, model.mesh.getPositions())      
+    return (compr2d, force, model.mesh.getPositions())      
 
 
 def static_shear(disloc):

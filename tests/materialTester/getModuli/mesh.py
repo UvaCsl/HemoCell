@@ -107,7 +107,7 @@ class Mesh(object):
     def calcTotalArea(self):
         a = 0.0
         for f in self.faces:
-            a += self.calcFaceArea(f[0], f[1], f[2])
+            a += self.calcFaceArea(f[0].position, f[1].position, f[2].position)
         return a
     
     def calcFaceNormal(self, v0, v1, v2):
