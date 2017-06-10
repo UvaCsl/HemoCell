@@ -59,13 +59,22 @@ def static_stretch(disloc):
     a0 = model.mesh.calcTotalArea()
     
     # Move verticies by disloc
-    
-    # Left side
-    for i in range(1,4):
-        model.mesh.nodes[i].position[0] -= disloc
-    # Right side
-    for i in range(4,7):
-        model.mesh.nodes[i].position[0] += disloc
+#    
+#    # Left side
+#    for i in range(1,4):
+#        model.mesh.nodes[i].position[0] -= disloc
+#    # Right side
+#    for i in range(4,7):
+#        model.mesh.nodes[i].position[0] += disloc
+
+    dl = disloc * np.cos(np.pi/6.0)
+    dd = disloc * 0.5
+    model.mesh.nodes[1].position += [-dd,  dl, 0.0]
+    model.mesh.nodes[2].position += [-disloc, 0.0, 0.0]
+    model.mesh.nodes[3].position += [-dd, -dl, 0.0]
+    model.mesh.nodes[4].position += [dd, -dl, 0.0]
+    model.mesh.nodes[5].position += [disloc, 0.0, 0.0]
+    model.mesh.nodes[6].position += [dd, dl, 0.0]   
 
     a = model.mesh.calcTotalArea()
                                           
@@ -120,7 +129,7 @@ def static_shear(disloc):
         force += model.mesh.nodes[i].force
                                  
     force_mag = np.sqrt(np.inner(force,force))
-    shear = force_mag * 1e6 * dy / (dy * disloc)
+    shear = force_mag * 1e6 * dy / (2.0 * l_eq * disloc)
     
     print "Force resonse: ", force_mag, ", for shear: ",  dy/disloc
     print "Approx. shear mod. [uN/m]: ", shear
@@ -135,10 +144,15 @@ if __name__ == "__main__":
 
     
     print "\n ### Test: Static stretching ###"
-    young, f, p2 = static_stretch(l_eq*0.1)
+    K, f, p2 = static_stretch(l_eq*0.1)
     
     print "\n ### Test: Static shearing ###"
-    shear, f3, p3 = static_shear(l_eq*0.1)
+    mu0, f3, p3 = static_shear(l_eq*0.1)
+    
+    young = 4.0 * K * mu0 / (K + mu0)
+    
+    print "\n ### Derived quantities ###"
+    print "Young modulus: ", young, " [uN/m]"
     
     # PLotting
     import matplotlib.pyplot as plt    
@@ -156,4 +170,5 @@ if __name__ == "__main__":
     plt.xlim([-2.0*l_eq, 2.0*l_eq])
     plt.ylim([-2.0*l_eq, 2.0*l_eq])
     plt.legend(loc='upper left');
+    plt.axes().set_aspect('equal', 'datalim')
     plt.show()
