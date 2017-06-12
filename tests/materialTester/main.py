@@ -150,25 +150,27 @@ if __name__ == "__main__":
     mu0, f3, p3 = static_shear(l_eq*0.1)
     
     young = 4.0 * K * mu0 / (K + mu0)
+    poisson = (3.0 * K - 2.0 * mu0) / (2.0*(3.0*K + mu0))
     
     print "\n ### Derived quantities ###"
     print "Young modulus: ", young, " [uN/m]"
+    print "Poisson ratio: ", poisson
     
     # PLotting
-    import matplotlib.pyplot as plt    
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    ax1.scatter(p[0], p[1], c='b', marker="o", label='dyn. stretch')
-    ax1.scatter(p2[0], p2[1], c='r', marker="o", label='stat. stretch')
-    ax1.scatter(p3[0], p3[1], c='g', marker="o", label='stat. shear')
+    # import matplotlib.pyplot as plt    
+    # fig = plt.figure()
+    # ax1 = fig.add_subplot(111)
+    # ax1.scatter(p[0], p[1], c='b', marker="o", label='dyn. stretch')
+    # ax1.scatter(p2[0], p2[1], c='r', marker="o", label='stat. stretch')
+    # ax1.scatter(p3[0], p3[1], c='g', marker="o", label='stat. shear')
 
-    # Ref.
-    model = RbcHO(l_eq)
-    pr = model.mesh.getPositions()
-    ax1.scatter(pr[0], pr[1], c='y', marker="v", label='Undeformed')
+    # # Ref.
+    # model = RbcHO(l_eq)
+    # pr = model.mesh.getPositions()
+    # ax1.scatter(pr[0], pr[1], c='y', marker="v", label='Undeformed')
 
-    plt.xlim([-2.0*l_eq, 2.0*l_eq])
-    plt.ylim([-2.0*l_eq, 2.0*l_eq])
-    plt.legend(loc='upper left');
-    plt.axes().set_aspect('equal', 'datalim')
-    plt.show()
+    # plt.xlim([-2.0*l_eq, 2.0*l_eq])
+    # plt.ylim([-2.0*l_eq, 2.0*l_eq])
+    # plt.legend(loc='upper left');
+    # plt.axes().set_aspect('equal', 'datalim')
+    # plt.show()
