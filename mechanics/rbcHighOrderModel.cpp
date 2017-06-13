@@ -136,14 +136,16 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const Array<double,3> x2 = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
 
       //calculate angle
-      double angle = angleBetweenVectors(V1, V2);
-      const plint sign = dot(x2-p0, V2) >= 0 ? 1 : -1;
-      if (sign <= 0) {
-        angle = 2 * PI - angle;
-      }
-      if (angle > PI) {
-        angle = angle - 2*PI; 
-      }
+      // double angle = angleBetweenVectors(V1, V2);
+      // const plint sign = dot(x2-p0, V2) >= 0 ? 1 : -1;
+      // if (sign <= 0) {
+      //   angle = 2 * PI - angle;
+      // }
+      // if (angle > PI) {
+      //   angle = angle - 2*PI; 
+      // }
+
+      double angle = getAngleBetweenFaces(V1, V2, edge_uv);
 
       //calculate resulting bending force
       const double angle_frac = cellConstants.edge_angle_eq_list[edge_n]/*cellConstants.angle_mean_eq*/ - angle;

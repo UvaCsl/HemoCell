@@ -4,6 +4,7 @@
 class CommonCellConstants;
 
 #include "hemocell_internal.h"
+#include "geometryUtils.h"
 
 //Forward declaration:
 class HemoCellField;

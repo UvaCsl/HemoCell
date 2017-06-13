@@ -58,7 +58,7 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     //Calculate eq edges angles
     vector<double> edge_angle_eq_list_;
     Array<double,3> x2 = {0.0,0.0,0.0};
-    double angle;
+
     for (const Array<plint,2> & edge : edge_list_) {
       const vector<plint> adjacentTriangles = cellField.meshElement.getAdjacentTriangleIds(edge[0], edge[1]);
       const Array<double,3> x1 = cellField.meshElement.getVertex(edge[0]);
@@ -74,17 +74,25 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       const Array<double,3> V1 = cellField.meshElement.computeTriangleNormal(adjacentTriangles[0]);
       const Array<double,3> V2 = cellField.meshElement.computeTriangleNormal(adjacentTriangles[1]);
 
-      angle = angleBetweenVectors(V1, V2);
+      // double angle = angleBetweenVectors(V1, V2);
 
-      ///TODO does this gives us a correct "sign"?
-      const plint sign = dot(x2-x1, V2) >= 0 ? 1 : -1;
-      if (sign <= 0) {
-        angle = 2 * PI - angle;
-      }
+      // ///TODO does this gives us a correct "sign"?
+      // const plint sign = dot(x2-x1, V2) >= 0 ? 1 : -1;
+      // if (sign <= 0) {
+      //   angle = 2 * PI - angle;
+      // }
       
-      if (angle > PI) {
-        angle = angle - 2*PI;
-      }
+      // if (angle > PI) {
+      //   angle = angle - 2*PI;
+      // }
+
+      const Array<double,3> p0 = cellField.meshElement.getVertex(edge[0]);
+      const Array<double,3> p1 = cellField.meshElement.getVertex(edge[1]);
+
+      const Array<double,3> edge_vec = p1-p0;
+      const double edge_length = norm(edge_vec);
+      const Array<double,3> edge_uv = edge_vec/edge_length;
+      double angle = getAngleBetweenFaces(V1, V2, edge_uv);
       
       edge_angle_eq_list_.push_back(angle);
     }
