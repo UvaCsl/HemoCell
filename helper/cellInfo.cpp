@@ -13,10 +13,10 @@ void CellInformationFunctionals::calculate_vol_pos_area(HemoCell* hemocell) {
 void CellInformationFunctionals::CellVolume::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
   
-  for (const auto & pair : pf->lpc) {
+  for (const auto & pair : pf->get_lpc()) {
     double volume = 0.;
     const int & cid = pair.first;
-    const vector<int> & cell = pf->particles_per_cell[cid];
+    const vector<int> & cell = pf->get_particles_per_cell()[cid];
     const pluint ctype = pf->particles[cell[0]].celltype;
     for (Array<plint,3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
       const Array<double,3> & v0 = pf->particles[cell[triangle[0]]].position;
@@ -38,10 +38,10 @@ void CellInformationFunctionals::CellVolume::processGenericBlocks(Box3D domain, 
 void CellInformationFunctionals::CellArea::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
   
-  for (const auto & pair : pf->lpc) {
+  for (const auto & pair : pf->get_lpc()) {
     double total_area = 0.;
     const int & cid = pair.first;
-    const vector<int> & cell = pf->particles_per_cell[cid];
+    const vector<int> & cell = pf->get_particles_per_cell()[cid];
     const pluint ctype = pf->particles[cell[0]].celltype;
     for (Array<plint,3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
       const Array<double,3> & v0 = pf->particles[cell[triangle[0]]].position;
@@ -56,10 +56,10 @@ void CellInformationFunctionals::CellArea::processGenericBlocks(Box3D domain, st
 void CellInformationFunctionals::CellPosition::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
   
-  for (const auto & pair : pf->lpc) {
+  for (const auto & pair : pf->get_lpc()) {
     Array<double,3> position = {0.,0.,0.};
     const int & cid = pair.first;
-    const vector<int> & cell = pf->particles_per_cell[cid];
+    const vector<int> & cell = pf->get_particles_per_cell()[cid];
     for (const int pid : cell ) {
       position += pf->particles[pid].position;
     }
@@ -70,10 +70,10 @@ void CellInformationFunctionals::CellPosition::processGenericBlocks(Box3D domain
 void CellInformationFunctionals::CellStretch::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
   
-  for (const auto & pair : pf->lpc) {
+  for (const auto & pair : pf->get_lpc()) {
     double max_stretch = 0.;
     const int & cid = pair.first;
-    const vector<int> & cell = pf->particles_per_cell[cid];
+    const vector<int> & cell = pf->get_particles_per_cell()[cid];
     for (unsigned int i = 0 ; i < cell.size() - 1 ; i++ ) {
       for (unsigned int j = i + 1 ; j < cell.size() ; j ++) {
         double distance = sqrt( pow(pf->particles[cell[i]].position[0]-pf->particles[cell[j]].position[0],2) +
@@ -88,10 +88,10 @@ void CellInformationFunctionals::CellStretch::processGenericBlocks(Box3D domain,
 void CellInformationFunctionals::CellBoundingBox::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
   
-  for (const auto & pair : pf->lpc) {
+  for (const auto & pair : pf->get_lpc()) {
     Array<double,6> bbox;
     const int & cid = pair.first;
-    const vector<int> & cell = pf->particles_per_cell[cid];
+    const vector<int> & cell = pf->get_particles_per_cell()[cid];
     HemoCellParticle * particle = &pf->particles[cell[0]];
     
     bbox[0] = particle->position[0];
@@ -117,7 +117,7 @@ void CellInformationFunctionals::CellBoundingBox::processGenericBlocks(Box3D dom
 void CellInformationFunctionals::CellAtomicBlock::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
   
-  for (const auto & pair : pf->lpc) {
+  for (const auto & pair : pf->get_lpc()) {
     const int & cid = pair.first;
 
     info_per_cell[cid].blockId = pf->atomicBlockId;
@@ -126,10 +126,10 @@ void CellInformationFunctionals::CellAtomicBlock::processGenericBlocks(Box3D dom
 void CellInformationFunctionals::CellType::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
   
-  for (const auto & pair : pf->lpc) {
+  for (const auto & pair : pf->get_lpc()) {
     const int & cid = pair.first;
 
-    info_per_cell[cid].cellType = pf->particles[pf->particles_per_cell[cid][0]].celltype;
+    info_per_cell[cid].cellType = pf->particles[pf->get_particles_per_cell()[cid][0]].celltype;
   }
 }
 

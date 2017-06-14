@@ -25,6 +25,8 @@ void HemoCellParticleField::outputPositions(Box3D domain,vector<vector<double>>&
   name = "Position";
   output.clear();
   HemoCellParticle * sparticle;
+  map<int,bool> & lpc = get_lpc();
+  map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (particles_per_cell[cellid][0] == -1) { continue; }
@@ -53,6 +55,8 @@ void HemoCellParticleField::outputForceBending(Box3D domain,vector<vector<double
   name = "Bending force";
   output.clear();
   HemoCellParticle * sparticle;
+  map<int,bool> & lpc = get_lpc();
+  map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (particles_per_cell[cellid][0] == -1) { continue; }
@@ -80,6 +84,8 @@ void HemoCellParticleField::outputForceArea(Box3D domain,vector<vector<double>>&
   name = "Area force";
   output.clear();
   HemoCellParticle * sparticle;
+  map<int,bool> & lpc = get_lpc();
+  map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (particles_per_cell[cellid][0] == -1) { continue; }
@@ -107,6 +113,8 @@ void HemoCellParticleField::outputForceLink(Box3D domain,vector<vector<double>>&
   name = "Link force";
   output.clear();
   HemoCellParticle * sparticle;
+  map<int,bool> & lpc = get_lpc();
+  map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (particles_per_cell[cellid][0] == -1) { continue; }
@@ -133,6 +141,8 @@ void HemoCellParticleField::outputForceVolume(Box3D domain,vector<vector<double>
   name = "Volume force";
   output.clear();
   HemoCellParticle * sparticle;
+  map<int,bool> & lpc = get_lpc();
+  map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (particles_per_cell[cellid][0] == -1) { continue; }
@@ -153,6 +163,8 @@ void HemoCellParticleField::outputForceVisc(Box3D domain,vector<vector<double>>&
   name = "Viscous force";
   output.clear();
   HemoCellParticle * sparticle;
+  map<int,bool> & lpc = get_lpc();
+  map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (particles_per_cell[cellid][0] == -1) { continue; }
@@ -180,6 +192,8 @@ void HemoCellParticleField::outputForces(Box3D domain,vector<vector<double>>& ou
   name = "Total force";
   output.clear();
   HemoCellParticle * sparticle;
+  map<int,bool> & lpc = get_lpc();
+  map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (particles_per_cell[cellid][0] == -1) { continue; }
@@ -207,6 +221,8 @@ void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>>&
   name = "Triangles";
   output.clear();
   int counter = 0;
+  map<int,bool> & lpc = get_lpc();
+  map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (particles_per_cell[cellid][0] == -1) { continue; }

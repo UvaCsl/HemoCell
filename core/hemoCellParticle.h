@@ -97,8 +97,40 @@ public:
       force_area = &force; //These pointers are only changed for nice outputs
       force_link = &force; //These pointers are only changed for nice outputs
       force_bending = &force; //These pointers are only changed for nice outputs
+      force_visc = &force;
     }
 
+    HemoCellParticle & operator =(const HemoCellParticle & copy) {
+       kernelLocations = copy.kernelLocations;
+    kernelWeights = copy.kernelWeights;
+    grid_pos = copy.grid_pos;
+    position = copy.position;
+    v = copy.v;
+    force = copy.force;
+    force_total = copy.force_total;
+    vPrevious = copy.vPrevious;
+    if (&copy.force == copy.force_volume) {
+      force_volume = &force;
+      force_bending = &force;
+      force_link = &force;
+      force_area = &force;
+      force_visc = &force;
+    } else {
+      force_volume = copy.force_volume;
+      force_bending = copy.force_bending;
+      force_link = copy.force_link;
+      force_area = copy.force_area;
+      force_visc = copy.force_visc;
+    }
+    force_repulsion = copy.force_repulsion;
+    tag = copy.tag;
+    cellId = copy.cellId;
+    vertexId = copy.vertexId;
+    celltype = copy.celltype;
+    cellPos = copy.cellPos;
+    weights = copy.weights;
+      return *this;
+    }
     HemoCellParticle* clone() const {
         HemoCellParticle* sparticle = new HemoCellParticle(*this);
         sparticle->force_volume = &sparticle->force;
