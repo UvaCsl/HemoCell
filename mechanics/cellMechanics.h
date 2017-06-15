@@ -13,7 +13,7 @@ class CellMechanics {
   
   CellMechanics(HemoCellField & cellfield);
 
-  virtual void ParticleMechanics(map<int,vector<HemoCellParticle *>> &,map<int,bool> &, pluint ctype) = 0 ;
+  virtual void ParticleMechanics(map<int,vector<HemoCellParticle *>> &,const map<int,bool> &, pluint ctype) = 0 ;
   virtual void statistics() = 0;
 };
 #endif

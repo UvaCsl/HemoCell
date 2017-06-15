@@ -47,15 +47,15 @@ HemoCellParticleField* HemoCellParticleField::clone() const
     return new HemoCellParticleField(*this);
 }
 
-vector<vector<unsigned int>> & HemoCellParticleField::get_particles_per_type() { 
+const vector<vector<unsigned int>> & HemoCellParticleField::get_particles_per_type() { 
     if (!ppt_up_to_date) { update_ppt(); }
     return _particles_per_type;
   }
-map<int,vector<int>> & HemoCellParticleField::get_particles_per_cell() { 
+const map<int,vector<int>> & HemoCellParticleField::get_particles_per_cell() { 
     if (!ppc_up_to_date) { update_ppc(); }
     return _particles_per_cell;
   }
-map<int,bool> & HemoCellParticleField::get_lpc() { 
+const map<int,bool> & HemoCellParticleField::get_lpc() { 
     if (!lpc_up_to_date) { update_lpc(); }
     return _lpc;
   }
@@ -91,7 +91,7 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
   //plint x,y,z;
   HemoCellParticle * local_sparticle;
   Array<double,3> pos = particle->position;
-  map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
+  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
 
   //while (particles_per_type.size()<=particle->celltype) {
   //  particles_per_type.push_back(std::vector<unsigned int>());
@@ -102,8 +102,8 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
     //check if we have particle already, if so, we must overwrite but not
     //forget to delete the old entry
     if ((!(particles_per_cell.find(particle->cellId) == 
-      particles_per_cell.end())) && particles_per_cell[particle->cellId][particle->vertexId] != -1) {
-      local_sparticle =  &particles[particles_per_cell[particle->cellId][particle->vertexId]];
+      particles_per_cell.end())) && particles_per_cell.at(particle->cellId)[particle->vertexId] != -1) {
+      local_sparticle =  &particles[particles_per_cell.at(particle->cellId)[particle->vertexId]];
 
       //If our particle is local, do not replace it, envelopes are less important
       if (isContainedABS(local_sparticle->position, localDomain)) {
@@ -216,7 +216,7 @@ void HemoCellParticleField::findParticles (
     found.clear();
     PLB_ASSERT( contained(domain, this->getBoundingBox()) );
     Array<double,3> pos; 
-    vector<vector<unsigned int>> & particles_per_type = get_particles_per_type();
+    const vector<vector<unsigned int>> & particles_per_type = get_particles_per_type();
     if (!(particles_per_type.size() > type)) {return;} else {
     for (pluint i=0; i<particles_per_type[type].size(); ++i) {
         pos = particles[particles_per_type[type][i]].position;
@@ -275,14 +275,14 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
   //unintentionally, for now, catch it here; TODO, this can be done better
   int deleted = 0;
 
-  map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
+  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   //Warning, TODO, high complexity, should be rewritten 
   //For now abuse tagging and the remove function
   for ( const auto &lpc_it : particles_per_cell ) {
     int cellid = lpc_it.first;
     bool broken = false;
-    for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
-      if (particles_per_cell[cellid][i] == -1) {
+    for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
+      if (particles_per_cell.at(cellid)[i] == -1) {
         broken = true;
         break;
       }
@@ -291,14 +291,14 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
 
     //actually add to tobedeleted list
     bool warningIssued = false;
-    for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
-      if (particles_per_cell[cellid][i] == -1) {continue;}
-      if (particles[particles_per_cell[cellid][i]].celltype != ctype) {break;} //certainly a entry, therefore we check here if it is the right type, if not, exit
-      if (isContainedABS(particles[particles_per_cell[cellid][i]].position,localDomain) && verbose && !warningIssued) {
+    for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
+      if (particles_per_cell.at(cellid)[i] == -1) {continue;}
+      if (particles[particles_per_cell.at(cellid)[i]].celltype != ctype) {break;} //certainly a entry, therefore we check here if it is the right type, if not, exit
+      if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].position,localDomain) && verbose && !warningIssued) {
         pcout << "(HemoCell) (Delete Cells) WARNING! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
         warningIssued = true;
       }
-      particles[particles_per_cell[cellid][i]].setTag(1);
+      particles[particles_per_cell.at(cellid)[i]].setTag(1);
       deleted++;
     }
   } 
@@ -314,14 +314,14 @@ int HemoCellParticleField::deleteIncompleteCells(bool verbose) {
   //unintentionally, for now, catch it here; TODO, this can be done better
   int deleted = 0;
 
-  map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
+  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   //Warning, TODO, high complexity, should be rewritten 
   //For now abuse tagging and the remove function
   for ( const auto &lpc_it : particles_per_cell ) {
     int cellid = lpc_it.first;
     bool broken = false;
-    for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
-      if (particles_per_cell[cellid][i] == -1) {
+    for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
+      if (particles_per_cell.at(cellid)[i] == -1) {
         broken = true;
         break;
       }
@@ -330,13 +330,13 @@ int HemoCellParticleField::deleteIncompleteCells(bool verbose) {
 
     //actually add to tobedeleted list
     bool warningIssued = false;
-    for (pluint i = 0; i < particles_per_cell[cellid].size() ; i++) {
-      if (particles_per_cell[cellid][i] == -1) {continue;}
-      if (isContainedABS(particles[particles_per_cell[cellid][i]].position,localDomain) && verbose && !warningIssued) {
+    for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
+      if (particles_per_cell.at(cellid)[i] == -1) {continue;}
+      if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].position,localDomain) && verbose && !warningIssued) {
         pcout << "(HemoCell) (Delete Cells) WARNING! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
         warningIssued = true;
       }
-      particles[particles_per_cell[cellid][i]].setTag(1);
+      particles[particles_per_cell.at(cellid)[i]].setTag(1);
       deleted++;
     }
   } 
@@ -407,8 +407,8 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
   lpc_up_to_date = false; 
   ppt_up_to_date = false;
   map<int,vector<HemoCellParticle*>> * ppc_new = new map<int,vector<HemoCellParticle*>>();
-  map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  map<int,bool> & lpc = get_lpc();
+  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
+  const map<int,bool> & lpc = get_lpc();
   
   //Fill it here, probably needs optimization, ah well ...
   for (const auto & pair : particles_per_cell) {
