@@ -53,6 +53,14 @@ Choose collision operator for LBM.
 #endif
 #endif
 
+/*
+Force unconditional stability on the material model. Note: it will not make the model magically correct, only stable!
+FORCE_LIMIT sets the allowed maximal force coming from the constitutive model (in LBM units).
+*/
+#ifndef ENFORCE_STABILITY
+#define ENFORCE_STABILITY 1
+#define FORCE_LIMIT 0.01
+#endif
 
 /*
 Choose bending force implementation. This is a numerical modelling choice.
