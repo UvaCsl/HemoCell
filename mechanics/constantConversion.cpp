@@ -3,12 +3,11 @@
 //This class converses SI things to LBM things for classes like the HO model.
 #include "constantConversion.h"
 
-void Parameters::lbm_pipe_parameters(Config & cfg, Box3D domainBox) {
+void Parameters::lbm_base_parameters(Config & cfg) {
     dt = cfg["domain"]["dt"].read<double>();
     dx = cfg["domain"]["dx"].read<double>();
     nu_p = cfg["domain"]["nuP"].read<double>();
     rho_p = cfg["domain"]["rhoP"].read<double>();
-    re = cfg["domain"]["Re"].read<double>();
     kBT_p = cfg["domain"]["kBT"].read<double>();
 
     if (dt < 0.0 ) { //dt is not set, calculate it from nu_p and dx, tau is set to 1
@@ -23,45 +22,23 @@ void Parameters::lbm_pipe_parameters(Config & cfg, Box3D domainBox) {
 
     dm = rho_p * (dx * dx *dx);
     df = dm * dx / (dt * dt);
-
-    // TODO: This is only true for a pipe set along the x-axis.
-    //       Make some document note, that Re is calculated using Ny!
-    u_lbm_max = re * nu_lbm / domainBox.getNy();
+    f_limit = FORCE_LIMIT / 1.0e12 / df; // Changing pN to lbm force
 
     kBT_lbm = kBT_p/(df*dx);
 };
 
+void Parameters::lbm_pipe_parameters(Config & cfg, Box3D domainBox) {
+    Parameters::lbm_base_parameters(cfg);
+    re = cfg["domain"]["Re"].read<double>();
+    u_lbm_max = re * nu_lbm / domainBox.getNy();
+};
+
 void Parameters::lbm_shear_parameters(Config & cfg,double nx) {
+  Parameters::lbm_base_parameters(cfg);
   double shearrate_p = cfg["domain"]["shearrate"].read<double>();
-  nu_p = cfg["domain"]["nuP"].read<double>();
-  dx = cfg["domain"]["dx"].read<double>();
-  dt = cfg["domain"]["dt"].read<double>();
-  rho_p = cfg["domain"]["rhoP"].read<double>();
-  kBT_p = cfg["domain"]["kBT"].read<double>();
-
-
   re = (nx* (shearrate_p * (nx*0.5))) / nu_p;
-  
-  if (dt < 0.0 ) { //dt is not set, calculate it from nu_p and dx, tau is set to 1
-    tau = 1.0;
-    nu_lbm = 1.0/3.0 * (tau - 0.5);
-    dt = nu_lbm /nu_p * (dx*dx);
-    pcout << "(HemoCell) dt is set to *auto*. Tau will be set to 1!" << std::endl;
-  } else {
-    nu_lbm = nu_p * dt/ (dx*dx);
-    tau = 3.0 * nu_lbm + 0.5;
-  }
-  
-  dm = rho_p * (dx * dx *dx);
-  df = dm * dx / (dt * dt);
-
-  // TODO: This is only true for a pipe set along the x-axis.
-  //       Make some document note, that Re is calculated using Ny!
-  u_lbm_max = re * nu_lbm / nx;
-  
+  u_lbm_max = re * nu_lbm / nx;  
   shearrate_lbm = shearrate_p*dt;
-  kBT_lbm = kBT_p/(df*dx);
-
 }
 
 void Parameters::printParameters() {
@@ -73,6 +50,7 @@ void Parameters::printParameters() {
   pcout << "\t tau: \t" << tau << std::endl;
   pcout << "\t nu_lbm: \t" << nu_lbm << std::endl;
   pcout << "\t u_lb_max: \t" << u_lbm_max << std::endl;
+  pcout << "\t f_limit: \t" << f_limit << std::endl;
 }
 
 double Parameters::dt = 0.0;
@@ -90,4 +68,5 @@ double Parameters::shearrate_lbm = 0.0;
 double Parameters::kBT_lbm = 0.0;
 double Parameters::kBT_p = 0.0;
 double Parameters::ef_lbm = 0.0;
+double Parameters::f_limit = 0.0;
 #endif

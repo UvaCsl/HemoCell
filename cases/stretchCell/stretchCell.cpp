@@ -17,39 +17,29 @@ int main(int argc, char* argv[])
 	
 // ---------------------------- Calc. LBM parameters -------------------------------------------------
 	pcout << "(CellStretch) (Parameters) calculating shear flow parameters" << endl;
-	//double nxyz = 10*(1e-6/(*cfg)["domain"]["dx"].read<double>());
-  plint nx = 50;
-  plint ny = 25;
-  plint nz = 25;
-  (*cfg)["domain"]["dt"].read(param::dt);
-  (*cfg)["domain"]["dx"].read(param::dx);
-  (*cfg)["domain"]["nuP"].read(param::nu_p);
-  (*cfg)["domain"]["kBT"].read(param::kBT_p);
-  (*cfg)["domain"]["rhoP"].read(param::rho_p);
-  param::tau = 3.0 * (param::nu_p * param::dt / (param::dx * param::dx)) + 0.5;
-  param::nu_lbm = 1.0/3.0 * (param::tau - 0.5);
-  param::dm = param::rho_p * (param::dx * param::dx * param::dx);
-  param::df = param::dm * param::dx / (param::dt * param::dt);
+
+  param::lbm_base_parameters(*cfg);
+
   param::ef_lbm = (*cfg)["parameters"]["stretchForce"].read<double>()*1e-12 / param::df;
-  param::kBT_lbm = param::kBT_p/(param::df*param::dx);
+
   param::printParameters();
   
 	// ------------------------ Init lattice --------------------------------
+
+  plint nx = 50;
+  plint ny = 25;
+  plint nz = 25;
 
 	pcout << "(CellStretch) Initializing lattice: " << nx <<"x" << ny <<"x" << nz << " [lu]" << std::endl;
 
 	plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
 
-			hemocell.lattice = new MultiBlockLattice3D<double,DESCRIPTOR>(
-					defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
-					defaultMultiBlockPolicy3D().getBlockCommunicator(),
-					defaultMultiBlockPolicy3D().getCombinedStatistics(),
-					defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-	#if HEMOCELL_CFD_DYNAMICS == 1
-					new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
-	#elif HEMOCELL_CFD_DYNAMICS == 2
-					new GuoExternalForceMRTdynamics<T, DESCRIPTOR>(1.0/param::tau)); // Use with MRT dynamics!
-	#endif
+	hemocell.lattice = new MultiBlockLattice3D<double,DESCRIPTOR>(
+			defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
+			defaultMultiBlockPolicy3D().getBlockCommunicator(),
+			defaultMultiBlockPolicy3D().getCombinedStatistics(),
+			defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+			new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
 
 
 	hemocell.lattice->toggleInternalStatistics(false);
@@ -95,7 +85,7 @@ int main(int argc, char* argv[])
 	outputs = {OUTPUT_VELOCITY,OUTPUT_FORCE};
 	hemocell.setFluidOutputs(outputs);
         
-        hemocell.outputInSiUnits = true; //HDF5 output in SI units (except location (so fluid location, particle location is still in LU)
+  hemocell.outputInSiUnits = true; //HDF5 output in SI units (except location (so fluid location, particle location is still in LU)
 
 // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
 

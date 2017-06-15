@@ -11,7 +11,7 @@ Phi1 [1], Phi2 [2] - Default, Phi3 [3], Phi4 [4],  Phi4c [5]
 #endif
 
 /*
- * Maximum number of neighbours, a sane setting is 27 (3x3) but you should increase it accordingly with crazy with small blocks and large envelopes
+ * Maximum number of neighbours, a sane setting is 27 (3x3) but it should be increased accordingly with very small blocks and large envelopes
  * Used in the loadbalancing library
  */
 #ifndef HEMOCELL_MAX_NEIGHBOURS
@@ -36,21 +36,10 @@ Euler [1], Adams-Bashforth [2]
 #endif
 
 /*
-Choose collision operator for LBM.
-[1] - BGK <- use this for dt < 0 settings to have tau = 1 suppress oscillations
-[2] - MRT <- use this in every other case
+Select BGK dynamics with Guo's forcing method.
 */
-#ifndef HEMOCELL_CFD_DYNAMICS
-#define HEMOCELL_CFD_DYNAMICS 1
-#endif
-
-//TODO: REMOVE!!!!!!!
 #ifndef DESCRIPTOR
-#if HEMOCELL_CFD_DYNAMICS == 1
-    #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor    // Using this with tau == 1 will increase numeric stability. (Suppresses oscillations).
-#elif HEMOCELL_CFD_DYNAMICS == 2
-    #define DESCRIPTOR descriptors::ForcedMRTD3Q19Descriptor    //Use this whenever tau != 1
-#endif
+#define DESCRIPTOR descriptors::ForcedD3Q19Descriptor
 #endif
 
 /*
@@ -59,7 +48,8 @@ FORCE_LIMIT sets the allowed maximal force coming from the constitutive model (i
 */
 #ifndef ENFORCE_STABILITY
 #define ENFORCE_STABILITY 1
-#define FORCE_LIMIT 0.01
+// in [pN / surface particle].
+#define FORCE_LIMIT 50.0 
 #endif
 
 /*

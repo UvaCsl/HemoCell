@@ -16,16 +16,16 @@ int main(int argc, char* argv[])
 	Config * cfg = hemocell.cfg;
 
 	
-	// ------------------------- Read in config file ------------------------------------------------
 
 
-// ---------------------------- Calc. LBM parameters -------------------------------------------------
+// ----------------- Read in config file & calc. LBM parameters ---------------------------
 	pcout << "(OneCellShear) (Parameters) calculating shear flow parameters" << endl;
 	//double nxyz = 20.0*(1e-6/(*cfg)["domain"]["dx"].read<double>());
   plint nx = 40;
   plint ny = 40;
   plint nz = 20;
   param::lbm_shear_parameters((*cfg),ny);
+  param::printParameters();
 
 	// ------------------------ Init lattice --------------------------------
 
@@ -33,25 +33,13 @@ int main(int argc, char* argv[])
 
 	plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
 
-			hemocell.lattice = new MultiBlockLattice3D<double,DESCRIPTOR>(
-					defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
-					defaultMultiBlockPolicy3D().getBlockCommunicator(),
-					defaultMultiBlockPolicy3D().getCombinedStatistics(),
-					defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-	#if HEMOCELL_CFD_DYNAMICS == 1
-					new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
-	#elif HEMOCELL_CFD_DYNAMICS == 2
-					new GuoExternalForceMRTdynamics<T, DESCRIPTOR>(1.0/param::tau)); // Use with MRT dynamics!
-	#endif
+	hemocell.lattice = new MultiBlockLattice3D<double,DESCRIPTOR>(
+			defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
+			defaultMultiBlockPolicy3D().getBlockCommunicator(),
+			defaultMultiBlockPolicy3D().getCombinedStatistics(),
+			defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+			new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
 
-	pcout << "(OneCellShear) [LB units] : dx = " << param::dx << ", " <<
-			"dt = " << param::dt << ", " <<
-			"dm = " << param::dm << ", " <<
-			"dN = " << param::df << ", " <<
-			"shear rate = " << param::shearrate_lbm << ", " <<
-			std::endl;
-
-	pcout << "(OneCellShear) tau = " << param::tau << " Re = " << param::re << " u_lb_max(based on Re) = " << param::u_lbm_max << " nu_lb = " << param::nu_lbm << endl;
 	pcout << "(OneCellShear) Re corresponds to u_max = " << (param::re * param::nu_p)/(hemocell.lattice->getBoundingBox().getNy()*param::dx) << " [m/s]" << endl;
 	// -------------------------- Define boundary conditions ---------------------
 

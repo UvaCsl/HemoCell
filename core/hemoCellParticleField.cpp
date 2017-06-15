@@ -482,8 +482,8 @@ void HemoCellParticleField::spreadParticleForce(Box3D domain) {
     // Capping force to ensure stability -> NOTE: this introduces error!
     #if ENFORCE_STABILITY == 1
       const double force_mag = norm(sparticle->force);
-      if(force_mag > FORCE_LIMIT)
-        sparticle->force *= FORCE_LIMIT/force_mag;
+      if(force_mag > param::f_limit)
+        sparticle->force *= param::f_limit/force_mag;
     #endif
 
     //Directly change the force on a node , Palabos developers hate this one

@@ -36,11 +36,8 @@ int main(int argc, char *argv[]) {
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
             defaultMultiBlockPolicy3D().getMultiCellAccess<double, DESCRIPTOR>(),
-#if HEMOCELL_CFD_DYNAMICS == 1
             new GuoExternalForceBGKdynamics<double, DESCRIPTOR>(1.0/param::tau));
-#elif HEMOCELL_CFD_DYNAMICS == 2
-            new GuoExternalForceMRTdynamics<double, DESCRIPTOR>(1.0/param::tau)); // Use with MRT dynamics!
-#endif
+
 
   pcout << "(PipeFlow) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl; 
   defineDynamics(*hemocell.lattice, *flagMatrix, (*hemocell.lattice).getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
