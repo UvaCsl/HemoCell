@@ -153,15 +153,16 @@ void HemoCellParticleField::removeParticles(plint tag) {
   const unsigned int old_size = particles.size();
   for (unsigned int i = 0 ; i < particles.size() ; i++) {
     if (particles[i].getTag() == tag) {
+      _particles_per_cell.at(particles[i].cellId)[particles[i].vertexId] = -1;
       particles[i] = particles.back();
       particles.pop_back();
+      _particles_per_cell.at(particles[i].cellId)[particles[i].vertexId] = i;
       i--;
     }
   }
   if (particles.size() != old_size) {
     lpc_up_to_date = false;
     ppt_up_to_date = false;
-    ppc_up_to_date = false;
   } 
 }
 
@@ -174,15 +175,16 @@ void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
   const unsigned int old_size = particles.size();
   for (unsigned int i = 0 ; i < particles.size() ; i++) {
     if (particles[i].getTag() == tag && this->isContainedABS(particles[i].position,finalDomain)) {
+      _particles_per_cell.at(particles[i].cellId)[particles[i].vertexId] = -1;
       particles[i] = particles.back();
       particles.pop_back();
+      _particles_per_cell.at(particles[i].cellId)[particles[i].vertexId] = i;
       i--;
     }
   }
   if (particles.size() != old_size) {
     lpc_up_to_date = false;
     ppt_up_to_date = false;
-    ppc_up_to_date = false;
   } 
 }
 
@@ -196,14 +198,16 @@ void HemoCellParticleField::removeParticles(Box3D domain) {
   const unsigned int old_size = particles.size();
   for (unsigned int i = 0 ; i < particles.size() ; i++) {
     if (this->isContainedABS(particles[i].position,finalDomain)) {
+      _particles_per_cell.at(particles[i].cellId)[particles[i].vertexId] = -1;
       particles[i] = particles.back();
       particles.pop_back();
+      _particles_per_cell.at(particles[i].cellId)[particles[i].vertexId] = i;
+      i--;
     }
   }
   if (particles.size() != old_size) {
     lpc_up_to_date = false;
     ppt_up_to_date = false;
-    ppc_up_to_date = false;
   } 
 }
 
