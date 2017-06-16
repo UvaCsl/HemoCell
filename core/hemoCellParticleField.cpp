@@ -216,11 +216,9 @@ void HemoCellParticleField::findParticles (
 {
     found.clear();
     PLB_ASSERT( contained(domain, this->getBoundingBox()) );
-    Array<double,3> pos; 
-    for (pluint i=0; i<particles.size(); ++i) {
-        pos = particles[i].position;
-        if (this->isContainedABS(pos,domain)) {
-            found.push_back(&particles[i]);
+    for (HemoCellParticle & particle : particles) {
+        if (this->isContainedABS(particle.position,domain)) {
+            found.push_back(&particle);
         }
     }
 }
@@ -230,20 +228,17 @@ void HemoCellParticleField::findParticles (
     
     found.clear();
     PLB_ASSERT( contained(domain, this->getBoundingBox()) );
-    Array<double,3> pos; 
+    //Array<double,3> pos; 
     const vector<vector<unsigned int>> & particles_per_type = get_particles_per_type();
     if (!(particles_per_type.size() > type)) {return;} else {
-    for (pluint i=0; i<particles_per_type[type].size(); ++i) {
-        pos = particles[particles_per_type[type][i]].position;
-        if (this->isContainedABS(pos,domain)) {
-            found.push_back(&(particles[particles_per_type[type][i]]));
+    for (const unsigned int i : particles_per_type[type]) {
+        if (this->isContainedABS(particles[i].position,domain)) {
+            found.push_back(&(particles[i]));
         }
     }
     }
     
 }
-
-
 
 inline plint HemoCellParticleField::nearestCell(double const pos) const {
   return int(pos + 0.5);
