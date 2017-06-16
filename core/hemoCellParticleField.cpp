@@ -124,7 +124,7 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
       
       //invalidate ppt
       ppt_up_to_date=false;
-      //particles_per_type[particle->celltype].push_back(particles.size()-1); //last entry
+      //_particles_per_type[particle->celltype].push_back(particles.size()-1); //last entry
       if(this->isContainedABS(pos, localDomain)) {
         _lpc[particle->cellId] = true;
       }
@@ -142,16 +142,15 @@ void inline HemoCellParticleField::insert_ppc(HemoCellParticle* sparticle, unsig
       _particles_per_cell[sparticle->cellId][i] = -1;
     }
   }
-  _particles_per_cell[sparticle->cellId][sparticle->vertexId] = index;
+  _particles_per_cell.at(sparticle->cellId)[sparticle->vertexId] = index;
 
 }
 
 
 void HemoCellParticleField::removeParticles(plint tag) {
 //Almost the same, but we save a lot of branching by making a seperate function
-  lpc_up_to_date = false;
-  ppt_up_to_date = false;
-  ppc_up_to_date = false;
+
+  const unsigned int old_size = particles.size();
   for (unsigned int i = 0 ; i < particles.size() ; i++) {
     if (particles[i].getTag() == tag) {
       particles[i] = particles.back();
@@ -159,17 +158,20 @@ void HemoCellParticleField::removeParticles(plint tag) {
       i--;
     }
   }
+  if (particles.size() != old_size) {
+    lpc_up_to_date = false;
+    ppt_up_to_date = false;
+    ppc_up_to_date = false;
+  } 
 }
 
 void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
 //Almost the same, but we save a lot of branching by making a seperate function
-  lpc_up_to_date = false;
-  ppt_up_to_date = false;
-  ppc_up_to_date = false;
   Box3D finalDomain;
   
   intersect(domain, this->getBoundingBox(), finalDomain);
 
+  const unsigned int old_size = particles.size();
   for (unsigned int i = 0 ; i < particles.size() ; i++) {
     if (particles[i].getTag() == tag && this->isContainedABS(particles[i].position,finalDomain)) {
       particles[i] = particles.back();
@@ -177,23 +179,32 @@ void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
       i--;
     }
   }
+  if (particles.size() != old_size) {
+    lpc_up_to_date = false;
+    ppt_up_to_date = false;
+    ppc_up_to_date = false;
+  } 
 }
 
 void HemoCellParticleField::removeParticles(Box3D domain) {
 //Almost the same, but we save a lot of branching by making a seperate function
-  lpc_up_to_date = false;
-  ppt_up_to_date = false;
-  ppc_up_to_date = false;
+
   Box3D finalDomain;
   
   intersect(domain, this->getBoundingBox(), finalDomain);
 
+  const unsigned int old_size = particles.size();
   for (unsigned int i = 0 ; i < particles.size() ; i++) {
     if (this->isContainedABS(particles[i].position,finalDomain)) {
       particles[i] = particles.back();
       particles.pop_back();
     }
   }
+  if (particles.size() != old_size) {
+    lpc_up_to_date = false;
+    ppt_up_to_date = false;
+    ppc_up_to_date = false;
+  } 
 }
 
 void HemoCellParticleField::findParticles (
