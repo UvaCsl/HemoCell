@@ -50,7 +50,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
                                / /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n];      
        
       //area force magnitude
-      const double afm = k_area * (areaRatio+areaRatio/fabs(0.09-areaRatio*areaRatio));
+      const double afm = k_area * (areaRatio+areaRatio/std::fabs(0.09-areaRatio*areaRatio));
 
       Array<double,3> centroid;
       centroid[0] = (v0[0]+v1[0]+v2[0])/3.0;
@@ -75,7 +75,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 
     //Volume
     const double volume_frac = (volume-cellConstants.volume_eq)/cellConstants.volume_eq;
-    const double volume_force = -k_volume * volume_frac/fabs(0.01-volume_frac*volume_frac);
+    const double volume_force = -k_volume * volume_frac/std::fabs(0.01-volume_frac*volume_frac);
 
     triangle_n = 0;
 
@@ -103,7 +103,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const double edge_frac = (edge_length - /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n])
                                / /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n];
       
-      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/fabs(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch
+      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/std::fabs(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch
       const Array<double,3> force = edge_uv*edge_force_scalar;
       *cell[edge[0]]->force_link += force;
       *cell[edge[1]]->force_link -= force;
@@ -140,7 +140,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 
       //calculate resulting bending force
       const double angle_frac = cellConstants.edge_angle_eq_list[edge_n]/*cellConstants.angle_mean_eq*/ - angle;
-      const double force_magnitude = - k_bend * (angle_frac + angle_frac / fabs( 2.467 - (angle_frac * angle_frac))); // tau_b = pi/2
+      const double force_magnitude = - k_bend * (angle_frac + angle_frac / std::fabs(2.467 - angle_frac * angle_frac)); // tau_b = pi/2
 
       //TODO make bending force differ with area, V1 and V2 are unit vectors right now!
       const Array<double,3> v1v2 = (V1 + V2)*0.5; 
@@ -208,7 +208,7 @@ double RbcHighOrderModel::calculate_kArea(Config & cfg, MeshMetrics<double> & me
   double eqLength = meshmetric.getMeanLength();
   kArea *= param::kBT_lbm/(eqLength*eqLength);
   return kArea;
-}
+};
 
 double RbcHighOrderModel::calculate_kLink(Config & cfg, MeshMetrics<double> & meshmetric){
   double kLink = cfg["MaterialModel"]["kLink"].read<double>();
@@ -217,5 +217,4 @@ double RbcHighOrderModel::calculate_kLink(Config & cfg, MeshMetrics<double> & me
   double plc = persistenceLengthFine/param::dx;
   kLink *= param::kBT_lbm/plc;
   return kLink;
-}
-                                                                                                                                                                                                                                                                                                                                                                                        
+};

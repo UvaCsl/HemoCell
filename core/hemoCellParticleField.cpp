@@ -532,4 +532,3 @@ std::string HemoCellParticleField::getBlockName() {
 HemoCellFields* HemoCellParticleField::cellFields=0;
 
 #endif
-                                                

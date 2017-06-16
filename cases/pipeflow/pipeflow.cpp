@@ -4,7 +4,6 @@
 #include "cellInfo.h"
 #include "fluidInfo.h"
 #include "particleInfo.h"
-//#include "rbcOldModel.h"
 #include <fenv.h>
 
 int main(int argc, char *argv[]) {

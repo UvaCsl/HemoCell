@@ -52,7 +52,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 
     //Volume
     const double volume_frac = (volume-cellConstants.volume_eq)/cellConstants.volume_eq;
-    const double volume_force = -k_volume * volume_frac/fabs(0.01-volume_frac*volume_frac);
+    const double volume_force = -k_volume * volume_frac/std::fabs(0.01-volume_frac*volume_frac);
 
     triangle_n = 0;
 
@@ -79,7 +79,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       const Array<double,3> edge_uv = edge_v/edge_length;
       const double edge_frac = (edge_length-cellConstants.edge_length_eq_list[edge_n])/cellConstants.edge_length_eq_list[edge_n];
       
-      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/fabs(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch
+      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/std::fabs(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch
       const Array<double,3> force = edge_uv*edge_force_scalar;
       *cell[edge[0]]->force_link += force;
       *cell[edge[1]]->force_link -= force;
@@ -119,7 +119,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       //calculate resulting bending force
       const double angle_frac = cellConstants.edge_angle_eq_list[edge_n] - angle;
 
-      const double force_magnitude = - k_bend * (angle_frac + angle_frac / fabs( 2.467 - (angle_frac * angle_frac))); // tau_b = pi/2
+      const double force_magnitude = - k_bend * (angle_frac + angle_frac / std::fabs(2.467 - angle_frac * angle_frac) ); // tau_b = pi/2
 
       //TODO Make bending force differ with area!
       const Array<double,3> bending_force = force_magnitude*(V1 + V2)*0.5;
@@ -144,7 +144,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
     }
 
   } 
-  }
+}
 
 void PltSimpleModel::statistics() {
     pcout << "(Cell-mechanics model) Reduced-model parameters for " << cellField.name << " cellfield" << std::endl;
@@ -152,7 +152,7 @@ void PltSimpleModel::statistics() {
     pcout << "\t k_bend: : " << k_bend << std::endl; 
     pcout << "\t k_volume: " << k_volume << std::endl; 
     pcout << "\t eta:      " << eta << std::endl;
-  };
+};
 
 
 double PltSimpleModel::calculate_eta(Config & cfg ){
@@ -177,4 +177,4 @@ double PltSimpleModel::calculate_kLink(Config & cfg, MeshMetrics<double> & meshm
   double plc = persistenceLengthFine/param::dx; //* sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kaniadakis magic
   kLink *= param::kBT_lbm/plc;
   return kLink;
-}
+};
