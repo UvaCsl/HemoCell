@@ -474,11 +474,9 @@ void HemoCellParticleField::spreadParticleForce(Box3D domain) {
     (*cellFields)[sparticle->celltype]->kernelMethod(*atomicLattice,sparticle);
 
     // Capping force to ensure stability -> NOTE: this introduces error!
-    #if ENFORCE_STABILITY == 1
-      const double force_mag = norm(sparticle->force);
-      if(force_mag > param::f_limit)
-        sparticle->force *= param::f_limit/force_mag;
-    #endif
+    const double force_mag = norm(sparticle->force);
+    if(force_mag > param::f_limit)
+      sparticle->force *= param::f_limit/force_mag;
 
     //Directly change the force on a node , Palabos developers hate this one
     //quick non-functional trick.
@@ -534,3 +532,4 @@ std::string HemoCellParticleField::getBlockName() {
 HemoCellFields* HemoCellParticleField::cellFields=0;
 
 #endif
+                                                
