@@ -230,12 +230,14 @@ void HemoCellParticleField::findParticles (
     PLB_ASSERT( contained(domain, this->getBoundingBox()) );
     //Array<double,3> pos; 
     const vector<vector<unsigned int>> & particles_per_type = get_particles_per_type();
-    if (!(particles_per_type.size() > type)) {return;} else {
-    for (const unsigned int i : particles_per_type[type]) {
-        if (this->isContainedABS(particles[i].position,domain)) {
-            found.push_back(&(particles[i]));
-        }
-    }
+    if (!(particles_per_type.size() > type)) 
+      {return;} 
+    else {
+      for (const unsigned int i : particles_per_type[type]) {
+          if (this->isContainedABS(particles[i].position,domain)) {
+              found.push_back(&(particles[i]));
+          }
+      }
     }
     
 }
@@ -264,6 +266,11 @@ void HemoCellParticleField::computeGridPosition (
       iZ = nearestCell(position[2]) - location.z;
 }
 
+void HemoCellParticleField::issueWarning(HemoCellParticle & p){
+	pcout << "(HemoCell) (Delete Cells) WARNING! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
+    pcout << "\t pos.: " << p.position[0] << ", " << p.position[1] << ", " << p.position[2] << "; vel.: " << p.v[0] << ", " <<  p.v[1] << ", " << p.v[2] << "; force: " << p.force[0] << ", " << p.force[1] << ", " << p.force[2] << endl;
+}
+
 int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
   //Function must be called twice since addParticle can remove a particle
   //unintentionally, for now, catch it here; TODO, this can be done better
@@ -289,7 +296,7 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
       if (particles_per_cell.at(cellid)[i] == -1) {continue;}
       if (particles[particles_per_cell.at(cellid)[i]].celltype != ctype) {break;} //certainly a entry, therefore we check here if it is the right type, if not, exit
       if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].position,localDomain) && verbose && !warningIssued) {
-        pcout << "(HemoCell) (Delete Cells) WARNING! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
+      	issueWarning(particles[particles_per_cell.at(cellid)[i]]);
         warningIssued = true;
       }
       particles[particles_per_cell.at(cellid)[i]].setTag(1);
@@ -327,7 +334,7 @@ int HemoCellParticleField::deleteIncompleteCells(bool verbose) {
     for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
       if (particles_per_cell.at(cellid)[i] == -1) {continue;}
       if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].position,localDomain) && verbose && !warningIssued) {
-        pcout << "(HemoCell) (Delete Cells) WARNING! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
+		issueWarning(particles[particles_per_cell.at(cellid)[i]]);
         warningIssued = true;
       }
       particles[particles_per_cell.at(cellid)[i]].setTag(1);

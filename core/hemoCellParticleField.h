@@ -44,21 +44,21 @@ public:
     
     inline bool isContainedABS(Array<double,3> pos, Box3D box) const {
 		Dot3D const& location = this->getLocation();
-    double x = pos[0]-location.x;
-    double y = pos[1]-location.y;
-    double z = pos[2]-location.z;
-    //if (box.z1 < -10000) {
-    //  exit(0);
-    //} 
-    //if (location.x < -10000) {
-    //  exit(0);
-    //} 
+	    double x = pos[0]-location.x;
+	    double y = pos[1]-location.y;
+	    double z = pos[2]-location.z;
+	    //if (box.z1 < -10000) {
+	    //  exit(0);
+	    //} 
+	    //if (location.x < -10000) {
+	    //  exit(0);
+	    //} 
 
-    return (x > box.x0-0.5) && (x <= box.x1+0.5) &&
-           (y > box.y0-0.5) && (y <= box.y1+0.5) &&
-           (z > box.z0-0.5) && (z <= box.z1+0.5);
+	    return (x > box.x0-0.5) && (x <= box.x1+0.5) &&
+	           (y > box.y0-0.5) && (y <= box.y1+0.5) &&
+	           (z > box.z0-0.5) && (z <= box.z1+0.5);
 
-}
+	}
 
     //Ugly output functions:
     void outputPositions(Box3D,vector<vector<double>>&, pluint, std::string&); 
@@ -100,6 +100,7 @@ private:
   void update_lpc();
   void update_ppc();
   void update_ppt();
+  void issueWarning(HemoCellParticle & p);
   
 public:
   const vector<vector<unsigned int>> & get_particles_per_type(); 
