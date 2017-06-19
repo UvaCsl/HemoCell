@@ -65,7 +65,7 @@ void HemoCellParticleDataTransfer::receive (
     //Particle Locations should always be ABSOULUTE, an offset thus makes no
     //sense
     Array<T,3> realAbsoluteOffset((T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z);
-    particleField->removeParticles(domain);
+    //particleField->removeParticles(domain);
     if ( (kind==modif::dynamicVariables) ||
          (kind==modif::allVariables) ||
          (kind==modif::dataStructure) )
