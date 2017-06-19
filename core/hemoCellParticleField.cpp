@@ -208,6 +208,34 @@ void HemoCellParticleField::removeParticles(Box3D domain) {
   } 
 }
 
+//remove everything outside this domain
+void HemoCellParticleField::removeParticles_inverse(Box3D domain) {
+//Almost the same, but we save a lot of branching by making a seperate function
+
+  Box3D finalDomain;
+  
+  intersect(domain, this->getBoundingBox(), finalDomain);
+
+  const unsigned int old_size = particles.size();
+  for (unsigned int i = 0 ; i < particles.size() ; i++) {
+    if (!this->isContainedABS(particles[i].position,finalDomain)) {
+      particles[i] = particles.back();
+      particles.pop_back();
+      i--;
+    }
+  }
+  if (particles.size() != old_size) {
+    lpc_up_to_date = false;
+    ppt_up_to_date = false;
+    ppc_up_to_date = false;
+  } 
+}
+
+void HemoCellParticleField::syncEnvelopes() {
+  removeParticles_inverse(localDomain);
+}
+
+
 void HemoCellParticleField::findParticles (
         Box3D domain, std::vector<HemoCellParticle*>& found ) 
 {

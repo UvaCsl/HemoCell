@@ -17,6 +17,7 @@ public:
     virtual void applyConstitutiveModel(bool forced = false);
     virtual void addParticle(Box3D domain, HemoCellParticle* particle);
     virtual void removeParticles(Box3D domain);
+    virtual void removeParticles_inverse(Box3D domain);
     virtual void removeParticles(Box3D domain,plint tag);
     virtual void removeParticles(plint tag);
     virtual void findParticles(Box3D domain,
@@ -33,7 +34,7 @@ public:
 
     int deleteIncompleteCells(pluint ctype, bool verbose=true);
     int deleteIncompleteCells(bool verbose=true);
-    void syncEnvelopes() {};
+    void syncEnvelopes();
 
     void setlocalDomain(Box3D & localDomain_);
 
