@@ -417,9 +417,6 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
     const vector<int> & cell = pair.second; 
     (*ppc_new)[cid].resize(cell.size());
     for (unsigned int i = 0 ; i < cell.size() ; i++) {
-      if (cell[i] == -1) {
-        cerr << "OhNoez" << endl;
-      }
       (*ppc_new)[cid][i] = &particles[cell[i]];
     }
   }

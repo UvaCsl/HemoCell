@@ -43,7 +43,7 @@ public:
                     plint* iX, plint* iY, plint* iZ ) const;
     
     inline bool isContainedABS(Array<double,3> pos, Box3D box) const {
-		Dot3D const& location = this->getLocation();
+	    Dot3D const& location = this->getLocation();
 	    double x = pos[0]-location.x;
 	    double y = pos[1]-location.y;
 	    double z = pos[2]-location.z;
