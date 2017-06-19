@@ -426,12 +426,9 @@ void HemoCellParticleField::unifyForceVectors() {
 }
 
 void HemoCellParticleField::applyConstitutiveModel(bool forced) {
-  ppc_up_to_date = false;
-  lpc_up_to_date = false; 
+
   deleteIncompleteCells();
-  ppc_up_to_date = false;
-  lpc_up_to_date = false; 
-  ppt_up_to_date = false;
+
   map<int,vector<HemoCellParticle*>> * ppc_new = new map<int,vector<HemoCellParticle*>>();
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   const map<int,bool> & lpc = get_lpc();
