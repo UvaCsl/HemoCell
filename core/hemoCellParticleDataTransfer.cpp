@@ -38,7 +38,7 @@ void HemoCellParticleDataTransfer::receive (
     PLB_PRECONDITION(contained(domain, particleField->getBoundingBox()));
 
     // Clear the existing data before introducing the new data.
-    particleField->removeParticles(domain);
+    //particleField->removeParticles(domain);
     // Particles, by definition, are dynamic data, and they need to
     //   be reconstructed in any case. Therefore, the receive procedure
     //   is run whenever kind is one of the dynamic types.
