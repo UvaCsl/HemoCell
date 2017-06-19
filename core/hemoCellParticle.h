@@ -7,39 +7,64 @@ class HemoCellParticle;
 
 class HemoCellParticle {
   //VARIABLES
-public:
-    //Is vector, optimize with array possible
-    vector<Cell<double,DESCRIPTOR>*> kernelLocations;
-    vector<double>         kernelWeights;
-    Array<plint,3> grid_pos;
-    Array<double,3> position;
+  //Store variables in struct for fast serialization
+  struct serializeValues_t {
     Array<double,3> v;
-    Array<double,3> force, force_total, vPrevious;
-    Array<double,3> *force_volume = &force;
-    Array<double,3> *force_bending = &force;
-    Array<double,3> *force_link = &force;
+    Array<double,3> position;
+    Array<double,3> force;
     Array<double,3> force_repulsion;
-    Array<double,3> *force_area = &force; //Default to pointing to force, if output is desired, it can be stored seperately
-    Array<double,3> *force_visc = &force;
-    plint tag;
     plint cellId;
     plint vertexId;
     pluint celltype;
+#if HEMOCELL_MATERIAL_INTEGRATION == 2
+    Array<double,3> vPrevious;
+#endif
+  };
+  
+  public:
+
+    serializeValues_t serializeValues = {};
+    //Is vector, optimize with array possible
+    vector<Cell<double,DESCRIPTOR>*> kernelLocations;
+    vector<double>         kernelWeights;
+    Array<double,3> & position;// = serializeValues.sv.v;
+    Array<double,3> & v;// = serializeValues.sv.v;
+    Array<double,3> & force;// = serializeValues.sv.force;
+    Array<double,3> force_total;
+#if HEMOCELL_MATERIAL_INTEGRATION == 2
+    Array<double,3> vPrevious;
+#endif
+    Array<double,3> *force_volume = &force;
+    Array<double,3> *force_bending = &force;
+    Array<double,3> *force_link = &force;
+    Array<double,3> & force_repulsion;// = serializeValues.sv.force_repulsion;
+    Array<double,3> *force_area = &force; //Default to pointing to force, if output is desired, it can be stored seperately
+    Array<double,3> *force_visc = &force;
+    plint tag;
+    plint & cellId;// = serializeValues.sv.cellId;
+    plint & vertexId;// = serializeValues.sv.vertexId;
+    pluint & celltype;// = serializeValues.sv.celltype;
 private:
     std::vector<Dot3D> cellPos;
     std::vector<double> weights;
 
 public:
   ~HemoCellParticle(){};
-  HemoCellParticle(const HemoCellParticle & copy) {
+  HemoCellParticle(const HemoCellParticle & copy) :
+    position(serializeValues.position), v(serializeValues.v),
+    force(serializeValues.force), force_repulsion(serializeValues.force_repulsion),
+    cellId(serializeValues.cellId), vertexId(serializeValues.vertexId),
+    celltype(serializeValues.celltype)
+  {
     kernelLocations = copy.kernelLocations;
     kernelWeights = copy.kernelWeights;
-    grid_pos = copy.grid_pos;
     position = copy.position;
     v = copy.v;
     force = copy.force;
     force_total = copy.force_total;
+#if HEMOCELL_MATERIAL_INTEGRATION == 2
     vPrevious = copy.vPrevious;
+#endif
     if (&copy.force == copy.force_volume) {
       force_volume = &force;
       force_bending = &force;
@@ -61,12 +86,18 @@ public:
     cellPos = copy.cellPos;
     weights = copy.weights;
   }
-    HemoCellParticle(){
-      grid_pos = {0,0,0};
+    HemoCellParticle() :
+    position(serializeValues.position), v(serializeValues.v),
+    force(serializeValues.force), force_repulsion(serializeValues.force_repulsion),
+    cellId(serializeValues.cellId), vertexId(serializeValues.vertexId),
+    celltype(serializeValues.celltype)
+    {
       position = {0.0,0.0,0.0};
       v = {0.0,0.0,0.0};
       force = {0.0,0.0,0.0};
+#if HEMOCELL_MATERIAL_INTEGRATION == 2
       vPrevious = {0.0,0.0,0.0};
+#endif
       tag = -1;
       cellId = 0;
       vertexId = 0;
@@ -78,20 +109,21 @@ public:
       force_visc = &force;
     }
     HemoCellParticle (Array<double,3> position_, plint cellId_, plint vertexId_,pluint celltype_) :
-          grid_pos(),
-          position(position_),
-          force(),
-          vPrevious(),
-          force_repulsion(),
-          cellId(cellId_), 
-          vertexId(vertexId_),
-          celltype(celltype_)
-    {
-      grid_pos = {0,0,0};
-      v = {0.0,0.0,0.0};
-      force = {0.0,0.0,0.0};
+    position(serializeValues.position), v(serializeValues.v),
+    force(serializeValues.force), force_repulsion(serializeValues.force_repulsion),
+    cellId(serializeValues.cellId), vertexId(serializeValues.vertexId),
+    celltype(serializeValues.celltype)
+{
+      force = {0.,0.,0.};
       force_repulsion = {0.,0.,0.};
+      cellId = cellId_;
+      vertexId = vertexId_;
+      celltype=celltype_;
+      position = position_;
+      v = {0.0,0.0,0.0};
+#if HEMOCELL_MATERIAL_INTEGRATION == 2
       vPrevious = {0.0,0.0,0.0};
+#endif
       tag = -1;
       force_volume = &force; //These pointers are only changed for nice outputs
       force_area = &force; //These pointers are only changed for nice outputs
@@ -103,12 +135,13 @@ public:
     HemoCellParticle & operator =(const HemoCellParticle & copy) {
        kernelLocations = copy.kernelLocations;
     kernelWeights = copy.kernelWeights;
-    grid_pos = copy.grid_pos;
     position = copy.position;
     v = copy.v;
     force = copy.force;
     force_total = copy.force_total;
+#if HEMOCELL_MATERIAL_INTEGRATION == 2
     vPrevious = copy.vPrevious;
+#endif
     if (&copy.force == copy.force_volume) {
       force_volume = &force;
       force_bending = &force;
@@ -158,7 +191,7 @@ public:
          */
         #if HEMOCELL_MATERIAL_INTEGRATION == 1
               position += v;    
-              vPrevious = v;    // Store previous velocity for viscosity terms     
+             //vPrevious = v;    // Store previous velocity for viscosity terms     
 
         #elif HEMOCELL_MATERIAL_INTEGRATION == 2
               Array<double,3> dxyz = (1.5*v - 0.5*vPrevious);
@@ -169,31 +202,18 @@ public:
     }
     void serialize(HierarchicSerializer& serializer) const 
     {
-        serializer.addValues<double,3>(position);
-        serializer.addValues<double,3>(v);
-        serializer.addValues<double,3>(force);
-        serializer.addValues<double,3>(force_repulsion);
-        serializer.addValues<double,3>(vPrevious);
-        serializer.addValue<plint>(cellId);
-        serializer.addValue<plint>(vertexId);
-        serializer.addValue<pluint>(celltype);
+        serializer.addValue<serializeValues_t>(serializeValues);
     }
     void unserialize(HierarchicUnserializer& unserializer) 
     {
-        unserializer.readValues<double,3>(position);
-        unserializer.readValues<double,3>(v);
-        unserializer.readValues<double,3>(force);
-        unserializer.readValues<double,3>(force_repulsion);
-        unserializer.readValues<double,3>(vPrevious);
-        unserializer.readValue<plint>(cellId);
-        unserializer.readValue<plint>(vertexId);
-        unserializer.readValue<pluint>(celltype);
+        unserializer.readValue<serializeValues_t>(serializeValues);
         //These pointers are only changed for nice outputs
         force_volume = &force; 
         force_area = &force; 
         force_link = &force;
         force_bending = &force;
         force_visc = &force;
+        
     }
 
     static int id;
