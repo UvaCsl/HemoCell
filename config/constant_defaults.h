@@ -46,7 +46,7 @@ Select BGK dynamics with Guo's forcing method.
 Force unconditional stability on the material model. Note: it will not make the model magically correct, only stable!
 FORCE_LIMIT sets the allowed maximal force coming from the constitutive model (in LBM units).
 */
-// in [pN / surface particle].
+// in [pN / surface particle]. //What do you want? pico newton or lbm units?
 #ifndef FORCE_LIMIT
 #define FORCE_LIMIT 50.0 
 #endif

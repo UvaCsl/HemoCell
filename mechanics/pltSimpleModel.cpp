@@ -102,7 +102,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       const Array<double,3> V2 = plb::computeTriangleNormal(b10,b11,b12, false);
 
      
-      const Array<double,3> x2 = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
+      //const Array<double,3> x2 = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
 
       //calculate angle
       // double angle = angleBetweenVectors(V1, V2);

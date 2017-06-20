@@ -12,7 +12,9 @@ class Parameters {
   static double nu_p,rho_p,kBT_p;
   static double tau,re;
   static double nu_lbm, u_lbm_max, kBT_lbm, shearrate_lbm;
+#ifdef FORCE_LIMIT
   static double f_limit;
+#endif
   static double ef_lbm; //used in cellStretching
 
 

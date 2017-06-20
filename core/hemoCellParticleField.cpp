@@ -499,11 +499,13 @@ void HemoCellParticleField::spreadParticleForce(Box3D domain) {
     //Clever trick to allow for different kernels for different particle types.
     (*cellFields)[sparticle->celltype]->kernelMethod(*atomicLattice,sparticle);
 
-    // Capping force to ensure stability -> NOTE: this introduces error!
+    // Capping force to ensure stability -> NOTE: this introduces error! 
+#ifdef FORCE_LIMIT
     const double force_mag = norm(sparticle->force);
     if(force_mag > param::f_limit)
       sparticle->force *= param::f_limit/force_mag;
-
+#endif
+    
     //Directly change the force on a node , Palabos developers hate this one
     //quick non-functional trick.
     for (pluint j = 0; j < sparticle->kernelLocations.size(); j++) {

@@ -1,4 +1,10 @@
 #include "rbcHighOrderModel.h"
+//Define constants used, so we can calculate the force limit better
+#define AREA_DIVIDER_CONSTANT 0.09
+#define VOLUME_DIVIDER_CONSTANT 0.01
+#define LINK_DIVIDER_CONSTANT 9.0
+#define BEND_DIVIDER_CONSTANT 2.467
+
 //TODO Make all inner array variables constant as well
 
 
@@ -10,6 +16,12 @@ RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellFie
                   k_bend( RbcHighOrderModel::calculate_kBend(modelCfg_) ),
                   eta_m( RbcHighOrderModel::calculate_etaM(modelCfg_) ),
                   eta_v( RbcHighOrderModel::calculate_etaV(modelCfg_) )
+#ifdef FORCE_LIMIT
+                  ,areaRatio_limit( RbcHighOrderModel::calculate_areaRatio_limit(modelCfg_,*cellField_.meshmetric) )
+                  ,volumeRatio_limit( RbcHighOrderModel::calculate_volumeRatio_limit(modelCfg_,*cellField_.meshmetric) )
+                  ,linkRatio_limit( RbcHighOrderModel::calculate_linkRatio_limit(modelCfg_,*cellField_.meshmetric) )
+                  ,bendingRatio_limit( RbcHighOrderModel::calculate_bendRatio_limit(modelCfg_) )
+#endif
     {};
 
 void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> & lpc, pluint ctype) {
@@ -50,8 +62,13 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
                                / /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n];      
        
       //area force magnitude
-      const double afm = k_area * (areaRatio+areaRatio/std::fabs(0.09-areaRatio*areaRatio));
-
+#ifdef FORCE_LIMIT
+      //capped between [-areaRatio_limit,areaRatio_limit]
+      const double capped_areaRatio = areaRatio > areaRatio_limit ? areaRatio_limit : areaRatio < -areaRatio_limit ? -areaRatio_limit : areaRatio;
+      const double afm = k_area * (capped_areaRatio+capped_areaRatio/(AREA_DIVIDER_CONSTANT-capped_areaRatio*capped_areaRatio));
+#else
+      const double afm = k_area * (areaRatio+areaRatio/(AREA_DIVIDER_CONSTANT-areaRatio*areaRatio));
+#endif
       Array<double,3> centroid;
       centroid[0] = (v0[0]+v1[0]+v2[0])/3.0;
       centroid[1] = (v0[1]+v1[1]+v2[1])/3.0;
@@ -75,8 +92,12 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 
     //Volume
     const double volume_frac = (volume-cellConstants.volume_eq)/cellConstants.volume_eq;
-    const double volume_force = -k_volume * volume_frac/std::fabs(0.01-volume_frac*volume_frac);
-
+#ifdef FORCE_LIMIT
+    const double capped_volume_frac = volume_frac > volumeRatio_limit ? volumeRatio_limit : volume_frac < -volumeRatio_limit ? -volumeRatio_limit : volume_frac;
+    const double volume_force = -k_volume * capped_volume_frac/(VOLUME_DIVIDER_CONSTANT-capped_volume_frac*capped_volume_frac);
+#else
+    const double volume_force = -k_volume * volume_frac/(VOLUME_DIVIDER_CONSTANT-volume_frac*volume_frac);
+#endif
     triangle_n = 0;
 
     for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
@@ -102,8 +123,12 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const Array<double,3> edge_uv = edge_vec/edge_length;
       const double edge_frac = (edge_length - /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n])
                                / /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n];
-      
-      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/std::fabs(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch
+#ifdef FORCE_LIMIT
+      const double capped_edge_frac = edge_frac > linkRatio_limit ? linkRatio_limit : edge_frac < - linkRatio_limit ? -linkRatio_limit : edge_frac;
+      const double edge_force_scalar = k_link * ( capped_edge_frac + capped_edge_frac/(LINK_DIVIDER_CONSTANT-capped_edge_frac*capped_edge_frac));
+#else
+      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(LINK_DIVIDER_CONSTANT-edge_frac*edge_frac));   // allows at max. 300% stretch
+#endif
       const Array<double,3> force = edge_uv*edge_force_scalar;
       *cell[edge[0]]->force_link += force;
       *cell[edge[1]]->force_link -= force;
@@ -133,15 +158,19 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const Array<double,3> V2 = plb::computeTriangleNormal(b10,b11,b12, false);
 
      
-      const Array<double,3> x2 = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
+      //const Array<double,3> x2 = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
 
 
       double angle = getAngleBetweenFaces(V1, V2, edge_uv);
 
       //calculate resulting bending force
       const double angle_frac = cellConstants.edge_angle_eq_list[edge_n]/*cellConstants.angle_mean_eq*/ - angle;
-      const double force_magnitude = - k_bend * (angle_frac + angle_frac / std::fabs(2.467 - angle_frac * angle_frac)); // tau_b = pi/2
-
+#ifdef FORCE_LIMIT
+      const double capped_angle_frac = angle_frac > bendingRatio_limit ? bendingRatio_limit : angle_frac < -bendingRatio_limit ? -bendingRatio_limit : angle_frac;
+      const double force_magnitude = - k_bend * (capped_angle_frac + capped_angle_frac / (BEND_DIVIDER_CONSTANT - capped_angle_frac * capped_angle_frac));
+#else
+      const double force_magnitude = - k_bend * (angle_frac + angle_frac / (BEND_DIVIDER_CONSTANT - angle_frac * angle_frac)); // tau_b = pi/2
+#endif
       //TODO make bending force differ with area, V1 and V2 are unit vectors right now!
       const Array<double,3> v1v2 = (V1 + V2)*0.5; 
       const Array<double,3> bending_force = force_magnitude*v1v2;
@@ -178,6 +207,12 @@ void RbcHighOrderModel::statistics() {
     pcout << "\t k_volume: " << k_volume << std::endl;
     pcout << "\t eta_m:    " << eta_m << std::endl;
     pcout << "\t eta_v:    " << eta_v << std::endl;
+#ifdef FORCE_LIMIT
+    pcout << "\t max area ratio:    " << areaRatio_limit << endl;
+    pcout << "\t max link ratio:    " << linkRatio_limit << endl;
+    pcout << "\t max bending ratio: " << bendingRatio_limit << endl;
+    pcout << "\t max volume ratio:  " << volumeRatio_limit << endl;
+#endif
 };
 
 
@@ -218,3 +253,74 @@ double RbcHighOrderModel::calculate_kLink(Config & cfg, MeshMetrics<double> & me
   kLink *= param::kBT_lbm/plc;
   return kLink;
 };
+
+#ifdef FORCE_LIMIT
+double RbcHighOrderModel::calculate_areaRatio_limit(Config & cfg, MeshMetrics<double> & meshmetric){
+  double kArea =  cfg["MaterialModel"]["kArea"].read<double>();
+  double eqLength = meshmetric.getMeanLength();
+  kArea *= param::kBT_lbm/(eqLength*eqLength);
+    
+  //Use a stepping function to decide the maximum x value (overshoot one step)
+  //We know we need a value between [0,AREA_DIVIDER_CONSTANT]
+  double cur_x;
+  for (unsigned int i = 0 ; i < 10000 ; i++) {
+    cur_x = sqrt((float(i)/10000)*AREA_DIVIDER_CONSTANT);
+    if (kArea*(cur_x+cur_x/(AREA_DIVIDER_CONSTANT-cur_x*cur_x)) > param::f_limit) {
+      return cur_x;
+    }
+  }
+  return 0.0;
+};
+
+double RbcHighOrderModel::calculate_volumeRatio_limit(Config & cfg, MeshMetrics<double> & meshmetric){
+  double kVolume =  cfg["MaterialModel"]["kVolume"].read<double>();
+  double eqLength = meshmetric.getMeanLength();
+  kVolume *= param::kBT_lbm/(eqLength*eqLength*eqLength);
+
+  //Use a stepping function to decide the maximum x value (overshoot one step)
+  //We know we need a value between [0,VOLUME_DIVIDER_CONSTANT]
+  double cur_x;
+  for (unsigned int i = 0 ; i < 10000 ; i++) {
+    cur_x = sqrt((float(i)/10000)*VOLUME_DIVIDER_CONSTANT);
+    if (kVolume*cur_x/(VOLUME_DIVIDER_CONSTANT-cur_x*cur_x) > param::f_limit) {
+      return cur_x;
+    }
+  }
+  return 0.0;
+};
+
+double RbcHighOrderModel::calculate_linkRatio_limit(Config & cfg, MeshMetrics<double> & meshmetric){
+  double kLink =  cfg["MaterialModel"]["kLink"].read<double>();
+  double persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
+  //TODO: It should scale with the number of surface points!
+  double plc = persistenceLengthFine/param::dx;
+  kLink *= param::kBT_lbm/plc;
+  
+  //Use a stepping function to decide the maximum x value (overshoot one step)
+  //We know we need a value between [0,LINK_DIVIDER_CONSTANT]
+  double cur_x;
+  for (unsigned int i = 0 ; i < 10000 ; i++) {
+    cur_x = sqrt((float(i)/10000)*LINK_DIVIDER_CONSTANT);
+    if (kLink*(cur_x + cur_x/(LINK_DIVIDER_CONSTANT-cur_x*cur_x)) > param::f_limit) {
+      return cur_x;
+    }
+  }
+  return 0.0;
+};
+
+double RbcHighOrderModel::calculate_bendRatio_limit(Config& cfg){
+  double kBend = cfg["MaterialModel"]["kBend"].read<double>() * param::kBT_lbm;
+  
+  //Use a stepping function to decide the maximum x value (overshoot one step)
+  //We know we need a value between [0,BEND_DIVIDER_CONSTANT]
+  double cur_x;
+  for (unsigned int i = 0 ; i < 10000 ; i++) {
+    cur_x = sqrt((float(i)/10000)*BEND_DIVIDER_CONSTANT);
+    if (kBend*(cur_x + cur_x/(BEND_DIVIDER_CONSTANT-cur_x*cur_x)) > param::f_limit) {
+      return cur_x;
+    }
+  }
+  return 0.0;
+};
+
+#endif
