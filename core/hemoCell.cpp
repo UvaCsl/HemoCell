@@ -152,7 +152,7 @@ void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separati
 
 void HemoCell::setParticlePositionUpdateTimeScaleSeparation(unsigned int separation) {
   pcout << "(HemoCell) (Timescale separation) Setting update separation of all particles to " << separation << " timesteps" << endl;
-  pcout << "(HemoCell) WARNING this introduces great errors, WARNING make sure its dividable by tmeasure and the material timescale separation" << endl;
+  pcout << "(HemoCell) WARNING this introduces great errors, WARNING make sure tmeasure and the material timescale separation are dividable by this value" << endl;
   cellfields->particleUpdateTimescale = separation;
 }
 
