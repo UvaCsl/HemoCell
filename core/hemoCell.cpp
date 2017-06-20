@@ -24,6 +24,10 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   // start clock for basic performance feedback
   lastOutputAt = 0;
   global::timer("atOutput").start();
+  
+#ifdef FORCE_LIMIT
+  pcout << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT << " pN. Results can be inaccurate due to force capping." << endl;
+#endif
 }
 
 void HemoCell::latticeEquilibrium(double rho, Array<double, 3> vel) {
