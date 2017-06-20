@@ -123,6 +123,8 @@ def updateDictForXDMFStrings(h5File, h5dict):
         dimObjShape = len(obj_shape)
         if dimObjShape==3:
             attributeType, rankString = "Scalar", ""
+        elif dimObjShape==4 and obj_shape[-1] == 1:
+            attributeType, rankString = "Scalar", "1"
         elif dimObjShape==4 and obj_shape[-1] == 3:
             attributeType, rankString = "Vector", "3"
         elif dimObjShape==4 and obj_shape[-1] == 6:

@@ -36,6 +36,7 @@ private:
 
     float * outputVelocity();
     float * outputForce();
+    float * outputDensity();
 
 };
 

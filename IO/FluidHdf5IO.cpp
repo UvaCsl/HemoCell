@@ -108,6 +108,11 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
         name = "Force";
         dim[3] = 3;
         break;
+      case OUTPUT_DENSITY:
+        output = outputDensity();
+        name = "Density";
+        dim[3] = 1;
+        break;
       default:
         continue;
     }
@@ -181,4 +186,27 @@ float * WriteFluidField::outputForce() {
   
   return output;
 }
+
+float * WriteFluidField::outputDensity() {
+  float * output = new float [(*nCells)];
+  unsigned int n = 0;
+  for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
+    for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
+      for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
+
+        output[n] = ablock->grid[iX][iY][iZ].computeDensity();
+        n++;
+      }
+    }
+  }
+  
+  if (cellfields.hemocell.outputInSiUnits) {
+    for (unsigned int i = 0 ; i < (*nCells) ; i++) {
+      output[i] = output[i]*param::dm;
+    }
+  }
+  
+  return output;
+}
+
 #endif

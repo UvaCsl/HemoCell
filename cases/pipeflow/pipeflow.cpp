@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
   hemocell.setOutputs("RBC_HO", outputs);
   hemocell.setOutputs("PLT", outputs);
 
-  outputs = {OUTPUT_VELOCITY};
+  outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE};
   hemocell.setFluidOutputs(outputs);
 
   //todo add statistics here

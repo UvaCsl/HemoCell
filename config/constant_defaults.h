@@ -94,6 +94,7 @@ class HemoCellParticleField;
 #define OUTPUT_FORCE_VISC 25
 #define OUTPUT_TRIANGLES 3
 #define OUTPUT_VELOCITY 4
+#define OUTPUT_DENSITY 5
 
 //==================== Not really an option but a nice shortcut
 #define param Parameters
