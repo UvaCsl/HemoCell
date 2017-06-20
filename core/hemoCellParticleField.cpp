@@ -527,7 +527,6 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
   Array<double,3> velocity;
   Array<double,3> velocity_comp;
 
-
   for (pluint i = 0; i < localParticles.size(); i++ ) {
     sparticle = localParticles[i];
     //Clever trick to allow for different kernels for different particle types.

@@ -140,10 +140,16 @@ double HemoCell::calculateFractionalLoadImbalance() {
   return loadBalancer->calculateFractionalLoadImbalance();
 }
 
-void HemoCell::setMaterialTimeScaleSeperation(string name, unsigned int separation){
+void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separation){
   pcout << "(HemoCell) (Timescale Seperation) Setting seperation of " << name << " to " << separation << " timesteps"<<endl;
   pcout << "(HemoCell) WARNING if the timescale separation is not dividable by tmeasure, checkpointing is non-deterministic!"<<endl;
   (*cellfields)[name]->timescale = separation;
+}
+
+void HemoCell::setParticlePositionUpdateTimeScaleSeparation(unsigned int separation) {
+  pcout << "(HemoCell) (Timescale separation) Setting update separation of all particles to " << separation << " timesteps" << endl;
+  pcout << "(HemoCell) WARNING this introduces great errors, WARNING make sure its dividable by tmeasure and the material timescale separation" << endl;
+  cellfields->particleUpdateTimescale = separation;
 }
 
 void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){

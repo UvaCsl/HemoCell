@@ -1,6 +1,7 @@
 #ifndef CELLFIELDS3D_CPP
 #define CELLFIELDS3D_CPP
 #include "hemoCellFields.h"
+#include "hemocell.h"
 
 
 HemoCellFields::HemoCellFields( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth, HemoCell & hemocell_) :
@@ -190,9 +191,13 @@ void HemoCellFields::HemoInterpolateFluidVelocity::processGenericBlocks(Box3D do
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->interpolateFluidVelocity(domain);
 }
 void HemoCellFields::interpolateFluidVelocity() {
+  if (hemocell.iter % particleUpdateTimescale == 0) {
+
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
   applyTimedProcessingFunctional(new HemoInterpolateFluidVelocity(),immersedParticles->getBoundingBox(),wrapper);
+  
+  }
 }
 
 void HemoCellFields::HemoSyncEnvelopes::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -210,9 +215,11 @@ void HemoCellFields::HemoAdvanceParticles::processGenericBlocks(Box3D domain, st
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->advanceParticles();
 }
 void HemoCellFields::advanceParticles() {
-  vector<MultiBlock3D*> wrapper;
-  wrapper.push_back(immersedParticles);
-  applyTimedProcessingFunctional(new HemoAdvanceParticles(),immersedParticles->getBoundingBox(),wrapper);
+  if (hemocell.iter % particleUpdateTimescale == 0) {
+    vector<MultiBlock3D*> wrapper;
+    wrapper.push_back(immersedParticles);
+    applyTimedProcessingFunctional(new HemoAdvanceParticles(),immersedParticles->getBoundingBox(),wrapper);
+  }
 }
 
 void HemoCellFields::HemoSpreadParticleForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {

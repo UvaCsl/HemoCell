@@ -67,6 +67,8 @@ public:
   double repulsionCutoff = 0.0;
   double repulsionConstant = 0.0;
   pluint repulsionTimescale = 1;
+  pluint particleUpdateTimescale = 1;
+  
   //void synchronizeCellQuantities(SyncRequirements _dummy) {}
   void separate_force_vectors();
   void unify_force_vectors();

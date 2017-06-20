@@ -82,8 +82,11 @@ class HemoCell {
   void setRepulsion(double repulsionConstant, double repulsionCutoff);
 
   //Set the timescale separation of the particles of a particle type
-  void setMaterialTimeScaleSeperation(string name, unsigned int separation);
+  void setMaterialTimeScaleSeparation(string name, unsigned int separation);
   
+  //Set the separation of when velocity is interpolated to the particle
+  void setParticlePositionUpdateTimeScaleSeparation(unsigned int separation);
+
   //Set the timescale separation of the repulsion force for all particles
   void setRepulsionTimeScaleSeperation(unsigned int separation);
   

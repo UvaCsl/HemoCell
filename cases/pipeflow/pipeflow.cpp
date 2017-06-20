@@ -60,11 +60,13 @@ int main(int argc, char *argv[]) {
   hemocell.initializeCellfield();
 
   hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
-  hemocell.setMaterialTimeScaleSeperation("RBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  hemocell.setMaterialTimeScaleSeparation("RBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
   hemocell.setMinimumDistanceFromSolid("RBC_HO", 1); //Micrometer! not LU
 
   hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
-  hemocell.setMaterialTimeScaleSeperation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  hemocell.setMaterialTimeScaleSeparation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  
+  hemocell.setParticlePositionUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
   //hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<double>(), (*cfg)["domain"]["RepCutoff"].read<double>());
   //hemocell.setRepulsionTimeScaleSeperation((*cfg)["ibm"]["stepMaterialEvery"].read<int>());
