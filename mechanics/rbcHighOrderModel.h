@@ -19,12 +19,7 @@ class RbcHighOrderModel : public CellMechanics {
   const double k_bend;
   const double eta_m;
   const double eta_v;
-#ifdef FORCE_LIMIT
-  const double areaRatio_limit;
-  const double volumeRatio_limit; 
-  const double linkRatio_limit; 
-  const double bendingRatio_limit;
-#endif
+
   public:
   RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) ;
 
@@ -38,13 +33,6 @@ class RbcHighOrderModel : public CellMechanics {
   static double calculate_kLink(Config & cfg, MeshMetrics<double> &);
   static double calculate_etaM(Config & cfg );
   static double calculate_etaV(Config & cfg );
-#ifdef FORCE_LIMIT
-  static double calculate_areaRatio_limit(Config & cfg, MeshMetrics<double> &);
-  static double calculate_volumeRatio_limit(Config & cfg, MeshMetrics<double> &);
-  static double calculate_linkRatio_limit(Config & cfg, MeshMetrics<double> &);
-  static double calculate_bendRatio_limit(Config & cfg);
-#endif
-
 
 };
 
