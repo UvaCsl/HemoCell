@@ -83,6 +83,7 @@ int main(int argc, char *argv[]) {
   //loading the cellfield
   if (not cfg->checkpointed) {
     hemocell.loadParticles();
+    hemocell.writeOutput();
   } else {
     hemocell.loadCheckPoint();
   }
