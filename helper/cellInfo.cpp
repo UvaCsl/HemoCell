@@ -196,6 +196,28 @@ pluint CellInformationFunctionals::getTotalNumberOfCells(HemoCell* hemocell) {
   info_per_cell.clear();
   return total;
 }
+pluint CellInformationFunctionals::getNumberOfCellsFromType(HemoCell*, string type) {
+  info_per_cell.clear(); //TODO thread safe n such
+  calculateCellPosition(hemocell); 
+  calculateCellType(hemocell);
+  pluint localCells = 0;
+  for (const auto & pair : info_per_cell) {
+    const CellInformation & cinfo = pair.second;
+    if (cinfo.centerLocal && (cinfo.cellType == (*hemocell->cellfields)[type]->ctype)) {
+      localCells++;
+    }
+  }
+  
+  map<int,pluint> cells_per_proc;
+  cells_per_proc[global::mpi().getRank()] = localCells;
+  HemoCellGatheringFunctional<pluint>::gather(cells_per_proc,global::mpi().getSize());
+  pluint total = 0;
+  for (const auto & pair : cells_per_proc) {
+    total += pair.second;
+  }
+  info_per_cell.clear();
+  return total;
+}
 
 
 CellInformationFunctionals::CellVolume * CellInformationFunctionals::CellVolume::clone() const { return new CellInformationFunctionals::CellVolume(*this);}

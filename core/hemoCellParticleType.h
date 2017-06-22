@@ -24,7 +24,7 @@ class HemoCellField{
   //ShellModel3D<double> * model;
   TriangularSurfaceMesh<double> & getMesh();
   std::string name;
-  int ctype;
+  pluint ctype;
   int numVertex;
   unsigned int timescale = 1;
   unsigned int minimumDistanceFromSolid = 0;

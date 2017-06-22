@@ -72,6 +72,7 @@ public:
   static void calculateCellAtomicBlock(HemoCell *);
   static void calculateCellType(HemoCell *);
   static pluint getTotalNumberOfCells(HemoCell *);
+  static pluint getNumberOfCellsFromType(HemoCell *, string type);
 };
 
 #endif
