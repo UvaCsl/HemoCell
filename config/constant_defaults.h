@@ -50,7 +50,6 @@ FORCE_LIMIT sets the allowed maximal force coming from the constitutive model (i
 #ifndef FORCE_LIMIT
 #define FORCE_LIMIT 50.0 
 #endif
-
 /*
 Choose bending force implementation. This is a numerical modelling choice.
 [1] - Local only bending implementation acting on the two opposing vertices of the surfaces with the bending angle.

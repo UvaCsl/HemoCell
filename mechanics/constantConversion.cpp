@@ -22,8 +22,9 @@ void Parameters::lbm_base_parameters(Config & cfg) {
 
     dm = rho_p * (dx * dx *dx);
     df = dm * dx / (dt * dt);
+#ifdef FORCE_LIMIT
     f_limit = FORCE_LIMIT / 1.0e12 / df; // Changing pN to lbm force
-
+#endif
     kBT_lbm = kBT_p/(df*dx);
 };
 
@@ -50,7 +51,9 @@ void Parameters::printParameters() {
   pcout << "\t tau: \t" << tau << std::endl;
   pcout << "\t nu_lbm: \t" << nu_lbm << std::endl;
   pcout << "\t u_lb_max: \t" << u_lbm_max << std::endl;
+#ifdef FORCE_LIMIT
   pcout << "\t f_limit: \t" << f_limit << std::endl;
+#endif
 }
 
 double Parameters::dt = 0.0;
@@ -68,5 +71,7 @@ double Parameters::shearrate_lbm = 0.0;
 double Parameters::kBT_lbm = 0.0;
 double Parameters::kBT_p = 0.0;
 double Parameters::ef_lbm = 0.0;
+#ifdef FORCE_LIMIT
 double Parameters::f_limit = 0.0;
+#endif
 #endif

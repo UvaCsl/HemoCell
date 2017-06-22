@@ -52,7 +52,12 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 
     //Volume
     const double volume_frac = (volume-cellConstants.volume_eq)/cellConstants.volume_eq;
+#ifdef FORCE_LIMIT
     const double volume_force = -k_volume * volume_frac/std::fabs(0.01-volume_frac*volume_frac);
+#else
+    const double volume_force = -k_volume * volume_frac/(0.01-volume_frac*volume_frac);
+#endif
+
 
     triangle_n = 0;
 
@@ -78,8 +83,12 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       const double edge_length = sqrt(edge_v[0]*edge_v[0]+edge_v[1]*edge_v[1]+edge_v[2]*edge_v[2]);
       const Array<double,3> edge_uv = edge_v/edge_length;
       const double edge_frac = (edge_length-cellConstants.edge_length_eq_list[edge_n])/cellConstants.edge_length_eq_list[edge_n];
-      
+
+#ifdef FORCE_LIMIT
       const double edge_force_scalar = k_link * ( edge_frac + edge_frac/std::fabs(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch
+#else
+      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch     
+#endif
       const Array<double,3> force = edge_uv*edge_force_scalar;
       *cell[edge[0]]->force_link += force;
       *cell[edge[1]]->force_link -= force;
@@ -119,8 +128,11 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       //calculate resulting bending force
       const double angle_frac = cellConstants.edge_angle_eq_list[edge_n] - angle;
 
+#ifdef FORCE_LIMIT
       const double force_magnitude = - k_bend * (angle_frac + angle_frac / std::fabs(2.467 - angle_frac * angle_frac) ); // tau_b = pi/2
-
+#else
+      const double force_magnitude = - k_bend * (angle_frac + angle_frac / (2.467 - angle_frac * angle_frac) ); // tau_b = pi/2
+#endif
       //TODO Make bending force differ with area!
       const Array<double,3> bending_force = force_magnitude*(V1 + V2)*0.5;
       *cell[edge[0]]->force_bending += bending_force;
