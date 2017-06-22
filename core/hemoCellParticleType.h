@@ -44,6 +44,7 @@ class HemoCellField{
   void statistics();
   /* position is in micrometers, so we still have to convert it*/
   void addSingleCell(Array<double,3> position, plint cellId);
+  Array<double,6> getOriginalBoundingBox();
   MeshMetrics<double> * meshmetric;
 };
 

@@ -47,6 +47,24 @@ void HemoCellField::setOutputVariables(const vector<int> & outputs) { desiredOut
          }
   }
 
+Array<double,6> HemoCellField::getOriginalBoundingBox() {
+  Array<double,6> bb;
+  bb[0] = bb[1] = meshElement.getVertex(0)[0];
+  bb[2] = bb[3] = meshElement.getVertex(0)[1];
+  bb[4] = bb[5] = meshElement.getVertex(0)[2];
+  
+  for (long int i = 0 ; i < meshElement.getNumVertices() ; i++) {
+    const Array<double,3> & vertex = meshElement.getVertex(i);
+    if (bb[0] > vertex[0]) { bb[0] = vertex[0]; }
+    if (bb[1] < vertex[0]) { bb[1] = vertex[0]; }
+    if (bb[2] > vertex[1]) { bb[2] = vertex[1]; }
+    if (bb[3] < vertex[1]) { bb[3] = vertex[1]; }
+    if (bb[4] > vertex[2]) { bb[4] = vertex[2]; }
+    if (bb[5] < vertex[2]) { bb[5] = vertex[2]; }    
+  }
+  return bb;
+}
+
 /* position is in micrometers, so we still have to convert it*/
 void HemoCellField::addSingleCell(Array<double,3> position, plint cellId) {
   pcerr << "(HemoCell) (ParticleType) addSingleCell not implemented, but might definitely be nice to have" << endl;

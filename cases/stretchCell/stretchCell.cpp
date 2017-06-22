@@ -109,11 +109,17 @@ int main(int argc, char* argv[])
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
 
   // Get undeformed values
-  CellInformationFunctionals::calculateCellVolume(&hemocell);
-  CellInformationFunctionals::calculateCellArea(&hemocell);
-  double volume_eq = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
-  double surface_eq = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
+  double volume_lbm = (*hemocell.cellfields)["RBC_HO"]->meshmetric->getVolume();
+  double surface_lbm = (*hemocell.cellfields)["RBC_HO"]->meshmetric->getSurface();
+  double volume_eq = volume_lbm/pow(1e-6/param::dx,3);
+  double surface_eq = surface_lbm/pow(1e-6/param::dx,2);
 
+  Array<double,6> bb =  (*hemocell.cellfields)["RBC_HO"]->getOriginalBoundingBox();
+  pcout << "Original Bounding box:" << endl;
+  pcout << "\tx: " << bb[0] << " : " << bb[1] << endl;
+  pcout << "\ty: " << bb[2] << " : " << bb[3] << endl;
+  pcout << "\tz: " << bb[4] << " : " << bb[5] << endl;
+  
   // Creating output log file
   plb_ofstream fOut;
   if(cfg->checkpointed)
