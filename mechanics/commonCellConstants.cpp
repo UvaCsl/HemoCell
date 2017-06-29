@@ -61,7 +61,7 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
 
     for (const Array<plint,2> & edge : edge_list_) {
       const vector<plint> adjacentTriangles = cellField.meshElement.getAdjacentTriangleIds(edge[0], edge[1]);
-      const Array<double,3> x1 = cellField.meshElement.getVertex(edge[0]);
+      //const Array<double,3> x1 = cellField.meshElement.getVertex(edge[0]);
 
       for (pluint id = 0 ; id < 3 ; id ++ ) {
         const plint kVertex = cellField.meshElement.getVertexId(adjacentTriangles[0],id);

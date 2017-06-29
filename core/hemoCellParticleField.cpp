@@ -93,10 +93,8 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
   Array<double,3> pos = particle->position;
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
 
-  //while (particles_per_type.size()<=particle->celltype) {
-  //  particles_per_type.push_back(std::vector<unsigned int>());
-  //}
-
+  cellFields->celltype_per_cell[particle->cellId] = particle->celltype; 
+  
   if( this->isContainedABS(pos, this->getBoundingBox()) )
   {
     //check if we have particle already, if so, we must overwrite but not
@@ -297,8 +295,6 @@ void HemoCellParticleField::issueWarning(HemoCellParticle & p){
 }
 
 int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
-  //Function must be called twice since addParticle can remove a particle
-  //unintentionally, for now, catch it here; TODO, this can be done better
   int deleted = 0;
 
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
@@ -306,6 +302,7 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
   //For now abuse tagging and the remove function
   for ( const auto &lpc_it : particles_per_cell ) {
     int cellid = lpc_it.first;
+    if (!(*cellFields)[cellFields->celltype_per_cell[cellid]]->deleteIncomplete) { continue; }
     bool broken = false;
     for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
       if (particles_per_cell.at(cellid)[i] == -1) {
@@ -336,8 +333,6 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
 }
 
 int HemoCellParticleField::deleteIncompleteCells(bool verbose) {
-  //Function must be called twice since addParticle can remove a particle
-  //unintentionally, for now, catch it here; TODO, this can be done better
   int deleted = 0;
 
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
@@ -345,6 +340,7 @@ int HemoCellParticleField::deleteIncompleteCells(bool verbose) {
   //For now abuse tagging and the remove function
   for ( const auto &lpc_it : particles_per_cell ) {
     int cellid = lpc_it.first;
+    if (!(*cellFields)[cellFields->celltype_per_cell[cellid]]->deleteIncomplete) { continue; }
     bool broken = false;
     for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
       if (particles_per_cell.at(cellid)[i] == -1) {
@@ -439,7 +435,11 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
     const vector<int> & cell = pair.second; 
     (*ppc_new)[cid].resize(cell.size());
     for (unsigned int i = 0 ; i < cell.size() ; i++) {
-      (*ppc_new)[cid][i] = &particles[cell[i]];
+      if (cell[i] == -1) {
+        (*ppc_new)[cid][i] = NULL;
+      } else {
+        (*ppc_new)[cid][i] = &particles[cell[i]];
+      }
     }
   }
   

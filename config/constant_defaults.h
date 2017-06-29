@@ -80,6 +80,7 @@ class HemoCellParticleField;
  */
 #define RBC_FROM_SPHERE 1
 #define ELLIPSOID_FROM_SPHERE 6
+#define STRING_FROM_VERTEXES 7
 
 /*
  * Defines for desired output per celltype, can save space/time etc. etc. also works for specific fluid ones (vel, force etc)
@@ -94,6 +95,7 @@ class HemoCellParticleField;
 #define OUTPUT_TRIANGLES 3
 #define OUTPUT_VELOCITY 4
 #define OUTPUT_DENSITY 5
+#define OUTPUT_LINES 6 //(For vWF)
 
 //==================== Not really an option but a nice shortcut
 #define param Parameters

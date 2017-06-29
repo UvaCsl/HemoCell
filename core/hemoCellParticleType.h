@@ -29,6 +29,8 @@ class HemoCellField{
   unsigned int timescale = 1;
   unsigned int minimumDistanceFromSolid = 0;
   bool outputTriangles = false;
+  bool outputLines = false;
+  bool deleteIncomplete = true;
   HemoCellFields & cellFields;
   vector<int> desiredOutputVariables;
   vector<Array<plint,3>> triangle_list;

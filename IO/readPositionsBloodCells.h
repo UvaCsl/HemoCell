@@ -13,7 +13,8 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
                                            std::vector<std::vector<Array<double,3> > > & positions,
                                            std::vector<std::vector<plint> > & cellIds,
                                            std::vector<std::vector<Array<double,3> > > & randomAngles,
-                                           Config & cfg, HemoCellFields & cellFields);
+                                           Config & cfg, HemoCellFields & cellFields,
+                                           HemoCellParticleField & particleField);
 
 class ReadPositionsBloodCellField3D : public BoxProcessingFunctional3D
 {

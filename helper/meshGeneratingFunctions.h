@@ -1,8 +1,8 @@
 #ifndef MESH_GENERATING_FUNCTIONS_H
 #define MESH_GENERATING_FUNCTIONS_H
 
-#include "palabos3D.h"
-#include "palabos3D.hh"
+#include "hemocell_internal.h"
+#include "config.h"
 
 namespace plb {
 
@@ -66,6 +66,8 @@ TriangleBoundary3D<T> constructMeshElement(plint shape, T radius, plint cellNumT
 
 
 } // namespace plb
+
+TriangularSurfaceMesh<double> * constructStringMeshFromConfig(Config & materialCfg);
 
 #include "meshGeneratingFunctions.hh"
 

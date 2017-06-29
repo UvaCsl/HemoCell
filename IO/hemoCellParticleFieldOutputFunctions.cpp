@@ -12,7 +12,6 @@ void HemoCellParticleField::AddOutputMap() {
   outputFunctionMap[OUTPUT_FORCE_LINK] = &HemoCellParticleField::outputForceLink;
   outputFunctionMap[OUTPUT_FORCE_BENDING] = &HemoCellParticleField::outputForceBending;
   outputFunctionMap[OUTPUT_FORCE_VISC] = &HemoCellParticleField::outputForceVisc;
-  
 }
 
 void HemoCellParticleField::passthroughpass(int type, Box3D domain, vector<vector<double>>& output, pluint ctype, std::string & name) {
@@ -32,6 +31,7 @@ void HemoCellParticleField::outputPositions(Box3D domain,vector<vector<double>>&
     if (particles_per_cell.at(cellid)[0] == -1) { continue; }
     if (ctype != particles[particles_per_cell.at(cellid)[0]].celltype) continue;
     for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
+      if (particles_per_cell.at(cellid)[i] == -1) { continue; }
       sparticle = &particles[particles_per_cell.at(cellid)[i]];
 
       vector<double> pbv;
@@ -232,28 +232,34 @@ void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>>&
                           (*cellFields)[ctype]->triangle_list[i][1] + counter,
                           (*cellFields)[ctype]->triangle_list[i][2] + counter};
 
-   
- 
-      //Do not add triangles over periodic boundaries
-      bool toolarge = false;
-      /*for (pluint x = 0; x < 3; x++) {
-        for (pluint y = x +1; y < 3; y++) {
-          if ((abs(positions[triangle[x]][0] - positions[triangle[y]][0]) > 2.0) ||
-              (abs(positions[triangle[x]][1] - positions[triangle[y]][1]) > 2.0) ||
-              (abs(positions[triangle[x]][2] - positions[triangle[y]][2]) > 2.0))
-          {
-            toolarge = true;
-            break;
-          }
-        }
-      }*/
-      if (!toolarge) {
+
         output.push_back(triangle);
-      }
     }
     counter += (*cellFields)[ctype]->numVertex;
   }
    
 }
 
+void HemoCellParticleField::outputLines(Box3D domain, vector<vector<plint>>& output, vector<vector<double>> & positions, pluint ctype, std::string & name) {
+  name = "Lines";
+  output.clear();
+  unsigned int counter = 0;
+  const map<int,bool> & lpc = get_lpc();
+  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
+  for ( const auto &lpc_it : lpc ) {
+    int cellid = lpc_it.first;
+    if (cellFields->celltype_per_cell[cellid] != ctype) { continue; }
+    const vector<int> & cell = particles_per_cell.at(cellid);
+    unsigned int nElems = 0;
+    for (unsigned int i = 0; i < cell.size() - 1 ; i++) {
+      if (cell[i] == -1) { continue; }
+      nElems++;
+      if (cell[i+1] == -1 ) { i++; continue;}
+      vector<plint> line = {i+counter,(i+1)+counter};
+      output.push_back(line);
+    }
+    counter += nElems;
+  }
+   
+}
 #endif

@@ -60,10 +60,13 @@ void CellInformationFunctionals::CellPosition::processGenericBlocks(Box3D domain
     Array<double,3> position = {0.,0.,0.};
     const int & cid = pair.first;
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
+    unsigned int size = 0;
     for (const int pid : cell ) {
+      if (pid == -1) { continue; }
+      size++;
       position += pf->particles[pid].position;
     }
-    info_per_cell[cid].position = position/double(cell.size());
+    info_per_cell[cid].position = position/double(size);
     info_per_cell[cid].centerLocal = pf->isContainedABS(info_per_cell[cid].position,pf->localDomain);
   }
 }
@@ -76,6 +79,7 @@ void CellInformationFunctionals::CellStretch::processGenericBlocks(Box3D domain,
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
     for (unsigned int i = 0 ; i < cell.size() - 1 ; i++ ) {
       for (unsigned int j = i + 1 ; j < cell.size() ; j ++) {
+        if (cell[i] == -1 || cell[j] == -1) {continue;}
         double distance = sqrt( pow(pf->particles[cell[i]].position[0]-pf->particles[cell[j]].position[0],2) +
                                 pow(pf->particles[cell[i]].position[1]-pf->particles[cell[j]].position[1],2) +
                                 pow(pf->particles[cell[i]].position[2]-pf->particles[cell[j]].position[2],2));

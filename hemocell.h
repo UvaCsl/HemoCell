@@ -35,20 +35,36 @@
 
 class HemoCell {
   public:
-  //Unfortunately, due to palabos regulations, it is required to pass the
-  //commandline arguments
+  /**
+   * Creates an hemocell object
+   * 
+   * @param configFileName the location of the main config file
+   * 
+   * Unfortunately, due to palabos regulations, it is required to pass the
+   * commandline arguments
+   */
+  
   HemoCell(char * configFileName, int argc, char* argv[]);
 
-  //Set all the fluid nodes to these values
+  /**
+   *  Set all the fluid nodes to these values
+   * 
+   *  @param rho the desired density in lbm units
+   *  @param vel the desired macroscopic velocity of each node
+   */
   void latticeEquilibrium(double rho, Array<double, 3> vel);
 
-  //Initialice the cellfields structure (and thus also the particlefield)
+  /**
+   * Initialice the cellfields structure (and thus also the particlefield)
+   */
   void initializeCellfield();
 
- /* Add a celltype
+ /**
+  * Add a celltype
   * valid options for constructType are:
   * RBC_FROM_SPHERE <- RBC
   * ELLIPSOID_FROM_SPHERE <- platelet
+  * STRING_FROM_VERTEXES ->von willibrand factor
   * use as addCelltype<RbcHO>("RBC", RBC_FROM_SPHERE) for example
   * Since it is a template, it must be in the header class, maybe move to .hh
   * file for readability ...
@@ -57,16 +73,22 @@ class HemoCell {
   void addCellType(string name, int constructType) {
     string materialXML = name + ".xml";
     Config *materialCfg = new Config(materialXML.c_str());
-
+    TriangularSurfaceMesh<double> * meshElement;
+    
     double aspectRatio = 0.3;
     if (constructType == ELLIPSOID_FROM_SPHERE) {
       aspectRatio = (*materialCfg)["MaterialModel"]["aspectRatio"].read<double>();
     }
-    TriangleBoundary3D<double> * boundaryElement = new TriangleBoundary3D<double>(constructMeshElement(constructType, 
+    
+    if(constructType == STRING_FROM_VERTEXES) {
+      meshElement = constructStringMeshFromConfig(*materialCfg);
+    } else {
+      TriangleBoundary3D<double> * boundaryElement = new TriangleBoundary3D<double>(constructMeshElement(constructType, 
                            (*materialCfg)["MaterialModel"]["radius"].read<double>()/param::dx, 
                            (*materialCfg)["MaterialModel"]["minNumTriangles"].read<double>(), param::dx, 
                            string(""), Array<double,3>(0.,0.,0.), aspectRatio));
-    TriangularSurfaceMesh<double>  *meshElement = new TriangularSurfaceMesh<double>(boundaryElement->getMesh());
+      meshElement = new TriangularSurfaceMesh<double>(boundaryElement->getMesh());
+    }
 
     HemoCellField * cellfield = cellfields->addCellType(*meshElement, name);
     Mechanics * mechanics = new Mechanics((*materialCfg), *cellfield);
@@ -74,7 +96,14 @@ class HemoCell {
     mechanics->statistics();
   }
 
-  //Set the output of a celltype
+  /**
+   * Set the output of a celltype
+   * the outputs string should contain constants like VELOCITY_OUTPUT defined
+   * in the constants_defaults file
+   * 
+   * @param outputs a vector of constants that define the desired output
+   * @param name the name of the CellType ("RBC", "PLT")
+   */
   void setOutputs(string name, vector<int> outputs);
   
   //Sets the repulsion constant and cutoff distance, also enables repulsion

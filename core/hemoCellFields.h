@@ -68,6 +68,8 @@ public:
   double repulsionConstant = 0.0;
   pluint repulsionTimescale = 1;
   pluint particleUpdateTimescale = 1;
+  map<unsigned int,unsigned int> celltype_per_cell;
+  
   
   //void synchronizeCellQuantities(SyncRequirements _dummy) {}
   void separate_force_vectors();

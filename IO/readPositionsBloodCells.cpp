@@ -1,8 +1,11 @@
 #ifndef READ_POSISIONS_OF_MULTIPLE_CELLS_CPP
 #define READ_POSISIONS_OF_MULTIPLE_CELLS_CPP
 
+//TODO rewrite this whole class to call a read particle per celltype, following OO-paradigms
+
 #include "readPositionsBloodCells.h"
 #include "tools/cellRandInit/geometry.h"
+#include "vWFModel.h"
 
 inline void meshRotation (TriangularSurfaceMesh<double> * mesh, Array<double,3> rotationAngles) {
     Array<double,2> xRange, yRange, zRange;
@@ -65,13 +68,47 @@ no_add:;
     }
 }
 
+void readvonWillibrands(Box3D realDomain, pluint celltype, HemoCellFields & cellFields,int & cellid, HemoCellParticleField & particleField)
+{
+  pcout << "(HemoCell) (ReadPositions) reading von willibrands" << endl;
+  unsigned int ncells;
+  fstream fIn;
+  string line;
+
+        fIn.open(cellFields[celltype]->name + ".pos", fstream::in);
+
+        if(!fIn.is_open())
+        {
+            cout << "*** WARNING! particle positions input file " << cellFields[celltype]->name << ".pos does not exist!" << endl;
+        }
+
+        fIn >> ncells;
+        pcout << "(readPositionsBloodCels) Particle count (" << cellFields[celltype]->name << "): " << ncells << "." << endl;
+        getline(fIn,line);
+        
+        for (unsigned i = 0 ; i < ncells ; i++) {
+          getline(fIn,line);
+          unsigned int nVertices = (count(line.begin(),line.end(),' ') + 1) / 3;
+          istringstream isline = istringstream(line);
+          for (unsigned int j = 0 ; j < nVertices;j++) {
+            Array<double,3> vertex;
+            isline >> vertex[0] >> vertex[1] >> vertex[2];
+            vertex *= (1e-6/param::dx);
+            HemoCellParticle to_add_particle = HemoCellParticle(vertex,cellid,j,celltype);
+            particleField.addParticle(particleField.getBoundingBox(), &to_add_particle);
+          }
+          cellid++;
+        }
+}
+
 void getReadPositionsBloodCellsVector(Box3D realDomain,
                                             std::vector<TriangularSurfaceMesh<double>* > & meshes,
                                             std::vector<plint> & Np,
                                             std::vector<std::vector<Array<double,3> > > & positions,
                                             std::vector<std::vector<plint> > & cellIds,
                                             std::vector<std::vector<Array<double,3> > > & randomAngles,
-                                            double dx, Config & cfg, HemoCellFields & cellFields)
+                                            double dx, Config & cfg, HemoCellFields & cellFields,
+                                            HemoCellParticleField & particleField)
 {
 
     pcout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
@@ -86,8 +123,12 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
     int cellid = 0;
     // TODO: proper try-catch
     for(pluint j = 0; j < Np.size(); j++) {
+      if (dynamic_cast<vWFModel*>(cellFields[j]->mechanics)) {
+        //von willibrands are special
+        readvonWillibrands(realDomain,j,cellFields,cellid, particleField);
+        continue;
+      }
         // Reading data from file
-
         fstream fIn;
         fIn.open(cellFields[j]->name + ".pos", fstream::in);
 
@@ -188,7 +229,11 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     Array<double,2> xRange, yRange, zRange;
 
     for (pluint iCF = 0; iCF < cellFields.size(); ++iCF) {
-        
+        if (dynamic_cast<vWFModel*>(cellFields[iCF]->mechanics)) {
+          particleFields[iCF] = ( dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[iCF+1]) );
+          continue; 
+        }
+
         TriangularSurfaceMesh<double> * mesh = copyTriangularSurfaceMesh(cellFields[iCF]->getMesh(), emptyEoTSM[iCF]);
         mesh->computeBoundingBox (xRange, yRange, zRange);
         mesh->translate(Array<double,3>(-(xRange[0]+xRange[1])/2.0, -(yRange[0]+yRange[1])/2.0, -(zRange[0]+zRange[1])/2.0));
@@ -207,14 +252,16 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
 
     // Note: this method uses the center of the particles for location
     double posRatio = 1e-6/dx;
-    getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, posRatio, cfg, cellFields);
+    getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, posRatio, cfg, cellFields,*particleFields[0]);
 
     // Change positions to match dx (it is in um originally)
     double wallWidth = 0; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
     
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
-        cout << "(ReadPositionsBloodCellField3D) " ;
+      if (dynamic_cast<vWFModel*>(cellFields[iCF]->mechanics)) { continue; }
+  
+      cout << "(ReadPositionsBloodCellField3D) " ;
         for (pluint c = 0; c < positions[iCF].size(); ++c)
         {
             ElementsOfTriangularSurfaceMesh<double> emptyEoTSMCopy;
