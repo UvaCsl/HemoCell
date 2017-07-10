@@ -19,6 +19,7 @@ class CommonCellConstants {
                       vector<Array<plint,2>> edge_bending_triangles_list_,
                       vector<Array<plint,2>> edge_bending_triangles_outer_points_,
                       vector<double> triangle_area_eq_list_,
+                      vector<Array<plint,6>> vertex_edges_,
                       double volume_eq_, double area_mean_eq_,
                       double edge_mean_eq_, double angle_mean_eq_);
   public: 
@@ -34,6 +35,7 @@ class CommonCellConstants {
   const vector<Array<plint,2>> edge_bending_triangles_list;
   const vector<Array<plint,2>> edge_bending_triangles_outer_points;
   const vector<double> triangle_area_eq_list;
+  const vector<Array<plint,6>> vertex_edges;
 
   const double volume_eq;
   const double area_mean_eq;

@@ -24,7 +24,9 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
     double volume = 0.0;
     int triangle_n = 0;
     vector<double> triangle_areas;
-    vector<Array<double,3>> triangle_normals; 
+    triangle_areas.reserve(cellConstants.triangle_list.size());
+    vector<Array<double,3>> triangle_normals;
+    triangle_normals.reserve(cellConstants.triangle_list.size());
 
     // Per-triangle calculations
     for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
@@ -86,6 +88,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 #endif
     triangle_n = 0;
 
+//Volume force loop
     for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
       // Scale volume force with local face area
       const Array<double, 3> local_volume_force = (volume_force*triangle_normals[triangle_n])*(triangle_areas[triangle_n]/cellConstants.area_mean_eq);
@@ -96,7 +99,33 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       triangle_n++;
     }
 
-
+//Vertex bending force loop
+    for (long unsigned int i = 0 ; i < cell.size() ; i++) {
+      Array<double,3> vertexes_sum = {0.,0.,0.};
+      const Array<plint,6> & edges = cellConstants.vertex_edges[i];
+      unsigned int absent = 0;
+      for (unsigned int j = 0 ; j < 6 ; j++ ) {
+        if (edges[j] == -1) {
+          absent++;
+          continue;
+        }
+        vertexes_sum += cell[edges[j]]->position;
+      }
+      const Array<double,3> vertexes_middle = vertexes_sum/(6.0-absent);
+      
+      //TODO scale bending force
+#ifdef FORCE_LIMIT
+      const Array<double,3> bending_force = (vertexes_middle - cell[i]->position) * k_bend;
+#else
+      const Array<double,3> bending_force = (vertexes_middle - cell[i]->position) * k_bend;
+#endif      
+      //Apply bending force
+      *cell[i]->force_bending += bending_force;
+      const Array<double,3> negative_bending_force = -bending_force/(6.0-absent);
+      for (unsigned int j = 0 ; j < 6 - absent; j++ ) {
+        *cell[j]->force_bending += negative_bending_force;
+      }              
+    }
     // Per-edge calculations
     int edge_n=0;
     for (const Array<plint,2> & edge : cellConstants.edge_list) {
@@ -127,7 +156,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       *cell[edge[0]]->force_visc += Fvisc_memb;
       *cell[edge[1]]->force_visc -= Fvisc_memb; 
 
-
+#if 0
       // calculate triangle normals, this should be in a function
       const plint b0 = cellConstants.edge_bending_triangles_list[edge_n][0];
       const plint b1 = cellConstants.edge_bending_triangles_list[edge_n][1];
@@ -178,8 +207,11 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const Array<double,3> Fvisc_vol = eta_v * vel_rejection * 0.2165 * cellConstants.edge_mean_eq; // assuming similar triangle areas
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_visc +=  Fvisc_vol * 0.5 ;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_visc -=  Fvisc_vol * 0.5;                            
-
+      
+#endif
+      
       edge_n++;
+      
     }
 
   } 
