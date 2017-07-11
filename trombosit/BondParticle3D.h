@@ -20,11 +20,11 @@ public:
     BondParticle3D() :
         Particle3D<T,Descriptor>(),
         processor(getMpiProcessor()),
-              r(0), eij(Array<T,3>(0,0,0)), bondTime(0)
+              r(0), eij(hemo::Array<T,3>(0,0,0)), bondTime(0)
         {
             for (int var = 0; var < 2; ++var) {
                 particles[var] = NULL;
-                positions[var] = Array<T,3>(0,0,0);
+                positions[var] = hemo::Array<T,3>(0,0,0);
                 processors[var] = getMpiProcessor();
                 particles[var] = NULL;
                 cellId[var] = 0;
@@ -34,10 +34,10 @@ public:
         } ;
 
 
-    BondParticle3D(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r_, Array<T,3> eij_, plint tag_, std::string uid_) :
+    BondParticle3D(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r_, hemo::Array<T,3> eij_, plint tag_, std::string uid_) :
         processor(getMpiProcessor()), bondTime(0), uid(uid_)
     {
-        positions[0] = positions[1] = Array<T,3>(0,0,0);
+        positions[0] = positions[1] = hemo::Array<T,3>(0,0,0);
         this->setTag(tag_);
         update(p0, p1, r_, eij_);
     };
@@ -94,8 +94,8 @@ public:
     	this->update(bp->particles[0], bp->particles[1], bp->r, bp->eij);
     }
 
-    void update(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r_, Array<T,3> eij_) {
-    	dx = Array<T,3>(0,0,0);
+    void update(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r_, hemo::Array<T,3> eij_) {
+    	dx = hemo::Array<T,3>(0,0,0);
     	if (p0 != NULL) {
     		particles[0] = p0;
             positions[0] = p0->getPosition();
@@ -118,7 +118,7 @@ public:
         this->getPosition() = (positions[0] + positions[1]) * 0.5;
     }
 
-    bool applyForce(Array<T,3> force) {
+    bool applyForce(hemo::Array<T,3> force) {
         if (particles[0] != NULL) { castParticleToICP3D(particles[0])->get_force() -= force; };
         if (particles[1] != NULL) { castParticleToICP3D(particles[1])->get_force() += force; };
         return true;
@@ -130,11 +130,11 @@ public:
     }
 
     T & get_r() { return r; }
-    Array<T,3> & get_eij() { return eij; }
-    Array<T,3> get_rVector() { return r*eij; }
+    hemo::Array<T,3> & get_eij() { return eij; }
+    hemo::Array<T,3> get_rVector() { return r*eij; }
 
-    Array<T,3> getPositions(plint pid) { PLB_ASSERT(pid<2); return positions[pid]; };
-//    Array<T,3> getVelocities(plint pid) { PLB_ASSERT(pid<2); return velocities[pid]; };
+    hemo::Array<T,3> getPositions(plint pid) { PLB_ASSERT(pid<2); return positions[pid]; };
+//    hemo::Array<T,3> getVelocities(plint pid) { PLB_ASSERT(pid<2); return velocities[pid]; };
     plint getProcessors(plint pid) { PLB_ASSERT(pid<2); return processors[pid]; };
     plint getCellIds(plint pid) { PLB_ASSERT(pid<2); return cellId[pid]; };
     int getBondTime() { return bondTime; }
@@ -152,10 +152,10 @@ private:
     T r, bondTime;
     plint cellId[2];
     plint vertexId[2];
-    Array<T,3> dx;
-    Array<T,3> eij;
-    Array<T,3> positions[2];
-//    Array<T,3> velocities[2];
+    hemo::Array<T,3> dx;
+    hemo::Array<T,3> eij;
+    hemo::Array<T,3> positions[2];
+//    hemo::Array<T,3> velocities[2];
     std::string uid;
     plint processors[2];
     Particle3D<T,Descriptor>* particles[2];

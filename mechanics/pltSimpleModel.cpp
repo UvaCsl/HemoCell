@@ -19,13 +19,13 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
     double volume = 0.0;
     int triangle_n = 0;
     vector<double> triangle_areas;
-    vector<Array<double,3>> triangle_normals; 
+    vector<hemo::Array<double,3>> triangle_normals; 
 
     // Per-triangle calculations
-    for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
-      const Array<double,3> & v0 = cell[triangle[0]]->position;
-      const Array<double,3> & v1 = cell[triangle[1]]->position;
-      const Array<double,3> & v2 = cell[triangle[2]]->position;
+    for (const hemo::Array<plint,3> & triangle : cellConstants.triangle_list) {
+      const hemo::Array<double,3> & v0 = cell[triangle[0]]->position;
+      const hemo::Array<double,3> & v1 = cell[triangle[1]]->position;
+      const hemo::Array<double,3> & v2 = cell[triangle[2]]->position;
       
       //Volume
       const double v210 = v2[0]*v1[1]*v0[2];
@@ -38,7 +38,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       
       //Area
       double area; 
-      Array<double,3> t_normal;
+      hemo::Array<double,3> t_normal;
       computeTriangleAreaAndUnitNormal(v0, v1, v2, area, t_normal);
       
       //Store values necessary later
@@ -61,9 +61,9 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 
     triangle_n = 0;
 
-    for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
+    for (const hemo::Array<plint,3> & triangle : cellConstants.triangle_list) {
       //Fixed volume force per area
-      const Array<double, 3> local_volume_force = (volume_force*triangle_normals[triangle_n])*(triangle_areas[triangle_n]/cellConstants.area_mean_eq);
+      const hemo::Array<double, 3> local_volume_force = (volume_force*triangle_normals[triangle_n])*(triangle_areas[triangle_n]/cellConstants.area_mean_eq);
       *cell[triangle[0]]->force_volume += local_volume_force;
       *cell[triangle[1]]->force_volume += local_volume_force;
       *cell[triangle[2]]->force_volume += local_volume_force;
@@ -74,14 +74,14 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 
     // Per-edge calculations
     int edge_n=0;
-    for (const Array<plint,2> & edge : cellConstants.edge_list) {
-      const Array<double,3> & v0 = cell[edge[0]]->position;
-      const Array<double,3> & v1 = cell[edge[1]]->position;
+    for (const hemo::Array<plint,2> & edge : cellConstants.edge_list) {
+      const hemo::Array<double,3> & v0 = cell[edge[0]]->position;
+      const hemo::Array<double,3> & v1 = cell[edge[1]]->position;
 
       // Link force
-      const Array<double,3> edge_v = v1-v0;
+      const hemo::Array<double,3> edge_v = v1-v0;
       const double edge_length = sqrt(edge_v[0]*edge_v[0]+edge_v[1]*edge_v[1]+edge_v[2]*edge_v[2]);
-      const Array<double,3> edge_uv = edge_v/edge_length;
+      const hemo::Array<double,3> edge_uv = edge_v/edge_length;
       const double edge_frac = (edge_length-cellConstants.edge_length_eq_list[edge_n])/cellConstants.edge_length_eq_list[edge_n];
 
 #ifdef FORCE_LIMIT
@@ -89,7 +89,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 #else
       const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch     
 #endif
-      const Array<double,3> force = edge_uv*edge_force_scalar;
+      const hemo::Array<double,3> force = edge_uv*edge_force_scalar;
       *cell[edge[0]]->force_link += force;
       *cell[edge[1]]->force_link -= force;
 
@@ -99,19 +99,19 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       const plint b0 = cellConstants.edge_bending_triangles_list[edge_n][0];
       const plint b1 = cellConstants.edge_bending_triangles_list[edge_n][1];
 
-      const Array<double,3> b00 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,0)]->position;
-      const Array<double,3> b01 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,1)]->position;
-      const Array<double,3> b02 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,2)]->position;
+      const hemo::Array<double,3> b00 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,0)]->position;
+      const hemo::Array<double,3> b01 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,1)]->position;
+      const hemo::Array<double,3> b02 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,2)]->position;
       
-      const Array<double,3> b10 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,0)]->position;
-      const Array<double,3> b11 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,1)]->position;
-      const Array<double,3> b12 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,2)]->position;
+      const hemo::Array<double,3> b10 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,0)]->position;
+      const hemo::Array<double,3> b11 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,1)]->position;
+      const hemo::Array<double,3> b12 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,2)]->position;
 
-      const Array<double,3> V1 = plb::computeTriangleNormal(b00,b01,b02, false);
-      const Array<double,3> V2 = plb::computeTriangleNormal(b10,b11,b12, false);
+      const hemo::Array<double,3> V1 = plb::computeTriangleNormal(b00,b01,b02, false);
+      const hemo::Array<double,3> V2 = plb::computeTriangleNormal(b10,b11,b12, false);
 
      
-      const Array<double,3> x2 = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
+      const hemo::Array<double,3> x2 = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
 
       //calculate angle
       // double angle = angleBetweenVectors(V1, V2);
@@ -134,7 +134,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       const double force_magnitude = - k_bend * (angle_frac + angle_frac / (2.467 - angle_frac * angle_frac) ); // tau_b = pi/2
 #endif
       //TODO Make bending force differ with area!
-      const Array<double,3> bending_force = force_magnitude*(V1 + V2)*0.5;
+      const hemo::Array<double,3> bending_force = force_magnitude*(V1 + V2)*0.5;
       *cell[edge[0]]->force_bending += bending_force;
       *cell[edge[1]]->force_bending += bending_force;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= bending_force;
@@ -142,11 +142,11 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 
 
       // Viscosity based on relative vertex velocity
-      const Array<double,3> outer_end_rel_vel = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->v 
+      const hemo::Array<double,3> outer_end_rel_vel = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->v 
                                               - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->v;
-      const Array<double,3> section = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->position 
+      const hemo::Array<double,3> section = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->position 
                                     - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
-      const Array<double,3> section_dir = section / norm(section);
+      const hemo::Array<double,3> section_dir = section / norm(section);
       const double norm_vel = dot(outer_end_rel_vel, section_dir); // relative velocity magn. between the points
       const double visc_mag = eta * norm_vel * 0.5;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_visc +=  visc_mag * section_dir;

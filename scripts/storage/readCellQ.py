@@ -83,7 +83,7 @@ def readCellQDirectory(dirname):
     for i in range(len(dataDict)):
         d = dataDict[i]
         for key, value in d.items():
-            d[key] = np.array(value)
+            d[key] = np.hemo::Array(value)
     return dataDict
 
 

@@ -21,7 +21,7 @@ class HemoCell;
  * particles, they can be set in a special map
  *
  *
- * TODO: light and heavy (tracking cellfield arrays to particles or not)
+ * TODO: light and heavy (tracking cellfield hemo::Arrays to particles or not)
  *
  */
 class HemoCellFields

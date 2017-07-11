@@ -1,5 +1,5 @@
 #include "vWFModel.h"
-//TODO Make all inner array variables constant as well
+//TODO Make all inner hemo::Array variables constant as well
 
 
 vWFModel::vWFModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_),
@@ -28,12 +28,12 @@ void vWFModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles
       if (cell[i+1] == NULL) { i++; continue; }
 
       //Calculate stretching force here if applicable
-      const Array<double,3> & p0 = cell[i]->position;
-      const Array<double,3> & p1 = cell[i+1]->position;
+      const hemo::Array<double,3> & p0 = cell[i]->position;
+      const hemo::Array<double,3> & p1 = cell[i+1]->position;
       
-      const Array<double,3> edge_vec = p1-p0;
+      const hemo::Array<double,3> edge_vec = p1-p0;
       const double edge_length = norm(edge_vec);
-      const Array<double,3> edge_uv = edge_vec/edge_length;
+      const hemo::Array<double,3> edge_uv = edge_vec/edge_length;
       
       const double edge_frac = (edge_length - link_eq) / link_eq;
       
@@ -42,7 +42,7 @@ void vWFModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles
 #else
       const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch
 #endif
-      const Array<double,3> force = edge_uv*edge_force_scalar;
+      const hemo::Array<double,3> force = edge_uv*edge_force_scalar;
       *cell[i]->force_link += force;
       *cell[i+1]->force_link -= force;
     }

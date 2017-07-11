@@ -18,7 +18,7 @@ using namespace plb;
 template<typename T>
 class ElementsOfTriangularSurfaceMesh {
 public:
-    std::vector<Array<T,3> > vertexList;
+    std::vector<hemo::Array<T,3> > vertexList;
     std::vector<plint> emanatingEdgeList;
     std::vector<Edge> edgeList;
 };
@@ -64,7 +64,7 @@ public:
     T getRadius() { return cellRadius; }
     T getSurface() { return Nt*area; }
     T getVolume() { return volume; }
-    Array<T,3> getMeanVertexPosition() { return meanVertexPosition; }
+    hemo::Array<T,3> getMeanVertexPosition() { return meanVertexPosition; }
 
     T getNumVertices() { return Nv; }
     T getNumTriangles() { return Nt; }
@@ -73,7 +73,7 @@ private:
     TriangularSurfaceMesh<T>  const& mesh;
     T Nv, Nt, Nn, Nn6, Nn5, Nn7;
     T area, length, angle, volume;
-    Array<T,3> meanVertexPosition;
+    hemo::Array<T,3> meanVertexPosition;
     T sigmaArea, sigmaLength, sigmaAngle, sigmaNn;
     T minArea, minLength, minAngle, minNn;
     T maxArea, maxLength, maxAngle, maxNn;

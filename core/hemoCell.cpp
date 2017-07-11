@@ -30,7 +30,7 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
 #endif
 }
 
-void HemoCell::latticeEquilibrium(double rho, Array<double, 3> vel) {
+void HemoCell::latticeEquilibrium(double rho, hemo::Array<double, 3> vel) {
   pcout << "(HemoCell) (Fluid) Setting Fluid Equilibrium" << endl;
   initializeAtEquilibrium(*lattice, (*lattice).getBoundingBox(), rho, vel);
 }
@@ -134,7 +134,7 @@ void HemoCell::iterate() {
   // Reset Forces on the lattice, TODO do own efficient implementation
   setExternalVector(*lattice, (*lattice).getBoundingBox(),
           DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-          Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
+          hemo::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
 
   iter++;
 }

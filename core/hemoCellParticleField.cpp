@@ -90,7 +90,7 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
   //Box3D finalDomain;
   //plint x,y,z;
   HemoCellParticle * local_sparticle;
-  Array<double,3> pos = particle->position;
+  hemo::Array<double,3> pos = particle->position;
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
 
   cellFields->celltype_per_cell[particle->cellId] = particle->celltype; 
@@ -111,7 +111,7 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
         *local_sparticle = *particle;
         particle = local_sparticle;
 
-        //Invalidate lpc array
+        //Invalidate lpc hemo::Array
         lpc_up_to_date = false;
 
       }
@@ -251,7 +251,7 @@ void HemoCellParticleField::findParticles (
     
     found.clear();
     PLB_ASSERT( contained(domain, this->getBoundingBox()) );
-    //Array<double,3> pos; 
+    //hemo::Array<double,3> pos; 
     const vector<vector<unsigned int>> & particles_per_type = get_particles_per_type();
     if (!(particles_per_type.size() > type)) 
       {return;} 
@@ -270,7 +270,7 @@ inline plint HemoCellParticleField::nearestCell(double const pos) const {
 }
 
 inline void HemoCellParticleField::computeGridPosition (
-            Array<double,3> const& position,
+            hemo::Array<double,3> const& position,
                     plint* iX, plint* iY, plint* iZ ) const
 {
       Dot3D const& location = this->getLocation();
@@ -280,7 +280,7 @@ inline void HemoCellParticleField::computeGridPosition (
 }
 
 void HemoCellParticleField::computeGridPosition (
-            Array<double,3> const& position,
+            hemo::Array<double,3> const& position,
                     plint& iX, plint& iY, plint& iZ ) const
 {
       Dot3D const& location = this->getLocation();
@@ -400,11 +400,11 @@ void HemoCellParticleField::separateForceVectors() {
     //want
     ////TODO this can leak if particle is deleted between seperate and unify,
     //rewrite to reference
-    sparticle.force_volume = new Array<double,3>(0.0,0.0,0.0);
-    sparticle.force_link = new Array<double,3>(0.0,0.0,0.0);
-    sparticle.force_area = new Array<double,3>(0.0,0.0,0.0);
-    sparticle.force_bending = new Array<double,3>(0.0,0.0,0.0);
-    sparticle.force_visc = new Array<double,3>(0.0,0.0,0.0);
+    sparticle.force_volume = new hemo::Array<double,3>({0.0,0.0,0.0});
+    sparticle.force_link = new hemo::Array<double,3>({0.0,0.0,0.0});
+    sparticle.force_area = new hemo::Array<double,3>({0.0,0.0,0.0});
+    sparticle.force_bending = new hemo::Array<double,3>({0.0,0.0,0.0});
+    sparticle.force_visc = new hemo::Array<double,3>({0.0,0.0,0.0});
   }
 }
 
@@ -476,10 +476,10 @@ void HemoCellParticleField::applyRepulsionForce(bool forced) {
       for (unsigned int i = 0 ; i < found.size() - 1 ; i ++) {
         for (unsigned int j = i + 1 ; j < found.size() ; j++ ) {
           if (found[i]->cellId == found[j]->cellId) { continue; } //No incell repulsion
-          const Array<double,3> dv = found[i]->position - found[j]->position;
+          const hemo::Array<double,3> dv = found[i]->position - found[j]->position;
           const double distance = sqrt(dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2]);
           if (distance < r_cutoff) {
-            const Array<double, 3> rfm = r_const * (1/(distance/r_cutoff))  * (dv/distance);
+            const hemo::Array<double, 3> rfm = r_const * (1/(distance/r_cutoff))  * (dv/distance);
             found[i]->force_repulsion = found[i]->force_repulsion + rfm;
             found[j]->force_repulsion = found[j]->force_repulsion - rfm;
           } 
@@ -524,8 +524,8 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
   //TODO, remove casting
   HemoCellParticle * sparticle;
   //Prealloc is nice
-  Array<double,3> velocity;
-  Array<double,3> velocity_comp;
+  hemo::Array<double,3> velocity;
+  hemo::Array<double,3> velocity_comp;
 
   for (pluint i = 0; i < localParticles.size(); i++ ) {
     sparticle = localParticles[i];
@@ -537,7 +537,7 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
     velocity = {0.0,0.0,0.0};
     for (pluint j = 0; j < sparticle->kernelLocations.size(); j++) {
       //Yay for direct access
-      sparticle->kernelLocations[j]->computeVelocity(velocity_comp);
+      sparticle->kernelLocations[j]->dynamics->computeVelocity(velocity_comp);
       velocity += velocity_comp * sparticle->kernelWeights[j];
     }
     sparticle->v = velocity;

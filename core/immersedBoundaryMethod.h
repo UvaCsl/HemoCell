@@ -7,7 +7,7 @@
 namespace plb {
 
 /// Decide if a Lagrangian point is contained in 3D box, boundaries exclusive
-inline bool contained_sane(Array<int,3> const& x, Box3D const& box) {
+inline bool contained_sane(hemo::Array<int,3> const& x, Box3D const& box) {
     return x[0]>=box.x0 && x[0]<=box.x1 &&
            x[1]>=box.y0 && x[1]<=box.y1 &&
            x[2]>=box.z0 && x[2]<=box.z1;
@@ -29,12 +29,12 @@ T phi4c (T x) ;
 
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficients (
-        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, hemo::Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi1 (
-        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, hemo::Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 inline void interpolationCoefficientsPhi2 (
@@ -49,20 +49,20 @@ inline void interpolationCoefficientsPhi2 (
 
     //Coordinates are relative
     const Dot3D tmpDot = block.getLocation(); 
-    const Array<plint,3> relLoc = {tmpDot.x, tmpDot.y, tmpDot.z};
+    const hemo::Array<plint,3> relLoc = {tmpDot.x, tmpDot.y, tmpDot.z};
 
     //Get position, relative
-    const Array<double,3> position_tmp = particle->position;
-    const Array<double,3> position = {position_tmp[0] -relLoc[0], position_tmp[1]-relLoc[1],position_tmp[2]-relLoc[2]};
+    const hemo::Array<double,3> position_tmp = particle->position;
+    const hemo::Array<double,3> position = {position_tmp[0] -relLoc[0], position_tmp[1]-relLoc[1],position_tmp[2]-relLoc[2]};
 
     //Get our reference node (0,0)
-    const Array<plint,3> center(position[0] + 0.5, position[1] + 0.5, position[2] + 0.5); 
+    const hemo::Array<plint,3> center(position[0] + 0.5, position[1] + 0.5, position[2] + 0.5); 
     
     //Boundingbox of lattice
     const Box3D boundingBox = block.getBoundingBox();
     
     //Prealloc is better than JItalloc
-    Array<plint,3> posInBlock;
+    hemo::Array<plint,3> posInBlock;
     double phi[3];
     double weight;
     
@@ -88,16 +88,16 @@ inline void interpolationCoefficientsPhi2 (
 
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi3 (
-        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, hemo::Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 void interpolationCoefficientsPhi4 (
-        BlockLattice3D<double,DESCRIPTOR> const& block, Array<double,3> const& position,
+        BlockLattice3D<double,DESCRIPTOR> const& block, hemo::Array<double,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<double>& weights);
 
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi4c (
-        BlockLattice3D<T,Descriptor> const& block, Array<T,3> const& position,
+        BlockLattice3D<T,Descriptor> const& block, hemo::Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 /*

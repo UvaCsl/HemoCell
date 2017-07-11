@@ -33,14 +33,14 @@ public:
     void getAreSameCellType(bool aSCT) { areSameCellType = aSCT; }
     // Particle p0 and p1 should exist in the same domain (even in envelopes) for a bond to be created.
     //    Hence p0 and p1 always exist and the envelopes should be large enough (>r_create) for this assumption to hold.
-    virtual bool isBondPossible(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
+    virtual bool isBondPossible(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, hemo::Array<T,3> eij) {
     	if (r > this->getCreateDistance() ) { return false;}
     	// If they are the same type they should: (1) have different cellId (2) be considered only once, hence only when cId1>cId2;
     	if (areSameCellType and (castParticleToICP3D(p0)->get_cellId() <= castParticleToICP3D(p1)->get_cellId())) { return false; }
     	return true;
     }
     // Create bond can also perform other function in bondParticle, like change saturation etc.
-    virtual bool createBond(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
+    virtual bool createBond(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, hemo::Array<T,3> eij) {
         return isBondPossible(p0, p1, r, eij) ;
     }
     // Break bond can also perform other functions in bondParticle, like change saturation etc.
@@ -93,7 +93,7 @@ public:
     virtual void applyForce(Particle3D<T,Descriptor> * bondParticle) {
         BondParticle3D<T,Descriptor> * bondP=castParticle3DToBondParticle3D(bondParticle);
         T r = bondP->get_r();
-        Array<T,3> eij = bondP->get_eij();
+        hemo::Array<T,3> eij = bondP->get_eij();
         bondP->applyForce( forceType(r, eij) );
     }
 private:
@@ -125,10 +125,10 @@ public:
     virtual void applyForce(Particle3D<T,Descriptor> * bondParticle) {
         BondParticle3D<T,Descriptor> * bondP=castParticle3DToBondParticle3D(bondParticle);
         T r = bondP->get_r();
-        Array<T,3> eij = bondP->get_eij();
+        hemo::Array<T,3> eij = bondP->get_eij();
         bondP->applyForce( forceType(r, eij) );
     }
-    virtual bool createBond(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
+    virtual bool createBond(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, hemo::Array<T,3> eij) {
     	if (not this->isBondPossible(p0, p1, r, eij)) { return false; }
         bool p0Saturated = castParticleToICP3D(p0)->getBondTypeSaturation(this->getBondTypeId())+deltaSaturation[0] > maxSaturation[0];
         if ( p0Saturated ) { return false; }

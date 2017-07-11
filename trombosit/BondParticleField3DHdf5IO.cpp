@@ -82,7 +82,7 @@ void WriteBondParticleField3D<T,Descriptor>::processGenericBlocks (
      float * geometry = new float [3 * 2 *Np];
      int * connections= new int [2*Np];
      plint itr2=0, itr=0;
-     Array<T,3> tmp;
+     hemo::Array<T,3> tmp;
      for (plint iP = 0; iP < Np; ++iP) {
     	 BondParticle3D<T,Descriptor>* bp = castParticle3DToBondParticle3D(particles[iP]);
     	 tmp = bp->getPositions(0);

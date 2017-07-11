@@ -10,9 +10,9 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, Confi
 void getReadPositionsBloodCellsVector(Box3D realDomain,
                                            std::vector<TriangularSurfaceMesh<double>* > & meshes,
                                            std::vector<plint> & Np,
-                                           std::vector<std::vector<Array<double,3> > > & positions,
+                                           std::vector<std::vector<hemo::Array<double,3> > > & positions,
                                            std::vector<std::vector<plint> > & cellIds,
-                                           std::vector<std::vector<Array<double,3> > > & randomAngles,
+                                           std::vector<std::vector<hemo::Array<double,3> > > & randomAngles,
                                            Config & cfg, HemoCellFields & cellFields,
                                            HemoCellParticleField & particleField);
 

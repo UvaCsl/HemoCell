@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
   hemocell.lattice->toggleInternalStatistics(false);
   hemocell.lattice->periodicity().toggleAll(false);
   hemocell.lattice->periodicity().toggle(0,true);
-  hemocell.latticeEquilibrium(1.,Array<double, 3>(0.,0.,0.));
+  hemocell.latticeEquilibrium(1.,hemo::Array<double, 3>(0.,0.,0.));
 
   //Driving Force
   pcout << "(PipeFlow) (Fluid) Setting up driving Force" << endl; 
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
   double poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                     DESCRIPTOR<double>::ExternalField::forceBeginsAt,
-                    Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
+                    hemo::Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
 
   hemocell.lattice->initialize();   
 
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-                Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+                hemo::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
     
     // Only enable if PARMETIS build is available
     // if (hemocell.iter % tbalance == 0) {
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
       //Set force as required after this function;
       // setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
       //           DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-      //           Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+      //           hemo::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
       // pcout << "Fluid force, Minimum: " << finfo.min << " Maximum: " << finfo.max << " Average: " << finfo.avg << endl;
       // ParticleStatistics pinfo = ParticleInfo::calculateVelocityStatistics(&hemocell);
       // pcout << "Particle velocity, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << endl;

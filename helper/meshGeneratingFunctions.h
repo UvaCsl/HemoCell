@@ -7,38 +7,38 @@
 namespace plb {
 
 template<typename T>
-TriangleSet<T> constructCell(Array<T,3> const& center, T radius, std::string cellFilename, Array<T,3> const& eulerAngles);
+TriangleSet<T> constructCell(hemo::Array<T,3> const& center, T radius, std::string cellFilename, hemo::Array<T,3> const& eulerAngles);
 
 
 template<typename T>
-TriangleSet<T> constructSphereIcosahedron(Array<T,3> const& center, T radius, plint minNumOfTriangles);
+TriangleSet<T> constructSphereIcosahedron(hemo::Array<T,3> const& center, T radius, plint minNumOfTriangles);
 
 
 template<typename T>
-Array<T,3> mapMeshAsRBC(const Array<T,3> point, const Array<T,3> center, T R) ;
+hemo::Array<T,3> mapMeshAsRBC(const hemo::Array<T,3> point, const hemo::Array<T,3> center, T R) ;
 
 
 template<typename T>
-Array<T,3> spherePointToRBCPoint(const Array<T,3> point, T R=1.0);
+hemo::Array<T,3> spherePointToRBCPoint(const hemo::Array<T,3> point, T R=1.0);
 
 
 template<typename T>
-TriangleSet<T> constructRBC(Array<T,3> const& center, T radius, plint minNumOfTriangles, Array<T,3> const& eulerAngles);
+TriangleSet<T> constructRBC(hemo::Array<T,3> const& center, T radius, plint minNumOfTriangles, hemo::Array<T,3> const& eulerAngles);
 
 
 // initialSphereShape: [0] Octahedron (PLB Sphere ) [1] Icosahedron
 template<typename T>
-TriangleSet<T> constructRBCFromSphere(Array<T,3> const& center, T radius, plint minNumOfTriangles,
-        Array<T,3> const& eulerAngles, pluint initialSphereShape=0);
+TriangleSet<T> constructRBCFromSphere(hemo::Array<T,3> const& center, T radius, plint minNumOfTriangles,
+        hemo::Array<T,3> const& eulerAngles, pluint initialSphereShape=0);
 
 template<typename T>
-TriangleSet<T> constructEllipsoidFromSphere(Array<T,3> const& center, T radius, T aspectRatio, plint minNumOfTriangles,
-        Array<T,3> const& eulerAngles, pluint initialSphereShape);
+TriangleSet<T> constructEllipsoidFromSphere(hemo::Array<T,3> const& center, T radius, T aspectRatio, plint minNumOfTriangles,
+        hemo::Array<T,3> const& eulerAngles, pluint initialSphereShape);
 
 
 template<typename T>
-TriangleBoundary3D<T> constructMeshElement(plint shape, T radius, plint cellNumTriangles, T dx, std::string cellPath, Array<T,3> const& eulerAngles, T aspectRatio=0.3) {
-    Array<T,3> center(0.0, 0.0, 0.0);
+TriangleBoundary3D<T> constructMeshElement(plint shape, T radius, plint cellNumTriangles, T dx, std::string cellPath, hemo::Array<T,3> const& eulerAngles, T aspectRatio=0.3) {
+    hemo::Array<T,3> center(0.0, 0.0, 0.0);
     std::vector<TriangleSet<T> > allTriangles;
     TriangleSet<T> wholeTriangleSet;
     if (shape == 0) {

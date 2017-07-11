@@ -20,8 +20,10 @@ using namespace plb;
 #include <vector>
 #include <limits>
 #include <map>
+#include "helper/array.h"
 
 using namespace std;
+using namespace hemo;
 
 class HemoCell;
 #endif // HEMOCELL_H

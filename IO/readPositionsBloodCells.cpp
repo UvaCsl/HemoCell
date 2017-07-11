@@ -7,17 +7,17 @@
 #include "tools/cellRandInit/geometry.h"
 #include "vWFModel.h"
 
-inline void meshRotation (TriangularSurfaceMesh<double> * mesh, Array<double,3> rotationAngles) {
-    Array<double,2> xRange, yRange, zRange;
+inline void meshRotation (TriangularSurfaceMesh<double> * mesh, hemo::Array<double,3> rotationAngles) {
+    hemo::Array<double,2> xRange, yRange, zRange;
     mesh->computeBoundingBox (xRange, yRange, zRange);
-    Array<double,3> meshCenter = Array<double,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
+    hemo::Array<double,3> meshCenter = hemo::Array<double,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
     mesh->translate(-1.0 * meshCenter);
     mesh->rotateXYZ(rotationAngles[0], rotationAngles[1], rotationAngles[2]);
     mesh->translate(meshCenter);
 }
 
 inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, BlockLattice3D<double,DESCRIPTOR>& fluid,
-                                            TriangularSurfaceMesh<double> * mesh, Array<double,3> startingPoint, plint cellId, pluint celltype) {
+                                            TriangularSurfaceMesh<double> * mesh, hemo::Array<double,3> startingPoint, plint cellId, pluint celltype) {
     plint nVertices=mesh->getNumVertices();
     Box3D fluidbb = fluid.getBoundingBox();
     Dot3D rrelfluidloc; // used later;
@@ -25,7 +25,7 @@ inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, 
     HemoCellParticle to_add_particle; // used_later
 
     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
-        Array<double,3> vertex = startingPoint + mesh->getVertex(iVertex);
+        hemo::Array<double,3> vertex = startingPoint + mesh->getVertex(iVertex);
         
         //If we cannot place it in the particle field continue
         if (!particleField.isContainedABS(vertex,particleField.getBoundingBox())) { continue; }
@@ -91,7 +91,7 @@ void readvonWillibrands(Box3D realDomain, pluint celltype, HemoCellFields & cell
           unsigned int nVertices = (count(line.begin(),line.end(),' ') + 1) / 3;
           istringstream isline = istringstream(line);
           for (unsigned int j = 0 ; j < nVertices;j++) {
-            Array<double,3> vertex;
+            hemo::Array<double,3> vertex;
             isline >> vertex[0] >> vertex[1] >> vertex[2];
             vertex *= (1e-6/param::dx);
             HemoCellParticle to_add_particle = HemoCellParticle(vertex,cellid,j,celltype);
@@ -104,9 +104,9 @@ void readvonWillibrands(Box3D realDomain, pluint celltype, HemoCellFields & cell
 void getReadPositionsBloodCellsVector(Box3D realDomain,
                                             std::vector<TriangularSurfaceMesh<double>* > & meshes,
                                             std::vector<plint> & Np,
-                                            std::vector<std::vector<Array<double,3> > > & positions,
+                                            std::vector<std::vector<hemo::Array<double,3> > > & positions,
                                             std::vector<std::vector<plint> > & cellIds,
-                                            std::vector<std::vector<Array<double,3> > > & randomAngles,
+                                            std::vector<std::vector<hemo::Array<double,3> > > & randomAngles,
                                             double dx, Config & cfg, HemoCellFields & cellFields,
                                             HemoCellParticleField & particleField)
 {
@@ -177,7 +177,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
     // cout << "Readed Cells " << Np[0] << " " << Np[1] << endl;
     pcout << "(readPositionsBloodCels) Reading done." << std::endl;
 
-    // Copy results of packing to appropriate arrays for ficsion
+    // Copy results of packing to appropriate hemo::Arrays for ficsion
     positions.clear();	positions.resize(Np.size());
     randomAngles.clear(); randomAngles.resize(Np.size());
     cellIds.clear();	cellIds.resize(Np.size());
@@ -192,9 +192,9 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
         for (plint j = 0; j < Np[i]; ++j)
         {
             // Store mesh positions and rotations
-            //randomAngles[i][j] = Array<T, 3>(1.0,0.0,0.0);
-            randomAngles[i][j] = Array<double, 3>(packAngles[i][j][0], packAngles[i][j][1], packAngles[i][j][2]);
-            positions[i][j] =Array<double,3>(packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]);
+            //randomAngles[i][j] = hemo::Array<T, 3>(1.0,0.0,0.0);
+            randomAngles[i][j] = hemo::Array<double, 3>(packAngles[i][j][0], packAngles[i][j][1], packAngles[i][j][2]);
+            positions[i][j] =hemo::Array<double,3>(packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]);
             cellIds[i][j] = cellIdss[i][j];
 
         }
@@ -226,7 +226,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
             domain.x0 + fLocation.x, domain.x1 + fLocation.x,
             domain.y0 + fLocation.y, domain.y1 + fLocation.y,
             domain.z0 + fLocation.z, domain.z1 + fLocation.z );
-    Array<double,2> xRange, yRange, zRange;
+    hemo::Array<double,2> xRange, yRange, zRange;
 
     for (pluint iCF = 0; iCF < cellFields.size(); ++iCF) {
         if (dynamic_cast<vWFModel*>(cellFields[iCF]->mechanics)) {
@@ -236,7 +236,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
 
         TriangularSurfaceMesh<double> * mesh = copyTriangularSurfaceMesh(cellFields[iCF]->getMesh(), emptyEoTSM[iCF]);
         mesh->computeBoundingBox (xRange, yRange, zRange);
-        mesh->translate(Array<double,3>(-(xRange[0]+xRange[1])/2.0, -(yRange[0]+yRange[1])/2.0, -(zRange[0]+zRange[1])/2.0));
+        mesh->translate(hemo::Array<double,3>(-(xRange[0]+xRange[1])/2.0, -(yRange[0]+yRange[1])/2.0, -(zRange[0]+zRange[1])/2.0));
         meshes[iCF] = mesh;
         volumes[iCF] = MeshMetrics<T>(*mesh).getVolume();
 
@@ -246,9 +246,9 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     }
    
 
-    std::vector<std::vector<Array<double,3> > > positions;
+    std::vector<std::vector<hemo::Array<double,3> > > positions;
     std::vector<std::vector<plint> > cellIds;
-    std::vector<std::vector<Array<double,3> > > randomAngles;
+    std::vector<std::vector<hemo::Array<double,3> > > randomAngles;
 
     // Note: this method uses the center of the particles for location
     double posRatio = 1e-6/dx;

@@ -21,12 +21,12 @@
 #include "ficsion.h"
 
 typedef double T;
-typedef Array<T,3> Velocity;
+typedef hemo::Array<T,3> Velocity;
 #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor
 
 void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
-        T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
+        T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, hemo::Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & ibmScheme, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
         plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed)
     {
@@ -65,7 +65,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     if (ea.size() != 3) {
         ea.resize(3, 0.0);
     }
-    eulerAngles = Array<T,3>(ea[0], ea[1], ea[2]);
+    eulerAngles = hemo::Array<T,3>(ea[0], ea[1], ea[2]);
     eulerAngles[0] *= pi/180.;
     eulerAngles[1] *= pi/180.;
     eulerAngles[2] *= pi/180.;
@@ -166,10 +166,10 @@ int main(int argc, char* argv[])
     pluint relaxationTime;
     plint flowType;
     T shearRate, shearRate_p;
-    Array<T,3> stretchForce(0,0,0);
+    hemo::Array<T,3> stretchForce(0,0,0);
     T stretchForceScalar;
     T stretchForce_p;
-    Array<T,3> eulerAngles;
+    hemo::Array<T,3> eulerAngles;
     plint flowParam;
     bool checkpointed=0;
 
@@ -231,7 +231,7 @@ int main(int argc, char* argv[])
     pcout << "Re " << Re << std::endl;
     pcout << "wallVelocity[LU] " << wallVelocity << std::endl;
 //    iniLattice_ForGalileanInvariance(lattice, parameters, *boundaryCondition, wallVelocity*0.0);
-    iniLatticeFullyPeriodic(lattice, parameters, Array<T,3>(0., 0., 0.));
+    iniLatticeFullyPeriodic(lattice, parameters, hemo::Array<T,3>(0., 0., 0.));
 
     util::ValueTracer<T> forceConvergeX(1, 20, 1.0e-4);
 
@@ -241,8 +241,8 @@ int main(int argc, char* argv[])
      */
 
     /* CREATE MESH */
-//    Array<T,3> eqShapeRotationEulerAngles = eulerAngles;
-    if (flowParam == 9) { eulerAngles= Array<T,3>(0.,0.,0.); }
+//    hemo::Array<T,3> eqShapeRotationEulerAngles = eulerAngles;
+    if (flowParam == 9) { eulerAngles= hemo::Array<T,3>(0.,0.,0.); }
     // Radius in LU
     TriangleBoundary3D<T> Cells = constructMeshElement(shape, radius, cellNumTriangles, dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> meshElement = Cells.getMesh();
@@ -256,7 +256,7 @@ int main(int argc, char* argv[])
     ElementsOfTriangularSurfaceMesh<T> emptyEoTSM;
     TriangularSurfaceMesh<T> * mesh = copyTriangularSurfaceMesh(meshElement, emptyEoTSM);
     std::map<plint, TriangularSurfaceMesh<T>* > meshes;
-    mesh->translate(Array<T,3>(nx*0.5, ny*0.5, nz*0.5));
+    mesh->translate(hemo::Array<T,3>(nx*0.5, ny*0.5, nz*0.5));
     meshes[0] = mesh;
 
     ConstitutiveModel<T,DESCRIPTOR> *cellModel;
@@ -266,9 +266,9 @@ int main(int argc, char* argv[])
 //    cellModel = new ShapeMemoryModel3D<T, DESCRIPTOR>(shellDensity, k_rest, k_shear, k_bend, k_stretch, k_WLC, k_elastic, k_volume, k_surface, eta_m,
 //         persistenceLengthFine, eqLengthRatio, dx, dt, dm,meshElement);
 //    std::vector<plint> RBCellIds(1);    RBCellIds[0] = 0;
-    const Array<T,3> headOnForce(-6*3.14159*parameters.getLatticeNu()*wallVelocity*radius, 0.0, 0.0);
+    const hemo::Array<T,3> headOnForce(-6*3.14159*parameters.getLatticeNu()*wallVelocity*radius, 0.0, 0.0);
 //    stretchForceScalar
-//    std::vector<Array<T,3> > forcesToApply(1); forcesToApply[0] = headOnForce;
+//    std::vector<hemo::Array<T,3> > forcesToApply(1); forcesToApply[0] = headOnForce;
 
     pcout << std::scientific << std::setprecision(15);
     pcout << "F_D " << headOnForce[0] << std::endl;
@@ -283,8 +283,8 @@ int main(int argc, char* argv[])
     checkpointer.load(document, lattice, cellFields, initIter);
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
-        std::vector<Array<T,3> > cellsOrigin;
-        cellsOrigin.push_back( Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
+        std::vector<hemo::Array<T,3> > cellsOrigin;
+        cellsOrigin.push_back( hemo::Array<T,3>(nx*0.5, ny*0.5, nz*0.5) );
         RBCField.initialize(cellsOrigin);
         checkpointer.save(lattice, cellFields, initIter);
     }

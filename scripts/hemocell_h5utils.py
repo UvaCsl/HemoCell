@@ -52,7 +52,7 @@ def readFicsionCellResults(hdf5_dir, cellType='RBC', progressBar=False, step=1):
         step -- read every 'step' timestep.
 
     Returns:
-        numpy array containing all the data from all the timesteps.
+        numpy hemo::Array containing all the data from all the timesteps.
             Dimensions are [timestep, cell, dimension]
 
 
@@ -88,7 +88,7 @@ def readFicsionCellResults(hdf5_dir, cellType='RBC', progressBar=False, step=1):
                     sD[key] = h[key].value[ic]
                 sD['t'] = h.attrs['dt'][0] * np.int(timestep)
             h.close()
-        if type(ra) == type(None): # Initialize array if not initialized.
+        if type(ra) == type(None): # Initialize hemo::Array if not initialized.
             Np = len(storageDict.keys())
             ra = np.empty((Nt, Np), dtype=dtype)
             # There are cases where certain cellIds are missing.
@@ -120,7 +120,7 @@ def rotateVector(vector, thetaDegrees):
 def main():
     import argparse, os
 
-    parser = argparse.ArgumentParser(description='Save CellType data in a numpy-array file.')
+    parser = argparse.ArgumentParser(description='Save CellType data in a numpy-hemo::Array file.')
     parser.add_argument('-i', '--inputDir', dest='inputDir', default='./tmp/hdf5',
                        help='Input directory where HDF5 files are located [default:./tmp/hdf5]')
     parser.add_argument('-o', '--output', dest='outputFile', default='./ficsion_hdf5.npy',
@@ -135,8 +135,8 @@ def main():
     if not os.path.exists(args.inputDir):
         print 'ERROR: \n\t "', args.inputDir, '" does not exist.'
         sys.exit(1)
-    numpy_array = readFicsionCellResults(args.inputDir, args.cellType, True, step=int(args.step))
-    np.save(args.outputFile, numpy_array)
+    numpy_hemo::Array = readFicsionCellResults(args.inputDir, args.cellType, True, step=int(args.step))
+    np.save(args.outputFile, numpy_hemo::Array)
     return
 
 if __name__ == '__main__':

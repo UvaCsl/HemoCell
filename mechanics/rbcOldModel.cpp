@@ -11,23 +11,23 @@ RbcOldModel::RbcOldModel(Config & modelCfg_, HemoCellField & cellField_) : CellM
     {};
 
 
-inline Array<double,3> computeVolumeConservationForce(Array<double,3> const& x1, Array<double,3> const& x2, 
-                               Array<double,3> const& x3, double cVolume) {
-  Array<double,3> tmp;
+inline hemo::Array<double,3> computeVolumeConservationForce(hemo::Array<double,3> const& x1, hemo::Array<double,3> const& x2, 
+                               hemo::Array<double,3> const& x3, double cVolume) {
+  hemo::Array<double,3> tmp;
   crossProduct(x2,x3,tmp);
   return -cVolume * 1.0/60 * tmp;
 }
 
-inline Array<double,3> computeHighOrderLocalAreaConservationForce(
-        Array<double,3> const& x1, Array<double,3> const& x2, Array<double,3> const& x3,
-        Array<double,3> const& triangleNormal,  double triangleArea, double eqArea,
+inline hemo::Array<double,3> computeHighOrderLocalAreaConservationForce(
+        hemo::Array<double,3> const& x1, hemo::Array<double,3> const& x2, hemo::Array<double,3> const& x3,
+        hemo::Array<double,3> const& triangleNormal,  double triangleArea, double eqArea,
         double cArea) {
 
-    Array<double,3> tmp;
+    hemo::Array<double,3> tmp;
     crossProduct(triangleNormal,
                  x3 - x2,
                  tmp);
-    Array<double,3> dAdx = 0.5 *tmp;
+    hemo::Array<double,3> dAdx = 0.5 *tmp;
 
     double dAreaRatio = (triangleArea - eqArea) / eqArea;
 
@@ -36,11 +36,11 @@ inline Array<double,3> computeHighOrderLocalAreaConservationForce(
 
 }
 
-inline Array<double,3> computeInPlaneHighOrderForce(Array<double,3> const& x1, Array<double,3> const& x2, double eqLength, double k_inPlane) {
+inline hemo::Array<double,3> computeInPlaneHighOrderForce(hemo::Array<double,3> const& x1, hemo::Array<double,3> const& x2, double eqLength, double k_inPlane) {
 
-    Array<double,3> vL = (x1 - x2);
+    hemo::Array<double,3> vL = (x1 - x2);
     double L = norm(vL);
-    Array<double,3> eij = vL/L;
+    hemo::Array<double,3> eij = vL/L;
 
     double dL = (L-eqLength)/eqLength;
 
@@ -51,12 +51,12 @@ inline Array<double,3> computeInPlaneHighOrderForce(Array<double,3> const& x1, A
     else
         force1D = - k_inPlane * dL * dL * dL;   // less stiff compression resistance -> let compression be dominated by area conservation force
 
-    Array<double,3> force = eij * force1D;
+    hemo::Array<double,3> force = eij * force1D;
 
     return force;
 }
 
-inline Array<double,3> getVertex(plint id) {
+inline hemo::Array<double,3> getVertex(plint id) {
   return (*glob_cell)[id]->position;
 }
 
@@ -64,18 +64,18 @@ vector<plint> getAdjacentTriangleIds(plint iV, plint jV) {
   return (*glob_cf).meshElement.getAdjacentTriangleIds(iV, jV);
 }
 
-inline Array<double,3> computeTriangleNormal(Array<double,3> v0, Array<double,3> v1, Array<double,3> v2) {
-  Array<double,3> e01 = v1 - v0;
-  Array<double,3> e02 = v2 - v0;
-  Array<double,3> n;
+inline hemo::Array<double,3> computeTriangleNormal(hemo::Array<double,3> v0, hemo::Array<double,3> v1, hemo::Array<double,3> v2) {
+  hemo::Array<double,3> e01 = v1 - v0;
+  hemo::Array<double,3> e02 = v2 - v0;
+  hemo::Array<double,3> n;
   crossProduct(e01,e02,n);
   n /= norm(n);
   return n;
 }
 
-inline double computeSignedAngle(plint iVertex, plint jVertex, plint & kVertex, plint & lVertex, bool& found, plint edgeId,const vector<Array<plint,3>> & triangles) {
+inline double computeSignedAngle(plint iVertex, plint jVertex, plint & kVertex, plint & lVertex, bool& found, plint edgeId,const vector<hemo::Array<plint,3>> & triangles) {
   found = true;
-    Array<double,3> x1 = getVertex(iVertex), x2(0.,0.,0.), x3(0.,0.,0.), x4(0.,0.,0.);
+    hemo::Array<double,3> x1 = getVertex(iVertex), x2(0.,0.,0.), x3(0.,0.,0.), x4(0.,0.,0.);
 
     std::vector<plint> adjacentTriangles = getAdjacentTriangleIds(iVertex, jVertex);
     plint iTriangle=adjacentTriangles[0], jTriangle=adjacentTriangles[1];
@@ -102,8 +102,8 @@ inline double computeSignedAngle(plint iVertex, plint jVertex, plint & kVertex, 
 //this.. TODO fixit
   if (not found) { /*signedAngles.erase(edgeId);*/  return 0.0; }
   //if (signedAngles.count(edgeId) == 0) {
-      Array<double,3> V1 = computeTriangleNormal(getVertex(triangles[iTriangle][0]),getVertex(triangles[iTriangle][1]),getVertex(triangles[iTriangle][2]));
-      Array<double,3> V2 = computeTriangleNormal(getVertex(triangles[jTriangle][0]),getVertex(triangles[jTriangle][1]),getVertex(triangles[jTriangle][2]));
+      hemo::Array<double,3> V1 = computeTriangleNormal(getVertex(triangles[iTriangle][0]),getVertex(triangles[iTriangle][1]),getVertex(triangles[iTriangle][2]));
+      hemo::Array<double,3> V2 = computeTriangleNormal(getVertex(triangles[jTriangle][0]),getVertex(triangles[jTriangle][1]),getVertex(triangles[jTriangle][2]));
       double angle = angleBetweenVectors(V1, V2);
     plint sign = dot(x2-x1, V2) >= 0?1:-1;
 
@@ -116,12 +116,12 @@ inline double computeSignedAngle(plint iVertex, plint jVertex, plint & kVertex, 
   return angle;
 }
 
-inline Array<double,3> computeBendingForce4p (Array<double,3> const& xi, Array<double,3> const& xj, 
-                                Array<double,3> const& xk, Array<double,3> const& xl, 
-                                Array<double,3> const& nTk, Array<double,3> const& nTl, 
+inline hemo::Array<double,3> computeBendingForce4p (hemo::Array<double,3> const& xi, hemo::Array<double,3> const& xj, 
+                                hemo::Array<double,3> const& xk, hemo::Array<double,3> const& xl, 
+                                hemo::Array<double,3> const& nTk, hemo::Array<double,3> const& nTl, 
                                 //T Ai, T Aj, 
                                 double eqArea, double eqLength, double eqAngle, double k, 
-                                Array<double,3> & iFx, Array<double,3> & jFx, Array<double,3> & kFx, Array<double,3> & lFx) { 
+                                hemo::Array<double,3> & iFx, hemo::Array<double,3> & jFx, hemo::Array<double,3> & kFx, hemo::Array<double,3> & lFx) { 
 /* The most messy force! 
  * Triangles are: 
  *      (i, j, k) and (l, k, j). These triangles share 
@@ -188,13 +188,13 @@ void RbcOldModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & partic
     double volume = 0.0;
     int triangle_n = 0;
     vector<double> triangle_areas;
-    vector<Array<double,3>> triangle_normals; 
+    vector<hemo::Array<double,3>> triangle_normals; 
 
 
-    for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
-      const Array<double,3> & v0 = cell[triangle[0]]->position;
-      const Array<double,3> & v1 = cell[triangle[1]]->position;
-      const Array<double,3> & v2 = cell[triangle[2]]->position;
+    for (const hemo::Array<plint,3> & triangle : cellConstants.triangle_list) {
+      const hemo::Array<double,3> & v0 = cell[triangle[0]]->position;
+      const hemo::Array<double,3> & v1 = cell[triangle[1]]->position;
+      const hemo::Array<double,3> & v2 = cell[triangle[2]]->position;
       
       //Volume
       const double v210 = v2[0]*v1[1]*v0[2];
@@ -207,9 +207,9 @@ void RbcOldModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & partic
       
       //Triangle Normal and area
       //TODO this is so wrong
-      const Array<double,3> e01 = v1 - v0;
-      const Array<double,3> e02 = v2 - v0;
-      Array<double,3> triangle_normal;
+      const hemo::Array<double,3> e01 = v1 - v0;
+      const hemo::Array<double,3> e02 = v2 - v0;
+      hemo::Array<double,3> triangle_normal;
       crossProduct(e01, e02, triangle_normal);
       const double normN = norm(triangle_normal);
       triangle_normal /= normN;
@@ -228,11 +228,11 @@ void RbcOldModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & partic
     const double volume_frac = (volume-cellConstants.volume_eq)/cellConstants.volume_eq;
     const double volume_force = k_volume * volume_frac/(0.01-volume_frac*volume_frac);
 
-    for (const Array<plint,3> & triangle : cellConstants.triangle_list) {
+    for (const hemo::Array<plint,3> & triangle : cellConstants.triangle_list) {
       //TODO volume force per area
-      const Array<double,3> & v0 = cell[triangle[0]]->position;
-      const Array<double,3> & v1 = cell[triangle[1]]->position;
-      const Array<double,3> & v2 = cell[triangle[2]]->position;
+      const hemo::Array<double,3> & v0 = cell[triangle[0]]->position;
+      const hemo::Array<double,3> & v1 = cell[triangle[1]]->position;
+      const hemo::Array<double,3> & v2 = cell[triangle[2]]->position;
       *cell[triangle[0]]->force_volume += computeVolumeConservationForce(v0,v1,v2,volume_force);
       *cell[triangle[1]]->force_volume += computeVolumeConservationForce(v1,v2,v0,volume_force);
       *cell[triangle[2]]->force_volume += computeVolumeConservationForce(v2,v0,v1,volume_force);
@@ -242,12 +242,12 @@ void RbcOldModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & partic
 
     // Edges
     int edge_n=0;
-    for (const Array<plint,2> & edge : cellConstants.edge_list) {
-      const Array<double,3> & v0 = cell[edge[0]]->position;
-      const Array<double,3> & v1 = cell[edge[1]]->position;
+    for (const hemo::Array<plint,2> & edge : cellConstants.edge_list) {
+      const hemo::Array<double,3> & v0 = cell[edge[0]]->position;
+      const hemo::Array<double,3> & v1 = cell[edge[1]]->position;
 
       // Link force
-      const Array<double,3> l_force = computeInPlaneHighOrderForce(v0,v1,cellConstants.edge_length_eq_list[edge_n],k_link);
+      const hemo::Array<double,3> l_force = computeInPlaneHighOrderForce(v0,v1,cellConstants.edge_length_eq_list[edge_n],k_link);
       *cell[edge[0]]->force_link += l_force;
       *cell[edge[1]]->force_link -= l_force;
       
@@ -257,12 +257,12 @@ void RbcOldModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & partic
 			const double edgeAngle = computeSignedAngle(edge[0],edge[1],kVertex, lVertex, angleFound,edge_n,cellConstants.triangle_list);
 
 			if (angleFound) {
-				Array<double,3> iNormal = computeTriangleNormal(getVertex(edge[0]),getVertex(edge[1]),getVertex(kVertex));
-				Array<double,3> jNormal = computeTriangleNormal(getVertex(edge[0]),getVertex(edge[1]),getVertex(lVertex));
+				hemo::Array<double,3> iNormal = computeTriangleNormal(getVertex(edge[0]),getVertex(edge[1]),getVertex(kVertex));
+				hemo::Array<double,3> jNormal = computeTriangleNormal(getVertex(edge[0]),getVertex(edge[1]),getVertex(lVertex));
         double Ai = computeTriangleArea(getVertex(edge[0]),getVertex(edge[1]),getVertex(kVertex));
         double Aj = computeTriangleArea(getVertex(edge[0]),getVertex(edge[1]),getVertex(lVertex));
 
-        Array<double,3> fi,fj,fk,fl;
+        hemo::Array<double,3> fi,fj,fk,fl;
         //OKAY... eqArea is actually the mean area of all triangles, this is
         //like MEGA-WRONG. lol
         fi = computeBendingForce4p (v0,v1,cell[kVertex]->position, cell[lVertex]->position, iNormal, jNormal, 
