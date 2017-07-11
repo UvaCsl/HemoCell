@@ -8,9 +8,9 @@
 #include "vWFModel.h"
 
 inline void meshRotation (TriangularSurfaceMesh<double> * mesh, hemo::Array<double,3> rotationAngles) {
-    hemo::Array<double,2> xRange, yRange, zRange;
+    plb::Array<double,2> xRange, yRange, zRange;
     mesh->computeBoundingBox (xRange, yRange, zRange);
-    hemo::Array<double,3> meshCenter = hemo::Array<double,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
+    plb::Array<double,3> meshCenter = plb::Array<double,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
     mesh->translate(-1.0 * meshCenter);
     mesh->rotateXYZ(rotationAngles[0], rotationAngles[1], rotationAngles[2]);
     mesh->translate(meshCenter);
@@ -193,8 +193,8 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
         {
             // Store mesh positions and rotations
             //randomAngles[i][j] = hemo::Array<T, 3>(1.0,0.0,0.0);
-            randomAngles[i][j] = hemo::Array<double, 3>(packAngles[i][j][0], packAngles[i][j][1], packAngles[i][j][2]);
-            positions[i][j] =hemo::Array<double,3>(packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]);
+            randomAngles[i][j] = hemo::Array<double, 3>({packAngles[i][j][0], packAngles[i][j][1], packAngles[i][j][2]});
+            positions[i][j] =hemo::Array<double,3>({packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]});
             cellIds[i][j] = cellIdss[i][j];
 
         }
@@ -226,7 +226,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
             domain.x0 + fLocation.x, domain.x1 + fLocation.x,
             domain.y0 + fLocation.y, domain.y1 + fLocation.y,
             domain.z0 + fLocation.z, domain.z1 + fLocation.z );
-    hemo::Array<double,2> xRange, yRange, zRange;
+    plb::Array<double,2> xRange, yRange, zRange;
 
     for (pluint iCF = 0; iCF < cellFields.size(); ++iCF) {
         if (dynamic_cast<vWFModel*>(cellFields[iCF]->mechanics)) {
@@ -236,7 +236,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
 
         TriangularSurfaceMesh<double> * mesh = copyTriangularSurfaceMesh(cellFields[iCF]->getMesh(), emptyEoTSM[iCF]);
         mesh->computeBoundingBox (xRange, yRange, zRange);
-        mesh->translate(hemo::Array<double,3>(-(xRange[0]+xRange[1])/2.0, -(yRange[0]+yRange[1])/2.0, -(zRange[0]+zRange[1])/2.0));
+        mesh->translate(plb::Array<double,3>(-(xRange[0]+xRange[1])/2.0, -(yRange[0]+yRange[1])/2.0, -(zRange[0]+zRange[1])/2.0));
         meshes[iCF] = mesh;
         volumes[iCF] = MeshMetrics<T>(*mesh).getVolume();
 

@@ -10,7 +10,12 @@ namespace hemo {
     Array(const std::initializer_list<_Tp> & il){
       std::copy(il.begin(),il.end(), this->_M_elems);
     }
-
+    Array(const plb::Array<_Tp,_Nm> & ext) {
+      for (std::size_t i = 0 ; i < _Nm ; i++) {
+        (*this)[i] = ext[i];
+      }
+    } 
+    
     inline Array<_Tp, _Nm> &
     operator+=(const hemo::Array<_Tp, _Nm>& __two) {
       for(std::size_t i = 0 ; i < _Nm ; i++ ) {
@@ -20,17 +25,46 @@ namespace hemo {
     }
     
     inline Array<_Tp, _Nm> &
+    operator-=(const hemo::Array<_Tp, _Nm>& __two) {
+      for(std::size_t i = 0 ; i < _Nm ; i++ ) {
+        (*this)[i] -= __two[i];
+      }
+      return *this;
+    }
+    
+    inline Array<_Tp, _Nm> &
+    operator+=(const plb::Array<_Tp, _Nm>& __two) {
+      for(std::size_t i = 0 ; i < _Nm ; i++ ) {
+        (*this)[i] += __two[i];
+      }
+      return *this;
+    }
+        
+    inline Array<_Tp, _Nm> &
     operator*=(const _Tp & mul) {
       for(std::size_t i = 0 ; i < _Nm ; i++ ) {
         (*this)[i] *= mul;
       }
       return *this;
     }
+    
+    inline Array<_Tp, _Nm> &
+    operator/=(const _Tp & div) {
+      for(std::size_t i = 0 ; i < _Nm ; i++ ) {
+        (*this)[i] /= div;
+      }
+      return *this;
+    }
+    
+    
     inline Array<_Tp, _Nm> &
     operator=(const std::initializer_list<_Tp> & c) {
       std::copy(c.begin(),c.end(), this->_M_elems);
       return *this;
     } 
+    inline void resetToZero() {
+      this->fill(0);
+    }
 
   };
   
@@ -43,6 +77,22 @@ namespace hemo {
     return ret;
   }
   
+    template<typename _Tp, std::size_t _Nm>
+  inline Array<_Tp, _Nm> operator+(const Array<_Tp, _Nm> & one, const plb::Array<_Tp, _Nm> & two) {
+    Array<_Tp, _Nm> ret;
+    for (std::size_t i = 0 ; i < _Nm ; i++ ) {
+      ret[i] = one[i]+two[i];
+    }
+    return ret;
+  }
+  template<typename _Tp, std::size_t _Nm>
+  inline Array<_Tp, _Nm> operator+(const Array<_Tp, _Nm> & one, const _Tp & two) {
+    Array<_Tp, _Nm> ret;
+    for (std::size_t i = 0 ; i < _Nm ; i++ ) {
+      ret[i] = one[i]+two;
+    }
+    return ret;
+  }
   template<typename _Tp, std::size_t _Nm>
   inline Array<_Tp, _Nm> operator-(const Array<_Tp, _Nm> & one, const Array<_Tp, _Nm> & two) {
     Array<_Tp, _Nm> ret;
@@ -110,5 +160,62 @@ namespace hemo {
     }
     return std::sqrt(ret);
   };
+  
+  template<typename _Tp>
+  _Tp angleBetweenVectors(const Array<_Tp,3> & one, const Array<_Tp,3> & two)
+  {
+    Array<_Tp,3> cross;
+    crossProduct(one, two, cross); 
+    return std::atan2(norm(cross), dot(one,two));
+  }
+ 
+  template<typename _Tp>
+  _Tp computeTriangleArea(const Array<_Tp,3> & v0, const Array<_Tp,3> & v1, const Array<_Tp,3> & v2)
+  {
+    Array<_Tp,3> e1 = v1 - v0;
+    Array<_Tp,3> e2 = v2 - v0;
+    Array<_Tp,3> cross;
+    crossProduct(e1, e2, cross);
+    
+    return (_Tp) 0.5 * norm(cross);
+  }
+  
+  template<typename _Tp>
+  void computeTriangleAreaAndUnitNormal(const Array<_Tp,3> & v0, const Array<_Tp,3> & v1, const Array<_Tp,3> & v2, _Tp & area, Array<_Tp,3>& unitNormal)
+  {
+      Array<_Tp,3> e01 = v1 - v0;
+      Array<_Tp,3> e02 = v2 - v0;
+
+      crossProduct(e01, e02, unitNormal);
+      _Tp normN = norm(unitNormal);
+      if (!util::isZero(normN)) {
+          area = (_Tp) 0.5 * normN;
+          unitNormal /= normN;
+      } else {
+          area = (_Tp) 0;
+          unitNormal.resetToZero();
+      }
+  }
+  
+  template<typename _Tp>
+  Array<_Tp,3> computeTriangleNormal(const Array<_Tp,3> & v0, const Array<_Tp,3> & v1, const Array<_Tp,3> & v2, bool isAreaWeighted)
+  {
+      Array<_Tp,3> e01 = v1 - v0;
+      Array<_Tp,3> e02 = v2 - v0;
+
+      Array<_Tp,3> n;
+      crossProduct(e01, e02, n);
+      if (!isAreaWeighted) {
+          _Tp normN = norm(n);
+          if (!util::isZero(normN)) {
+              n /= normN;
+          } else {
+              n.resetToZero();
+          }
+      }
+      return n;
+  }
+  
 }
+
 #endif

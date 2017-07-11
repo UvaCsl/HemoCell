@@ -139,7 +139,7 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
 float * WriteFluidField::outputVelocity() {
   float * output = new float [(*nCells)*3];
   unsigned int n = 0;
-  hemo::Array<double,3> vel;
+  plb::Array<double,3> vel;
   for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
     for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
       for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {

@@ -18,7 +18,7 @@ using namespace plb;
 template<typename T>
 class ElementsOfTriangularSurfaceMesh {
 public:
-    std::vector<hemo::Array<T,3> > vertexList;
+    std::vector<plb::Array<T,3> > vertexList;
     std::vector<plint> emanatingEdgeList;
     std::vector<Edge> edgeList;
 };

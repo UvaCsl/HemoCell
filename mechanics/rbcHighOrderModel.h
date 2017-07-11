@@ -1,7 +1,7 @@
 #ifndef HEMOCELL_RBCHIGHORDERMODEL_H
 #define HEMOCELL_RBCHIGHORDERMODEL_H
 
-#include "hemocell_internal.h"
+#include "hemocell_internal_no_gpl.h"
 #include "constantConversion.h"
 #include "config.h"
 #include "cellMechanics.h"

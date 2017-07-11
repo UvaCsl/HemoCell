@@ -489,6 +489,33 @@ void HemoCellParticleField::applyRepulsionForce(bool forced) {
   }
 }
 
+void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
+  vector<HemoCellParticle*> localParticles;
+  findParticles(domain,localParticles);
+  //TODO, remove casting
+  HemoCellParticle * sparticle;
+  //Prealloc is nice
+  hemo::Array<double,3> velocity;
+  plb::Array<double,3> velocity_comp;
+
+  for (pluint i = 0; i < localParticles.size(); i++ ) {
+    sparticle = localParticles[i];
+    //Clever trick to allow for different kernels for different particle types.
+    (*cellFields)[sparticle->celltype]->kernelMethod(*atomicLattice,sparticle);
+
+    //We have the kernels, now calculate the velocity of the particles.
+    //Palabos developers, sorry for not using a functional...
+    velocity = {0.0,0.0,0.0};
+    for (pluint j = 0; j < sparticle->kernelLocations.size(); j++) {
+      //Yay for direct access
+      sparticle->kernelLocations[j]->computeVelocity(velocity_comp);
+      velocity += (velocity_comp * sparticle->kernelWeights[j]);
+    }
+    sparticle->v = velocity;
+  }
+
+}
+
 void HemoCellParticleField::spreadParticleForce(Box3D domain) {
   vector<HemoCellParticle*> localParticles;
   findParticles(domain,localParticles);
@@ -516,33 +543,6 @@ void HemoCellParticleField::spreadParticleForce(Box3D domain) {
     }
 
   }
-}
-
-void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
-  vector<HemoCellParticle*> localParticles;
-  findParticles(domain,localParticles);
-  //TODO, remove casting
-  HemoCellParticle * sparticle;
-  //Prealloc is nice
-  hemo::Array<double,3> velocity;
-  hemo::Array<double,3> velocity_comp;
-
-  for (pluint i = 0; i < localParticles.size(); i++ ) {
-    sparticle = localParticles[i];
-    //Clever trick to allow for different kernels for different particle types.
-    (*cellFields)[sparticle->celltype]->kernelMethod(*atomicLattice,sparticle);
-
-    //We have the kernels, now calculate the velocity of the particles.
-    //Palabos developers, sorry for not using a functional...
-    velocity = {0.0,0.0,0.0};
-    for (pluint j = 0; j < sparticle->kernelLocations.size(); j++) {
-      //Yay for direct access
-      sparticle->kernelLocations[j]->dynamics->computeVelocity(velocity_comp);
-      velocity += velocity_comp * sparticle->kernelWeights[j];
-    }
-    sparticle->v = velocity;
-  }
-
 }
 
 HemoCellParticleDataTransfer& HemoCellParticleField::getDataTransfer() {

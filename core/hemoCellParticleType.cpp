@@ -67,7 +67,7 @@ hemo::Array<double,6> HemoCellField::getOriginalBoundingBox() {
   bb[4] = bb[5] = meshElement.getVertex(0)[2];
   
   for (long int i = 0 ; i < meshElement.getNumVertices() ; i++) {
-    const hemo::Array<double,3> & vertex = meshElement.getVertex(i);
+    const hemo::Array<double,3> vertex(meshElement.getVertex(i));
     if (bb[0] > vertex[0]) { bb[0] = vertex[0]; }
     if (bb[1] < vertex[0]) { bb[1] = vertex[0]; }
     if (bb[2] > vertex[1]) { bb[2] = vertex[1]; }

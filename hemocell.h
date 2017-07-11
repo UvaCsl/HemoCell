@@ -86,7 +86,7 @@ class HemoCell {
       TriangleBoundary3D<double> * boundaryElement = new TriangleBoundary3D<double>(constructMeshElement(constructType, 
                            (*materialCfg)["MaterialModel"]["radius"].read<double>()/param::dx, 
                            (*materialCfg)["MaterialModel"]["minNumTriangles"].read<double>(), param::dx, 
-                           string(""), hemo::Array<double,3>(0.,0.,0.), aspectRatio));
+                           string(""), plb::Array<double,3>(0.,0.,0.), aspectRatio));
       meshElement = new TriangularSurfaceMesh<double>(boundaryElement->getMesh());
     }
 

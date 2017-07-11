@@ -6,7 +6,7 @@
 namespace plb {
 
 template<typename T>
-TriangleSet<T> constructSphereIcosahedron(hemo::Array<T,3> const& center, T radius, plint minNumOfTriangles)
+TriangleSet<T> constructSphereIcosahedron(plb::Array<T,3> const& center, T radius, plint minNumOfTriangles)
 {
     std::vector<typename TriangleSet<T>::Triangle> triangles;
 #ifdef PLB_DEBUG
@@ -21,18 +21,18 @@ TriangleSet<T> constructSphereIcosahedron(hemo::Array<T,3> const& center, T radi
     T one = -0.5257311121; // one=1/sqrt(1+t^2) , unit sphere
 
     // Initial 6 vertices
-    hemo::Array<T,3> v1( tau, one, 0); //ZA
-    hemo::Array<T,3> v2(-tau, one, 0); //ZB
-    hemo::Array<T,3> v3(-tau, -one, 0); //ZC
-    hemo::Array<T,3> v4( tau, -one, 0); //ZD
-    hemo::Array<T,3> v5( one, 0 , tau); //YA
-    hemo::Array<T,3> v6( one, 0 , -tau); //YB
-    hemo::Array<T,3> v7(-one, 0 , -tau); //YC
-    hemo::Array<T,3> v8(-one, 0 , tau); //YD
-    hemo::Array<T,3> v9( 0 , tau, one); //XA
-    hemo::Array<T,3> v10( 0 , -tau, one); //XB
-    hemo::Array<T,3> v11( 0 , -tau, -one); //XC
-    hemo::Array<T,3> v12( 0 , tau, -one); //XD
+    plb::Array<T,3> v1( tau, one, 0); //ZA
+    plb::Array<T,3> v2(-tau, one, 0); //ZB
+    plb::Array<T,3> v3(-tau, -one, 0); //ZC
+    plb::Array<T,3> v4( tau, -one, 0); //ZD
+    plb::Array<T,3> v5( one, 0 , tau); //YA
+    plb::Array<T,3> v6( one, 0 , -tau); //YB
+    plb::Array<T,3> v7(-one, 0 , -tau); //YC
+    plb::Array<T,3> v8(-one, 0 , tau); //YD
+    plb::Array<T,3> v9( 0 , tau, one); //XA
+    plb::Array<T,3> v10( 0 , -tau, one); //XB
+    plb::Array<T,3> v11( 0 , -tau, -one); //XC
+    plb::Array<T,3> v12( 0 , tau, -one); //XD
 
     // Structure for unit icosahedron
     typename TriangleSet<T>::Triangle tmp;
@@ -81,7 +81,7 @@ TriangleSet<T> constructSphereIcosahedron(hemo::Array<T,3> const& center, T radi
     // Perform refinement iterations
 
     plint size;
-    hemo::Array<T,3>  va,vb,vc,vd,ve,vf;
+    plb::Array<T,3>  va,vb,vc,vd,ve,vf;
     while ((size = triangles.size()) < minNumOfTriangles) {
         for (plint i = 0; i < size; i++) {
             va = triangles[i][0];
@@ -128,8 +128,8 @@ TriangleSet<T> constructSphereIcosahedron(hemo::Array<T,3> const& center, T radi
 }
 
 template<typename T>
-hemo::Array<T,3> spherePointToRBCPoint(const hemo::Array<T,3> point, T R) {
-    hemo::Array<T,3> rbcPoint(point);
+plb::Array<T,3> spherePointToRBCPoint(const plb::Array<T,3> point, T R) {
+    plb::Array<T,3> rbcPoint(point);
     T r2 = rbcPoint[0]*rbcPoint[0] + rbcPoint[1]*rbcPoint[1];
     T val = rbcPoint[2];
     plint sign = (T(0) < val) - (val < T(0));
@@ -145,8 +145,8 @@ hemo::Array<T,3> spherePointToRBCPoint(const hemo::Array<T,3> point, T R) {
 }
 
 template<typename T>
-hemo::Array<T,3> spherePointToEllipsoidPoint(const hemo::Array<T,3> point, T R, T aspectRatio) {
-    hemo::Array<T,3> elPoint(point);
+plb::Array<T,3> spherePointToEllipsoidPoint(const plb::Array<T,3> point, T R, T aspectRatio) {
+    plb::Array<T,3> elPoint(point);
     T r2 = elPoint[0]*elPoint[0] + elPoint[1]*elPoint[1];
     T val = elPoint[2];
     plint sign = (T(0) < val) - (val < T(0));
@@ -160,8 +160,8 @@ hemo::Array<T,3> spherePointToEllipsoidPoint(const hemo::Array<T,3> point, T R, 
 }
 
 template<typename T>
-hemo::Array<T,3> mapMeshAsRBC(const hemo::Array<T,3> point, const hemo::Array<T,3> center, T R) {
-    hemo::Array<T,3> rbcPoint(point - center);
+plb::Array<T,3> mapMeshAsRBC(const plb::Array<T,3> point, const plb::Array<T,3> center, T R) {
+    plb::Array<T,3> rbcPoint(point - center);
     rbcPoint[0] = rbcPoint[0] > R ? R : rbcPoint[0];
     rbcPoint[1] = rbcPoint[1] > R ? R : rbcPoint[1];
     T r2 = rbcPoint[0]*rbcPoint[0] + rbcPoint[1]*rbcPoint[1];
@@ -182,20 +182,20 @@ hemo::Array<T,3> mapMeshAsRBC(const hemo::Array<T,3> point, const hemo::Array<T,
 
 
 template<typename T>
-TriangleSet<T> constructRBC(hemo::Array<T,3> const& center, T radius, plint minNumOfTriangles, hemo::Array<T,3> const& eulerAngles) {
+TriangleSet<T> constructRBC(plb::Array<T,3> const& center, T radius, plint minNumOfTriangles, plb::Array<T,3> const& eulerAngles) {
     return constructCell(center, radius, "./lib/RBC.stl", eulerAngles);
 }
 
 
 template<typename T>
-TriangleSet<T> constructRBCFromSphere(hemo::Array<T,3> const& center, T radius, plint minNumOfTriangles,
-        hemo::Array<T,3> const& eulerAngles, pluint initialSphereShape)
+TriangleSet<T> constructRBCFromSphere(plb::Array<T,3> const& center, T radius, plint minNumOfTriangles,
+        plb::Array<T,3> const& eulerAngles, pluint initialSphereShape)
 {
     TriangleSet<T> sphere;
     if (initialSphereShape == 1) {
-        sphere = constructSphereIcosahedron<T>(hemo::Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
+        sphere = constructSphereIcosahedron<T>(plb::Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
     } else if (initialSphereShape == 0) {
-        sphere = constructSphere<T>(hemo::Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
+        sphere = constructSphere<T>(plb::Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
     }
     sphere.rotate(
             PI/2.0 + eulerAngles[0],
@@ -219,14 +219,14 @@ TriangleSet<T> constructRBCFromSphere(hemo::Array<T,3> const& center, T radius, 
 
 
 template<typename T>
-TriangleSet<T> constructEllipsoidFromSphere(hemo::Array<T,3> const& center, T radius, T aspectRatio, plint minNumOfTriangles,
-        hemo::Array<T,3> const& eulerAngles, pluint initialSphereShape)
+TriangleSet<T> constructEllipsoidFromSphere(plb::Array<T,3> const& center, T radius, T aspectRatio, plint minNumOfTriangles,
+        plb::Array<T,3> const& eulerAngles, pluint initialSphereShape)
 {
     TriangleSet<T> sphere;
     if (initialSphereShape == 1) {
-        sphere = constructSphereIcosahedron<T>(hemo::Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
+        sphere = constructSphereIcosahedron<T>(plb::Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
     } else if (initialSphereShape == 0) {
-        sphere = constructSphere<T>(hemo::Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
+        sphere = constructSphere<T>(plb::Array<T,3>(0,0,0), 1.0, minNumOfTriangles);
     }
     sphere.rotate(
             PI/2.0 + eulerAngles[0],
@@ -249,11 +249,11 @@ TriangleSet<T> constructEllipsoidFromSphere(hemo::Array<T,3> const& center, T ra
 
 
 template<typename T>
-TriangleSet<T> constructCell(hemo::Array<T,3> const& center, T radius, std::string cellFilename, hemo::Array<T,3> const& eulerAngles) {
+TriangleSet<T> constructCell(plb::Array<T,3> const& center, T radius, std::string cellFilename, plb::Array<T,3> const& eulerAngles) {
 //    Cuboid<T> boundingCuboid;
     TriangleSet<T> Cell(cellFilename);
     Cuboid<T> cb = Cell.getBoundingCuboid();
-    hemo::Array<T,3> dr = (cb.upperRightCorner - cb.lowerLeftCorner);
+    plb::Array<T,3> dr = (cb.upperRightCorner - cb.lowerLeftCorner);
     T scaleFactor = std::max(dr[0],std::max(dr[1],dr[2]));
     Cell.scale(radius*2.0/scaleFactor);
     Cell.rotate(

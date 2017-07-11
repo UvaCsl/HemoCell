@@ -7,7 +7,7 @@
 namespace plb {
 
 /// Decide if a Lagrangian point is contained in 3D box, boundaries exclusive
-inline bool contained_sane(hemo::Array<int,3> const& x, Box3D const& box) {
+inline bool contained_sane(hemo::Array<plint,3> const& x, Box3D const& box) {
     return x[0]>=box.x0 && x[0]<=box.x1 &&
            x[1]>=box.y0 && x[1]<=box.y1 &&
            x[2]>=box.z0 && x[2]<=box.z1;
@@ -56,7 +56,7 @@ inline void interpolationCoefficientsPhi2 (
     const hemo::Array<double,3> position = {position_tmp[0] -relLoc[0], position_tmp[1]-relLoc[1],position_tmp[2]-relLoc[2]};
 
     //Get our reference node (0,0)
-    const hemo::Array<plint,3> center(position[0] + 0.5, position[1] + 0.5, position[2] + 0.5); 
+    const hemo::Array<plint,3> center({plint(position[0] + 0.5), plint(position[1] + 0.5), plint(position[2] + 0.5)}); 
     
     //Boundingbox of lattice
     const Box3D boundingBox = block.getBoundingBox();

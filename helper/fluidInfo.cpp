@@ -12,7 +12,7 @@
 void GatherFluidVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     BlockLattice3D<double,DESCRIPTOR>* ff = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
     HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[1]);
-    hemo::Array<double,3> vel_vec;
+    plb::Array<double,3> vel_vec;
     ff->grid[domain.x0][domain.y0][domain.z0].computeVelocity(vel_vec);
     double vel = sqrt(vel_vec[0]*vel_vec[0]+vel_vec[1]*vel_vec[1]+vel_vec[2]*vel_vec[2]);
     double min=vel,max=vel,avg=0.;
@@ -123,7 +123,7 @@ FluidStatistics FluidInfo::calculateForceStatistics(HemoCell* hemocell) {
 
   setExternalVector(*hemocell->lattice, (*hemocell->lattice).getBoundingBox(),
           DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-          hemo::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
+          plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
   
   return result;
 }

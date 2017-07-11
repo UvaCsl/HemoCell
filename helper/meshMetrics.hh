@@ -8,7 +8,7 @@
  */
 template<typename T>
 T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plint jVertex, plint & kVertex, plint & lVertex) {
-    hemo::Array<T,3> x1 = mesh.getVertex(iVertex), x2(0.,0.,0.), x3(0.,0.,0.), x4(0.,0.,0.);
+    hemo::Array<T,3> x1 = mesh.getVertex(iVertex), x2({0.,0.,0.}), x3({0.,0.,0.}), x4({0.,0.,0.});
 
     std::vector<plint> adjacentTriangles = mesh.getAdjacentTriangleIds(iVertex, jVertex);
 	plint iTriangle=adjacentTriangles[0], jTriangle=adjacentTriangles[1];
@@ -79,9 +79,9 @@ void MeshMetrics<T>::init()    {
 
     Nv = mesh.getNumVertices();
     Nt = mesh.getNumTriangles();
-    hemo::Array<T,2> xRange;
-    hemo::Array<T,2> yRange;
-    hemo::Array<T,2> zRange;
+    plb::Array<T,2> xRange;
+    plb::Array<T,2> yRange;
+    plb::Array<T,2> zRange;
     mesh.computeBoundingBox (xRange, yRange, zRange);
     cellRadius = max(xRange[1] - xRange[0], yRange[1] - yRange[0]);
     cellRadius = max(cellRadius , zRange[1] - zRange[0]) * 0.5;
@@ -127,7 +127,7 @@ void MeshMetrics<T>::init()    {
             hemo::Array<T,3> v2 = mesh.getVertex(iTriangle, 2);
             hemo::Array<T,3> tmp;
             crossProduct(v1, v2, tmp);
-            T triangleVolumeT6 =  VectorTemplateImpl<T,3>::scalarProduct(v0,tmp);
+            T triangleVolumeT6 =  dot(v0,tmp);
             volume += triangleVolumeT6/6.0/3.0; // every volume is evaluated 3 times
         }
     }
