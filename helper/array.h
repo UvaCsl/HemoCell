@@ -1,6 +1,10 @@
 #ifndef HEMO_ARRAY_H
 #define HEMO_ARRAY_H
 
+#ifdef WITHOUT_PLB
+#include "palabos_array_interface.h"
+#endif
+
 namespace hemo {
 
   
@@ -188,7 +192,7 @@ namespace hemo {
 
       crossProduct(e01, e02, unitNormal);
       _Tp normN = norm(unitNormal);
-      if (!util::isZero(normN)) {
+      if (normN != 0.0) {
           area = (_Tp) 0.5 * normN;
           unitNormal /= normN;
       } else {
@@ -207,7 +211,7 @@ namespace hemo {
       crossProduct(e01, e02, n);
       if (!isAreaWeighted) {
           _Tp normN = norm(n);
-          if (!util::isZero(normN)) {
+          if (normN != 0) {
               n /= normN;
           } else {
               n.resetToZero();

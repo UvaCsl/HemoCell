@@ -1,7 +1,7 @@
 #ifndef HEMOCELL_RBCHIGHORDERMODEL_H
 #define HEMOCELL_RBCHIGHORDERMODEL_H
 
-#include "hemocell_internal_no_gpl.h"
+#include "hemocell_internal.h"
 #include "constantConversion.h"
 #include "config.h"
 #include "cellMechanics.h"
@@ -23,7 +23,7 @@ class RbcHighOrderModel : public CellMechanics {
   public:
   RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) ;
 
-  void ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> &lpc, pluint ctype) ;
+  void ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> &lpc, size_t ctype) ;
 
   void statistics();
 

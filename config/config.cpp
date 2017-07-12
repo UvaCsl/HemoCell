@@ -1,28 +1,36 @@
 #include "config.h"
+namespace hemo {
+  Config::Config(std::string paramXmlFileName) 
+  {  
+    orig = new tinyxml2::XMLDocument();
+    orig->LoadFile(paramXmlFileName.c_str());
+   // Check if it is a fresh start or a checkpointed run 
+   std::string firstField = orig->FirstChild()->Value(); 
 
-Config::Config(std::string paramXmlFileName) : plb::XMLreader(paramXmlFileName)
-{  
-
- // Check if it is a fresh start or a checkpointed run 
- std::string firstField = (*(this->getChildren(this->getFirstId())[0])).getName(); 
-
- if (firstField == "Checkpoint") { checkpointed = 1; } //If the first field is not checkpoint but hemocell
- else { checkpointed = 0; }
+   if (firstField == "Checkpoint") { checkpointed = 1; } //If the first field is not checkpoint but hemocell
+   else { checkpointed = 0; }
 
 
-}
+  }
 
-/*
- * Overload the overloaded operator to provide convenient access to
- * this["parameters"]["etc"]
- * Also hide the read() semantics, so it either returns a 
- */
-plb::XMLreaderProxy Config::operator[] (std::string name) const
-{
- // Set our direct access
- if (checkpointed) {
-   return plb::XMLreader::operator[]("Checkpoint")["hemocell"][name];
- } else {
-   return plb::XMLreader::operator[]("hemocell")[name];
- }
+  /*
+   * Overload the overloaded operator to provide convenient access to
+   * this["parameters"]["etc"]
+   * Also hide the read() semantics, so it either returns a 
+   */
+  XMLElement  Config::operator[] (std::string name) const
+  {
+   // Set our direct access
+   if (checkpointed) {
+     return static_cast<XMLElement>(orig->FirstChildElement("Checkpoint"))["hemocell"][name];
+   } else {
+     return static_cast<XMLElement>(orig->FirstChildElement("hemocell"))[name];
+   }
+  }
+  
+  XMLElement XMLElement::operator[] (std::string name) const {
+    return static_cast<XMLElement>(orig->FirstChildElement(name.c_str()));
+  }
+
+  
 }

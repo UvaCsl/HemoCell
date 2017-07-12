@@ -12,7 +12,7 @@ RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellFie
                   eta_v( RbcHighOrderModel::calculate_etaV(modelCfg_) )
     {};
 
-void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> & lpc, pluint ctype) {
+void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> & lpc, size_t ctype) {
 
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;
