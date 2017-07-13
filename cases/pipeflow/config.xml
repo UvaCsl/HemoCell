@@ -10,8 +10,8 @@
 <ibm>
     <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5] -->
     <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
-    <stepMaterialEvery> 10 </stepMaterialEvery> <!-- Update particle material model after this many fluid time steps. -->
-    <stepParticleEvery> 10 </stepParticleEvery> <!-- Update particles position after this many fluid time steps. -->
+    <stepMaterialEvery> 20 </stepMaterialEvery> <!-- Update particle material model after this many fluid time steps. -->
+    <stepParticleEvery> 5 </stepParticleEvery> <!-- Update particles position after this many fluid time steps. -->
     <minForceLimit> 1e-3 </minForceLimit> <!-- Point of increase for integration steps -->
     <maxForceLimit> 2e-3 </maxForceLimit> <!-- Point of decrease for integration steps -->
 </ibm>
@@ -28,14 +28,14 @@
     <blockSize> -1 </blockSize>
     <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
     <Re> 0.1 </Re>   <!--Reynolds number-->
-    <particleEnvelope> 35 </particleEnvelope>
+    <particleEnvelope> 25 </particleEnvelope>
     <kRep> 2e-22 </kRep> <!-- Repulsion Constant -->
     <RepCutoff> 0.7 </RepCutoff> <!-- RepulsionCutoff -->
 </domain>
 
 <sim>
-    <tmax> 1000 </tmax> <!-- total number of iterations -->
-    <tmeas>  100 </tmeas> <!-- interval after which data is written --> 
+    <tmax> 1000000 </tmax> <!-- total number of iterations -->
+    <tmeas>  5000 </tmeas> <!-- interval after which data is written --> 
     <tcheckpoint> 200000 </tcheckpoint> 
     <tbalance> 100 </tbalance> <!-- interval after which balance is performed --> 
 </sim>

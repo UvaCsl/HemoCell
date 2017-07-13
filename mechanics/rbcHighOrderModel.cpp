@@ -7,7 +7,7 @@ RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellFie
                   k_volume( RbcHighOrderModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
                   k_area( RbcHighOrderModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
                   k_link( RbcHighOrderModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
-                  k_bend( RbcHighOrderModel::calculate_kBend(modelCfg_) ),
+                  k_bend( RbcHighOrderModel::calculate_kBend(modelCfg_,*cellField_.meshmetric) ),
                   eta_m( RbcHighOrderModel::calculate_etaM(modelCfg_) ),
                   eta_v( RbcHighOrderModel::calculate_etaV(modelCfg_) )
     {};
@@ -113,11 +113,15 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       }
       const Array<double,3> vertexes_middle = vertexes_sum/(6.0-absent);
       
+      const Array<double, 3> dev = vertexes_middle - cell[i]->position;
+      const double n_dev = norm(dev);
+      const double dDev = n_dev / cellConstants.edge_mean_eq;
+
       //TODO scale bending force
 #ifdef FORCE_LIMIT
-      const Array<double,3> bending_force = (vertexes_middle - cell[i]->position) * k_bend;
+      const Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * dev / n_dev; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
 #else
-      const Array<double,3> bending_force = (vertexes_middle - cell[i]->position) * k_bend;
+      const Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * dev / n_dev;
 #endif      
       //Apply bending force
       *cell[i]->force_bending += bending_force;
@@ -238,8 +242,9 @@ double RbcHighOrderModel::calculate_etaM(Config & cfg ){
   return cfg["MaterialModel"]["eta_m"].read<double>() * param::dx / param::dt / param::df;
 };
 
-double RbcHighOrderModel::calculate_kBend(Config & cfg ){
-  return cfg["MaterialModel"]["kBend"].read<double>() * param::kBT_lbm;
+double RbcHighOrderModel::calculate_kBend(Config & cfg, MeshMetrics<double> & meshmetric ){
+  double eqLength = meshmetric.getMeanLength();
+  return cfg["MaterialModel"]["kBend"].read<double>() * param::kBT_lbm / eqLength;
 };
 
 double RbcHighOrderModel::calculate_kVolume(Config & cfg, MeshMetrics<double> & meshmetric){

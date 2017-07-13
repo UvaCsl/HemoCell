@@ -27,7 +27,7 @@ class RbcHighOrderModel : public CellMechanics {
 
   void statistics();
 
-  static double calculate_kBend(Config & cfg);
+  static double calculate_kBend(Config & cfg, MeshMetrics<double> &);
   static double calculate_kVolume(Config & cfg, MeshMetrics<double> &);
   static double calculate_kArea(Config & cfg, MeshMetrics<double> &);
   static double calculate_kLink(Config & cfg, MeshMetrics<double> &);
