@@ -11,7 +11,6 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<hemo::Array<plint,2>> edge_bending_triangles_list_,
                       vector<hemo::Array<plint,2>> edge_bending_triangles_outer_points_,
                       vector<double> triangle_area_eq_list_,
-                      vector<hemo::Array<plint,6>> vertex_edges_,
                       double volume_eq_, double area_mean_eq_, 
                       double edge_mean_eq_, double angle_mean_eq_) :
     cellField(cellField_),
@@ -22,7 +21,6 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
     edge_bending_triangles_list(edge_bending_triangles_list_),
     edge_bending_triangles_outer_points(edge_bending_triangles_outer_points_),
     triangle_area_eq_list(triangle_area_eq_list_),
-    vertex_edges(vertex_edges_),
     volume_eq(volume_eq_),
     area_mean_eq(area_mean_eq_),
     edge_mean_eq(edge_mean_eq_),
@@ -149,27 +147,7 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     }
     mean_angle_eq_ /= edge_angle_eq_list_.size();
 
-    //Pre-init, making things easy
-    vector<hemo::Array<plint,6>> vertex_edges_(cellField.meshElement.getNumVertices(),{-1,-1,-1,-1,-1,-1});
-    //Calculate triangles neighbouring vertices
-    for (const hemo::Array<plint,2> & edge:  edge_list_) {
-      for (int k = 0 ; k < 6 ; k++) {
-        if (vertex_edges_[edge[0]][k] == -1) {
-          vertex_edges_[edge[0]][k] = edge[1];
-          break;
-        }
-      }
-     for (int k = 0 ; k < 6 ; k++) {
-        if (vertex_edges_[edge[1]][k] == -1) {
-          vertex_edges_[edge[1]][k] = edge[0];
-          break;
-        }
-      }
-    }
-    
-    
-    
-    CommonCellConstants CCC(cellField_,triangle_list_,edge_list_,edge_length_eq_list_,edge_angle_eq_list_,edge_bending_triangles_,edge_bending_triangles_outer_points_,triangle_area_eq_list_,vertex_edges_,volume_eq_,mean_area_eq_, mean_edge_eq_, mean_angle_eq_);
+    CommonCellConstants CCC(cellField_,triangle_list_,edge_list_,edge_length_eq_list_,edge_angle_eq_list_,edge_bending_triangles_,edge_bending_triangles_outer_points_,triangle_area_eq_list_,volume_eq_,mean_area_eq_, mean_edge_eq_, mean_angle_eq_);
     return CCC;
 };
 
