@@ -99,33 +99,6 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       triangle_n++;
     }
 
-//Vertex bending force loop
-    for (long unsigned int i = 0 ; i < cell.size() ; i++) {
-      hemo::Array<double,3> vertexes_sum = {0.,0.,0.};
-      const hemo::Array<plint,6> & edges = cellConstants.vertex_edges[i];
-      unsigned int absent = 0;
-      for (unsigned int j = 0 ; j < 6 ; j++ ) {
-        if (edges[j] == -1) {
-          absent++;
-          continue;
-        }
-        vertexes_sum += cell[edges[j]]->position;
-      }
-      const hemo::Array<double,3> vertexes_middle = vertexes_sum/(6.0-absent);
-      
-      //TODO scale bending force
-#ifdef FORCE_LIMIT
-      const hemo::Array<double,3> bending_force = (vertexes_middle - cell[i]->position) * k_bend;
-#else
-      const hemo::Array<double,3> bending_force = (vertexes_middle - cell[i]->position) * k_bend;
-#endif      
-      //Apply bending force
-      *cell[i]->force_bending += bending_force;
-      const hemo::Array<double,3> negative_bending_force = (bending_force/(6.0-absent))*-1.0;
-      for (unsigned int j = 0 ; j < 6 - absent; j++ ) {
-        *cell[j]->force_bending += negative_bending_force;
-      }              
-    }
     // Per-edge calculations
     int edge_n=0;
     for (const hemo::Array<plint,2> & edge : cellConstants.edge_list) {
@@ -169,8 +142,8 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const hemo::Array<double,3> b11 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,1)]->position;
       const hemo::Array<double,3> b12 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,2)]->position;
 
-      const hemo::Array<double,3> V1 = plb::computeTriangleNormal(b00,b01,b02, false);
-      const hemo::Array<double,3> V2 = plb::computeTriangleNormal(b10,b11,b12, false);
+      const hemo::Array<double,3> V1 = computeTriangleNormal(b00,b01,b02, false);
+      const hemo::Array<double,3> V2 = computeTriangleNormal(b10,b11,b12, false);
 
      
       //const hemo::Array<double,3> x2 = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
