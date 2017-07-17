@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
   defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
 
   boundaryCondition->setVelocityConditionOnBlockBoundaries (*hemocell.lattice, topChannel );
-  setBoundaryVelocity(*hemocell.lattice, topChannel, Array<T,3>(0.00815625,0,0)); // #calculated form: vmax=shearrate*h/32 = 0.04375, v_topwall,p = 0.75*vmax, v_top_lbm=v_topwall*(dt/dx)
+  setBoundaryVelocity(*hemocell.lattice, topChannel, plb::Array<T,3>(0.00815625,0,0)); // #calculated form: vmax=shearrate*h/32 = 0.04375, v_topwall,p = 0.75*vmax, v_top_lbm=v_topwall*(dt/dx)
 
 //  defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR> );
 
@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
   hemocell.lattice->periodicity().toggleAll(false);
   hemocell.lattice->periodicity().toggle(0,true);
   hemocell.lattice->periodicity().toggle(1,true); //b
-  hemocell.latticeEquilibrium(1.,Array<double, 3>(0.,0.,0.));
+  hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
   //Driving Force
 //  pcout << "(PipeFlow) (Fluid) Setting up driving Force" << endl; 
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 //  double poiseuilleForce = 0.0; // 8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
 //  setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
 //                    DESCRIPTOR<double>::ExternalField::forceBeginsAt,
-//                    Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
+//                    plb::Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
 
   hemocell.lattice->initialize();   
 
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
 //    //Set driving force as required after each iteration
 //    setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
 //               DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-//               Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+//               plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
     
     // Only enable if PARMETIS build is available
     // if (hemocell.iter % tbalance == 0) {
@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
       //Set force as required after this function;
       // setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
       //           DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-      //           Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+      //           plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
       // pcout << "Fluid force, Minimum: " << finfo.min << " Maximum: " << finfo.max << " Average: " << finfo.avg << endl;
       // ParticleStatistics pinfo = ParticleInfo::calculateVelocityStatistics(&hemocell);
       // pcout << "Particle velocity, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << endl;
