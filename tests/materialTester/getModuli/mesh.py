@@ -22,9 +22,9 @@ m = rho * dx**3 # To get similar characteristics to IBM in LBM
 class Node (object):
     _id = 0
     def __init__(self, pos=[0.0,0.0,0.0]):
-        self.position = np.array(pos)
-        self.force = np.array([0.0,0.0,0.0])
-        self.velocity = np.array([0.0,0.0,0.0])
+        self.position = np.hemo::Array(pos)
+        self.force = np.hemo::Array([0.0,0.0,0.0])
+        self.velocity = np.hemo::Array([0.0,0.0,0.0])
         self._fixed = False
         self.Id = Node._id
         Node._id = Node._id+1

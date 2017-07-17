@@ -33,7 +33,7 @@ class HemoCellField{
   bool deleteIncomplete = true;
   HemoCellFields & cellFields;
   vector<int> desiredOutputVariables;
-  vector<Array<plint,3>> triangle_list;
+  vector<hemo::Array<plint,3>> triangle_list;
   TriangularSurfaceMesh<double> & meshElement;
   void(*kernelMethod)(BlockLattice3D<double,DESCRIPTOR> const&,HemoCellParticle*);
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D();
@@ -45,8 +45,8 @@ class HemoCellField{
   CellMechanics * mechanics;
   void statistics();
   /* position is in micrometers, so we still have to convert it*/
-  void addSingleCell(Array<double,3> position, plint cellId);
-  Array<double,6> getOriginalBoundingBox();
+  void addSingleCell(hemo::Array<double,3> position, plint cellId);
+  hemo::Array<double,6> getOriginalBoundingBox();
   MeshMetrics<double> * meshmetric;
 };
 

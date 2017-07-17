@@ -108,4 +108,12 @@ typedef double T;
 #define PI 3.14159265358979323846
 #endif
 
+//Define signed and unsigned ints
+#ifndef plint
+typedef long int plint;
+#endif
+#ifndef pluint
+typedef long unsigned int pluint;
+#endif
+
 #endif

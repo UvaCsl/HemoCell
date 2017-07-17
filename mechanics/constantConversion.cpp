@@ -2,6 +2,8 @@
 #define HEMO_constantConversion_cpp
 //This class converses SI things to LBM things for classes like the HO model.
 #include "constantConversion.h"
+#include "meshMetrics.h"
+#include "palabos3D.h"
 
 void Parameters::lbm_base_parameters(Config & cfg) {
     dt = cfg["domain"]["dt"].read<double>();
@@ -28,10 +30,10 @@ void Parameters::lbm_base_parameters(Config & cfg) {
     kBT_lbm = kBT_p/(df*dx);
 };
 
-void Parameters::lbm_pipe_parameters(Config & cfg, Box3D domainBox) {
+void Parameters::lbm_pipe_parameters(Config & cfg, unsigned int ny) {
     Parameters::lbm_base_parameters(cfg);
     re = cfg["domain"]["Re"].read<double>();
-    u_lbm_max = re * nu_lbm / domainBox.getNy();
+    u_lbm_max = re * nu_lbm / ny;
 };
 
 void Parameters::lbm_shear_parameters(Config & cfg,double nx) {

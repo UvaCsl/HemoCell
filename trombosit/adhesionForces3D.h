@@ -38,7 +38,7 @@ public:
     virtual T calculatePotential (T r) { 
         T x = pow(sigmaLJ*1.0/r, 6.0); return 4*epsilonLJ*(x*x - x); 
     };
-    virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
+    virtual hemo::Array<T,3> calculateForce (T r, hemo::Array<T,3> & eij) {
         T x = pow(sigmaLJ*1.0/r, 6.0);
         T force=0.0;
         if (r<r_cut) {
@@ -73,7 +73,7 @@ public:
     virtual T calculatePotential (T r) { 
          return De*( exp(2*beta*(r0 - r)) - 2*exp(beta*(r0 - r))); 
     };
-    virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
+    virtual hemo::Array<T,3> calculateForce (T r, hemo::Array<T,3> & eij) {
             T x = exp( beta * (-r + r0) );
             T force=0.0;
             if (r<r_cut) {
@@ -124,7 +124,7 @@ public:
     virtual T calculatePotential (T r) { // Only the attractive contribution is accounted for the potential.
         return -0.5* H* el_max * log(1-((r-r0)*1.0/el_max)*((r-r0)*1.0/el_max) ) ;
     };
-    virtual Array<T,3> calculateForce (T r, Array<T,3> & eij) {
+    virtual hemo::Array<T,3> calculateForce (T r, hemo::Array<T,3> & eij) {
             T force = 0.0;
             if ( (r>r0) && (r<r_cut) && ((r-r0)<el_max) ) {
                 force+= -H*(r-r0)*1.0/(1.0 - ( (r-r0)*1.0/el_max )*( (r-r0)*1.0/el_max ) );

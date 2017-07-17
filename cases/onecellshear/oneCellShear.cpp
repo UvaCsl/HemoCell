@@ -119,8 +119,8 @@ int main(int argc, char* argv[])
 
       double volume = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
       double surface = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
-      Array<double,3> position = CellInformationFunctionals::info_per_cell[0].position/(1e-6/param::dx);
-      Array<double,6> bbox = CellInformationFunctionals::info_per_cell[0].bbox/(1e-6/param::dx);
+      hemo::Array<double,3> position = CellInformationFunctionals::info_per_cell[0].position/(1e-6/param::dx);
+      hemo::Array<double,6> bbox = CellInformationFunctionals::info_per_cell[0].bbox/(1e-6/param::dx);
       double largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch)/(1e-6/param::dx);
       double rel_D2 = (largest_diam/D0)*(largest_diam/D0);
       double def_idx = (rel_D2 - 1.0) / (rel_D2 + 1.0) * 100.0;

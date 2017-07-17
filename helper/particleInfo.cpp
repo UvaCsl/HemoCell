@@ -22,7 +22,7 @@ void GatherParticleVelocity::processGenericBlocks(Box3D domain, std::vector<Atom
     
     if (localParticles.size() > 0) {
       //initial value
-      Array<double,3> vel_vec = localParticles[0]->v;
+      hemo::Array<double,3> vel_vec = localParticles[0]->v;
       double vel = sqrt(vel_vec[0]*vel_vec[0]+vel_vec[1]*vel_vec[1]+vel_vec[2]*vel_vec[2]);
       double min=vel,max=vel,avg=0.;
 
@@ -49,7 +49,7 @@ void GatherParticleForce::processGenericBlocks(Box3D domain, std::vector<AtomicB
     
     if (localParticles.size() > 0) {
       //initial value
-      Array<double,3> force_vec = localParticles[0]->force +localParticles[0]->force_repulsion;
+      hemo::Array<double,3> force_vec = localParticles[0]->force +localParticles[0]->force_repulsion;
       double force = sqrt(force_vec[0]*force_vec[0]+force_vec[1]*force_vec[1]+force_vec[2]*force_vec[2]);
       double min=force,max=force,avg=0.;
 

@@ -38,12 +38,12 @@ public:
 
     void setlocalDomain(Box3D & localDomain_);
 
-    void computeGridPosition ( Array<double,3> const& position,
+    void computeGridPosition ( hemo::Array<double,3> const& position,
                     plint& iX, plint& iY, plint& iZ ) const;
-    inline void computeGridPosition ( Array<double,3> const& position,
+    inline void computeGridPosition ( hemo::Array<double,3> const& position,
                     plint* iX, plint* iY, plint* iZ ) const;
     
-    inline bool isContainedABS(Array<double,3> pos, Box3D box) const {
+    inline bool isContainedABS(hemo::Array<double,3> pos, Box3D box) const {
 	    Dot3D const& location = this->getLocation();
 	    double x = pos[0]-location.x;
 	    double y = pos[1]-location.y;

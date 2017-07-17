@@ -69,10 +69,10 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
     plint nz = domainBox.getNz();
 
     Box3D domain(0, 1, 0, ny - 1, 0, nz - 1);
-    applyProcessingFunctional(new CopyFromNeighbor(Array<plint, 3>(1, 0, 0)), domain, *flagMatrix);
+    applyProcessingFunctional(new CopyFromNeighbor(hemo::Array<plint, 3>({1, 0, 0})), domain, *flagMatrix);
 
     domain = Box3D(nx - 2, nx - 1, 0, ny - 1, 0, nz - 1);
-    applyProcessingFunctional(new CopyFromNeighbor(Array<plint, 3>(-1, 0, 0)), domain, *flagMatrix);
+    applyProcessingFunctional(new CopyFromNeighbor(hemo::Array<plint, 3>({-1, 0, 0})), domain, *flagMatrix);
 
 }
 

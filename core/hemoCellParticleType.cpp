@@ -60,14 +60,14 @@ void HemoCellField::setOutputVariables(const vector<int> & outputs) { desiredOut
          }
   }
 
-Array<double,6> HemoCellField::getOriginalBoundingBox() {
-  Array<double,6> bb;
+hemo::Array<double,6> HemoCellField::getOriginalBoundingBox() {
+  hemo::Array<double,6> bb;
   bb[0] = bb[1] = meshElement.getVertex(0)[0];
   bb[2] = bb[3] = meshElement.getVertex(0)[1];
   bb[4] = bb[5] = meshElement.getVertex(0)[2];
   
   for (long int i = 0 ; i < meshElement.getNumVertices() ; i++) {
-    const Array<double,3> & vertex = meshElement.getVertex(i);
+    const hemo::Array<double,3> vertex(meshElement.getVertex(i));
     if (bb[0] > vertex[0]) { bb[0] = vertex[0]; }
     if (bb[1] < vertex[0]) { bb[1] = vertex[0]; }
     if (bb[2] > vertex[1]) { bb[2] = vertex[1]; }
@@ -79,7 +79,7 @@ Array<double,6> HemoCellField::getOriginalBoundingBox() {
 }
 
 /* position is in micrometers, so we still have to convert it*/
-void HemoCellField::addSingleCell(Array<double,3> position, plint cellId) {
+void HemoCellField::addSingleCell(hemo::Array<double,3> position, plint cellId) {
   pcerr << "(HemoCell) (ParticleType) addSingleCell not implemented, but might definitely be nice to have" << endl;
   exit(0);  
 }

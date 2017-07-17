@@ -74,11 +74,11 @@ public:
     };
 
     // Bond doesn't exist, particle is not saturated and for SameCellFields, cellId is not the same.
-    virtual bool isBondPossible(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
+    virtual bool isBondPossible(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, hemo::Array<T,3> eij) {
     	return bondType.isBondPossible(p0, p1, r, eij);
     }
     // Insert BondParticle, update data structures
-    virtual BondParticle3D<T,Descriptor> * createBondParticle(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
+    virtual BondParticle3D<T,Descriptor> * createBondParticle(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, hemo::Array<T,3> eij) {
     	bool created = bondType.createBond(p0, p1, r, eij);
     	BondParticle3D<T,Descriptor> * bp = NULL;
     	if (created) {
@@ -143,7 +143,7 @@ public:
     	bondField.updateBondParticleMap(fields[2]);
     };
 
-    virtual bool operator()(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) {
+    virtual bool operator()(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, hemo::Array<T,3> eij) {
         std::map<std::string, Particle3D<T,Descriptor>* > & bondParticleMap = bondField.getBondParticleMap();
         std::string uid = bondField.getUID(p0, p1);
         if (bondParticleMap.count(uid) > 0) {
@@ -190,7 +190,7 @@ public:
         bondParticleField->removeParticles(bondParticleField->getBoundingBox(), -1);
     };
     // conditionsAreMet is not necessary here, all the checks and actions will be performed in open(*).
-    virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, Array<T,3> eij) { return true; }
+    virtual bool conditionsAreMet(Particle3D<T,Descriptor> * p0, Particle3D<T,Descriptor> * p1, T r, hemo::Array<T,3> eij) { return true; }
 
 private:
     BondField3D<T, Descriptor> & bondField;

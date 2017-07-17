@@ -17,11 +17,11 @@
  */
 
 struct CellInformation {
-  Array<double,3> position;
+  hemo::Array<double,3> position;
   double volume;
   double area;
   double stretch;
-  Array<double,6> bbox;
+  hemo::Array<double,6> bbox;
   pluint blockId;
   pluint cellType;
   bool centerLocal;

@@ -5,7 +5,7 @@
 
 class CopyFromNeighbor : public BoxProcessingFunctional3D_S<int> {
 public:
-    CopyFromNeighbor(Array<plint, 3> offset_) : offset(offset_) { };
+    CopyFromNeighbor(hemo::Array<plint, 3> offset_) : offset(offset_) { };
 
     virtual void process(Box3D domain, ScalarField3D<int> &field1);
 
@@ -16,7 +16,7 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
 
 private:
-    Array<plint, 3> offset;
+    hemo::Array<plint, 3> offset;
 };
 
 void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint refDirLength, plint refDir,

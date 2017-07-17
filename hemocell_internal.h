@@ -1,6 +1,8 @@
 #ifndef HEMOCELL_INTERNAL_H
 #define HEMOCELL_INTERNAL_H
 
+#ifndef WITHOUT_PLB
+
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 2
 
@@ -20,8 +22,12 @@ using namespace plb;
 #include <vector>
 #include <limits>
 #include <map>
+#include "helper/array.h"
 
 using namespace std;
+using namespace hemo;
 
 class HemoCell;
+
+#endif
 #endif // HEMOCELL_H

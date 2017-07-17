@@ -21,12 +21,12 @@
 #include "ficsion.h"
 
 typedef double T;
-typedef Array<T,3> Velocity;
+typedef hemo::Array<T,3> Velocity;
 #define DESCRIPTOR descriptors::ForcedD3Q19Descriptor
 
 void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcModel, T & shellDensity, T & k_rest,
         T & k_shear, T & k_bend, T & k_stretch, T & k_WLC, T & eqLengthRatio, T & k_rep, T & k_elastic, T & k_volume, T & k_surface, T & eta_m,
-        T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
+        T & rho_p, T & u, plint & flowType, T & Re, T & shearRate, T & stretchForce, hemo::Array<T,3> & eulerAngles, T & Re_p, T & N, T & lx, T & ly, T & lz,
         plint & forceToFluid, plint & ibmKernel, plint & ibmScheme, plint & shape, std::string & cellPath, T & radius, T & deflationRatio, pluint & relaxationTime,
         plint & minNumOfTriangles, pluint & tmax, plint & tmeas, T & hct, plint & npar, plint & flowParam, bool & checkpointed)
     {
@@ -62,7 +62,7 @@ void readFicsionXML(XMLreader & documentXML,std::string & caseId, plint & rbcMod
     if (ea.size() != 3) {
         ea.resize(3, 0.0);
     }
-    eulerAngles = Array<T,3>(ea[0], ea[1], ea[2]);
+    eulerAngles = hemo::Array<T,3>(ea[0], ea[1], ea[2]);
     eulerAngles[0] *= pi/180.;
     eulerAngles[1] *= pi/180.;
     eulerAngles[2] *= pi/180.;
@@ -169,10 +169,10 @@ int main(int argc, char* argv[])
     pluint relaxationTime;
     plint flowType;
     T shearRate, shearRate_p;
-    Array<T,3> stretchForce(0,0,0);
+    hemo::Array<T,3> stretchForce(0,0,0);
     T stretchForceScalar;
     T stretchForce_p;
-    Array<T,3> eulerAngles;
+    hemo::Array<T,3> eulerAngles;
     plint flowParam;
     bool checkpointed=0;
 
@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
     lattice.toggleInternalStatistics(false);
 
     // Drag force specific
-    Array<plint,3> forceIds;
+    hemo::Array<plint,3> forceIds;
     forceIds[0] = lattice.internalStatSubscription().subscribeSum();
     forceIds[1] = lattice.internalStatSubscription().subscribeSum();
     forceIds[2] = lattice.internalStatSubscription().subscribeSum();
@@ -249,8 +249,8 @@ int main(int argc, char* argv[])
      */
 
     /* CREATE MESH */
-//    Array<T,3> eqShapeRotationEulerAngles = eulerAngles;
-    if (flowParam == 9) { eulerAngles= Array<T,3>(0.,0.,0.); }
+//    hemo::Array<T,3> eqShapeRotationEulerAngles = eulerAngles;
+    if (flowParam == 9) { eulerAngles= hemo::Array<T,3>(0.,0.,0.); }
     // Radius in LU
     TriangleBoundary3D<T> Cells = constructMeshElement(shape, radius, cellNumTriangles, dx, cellPath, eulerAngles);
     TriangularSurfaceMesh<T> meshElement = Cells.getMesh();
@@ -276,9 +276,9 @@ int main(int argc, char* argv[])
     checkpointer.load(document, lattice, cellFields, initIter);
     if (not checkpointer.wasCheckpointed()) {
         pcout << "(main) initializing"<< std::endl;
-        std::vector<Array<T,3> > cellsOrigin;
-        cellsOrigin.push_back( Array<T,3>(nx*0.5 - 5*radius, ny*0.5 + 0.75*radius, nz*0.5) );
-        cellsOrigin.push_back( Array<T,3>(nx*0.5 + 5*radius, ny*0.5 - 0.75*radius, nz*0.5) );
+        std::vector<hemo::Array<T,3> > cellsOrigin;
+        cellsOrigin.push_back( hemo::Array<T,3>(nx*0.5 - 5*radius, ny*0.5 + 0.75*radius, nz*0.5) );
+        cellsOrigin.push_back( hemo::Array<T,3>(nx*0.5 + 5*radius, ny*0.5 - 0.75*radius, nz*0.5) );
         RBCField.initialize(cellsOrigin);
         checkpointer.save(lattice, cellFields, initIter);
     }

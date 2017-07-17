@@ -8,7 +8,7 @@
  */
 template<typename T>
 T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plint jVertex, plint & kVertex, plint & lVertex) {
-    Array<T,3> x1 = mesh.getVertex(iVertex), x2(0.,0.,0.), x3(0.,0.,0.), x4(0.,0.,0.);
+    hemo::Array<T,3> x1 = mesh.getVertex(iVertex), x2({0.,0.,0.}), x3({0.,0.,0.}), x4({0.,0.,0.});
 
     std::vector<plint> adjacentTriangles = mesh.getAdjacentTriangleIds(iVertex, jVertex);
 	plint iTriangle=adjacentTriangles[0], jTriangle=adjacentTriangles[1];
@@ -32,8 +32,8 @@ T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plin
     }
     PLB_ASSERT(foundVertices == 2); //Assert if some particles are outside of the domain
 
-    Array<T,3> V1 = mesh.computeTriangleNormal(iTriangle);
-    Array<T,3> V2 = mesh.computeTriangleNormal(jTriangle);
+    hemo::Array<T,3> V1 = mesh.computeTriangleNormal(iTriangle);
+    hemo::Array<T,3> V2 = mesh.computeTriangleNormal(jTriangle);
     T angle = angleBetweenVectors(V1, V2);
 	plint sign = dot(x2-x1, V2) >= 0?1:-1;
 	if (sign <= 0) {
@@ -79,9 +79,9 @@ void MeshMetrics<T>::init()    {
 
     Nv = mesh.getNumVertices();
     Nt = mesh.getNumTriangles();
-    Array<T,2> xRange;
-    Array<T,2> yRange;
-    Array<T,2> zRange;
+    plb::Array<T,2> xRange;
+    plb::Array<T,2> yRange;
+    plb::Array<T,2> zRange;
     mesh.computeBoundingBox (xRange, yRange, zRange);
     cellRadius = max(xRange[1] - xRange[0], yRange[1] - yRange[0]);
     cellRadius = max(cellRadius , zRange[1] - zRange[0]) * 0.5;
@@ -122,12 +122,12 @@ void MeshMetrics<T>::init()    {
         std::vector<plint> neighborTriangleIds = mesh.getNeighborTriangleIds(iV);
         for (pluint iB = 0; iB < neighborTriangleIds.size(); ++iB) {
             plint iTriangle = neighborTriangleIds[iB];
-            Array<T,3> v0 = mesh.getVertex(iTriangle, 0);
-            Array<T,3> v1 = mesh.getVertex(iTriangle, 1);
-            Array<T,3> v2 = mesh.getVertex(iTriangle, 2);
-            Array<T,3> tmp;
+            hemo::Array<T,3> v0 = mesh.getVertex(iTriangle, 0);
+            hemo::Array<T,3> v1 = mesh.getVertex(iTriangle, 1);
+            hemo::Array<T,3> v2 = mesh.getVertex(iTriangle, 2);
+            hemo::Array<T,3> tmp;
             crossProduct(v1, v2, tmp);
-            T triangleVolumeT6 =  VectorTemplateImpl<T,3>::scalarProduct(v0,tmp);
+            T triangleVolumeT6 =  dot(v0,tmp);
             volume += triangleVolumeT6/6.0/3.0; // every volume is evaluated 3 times
         }
     }
@@ -231,8 +231,8 @@ void writeSurfaceMeshAsciiSTL(TriangularSurfaceMesh<T> const& mesh, std::string 
 
     fprintf(fp, "solid surface\n");
     for (plint i = 0; i < mesh.getNumTriangles(); i++) {
-        Array<T,3> n = mesh.computeTriangleNormal(i);
-        Array<T,3> v;
+        hemo::Array<T,3> n = mesh.computeTriangleNormal(i);
+        hemo::Array<T,3> v;
         fprintf(fp, fmt1, n[0], n[1], n[2]);
         fprintf(fp, "    outer loop\n");
         v = dx * mesh.getVertex(i, 0);

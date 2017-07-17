@@ -18,10 +18,10 @@ void CellInformationFunctionals::CellVolume::processGenericBlocks(Box3D domain, 
     const int & cid = pair.first;
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
     const pluint ctype = pf->particles[cell[0]].celltype;
-    for (Array<plint,3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
-      const Array<double,3> & v0 = pf->particles[cell[triangle[0]]].position;
-      const Array<double,3> & v1 = pf->particles[cell[triangle[1]]].position;
-      const Array<double,3> & v2 = pf->particles[cell[triangle[2]]].position;
+    for (hemo::Array<plint,3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
+      const hemo::Array<double,3> & v0 = pf->particles[cell[triangle[0]]].position;
+      const hemo::Array<double,3> & v1 = pf->particles[cell[triangle[1]]].position;
+      const hemo::Array<double,3> & v2 = pf->particles[cell[triangle[2]]].position;
       
       //Volume
       const double v210 = v2[0]*v1[1]*v0[2];
@@ -43,10 +43,10 @@ void CellInformationFunctionals::CellArea::processGenericBlocks(Box3D domain, st
     const int & cid = pair.first;
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
     const pluint ctype = pf->particles[cell[0]].celltype;
-    for (Array<plint,3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
-      const Array<double,3> & v0 = pf->particles[cell[triangle[0]]].position;
-      const Array<double,3> & v1 = pf->particles[cell[triangle[1]]].position;
-      const Array<double,3> & v2 = pf->particles[cell[triangle[2]]].position;
+    for (hemo::Array<plint,3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
+      const hemo::Array<double,3> & v0 = pf->particles[cell[triangle[0]]].position;
+      const hemo::Array<double,3> & v1 = pf->particles[cell[triangle[1]]].position;
+      const hemo::Array<double,3> & v2 = pf->particles[cell[triangle[2]]].position;
 
       total_area += computeTriangleArea(v0,v1,v2);  
     }
@@ -57,7 +57,7 @@ void CellInformationFunctionals::CellPosition::processGenericBlocks(Box3D domain
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
   
   for (const auto & pair : pf->get_lpc()) {
-    Array<double,3> position = {0.,0.,0.};
+    hemo::Array<double,3> position = {0.,0.,0.};
     const int & cid = pair.first;
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
     unsigned int size = 0;
@@ -93,7 +93,7 @@ void CellInformationFunctionals::CellBoundingBox::processGenericBlocks(Box3D dom
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
   
   for (const auto & pair : pf->get_lpc()) {
-    Array<double,6> bbox;
+    hemo::Array<double,6> bbox;
     const int & cid = pair.first;
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
     HemoCellParticle * particle = &pf->particles[cell[0]];

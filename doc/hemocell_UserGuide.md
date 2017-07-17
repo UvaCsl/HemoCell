@@ -115,7 +115,7 @@ The first one runs in a single CPU and the latter in `${NUM_PROCS}`. The applica
 ### `CellField3D` initialization
 The initial conditions modules are not perfect and may break the simulation. The options are:
 
-- `RBCField.initialize(cellsOrigin)`, where `cellsOrigin` are the centers of the cells (its type is `vector<Array<T,3> >`) and cells are placed in these positions. 
+- `RBCField.initialize(cellsOrigin)`, where `cellsOrigin` are the centers of the cells (its type is `vector<hemo::Array<T,3> >`) and cells are placed in these positions. 
 - `randomPositionCellFieldsForGrowth3D(cellFields)` for initializing only the first field (usually RBCs) at semi-random positions and randomly rotated. Cells are deflated to pack higher volume fractions. It results in high initialization time until they are fully inflated, which is many times hindered by the coarse resolution of the mesh in combination with the IBM.
 - `orderedPositionCellField3D(cellFields, latticeSize)` initializes one cell field (e.g. RBCs) in a very ordered fashion.
 - `orderedPositionMultipleCellField3D(cellFields)` for initializing multiple cells fields in an ordered fashion (very symmetrical IC).
@@ -161,7 +161,7 @@ The default value for `invertXZ_for_XDMF` is `false`, but up until recently it w
 
 #### Other important scripts
 
-* `ficsion_h5utils.py`: Creates numpy arrays from a `tmp/hdf5` directory. RBCs are the default cell type.
+* `ficsion_h5utils.py`: Creates numpy hemo::Arrays from a `tmp/hdf5` directory. RBCs are the default cell type.
 * `conficsion.py`: A script to create a multitude of new XML files by changing one or more parameters (creates combinations). Usage: `conficsion.py myconfig.xml --stretchForce=10 20 30 50`.
 * `h5repack-and-replace`: Compresses `h5` files. Initial files are deleted and the new ones follow the convention `${TypeIdentifier}.${LB_timestep}.pgz.${processorId}.h5` (`.pgz.` instead of `.p.`).
 
