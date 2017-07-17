@@ -68,6 +68,17 @@ int main(int argc, char *argv[]) {
   plint sphere_x = 2*lengthChannel/4;
   plint sphere_y = lengthChannel/2;
   plint sphere_z = sphere_diameter/2;
+
+// ----------------------------------------------------------------------------------------------------------------------------
+  double shear_rate = 1800; //input shear rate s-1
+  pcout << "shear_rate = " << shear_rate << endl;
+
+  double velocity_max = (shear_rate*(lengthChannel/1e6))/4;
+  pcout << "velocity_max = " << velocity_max << endl;
+
+  double velocity_max_lbm = velocity_max * ( (*cfg)["domain"]["dt"].read<double>() /(*cfg)["domain"]["dx"].read<double>() );
+  pcout << "velocity_max_lbm = " << velocity_max_lbm << endl;
+
 // ---------------------------------------------------------------------------------------------
   plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
 
@@ -96,7 +107,7 @@ int main(int argc, char *argv[]) {
   defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
 
   boundaryCondition->setVelocityConditionOnBlockBoundaries (*hemocell.lattice, topChannel );
-  setBoundaryVelocity(*hemocell.lattice, topChannel, plb::Array<T,3>(0.00815625,0,0)); // #calculated form: vmax=shearrate*h/32 = 0.04375, v_topwall,p = 0.75*vmax, v_top_lbm=v_topwall*(dt/dx)
+  setBoundaryVelocity(*hemocell.lattice, topChannel, plb::Array<T,3>(0.75*velocity_max_lbm,0,0)); // #calculated form: vmax=shearrate*h/32 = 0.04375, v_topwall,p = 0.75*vmax, v_top_lbm=v_topwall*(dt/dx)
 
 //  defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR> );
 
