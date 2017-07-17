@@ -101,10 +101,10 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 
 //Vertex bending force loop
     for (long unsigned int i = 0 ; i < cell.size() ; i++) {
-      Array<double,3> vertexes_sum = {0.,0.,0.};
-      Array<double,3> vertices_vel_sum = {0.,0.,0.};
+      hemo::Array<double,3> vertexes_sum = {0.,0.,0.};
+      hemo::Array<double,3> vertices_vel_sum = {0.,0.,0.};
 
-      const Array<plint,6> & edges = cellConstants.vertex_edges[i];
+      const hemo::Array<plint,6> & edges = cellConstants.vertex_edges[i];
       unsigned int absent = 0;
       for (unsigned int j = 0 ; j < 6 ; j++ ) {
         if (edges[j] == -1) {
@@ -114,29 +114,29 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
         vertexes_sum += cell[edges[j]]->position;
         vertices_vel_sum += cell[edges[j]]->v;
       }
-      const Array<double,3> vertexes_middle = vertexes_sum/(6.0-absent);
-      const Array<double,3> vertices_vavg = vertices_vel_sum/(6.0-absent);
+      const hemo::Array<double,3> vertexes_middle = vertexes_sum/(6.0-absent);
+      const hemo::Array<double,3> vertices_vavg = vertices_vel_sum/(6.0-absent);
 
-      const Array<double, 3> dev = vertexes_middle - cell[i]->position;
+      const hemo::Array<double, 3> dev = vertexes_middle - cell[i]->position;
       const double n_dev = norm(dev);
-      const Array<double, 3> nv_dev = dev / n_dev;
+      const hemo::Array<double, 3> nv_dev = dev / n_dev;
       const double dDev = n_dev / cellConstants.edge_mean_eq;
 
       //TODO scale bending force
 #ifdef FORCE_LIMIT
-      const Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * dev / n_dev; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
+      const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * dev / n_dev; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
 #else
-      const Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * dev / n_dev;
+      const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * dev / n_dev;
 #endif      
       // Calculating viscous term
-      const Array<double,3> rel_vel_v = vertices_vavg - cell[i]->v;
-      const Array<double,3> rel_vel_proj = dot(nv_dev, rel_vel_v) * nv_dev;
-      const Array<double,3> Fvisc_vol = eta_v * rel_vel_proj * 0.866 * cellConstants.edge_mean_eq;
+      const hemo::Array<double,3> rel_vel_v = vertices_vavg - cell[i]->v;
+      const hemo::Array<double,3> rel_vel_proj = dot(nv_dev, rel_vel_v) * nv_dev;
+      const hemo::Array<double,3> Fvisc_vol = eta_v * rel_vel_proj * 0.866 * cellConstants.edge_mean_eq;
 
       //Apply bending force
       *cell[i]->force_bending += bending_force;
       *cell[i]->force_visc += Fvisc_vol;
-      const Array<double,3> negative_bending_force = -bending_force/(6.0-absent);
+      const hemo::Array<double,3> negative_bending_force = bending_force/(6.0-absent) *-1.0;
       for (unsigned int j = 0 ; j < 6 - absent; j++ ) {
         *cell[edges[j]]->force_bending += negative_bending_force;
       }              
