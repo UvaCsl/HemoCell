@@ -75,8 +75,8 @@ int main(int argc, char *argv[]) {
 // ----------------------------------------------------------------------------------------------------------------------------
   double shear_rate = 1000; //s-1
   pcout << "shear_rate = " << shear_rate << endl;
-  //plint flow = ( ( 2*( lengthChannel/10**6 ) / 2*( ( heightChannel/10**6 ) / 2**2 ) ) / ( 3*(param:nu_lbm) ) ) * shear_rate;
-  double flowQ = shear_rate * ((100e-6 * 52e-6 * 52e-6)/6);
+  
+  double flowQ = (0.5e-6)/3600; // m^3/s //shear_rate * ((100e-6 * 52e-6 * 52e-6)/6);
   pcout << "flow = " << flowQ << endl;
 //  double u_max = flowQ * (100e-6) * (52e-6);
 //  pcout << "u_max = " << u_max << endl;
@@ -115,14 +115,14 @@ int main(int argc, char *argv[]) {
   hemocell.lattice->periodicity().toggle(0,true);
   hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
-  double dpdz = (shear_rate * 2e-3) / (4*52e-6);
+  double dpdz = (flowQ*12*3.0e-3)/(52e-6*52e-6*52e-6*300e-6); //(shear_rate * 2e-3) / (4*52e-6);
   double dpdz_lbm = dpdz * ((*cfg)["domain"]["dx"].read<double>() * (*cfg)["domain"]["dx"].read<double>() * (*cfg)["domain"]["dt"].read<double>()*(*cfg)["domain"]["dt"].read<double>() /param::dm);
   pcout << "dpdz_lbm = " << dpdz_lbm << endl;
 
   //Driving Force
   pcout << "(PipeFlow) (Fluid) Setting up driving Force" << endl; 
   double rPipe = (*cfg)["domain"]["refDirN"].read<int>()/2.0;
-  double poiseuilleForce = dpdz_lbm*15; //u_max_lbm * 8 * param::nu_lbm / (lengthChannel*heightChannel );//8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
+  double poiseuilleForce = dpdz_lbm; //u_max_lbm * 8 * param::nu_lbm / (lengthChannel*heightChannel );//8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                     DESCRIPTOR<double>::ExternalField::forceBeginsAt,
                     plb::Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
