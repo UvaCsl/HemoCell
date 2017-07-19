@@ -99,7 +99,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       triangle_n++;
     }
 
-//Vertex bending force loop
+//Per-vertex bending force loop
     for (long unsigned int i = 0 ; i < cell.size() ; i++) {
       Array<double,3> vertexes_sum = {0.,0.,0.};
       Array<double,3> vertices_vel_sum = {0.,0.,0.};
@@ -148,6 +148,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
        *cell[edges[j]]->force_bending += negative_bending_force;
       }              
     }
+
     // Per-edge calculations
     int edge_n=0;
     for (const Array<plint,2> & edge : cellConstants.edge_list) {
