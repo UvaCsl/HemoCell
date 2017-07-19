@@ -8,6 +8,7 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<Array<plint,2>> edge_list_,
                       vector<double> edge_length_eq_list_,
                       vector<double> edge_angle_eq_list_,
+                      vector<double> surface_patch_center_eq_list_,
                       vector<Array<plint,2>> edge_bending_triangles_list_,
                       vector<Array<plint,2>> edge_bending_triangles_outer_points_,
                       vector<double> triangle_area_eq_list_,
@@ -19,6 +20,7 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
     edge_list(edge_list_),
     edge_length_eq_list(edge_length_eq_list_),
     edge_angle_eq_list(edge_angle_eq_list_),
+    surface_patch_center_eq_list(surface_patch_center_eq_list_),
     edge_bending_triangles_list(edge_bending_triangles_list_),
     edge_bending_triangles_outer_points(edge_bending_triangles_outer_points_),
     triangle_area_eq_list(triangle_area_eq_list_),
@@ -167,9 +169,37 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       }
     }
     
+    // Now that things has been made easy:
+    // Calculate center point deviation for surface patches
+    vector<double> surface_patch_center_eq_list_;
+    for (long unsigned int i = 0 ; i < cellField.meshElement.getNumVertices() ; i++) {
+      Array<double,3> vertexes_sum = {0.,0.,0.};
+
+      const Array<plint,6> & edges = vertex_edges_[i];
+      unsigned int absent = 0;
+      for (unsigned int j = 0 ; j < 6 ; j++ ) {
+        if (edges[j] == -1) {
+          absent++;
+          continue;
+        }
+        vertexes_sum += cellField.meshElement.getVertex(edges[j]);
+      }
+      const Array<double,3> vertexes_middle = vertexes_sum/(6.0-absent);
+      const Array<double,3> localVertex = cellField.meshElement.getVertex(i);
+
+      const Array<double,3> dev_vect = vertexes_middle - localVertex;
+      const double ndev = norm(dev_vect); // absolute distance
+
+      // Get which side is the vertex on (e.g. inward or outward curve)
+      // We dont know how much vertex neighbours exist, but the firts two always has to be present, so get the normal approximation using those
+      const Array<double,3> patch_norm_approx = crossProduct( (cellField.meshElement.getVertex(edges[0]) - localVertex),
+                                                              (cellField.meshElement.getVertex(edges[1]) - localVertex) );
+      const double sign = dot(patch_norm_approx, dev_vect);
+
+      surface_patch_center_eq_list_.push_back(copysign(ndev, sign));
+    }
     
-    
-    CommonCellConstants CCC(cellField_,triangle_list_,edge_list_,edge_length_eq_list_,edge_angle_eq_list_,edge_bending_triangles_,edge_bending_triangles_outer_points_,triangle_area_eq_list_,vertex_edges_,volume_eq_,mean_area_eq_, mean_edge_eq_, mean_angle_eq_);
+    CommonCellConstants CCC(cellField_,triangle_list_,edge_list_,edge_length_eq_list_,edge_angle_eq_list_,surface_patch_center_eq_list_,edge_bending_triangles_,edge_bending_triangles_outer_points_,triangle_area_eq_list_,vertex_edges_,volume_eq_,mean_area_eq_, mean_edge_eq_, mean_angle_eq_);
     return CCC;
 };
 

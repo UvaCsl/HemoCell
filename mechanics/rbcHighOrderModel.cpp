@@ -117,20 +117,27 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const Array<double,3> vertexes_middle = vertexes_sum/(6.0-absent);
       const Array<double,3> vertices_vavg = vertices_vel_sum/(6.0-absent);
 
-      const Array<double, 3> dev = vertexes_middle - cell[i]->position;
-      const double n_dev = norm(dev);
-      const Array<double, 3> nv_dev = dev / n_dev;
-      const double dDev = n_dev / cellConstants.edge_mean_eq;
+      const Array<double,3> dev_vect = vertexes_middle - cell[i]->position;
+      const double dev_n = norm(dev_vect); // absolute distance
+      const Array<double, 3> dev_dir = dev_vect / dev_n;
 
+      // Get which side is the vertex on (e.g. inward or outward curve)
+      // We dont know how much vertex neighbours exist, but the firts two always has to be present, so get the normal approximation using those
+      const Array<double,3> patch_norm_approx = crossProduct( (cell[edges[0]]->position - cell[i]->position),
+                                                              (cell[edges[1]]->position - cell[i]->position) );
+      const double sign = dot(patch_norm_approx, dev_vect);
+
+      const double dDev = abs(copysign(dev_n, sign) - cellConstants.surface_patch_center_eq_list[i] ) / cellConstants.edge_mean_eq; // Non-dimension
+  
       //TODO scale bending force
 #ifdef FORCE_LIMIT
-      const Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * dev / n_dev; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
+      const Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * dev_dir; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
 #else
-      const Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * dev / n_dev;
+      const Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * dev_dir;
 #endif      
       // Calculating viscous term
       const Array<double,3> rel_vel_v = vertices_vavg - cell[i]->v;
-      const Array<double,3> rel_vel_proj = dot(nv_dev, rel_vel_v) * nv_dev;
+      const Array<double,3> rel_vel_proj = dot(dev_dir, rel_vel_v) * dev_dir;
       const Array<double,3> Fvisc_vol = eta_v * rel_vel_proj * 0.866 * cellConstants.edge_mean_eq;
 
       //Apply bending force
@@ -138,7 +145,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       *cell[i]->force_visc += Fvisc_vol;
       const Array<double,3> negative_bending_force = -bending_force/(6.0-absent);
       for (unsigned int j = 0 ; j < 6 - absent; j++ ) {
-        *cell[edges[j]]->force_bending += negative_bending_force;
+       *cell[edges[j]]->force_bending += negative_bending_force;
       }              
     }
     // Per-edge calculations
@@ -194,7 +201,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       double angle = getAngleBetweenFaces(V1, V2, edge_uv);
 
       //calculate resulting bending force
-      const double angle_frac = cellConstants.edge_angle_eq_list[edge_n]/*cellConstants.angle_mean_eq*/ - angle;
+      const double angle_frac = /*cellConstants.edge_angle_eq_list[edge_n]*/cellConstants.angle_mean_eq - angle;
 #ifdef FORCE_LIMIT
       const double force_magnitude = - k_bend * (angle_frac + angle_frac / std::fabs(2.467 - angle_frac * angle_frac)); // tau_b = pi/2
 #else
@@ -208,7 +215,6 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       *cell[edge[1]]->force_bending += bending_force;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= force_magnitude * V1;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= force_magnitude * V2;
-
 
       // Volume viscosity of cytoplasm based on relative outer vertex velocity
       // F = eta * (dv/2l) * area. | area = sqrt(3)*l^2/4 => F = eta * dv * sqrt(3)/8 * l
