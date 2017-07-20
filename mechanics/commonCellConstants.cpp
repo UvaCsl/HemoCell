@@ -8,16 +8,17 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<hemo::Array<plint,2>> edge_list_,
                       vector<double> edge_length_eq_list_,
                       vector<double> edge_angle_eq_list_,
+                      vector<double> surface_patch_center_dist_eq_list_,
                       vector<hemo::Array<plint,2>> edge_bending_triangles_list_,
                       vector<hemo::Array<plint,2>> edge_bending_triangles_outer_points_,
                       vector<double> surface_patch_center_eq_list_,
                       vector<double> triangle_area_eq_list_,
                       vector<hemo::Array<plint,6>> vertex_vertexes_,
-          vector<hemo::Array<plint,6>> vertex_edges_,
-          vector<hemo::Array<signed int,6>> vertex_edges_sign_,
-          vector<unsigned int> vertex_n_vertexes_,
-          vector<hemo::Array<hemo::Array<plint,2>,6>> vertex_outer_edges_per_vertex_,
-          vector<hemo::Array<hemo::Array<signed int,2>,6>> vertex_outer_edges_per_vertex_sign_,
+                      vector<hemo::Array<plint,6>> vertex_edges_,
+                      vector<hemo::Array<signed int,6>> vertex_edges_sign_,
+                      vector<unsigned int> vertex_n_vertexes_,
+                      vector<hemo::Array<hemo::Array<plint,2>,6>> vertex_outer_edges_per_vertex_,
+                      vector<hemo::Array<hemo::Array<signed int,2>,6>> vertex_outer_edges_per_vertex_sign_,
                       double volume_eq_, double area_mean_eq_, 
                       double edge_mean_eq_, double angle_mean_eq_) :
     cellField(cellField_),
@@ -25,7 +26,7 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
     edge_list(edge_list_),
     edge_length_eq_list(edge_length_eq_list_),
     edge_angle_eq_list(edge_angle_eq_list_),
-    surface_patch_center_eq_list(surface_patch_center_eq_list_),
+    surface_patch_center_dist_eq_list(surface_patch_center_dist_eq_list_),
     edge_bending_triangles_list(edge_bending_triangles_list_),
     edge_bending_triangles_outer_points(edge_bending_triangles_outer_points_),
     triangle_area_eq_list(triangle_area_eq_list_),
@@ -179,35 +180,6 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       }
     }
     
-    // Now that things has been made easy:
-    // Calculate center point deviation for surface patches
-    vector<double> surface_patch_center_eq_list_;
-    for (long unsigned int i = 0 ; i < cellField.meshElement.getNumVertices() ; i++) {
-      Array<double,3> vertexes_sum = {0.,0.,0.};
-
-      const Array<plint,6> & edges = vertex_edges_[i];
-      unsigned int absent = 0;
-      for (unsigned int j = 0 ; j < 6 ; j++ ) {
-        if (edges[j] == -1) {
-          absent++;
-          continue;
-        }
-        vertexes_sum += cellField.meshElement.getVertex(edges[j]);
-      }
-      const Array<double,3> vertexes_middle = vertexes_sum/(6.0-absent);
-      const Array<double,3> localVertex = cellField.meshElement.getVertex(i);
-
-      const Array<double,3> dev_vect = vertexes_middle - localVertex;
-      const double ndev = norm(dev_vect); // absolute distance
-
-      // Get which side is the vertex on (e.g. inward or outward curve)
-      // We dont know how much vertex neighbours exist, but the firts two always has to be present, so get the normal approximation using those
-      const Array<double,3> patch_norm_approx = crossProduct( (cellField.meshElement.getVertex(edges[0]) - localVertex),
-                                                              (cellField.meshElement.getVertex(edges[1]) - localVertex) );
-      const double sign = dot(patch_norm_approx, dev_vect);
-
-      surface_patch_center_eq_list_.push_back(copysign(ndev, sign));
-    }
     //Number of neighbouring vertices per vertex
     vector<unsigned int> vertex_n_vertexes_(cellField.meshElement.getNumVertices(),0);
     for (unsigned int i = 0 ; i < vertex_vertexes_.size() ; i++) {
@@ -261,6 +233,42 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     }
     
     
+    // Calculate center point deviation for surface patches around each vertex
+    vector<double> surface_patch_center_dist_eq_list_;
+    for (long unsigned int i = 0 ; i < cellField.meshElement.getNumVertices() ; i++) {
+      
+      hemo::Array<double,3> vertexes_sum = {0.,0.,0.};
+      for(unsigned int j = 0; j < vertex_n_vertexes_[i]; j++) 
+        vertexes_sum += cellField.meshElement.getVertex(vertex_vertexes_[i][j]);  
+      
+      const hemo::Array<double,3> vertexes_middle = vertexes_sum/vertex_n_vertexes_[i];
+      const hemo::Array<double,3> localVertex = cellField.meshElement.getVertex(i);
+
+      const hemo::Array<double,3> dev_vect = vertexes_middle - localVertex;
+      
+      // Get the local surface normal
+      hemo::Array<double,3> patch_normal = {0.,0.,0.};
+      for(unsigned int j = 0; j < vertex_n_vertexes_[i]-1; j++) {
+        hemo::Array<double,3> triangle_normal = crossProduct(cellField.meshElement.getVertex(vertex_vertexes_[j]) -localVertex, 
+                                                             cellField.meshElement.getVertex(vertex_vertexes_[j+1]) -localVertex);
+        triangle_normal /= norm(triangle_normal);                                                     
+      }
+      hemo::Array<double,3> triangle_normal = crossProduct(cellField.meshElement.getVertex(vertex_vertexes_[vertex_n_vertexes_[i]-1]) -localVertex, 
+                                                           cellField.meshElement.getVertex(vertex_vertexes_[0]) -localVertex);
+      triangle_normal /= norm(triangle_normal);
+
+        
+      const double ndev = norm(dev_vect); // absolute distance
+
+      // Get which side is the vertex on (e.g. inward or outward curve)
+      // We dont know how much vertex neighbours exist, but the firts two always has to be present, so get the normal approximation using those
+      const hemo::Array<double,3> patch_norm_approx = crossProduct( (cellField.meshElement.getVertex(edges[0]) - localVertex),
+                                                              (cellField.meshElement.getVertex(edges[1]) - localVertex) );
+      const double sign = dot(patch_norm_approx, dev_vect);
+
+      surface_patch_center_dist_eq_list_.push_back(copysign(ndev, sign));
+    }
+
     
     vector<hemo::Array<plint,6>> vertex_edges_(cellField.meshElement.getNumVertices(),{-1,-1,-1,-1,-1,-1});
     vector<hemo::Array<signed int,6>> vertex_edges_sign_(cellField.meshElement.getNumVertices(), {0,0,0,0,0,0});
@@ -329,7 +337,7 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
         
       }
     }
-    
+}
     
     
     CommonCellConstants CCC(cellField_,
@@ -337,6 +345,7 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
             edge_list_,
             edge_length_eq_list_,
             edge_angle_eq_list_,
+            surface_patch_center_dist_eq_list_,
             edge_bending_triangles_,
             edge_bending_triangles_outer_points_,
             triangle_area_eq_list_,
