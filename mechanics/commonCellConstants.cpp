@@ -11,7 +11,6 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<double> surface_patch_center_dist_eq_list_,
                       vector<hemo::Array<plint,2>> edge_bending_triangles_list_,
                       vector<hemo::Array<plint,2>> edge_bending_triangles_outer_points_,
-                      vector<double> surface_patch_center_eq_list_,
                       vector<double> triangle_area_eq_list_,
                       vector<hemo::Array<plint,6>> vertex_vertexes_,
                       vector<hemo::Array<plint,6>> vertex_edges_,
@@ -249,24 +248,21 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       // Get the local surface normal
       hemo::Array<double,3> patch_normal = {0.,0.,0.};
       for(unsigned int j = 0; j < vertex_n_vertexes_[i]-1; j++) {
-        hemo::Array<double,3> triangle_normal = crossProduct(cellField.meshElement.getVertex(vertex_vertexes_[j]) -localVertex, 
-                                                             cellField.meshElement.getVertex(vertex_vertexes_[j+1]) -localVertex);
-        triangle_normal /= norm(triangle_normal);                                                     
+        hemo::Array<double,3> triangle_normal = crossProduct(cellField.meshElement.getVertex(vertex_vertexes_[i][j]) - localVertex, 
+                                                             cellField.meshElement.getVertex(vertex_vertexes_[i][j+1]) - localVertex);
+        triangle_normal /= norm(triangle_normal);  
+        patch_normal += trianlge_normal;                                                   
       }
-      hemo::Array<double,3> triangle_normal = crossProduct(cellField.meshElement.getVertex(vertex_vertexes_[vertex_n_vertexes_[i]-1]) -localVertex, 
-                                                           cellField.meshElement.getVertex(vertex_vertexes_[0]) -localVertex);
+      hemo::Array<double,3> triangle_normal = crossProduct(cellField.meshElement.getVertex(vertex_vertexes_[i][vertex_n_vertexes_[i]-1]) -localVertex, 
+                                                           cellField.meshElement.getVertex(vertex_vertexes_[i][0]) -localVertex);
       triangle_normal /= norm(triangle_normal);
+      patch_normal += trianlge_normal;
 
-        
-      const double ndev = norm(dev_vect); // absolute distance
+      patch_normal /= norm(patch_noraml);
+              
+      const double ndev = dot(patch_normal, dev_vect); // distance along patch normal
 
-      // Get which side is the vertex on (e.g. inward or outward curve)
-      // We dont know how much vertex neighbours exist, but the firts two always has to be present, so get the normal approximation using those
-      const hemo::Array<double,3> patch_norm_approx = crossProduct( (cellField.meshElement.getVertex(edges[0]) - localVertex),
-                                                              (cellField.meshElement.getVertex(edges[1]) - localVertex) );
-      const double sign = dot(patch_norm_approx, dev_vect);
-
-      surface_patch_center_dist_eq_list_.push_back(copysign(ndev, sign));
+      surface_patch_center_dist_eq_list_.push_back(ndev);
     }
 
     
@@ -337,7 +333,6 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
         
       }
     }
-}
     
     
     CommonCellConstants CCC(cellField_,

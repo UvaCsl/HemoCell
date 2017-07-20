@@ -104,51 +104,57 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       hemo::Array<double,3> vertexes_sum = {0.,0.,0.};
       hemo::Array<double,3> vertices_vel_sum = {0.,0.,0.};
 
-      const hemo::Array<plint,6> & edges = cellConstants.vertex_edges[i];
-      unsigned int absent = 0;
-      for (unsigned int j = 0 ; j < 6 ; j++ ) {
-        if (edges[j] == -1) {
-          absent++;
-          continue;
-        }
-        vertexes_sum += cell[edges[j]]->position;
-        vertices_vel_sum += cell[edges[j]]->v;
+      for(unsigned int j = 0; j < cellConstants.vertex_n_vertexes[i]; j++) {
+        vertexes_sum += cell[cellConstants.vertex_vertexes[i][j]]->position;
+        vertices_vel_sum += cell[cellConstants.vertex_vertexes[i][j]]->v;
       }
-      const hemo::Array<double,3> vertexes_middle = vertexes_sum/(6.0-absent);
-      const hemo::Array<double,3> vertices_vavg = vertices_vel_sum/(6.0-absent);
+      const hemo::Array<double,3> vertexes_middle = vertexes_sum/cellConstants.vertex_n_vertexes[i];
+      const hemo::Array<double,3> vertices_vavg = vertices_vel_sum/cellConstants.vertex_n_vertexes[i];
 
       const hemo::Array<double,3> dev_vect = vertexes_middle - cell[i]->position;
-      const double dev_n = norm(dev_vect); // absolute distance
-      const hemo::Array<double, 3> dev_dir = dev_vect / dev_n;
+      
+      
+      // Get the local surface normal
+      hemo::Array<double,3> patch_normal = {0.,0.,0.};
+      for(unsigned int j = 0; j < cellConstants.vertex_n_vertexes[i]-1; j++) {
+        hemo::Array<double,3> triangle_normal = crossProduct(cell[cellConstants.vertex_vertexes[i][j]]->position - cell[i]->position, 
+                                                             cell[cellConstants.vertex_vertexes[i][j+1]]->position - cell[i]->position);
+        triangle_normal /= norm(triangle_normal);  
+        patch_normal += trianlge_normal;                                                   
+      }
+      hemo::Array<double,3> triangle_normal = crossProduct(cell[cellConstants.vertex_vertexes[i][cellConstants.vertex_n_vertexes[i]-1]->position - cell[i]->position, 
+                                                           cell[cellConstants.vertex_vertexes[i][0]]->position - cell[i]->position);
+      triangle_normal /= norm(triangle_normal);
+      patch_normal += trianlge_normal;
+ 
+      patch_normal /= norm(patch_noraml);
+              
+      const double ndev = dot(patch_normal, dev_vect); // distance along patch normal
 
-      // Get which side is the vertex on (e.g. inward or outward curve)
-      // We dont know how much vertex neighbours exist, but the firts two always has to be present, so get the normal approximation using those
-      const hemo::Array<double,3> patch_norm_approx = crossProduct( (cell[edges[0]]->position - cell[i]->position),
-                                                              (cell[edges[1]]->position - cell[i]->position) );
-      const double sign = dot(patch_norm_approx, dev_vect);
-
-      const double dDev = abs(copysign(dev_n, sign) - cellConstants.surface_patch_center_eq_list[i] ) / cellConstants.edge_mean_eq; // Non-dimension
+      const double dDev = ( ndev - cellConstants.surface_patch_center_dist_eq_list[i] ) / cellConstants.edge_mean_eq; // Non-dimension
   
       //TODO scale bending force
 #ifdef FORCE_LIMIT
-      const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * dev_dir; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
+      const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * patch_normal; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
 #else
-      const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * dev_dir;
+      const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * patch_normal;
 #endif      
       // Calculating viscous term
       const hemo::Array<double,3> rel_vel_v = vertices_vavg - cell[i]->v;
-      const hemo::Array<double,3> rel_vel_proj = dot(dev_dir, rel_vel_v) * dev_dir;
+      const hemo::Array<double,3> rel_vel_proj = dot(patch_normal, rel_vel_v) * patch_normal;
       const hemo::Array<double,3> Fvisc_vol = eta_v * rel_vel_proj * 0.866 * cellConstants.edge_mean_eq;
 
       //Apply bending force
       *cell[i]->force_bending += bending_force;
       *cell[i]->force_visc += Fvisc_vol;
-      const hemo::Array<double,3> negative_bending_force = -bending_force/(6.0-absent);
-      const hemo::Array<double,3> negative_bending_viscous_force = -Fvisc_vol/(6.0-absent);
-
-      for (unsigned int j = 0 ; j < 6 - absent; j++ ) {
-       *cell[edges[j]]->force_bending += negative_bending_force;
-       *cell[edges[j]]->force_bending += negative_bending_viscous_force;
+      const hemo::Array<double,3> negative_bending_force = -bending_force/cellConstants.vertex_n_vertexes[i];
+      const hemo::Array<double,3> negative_bending_viscous_force = -Fvisc_vol/cellConstants.vertex_n_vertexes[i];
+      
+      const hemo::Array<plint,6> & edges = cellConstants.vertex_edges[i];
+      
+      for (unsigned int j = 0 ; j < cellConstants.vertex_n_vertexes[i]; j++ ) {
+       *cell[vertex_vertexes[i][j]]->force_bending += negative_bending_force;
+       *cell[vertex_vertexes[i][j]]->force_viscous += negative_bending_viscous_force;
       }              
     }
 
