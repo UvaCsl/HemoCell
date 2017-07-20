@@ -16,6 +16,7 @@ class CommonCellConstants {
                       vector<hemo::Array<plint,2>> edge_list_,
                       vector<double> edge_length_eq_list_,
                       vector<double> edge_angle_eq_list_,
+                      vector<double> surface_patch_center_eq_list,
                       vector<hemo::Array<plint,2>> edge_bending_triangles_list_,
                       vector<hemo::Array<plint,2>> edge_bending_triangles_outer_points_,
                       vector<double> triangle_area_eq_list_,
@@ -39,6 +40,7 @@ class CommonCellConstants {
   const vector<double> edge_angle_eq_list;
   const vector<hemo::Array<plint,2>> edge_bending_triangles_list;
   const vector<hemo::Array<plint,2>> edge_bending_triangles_outer_points;
+  const vector<double> surface_patch_center_eq_list;
   const vector<double> triangle_area_eq_list;
   const vector<hemo::Array<plint,6>> vertex_vertexes;
   const vector<hemo::Array<plint,6>> vertex_edges;
