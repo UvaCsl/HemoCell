@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
   pcout << "(main) Flowaroundsphere geometry ..." << std::endl;
 
   plint lengthChannel = 2*(*cfg)["domain"]["refDirN"].read<int>();
-  plint heightChannel = 2*52; //52um
+  plint heightChannel = 2*17; //52um
 
   plint nx = 6*lengthChannel;
   plint ny = lengthChannel;
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
   hemocell.lattice->periodicity().toggle(0,true);
   hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
-  double dpdz = (flowQ*12*3.0e-3)/(52e-6*52e-6*52e-6*300e-6); //(shear_rate * 2e-3) / (4*52e-6);
+  double dpdz = (flowQ*12*3.0e-3)/(17e-6*17e-6*17e-6*300e-6); //(shear_rate * 2e-3) / (4*52e-6);
   double dpdz_lbm = dpdz * ((*cfg)["domain"]["dx"].read<double>() * (*cfg)["domain"]["dx"].read<double>() * (*cfg)["domain"]["dt"].read<double>()*(*cfg)["domain"]["dt"].read<double>() /param::dm);
   pcout << "dpdz_lbm = " << dpdz_lbm << endl;
 

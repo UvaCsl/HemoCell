@@ -23,11 +23,11 @@ public:
           radiusSqr(radiusCyl*radiusCyl)
     {}
     virtual bool operator() (plint iX, plint iY, plint iZ) const {
-        return ((iX-xcirc)*(iX-xcirc) + (iZ-ycirc)*(iZ-ycirc) <= radiusSqr) ||
+        return ((iX-xcirc)*(iX-xcirc) + (iY-ycirc)*(iY-ycirc) <= radiusSqr) ||
                //(iX <= -(95/151)*(iZ-(9964/19))  && iX >= xbottomL && iZ <= ytop) ;
-               (iX <= xtopR && iX >= xbottomL && iZ <= ycirc ) ||
+               (iX <= xtopR && iX >= xbottomL && iY <= ycirc ) ||
                //(iX <= ( iZ*(xbottomR-xtopR)/(-ycirc) + xbottomR ) && iX >= xtopR && iZ <= ycirc );
-               (iX <= ((iZ - 514.16683048)/-1.60677134525) && iX >= 127.73502714 && iZ <= 308.92584909) ;
+               (iX <= ((iY - 514.16683048)/-1.60677134525) && iX >= 127.73502714 && iY <= 308.92584909) ;
     }
     virtual StenosisShapeDomain3D<T>* clone() const {
         return new StenosisShapeDomain3D<T>(*this);
@@ -87,8 +87,8 @@ int main(int argc, char *argv[]) {
   plint depthChannel = 2*80;
 
   plint nx = 3*lengthChannel;
-  plint ny = depthChannel;
-  plint nz = heightChannel;
+  plint ny = heightChannel;
+  plint nz = depthChannel;
 
   plint radiusCyl = 2*7.5; //
   plint widthSt = 2*110.0;
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
   double shear_rate = 1800; //input shear rate s-1
   pcout << "shear_rate = " << shear_rate << endl;
 
-  double flowQ = (shear_rate*80e-6*174e-6*174e-6)/6;
+  double flowQ = (shear_rate*130e-6*80e-6*80e-6)/6;
   pcout << "flow = " << flowQ << endl;
 //  double u_max = flowQ * (100e-6) * (174e-6);
   //pcout << "u_max = " << u_max << endl;
@@ -143,8 +143,8 @@ int main(int argc, char *argv[]) {
 
   Box3D topChannel(0, nx-1, 0, ny-1, nz-1, nz-1);
   Box3D bottomChannel( 0, nx-1, 0, ny-1, 0, 0);
-  Box3D backChannel( 0, 3*lengthChannel-1, lengthChannel-1, lengthChannel-1, 0, heightChannel-1);
-  Box3D frontChannel( 0, 3*lengthChannel-1, 0, 0, 0, heightChannel-1);
+  Box3D backChannel( 0, nx-1, ny-1, ny-1, 0, nz-1);
+  Box3D frontChannel( 0, nx-1, 0, 0, 0, nz-1);
 
   defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR> );
   defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
 
   hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
-  double dpdz = (flowQ*12*3.0e-3)/(174e-6*174e-6*174e-6*80e-6); //(shear_rate * 2e-3) / (4*174e-6);
+  double dpdz = (flowQ*12*3.0e-3)/(80e-6*80e-6*80e-6*130e-6); //(shear_rate * 2e-3) / (4*174e-6);
   double dpdz_lbm = dpdz * ((*cfg)["domain"]["dx"].read<double>() * (*cfg)["domain"]["dx"].read<double>() * (*cfg)["domain"]["dt"].read<double>()*(*cfg)["domain"]["dt"].read<double>() /param::dm);
   pcout << "dpdz_lbm = " << dpdz_lbm << endl;
 
