@@ -19,7 +19,12 @@ class CommonCellConstants {
                       vector<hemo::Array<plint,2>> edge_bending_triangles_list_,
                       vector<hemo::Array<plint,2>> edge_bending_triangles_outer_points_,
                       vector<double> triangle_area_eq_list_,
-                      vector<hemo::Array<plint,6>> vertex_edges_,
+                      vector<hemo::Array<plint,6>> vertex_vertexes_,
+          vector<hemo::Array<plint,6>> vertex_edges_,
+          vector<hemo::Array<signed int,6>> vertex_edges_sign_,
+          vector<unsigned int> vertex_n_vertexes_,
+          vector<hemo::Array<hemo::Array<plint,2>,6>> vertex_outer_edges_per_vertex_,
+          vector<hemo::Array<hemo::Array<signed int,2>,6>> vertex_outer_edges_per_vertex_sign_,
                       double volume_eq_, double area_mean_eq_,
                       double edge_mean_eq_, double angle_mean_eq_);
   public: 
@@ -35,7 +40,12 @@ class CommonCellConstants {
   const vector<hemo::Array<plint,2>> edge_bending_triangles_list;
   const vector<hemo::Array<plint,2>> edge_bending_triangles_outer_points;
   const vector<double> triangle_area_eq_list;
+  const vector<hemo::Array<plint,6>> vertex_vertexes;
   const vector<hemo::Array<plint,6>> vertex_edges;
+  const vector<hemo::Array<signed int,6>> vertex_edges_sign;
+  const vector<unsigned int> vertex_n_vertexes;
+  const vector<hemo::Array<hemo::Array<plint,2>,6>> vertex_outer_edges_per_vertex;
+  const vector<hemo::Array<hemo::Array<signed int,2>,6>> vertex_outer_edges_per_vertex_sign;
 
   const double volume_eq;
   const double area_mean_eq;
