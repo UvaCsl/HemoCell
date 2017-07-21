@@ -120,14 +120,14 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
         hemo::Array<double,3> triangle_normal = crossProduct(cell[cellConstants.vertex_vertexes[i][j]]->position - cell[i]->position, 
                                                              cell[cellConstants.vertex_vertexes[i][j+1]]->position - cell[i]->position);
         triangle_normal /= norm(triangle_normal);  
-        patch_normal += trianlge_normal;                                                   
+        patch_normal += triangle_normal;                                                   
       }
-      hemo::Array<double,3> triangle_normal = crossProduct(cell[cellConstants.vertex_vertexes[i][cellConstants.vertex_n_vertexes[i]-1]->position - cell[i]->position, 
+      hemo::Array<double,3> triangle_normal = crossProduct(cell[cellConstants.vertex_vertexes[i][cellConstants.vertex_n_vertexes[i]-1]]->position - cell[i]->position, 
                                                            cell[cellConstants.vertex_vertexes[i][0]]->position - cell[i]->position);
       triangle_normal /= norm(triangle_normal);
-      patch_normal += trianlge_normal;
+      patch_normal += triangle_normal;
  
-      patch_normal /= norm(patch_noraml);
+      patch_normal /= norm(patch_normal);
               
       const double ndev = dot(patch_normal, dev_vect); // distance along patch normal
 
@@ -153,8 +153,8 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const hemo::Array<plint,6> & edges = cellConstants.vertex_edges[i];
       
       for (unsigned int j = 0 ; j < cellConstants.vertex_n_vertexes[i]; j++ ) {
-       *cell[vertex_vertexes[i][j]]->force_bending += negative_bending_force;
-       *cell[vertex_vertexes[i][j]]->force_viscous += negative_bending_viscous_force;
+       *cell[cellConstants.vertex_vertexes[i][j]]->force_bending += negative_bending_force;
+       *cell[cellConstants.vertex_vertexes[i][j]]->force_visc += negative_bending_viscous_force;
       }              
     }
 

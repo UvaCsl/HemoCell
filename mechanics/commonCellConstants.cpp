@@ -248,17 +248,17 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       // Get the local surface normal
       hemo::Array<double,3> patch_normal = {0.,0.,0.};
       for(unsigned int j = 0; j < vertex_n_vertexes_[i]-1; j++) {
-        hemo::Array<double,3> triangle_normal = crossProduct(cellField.meshElement.getVertex(vertex_vertexes_[i][j]) - localVertex, 
-                                                             cellField.meshElement.getVertex(vertex_vertexes_[i][j+1]) - localVertex);
+        hemo::Array<double,3> triangle_normal = crossProduct(hemo::Array<double,3> (cellField.meshElement.getVertex(vertex_vertexes_[i][j])) - localVertex, 
+                                                             hemo::Array<double,3> (cellField.meshElement.getVertex(vertex_vertexes_[i][j+1])) - localVertex);
         triangle_normal /= norm(triangle_normal);  
-        patch_normal += trianlge_normal;                                                   
+        patch_normal += triangle_normal;                                                   
       }
-      hemo::Array<double,3> triangle_normal = crossProduct(cellField.meshElement.getVertex(vertex_vertexes_[i][vertex_n_vertexes_[i]-1]) -localVertex, 
-                                                           cellField.meshElement.getVertex(vertex_vertexes_[i][0]) -localVertex);
+      hemo::Array<double,3> triangle_normal = crossProduct(hemo::Array<double,3> (cellField.meshElement.getVertex(vertex_vertexes_[i][vertex_n_vertexes_[i]-1])) -localVertex, 
+                                                           hemo::Array<double,3> (cellField.meshElement.getVertex(vertex_vertexes_[i][0])) -localVertex);
       triangle_normal /= norm(triangle_normal);
-      patch_normal += trianlge_normal;
+      patch_normal += triangle_normal;
 
-      patch_normal /= norm(patch_noraml);
+      patch_normal /= norm(patch_normal);
               
       const double ndev = dot(patch_normal, dev_vect); // distance along patch normal
 
@@ -266,6 +266,7 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     }
 
     
+    //Get edges around vertex
     vector<hemo::Array<plint,6>> vertex_edges_(cellField.meshElement.getNumVertices(),{-1,-1,-1,-1,-1,-1});
     vector<hemo::Array<signed int,6>> vertex_edges_sign_(cellField.meshElement.getNumVertices(), {0,0,0,0,0,0});
     plint v0,v1;
