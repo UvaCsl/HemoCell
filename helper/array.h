@@ -113,7 +113,7 @@ namespace hemo {
     }
     return ret;
   }
-  
+
   template<typename _Tp, std::size_t _Nm, typename _Tp2>
   inline Array<_Tp, _Nm> operator/(const Array<_Tp, _Nm> & one, const _Tp2 div) {
     Array<_Tp, _Nm> ret;
@@ -123,8 +123,8 @@ namespace hemo {
     return ret;
   }
   
-  template<typename _Tp, std::size_t _Nm>
-  inline Array<_Tp, _Nm> operator*(const Array<_Tp, _Nm> & one, const _Tp mul) {
+  template<typename _Tp, std::size_t _Nm, typename _Tp2>
+  inline Array<_Tp, _Nm> operator*(const Array<_Tp, _Nm> & one, const _Tp2 mul) {
     Array<_Tp, _Nm> ret;
     for (std::size_t i = 0 ; i < _Nm ; i++ ) {
       ret[i] = one[i]*mul;
@@ -228,6 +228,22 @@ namespace hemo {
       return n;
   }
   
+  template<typename _Tp>
+  _Tp computeCotangentFromVectors (const Array<_Tp,3> & a, const Array<_Tp,3> & b) {
+    const _Tp adj_norm = dot(a,b)/norm(b);
+    //Pythagoras to get opp side length
+    const _Tp hyp_norm = norm(a);
+    const _Tp opp_norm = std::sqrt(std::pow(hyp_norm,2)-std::pow(adj_norm,2));
+    return adj_norm/opp_norm;
+  }
+  
+  template<typename _Tp>
+  void computeLengthsPythagoras (const Array<_Tp,3> & a, const Array<_Tp,3> & b, _Tp & a_l, _Tp & b_l, _Tp & c_l) {
+    a_l = dot(a,b)/norm(b);
+    //Pythagoras to get opp side length
+    c_l = norm(a);
+    b_l = std::sqrt(std::pow(c_l,2)-std::pow(a_l,2));
+  }  
 }
 
 #endif
