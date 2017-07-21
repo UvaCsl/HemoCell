@@ -1,18 +1,18 @@
-#include "rbcHighOrderModel.h"
+#include "rbcHighOrderModelnewBending.h"
 //TODO Make all inner hemo::Array variables constant as well
 
 
-RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_),
+RbcHighOrderModelnewBending::RbcHighOrderModelnewBending(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_),
                   cellField(cellField_),
-                  k_volume( RbcHighOrderModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
-                  k_area( RbcHighOrderModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
-                  k_link( RbcHighOrderModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
-                  k_bend( RbcHighOrderModel::calculate_kBend(modelCfg_,*cellField_.meshmetric) ),
-                  eta_m( RbcHighOrderModel::calculate_etaM(modelCfg_) ),
-                  eta_v( RbcHighOrderModel::calculate_etaV(modelCfg_) )
+                  k_volume( RbcHighOrderModelnewBending::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
+                  k_area( RbcHighOrderModelnewBending::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
+                  k_link( RbcHighOrderModelnewBending::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
+                  k_bend( RbcHighOrderModelnewBending::calculate_kBend(modelCfg_,*cellField_.meshmetric) ),
+                  eta_m( RbcHighOrderModelnewBending::calculate_etaM(modelCfg_) ),
+                  eta_v( RbcHighOrderModelnewBending::calculate_etaV(modelCfg_) )
     {};
 
-void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> & lpc, size_t ctype) {
+void RbcHighOrderModelnewBending::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> & lpc, size_t ctype) {
 
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;
@@ -212,7 +212,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
   }
 };
 
-void RbcHighOrderModel::statistics() {
+void RbcHighOrderModelnewBending::statistics() {
     pcout << "(Cell-mechanics model) High Order model parameters for " << cellField.name << " cellfield" << std::endl; 
     pcout << "\t k_link:   " << k_link << std::endl; 
     pcout << "\t k_area:   " << k_area << std::endl; 
@@ -225,20 +225,20 @@ void RbcHighOrderModel::statistics() {
 
 // Provide methods to calculate and scale to coefficients from here
 
-double RbcHighOrderModel::calculate_etaV(Config & cfg ){
+double RbcHighOrderModelnewBending::calculate_etaV(Config & cfg ){
   return cfg["MaterialModel"]["eta_v"].read<double>() * param::dx * param::dt / param::dm; //== dx^2/dN/dt
 };
 
-double RbcHighOrderModel::calculate_etaM(Config & cfg ){
+double RbcHighOrderModelnewBending::calculate_etaM(Config & cfg ){
   return cfg["MaterialModel"]["eta_m"].read<double>() * param::dx / param::dt / param::df;
 };
 
-double RbcHighOrderModel::calculate_kBend(Config & cfg, MeshMetrics<double> & meshmetric ){
+double RbcHighOrderModelnewBending::calculate_kBend(Config & cfg, MeshMetrics<double> & meshmetric ){
   double eqLength = meshmetric.getMeanLength();
   return cfg["MaterialModel"]["kBend"].read<double>() * param::kBT_lbm / eqLength;
 };
 
-double RbcHighOrderModel::calculate_kVolume(Config & cfg, MeshMetrics<double> & meshmetric){
+double RbcHighOrderModelnewBending::calculate_kVolume(Config & cfg, MeshMetrics<double> & meshmetric){
   double kVolume =  cfg["MaterialModel"]["kVolume"].read<double>();
   double eqLength = meshmetric.getMeanLength();
   kVolume *= param::kBT_lbm/(eqLength*eqLength*eqLength);
@@ -246,14 +246,14 @@ double RbcHighOrderModel::calculate_kVolume(Config & cfg, MeshMetrics<double> & 
   return kVolume;
 };
 
-double RbcHighOrderModel::calculate_kArea(Config & cfg, MeshMetrics<double> & meshmetric){
+double RbcHighOrderModelnewBending::calculate_kArea(Config & cfg, MeshMetrics<double> & meshmetric){
   double kArea =  cfg["MaterialModel"]["kArea"].read<double>();
   double eqLength = meshmetric.getMeanLength();
   kArea *= param::kBT_lbm/(eqLength*eqLength);
   return kArea;
 };
 
-double RbcHighOrderModel::calculate_kLink(Config & cfg, MeshMetrics<double> & meshmetric){
+double RbcHighOrderModelnewBending::calculate_kLink(Config & cfg, MeshMetrics<double> & meshmetric){
   double kLink = cfg["MaterialModel"]["kLink"].read<double>();
   double persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
   //TODO: It should scale with the number of surface points!
