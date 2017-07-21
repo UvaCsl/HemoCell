@@ -208,6 +208,7 @@ void RbcHighOrderModelnewBending::ParticleMechanics(map<int,vector<HemoCellParti
       for (unsigned int k = 0 ; k < 3 ; k++) {
         (*cell[vertex]->force_bending)[k] -= dot(4.0*sum_vec_Tij/sum_len_Tij,sum_second_term[k])-(2.0*dot(sum_vec_Tij,sum_vec_Tij)/pow(sum_len_Tij,2))*sum_fourth_term[k];
       }
+      (*cell[vertex]->force_bending) *= k_bend;
     }
   }
 };
@@ -235,7 +236,7 @@ double RbcHighOrderModelnewBending::calculate_etaM(Config & cfg ){
 
 double RbcHighOrderModelnewBending::calculate_kBend(Config & cfg, MeshMetrics<double> & meshmetric ){
   double eqLength = meshmetric.getMeanLength();
-  return cfg["MaterialModel"]["kBend"].read<double>() * param::kBT_lbm / eqLength;
+  return cfg["MaterialModel"]["kBend"].read<double>(); //Not needed because of things // * param::kBT_lbm / eqLength;
 };
 
 double RbcHighOrderModelnewBending::calculate_kVolume(Config & cfg, MeshMetrics<double> & meshmetric){
