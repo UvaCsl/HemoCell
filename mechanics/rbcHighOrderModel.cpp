@@ -131,7 +131,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
               
       const double ndev = dot(patch_normal, dev_vect); // distance along patch normal
 
-      const double dDev = ( ndev - cellConstants.surface_patch_center_dist_eq_list[i] ) / cellConstants.edge_mean_eq; // Non-dimension
+      const double dDev = (ndev - cellConstants.surface_patch_center_dist_eq_list[i] ) / cellConstants.edge_mean_eq; // Non-dimension
   
       //TODO scale bending force
 #ifdef FORCE_LIMIT

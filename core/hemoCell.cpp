@@ -52,6 +52,10 @@ void HemoCell::setFluidOutputs(vector<int> outputs) {
   cellfields->desiredFluidOutputVariables = outputs_c;
 }
 
+void HemoCell::setParticlePeriodicity(unsigned int axis, bool bePeriodic) {
+  cellfields->immersedParticles->periodicity().toggle(axis, bePeriodic);
+}
+
 void HemoCell::loadParticles() {
   pcout << "(HemoCell) (CellField) Loading particle positions "  << endl;
   loadParticlesIsCalled = true;

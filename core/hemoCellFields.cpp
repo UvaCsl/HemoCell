@@ -24,7 +24,6 @@ void HemoCellFields::createParticleField() {
   immersedParticles = new MultiParticleField3D<HEMOCELL_PARTICLE_FIELD>(
             particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
   immersedParticles->periodicity().toggleAll(false);
-  immersedParticles->periodicity().toggle(0,true);
   immersedParticles->toggleInternalStatistics(false);
   InitAfterLoadCheckpoint();
 }

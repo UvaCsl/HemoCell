@@ -93,8 +93,6 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       *cell[edge[0]]->force_link += force;
       *cell[edge[1]]->force_link -= force;
 
-      
-      // calculate triangle normals, this should be in a function
 
       const plint b0 = cellConstants.edge_bending_triangles_list[edge_n][0];
       const plint b1 = cellConstants.edge_bending_triangles_list[edge_n][1];
@@ -112,16 +110,6 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 
      
       const hemo::Array<double,3> x2 = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
-
-      //calculate angle
-      // double angle = angleBetweenVectors(V1, V2);
-      // const plint sign = dot(x2-v0, V2) >= 0 ? 1 : -1;
-      // if (sign <= 0) {
-      //   angle = 2 * PI - angle;
-      // }
-      // if (angle > PI) {
-      //   angle = angle - 2*PI; 
-      // }
 
       double angle = getAngleBetweenFaces(V1, V2, edge_uv);
       
