@@ -135,14 +135,14 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
   
       //TODO scale bending force
 #ifdef FORCE_LIMIT
-      const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * patch_normal; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
+      const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.055-dDev*dDev)) * patch_normal; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
 #else
-      const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.5-dDev*dDev)) * patch_normal;
+      const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.055-dDev*dDev)) * patch_normal;
 #endif      
       // Calculating viscous term
       const hemo::Array<double,3> rel_vel_v = vertices_vavg - cell[i]->v;
       const hemo::Array<double,3> rel_vel_proj = dot(patch_normal, rel_vel_v) * patch_normal;
-      const hemo::Array<double,3> Fvisc_vol = eta_v * rel_vel_proj * 0.866 * cellConstants.edge_mean_eq;
+      const hemo::Array<double,3> Fvisc_vol = eta_v * rel_vel_proj * 0.866 * cellConstants.edge_mean_eq; // last term is triangle area from equilateral approx. x ratio of #triangle/#vertices -> surface area belonging to a vertex
 
       //Apply bending force
       *cell[i]->force_bending += bending_force;
