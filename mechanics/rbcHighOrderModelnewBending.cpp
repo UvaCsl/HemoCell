@@ -205,10 +205,18 @@ void RbcHighOrderModelnewBending::ParticleMechanics(map<int,vector<HemoCellParti
         }
         
       }
+      hemo::Array<double,3> force_bend;
       for (unsigned int k = 0 ; k < 3 ; k++) {
-        (*cell[vertex]->force_bending)[k] -= dot(4.0*sum_vec_Tij/sum_len_Tij,sum_second_term[k])-(2.0*dot(sum_vec_Tij,sum_vec_Tij)/pow(sum_len_Tij,2))*sum_fourth_term[k];
+        force_bend[k]  = (dot(4.0*sum_vec_Tij/sum_len_Tij,sum_second_term[k])-(2.0*dot(sum_vec_Tij,sum_vec_Tij)/pow(sum_len_Tij,2))*sum_fourth_term[k]) * k_bend;
       }
-      (*cell[vertex]->force_bending) *= k_bend;
+      
+      *cell[vertex]->force_bending -= force_bend;
+
+      const hemo::Array<double,3> force_bend_neg = force_bend/cellConstants.vertex_n_vertexes[vertex];
+      
+      for (unsigned int j = 0 ; j < cellConstants.vertex_n_vertexes[vertex]; j++ ) {
+       *cell[cellConstants.vertex_vertexes[vertex][j]]->force_bending += force_bend_neg;
+      }              
     }
   }
 };
