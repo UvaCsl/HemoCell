@@ -93,8 +93,14 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       *cell[edge[0]]->force_link += force;
       *cell[edge[1]]->force_link -= force;
 
-      
-      // calculate triangle normals, this should be in a function
+      // Membrane viscosity of bilipid layer
+      // F = eta * (dv/l) * l. 
+      const hemo::Array<double,3> rel_vel = cell[edge[1]]->v - cell[edge[0]]->v;
+      const hemo::Array<double,3> rel_vel_projection = dot(rel_vel, edge_uv) * edge_uv;
+      const hemo::Array<double,3> Fvisc_memb = eta * rel_vel_projection;
+      *cell[edge[0]]->force_visc += Fvisc_memb;
+      *cell[edge[1]]->force_visc -= Fvisc_memb; 
+
 
       const plint b0 = cellConstants.edge_bending_triangles_list[edge_n][0];
       const plint b1 = cellConstants.edge_bending_triangles_list[edge_n][1];
@@ -113,25 +119,15 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
      
       const hemo::Array<double,3> x2 = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
 
-      //calculate angle
-      // double angle = angleBetweenVectors(V1, V2);
-      // const plint sign = dot(x2-v0, V2) >= 0 ? 1 : -1;
-      // if (sign <= 0) {
-      //   angle = 2 * PI - angle;
-      // }
-      // if (angle > PI) {
-      //   angle = angle - 2*PI; 
-      // }
-
       double angle = getAngleBetweenFaces(V1, V2, edge_uv);
       
       //calculate resulting bending force
-      const double angle_frac = cellConstants.edge_angle_eq_list[edge_n] - angle;
+      const double angle_frac = angle - cellConstants.edge_angle_eq_list[edge_n];
 
 #ifdef FORCE_LIMIT
-      const double force_magnitude = - k_bend * (angle_frac + angle_frac / std::fabs(2.467 - angle_frac * angle_frac) ); // tau_b = pi/2
+      const double force_magnitude = k_bend * (angle_frac + angle_frac / std::fabs(2.467 - angle_frac * angle_frac) ); // tau_b = pi/2
 #else
-      const double force_magnitude = - k_bend * (angle_frac + angle_frac / (2.467 - angle_frac * angle_frac) ); // tau_b = pi/2
+      const double force_magnitude = k_bend * (angle_frac + angle_frac / (2.467 - angle_frac * angle_frac) ); // tau_b = pi/2
 #endif
       //TODO Make bending force differ with area!
       const hemo::Array<double,3> bending_force = force_magnitude*(V1 + V2)*0.5;
@@ -140,7 +136,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= bending_force;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= bending_force;
 
-
+      /*
       // Viscosity based on relative vertex velocity
       const hemo::Array<double,3> outer_end_rel_vel = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->v 
                                               - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->v;
@@ -151,7 +147,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       const double visc_mag = eta * norm_vel * 0.5;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_visc +=  visc_mag * section_dir;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_visc -=  visc_mag * section_dir;   
-      
+      */
       edge_n++;
     }
 
@@ -168,7 +164,7 @@ void PltSimpleModel::statistics() {
 
 
 double PltSimpleModel::calculate_eta(Config & cfg ){
-  return cfg["MaterialModel"]["eta"].read<double>() * param::dx * param::dt / param::dm;
+  return cfg["MaterialModel"]["eta"].read<double>() * param::dx / param::dt / param::df;//* param::dx * param::dt / param::dm;
 };
 
 double PltSimpleModel::calculate_kBend(Config & cfg ){

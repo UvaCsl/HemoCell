@@ -125,6 +125,9 @@ class HemoCell {
   //Set the output of the fluid field
   void setFluidOutputs(vector<int> outputs);
 
+  //Explicitly set the periodicity of the domain along the different axes
+  void setParticlePeriodicity(unsigned int axis, bool bePeriodic);
+
   //Load the particles
 private:
   bool loadParticlesIsCalled = false;

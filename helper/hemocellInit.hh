@@ -47,11 +47,11 @@ void iniLatticeSquareCouette( MultiBlockLattice3D<T,Descriptor>& lattice,
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, bottom );
 
     T vHalf = (ny-1)*shearRate*0.5;
-    setBoundaryVelocity(lattice, top, hemo::Array<T,3>(-vHalf,0.0,0.0));
-    setBoundaryVelocity(lattice, bottom, hemo::Array<T,3>(vHalf,0.0,0.0));
+    setBoundaryVelocity(lattice, top, plb::Array<T,3>(-vHalf,0.0,0.0));
+    setBoundaryVelocity(lattice, bottom, plb::Array<T,3>(vHalf,0.0,0.0));
 
     setExternalVector( lattice, lattice.getBoundingBox(),
-            Descriptor<T>::ExternalField::forceBeginsAt, hemo::Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
+            Descriptor<T>::ExternalField::forceBeginsAt, plb::Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
 
     // For shearing test this results in a dirac delta in force -> viscous force will not like it
     //initializeAtEquilibrium(lattice, lattice.getBoundingBox(), CouetteDensityAndVelocity<T>(shearRate, (ny-1)*0.5 ));

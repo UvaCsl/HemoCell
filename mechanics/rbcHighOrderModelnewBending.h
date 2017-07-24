@@ -8,7 +8,7 @@
 #include "commonCellConstants.h"
 #include "hemoCellFields.h"
 
-class RbcHighOrderModel : public CellMechanics {
+class RbcHighOrderModelnewBending : public CellMechanics {
 
   public:
   //Variables
@@ -21,7 +21,7 @@ class RbcHighOrderModel : public CellMechanics {
   const double eta_v;
 
   public:
-  RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) ;
+  RbcHighOrderModelnewBending(Config & modelCfg_, HemoCellField & cellField_) ;
 
   void ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> &lpc, size_t ctype) ;
 

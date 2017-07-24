@@ -1,18 +1,18 @@
-#include "rbcHighOrderModel.h"
+#include "rbcHighOrderModelnewBending.h"
 //TODO Make all inner hemo::Array variables constant as well
 
 
-RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_),
+RbcHighOrderModelnewBending::RbcHighOrderModelnewBending(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_),
                   cellField(cellField_),
-                  k_volume( RbcHighOrderModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
-                  k_area( RbcHighOrderModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
-                  k_link( RbcHighOrderModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
-                  k_bend( RbcHighOrderModel::calculate_kBend(modelCfg_,*cellField_.meshmetric) ),
-                  eta_m( RbcHighOrderModel::calculate_etaM(modelCfg_) ),
-                  eta_v( RbcHighOrderModel::calculate_etaV(modelCfg_) )
+                  k_volume( RbcHighOrderModelnewBending::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
+                  k_area( RbcHighOrderModelnewBending::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
+                  k_link( RbcHighOrderModelnewBending::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
+                  k_bend( RbcHighOrderModelnewBending::calculate_kBend(modelCfg_,*cellField_.meshmetric) ),
+                  eta_m( RbcHighOrderModelnewBending::calculate_etaM(modelCfg_) ),
+                  eta_v( RbcHighOrderModelnewBending::calculate_etaV(modelCfg_) )
     {};
 
-void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> & lpc, size_t ctype) {
+void RbcHighOrderModelnewBending::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> & lpc, size_t ctype) {
 
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;
@@ -27,6 +27,10 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
     triangle_areas.reserve(cellConstants.triangle_list.size());
     vector<hemo::Array<double,3>> triangle_normals;
     triangle_normals.reserve(cellConstants.triangle_list.size());
+    vector<double> edges_length;
+    edges_length.reserve(cellConstants.edge_list.size());
+    vector<hemo::Array<double,3>> edges_vector;
+    edges_vector.reserve(cellConstants.edge_list.size());
 
     // Per-triangle calculations
     for (const hemo::Array<plint,3> & triangle : cellConstants.triangle_list) {
@@ -98,66 +102,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 
       triangle_n++;
     }
-
-//Per-vertex bending force loop
-    for (long unsigned int i = 0 ; i < cell.size() ; i++) {
-      hemo::Array<double,3> vertexes_sum = {0.,0.,0.};
-      hemo::Array<double,3> vertices_vel_sum = {0.,0.,0.};
-
-      for(unsigned int j = 0; j < cellConstants.vertex_n_vertexes[i]; j++) {
-        vertexes_sum += cell[cellConstants.vertex_vertexes[i][j]]->position;
-        vertices_vel_sum += cell[cellConstants.vertex_vertexes[i][j]]->v;
-      }
-      const hemo::Array<double,3> vertexes_middle = vertexes_sum/cellConstants.vertex_n_vertexes[i];
-      const hemo::Array<double,3> vertices_vavg = vertices_vel_sum/cellConstants.vertex_n_vertexes[i];
-
-      const hemo::Array<double,3> dev_vect = vertexes_middle - cell[i]->position;
-      
-      
-      // Get the local surface normal
-      hemo::Array<double,3> patch_normal = {0.,0.,0.};
-      for(unsigned int j = 0; j < cellConstants.vertex_n_vertexes[i]-1; j++) {
-        hemo::Array<double,3> triangle_normal = crossProduct(cell[cellConstants.vertex_vertexes[i][j]]->position - cell[i]->position, 
-                                                             cell[cellConstants.vertex_vertexes[i][j+1]]->position - cell[i]->position);
-        triangle_normal /= norm(triangle_normal);  
-        patch_normal += triangle_normal;                                                   
-      }
-      hemo::Array<double,3> triangle_normal = crossProduct(cell[cellConstants.vertex_vertexes[i][cellConstants.vertex_n_vertexes[i]-1]]->position - cell[i]->position, 
-                                                           cell[cellConstants.vertex_vertexes[i][0]]->position - cell[i]->position);
-      triangle_normal /= norm(triangle_normal);
-      patch_normal += triangle_normal;
- 
-      patch_normal /= norm(patch_normal);
-              
-      const double ndev = dot(patch_normal, dev_vect); // distance along patch normal
-
-      const double dDev = (ndev - cellConstants.surface_patch_center_dist_eq_list[i] ) / cellConstants.edge_mean_eq; // Non-dimension
-  
-      //TODO scale bending force
-#ifdef FORCE_LIMIT
-      const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.055-dDev*dDev)) * patch_normal; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
-#else
-      const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.055-dDev*dDev)) * patch_normal;
-#endif      
-      // Calculating viscous term
-      const hemo::Array<double,3> rel_vel_v = vertices_vavg - cell[i]->v;
-      const hemo::Array<double,3> rel_vel_proj = dot(patch_normal, rel_vel_v) * patch_normal;
-      const hemo::Array<double,3> Fvisc_vol = eta_v * rel_vel_proj * 0.866 * cellConstants.edge_mean_eq; // last term is triangle area from equilateral approx. x ratio of #triangle/#vertices -> surface area belonging to a vertex
-
-      //Apply bending force
-      *cell[i]->force_bending += bending_force;
-      *cell[i]->force_visc += Fvisc_vol;
-      const hemo::Array<double,3> negative_bending_force = -bending_force/cellConstants.vertex_n_vertexes[i];
-      const hemo::Array<double,3> negative_bending_viscous_force = -Fvisc_vol/cellConstants.vertex_n_vertexes[i];
-      
-      const hemo::Array<plint,6> & edges = cellConstants.vertex_edges[i];
-      
-      for (unsigned int j = 0 ; j < cellConstants.vertex_n_vertexes[i]; j++ ) {
-       *cell[cellConstants.vertex_vertexes[i][j]]->force_bending += negative_bending_force;
-       *cell[cellConstants.vertex_vertexes[i][j]]->force_visc += negative_bending_viscous_force;
-      }              
-    }
-
+    
     // Per-edge calculations
     int edge_n=0;
     for (const hemo::Array<plint,2> & edge : cellConstants.edge_list) {
@@ -167,6 +112,9 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       // Link force
       const hemo::Array<double,3> edge_vec = p1-p0;
       const double edge_length = norm(edge_vec);
+      edges_vector.push_back(edge_vec);
+      edges_length.push_back(edge_length);
+      
       const hemo::Array<double,3> edge_uv = edge_vec/edge_length;
       const double edge_frac = (edge_length - /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n])
                                / /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n];
@@ -190,11 +138,90 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 
       edge_n++;
     }
+    
+    //Bending force calculation (Method B from "On the bending algorithms for soft objects in flows" by Achim Guckenberger)
 
-  } 
+    for (unsigned int vertex = 0 ; vertex < cellConstants.vertex_vertexes.size() ; vertex++) {
+      const hemo::Array<plint,6> & neighbour_vertexes = cellConstants.vertex_vertexes[vertex];
+      const hemo::Array<plint,6> & neighbour_edges = cellConstants.vertex_edges[vertex];
+      const hemo::Array<signed int, 6> neighbour_edges_sign = cellConstants.vertex_edges_sign[vertex];
+      const unsigned int & n_neighbours = cellConstants.vertex_n_vertexes[vertex];
+      const hemo::Array<hemo::Array<plint,2>,6> & outer_edges_per_neighbour = cellConstants.vertex_outer_edges_per_vertex[vertex];
+      const hemo::Array<hemo::Array<signed int,2>,6> & outer_edges_per_neighbour_sign = cellConstants.vertex_outer_edges_per_vertex_sign[vertex];
+      
+      hemo::Array<double,3> sum_vec_Tij = {0.,0.,0.};
+      hemo::Array<hemo::Array<double,3>,3> sum_second_term = {{0.,0.,0.},{0.,0.,0.},{0.,0.,0.}};
+      hemo::Array<double,3> sum_fourth_term = {0.,0.,0.};
+
+      hemo::Array<hemo::Array<double,3>,3> unit_vectors = {{1.,0.,0.},{0.,1.,0.},{0.,0.,1.}};
+
+      double sum_len_Tij = 0.0;
+
+      for (unsigned int n = 0 ; n < n_neighbours ; n++) {
+        const unsigned int n_lower = ((n - 1)+n_neighbours)%n_neighbours;
+        const unsigned int n_upper = (n+1)%n_neighbours;
+        const hemo::Array<double,3>  n_edge = edges_vector[neighbour_edges[n]]*neighbour_edges_sign[n]*-1.0;
+        const hemo::Array<double,3>  n_lower_edge = edges_vector[neighbour_edges[n_lower]]*neighbour_edges_sign[n_lower]*-1.0;
+        const hemo::Array<double,3>  n_lower_outer_edge = edges_vector[outer_edges_per_neighbour[n][0]]*outer_edges_per_neighbour_sign[n][0]*-1.0;
+        const hemo::Array<double,3>  n_upper_edge = edges_vector[neighbour_edges[n_upper]]*neighbour_edges_sign[n_upper]*-1.0;
+        const hemo::Array<double,3>  n_upper_outer_edge = edges_vector[outer_edges_per_neighbour[n][1]]*outer_edges_per_neighbour_sign[n][1]*-1.0;
+        const double n_edge_len = norm(n_edge);
+        const double n_upper_edge_len = norm(n_upper_edge);
+        const double n_lower_edge_len = norm(n_lower_edge);
+
+
+        double n_lower_adj, n_lower_hyp, n_lower_opp, 
+                     n_upper_adj, n_upper_hyp, n_upper_opp;
+
+        computeLengthsPythagoras(n_lower_edge,n_lower_outer_edge,n_lower_adj, n_lower_opp, n_lower_hyp);
+        computeLengthsPythagoras(n_upper_edge,n_upper_outer_edge,n_upper_adj, n_upper_opp, n_upper_hyp);
+
+
+        const double Tij = n_lower_adj/n_lower_opp + 
+                           n_upper_adj/n_upper_opp;
+
+        sum_vec_Tij += n_edge*Tij;
+        sum_len_Tij += pow(n_edge_len,2)*Tij;
+
+        const double cos_lower = n_lower_adj/n_lower_hyp;
+        const double cos_upper = n_upper_adj/n_upper_hyp;
+
+        const hemo::Array<double,3> delta_cos_x_lower = (1.0/(n_edge_len*n_lower_edge_len))*
+        (n_lower_edge*-1.0+n_edge*-1.0-(n_lower_edge_len/n_edge_len)*cos_lower*n_edge*-1.0-
+        (n_edge_len/n_lower_edge_len)*cos_lower*n_lower_edge*-1.0
+        );
+
+        const hemo::Array<double,3> delta_cos_x_upper = (1.0/(n_edge_len*n_upper_edge_len))*
+        (n_upper_edge*-1.0+n_edge*-1.0-(n_upper_edge_len/n_edge_len)*cos_upper*n_edge*-1.0-
+        (n_edge_len/n_upper_edge_len)*cos_upper*n_upper_edge*-1.0
+        );
+
+        const hemo::Array<double,3> delta_Tij = (1.0/pow(1.0-pow(cos_lower,2),1.5))*delta_cos_x_lower +
+                                                (1.0/pow(1.0-pow(cos_upper,2),1.5))*delta_cos_x_upper;
+
+        for (unsigned int k = 0 ; k < 3 ; k++) {
+          sum_second_term[k] += n_edge*delta_Tij[k] + Tij*unit_vectors[k];
+          sum_fourth_term[k] += Tij*2*n_edge[k] + pow(n_edge_len,2)*delta_Tij[k];
+        }
+        
+      }
+      hemo::Array<double,3> force_bend;
+      for (unsigned int k = 0 ; k < 3 ; k++) {
+        force_bend[k]  = (dot(4.0*sum_vec_Tij/sum_len_Tij,sum_second_term[k])-(2.0*dot(sum_vec_Tij,sum_vec_Tij)/pow(sum_len_Tij,2))*sum_fourth_term[k]) * k_bend;
+      }
+      
+      *cell[vertex]->force_bending -= force_bend;
+
+      const hemo::Array<double,3> force_bend_neg = force_bend/cellConstants.vertex_n_vertexes[vertex];
+      
+      for (unsigned int j = 0 ; j < cellConstants.vertex_n_vertexes[vertex]; j++ ) {
+       *cell[cellConstants.vertex_vertexes[vertex][j]]->force_bending += force_bend_neg;
+      }              
+    }
+  }
 };
 
-void RbcHighOrderModel::statistics() {
+void RbcHighOrderModelnewBending::statistics() {
     pcout << "(Cell-mechanics model) High Order model parameters for " << cellField.name << " cellfield" << std::endl; 
     pcout << "\t k_link:   " << k_link << std::endl; 
     pcout << "\t k_area:   " << k_area << std::endl; 
@@ -207,20 +234,20 @@ void RbcHighOrderModel::statistics() {
 
 // Provide methods to calculate and scale to coefficients from here
 
-double RbcHighOrderModel::calculate_etaV(Config & cfg ){
+double RbcHighOrderModelnewBending::calculate_etaV(Config & cfg ){
   return cfg["MaterialModel"]["eta_v"].read<double>() * param::dx * param::dt / param::dm; //== dx^2/dN/dt
 };
 
-double RbcHighOrderModel::calculate_etaM(Config & cfg ){
+double RbcHighOrderModelnewBending::calculate_etaM(Config & cfg ){
   return cfg["MaterialModel"]["eta_m"].read<double>() * param::dx / param::dt / param::df;
 };
 
-double RbcHighOrderModel::calculate_kBend(Config & cfg, MeshMetrics<double> & meshmetric ){
+double RbcHighOrderModelnewBending::calculate_kBend(Config & cfg, MeshMetrics<double> & meshmetric ){
   double eqLength = meshmetric.getMeanLength();
-  return cfg["MaterialModel"]["kBend"].read<double>() * param::kBT_lbm / eqLength;
+  return cfg["MaterialModel"]["kBend"].read<double>(); //Not needed because of things // * param::kBT_lbm / eqLength;
 };
 
-double RbcHighOrderModel::calculate_kVolume(Config & cfg, MeshMetrics<double> & meshmetric){
+double RbcHighOrderModelnewBending::calculate_kVolume(Config & cfg, MeshMetrics<double> & meshmetric){
   double kVolume =  cfg["MaterialModel"]["kVolume"].read<double>();
   double eqLength = meshmetric.getMeanLength();
   kVolume *= param::kBT_lbm/(eqLength*eqLength*eqLength);
@@ -228,14 +255,14 @@ double RbcHighOrderModel::calculate_kVolume(Config & cfg, MeshMetrics<double> & 
   return kVolume;
 };
 
-double RbcHighOrderModel::calculate_kArea(Config & cfg, MeshMetrics<double> & meshmetric){
+double RbcHighOrderModelnewBending::calculate_kArea(Config & cfg, MeshMetrics<double> & meshmetric){
   double kArea =  cfg["MaterialModel"]["kArea"].read<double>();
   double eqLength = meshmetric.getMeanLength();
   kArea *= param::kBT_lbm/(eqLength*eqLength);
   return kArea;
 };
 
-double RbcHighOrderModel::calculate_kLink(Config & cfg, MeshMetrics<double> & meshmetric){
+double RbcHighOrderModelnewBending::calculate_kLink(Config & cfg, MeshMetrics<double> & meshmetric){
   double kLink = cfg["MaterialModel"]["kLink"].read<double>();
   double persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
   //TODO: It should scale with the number of surface points!

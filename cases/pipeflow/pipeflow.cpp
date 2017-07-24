@@ -78,6 +78,9 @@ int main(int argc, char *argv[]) {
   outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE};
   hemocell.setFluidOutputs(outputs);
 
+  // Turn on periodicity of particles in the X direction
+  hemocell.setParticlePeriodicity(0, true);
+
   //todo add statistics here
   
   //loading the cellfield
