@@ -144,6 +144,8 @@ public:
   //Load balancing library functions
   double calculateFractionalLoadImbalance();
   void doLoadBalance();
+  ///Restructure the grid, has an optional argument to specify whether a checkpoint from this iteration is available, default is YES!
+  void doRestructure(bool checkpoint_avail = true);
   LoadBalancer * loadBalancer;
 
   MultiBlockLattice3D<double, DESCRIPTOR> * lattice;

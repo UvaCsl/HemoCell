@@ -191,4 +191,9 @@ void HemoCell::doLoadBalance() {
 }
 #endif
 
+void HemoCell::doRestructure(bool checkpoint_avail) {
+	pcout << "(HemoCell) (LoadBalancer) Restructuring Atomic Blocks on processors" << endl;
+  loadBalancer->restructureBlocks(checkpoint_avail);
+}
+
 #endif

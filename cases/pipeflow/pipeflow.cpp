@@ -91,6 +91,9 @@ int main(int argc, char *argv[]) {
     hemocell.loadCheckPoint();
   }
 
+  //Restructure atomic blocks on processors when possible
+  hemocell.doRestructure();
+  
   if (hemocell.iter == 0) {
     pcout << "(PipeFlow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
     for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) { 
@@ -114,12 +117,14 @@ int main(int argc, char *argv[]) {
                 plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
     
     // Only enable if PARMETIS build is available
-    // if (hemocell.iter % tbalance == 0) {
-    //   if(hemocell.calculateFractionalLoadImbalance() > 3) {
-    //    // hemocell.doLoadBalance();
-    //   }
-    // }
-   
+    /*
+     if (hemocell.iter % tbalance == 0) {
+       if(hemocell.calculateFractionalLoadImbalance() > 3) {
+         hemocell.doLoadBalance();
+         hemocell.doRestructure();
+       }
+     }
+   */
     if (hemocell.iter % tmeas == 0) {
       pcout << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
       pcout << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);

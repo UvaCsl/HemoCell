@@ -6,7 +6,7 @@
 #include <parmetis.h>
 #endif
 
-LoadBalancer::LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_) {
+LoadBalancer::LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_), original_block_structure(0,0,0) {
 
 }
 
@@ -211,4 +211,115 @@ void LoadBalancer::doLoadBalance() {
 
 //Necessary C++ crap
 LoadBalancer::GatherTimeOfAtomicBlocks * LoadBalancer::GatherTimeOfAtomicBlocks::clone() const { return new LoadBalancer::GatherTimeOfAtomicBlocks(*this); }
+
+void LoadBalancer::restructureBlocks(bool checkpoint_available) {
+
+  //Store original block structure
+  original_block_structure = hemocell.lattice->getSparseBlockStructure();
+  original_block_stored = true;
+
+  if(!checkpoint_available) {
+    hemocell.saveCheckPoint();
+  }
+  
+  const ThreadAttribution & oldThreads = hemocell.lattice->getMultiBlockManagement().getThreadAttribution();
+  
+  SparseBlockStructure3D old_structure = hemocell.lattice->getSparseBlockStructure();
+  vector<plint> localBlocks = old_structure.getLocalBlocks(hemocell.lattice->getMultiBlockManagement().getThreadAttribution());
+  
+  vector<Box3D> boxes(localBlocks.size());
+  for(unsigned int bid = 0 ; bid < localBlocks.size() ; bid ++) {
+    old_structure.getBulk(localBlocks[bid],boxes[bid]);
+  }
+  
+  //Simple algorithm, check in three directions (the other three are from neigh -> root)
+  //If we find a matching face, extend root block, delete neighbour block, and restart until we find no merges
+  restart:
+  for (unsigned int root = 0 ; root < boxes.size() ; root++) {
+    for (unsigned int neigh = 0 ; neigh < boxes.size() ; neigh++) {
+      if (root == neigh) continue;
+      if (boxes[root].x0 == boxes[neigh].x1 + 1&& 
+          boxes[root].y0 == boxes[neigh].y0 && boxes[root].y1 == boxes[neigh].y1 &&
+          boxes[root].z0 == boxes[neigh].z0 && boxes[root].z1 == boxes[neigh].z1)
+      {
+        boxes[root].x0 = boxes[neigh].x0;
+        boxes[neigh] = boxes.back();
+        boxes.pop_back();
+        goto restart;
+      }
+      if (boxes[root].y0 == boxes[neigh].y1 + 1 && 
+          boxes[root].x0 == boxes[neigh].x0 && boxes[root].x1 == boxes[neigh].x1 &&
+          boxes[root].z0 == boxes[neigh].z0 && boxes[root].z1 == boxes[neigh].z1)
+      {
+        boxes[root].y0 = boxes[neigh].y0;
+        boxes[neigh] = boxes.back();
+        boxes.pop_back();
+        goto restart;
+      }
+      if (boxes[root].z0 == boxes[neigh].z1 + 1 && 
+          boxes[root].x0 == boxes[neigh].x0 && boxes[root].x1 == boxes[neigh].x1 &&
+          boxes[root].y0 == boxes[neigh].y0 && boxes[root].y1 == boxes[neigh].y1)
+      {
+        boxes[root].z0 = boxes[neigh].z0;
+        boxes[neigh] = boxes.back();
+        boxes.pop_back();
+        goto restart;
+      }
+    }
+  }
+  
+  //Communicate new blocks to all procs
+  map<int,Box3D_simple> newBlocks;
+  for (unsigned int box = 0 ; box < boxes.size() ; box++) {
+    newBlocks[localBlocks[box]] = boxes[box];
+  }
+  
+  int numAtomicBlock = old_structure.getNumBlocks();
+  HemoCellGatheringFunctional<Box3D_simple>::gather(newBlocks,numAtomicBlock);
+  
+  pcout << "(LoadBalancer) (Restructure) went from " << numAtomicBlock << " to " << newBlocks.size() << " atomic blocks (whole domain)" << endl;
+  
+  //The new structure we can fill, Initialize such because palabos
+  SparseBlockStructure3D new_structure = old_structure;
+  for (const auto & pair : new_structure.getBulks()) {
+    new_structure.removeBlock(pair.first); //Lol
+  }
+  
+  map<plint,plint> nTA; //Conversion is necessary for new threadattribution
+  plint blockId = 0;
+  for (const auto & pair : newBlocks ) {
+    nTA[blockId] = oldThreads.getMpiProcess(pair.first);
+    new_structure.addBlock(pair.second.getBox3D(),blockId);
+    blockId++;
+  }
+  ThreadAttribution* newThreadAttribution = new ExplicitThreadAttribution(nTA);        
+  
+  MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
+                MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
+                new_structure,
+                newThreadAttribution,
+                hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth(),
+                hemocell.lattice->getMultiBlockManagement().getRefinementLevel() ),
+                hemocell.lattice->getBlockCommunicator().clone(),
+                hemocell.lattice->getCombinedStatistics().clone(),
+                defaultMultiBlockPolicy3D().getMultiCellAccess<double,DESCRIPTOR>(),
+                hemocell.lattice->getBackgroundDynamics().clone() );
+  newlattice->periodicity().toggle(0, hemocell.lattice->periodicity().get(0));
+  newlattice->periodicity().toggle(1, hemocell.lattice->periodicity().get(1));
+  newlattice->periodicity().toggle(2, hemocell.lattice->periodicity().get(2));
+  newlattice->toggleInternalStatistics(hemocell.lattice->isInternalStatisticsOn());
+
+  delete hemocell.lattice;
+  hemocell.lattice = newlattice;
+  hemocell.cellfields->lattice = newlattice;
+  
+  delete hemocell.cellfields->immersedParticles;
+  hemocell.cellfields->createParticleField();
+  
+  hemocell.loadCheckPoint();
+  pcout << "(LoadBalancer) (Restructure) Continuing simulation with restructured application" << endl;
+
+  return;
+}
+
 #endif

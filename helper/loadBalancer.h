@@ -5,12 +5,19 @@ class LoadBalancer;
 
 #include "hemocell_internal.h"
 #include "hemocell.h"
+#define HEMO_PARMETIS
 
-class LoadBalancer {
+class LoadBalancer {  
   public:
   LoadBalancer(HemoCell & hemocell);
   double calculateFractionalLoadImbalance();
   void doLoadBalance();
+  
+  /**
+   * Restructure blocks to reduce communication on one processor
+   * Set checkpoint_available to false if not called in the same iteration right after doLoadBalance()
+   */
+  void restructureBlocks(bool checkpoint_available=true);
 
   //Functionals for gathering data
   struct TOAB_t{
@@ -22,6 +29,22 @@ class LoadBalancer {
     int location[3];
     int neighbours[HEMOCELL_MAX_NEIGHBOURS];
   };
+  struct Box3D_simple {
+    plint x0,x1,y0,y1,z0,z1;
+    inline Box3D_simple & operator=(const Box3D & box) {
+      x0 = box.x0;
+      x1 = box.x1;
+      y0 = box.y0;
+      y1 = box.y1;
+      z0 = box.z0;
+      z1 = box.z1;
+      return *this;
+    }
+    inline Box3D getBox3D() const {
+      return Box3D(x0,x1,y0,y1,z0,z1);
+    }
+  };
+  
   class GatherTimeOfAtomicBlocks : public HemoCellGatheringFunctional<TOAB_t> {
   public:  
     using HemoCellGatheringFunctional<TOAB_t>::HemoCellGatheringFunctional; //Inherit Constructor
@@ -32,6 +55,8 @@ class LoadBalancer {
   bool FLI_iscalled = false;
   map<int,TOAB_t> gatherValues;
   HemoCell & hemocell;
+  bool original_block_stored = false;
+  SparseBlockStructure3D original_block_structure;
 };
 
 #endif
