@@ -120,7 +120,14 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       // F = eta * (dv/l) * l. 
       const hemo::Array<double,3> rel_vel = cell[edge[1]]->v - cell[edge[0]]->v;
       const hemo::Array<double,3> rel_vel_projection = dot(rel_vel, edge_uv) * edge_uv;
-      const hemo::Array<double,3> Fvisc_memb = eta * rel_vel_projection;
+      hemo::Array<double,3> Fvisc_memb = eta * rel_vel_projection;
+
+      // Limit membrane viscosity
+      const double Fvisc_memb_mag = norm(Fvisc_memb);
+      if (Fvisc_memb_mag > FORCE_LIMIT / 4.0) {
+        Fvisc_memb *= (FORCE_LIMIT / 4.0) / Fvisc_memb_mag;
+      }
+
       *cell[edge[0]]->force_visc += Fvisc_memb;
       *cell[edge[1]]->force_visc -= Fvisc_memb; 
 
