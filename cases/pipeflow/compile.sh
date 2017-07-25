@@ -14,7 +14,7 @@ fi
 
 echo "* Compiling..."
 cd build; 
-script -q -c 'make -j 4' 2>&1 >/dev/null | grep 'Error\|error\|\*\*\*'; 
+script -q -c "make -j 4 2>&1 >/dev/null | grep 'Error\|error\|\*\*\*'"; 
 cd ..
 
 date

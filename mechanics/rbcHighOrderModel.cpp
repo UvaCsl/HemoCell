@@ -131,8 +131,12 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
               
       const double ndev = dot(patch_normal, dev_vect); // distance along patch normal
 
-      const double dDev = (ndev - cellConstants.surface_patch_center_dist_eq_list[i] ) / cellConstants.edge_mean_eq; // Non-dimension
-  
+#ifdef PRECALCULATED_ANGLES
+      const double dDev = (ndev - cellConstants.surface_patch_center_dist_eq_list[i] ) / cellConstants.edge_mean_eq; // Non-dimensional
+#else 
+      const double dDev = ndev / cellConstants.edge_mean_eq; // Non-dimensional
+#endif
+
       //TODO scale bending force
 #ifdef FORCE_LIMIT
       const hemo::Array<double,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.055-dDev*dDev)) * patch_normal; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
@@ -142,10 +146,18 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       // Calculating viscous term
       const hemo::Array<double,3> rel_vel_v = vertices_vavg - cell[i]->v;
       const hemo::Array<double,3> rel_vel_proj = dot(patch_normal, rel_vel_v) * patch_normal;
-      const hemo::Array<double,3> Fvisc_vol = eta_v * rel_vel_proj * 0.866 * cellConstants.edge_mean_eq; // last term is triangle area from equilateral approx. x ratio of #triangle/#vertices -> surface area belonging to a vertex
+      hemo::Array<double,3> Fvisc_vol = eta_v * rel_vel_proj * 0.866 * cellConstants.edge_mean_eq; // last term is triangle area from equilateral approx. x ratio of #triangle/#vertices -> surface area belonging to a vertex
 
       //Apply bending force
       *cell[i]->force_bending += bending_force;
+
+      // Limit volume viscosity
+      const double Fvisc_vol_mag = norm(Fvisc_vol);
+      if (Fvisc_vol_mag > FORCE_LIMIT / 4.0) {
+        Fvisc_vol *= (FORCE_LIMIT / 4.0) / Fvisc_vol_mag;
+      }
+
+      // Apply volume viscosity
       *cell[i]->force_visc += Fvisc_vol;
       const hemo::Array<double,3> negative_bending_force = -bending_force/cellConstants.vertex_n_vertexes[i];
       const hemo::Array<double,3> negative_bending_viscous_force = -Fvisc_vol/cellConstants.vertex_n_vertexes[i];
@@ -184,7 +196,14 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       // F = eta * (dv/l) * l. 
       const hemo::Array<double,3> rel_vel = cell[edge[1]]->v - cell[edge[0]]->v;
       const hemo::Array<double,3> rel_vel_projection = dot(rel_vel, edge_uv) * edge_uv;
-      const hemo::Array<double,3> Fvisc_memb = eta_m * rel_vel_projection;
+      hemo::Array<double,3> Fvisc_memb = eta_m * rel_vel_projection;
+
+      // Limit membrane viscosity
+      const double Fvisc_memb_mag = norm(Fvisc_memb);
+      if (Fvisc_memb_mag > FORCE_LIMIT / 4.0) {
+        Fvisc_memb *= (FORCE_LIMIT / 4.0) / Fvisc_memb_mag;
+      }
+
       *cell[edge[0]]->force_visc += Fvisc_memb;
       *cell[edge[1]]->force_visc -= Fvisc_memb; 
 

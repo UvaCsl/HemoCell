@@ -28,6 +28,13 @@ Choose material model.
 #endif
 
 /*
+Choose to use precalculated curvature angles for equilibrium
+*/
+#ifndef PRECALCULATED_ANGLES
+#define PRECALCULATED_ANGLES
+#endif
+
+/*
 Choose material integration method.
 Euler [1], Adams-Bashforth [2]
 */

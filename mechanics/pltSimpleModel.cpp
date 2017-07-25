@@ -2,7 +2,8 @@
 
 PltSimpleModel::PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_), 
                   cellField(cellField_),
-                  k_volume( PltSimpleModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ), 
+                  k_volume( PltSimpleModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
+                  k_area( PltSimpleModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
                   k_link( PltSimpleModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
                   k_bend( PltSimpleModel::calculate_kBend(modelCfg_) ),
                   eta( PltSimpleModel::calculate_eta(modelCfg_) )
@@ -41,6 +42,28 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       hemo::Array<double,3> t_normal;
       computeTriangleAreaAndUnitNormal(v0, v1, v2, area, t_normal);
       
+      const double areaRatio = (area - /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n])
+                               / /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n];      
+       
+      //area force magnitude
+#ifdef FORCE_LIMIT
+      const double afm = k_area * (areaRatio+areaRatio/std::fabs(0.09-areaRatio*areaRatio));
+#else
+      const double afm = k_area * (areaRatio+areaRatio/(0.09-areaRatio*areaRatio));
+#endif
+
+      hemo::Array<double,3> centroid;
+      centroid[0] = (v0[0]+v1[0]+v2[0])/3.0;
+      centroid[1] = (v0[1]+v1[1]+v2[1])/3.0;
+      centroid[2] = (v0[2]+v1[2]+v2[2])/3.0;
+      hemo::Array<double,3> av0 = centroid - v0;
+      hemo::Array<double,3> av1 = centroid - v1;
+      hemo::Array<double,3> av2 = centroid - v2;
+
+      *cell[triangle[0]]->force_area += afm*av0;
+      *cell[triangle[1]]->force_area += afm*av1;
+      *cell[triangle[2]]->force_area += afm*av2;
+
       //Store values necessary later
       triangle_areas.push_back(area);
       triangle_normals.push_back(t_normal);
@@ -176,6 +199,13 @@ double PltSimpleModel::calculate_kVolume(Config & cfg, MeshMetrics<double> & mes
   double eqLength = meshmetric.getMeanLength();
   kVolume *= param::kBT_lbm/(eqLength*eqLength*eqLength);
   return kVolume;
+};
+
+double PltSimpleModel::calculate_kArea(Config & cfg, MeshMetrics<double> & meshmetric){
+  double kArea =  cfg["MaterialModel"]["kArea"].read<double>();
+  double eqLength = meshmetric.getMeanLength();
+  kArea *= param::kBT_lbm/(eqLength*eqLength);
+  return kArea;
 };
 
 double PltSimpleModel::calculate_kLink(Config & cfg, MeshMetrics<double> & meshmetric){

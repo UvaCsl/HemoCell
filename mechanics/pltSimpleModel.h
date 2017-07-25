@@ -15,6 +15,7 @@ class PltSimpleModel : public CellMechanics {
   HemoCellField & cellField;
   const double k_volume;
   const double k_link;
+  const double k_area;
   const double k_bend;
   const double eta;
 
@@ -29,6 +30,7 @@ class PltSimpleModel : public CellMechanics {
 
   static double calculate_kBend(Config & cfg);
   static double calculate_kVolume(Config & cfg, MeshMetrics<double> &);
+  static double calculate_kArea(Config & cfg, MeshMetrics<double> &);
   static double calculate_kLink(Config & cfg, MeshMetrics<double> &);
   static double calculate_eta(Config & cfg );
 
