@@ -25,6 +25,8 @@ def getCoord(csv_file):
 
 
 if __name__ == "__main__":
+    print "For now, only single result file / save is supported. If you have multiple csv/save, concatenate them first."
+
     import sys
 
     folder = "tmp"
