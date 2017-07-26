@@ -11,69 +11,121 @@ class HemoCellFields;
 
 class HemoCell;
 /*
- * This class can contain many cellfields, it keeps track of all the particles
- * in all the cellfields. The option exists to get exclusive access to a single
- * cellfield if necessary.`
- * 
- * A cellField should have an local update and a between cell update function
- *
- * The between cell interaction might be different for different type of
- * particles, they can be set in a special map
- *
- *
- * TODO: light and heavy (tracking cellfield hemo::Arrays to particles or not)
- *
+ * This class can contain many cellTypes, it keeps track of all the particles
+ * of all types. The option exists to get exclusive access to a single
+ * cellType if necessary.`
  */
 class HemoCellFields
 {
 public:
-    HemoCellFields(MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth,HemoCell &);
-    MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & getParticleField3D();
-    void createParticleField();
-    ~HemoCellFields();
-    virtual void advanceParticles();
-    virtual void interpolateFluidVelocity();
-    virtual void spreadParticleForce();
+  
+  ///Default constructor, needs an palabos lattice, envelope width (lbm units), and hemocell reference
+  HemoCellFields(MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth,HemoCell &);
+ 
+  /*
+   * Create the particle field seperately, takes the arguments set in the constructor
+   * Is called in the constructor as well
+   */
+  void createParticleField();
+  
+private:
+  ///Used to set variables inside the celltypes for correct access, called through createParticleField
+  void InitAfterLoadCheckpoint();
 
-    HemoCellField * addCellType(TriangularSurfaceMesh<double> & meshElement, std::string name_);
-	  void setParticleUpdateScheme (double _cellTimeStep=1.0); //For decoupled update schemes 
-
-    void readPositionsCellFields(std::string particlePosFile);
-    /*Checkpoint functions*/
-    void copyXMLreader2XMLwriter(XMLreader const& reader, XMLwriter & writer);
-    void copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwriter & writer);
-    void load(XMLreader * documentXML, unsigned int & iter);
-    void save(XMLreader * documentXML, unsigned int iter);
-    void InitAfterLoadCheckpoint();
-
-    //double getMaximumForce_Global() {return 0;}
-
-    unsigned int size();
-
-    HemoCellField * operator[](unsigned int index);
-    HemoCellField * operator[](string name);
-
-
-    //void setFluidExternalForce(double poiseuilleForce);
-
-	MultiBlockLattice3D<double, DESCRIPTOR> * lattice;
-  vector<int> desiredFluidOutputVariables;
-  HemoCell & hemocell;
-  vector<HemoCellField *> cellFields;
-  pluint envelopeSize;
-	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles;
-	//MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * reductionParticles;
-  double cellTimeStep;
-  double repulsionCutoff = 0.0;
-  double repulsionConstant = 0.0;
-  pluint repulsionTimescale = 1;
-  pluint particleUpdateTimescale = 1;
-  map<unsigned int,unsigned int> celltype_per_cell;
+public:
+  ///Generic Destructor
+  ~HemoCellFields();
   
   
-  //void synchronizeCellQuantities(SyncRequirements _dummy) {}
+
+  ///Add an celltype with a certain mesh, the name also specifies <name_>.xml and <name_>.pos
+  HemoCellField * addCellType(TriangularSurfaceMesh<double> & meshElement, std::string name_);
+  
+  ///Easy access to contained celltypes
+  HemoCellField * operator[](unsigned int index);
+  
+  ///Easy access to contained celltypes
+  HemoCellField * operator[](string name);
+  
+  ///Get the number of celltypes
+  unsigned int size();
+  
+  /*Checkpoint functions*/
+private:
+  void copyXMLreader2XMLwriter(XMLreader const& reader, XMLwriter & writer);
+  void copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwriter & writer);
+public:
+  ///Load a checkpoint, store the current iteration in &iter
+  void load(XMLreader * documentXML, unsigned int & iter);
+  ///Save a checkpoint
+  void save(XMLreader * documentXML, unsigned int iter);
+    
+  ///Legacy Helper function to get the particle field, mostly unused as direct access is available
+  MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & getParticleField3D();
+  ///Legacy reads in only RBC an PLT from a single pos file
+  void readPositionsCellFields(std::string particlePosFile);
+
+  //Class functionals
+  ///Advance the particles in an iteration
+  virtual void advanceParticles();
+  
+  ///Interpolate the velocity of the fluid to the individual particles
+  virtual void interpolateFluidVelocity();
+  
+  ///Spread the force of all particles over the fluid in this iteration
+  virtual void spreadParticleForce();
+  
+  /// Separate the force vectors of particles so it becomes clear what the vector for each separate force is
   void separate_force_vectors();
+  
+  /// Unify the force vectors of particles to point to a single force
   void unify_force_vectors();
+  
+  /// Apply (and calculate) the repulsion force between particles
+  void applyRepulsionForce(bool forced = false);
+  
+  /// Delete any incomplete cells on a block
+  void deleteIncompleteCells(bool verbose = true);
+  
+  /// Apply the material model of the cells to the particles, updating their force
+  virtual void applyConstitutiveModel(bool forced = false);
+  
+  /// Sync the particle envelopes between domains
+  void syncEnvelopes();
+    
+  //Class Variables
+  
+  ///the fluid lattice
+	MultiBlockLattice3D<double, DESCRIPTOR> * lattice;
+  ///A vector specifying the output variables (from const_defaults.h)
+  vector<int> desiredFluidOutputVariables;
+  ///Reference to parent
+  HemoCell & hemocell;
+  ///Vector containing the cellTypes
+  vector<HemoCellField *> cellFields;
+  ///The envelopeSize for the particles
+  pluint envelopeSize;
+  /// palabos field storing the particles
+	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles;
+
+  ///Repulsion variable set through hemocell.h
+  double repulsionCutoff = 0.0;
+  ///Repulsion variable set through hemocell.h
+  double repulsionConstant = 0.0;
+  ///Timescale seperation for repulsion, set through hemocell.h
+  pluint repulsionTimescale = 1;
+  
+  ///Timescale seperation for the velocity interpolation from the fluid to the particle
+  pluint particleVelocityUpdateTimescale = 1;
+  
+  ///Map that keeps track of the type of a cell per cellID
+  map<unsigned int,unsigned int> celltype_per_cell;
+ 
+
+  
+  /*
+   * Functionals needed for access of the cellfields
+   */
   class HemoSeperateForceVectors: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
    HemoSeperateForceVectors * clone() const;
@@ -106,22 +158,16 @@ public:
   public:
    bool forced = false;
   };
-  void applyRepulsionForce(bool forced = false);
   class HemoDeleteIncompleteCells: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
    HemoDeleteIncompleteCells * clone() const;
   public:
     bool verbose;
   };
-  void deleteIncompleteCells(bool verbose = true);
-  virtual void applyConstitutiveModel(bool forced = false);
-  void syncEnvelopes();
   class HemoSyncEnvelopes: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
    HemoSyncEnvelopes * clone() const;
    void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
   };
-  bool hemocellfunction = false; //true if we should allow things to communicate (under our sight, not palabos);
 };
-
 #endif

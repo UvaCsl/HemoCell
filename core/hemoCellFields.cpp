@@ -91,11 +91,6 @@ void HemoCellFields::copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwrit
     }
 }
 
-void HemoCellFields::setParticleUpdateScheme(double _cellTimeStep) 
-{
-  cellTimeStep = _cellTimeStep;
-}
-
 /*
  * Initialize variables that need to be loaded after a checkpoint AS WELL
  */
@@ -128,21 +123,17 @@ void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter)
     std::string firstField = (*(documentXML->getChildren( documentXML->getFirstId() )[0])).getName();
     bool isCheckpointed = (firstField=="Checkpoint");
     if (isCheckpointed) {
-      hemocellfunction = true;
       (*documentXML)["Checkpoint"]["General"]["Iteration"].read(iter);
       parallelIO::load(outDir + "lattice", *lattice, true);
       parallelIO::load(outDir + "particleField", *immersedParticles, true);
 
       InitAfterLoadCheckpoint();
-      hemocellfunction = false;
     } else {
       pcout << "(HemoCell) (CellFields) loading checkpoint from non-checkpoint Config" << endl;
-      hemocellfunction = true;
       parallelIO::load(outDir + "lattice", *lattice, true);
       parallelIO::load(outDir + "particleField", *immersedParticles, true);
 
       InitAfterLoadCheckpoint();
-      hemocellfunction = false;
     }
 }
 
@@ -190,7 +181,7 @@ void HemoCellFields::HemoInterpolateFluidVelocity::processGenericBlocks(Box3D do
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->interpolateFluidVelocity(domain);
 }
 void HemoCellFields::interpolateFluidVelocity() {
-  if (hemocell.iter % particleUpdateTimescale == 0) {
+  if (hemocell.iter % particleVelocityUpdateTimescale == 0) {
 
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
@@ -203,12 +194,10 @@ void HemoCellFields::HemoSyncEnvelopes::processGenericBlocks(Box3D domain, std::
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->syncEnvelopes();
 }
 void HemoCellFields::syncEnvelopes() {
-  if (hemocell.iter % particleUpdateTimescale == 0) {
+  if (hemocell.iter % particleVelocityUpdateTimescale == 0) {
     vector<MultiBlock3D*> wrapper;
     wrapper.push_back(immersedParticles);
-    hemocellfunction=true;
     applyTimedProcessingFunctional(new HemoSyncEnvelopes(),immersedParticles->getBoundingBox(),wrapper);
-    hemocellfunction=false;
   }
 }
 

@@ -43,7 +43,6 @@ class HemoCell {
    * Unfortunately, due to palabos regulations, it is required to pass the
    * commandline arguments
    */
-  
   HemoCell(char * configFileName, int argc, char* argv[]);
 
   /**
@@ -114,7 +113,7 @@ class HemoCell {
   void setMaterialTimeScaleSeparation(string name, unsigned int separation);
   
   //Set the separation of when velocity is interpolated to the particle
-  void setParticlePositionUpdateTimeScaleSeparation(unsigned int separation);
+  void setParticleVelocityUpdateTimeScaleSeparation(unsigned int separation);
 
   //Set the timescale separation of the repulsion force for all particles
   void setRepulsionTimeScaleSeperation(unsigned int separation);
@@ -124,32 +123,48 @@ class HemoCell {
   
   //Set the output of the fluid field
   void setFluidOutputs(vector<int> outputs);
-
+  
   //Explicitly set the periodicity of the domain along the different axes
-  void setParticlePeriodicity(unsigned int axis, bool bePeriodic);
+  void setSystemPeriodicity(unsigned int axis, bool bePeriodic);
 
   //Load the particles
 private:
   bool loadParticlesIsCalled = false;
 public:
+  ///Load the particles from their .pos files
   void loadParticles();
 
+  ///Load a checkpoint
   void loadCheckPoint();
+  
+  ///Save a checkpoint
   void saveCheckPoint();
 
+  ///Specify whether the output is in SI or LBM units
   bool outputInSiUnits = false;
+  
+  ///Write the specified output to hdf5 files
   void writeOutput();
+  
+  /// Do an iteration, If the system is driven by an external vector, you must set 
+  /// it again after calling iterate
   void iterate();
 
   //Load balancing library functions
+  /// Calculate and return the fractional load imbalance 
   double calculateFractionalLoadImbalance();
+  
+  ///Load balance the domain (only necessary with nAtomic blocks > nMpi processors, also checkpoints
   void doLoadBalance();
+  
   ///Restructure the grid, has an optional argument to specify whether a checkpoint from this iteration is available, default is YES!
   void doRestructure(bool checkpoint_avail = true);
+  
   LoadBalancer * loadBalancer;
-
+  ///The fluid lattice
   MultiBlockLattice3D<double, DESCRIPTOR> * lattice;
 	Config * cfg;
+  ///The cellfields contains the particle field and all celltypes
   HemoCellFields * cellfields;
   unsigned int iter = 0;
 

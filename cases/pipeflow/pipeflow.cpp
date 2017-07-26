@@ -43,7 +43,6 @@ int main(int argc, char *argv[]) {
 
   hemocell.lattice->toggleInternalStatistics(false);
   hemocell.lattice->periodicity().toggleAll(false);
-  hemocell.lattice->periodicity().toggle(0,true);
   hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
   //Driving Force
@@ -66,7 +65,7 @@ int main(int argc, char *argv[]) {
   hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
   
-  hemocell.setParticlePositionUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
+  hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
   //hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<double>(), (*cfg)["domain"]["RepCutoff"].read<double>());
   //hemocell.setRepulsionTimeScaleSeperation((*cfg)["ibm"]["stepMaterialEvery"].read<int>());
@@ -78,8 +77,8 @@ int main(int argc, char *argv[]) {
   outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE};
   hemocell.setFluidOutputs(outputs);
 
-  // Turn on periodicity of particles in the X direction
-  hemocell.setParticlePeriodicity(0, true);
+  // Turn on periodicity in the X direction
+  hemocell.setSystemPeriodicity(0, true);
 
   //todo add statistics here
   

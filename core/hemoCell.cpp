@@ -52,7 +52,8 @@ void HemoCell::setFluidOutputs(vector<int> outputs) {
   cellfields->desiredFluidOutputVariables = outputs_c;
 }
 
-void HemoCell::setParticlePeriodicity(unsigned int axis, bool bePeriodic) {
+void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
+  lattice->periodicity().toggle(axis,bePeriodic);
   cellfields->immersedParticles->periodicity().toggle(axis, bePeriodic);
 }
 
@@ -155,10 +156,10 @@ void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separati
   (*cellfields)[name]->timescale = separation;
 }
 
-void HemoCell::setParticlePositionUpdateTimeScaleSeparation(unsigned int separation) {
+void HemoCell::setParticleVelocityUpdateTimeScaleSeparation(unsigned int separation) {
   pcout << "(HemoCell) (Timescale separation) Setting update separation of all particles to " << separation << " timesteps" << endl;
   pcout << "(HemoCell) WARNING this introduces great errors, WARNING make sure tmeasure and the material timescale separation are dividable by this value" << endl;
-  cellfields->particleUpdateTimescale = separation;
+  cellfields->particleVelocityUpdateTimescale = separation;
 }
 
 void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
