@@ -28,7 +28,7 @@ Choose material model.
 #endif
 
 /*
-Choose to use precalculated curvature angles for equilibrium
+Choose to use precalculated curvature angles for equilibrium cell shapes.
 */
 #ifndef PRECALCULATED_ANGLES
 #define PRECALCULATED_ANGLES

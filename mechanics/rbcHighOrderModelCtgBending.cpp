@@ -1,4 +1,4 @@
-#include "rbcHighOrderModelnewBending.h"
+#include "rbcHighOrderModelCtgBending.h"
 //TODO Make all inner hemo::Array variables constant as well
 
 
@@ -56,11 +56,7 @@ void RbcHighOrderModelnewBending::ParticleMechanics(map<int,vector<HemoCellParti
                                / /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n];      
        
       //area force magnitude
-#ifdef FORCE_LIMIT
       const double afm = k_area * (areaRatio+areaRatio/std::fabs(0.09-areaRatio*areaRatio));
-#else
-      const double afm = k_area * (areaRatio+areaRatio/(0.09-areaRatio*areaRatio));
-#endif
 
       hemo::Array<double,3> centroid;
       centroid[0] = (v0[0]+v1[0]+v2[0])/3.0;
@@ -85,11 +81,7 @@ void RbcHighOrderModelnewBending::ParticleMechanics(map<int,vector<HemoCellParti
 
     //Volume
     const double volume_frac = (volume-cellConstants.volume_eq)/cellConstants.volume_eq;
-#ifdef FORCE_LIMIT
     const double volume_force = -k_volume * volume_frac/std::fabs(0.01-volume_frac*volume_frac);
-#else
-    const double volume_force = -k_volume * volume_frac/(0.01-volume_frac*volume_frac);    
-#endif
     triangle_n = 0;
 
 //Volume force loop
@@ -119,11 +111,7 @@ void RbcHighOrderModelnewBending::ParticleMechanics(map<int,vector<HemoCellParti
       const double edge_frac = (edge_length - /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n])
                                / /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n];
 
-#ifdef FORCE_LIMIT
       const double edge_force_scalar = k_link * ( edge_frac + edge_frac/std::fabs(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch
-#else
-      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch
-#endif
       const hemo::Array<double,3> force = edge_uv*edge_force_scalar;
       *cell[edge[0]]->force_link += force;
       *cell[edge[1]]->force_link -= force;
