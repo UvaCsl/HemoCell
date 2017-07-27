@@ -53,8 +53,21 @@ void HemoCell::setFluidOutputs(vector<int> outputs) {
 }
 
 void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
+  int nper = 0;
+
   lattice->periodicity().toggle(axis,bePeriodic);
   cellfields->immersedParticles->periodicity().toggle(axis, bePeriodic);
+    
+  for (int i = 0 ; i < 3 ; i++) {
+    if(lattice->periodicity().get(i)) {
+      nper +=2;
+    }
+  }
+  
+  if (global::mpi().getSize() < nper) {
+    pcerr << "(HemoCell) (ERROR) Cowardly refusing to set periodicity with # proc (mpi) < # periodic directions * 2" << endl;
+    exit(0);
+  }
 }
 
 void HemoCell::loadParticles() {
