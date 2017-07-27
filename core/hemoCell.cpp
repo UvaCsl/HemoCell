@@ -64,10 +64,9 @@ void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
     }
   }
   
-  if (global::mpi().getSize() < nper) {
-    pcerr << "(HemoCell) (ERROR) Cowardly refusing to set periodicity with # proc (mpi) < # periodic directions * 2" << endl;
-    exit(0);
-  }
+  if ( nper > 0) 
+    pcerr << "(HemoCell) (WARNING) Make sure you have at least 2 MPI domains in the periodic direction!" << endl;
+
 }
 
 void HemoCell::loadParticles() {
