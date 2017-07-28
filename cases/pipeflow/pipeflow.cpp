@@ -80,7 +80,6 @@ int main(int argc, char *argv[]) {
   // Turn on periodicity in the X direction
   hemocell.setSystemPeriodicity(0, true);
 
-  //todo add statistics here
   
   //loading the cellfield
   if (not cfg->checkpointed) {
@@ -91,7 +90,7 @@ int main(int argc, char *argv[]) {
   }
 
   //Restructure atomic blocks on processors when possible
-  hemocell.doRestructure();
+  hemocell.doRestructure(false);
   
   if (hemocell.iter == 0) {
     pcout << "(PipeFlow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;

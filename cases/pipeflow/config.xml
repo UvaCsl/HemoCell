@@ -12,8 +12,6 @@
     <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
     <stepMaterialEvery> 20 </stepMaterialEvery> <!-- Update particle material model after this many fluid time steps. -->
     <stepParticleEvery> 5 </stepParticleEvery> <!-- Update particles position after this many fluid time steps. -->
-    <minForceLimit> 1e-3 </minForceLimit> <!-- Point of increase for integration steps -->
-    <maxForceLimit> 2e-3 </maxForceLimit> <!-- Point of decrease for integration steps -->
 </ibm>
 
 <domain>
