@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
           = createLocalBoundaryCondition3D<double,DESCRIPTOR>();
 
   boundaryCondition->setVelocityConditionOnBlockBoundaries(*hemocell.lattice);
-  setBoundaryVelocity(*hemocell.lattice, hemocell.lattice->getBoundingBox(), plb::Array<double,3>(0.,0., 0.) );
+  setBoundaryVelocity(*hemocell.lattice, hemocell.lattice->getBoundingBox(), plb::Array<double,3>(0.,0.,0.) );
   // Box3D x_n = Box3D(0,0,0,ny,0,nz); 
   // boundaryCondition->addPressureBoundary0N(x_n, *hemocell.lattice);
   // Box3D x_p = Box3D(nx,nx,0,ny,0,nz); 
