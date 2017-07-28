@@ -138,6 +138,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
         }
 
         fIn >> Np[j];
+        cellFields.number_of_cells+=Np[j];
         pcout << "(readPositionsBloodCels) Particle count (" << cellFields[j]->name << "): " << Np[j] << "." << endl;
 
         packPositions[j].resize(Np[j]); packAngles[j].resize(Np[j]);cellIdss[j].resize(Np[j]);

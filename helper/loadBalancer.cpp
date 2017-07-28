@@ -221,7 +221,7 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
   if(!checkpoint_available) {
     hemocell.saveCheckPoint();
   }
-  
+
   const ThreadAttribution & oldThreads = hemocell.lattice->getMultiBlockManagement().getThreadAttribution();
   
   SparseBlockStructure3D old_structure = hemocell.lattice->getSparseBlockStructure();
@@ -315,7 +315,7 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
   
   delete hemocell.cellfields->immersedParticles;
   hemocell.cellfields->createParticleField();
-  
+
   hemocell.loadCheckPoint();
   pcout << "(LoadBalancer) (Restructure) Continuing simulation with restructured application" << endl;
 

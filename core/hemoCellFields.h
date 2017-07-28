@@ -106,7 +106,7 @@ public:
   ///The envelopeSize for the particles
   pluint envelopeSize;
   /// palabos field storing the particles
-	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles;
+	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles = 0;
 
   ///Repulsion variable set through hemocell.h
   double repulsionCutoff = 0.0;
@@ -120,8 +120,11 @@ public:
   
   ///Map that keeps track of the type of a cell per cellID
   map<unsigned int,unsigned int> celltype_per_cell;
- 
-
+  /**
+   * Total number of cells in the simulation, should be constant
+   * Is set through hemocell::loadParticles() is added (TODO: also when removed)
+   */
+   unsigned int number_of_cells;
   
   /*
    * Functionals needed for access of the cellfields

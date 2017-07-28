@@ -53,20 +53,16 @@ void HemoCell::setFluidOutputs(vector<int> outputs) {
 }
 
 void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
-  int nper = 0;
-
+  if (lattice == 0) {
+    pcerr << "(HemoCell) (Periodicity) please create a lattice before trying to set the periodicity" << endl;
+    exit(0);    
+  }
+  if (cellfields->immersedParticles == 0) {
+    pcerr << "(HemoCell) (Periodicity) please create a particlefield (hemocell.initializeCellfields()) before trying to set the periodicity" << endl;
+    exit(0);   
+  }
   lattice->periodicity().toggle(axis,bePeriodic);
   cellfields->immersedParticles->periodicity().toggle(axis, bePeriodic);
-    
-  for (int i = 0 ; i < 3 ; i++) {
-    if(lattice->periodicity().get(i)) {
-      nper +=2;
-    }
-  }
-  
-  if ( nper > 0) 
-    pcerr << "(HemoCell) (WARNING) Make sure you have at least 2 MPI domains in the periodic direction!" << endl;
-
 }
 
 void HemoCell::loadParticles() {

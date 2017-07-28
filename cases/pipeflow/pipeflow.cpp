@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
   } else {
     hemocell.loadCheckPoint();
   }
-
+ 
   //Restructure atomic blocks on processors when possible
   hemocell.doRestructure(false);
   

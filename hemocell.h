@@ -162,7 +162,7 @@ public:
   
   LoadBalancer * loadBalancer;
   ///The fluid lattice
-  MultiBlockLattice3D<double, DESCRIPTOR> * lattice;
+  MultiBlockLattice3D<double, DESCRIPTOR> * lattice = 0;
 	Config * cfg;
   ///The cellfields contains the particle field and all celltypes
   HemoCellFields * cellfields;
