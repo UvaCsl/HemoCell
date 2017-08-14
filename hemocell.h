@@ -127,6 +127,9 @@ class HemoCell {
   //Explicitly set the periodicity of the domain along the different axes
   void setSystemPeriodicity(unsigned int axis, bool bePeriodic);
 
+  //Set the number or times a particle should be able to wrap around in a certain direction (both negative and positive (default: 100)
+  void setSystemPeriodicityLimit(unsigned int axis, int limit);
+  
   //Load the particles
 private:
   bool loadParticlesIsCalled = false;

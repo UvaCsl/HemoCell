@@ -231,9 +231,22 @@ void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>>&
       vector<plint> triangle = {(*cellFields)[ctype]->triangle_list[i][0] + counter,
                           (*cellFields)[ctype]->triangle_list[i][1] + counter,
                           (*cellFields)[ctype]->triangle_list[i][2] + counter};
-
-
-        output.push_back(triangle);
+      //Do not add triangles over periodic boundaries
+/*      bool toolarge = false;
+      for (pluint x = 0; x < 3; x++) {
+        for (pluint y = x +1; y < 3; y++) {
+          if ((abs(positions[triangle[x]][0] - positions[triangle[y]][0]) > 2.0) ||
+              (abs(positions[triangle[x]][1] - positions[triangle[y]][1]) > 2.0) ||
+              (abs(positions[triangle[x]][2] - positions[triangle[y]][2]) > 2.0))
+          {
+            toolarge = true;
+            break;
+          }
+        }
+      }
+      if (!toolarge) {*/
+         output.push_back(triangle);
+      //}
     }
     counter += (*cellFields)[ctype]->numVertex;
   }

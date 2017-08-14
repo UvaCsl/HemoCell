@@ -61,25 +61,43 @@ void HemoCellParticleDataTransfer::receive (
 void HemoCellParticleDataTransfer::receive (
         Box3D domain, std::vector<char> const& buffer, modif::ModifT kind, Dot3D absoluteOffset )
 {
-    //Particle Locations should always be ABSOULUTE, an offset thus makes no
-    //sense
-    hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
-    //particleField->removeParticles(domain);
-    if ( (kind==modif::dynamicVariables) ||
-         (kind==modif::allVariables) ||
-         (kind==modif::dataStructure) )
-    {
-        pluint posInBuffer = 0;
-        HemoCellParticle newParticle = HemoCellParticle();
-        while (posInBuffer < buffer.size()) {
-            // 1. Generate dynamics object, and unserialize dynamic data.
-            HierarchicUnserializer unserializer(buffer, posInBuffer);
-            newParticle.unserialize(unserializer);
-            posInBuffer = unserializer.getCurrentPos();
-            newParticle.position += realAbsoluteOffset;
-            particleField->addParticle(domain, &newParticle);
-        }
+  int offset = 0;
+  hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
+  //Offset only happens for wrapping around. Decide the new (or old) CellID to use
+  if (absoluteOffset.x > 0) {
+    offset ++;
+  } else if (absoluteOffset.x < 0) {
+    offset --;
+  }
+  if (absoluteOffset.y > 0) {
+    offset += particleField->cellFields->periodicity_limit_offset_y;
+  } else if (absoluteOffset.y < 0) {
+    offset -= particleField->cellFields->periodicity_limit_offset_y;
+  }
+  if (absoluteOffset.z > 0) {
+    offset += particleField->cellFields->periodicity_limit_offset_z;
+  } else if (absoluteOffset.z < 0) {
+    offset -= particleField->cellFields->periodicity_limit_offset_z;
+  }
+  
+  offset*=particleField->cellFields->number_of_cells;
+  
+  if ( (kind==modif::dynamicVariables) ||
+       (kind==modif::allVariables) ||
+       (kind==modif::dataStructure) )
+  {
+    pluint posInBuffer = 0;
+    HemoCellParticle newParticle = HemoCellParticle();
+    while (posInBuffer < buffer.size()) {
+      // 1. Generate dynamics object, and unserialize dynamic data.
+      HierarchicUnserializer unserializer(buffer, posInBuffer);
+      newParticle.unserialize(unserializer);
+      posInBuffer = unserializer.getCurrentPos();
+      newParticle.position += realAbsoluteOffset;
+      newParticle.cellId += offset;
+      particleField->addParticle(domain, &newParticle);
     }
+  }
 }
 
 void HemoCellParticleDataTransfer::setBlock(AtomicBlock3D& block) {

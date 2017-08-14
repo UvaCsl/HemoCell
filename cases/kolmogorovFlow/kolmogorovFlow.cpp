@@ -60,11 +60,7 @@ int main(int argc, char* argv[])
 	Box3D top   = Box3D(0, nx-1, 0,  ny/2,    0, nz-1);
     Box3D bottom  = Box3D(0, nx-1, ny/2+1, ny-1, 0, nz-1);
 
-    setExternalVector( *hemocell.lattice, top,
-            DESCRIPTOR<T>::ExternalField::forceBeginsAt, plb::Array<double,DESCRIPTOR<T>::d>(poiseuilleForce,0.0,0.0));
 
-    setExternalVector( *hemocell.lattice, bottom,
-            DESCRIPTOR<T>::ExternalField::forceBeginsAt, plb::Array<double,DESCRIPTOR<T>::d>(-poiseuilleForce,0.0,0.0));
 
 	hemocell.lattice->initialize();
 
@@ -118,6 +114,11 @@ int main(int argc, char* argv[])
 
 
   while (hemocell.iter < tmax ) {
+    setExternalVector( *hemocell.lattice, top,
+            DESCRIPTOR<T>::ExternalField::forceBeginsAt, plb::Array<double,DESCRIPTOR<T>::d>(poiseuilleForce,0.0,0.0));
+
+    setExternalVector( *hemocell.lattice, bottom,
+            DESCRIPTOR<T>::ExternalField::forceBeginsAt, plb::Array<double,DESCRIPTOR<T>::d>(-poiseuilleForce,0.0,0.0));
     
     hemocell.iterate();
 

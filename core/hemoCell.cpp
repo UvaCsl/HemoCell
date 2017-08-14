@@ -65,6 +65,15 @@ void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
   cellfields->immersedParticles->periodicity().toggle(axis, bePeriodic);
 }
 
+void HemoCell::setSystemPeriodicityLimit(unsigned int axis, int limit) {
+  pcout << "(HemoCell) (Periodicity) Setting periodicity limit of axis " << axis << " to " << limit << endl;
+  cellfields->periodicity_limit[axis] = limit;
+  
+  //recalculate offsets :
+  cellfields->periodicity_limit_offset_y = cellfields->periodicity_limit[0];
+  cellfields->periodicity_limit_offset_z = cellfields->periodicity_limit[0]*cellfields->periodicity_limit[1];
+}
+
 void HemoCell::loadParticles() {
   pcout << "(HemoCell) (CellField) Loading particle positions "  << endl;
   loadParticlesIsCalled = true;

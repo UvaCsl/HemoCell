@@ -118,6 +118,12 @@ public:
   ///Timescale seperation for the velocity interpolation from the fluid to the particle
   pluint particleVelocityUpdateTimescale = 1;
   
+  ///Limit of cycles in a direction (xyz)
+  unsigned int periodicity_limit[3] = {100};
+  //Internal calculation of offset created by flattening limits
+  unsigned int periodicity_limit_offset_y = 100;
+  unsigned int periodicity_limit_offset_z = 10000;
+  
   ///Map that keeps track of the type of a cell per cellID
   map<unsigned int,unsigned int> celltype_per_cell;
   /**
