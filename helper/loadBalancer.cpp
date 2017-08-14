@@ -94,7 +94,7 @@ double LoadBalancer::calculateFractionalLoadImbalance() {
   
   pcout << "fli (time):  " << fli << " fli (lsp): "<< fli2 << std::endl;
   
-  return fli;
+  return fli2;
 }
 
 #ifdef HEMO_PARMETIS
@@ -102,6 +102,36 @@ void LoadBalancer::doLoadBalance() {
   if(!FLI_iscalled) {
     pcerr << "You did not calculate the fractional load imbalance before trying to balance, this is required! Exiting...";
     exit(0);
+  }
+  hemocell.saveCheckPoint(); // Save Checkpoint
+
+  if (original_block_stored) {
+    MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
+                MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
+                original_block_structure,
+                original_thread_attribution,
+                hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth(),
+                hemocell.lattice->getMultiBlockManagement().getRefinementLevel() ),
+                hemocell.lattice->getBlockCommunicator().clone(),
+                hemocell.lattice->getCombinedStatistics().clone(),
+                defaultMultiBlockPolicy3D().getMultiCellAccess<double,DESCRIPTOR>(),
+                hemocell.lattice->getBackgroundDynamics().clone() );
+  newlattice->periodicity().toggle(0, hemocell.lattice->periodicity().get(0));
+  newlattice->periodicity().toggle(1, hemocell.lattice->periodicity().get(1));
+  newlattice->periodicity().toggle(2, hemocell.lattice->periodicity().get(2));
+  newlattice->toggleInternalStatistics(hemocell.lattice->isInternalStatisticsOn());
+
+  delete hemocell.lattice;
+  hemocell.lattice = newlattice;
+  hemocell.cellfields->lattice = newlattice;
+  
+  delete hemocell.cellfields->immersedParticles;
+  hemocell.cellfields->createParticleField();
+  
+  hemocell.loadCheckPoint();
+  
+  pcout << "(LoadBalancer) Re-Calculating FLI of original block structure" << endl;
+  calculateFractionalLoadImbalance();
   }
   
   //Variable naming according to Parmetis Manual
@@ -172,8 +202,8 @@ void LoadBalancer::doLoadBalance() {
   for (auto & pair : newProc) {
     pcout << "Atomic block " << pair.first << " is assigned to processor " << pair.second << endl;
   }
+
   
-  hemocell.saveCheckPoint(); // Save Checkpoint
   pcout << "(LoadBalancer) Recreating Fluid field with new Distribution of Atomic Blocks" << endl;
 
   map<plint,plint> nTA; //Conversion is necessary for next function
@@ -216,6 +246,8 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
 
   //Store original block structure
   original_block_structure = hemocell.lattice->getSparseBlockStructure();
+  original_thread_attribution = hemocell.lattice->getMultiBlockManagement().getThreadAttribution().clone();
+
   original_block_stored = true;
 
   if(!checkpoint_available) {

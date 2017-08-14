@@ -1,5 +1,6 @@
 #ifndef LOADBALANCER_H
 #define LOADBALANCER_H
+#define HEMO_PARMETIS
 
 class LoadBalancer;
 
@@ -56,6 +57,7 @@ class LoadBalancer {
   HemoCell & hemocell;
   bool original_block_stored = false;
   SparseBlockStructure3D original_block_structure;
+  ThreadAttribution* original_thread_attribution;
 };
 
 #endif
