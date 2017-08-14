@@ -4,6 +4,7 @@
 <parameters>
     <warmup> 10 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
+    <maxFlin> 0.0035 </maxFlin>
 </parameters>
 
 
@@ -33,9 +34,9 @@
 
 <sim>
     <tmax> 1000000 </tmax> <!-- total number of iterations -->
-    <tmeas>  5000 </tmeas> <!-- interval after which data is written --> 
+    <tmeas>  1000 </tmeas> <!-- interval after which data is written --> 
     <tcheckpoint> 200000 </tcheckpoint> 
-    <tbalance> 100 </tbalance> <!-- interval after which balance is performed --> 
+    <tbalance> 1000 </tbalance> <!-- interval after which balance is performed --> 
 </sim>
 
 </hemocell>

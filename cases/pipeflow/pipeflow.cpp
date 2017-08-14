@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
     // Only enable if PARMETIS build is available
     /*
      if (hemocell.iter % tbalance == 0) {
-       if(hemocell.calculateFractionalLoadImbalance() > 3) {
+       if(hemocell.calculateFractionalLoadImbalance() > (*cfg)["parameters"]["maxFlin"].read<double>()) {
          hemocell.doLoadBalance();
          hemocell.doRestructure();
        }
