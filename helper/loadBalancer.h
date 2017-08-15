@@ -1,6 +1,5 @@
 #ifndef LOADBALANCER_H
 #define LOADBALANCER_H
-#define HEMO_PARMETIS
 
 class LoadBalancer;
 
