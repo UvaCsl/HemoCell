@@ -2,7 +2,7 @@
 # Build settings. Set these.
 
 # Project setup
-SET(PROJECT_NAME stretchcell)
+SET(PROJECT_NAME stretchCell)
 SET(PROJECT_SRC "stretchCell.cpp")
 
 # HemoCell location relative to CMakelists.txt

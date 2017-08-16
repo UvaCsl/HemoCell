@@ -2,7 +2,7 @@
 # Build settings. Set these.
 
 # Project setup
-SET(PROJECT_NAME cellcollision)
+SET(PROJECT_NAME cellCollision)
 SET(PROJECT_SRC "cellCollision.cpp")
 
 # HemoCell location relative to CMakelists.txt

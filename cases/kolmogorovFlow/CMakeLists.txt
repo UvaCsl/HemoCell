@@ -2,7 +2,7 @@
 # Build settings. Set these.
 
 # Project setup
-SET(PROJECT_NAME kolmogorovflow)
+SET(PROJECT_NAME kolmogorovFlow)
 SET(PROJECT_SRC "kolmogorovFlow.cpp")
 
 # HemoCell location relative to CMakelists.txt
