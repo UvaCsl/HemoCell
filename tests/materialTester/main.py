@@ -3,7 +3,8 @@
 @author: Gabor Zavodszky
 """
 import numpy as np
-from getModuli.rbcHO import RbcHO 
+from getModuli.rbcHO import RbcHO
+# from getModuli.wbcHO import WbcHO 
 
 l_eq = 0.5e-6
 
@@ -20,6 +21,7 @@ def dynamic_stretch(force):
     
     # Constructing patch
     model = RbcHO(l_eq)
+    # model = WbcHo(l_eq)
     
     # Starting simulation
     while True:
@@ -56,6 +58,7 @@ def static_stretch(disloc):
     
     # Constructing patch
     model = RbcHO(l_eq)
+    # model = WbcHo(l_eq)
     a0 = model.mesh.calcTotalArea()
     
     # Move verticies by disloc
@@ -108,6 +111,7 @@ def static_shear(disloc):
     
     # Constructing patch
     model = RbcHO(l_eq)
+    # model = WbcHo(l_eq)
     
     # Move verticies a little
     
@@ -166,6 +170,7 @@ if __name__ == "__main__":
 
     # # Ref.
     # model = RbcHO(l_eq)
+    # # model = WbcHo(l_eq)
     # pr = model.mesh.getPositions()
     # ax1.scatter(pr[0], pr[1], c='y', marker="v", label='Undeformed')
 
