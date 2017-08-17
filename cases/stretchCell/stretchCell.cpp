@@ -1,5 +1,6 @@
 #include "hemocell.h"
 #include "rbcHighOrderModel.h"
+// #include "wbcHighOrderModel.h" // in case of WBC uncomment this
 #include "helper/hemoCellStretch.h"
 #include "helper/cellInfo.h"
 
@@ -26,9 +27,9 @@ int main(int argc, char* argv[])
   
 	// ------------------------ Init lattice --------------------------------
 
-  plint nx = 50;
-  plint ny = 25;
-  plint nz = 25;
+  plint nx = 50; //plint nx = 70; // in case of WBC use larger dimensions
+  plint ny = 25; //plint ny = 35;
+  plint nz = 25; //plint nz = 35;
 
 	pcout << "(CellStretch) Initializing lattice: " << nx <<"x" << ny <<"x" << nz << " [lu]" << std::endl;
 
@@ -79,8 +80,10 @@ int main(int argc, char* argv[])
 	
 	hemocell.initializeCellfield();
 	hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
+	// hemocell.addCellType<WbcHighOrderModel>("WBC_HO", WBC_SPHERE);
 	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC}; 
 	hemocell.setOutputs("RBC_HO", outputs);
+	// hemocell.setOutputs("WBC_HO", outputs);
 
 	outputs = {OUTPUT_VELOCITY,OUTPUT_FORCE};
 	hemocell.setFluidOutputs(outputs);
@@ -101,6 +104,7 @@ int main(int argc, char* argv[])
 // Setting up the stretching
   unsigned int n_forced_lsps = 1 + 6;// + 12;
   HemoCellStretch cellStretch(*(*hemocell.cellfields)["RBC_HO"],n_forced_lsps, param::ef_lbm);
+  // HemoCellStretch cellStretch(*(*hemocell.cellfields)["WBC_HO"],n_forced_lsps, param::ef_lbm);
   
   pcout << "(CellStretch) External stretching force [pN(flb)]: " <<(*cfg)["parameters"]["stretchForce"].read<double>() << " (" << param::ef_lbm  << ")" << endl;
     
@@ -110,11 +114,14 @@ int main(int argc, char* argv[])
 
   // Get undeformed values
   double volume_lbm = (*hemocell.cellfields)["RBC_HO"]->meshmetric->getVolume();
+  // double volume_lbm = (*hemocell.cellfields)["WBC_HO"]->meshmetric->getVolume();
   double surface_lbm = (*hemocell.cellfields)["RBC_HO"]->meshmetric->getSurface();
+  // double surface_lbm = (*hemocell.cellfields)["WBC_HO"]->meshmetric->getSurface();
   double volume_eq = volume_lbm/pow(1e-6/param::dx,3);
   double surface_eq = surface_lbm/pow(1e-6/param::dx,2);
 
   hemo::Array<double,6> bb =  (*hemocell.cellfields)["RBC_HO"]->getOriginalBoundingBox();
+  // hemo::Array<double,6> bb =  (*hemocell.cellfields)["WBC_HO"]->getOriginalBoundingBox();
   pcout << "Original Bounding box:" << endl;
   pcout << "\tx: " << bb[0] << " : " << bb[1] << endl;
   pcout << "\ty: " << bb[2] << " : " << bb[3] << endl;

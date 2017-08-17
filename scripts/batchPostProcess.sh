@@ -16,7 +16,7 @@ cd tmp;
 ${scriptsDir}/FluidHDF5toXMF.py; 
 
 # Cells of different types
-${scriptsDir}/CellHDF5toXMF.py PLT RBC_HO RBC_SU WBC SickledRBC TumorCell; 
+${scriptsDir}/CellHDF5toXMF.py PLT RBC_HO RBC_SU SickledRBC WBC WBC_HO TumorCell; 
 
 # vWF
 ${scriptsDir}/VWFHDF5toXMF.py VWF;
