@@ -11,4 +11,6 @@ number of lsps (or any other measure you come up with)
 - The CmakeFile for a case can be generated from cases/CMakeLists_template.txt
 by the makefile (cases/Makefile). running make in ./cases will create and build all cases.
 
--
+Version 0.5
+===========
+
