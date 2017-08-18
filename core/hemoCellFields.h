@@ -118,18 +118,18 @@ public:
   pluint particleVelocityUpdateTimescale = 1;
   
   ///Limit of cycles in a direction (xyz)
-  unsigned int periodicity_limit[3] = {100};
+  int periodicity_limit[3] = {100};
   //Internal calculation of offset created by flattening limits
-  unsigned int periodicity_limit_offset_y = 100;
-  unsigned int periodicity_limit_offset_z = 10000;
+  int periodicity_limit_offset_y = 100;
+  int periodicity_limit_offset_z = 10000;
   
   ///Map that keeps track of the type of a cell per cellID
-  map<unsigned int,unsigned int> celltype_per_cell;
+  map<int,int> celltype_per_cell;
   /**
    * Total number of cells in the simulation, should be constant
    * Is set through hemocell::loadParticles() is added (TODO: also when removed)
    */
-   unsigned int number_of_cells;
+   int number_of_cells;
   
   /*
    * Functionals needed for access of the cellfields
