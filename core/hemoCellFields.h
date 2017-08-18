@@ -28,7 +28,6 @@ public:
    */
   void createParticleField();
   
-private:
   ///Used to set variables inside the celltypes for correct access, called through createParticleField
   void InitAfterLoadCheckpoint();
 

@@ -23,7 +23,7 @@ void HemoCellFields::createParticleField() {
 
   immersedParticles = new MultiParticleField3D<HEMOCELL_PARTICLE_FIELD>(
             particleManagement, defaultMultiBlockPolicy3D().getCombinedStatistics() );
- 
+
   InitAfterLoadCheckpoint();
 
   immersedParticles->periodicity().toggle(0,lattice->periodicity().get(0));
@@ -31,6 +31,7 @@ void HemoCellFields::createParticleField() {
   immersedParticles->periodicity().toggle(2,lattice->periodicity().get(2));
 
   immersedParticles->toggleInternalStatistics(false);
+  
 }
 
 HemoCellField * HemoCellFields::addCellType(TriangularSurfaceMesh<double> & meshElement, std::string name_)

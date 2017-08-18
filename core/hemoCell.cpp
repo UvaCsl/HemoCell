@@ -63,6 +63,7 @@ void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
   }
   lattice->periodicity().toggle(axis,bePeriodic);
   cellfields->immersedParticles->periodicity().toggle(axis, bePeriodic);
+  cellfields->InitAfterLoadCheckpoint();
 }
 
 void HemoCell::setSystemPeriodicityLimit(unsigned int axis, int limit) {
