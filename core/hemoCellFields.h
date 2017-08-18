@@ -129,7 +129,7 @@ public:
    * Total number of cells in the simulation, should be constant
    * Is set through hemocell::loadParticles() is added (TODO: also when removed)
    */
-   int number_of_cells;
+   int number_of_cells = 0;
   
   /*
    * Functionals needed for access of the cellfields
