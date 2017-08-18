@@ -5,12 +5,12 @@ namespace hemo {
     orig = new tinyxml2::XMLDocument();
     orig->LoadFile(paramXmlFileName.c_str());
    // Check if it is a fresh start or a checkpointed run 
-   std::string firstField = orig->FirstChild()->Value(); 
-
-   if (firstField == "Checkpoint") { checkpointed = 1; } //If the first field is not checkpoint but hemocell
-   else { checkpointed = 0; }
-
-
+    tinyxml2::XMLNode * first =orig->FirstChild()->NextSibling();
+    if (first) {
+      std::string firstField = first->Value(); 
+      if (firstField == "Checkpoint") { checkpointed = 1; } //If the first field is not checkpoint but hemocell
+      else { checkpointed = 0; }
+    }
   }
 
   /*
