@@ -9,7 +9,7 @@
 About HemoCell
 ==========
 
-`HemoCell` is a framework for simulating suspensions of deformable cells, focusing on blood. It is based of the combined Immersed boundary-lattice Boltzmann method (IB-LBM) and is currently built on top of the open source `C++` lattice Boltzmann solver [`Palabos`](www.palabos.org).
+`HemoCell` is a framework for simulating suspensions of deformable cells, focusing on blood. It is based of the combined Immersed boundary-lattice Boltzmann method (IB-LBM) and is currently built on top of the open source `C++` lattice Boltzmann solver [`Palabos`](http://www.palabos.org).
 
 `HemoCell` has been developed as a framework:
 
@@ -33,8 +33,8 @@ sudo apt-get install h5utils hdf5-tools libhdf5-serial-dev
 - On Windows 10, use the Linux subsystem feature (search for Ubuntu in Windows Store), then follow the above instructions to install the required packages.
 - On Mac OS X install homebrew, and search for the packages providing the same tools (g++, openmpi, hdf5, cmake).
 
-### `Palabos`
-The working version of `palabos` is bundled with HemoCell. Some modification of the source code is necessary for seamless and performant interoperation (see `Setting up the source` below). Other versions of Palabos are not currently supported.
+### Palabos
+The working version of `Palabos` is bundled with HemoCell. Some modification of the source code is necessary for seamless and performant interoperation (see `Setting up the source` below). Other versions of Palabos are not currently supported.
 
 ### HDF5
 
