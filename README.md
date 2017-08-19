@@ -2,87 +2,101 @@
     ( )_( ) ( ___) (  \/  ) (  _  )  / __) ( ___) (  )   (  )  
      ) _ (   )__)   )    (   )(_)(  ( (__   )__)   )(__   )(__ 
     (_) (_) (____) (_/\/\_) (_____)  \___) (____) (____) (____)   
-
+    
           HighpErformance MicrOscopic CELlular Library
 
 
-HemoCell (former ficsion)
+About HemoCell
 ==========
 
-`HemoCell` is a framework for simulating suspensions of deformable cells, focusing on blood. It is based of the combined Immersed boundary-lattice Boltzmann method (IB-LBM) and is built on top of the open source `C++` lattice Boltzmann solver `palabos`.
+`HemoCell` is a framework for simulating suspensions of deformable cells, focusing on blood. It is based of the combined Immersed boundary-lattice Boltzmann method (IB-LBM) and is currently built on top of the open source `C++` lattice Boltzmann solver [`Palabos`](www.palabos.org).
 
-`HemoCell` has been developed as a framework and not as a single monolithic application. The user/developer can choose the geometry and type of flow he/she will use, the type of cells (red blood cells, platelets, etc.), the model which will be applied to them and a variety of actions: from applying forces to a certain number of surface particles to letting platelets stick to the walls or between each other. In that sense, the already implemented files serve as examples where the user can take the modules and built his/her own application, like lego-bricks.
+`HemoCell` has been developed as a framework:
+
+<img src="doc/images/structure.png" width="400">
+
+A wide range of functions are provided on the API level to create the geometry, the type of flow, the type of cells (red blood cells, white blood cells, platelets, etc.), and the model which will be applied to them. It also provides a variety of actions: from applying forces to a certain number of surface particles to letting platelets stick to the walls or between each other. The already implemented cases serve as examples where the users can take the modules and build their own application from them.
 
 Building Prerequisites
 ====================
 
-`HemoCell` is built on top of `palabos` and it should be possible to be build on any GNU/Linux system with at least the GNU GCC compiler suite and OpenMPI. Make and SCONS or CMake are used as the build automation tools. GCC versions 4.7.2 and 4.8.1 as well as OpenMPI version 1.4.5 and 1.6.5 have been successfully tested. It is very likely that other compilers will also produce favorable results. `HemoCell` has been successfully built and ran on x64 and IBM BG/Q systems. 
+`HemoCell` supports Linux, OS X, and Windows. It is currently requires a fairly recent GNU GCC compiler suite (> 5.1), and for distributed runs OpenMPI (> 1.4.5). CMake is used as the build automation tools.  The required packages are given for Debian based systems (such as Ubuntu), but they are available for OS X as well from [homebrew](http://brew.sh).
 
-Remarks:
-
-- Though the library is being developed on linux, it is known to build and execute on Mac OS X (10.11.4 was tested). The suggested way to install the required library is through `homebrew`.
-- The code should work on Windows as well, however, this is completeley untested. The suggested compiler suite is `TDM-gcc`.
-
-## `palabos`
-The working version of `palabos` is [v1.5r1](http://www.palabos.org/images/palabos_releases/palabos-v1.5r1.zip) or newer. Some modification of the source code is necessary for seamless and performant interoperation with `HemoCell`; see know-issues. Earlier versions of `palabos` are no longer supported due to strong dependency on the sparse particle classes present from this version.
-
-## HDF5
-`HemoCell` uses the `hdf5` library with the high-level extensions for the output and post-processing of the results. Debian packages `h5utils hdf5-tools libhdf5-serial-dev` are known to work for the I/O.
-
-## Post-processing
-Almost all the post-processing is performed by python scripts. The necessary libraries are `numpy`, `matplotlib` and `h5py`. These are parts of most wide-spread python distributions (e.g., Anaconda, Canopy).
-
-## Debian packages
+Installation of the required packages:
 
 ```bash
-sudo apt-get install gcc g++ gdb make scons cmake
+sudo apt-get install gcc g++ gdb make cmake
 sudo apt-get install openmpi-bin openmpi-checkpoint openmpi-common libopenmpi-dev
 sudo apt-get install h5utils hdf5-tools libhdf5-serial-dev
+```
+
+- On Windows 10, use the Linux subsystem feature (search for Ubuntu in Windows Store), then follow the above instructions to install the required packages.
+- On Mac OS X install homebrew, and search for the packages providing the same tools (g++, openmpi, hdf5, cmake).
+
+### `Palabos`
+The working version of `palabos` is bundled with HemoCell. Some modification of the source code is necessary for seamless and performant interoperation (see `Setting up the source` below). Other versions of Palabos are not currently supported.
+
+### HDF5
+
+`HemoCell` uses the `hdf5` library with the high-level extensions for the output and post-processing of the results. Debian packages `h5utils hdf5-tools libhdf5-serial-dev` are known to work for the I/O.
+
+### Post-processing
+
+Almost all the post-processing is performed by python scripts. The scripts are written for python 2.7, thus for newer versions some modifications might be needed. The necessary libraries are `numpy`, `matplotlib` and `h5py`. These are parts of most wide-spread python distributions (e.g., Anaconda, Canopy). Alternatively, you can install these on a Debian based system as follows:
+
+```bash
 sudo apt-get install python python-numpy python-matplotlib python-h5py
 ```
 
 
 ## Known issues
-* Newer GNU C versions (>= 5.1) do not work. They generate problems with the MPI code. (On newer Ubuntu set CC, CXX, OMPI_CC, OMPI_CXX environmental variables to an older compiler).
 * Ordinary `Makefile`s do not work for IBM BG/Q systems. Instead use the `Makefile.cineca` as a template, found in the parent directory.
-* Due to some changes required in the `Palabos` source code, patch files are provided for version 1.5r1 under the `patch` directory. See the bash script `patchPLB.sh` for info on how to apply them.
+* Due to some changes required in the `Palabos` source code, patch files are provided for a custom version bundled together with HemoCell. Execute `setup.sh` before you start building the project (see below)
 
 
+# Setting up the source
 
-Building instructions for CMake
+HemoCell currently depends on a modified version of Palabos which needs to be set up first. The required sources are bundled together with HemoCell, and a convenience script is provided to facilitate this process. Navigate to the main directory (e.g. /home/developer1/hemocell) and execute following script:
+
+```bash
+./setup.sh
+```
+
+Note: you only need to do this once, before any compilation!
+
+
+Building instructions
 ================================
 
-To build a case, issue the following from its folder:
+After HemoCell has been set up, issue the following from the folder of a case (e.g. hemocell/cases/pipeflow):
 
 ```shell
 mkdir build
 cd build
 cmake ..
-make -j 4
-```
-
-The cmake tries to make use of the installed libraries of the system instead of building them, thus you might also want to install
-development packages for Eigen and TinyXML (Palabos 1.5+). 
-Both ficsion and palabos are handled as an external library relative to the `case` in the cmake project structure.
-
-Note: The CMake files are also suitable to use in IDE-s supporting cmake projects (e.g., CLion).
-
-
-Building Instructions for SCons (deprecated)
-============================================
-
-Ensure that the above packages are downloaded and installed on your system. Assuming that HemoCell lies in the directory `${HEMOCELL}`,  e.g. 
-```shell
-export HEMOCELL=${HOME}/hemocell
-```
-download `palabos` v1.5r1 from its [website](http://www.palabos.org/images/palabos_releases/palabos-v1.5r1.zip) and extract it to the path `${HEMOCELL}/palabos`. Now navigate into one of the `case` subfolders and build the corresponding case:
-
-``` shell
 make
 ```
-and it will produce an executable with the name of the case. Should you want to change debugging or profiling options, please alter the `Makefile`. Follow a similar approach to compile the examples.
 
-Documentation
+The CMake tries to make use of the installed libraries of the system instead of building them, thus you might also want to install development packages for Eigen and TinyXML.  Both HemoCell and Palabos are handled as an external library relative to the `case` in the CMake project structure.
+
+Note: The CMake files are also suitable to use in IDE-s supporting CMake projects (e.g., CLion).
+
+Documentation 
 =============
 
-Program Documentation can be found in `${HEMOCELL}/doc/ficsion_UserGuide.pdf` which provides detailed information on the `HemoCell` configuration.
+- For a description of the material models and used techniques consult the open access [paper of HemoCell](http://journal.frontiersin.org/article/10.3389/fphys.2017.00563)
+- Information about how to create initial conditions for the cells filed can be found in `${HEMOCELL}/doc/gen_random_pos.pdf`
+- (deprecated, soon to be rewritten) Program documentation can be found in `${HEMOCELL}/doc/hemocell_UserGuide.pdf` which provides detailed information on the `HemoCell` configuration.
+
+# FAQ
+
+For frequently added questions refer to `FAQ.md` in the root directory of the project.
+
+# License
+
+HemoCell is currently available under a restrictive non-commercial license. Please see the file `LICENSE` in the root directory. 
+
+Note that if HemoCell is used in any scientific project the license requires proper citation to be given! 
+
+
+
