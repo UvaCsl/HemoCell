@@ -200,7 +200,7 @@ pluint CellInformationFunctionals::getTotalNumberOfCells(HemoCell* hemocell) {
   info_per_cell.clear();
   return total;
 }
-pluint CellInformationFunctionals::getNumberOfCellsFromType(HemoCell*, string type) {
+pluint CellInformationFunctionals::getNumberOfCellsFromType(HemoCell* hemocell, string type) {
   info_per_cell.clear(); //TODO thread safe n such
   calculateCellPosition(hemocell); 
   calculateCellType(hemocell);

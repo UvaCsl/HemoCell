@@ -6,6 +6,7 @@
 #include "config.h"
 #include "constantConversion.h"
 void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, Config & cfg);
+int getTotalNumberOfCells(HemoCellFields & cellFields);
 
 void getReadPositionsBloodCellsVector(Box3D realDomain,
                                            std::vector<TriangularSurfaceMesh<double>* > & meshes,

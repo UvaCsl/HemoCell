@@ -102,6 +102,7 @@ void HemoCellFields::copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwrit
  */
 void HemoCellFields::InitAfterLoadCheckpoint()
 {
+  number_of_cells = getTotalNumberOfCells(*this);
   std::vector<plint> const& blocks = immersedParticles->getLocalInfo().getBlocks();
   for (pluint iBlock=0; iBlock<blocks.size(); ++iBlock) {
     SmartBulk3D bulk(immersedParticles->getMultiBlockManagement(),blocks[iBlock]);

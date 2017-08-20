@@ -101,6 +101,19 @@ void readvonWillibrands(Box3D realDomain, pluint celltype, HemoCellFields & cell
         }
 }
 
+int getTotalNumberOfCells(HemoCellFields & cellFields){
+  int nCells, totalCells = 0;
+  for (pluint j = 0; j < cellFields.size(); j++) {
+    fstream fIn;
+    fIn.open(cellFields[j]->name + ".pos", fstream::in);
+    fIn >> nCells;
+    totalCells += nCells;
+    fIn.close();
+  }
+  return totalCells;
+  
+}
+
 void getReadPositionsBloodCellsVector(Box3D realDomain,
                                             std::vector<TriangularSurfaceMesh<double>* > & meshes,
                                             std::vector<plint> & Np,
