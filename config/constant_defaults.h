@@ -104,6 +104,7 @@ class HemoCellParticleField;
 #define OUTPUT_VELOCITY 4
 #define OUTPUT_DENSITY 5
 #define OUTPUT_LINES 6 //(For vWF)
+#define OUTPUT_VERTEX_ID 2
 
 //==================== Not really an option but a nice shortcut
 #define param Parameters

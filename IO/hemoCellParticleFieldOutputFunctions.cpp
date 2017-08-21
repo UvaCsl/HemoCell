@@ -12,6 +12,7 @@ void HemoCellParticleField::AddOutputMap() {
   outputFunctionMap[OUTPUT_FORCE_LINK] = &HemoCellParticleField::outputForceLink;
   outputFunctionMap[OUTPUT_FORCE_BENDING] = &HemoCellParticleField::outputForceBending;
   outputFunctionMap[OUTPUT_FORCE_VISC] = &HemoCellParticleField::outputForceVisc;
+  outputFunctionMap[OUTPUT_VERTEX_ID] = &HemoCellParticleField::outputVertexId;
 }
 
 void HemoCellParticleField::passthroughpass(int type, Box3D domain, vector<vector<double>>& output, pluint ctype, std::string & name) {
@@ -137,6 +138,7 @@ void HemoCellParticleField::outputForceLink(Box3D domain,vector<vector<double>>&
     }
   }
 }
+
 void HemoCellParticleField::outputForceVolume(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
   name = "Volume force";
   output.clear();
@@ -275,4 +277,24 @@ void HemoCellParticleField::outputLines(Box3D domain, vector<vector<plint>>& out
   }
    
 }
+
+void HemoCellParticleField::outputVertexId(Box3D domain,vector<vector<double>>& output, pluint ctype, std::string & name) {
+  name = "Vertex Id";
+  output.clear();
+  HemoCellParticle * sparticle;
+  const map<int,bool> & lpc = get_lpc();
+  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
+  for ( const auto &lpc_it : lpc ) {
+    int cellid = lpc_it.first;
+    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
+    if (ctype != particles[particles_per_cell.at(cellid)[0]].celltype) continue;
+    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
+      sparticle = &particles[particles_per_cell.at(cellid)[i]];
+      vector<double> tf;
+      tf.push_back((sparticle->vertexId));
+      output.push_back(tf);
+    }
+  }
+}
+
 #endif
