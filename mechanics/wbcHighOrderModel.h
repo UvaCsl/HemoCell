@@ -19,6 +19,8 @@ class WbcHighOrderModel : public CellMechanics {
   const double k_bend;
   const double eta_m;
   const double eta_v;
+  const double k_inner;
+  const double core_radius;
 
   public:
   WbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) ;
@@ -33,7 +35,9 @@ class WbcHighOrderModel : public CellMechanics {
   static double calculate_kLink(Config & cfg, MeshMetrics<double> &);
   static double calculate_etaM(Config & cfg );
   static double calculate_etaV(Config & cfg );
-
+  static double calculate_coreRadius(Config & cfg );
+  static double calculate_kInner(Config & cfg );
+  
 };
 
 #endif
