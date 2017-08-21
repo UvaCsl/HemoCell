@@ -40,6 +40,7 @@ class HemoCellParticle {
     hemo::Array<double,3> & force_repulsion;// = serializeValues.sv.force_repulsion;
     hemo::Array<double,3> *force_area = &force; //Default to pointing to force, if output is desired, it can be stored seperately
     hemo::Array<double,3> *force_visc = &force;
+    hemo::Array<double,3> *inner_force_link = &force;
     plint tag;
     plint & cellId;// = serializeValues.sv.cellId;
     plint & vertexId;// = serializeValues.sv.vertexId;
@@ -71,12 +72,14 @@ public:
       force_link = &force;
       force_area = &force;
       force_visc = &force;
+      inner_force_link = &force;
     } else {
       force_volume = copy.force_volume;
       force_bending = copy.force_bending;
       force_link = copy.force_link;
       force_area = copy.force_area;
       force_visc = copy.force_visc;
+      inner_force_link = copy.inner_force_link;
     }
     force_repulsion = copy.force_repulsion;
     tag = copy.tag;
@@ -107,6 +110,7 @@ public:
       force_link = &force; //These pointers are only changed for nice outputs
       force_bending = &force; //These pointers are only changed for nice outputs
       force_visc = &force;
+      inner_force_link = &force;
     }
     HemoCellParticle (hemo::Array<double,3> position_, plint cellId_, plint vertexId_,pluint celltype_) :
     position(serializeValues.position), v(serializeValues.v),
@@ -130,6 +134,7 @@ public:
       force_link = &force; //These pointers are only changed for nice outputs
       force_bending = &force; //These pointers are only changed for nice outputs
       force_visc = &force;
+      inner_force_link = &force;
     }
 
     HemoCellParticle & operator =(const HemoCellParticle & copy) {
@@ -148,12 +153,14 @@ public:
       force_link = &force;
       force_area = &force;
       force_visc = &force;
+      inner_force_link = &force;
     } else {
       force_volume = copy.force_volume;
       force_bending = copy.force_bending;
       force_link = copy.force_link;
       force_area = copy.force_area;
       force_visc = copy.force_visc;
+      inner_force_link = copy.inner_force_link;
     }
     force_repulsion = copy.force_repulsion;
     tag = copy.tag;
@@ -171,6 +178,7 @@ public:
         sparticle->force_link = &sparticle->force;
         sparticle->force_area = &sparticle->force;
         sparticle->force_visc = &sparticle->force;
+        sparticle->inner_force_link = &sparticle->force;
         return sparticle;
     }
 
@@ -180,6 +188,7 @@ public:
       force_link = &force;
       force_area = &force;
       force_visc = &force;
+      inner_force_link = &force;
     }
 
     /// Implements Euler integration with velocity alone.
@@ -213,6 +222,7 @@ public:
         force_link = &force;
         force_bending = &force;
         force_visc = &force;
+        inner_force_link = &force;
         
     }
 

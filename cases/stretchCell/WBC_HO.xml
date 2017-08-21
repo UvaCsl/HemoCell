@@ -10,7 +10,9 @@
     <kArea> 20.0 </kArea> <!--Local area conservation coefficient (dimensionless) 4xrbc [20] --> 
     <!-- NOTE: kBend should != kArea. The larger the difference, the more stable the model -> they are competing forces under some circumstances. -->
     <kLink> 60.0 </kLink> <!-- Link force coefficient (dimensionless) 4xrbc [60.0] -->
-    <minNumTriangles> 600 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact. [642]-->
+    <kInner> 100.0 </kInner> <!-- Inner link force parameter -->
+    <minNumTriangles> 20 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact. [642]-->
     <radius> 5.0e-6 </radius> <!-- Radius of the WBC in [ 5.0 um] -->
+    <core_radius> 4.9e-6 </core_radius> <!-- Radius of the cell core (nucleus) in [ 1.5 um] -->
 </MaterialModel>
 </hemocell>
