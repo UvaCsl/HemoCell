@@ -134,6 +134,10 @@ int main(int argc, char* argv[])
       
       CellInformationFunctionals::clear_list();
     }
+    // Reset Forces on the lattice, TODO do own efficient implementation
+    setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
+          DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+          plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
     if (hemocell.iter % tcheckpoint == 0) {
       hemocell.saveCheckPoint();
     }
