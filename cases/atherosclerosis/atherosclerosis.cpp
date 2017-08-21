@@ -178,13 +178,13 @@ int main(int argc, char *argv[]) {
   pcout << "(PipeFlow) Starting simulation..." << endl;
 
   while (hemocell.iter < tmax ) {
-    hemocell.iterate();
-    
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                 plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+    hemocell.iterate();
     
+
     // Only enable if PARMETIS build is available
     // if (hemocell.iter % tbalance == 0) {
     //   if(hemocell.calculateFractionalLoadImbalance() > 3) {

@@ -8,11 +8,21 @@
 #include <hdf5_hl.h>
 
 void writeFluidField_HDF5(HemoCellFields& cellfields, double dx, double dt, plint iter, string preString) {
+  if(std::find(cellfields.desiredFluidOutputVariables.begin(), cellfields.desiredFluidOutputVariables.end(), OUTPUT_FORCE) != cellfields.desiredFluidOutputVariables.end()) {
+    pcout << "(FluidOutput) (OutputForce) The force on the fluid field is reset to zero, If there is a bodyforce, reset it after this function" << endl; 
+    cellfields.spreadParticleForce();
+  }
   WriteFluidField * wff = new WriteFluidField(cellfields, *cellfields.lattice,iter,"Fluid",dx,dt);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(cellfields.lattice);
   wrapper.push_back(cellfields.immersedParticles); //Needed for the atomicblock id, nothing else
   applyProcessingFunctional(wff,cellfields.lattice->getBoundingBox(),wrapper);
+  if(std::find(cellfields.desiredFluidOutputVariables.begin(), cellfields.desiredFluidOutputVariables.end(), OUTPUT_FORCE) != cellfields.desiredFluidOutputVariables.end()) {
+    // Reset Forces on the lattice, TODO do own efficient implementation
+    setExternalVector(*cellfields.hemocell.lattice, (*cellfields.hemocell.lattice).getBoundingBox(),
+          DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+          plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
+  }
 }
 
 BlockDomain::DomainT WriteFluidField::appliesTo () const {
