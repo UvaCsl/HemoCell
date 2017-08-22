@@ -405,7 +405,7 @@ void HemoCellParticleField::separateForceVectors() {
     sparticle.force_area = new hemo::Array<double,3>({0.0,0.0,0.0});
     sparticle.force_bending = new hemo::Array<double,3>({0.0,0.0,0.0});
     sparticle.force_visc = new hemo::Array<double,3>({0.0,0.0,0.0});
-    sparticle.inner_force_link = new hemo::Array<double,3>({0.0,0.0,0.0});
+    sparticle.force_inner_link = new hemo::Array<double,3>({0.0,0.0,0.0});
   }
 }
 
@@ -418,7 +418,7 @@ void HemoCellParticleField::unifyForceVectors() {
     delete sparticle.force_area;
     delete sparticle.force_bending;
     delete sparticle.force_visc;
-    delete sparticle.inner_force_link;
+    delete sparticle.force_inner_link;
     sparticle.repoint_force_vectors();
   }
 }

@@ -166,6 +166,26 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       edge_n++;
     }
 
+    // Per-inner-edge caluclations
+    int inner_edge_n=0;
+    for (const hemo::Array<plint,2> & edge : cellConstants.inner_edge_list) {
+      const hemo::Array<double,3> & v0 = cell[edge[0]]->position;
+      const hemo::Array<double,3> & v1 = cell[edge[1]]->position;
+
+      // Link force
+      const hemo::Array<double,3> edge_v = v1-v0;
+      const double edge_length = sqrt(edge_v[0]*edge_v[0]+edge_v[1]*edge_v[1]+edge_v[2]*edge_v[2]);
+      const hemo::Array<double,3> edge_uv = edge_v/edge_length;
+      const double edge_frac = (edge_length-cellConstants.inner_edge_length_eq_list[edge_n])/cellConstants.inner_edge_length_eq_list[edge_n];
+
+      const double edge_force_scalar = k_link * ( edge_frac + edge_frac/std::fabs(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch
+      
+      const hemo::Array<double,3> force = edge_uv*edge_force_scalar;
+      *cell[edge[0]]->force_inner_link += force;
+      *cell[edge[1]]->force_inner_link -= force;
+      inner_edge_n++;
+    }
+
   } 
 }
 

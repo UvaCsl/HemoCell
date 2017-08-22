@@ -73,7 +73,7 @@ public:
     void outputLines   (Box3D,vector<vector<plint>>&, vector<vector<double>>&, pluint, std::string&);
     void outputVertexId    (Box3D,vector<vector<double>>&, pluint, std::string&);
     void outputCellId    (Box3D,vector<vector<double>>&, pluint, std::string&);
-    void outputInnerForceLink   (Box3D,vector<vector<double>>&, pluint, std::string&);
+    void outputForceInnerLink   (Box3D,vector<vector<double>>&, pluint, std::string&);
 
     void AddOutputMap();
     map<int,void (HemoCellParticleField::*)(Box3D,vector<vector<double>>&,pluint,std::string&)> outputFunctionMap;

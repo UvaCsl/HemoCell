@@ -23,11 +23,11 @@ int main(int argc, char* argv[])
 // ----------------- Read in config file & calc. LBM parameters ---------------------------
 	pcout << "(KolmogorovFlow) (Parameters) calculating flow parameters" << endl;
 	plint domainSize = (*cfg)["domain"]["refDirN"].read<int>();
-  	plint nx = domainSize;
-  	plint ny = domainSize;
-  	plint nz = domainSize;
-  	param::lbm_pipe_parameters((*cfg),ny/4);
-  	param::printParameters();
+  plint nx = domainSize;
+  plint ny = domainSize;
+  plint nz = domainSize;
+  param::lbm_pipe_parameters((*cfg),ny/4);
+  param::printParameters();
 
 	// ------------------------ Init lattice --------------------------------
 
@@ -45,9 +45,9 @@ int main(int argc, char* argv[])
 	pcout << "(KolmogorovFlow) Re corresponds to u_max = " << (param::re * param::nu_p)/(hemocell.lattice->getBoundingBox().getNy()/2.0*param::dx) << " [m/s]" << endl;
 
 	//Driving Force
-    pcout << "(KolmogorovFlow) (Fluid) Setting up driving force using parallel planes approximation" << endl; 
-    double rPipe = (*cfg)["domain"]["refDirN"].read<int>()/4.0;
-    double poiseuilleForce =  16 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
+  pcout << "(KolmogorovFlow) (Fluid) Setting up driving force using parallel planes approximation" << endl; 
+  double rPipe = (*cfg)["domain"]["refDirN"].read<int>()/4.0;
+  double poiseuilleForce =  16 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
 	// -------------------------- Define boundary conditions ---------------------
 
 	OnLatticeBoundaryCondition3D<double,DESCRIPTOR>* boundaryCondition
@@ -55,15 +55,13 @@ int main(int argc, char* argv[])
 
 	hemocell.lattice->toggleInternalStatistics(false);
 
-	//iniLatticeSquareCouette(*hemocell.lattice, nx, ny, nz, *boundaryCondition, param::shearrate_lbm);
-
 	Box3D top   = Box3D(0, nx-1, 0,  (ny-1)/2,    0, nz-1);
-    Box3D bottom  = Box3D(0, nx-1, (ny-1)/2+1, ny-1, 0, nz-1);
-    if (ny%2 != 0) {
-      top.y1--;
-    }
+  Box3D bottom  = Box3D(0, nx-1, (ny-1)/2+1, ny-1, 0, nz-1);
+  if (ny%2 != 0) {
+    top.y1--;
+  }
 
-    pcout << "TOP domain height: " << top.y1 - top.y0 <<  " BOTTOM domain height: " << bottom.y1 - bottom.y0 << endl;
+  pcout << "TOP domain height: " << top.y1 - top.y0 <<  " BOTTOM domain height: " << bottom.y1 - bottom.y0 << endl;
 	hemocell.lattice->initialize();
 
 
@@ -72,7 +70,7 @@ int main(int argc, char* argv[])
 	hemocell.initializeCellfield();
 	hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
 	hemocell.setMaterialTimeScaleSeparation("RBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC}; 
+	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC, OUTPUT_FORCE_INNER_LINK, OUTPUT_VERTEX_ID, OUTPUT_CELL_ID}; 
 	hemocell.setOutputs("RBC_HO", outputs);
 
 	hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
