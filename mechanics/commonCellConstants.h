@@ -28,7 +28,8 @@ class CommonCellConstants {
                       vector<hemo::Array<hemo::Array<signed int,2>,6>> vertex_outer_edges_per_vertex_sign_,
                       double volume_eq_, double area_mean_eq_,
                       double edge_mean_eq_, double angle_mean_eq_,
-                      vector<hemo::Array<plint,2>> inner_edge_list_);
+                      vector<hemo::Array<plint,2>> inner_edge_list_,
+                      vector<double> inner_edge_length_eq_list_);
   public: 
   static CommonCellConstants CommonCellConstantsConstructor(HemoCellField &);
 
@@ -55,6 +56,7 @@ class CommonCellConstants {
   const double edge_mean_eq;
   const double angle_mean_eq;
   const vector<hemo::Array<plint,2>> inner_edge_list;
+  const vector<double> inner_edge_length_eq_list;
 
 };
 #endif

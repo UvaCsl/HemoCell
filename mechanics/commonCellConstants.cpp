@@ -20,7 +20,8 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<hemo::Array<hemo::Array<signed int,2>,6>> vertex_outer_edges_per_vertex_sign_,
                       double volume_eq_, double area_mean_eq_, 
                       double edge_mean_eq_, double angle_mean_eq_,
-                      vector<hemo::Array<plint,2>> inner_edge_list_) :
+                      vector<hemo::Array<plint,2>> inner_edge_list_,
+                      vector<double> inner_edge_length_eq_list_) :
     cellField(cellField_),
     triangle_list(triangle_list_),
     edge_list(edge_list_),
@@ -40,7 +41,8 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
     area_mean_eq(area_mean_eq_),
     edge_mean_eq(edge_mean_eq_),
     angle_mean_eq(angle_mean_eq_),
-    inner_edge_list(inner_edge_list_)
+    inner_edge_list(inner_edge_list_),
+    inner_edge_length_eq_list(inner_edge_length_eq_list_)
   {};
 
 CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCellField & cellField_) {
@@ -68,15 +70,6 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       }
     }
     
-    // Define opposite points TODO: make it automatic
-    vector<hemo::Array<plint,2>> inner_edge_list_; 
-    inner_edge_list_.push_back({0,6});
-    inner_edge_list_.push_back({1,4});
-    inner_edge_list_.push_back({2,7});
-    inner_edge_list_.push_back({3,5});
-    inner_edge_list_.push_back({8,10});
-    inner_edge_list_.push_back({9,11});
-
     //Calculate eq edges
     vector<double> edge_length_eq_list_;
     for (const hemo::Array<plint,2> & edge : edge_list_) {
@@ -122,6 +115,21 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       double angle = getAngleBetweenFaces(V1, V2, edge_uv);
       
       edge_angle_eq_list_.push_back(angle);
+    }
+
+    // Define opposite points TODO: make it automatic / or add the 33 links version ;)
+    vector<hemo::Array<plint,2>> inner_edge_list_; 
+    inner_edge_list_.push_back({0,6});
+    inner_edge_list_.push_back({1,4});
+    inner_edge_list_.push_back({2,7});
+    inner_edge_list_.push_back({3,5});
+    inner_edge_list_.push_back({8,10});
+    inner_edge_list_.push_back({9,11});
+
+    //Calculate eq edges lengths
+    vector<double> inner_edge_length_eq_list_;
+    for (const hemo::Array<plint,2> & edge : inner_edge_list_) {
+      inner_edge_length_eq_list_.push_back(cellField.meshElement.computeEdgeLength(edge[0],edge[1]));
     }
 
     //Calculate triangle eq
@@ -367,7 +375,8 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
             mean_area_eq_, 
             mean_edge_eq_, 
             mean_angle_eq_,
-            inner_edge_list_);
+            inner_edge_list_,
+            inner_edge_length_eq_list_);
     return CCC;
 };
 
