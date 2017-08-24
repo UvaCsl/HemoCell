@@ -116,10 +116,13 @@ void HemoCellFields::InitAfterLoadCheckpoint()
     //Calculate neighbours 
     immersedParticles->getSparseBlockStructure().findNeighbors(blocks[iBlock], envelopeSize,
                            immersedParticles->getComponent(blocks[iBlock]).neighbours);
-  if (immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > HEMOCELL_MAX_NEIGHBOURS) {
-    cerr << "More neighbours of atomic block than allowed, exiting ...";
-    exit(0);
-  }
+    if (immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > HEMOCELL_MAX_NEIGHBOURS) {
+      cerr << "(HemoCell) ERROR: More neighbours of atomic block exist than allowed: " << immersedParticles->getComponent(blocks[iBlock]).neighbours.size() << " instead of " << HEMOCELL_MAX_NEIGHBOURS << "!. Check the atomic block structure!\n";
+      exit(0);
+    }
+    if (immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > 27) {
+      cerr << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << immersedParticles->getComponent(blocks[iBlock]).neighbours.size() << " Usually it should be < 27 ! Check the atomic block structure!\n";
+    }
   }
 }
 

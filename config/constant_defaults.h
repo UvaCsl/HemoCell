@@ -15,7 +15,7 @@ Phi1 [1], Phi2 [2] - Default, Phi3 [3], Phi4 [4],  Phi4c [5]
  * Used in the loadbalancing library
  */
 #ifndef HEMOCELL_MAX_NEIGHBOURS
-#define HEMOCELL_MAX_NEIGHBOURS 27
+#define HEMOCELL_MAX_NEIGHBOURS 32 //27
 #endif
 
 /*

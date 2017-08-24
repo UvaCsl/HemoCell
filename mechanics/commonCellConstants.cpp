@@ -118,13 +118,21 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     }
 
     // Define opposite points TODO: make it automatic / or add the 33 links version ;)
+    const int nv = cellField.meshElement.getNumVertices();
     vector<hemo::Array<plint,2>> inner_edge_list_; 
-    inner_edge_list_.push_back({0,6});
-    inner_edge_list_.push_back({1,4});
-    inner_edge_list_.push_back({2,7});
-    inner_edge_list_.push_back({3,5});
-    inner_edge_list_.push_back({8,10});
-    inner_edge_list_.push_back({9,11});
+    // inner_edge_list_.push_back({0,6});
+    // inner_edge_list_.push_back({1,4});
+    // inner_edge_list_.push_back({2,7});
+    // inner_edge_list_.push_back({3,5});
+    // inner_edge_list_.push_back({8,10});
+    // inner_edge_list_.push_back({9,11});
+    // Connect the last 12 vertices!
+    inner_edge_list_.push_back({nv-12,nv-6});
+    inner_edge_list_.push_back({nv-11,nv-8});
+    inner_edge_list_.push_back({nv-10,nv-5});
+    inner_edge_list_.push_back({nv-9,nv-7});
+    inner_edge_list_.push_back({nv-4,nv-2});
+    inner_edge_list_.push_back({nv-3,nv-1});
 
     //Calculate eq edges lengths
     vector<double> inner_edge_length_eq_list_;
