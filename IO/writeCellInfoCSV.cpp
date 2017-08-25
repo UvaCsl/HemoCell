@@ -26,7 +26,7 @@ void writeCellInfo_CSV(HemoCell * hemocell) {
   }
   
   for (const auto & pair : CellInformationFunctionals::info_per_cell) {
-    const pluint cid = pair.first;
+    const plint cid = pair.first;
     const CellInformation & cinfo = pair.second;
     
     csvFiles[cinfo.cellType] << cinfo.position[0] << "," << cinfo.position[1] << "," << cinfo.position[2] << ",";
