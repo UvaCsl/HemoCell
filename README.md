@@ -88,6 +88,25 @@ Documentation
 - Information about how to create initial conditions for the cells filed can be found in `${HEMOCELL}/doc/gen_random_pos.pdf`
 - (deprecated, soon to be rewritten) Program documentation can be found in `${HEMOCELL}/doc/hemocell_UserGuide.pdf` which provides detailed information on the `HemoCell` configuration.
 
+# Quickstart step-by-step example
+After having installed the prerequisites, these are the steps to compile and run the RBC parachuting case:
+
+- Setting up the source tree:
+> ./setup.sh
+- Change to the case directory
+> cd ./cases/parachuting
+- Create build folder
+> mkdir build
+- Build the case
+> cd build
+> cmake ..
+> make
+- Go back to case directory
+> cd ..
+- Run the case with defult settings on 2 cores
+> mpirun -np 2 ./parachuting config.xml
+
+
 # FAQ
 
 For frequently added questions refer to `FAQ.md` in the root directory of the project.
