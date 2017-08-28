@@ -1,5 +1,7 @@
 #!/bin/bash
+patch -p1 < patch/make_precompiled_generic.patch
 (cd build/hemocell/ && cmake . && make -j4 && cp libhemocell_pre_all_deps.a libhemocell_local.a)
+patch -R -p1 < patch/make_precompiled_generic.patch
 rm core/*.cpp
 rm helper/*.cpp
 rm mechanics/*.cpp
