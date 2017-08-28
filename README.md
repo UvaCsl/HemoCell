@@ -92,28 +92,39 @@ Documentation
 After having installed the prerequisites, these are the steps to compile and run the RBC parachuting case:
 
 - Setting up the source tree:
+
 ```shell
 ./setup.sh
 ```
+
 - Change to the case directory
+
 ```shell
 cd ./cases/parachuting
 ```
+
 - Create build folder
+
 ```shell
 mkdir build
 ```
+
 - Build the case
+
 ```shell
 cd build
 cmake ..
 make
 ```
+
 - Go back to case directory
+
 ```shell 
 cd ..
 ```
+
 - Run the case with defult settings on 2 cores
+
 ```shell
 mpirun -np 2 ./parachuting config.xml
 ```
