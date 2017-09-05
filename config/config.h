@@ -8,9 +8,9 @@
 namespace hemo {
 
   class XMLElement {
-    const tinyxml2::XMLElement * orig;
+    tinyxml2::XMLElement * orig;
   public:
-    XMLElement(const tinyxml2::XMLElement * orig_) : orig(orig_){}
+    XMLElement(tinyxml2::XMLElement * orig_) : orig(orig_){}
     XMLElement operator[] (std::string name) const;
     
     template<typename T>
@@ -22,6 +22,9 @@ namespace hemo {
       }
       return ret;
     }
+    
+    tinyxml2::XMLElement * getOrig() { return orig;}
+    
   };
   
   

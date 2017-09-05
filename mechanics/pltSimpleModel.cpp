@@ -1,6 +1,6 @@
 #include "pltSimpleModel.h"
 
-PltSimpleModel::PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_), 
+PltSimpleModel::PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_), 
                   cellField(cellField_),
                   k_volume( PltSimpleModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
                   k_area( PltSimpleModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 

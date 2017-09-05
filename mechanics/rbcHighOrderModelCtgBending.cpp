@@ -2,7 +2,7 @@
 //TODO Make all inner hemo::Array variables constant as well
 
 
-RbcHighOrderModelnewBending::RbcHighOrderModelnewBending(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_),
+RbcHighOrderModelnewBending::RbcHighOrderModelnewBending(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_),
                   cellField(cellField_),
                   k_volume( RbcHighOrderModelnewBending::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
                   k_area( RbcHighOrderModelnewBending::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 

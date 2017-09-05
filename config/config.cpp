@@ -1,4 +1,6 @@
 #include "config.h"
+#include <stdexcept>
+
 namespace hemo {
   Config::Config(std::string paramXmlFileName) 
   {  
@@ -29,7 +31,12 @@ namespace hemo {
   }
   
   XMLElement XMLElement::operator[] (std::string name) const {
-    return static_cast<XMLElement>(orig->FirstChildElement(name.c_str()));
+    tinyxml2::XMLElement * child = orig->FirstChildElement(name.c_str());
+    if (child) {
+      return static_cast<XMLElement>(child);
+    } else {
+      throw std::invalid_argument("XML child " + name + " does not exist.");
+    }
   }
 
   

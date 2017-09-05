@@ -45,7 +45,7 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
     inner_edge_length_eq_list(inner_edge_length_eq_list_)
   {};
 
-CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCellField & cellField_) {
+CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCellField & cellField_, Config & modelCfg_) {
     HemoCellField & cellField = cellField_;
     //Calculate triangles
     vector<hemo::Array<plint,3>> triangle_list_ = cellField.triangle_list;
@@ -117,22 +117,21 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       edge_angle_eq_list_.push_back(angle);
     }
 
-    // Define opposite points TODO: make it automatic / or add the 33 links version ;)
-    const int nv = cellField.meshElement.getNumVertices();
+    // Define opposite points TODO: make it automatic / or add the 33 links version ;) 
+    int nv = cellField.meshElement.getNumVertices();
     vector<hemo::Array<plint,2>> inner_edge_list_; 
-    // inner_edge_list_.push_back({0,6});
-    // inner_edge_list_.push_back({1,4});
-    // inner_edge_list_.push_back({2,7});
-    // inner_edge_list_.push_back({3,5});
-    // inner_edge_list_.push_back({8,10});
-    // inner_edge_list_.push_back({9,11});
-    // Connect the last 12 vertices!
-    inner_edge_list_.push_back({nv-12,nv-6});
-    inner_edge_list_.push_back({nv-11,nv-8});
-    inner_edge_list_.push_back({nv-10,nv-5});
-    inner_edge_list_.push_back({nv-9,nv-7});
-    inner_edge_list_.push_back({nv-4,nv-2});
-    inner_edge_list_.push_back({nv-3,nv-1});
+    try {
+      int v1, v2;
+      tinyxml2::XMLElement * ie = modelCfg_["MaterialModel"]["InnerEdges"].getOrig();
+      for (tinyxml2::XMLElement* edge = ie->FirstChildElement(); edge != NULL; edge = edge->NextSiblingElement())
+      {
+        std::istringstream ss(std::string(edge->GetText()));;
+        // read out integers
+        ss >> v1 >> v2;
+        inner_edge_list_.push_back({v1,v2});
+        pcout << v1 << " " << v2 << endl;
+      }
+    } catch (std::invalid_argument & exeption) {}
 
     //Calculate eq edges lengths
     vector<double> inner_edge_length_eq_list_;

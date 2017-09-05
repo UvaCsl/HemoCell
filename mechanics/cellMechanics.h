@@ -11,7 +11,7 @@ class CellMechanics {
   public:
   const CommonCellConstants cellConstants;
   
-  CellMechanics(HemoCellField & cellfield);
+  CellMechanics(HemoCellField & cellfield, Config & modelCfg_);
 
   virtual void ParticleMechanics(map<int,vector<HemoCellParticle *>> &,const map<int,bool> &, pluint ctype) = 0 ;
   virtual void statistics() = 0;

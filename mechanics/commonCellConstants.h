@@ -5,6 +5,7 @@ class CommonCellConstants;
 
 #include "hemocell_internal.h"
 #include "geometryUtils.h"
+#include "config.h"
 
 //Forward declaration:
 class HemoCellField;
@@ -31,7 +32,7 @@ class CommonCellConstants {
                       vector<hemo::Array<plint,2>> inner_edge_list_,
                       vector<double> inner_edge_length_eq_list_);
   public: 
-  static CommonCellConstants CommonCellConstantsConstructor(HemoCellField &);
+  static CommonCellConstants CommonCellConstantsConstructor(HemoCellField &, Config & modelCfg_);
 
 
   HemoCellField & cellField;

@@ -2,7 +2,7 @@
 //TODO Make all inner hemo::Array variables constant as well
 
 
-vWFModel::vWFModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_),
+vWFModel::vWFModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_),
                   cellField(cellField_),
                   k_link( vWFModel::calculate_kLink(modelCfg_) ), 
                   k_bend( vWFModel::calculate_kBend(modelCfg_) ),
