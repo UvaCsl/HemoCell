@@ -14,3 +14,5 @@ by the makefile (cases/Makefile). running make in ./cases will create and build 
 Version 0.5
 ===========
 
+- Inner links are specified in the <CellType>.xml file through
+"CellMechanics"->"InnerEdges"->"Edge"

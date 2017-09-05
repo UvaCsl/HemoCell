@@ -10,6 +10,14 @@
     <kArea> 8.0 </kArea> <!--Local area conservation coefficient (dimensionless) [8] --> 
     <kLink> 25.0 </kLink> <!-- Link force coefficient (dimensionless) [25.0] -->
     <minNumTriangles> 66 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact. [66]-->
+    <InnerEdges>
+    <Edge> 54 60 </Edge>
+    <Edge> 55 58 </Edge>
+    <Edge> 56 61 </Edge>
+    <Edge> 57 59 </Edge>
+    <Edge> 62 64 </Edge>
+    <Edge> 63 65 </Edge>
+    </InnerEdges>
     <radius> 1.25e-6 </radius> <!-- Radius of the PLT in [1.25 um] -->
 </MaterialModel>
 </hemocell>
