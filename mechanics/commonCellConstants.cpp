@@ -129,7 +129,6 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
         // read out integers
         ss >> v1 >> v2;
         inner_edge_list_.push_back({v1,v2});
-        pcout << v1 << " " << v2 << endl;
       }
     } catch (std::invalid_argument & exeption) {}
 
