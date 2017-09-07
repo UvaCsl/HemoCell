@@ -10,6 +10,13 @@ LoadBalancer::LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_), original
 
 }
 
+void LoadBalancer::reloadCheckpoint() {
+  //Firstly reload the config
+  delete hemocell.documentXML;
+  hemocell.documentXML = new XMLreader(global::directories().getOutputDir() + "checkpoint.xml");
+  hemocell.loadCheckPoint();
+}
+
 void LoadBalancer::GatherTimeOfAtomicBlocks::processGenericBlocks(Box3D domain, vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
   BlockLattice3D<double,DESCRIPTOR> * ff = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[1]);
@@ -128,7 +135,7 @@ void LoadBalancer::doLoadBalance() {
   delete hemocell.cellfields->immersedParticles;
   hemocell.cellfields->createParticleField();
   
-  hemocell.loadCheckPoint();
+  reloadCheckpoint();
   
   pcout << "(LoadBalancer) Re-Calculating FLI of original block structure" << endl;
   calculateFractionalLoadImbalance();
@@ -232,7 +239,7 @@ void LoadBalancer::doLoadBalance() {
   delete hemocell.cellfields->immersedParticles;
   hemocell.cellfields->createParticleField();
   
-  hemocell.loadCheckPoint();
+  reloadCheckpoint();
   pcout << "(LoadBalancer) Continuing simulation with balanced application" << endl;
 
   return;
@@ -348,7 +355,7 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
   delete hemocell.cellfields->immersedParticles;
   hemocell.cellfields->createParticleField();
 
-  hemocell.loadCheckPoint();
+  reloadCheckpoint();
   pcout << "(LoadBalancer) (Restructure) Continuing simulation with restructured application" << endl;
 
   return;

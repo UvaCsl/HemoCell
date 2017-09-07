@@ -18,6 +18,11 @@ class LoadBalancer {
    */
   void restructureBlocks(bool checkpoint_available=true);
 
+  /**
+   * used to reload a checkpoint, but first reload the config file
+   */
+  void reloadCheckpoint();
+  
   //Functionals for gathering data
   struct TOAB_t{
     double fluid_time;

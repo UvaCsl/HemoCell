@@ -171,8 +171,8 @@ public:
   HemoCellFields * cellfields;
   unsigned int iter = 0;
 
-  private:
   XMLreader * documentXML; //Needed for legacy checkpoint reading TODO fix
+  private:
   int lastOutputAt;  // Store the last time (iteration) output occured
 };
 
