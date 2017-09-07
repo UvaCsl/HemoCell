@@ -121,13 +121,14 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     int nv = cellField.meshElement.getNumVertices();
     vector<hemo::Array<plint,2>> inner_edge_list_; 
     try {
-      int v1, v2;
+      int v1 = 0, v2 = 0;
       tinyxml2::XMLElement * ie = modelCfg_["MaterialModel"]["InnerEdges"].getOrig();
       for (tinyxml2::XMLElement* edge = ie->FirstChildElement(); edge != NULL; edge = edge->NextSiblingElement())
       {
-        std::istringstream ss(std::string(edge->GetText()));;
+        if (sscanf(edge->GetText(), "%d %d", &v1, &v2) != 2 ) {
+         pcout << "Inner Edges not read, somethings wrong" << endl; 
+        }
         // read out integers
-        ss >> v1 >> v2;
         inner_edge_list_.push_back({v1,v2});
       }
     } catch (std::invalid_argument & exeption) {}

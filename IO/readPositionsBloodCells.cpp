@@ -6,6 +6,7 @@
 #include "readPositionsBloodCells.h"
 #include "tools/cellRandInit/geometry.h"
 #include "vWFModel.h"
+#include <sstream>
 
 inline void meshRotation (TriangularSurfaceMesh<double> * mesh, hemo::Array<double,3> rotationAngles) {
     plb::Array<double,2> xRange, yRange, zRange;
@@ -89,10 +90,15 @@ void readvonWillibrands(Box3D realDomain, pluint celltype, HemoCellFields & cell
         for (unsigned i = 0 ; i < ncells ; i++) {
           getline(fIn,line);
           unsigned int nVertices = (count(line.begin(),line.end(),' ') + 1) / 3;
-          istringstream isline = istringstream(line);
+          char * gcc4compatibility = (char *)line.c_str();
           for (unsigned int j = 0 ; j < nVertices;j++) {
+            int c_is_sane;
             hemo::Array<double,3> vertex;
-            isline >> vertex[0] >> vertex[1] >> vertex[2];
+            int ret = sscanf(gcc4compatibility, "%lf %lf %lf %n", &vertex[0], &vertex[1], &vertex[2], &c_is_sane);
+            if ( ret != 3) {
+             pcout << "sscanf consumed too few (von Willibrand) somethings wrong" << endl; 
+            }
+            gcc4compatibility += c_is_sane;
             vertex *= (1e-6/param::dx);
             HemoCellParticle to_add_particle = HemoCellParticle(vertex,cellid,j,celltype);
             particleField.addParticle(particleField.getBoundingBox(), &to_add_particle);
