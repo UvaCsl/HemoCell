@@ -11,12 +11,15 @@
     <kLink> 25.0 </kLink> <!-- Link force coefficient (dimensionless) [25.0] -->
     <minNumTriangles> 66 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact. [66]-->
     <InnerEdges>
-    <Edge> 54 60 </Edge>
-    <Edge> 55 58 </Edge>
-    <Edge> 56 61 </Edge>
-    <Edge> 57 59 </Edge>
-    <Edge> 62 64 </Edge>
-    <Edge> 63 65 </Edge>
+    <Edge> 0 19 </Edge>
+    <Edge> 4 21 </Edge>
+    <Edge> 6 13 </Edge>
+    <Edge> 10 15 </Edge>
+    <Edge> 48 58 </Edge>
+    <Edge> 49 53 </Edge>
+    <Edge> 51 55 </Edge>
+    <Edge> 52 57 </Edge>
+    <Edge> 61 63 </Edge>
     </InnerEdges>
     <radius> 1.25e-6 </radius> <!-- Radius of the PLT in [1.25 um] -->
 </MaterialModel>
