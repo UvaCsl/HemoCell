@@ -89,6 +89,7 @@ class HemoCellParticleField;
 #define ELLIPSOID_FROM_SPHERE 6
 #define STRING_FROM_VERTEXES 7
 #define WBC_SPHERE 0
+#define MESH_FROM_STL 2
 
 /*
  * Defines for desired output per celltype, can save space/time etc. etc. also works for specific fluid ones (vel, force etc)

@@ -80,15 +80,22 @@ class HemoCell {
     }
     
     if(constructType == STRING_FROM_VERTEXES) {
-      meshElement = constructStringMeshFromConfig(*materialCfg);
+      meshElement = constructStringMeshFromConfig(*materialCfg);     
     } else {
-      TriangleBoundary3D<double> * boundaryElement = new TriangleBoundary3D<double>(constructMeshElement(constructType, 
+      TriangleBoundary3D<double> * boundaryElement = NULL;
+      try {
+        boundaryElement = new TriangleBoundary3D<double>(constructMeshElement(constructType, 
+                           (*materialCfg)["MaterialModel"]["radius"].read<double>()/param::dx, 
+                           (*materialCfg)["MaterialModel"]["minNumTriangles"].read<double>(), param::dx, 
+                           (*materialCfg)["MaterialModel"]["StlFile"].read<string>(), plb::Array<double,3>(0.,0.,0.), aspectRatio));
+      } catch (std::invalid_argument & exeption) {
+        boundaryElement = new TriangleBoundary3D<double>(constructMeshElement(constructType, 
                            (*materialCfg)["MaterialModel"]["radius"].read<double>()/param::dx, 
                            (*materialCfg)["MaterialModel"]["minNumTriangles"].read<double>(), param::dx, 
                            string(""), plb::Array<double,3>(0.,0.,0.), aspectRatio));
+      }
       meshElement = new TriangularSurfaceMesh<double>(boundaryElement->getMesh());
     }
-
     HemoCellField * cellfield = cellfields->addCellType(*meshElement, name);
     Mechanics * mechanics = new Mechanics((*materialCfg), *cellfield);
     cellfield->mechanics = mechanics;

@@ -16,3 +16,4 @@ Version 0.5
 
 - Inner links are specified in the <CellType>.xml file through
 "CellMechanics"->"InnerEdges"->"Edge"
+- Added MESH_FROM_STL for addCellType. Takes a triangulized STL file from xml-file->"MaterialModel"->"StlFile".
