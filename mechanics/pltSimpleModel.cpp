@@ -134,9 +134,6 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       const hemo::Array<double,3> V1 = computeTriangleNormal(b00,b01,b02, false);
       const hemo::Array<double,3> V2 = computeTriangleNormal(b10,b11,b12, false);
 
-     
-      const hemo::Array<double,3> x2 = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
-
       double angle = getAngleBetweenFaces(V1, V2, edge_uv);
       
       //calculate resulting bending force

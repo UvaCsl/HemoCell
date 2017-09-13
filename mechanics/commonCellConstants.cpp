@@ -118,7 +118,6 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     }
 
     // Define opposite points TODO: make it automatic / or add the 33 links version ;) 
-    int nv = cellField.meshElement.getNumVertices();
     vector<hemo::Array<plint,2>> inner_edge_list_; 
     try {
       int v1 = 0, v2 = 0;
@@ -220,7 +219,7 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     //Sort vertexes in order around vertex
     for (unsigned int vertex = 0 ; vertex < vertex_vertexes_.size() ; vertex++) {
       plint n_vertex = vertex_vertexes_[vertex][0];
-      plint nextVertex;
+      plint nextVertex = -1;
       for (unsigned int n = 1 ; n < vertex_n_vertexes_[vertex] ; n++) {
         vector<plint> triangleIDS = cellField.meshElement.getAdjacentTriangleIds(vertex, n_vertex);
         plint v0 = cellField.meshElement.getVertexId(triangleIDS[0],0);

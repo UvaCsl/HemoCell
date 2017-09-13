@@ -152,9 +152,7 @@ void WbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       *cell[i]->force_visc += Fvisc_vol;
       const hemo::Array<double,3> negative_bending_force = -bending_force/cellConstants.vertex_n_vertexes[i];
       const hemo::Array<double,3> negative_bending_viscous_force = -Fvisc_vol/cellConstants.vertex_n_vertexes[i];
-      
-      const hemo::Array<plint,6> & edges = cellConstants.vertex_edges[i];
-      
+          
       for (unsigned int j = 0 ; j < cellConstants.vertex_n_vertexes[i]; j++ ) {
        *cell[cellConstants.vertex_vertexes[i][j]]->force_bending += negative_bending_force;
        *cell[cellConstants.vertex_vertexes[i][j]]->force_visc += negative_bending_viscous_force;

@@ -130,7 +130,6 @@ void RbcHighOrderModelnewBending::ParticleMechanics(map<int,vector<HemoCellParti
     //Bending force calculation (Method B from "On the bending algorithms for soft objects in flows" by Achim Guckenberger)
 
     for (unsigned int vertex = 0 ; vertex < cellConstants.vertex_vertexes.size() ; vertex++) {
-      const hemo::Array<plint,6> & neighbour_vertexes = cellConstants.vertex_vertexes[vertex];
       const hemo::Array<plint,6> & neighbour_edges = cellConstants.vertex_edges[vertex];
       const hemo::Array<signed int, 6> neighbour_edges_sign = cellConstants.vertex_edges_sign[vertex];
       const unsigned int & n_neighbours = cellConstants.vertex_n_vertexes[vertex];
@@ -231,7 +230,6 @@ double RbcHighOrderModelnewBending::calculate_etaM(Config & cfg ){
 };
 
 double RbcHighOrderModelnewBending::calculate_kBend(Config & cfg, MeshMetrics<double> & meshmetric ){
-  double eqLength = meshmetric.getMeanLength();
   return cfg["MaterialModel"]["kBend"].read<double>(); //Not needed because of things // * param::kBT_lbm / eqLength;
 };
 
