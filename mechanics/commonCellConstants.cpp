@@ -261,7 +261,7 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     
     // Calculate center point deviation for surface patches around each vertex
     vector<double> surface_patch_center_dist_eq_list_;
-    for (long unsigned int i = 0 ; i < cellField.meshElement.getNumVertices() ; i++) {
+    for (long signed int i = 0 ; i < cellField.meshElement.getNumVertices() ; i++) {
       
       hemo::Array<double,3> vertexes_sum = {0.,0.,0.};
       for(unsigned int j = 0; j < vertex_n_vertexes_[i]; j++) 

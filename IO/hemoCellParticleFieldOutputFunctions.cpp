@@ -287,7 +287,7 @@ void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>>&
    
 }
 
-void HemoCellParticleField::outputLines(Box3D domain, vector<vector<plint>>& output, vector<vector<double>> & positions, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputLines(Box3D domain, vector<vector<plint>>& output, vector<vector<double>> & positions, plint ctype, std::string & name) {
   name = "Lines";
   output.clear();
   unsigned int counter = 0;
