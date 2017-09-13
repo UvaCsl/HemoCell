@@ -208,7 +208,7 @@ void WbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 
       if (edge_length < 2*core_radius){
         const hemo::Array<double,3> edge_uv = edge_vec/edge_length;
-        const hemo::Array<double,3> force = edge_uv*(2*core_radius-edge_length);
+        const hemo::Array<double,3> force = edge_uv*(2*core_radius-edge_length)*k_inner;
         *cell[edge[0]]->force_inner_link -= force;
         *cell[edge[1]]->force_inner_link += force;
       }
