@@ -62,15 +62,6 @@ HemoCellField * HemoCellFields::operator[](string name)
   } 
   return NULL;
 }
-//Initialization
-//vector <CellField3D<double, DESCRIPTOR>> CellFields3D::getLegacyCellFieldsVector() {
-//  vector <CellField3D<double, DESCRIPTOR>> cfv;
-//  for (uint i = 0 ; i < cellFields.size() ; i++) {
-//    cfv.push_back(CellField3D<double,DESCRIPTOR>(ce
-     
-//  }
-//  return cfv;
-//}
 
 //SAVING FUNCTIONS
 /* ******************* copyXMLreader2XMLwriter ***************************************** */
@@ -137,14 +128,16 @@ void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter)
       parallelIO::load(outDir + "lattice", *lattice, true);
       parallelIO::load(outDir + "particleField", *immersedParticles, true);
 
-      InitAfterLoadCheckpoint();
     } else {
       pcout << "(HemoCell) (CellFields) loading checkpoint from non-checkpoint Config" << endl;
       parallelIO::load(outDir + "lattice", *lattice, true);
       parallelIO::load(outDir + "particleField", *immersedParticles, true);
 
-      InitAfterLoadCheckpoint();
     }
+
+    InitAfterLoadCheckpoint();
+    syncEnvelopes();
+    deleteIncompleteCells();
 }
 
 void HemoCellFields::save(XMLreader * documentXML, unsigned int iter)

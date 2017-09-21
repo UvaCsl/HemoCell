@@ -15,13 +15,13 @@ int main(int argc, char *argv[]) {
   HemoCell hemocell(argv[1], argc, argv);
   Config * cfg = hemocell.cfg;
 
-  pcout << "(unbounded) (Parameters) calculating flow parameters" << endl;
-  param::lbm_base_parameters((*cfg));
-  param::printParameters();
   
   int nx, ny, nz;
   nx = ny = nz = (*cfg)["domain"]["refDirN"].read<int>() ;
   //nx = 2 * ny ; 
+  pcout << "(unbounded) (Parameters) calculating flow parameters" << endl;
+  param::lbm_pipe_parameters((*cfg),nx);
+  param::printParameters();
   
   pcout << "(unbounded) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
@@ -44,14 +44,14 @@ int main(int argc, char *argv[]) {
   //pcout << hemocell.lattice->getLocalInfo() << endl;
 
   //Driving Force
-  /*
+  
   pcout << "(PipeFlow) (Fluid) Setting up driving Force" << endl; 
   double rPipe = (*cfg)["domain"]["refDirN"].read<int>()/2.0;
   double poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
   DESCRIPTOR<T>::ExternalField::forceBeginsAt,                                                                                    
-  plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-  */
+  plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, poiseuilleForce, poiseuilleForce));
+ 
 
   hemocell.lattice->initialize();
 
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
 
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
-  //unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
+  unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
   //unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
   pcout << "(unbounded) Starting simulation..." << endl;
@@ -153,12 +153,12 @@ int main(int argc, char *argv[]) {
 
   while (hemocell.iter < tmax ) {
     hemocell.iterate();
-    /*
+    
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-		      plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-    */
+		      plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, poiseuilleForce, poiseuilleForce));
+   
 
     // Only enable if PARMETIS build is available
     /*
@@ -180,9 +180,9 @@ int main(int argc, char *argv[]) {
 
       hemocell.writeOutput();
     }
-    /*if (hemocell.iter % tcheckpoint == 0) {
+    if (hemocell.iter % tcheckpoint == 0) {
       hemocell.saveCheckPoint();
-      }*/
+      }
   }
 
   pcout << "(main) Simulation finished :) " << endl;

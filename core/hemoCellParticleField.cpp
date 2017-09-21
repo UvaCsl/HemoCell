@@ -290,8 +290,9 @@ void HemoCellParticleField::computeGridPosition (
 }
 
 void HemoCellParticleField::issueWarning(HemoCellParticle & p){
-	pcout << "(HemoCell) (Delete Cells) WARNING! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
-    pcout << "\t pos.: " << p.position[0] << ", " << p.position[1] << ", " << p.position[2] << "; vel.: " << p.v[0] << ", " <<  p.v[1] << ", " << p.v[2] << "; force: " << p.force[0] << ", " << p.force[1] << ", " << p.force[2] << endl;
+	cout << "(HemoCell) (Delete Cells) WARNING! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
+        cout << "\t Particle ID:" << p.cellId << endl;
+    cout << "\t Position: " << p.position[0] << ", " << p.position[1] << ", " << p.position[2] << "; vel.: " << p.v[0] << ", " <<  p.v[1] << ", " << p.v[2] << "; force: " << p.force[0] << ", " << p.force[1] << ", " << p.force[2] << endl;
 }
 
 int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
