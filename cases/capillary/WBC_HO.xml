@@ -1,0 +1,41 @@
+<?xml version="1.0" ?>
+<hemocell>
+<MaterialModel>
+    <comment>Parameters for the HO WBC constitutive model.</comment>
+    <name>WBC</name>
+    <eta_m> 1.0e-9 </eta_m> <!-- Membrane viscosity. [1e-9 Ns/m]-->
+    <eta_v> 0.0 </eta_v> <!-- Volume viscosity of cytoplasm, acting between outer vertices around angle edges [0.002 Pa s] -->
+    <kBend> 200.0 </kBend> <!-- Bending force modulus for membrane + cytoskeleton ( in k_BT units, 4.142e-21 N m) [200] -->
+    <kVolume> 20.0 </kVolume> <!-- Volume conservation coefficient (dimensionless) [20] --> 
+    <kArea> 20.0 </kArea> <!--Local area conservation coefficient (dimensionless) 4xrbc [20] --> 
+    <!-- NOTE: kBend should != kArea. The larger the difference, the more stable the model -> they are competing forces under some circumstances. -->
+    <kLink> 60.0 </kLink> <!-- Link force coefficient (dimensionless) 4xrbc [60.0] -->
+    <kInner> 60.0 </kInner> <!-- Link force coefficient of the inner links -->
+    <core_radius> 2.5e-6 </core_radius> <!-- WBC rigid core radius in um -->
+    <InnerEdges>
+    <Edge> 630 636 </Edge>
+    <Edge> 631 634 </Edge>
+    <Edge> 632 637 </Edge>
+    <Edge> 633 635 </Edge>
+    <Edge> 638 640 </Edge>
+    <Edge> 639 641 </Edge>
+    <Edge> 600 607 </Edge>
+    <Edge> 601 609 </Edge>
+    <Edge> 602 608 </Edge>
+    <Edge> 603 606 </Edge>
+    <Edge> 604 605 </Edge>
+    <Edge> 610 615 </Edge>
+    <Edge> 611 619 </Edge>
+    <Edge> 612 618 </Edge>
+    <Edge> 613 617 </Edge>
+    <Edge> 614 616 </Edge>
+    <Edge> 620 627 </Edge>
+    <Edge> 621 629 </Edge>
+    <Edge> 622 628 </Edge>
+    <Edge> 623 626 </Edge>
+    <Edge> 624 625 </Edge>
+    </InnerEdges>
+    <minNumTriangles> 600 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact. [642]-->
+    <radius> 5.0e-6 </radius> <!-- Radius of the WBC in [ 5.0 um] -->
+</MaterialModel>
+</hemocell>
