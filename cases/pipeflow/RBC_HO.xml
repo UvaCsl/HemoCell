@@ -12,5 +12,6 @@
     <kLink> 15.0 </kLink> <!-- Link force coefficient (dimensionless) [15.0] -->
     <minNumTriangles> 600 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact. [642]-->
     <radius> 3.91e-6 </radius> <!-- Radius of the RBC in [ 3.96 um] -->
+    <Volume> 90 </Volume> <!-- Volume of the RBC in µm³ -->
 </MaterialModel>
 </hemocell>

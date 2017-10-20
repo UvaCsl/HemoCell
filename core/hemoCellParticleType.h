@@ -19,22 +19,26 @@ class HemoCellField{
   static vector<int> default_output;
   public:
 
-  HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<double>& meshElement_);
+  HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<double>& meshElement_, string & name_, unsigned int ctype_);
   double getVolumeFraction();
   //ShellModel3D<double> * model;
   TriangularSurfaceMesh<double> & getMesh();
   std::string name;
+  HemoCellFields & cellFields;
+  vector<int> desiredOutputVariables;
+  TriangularSurfaceMesh<double> & meshElement;
   pluint ctype;
-  int numVertex;
+  
+  int numVertex = 0;
+  double volume = 0;
+  double volumeFractionOfLspPerNode = 0;
+  double restingCellVolume = 0;
   unsigned int timescale = 1;
   unsigned int minimumDistanceFromSolid = 0;
   bool outputTriangles = false;
   bool outputLines = false;
   bool deleteIncomplete = true;
-  HemoCellFields & cellFields;
-  vector<int> desiredOutputVariables;
   vector<hemo::Array<plint,3>> triangle_list;
-  TriangularSurfaceMesh<double> & meshElement;
   void(*kernelMethod)(BlockLattice3D<double,DESCRIPTOR> const&,HemoCellParticle*);
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D();
   MultiBlockLattice3D<double,DESCRIPTOR> * getFluidField3D();

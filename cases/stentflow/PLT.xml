@@ -19,5 +19,6 @@
     <Edge> 63 65 </Edge>
     </InnerEdges>
     <radius> 1.25e-6 </radius> <!-- Radius of the PLT in [1.25 um] -->
+    <Volume> 11 </Volume> <!-- Volume of the RBC in µm³ -->
 </MaterialModel>
 </hemocell>

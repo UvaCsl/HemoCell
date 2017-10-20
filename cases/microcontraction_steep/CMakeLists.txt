@@ -2,8 +2,8 @@
 # Build settings. Set these.
 
 # Project setup
-SET(PROJECT_NAME microcontraction)
-SET(PROJECT_SRC "microcontraction.cpp")
+SET(PROJECT_NAME microcontraction_steep)
+SET(PROJECT_SRC "microcontraction_steep.cpp")
 
 # HemoCell location relative to CMakelists.txt
 SET(HEMOCELL_BASE_DIR "./../../")

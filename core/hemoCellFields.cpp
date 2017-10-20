@@ -36,9 +36,7 @@ void HemoCellFields::createParticleField() {
 
 HemoCellField * HemoCellFields::addCellType(TriangularSurfaceMesh<double> & meshElement, std::string name_)
 {
-  HemoCellField * cf = new HemoCellField(*this, meshElement);
-  cf->name = name_;
-  cf->ctype = cellFields.size();
+  HemoCellField * cf = new HemoCellField(*this, meshElement, name_, cellFields.size());
   cellFields.push_back(cf);
   return cf;
 }

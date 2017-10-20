@@ -13,10 +13,11 @@
 
 #include "hemoCellParticleType.h"
 #include "immersedBoundaryMethod.h"
+#include "config.h"
 
 //HemoCellField
-HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<double>& meshElement_)
-      :cellFields(cellFields_), desiredOutputVariables(default_output), meshElement(meshElement_) {
+HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<double>& meshElement_, string & name_, unsigned int ctype_)
+      :name(name_), cellFields(cellFields_), desiredOutputVariables(default_output), meshElement(meshElement_), ctype(ctype_) {
          numVertex = meshElement.getNumVertices();
          std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
          if (it != desiredOutputVariables.end()) {
@@ -39,9 +40,16 @@ HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<
         meshmetric = new MeshMetrics<double>(meshElement_);
 
         kernelMethod = interpolationCoefficientsPhi2;
-              
-       }
-
+        
+        try {
+          string materialXML = name + ".xml";
+          hemo::Config materialCfg(materialXML.c_str());
+          volume = materialCfg["MaterialModel"]["Volume"].read<double>();
+          volumeFractionOfLspPerNode = (volume/numVertex)/pow(param::dx*1e6,3);
+        } catch (std::invalid_argument & exeption) {
+          pcout << "(HemoCell) (WARNING) (AddCellType) Volume of celltype not present, volume set to zero" << endl;
+        }
+}
 
 void HemoCellField::setOutputVariables(const vector<int> & outputs) { desiredOutputVariables = outputs;
          std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
@@ -86,7 +94,8 @@ void HemoCellField::addSingleCell(hemo::Array<double,3> position, plint cellId) 
 
 void HemoCellField::statistics() {
   pcout << "Cellfield  (+ material model) of " << name << std::endl;
-
+  pcout << "  Volume :" << volume << " µm³ VolumeFraction of lsp per fluid node: " << volumeFractionOfLspPerNode << " %" << endl;
+  pcout << "  Nvertex: " << numVertex << endl;
   mechanics->statistics();
 
 }

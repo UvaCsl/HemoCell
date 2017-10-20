@@ -7,6 +7,21 @@
 #include <hdf5.h>
 #include <hdf5_hl.h>
 
+void outputHDF5(hsize_t* dim, hsize_t* chunk, hid_t& file_id, string& name, float* output) {
+    //We can calulate nvalues through the dims
+    chunk[3] = dim[3];
+    //unsigned int nvalues = dim[0]*dim[1]*dim[2]*dim[3];
+
+    int sid = H5Screate_simple(4,dim,NULL);
+      int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+        H5Pset_chunk(plist_id, 4, chunk); 
+        H5Pset_deflate(plist_id, 7);
+        int did = H5Dcreate2(file_id,name.c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+        H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output);
+      H5Dclose(did);
+    H5Sclose(sid);
+}
+
 void writeFluidField_HDF5(HemoCellFields& cellfields, double dx, double dt, plint iter, string preString) {
   if(std::find(cellfields.desiredFluidOutputVariables.begin(), cellfields.desiredFluidOutputVariables.end(), OUTPUT_FORCE) != cellfields.desiredFluidOutputVariables.end()) {
     pcout << "(FluidOutput) (OutputForce) The force on the fluid field is reset to zero, If there is a bodyforce, reset it after this function" << endl; 
@@ -49,8 +64,9 @@ cellfields(cellfields_), fluid(fluid_), iter(iter_), identifier(identifier_), dx
 void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*> blocks ) {
 
   int id = global::mpi().getRank();
-	ablock = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
-  int blockid = dynamic_cast<HemoCellParticleField*>(blocks[1])->atomicBlockId; //Nasty trick to prevent us from having to overload the fluid field ( palabos domain)
+  ablock = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
+  particlefield = dynamic_cast<HemoCellParticleField*>(blocks[1]);
+  blockid = particlefield->atomicBlockId; //Nasty trick to prevent us from having to overload the fluid field ( palabos domain)
 
   this->odomain = &domain; //Access for output functions
   if (cellfields.desiredFluidOutputVariables.size() == 0 ) {
@@ -104,7 +120,7 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
   for (int outputVariable : cellfields.desiredFluidOutputVariables) {
     //These variables should be set by the functions:
     float * output = 0;
-    hsize_t dim[] = {Nz,Ny,Nx,0};
+    hsize_t dim[4] = {Nz,Ny,Nx,0};
     string name;
     
     switch(outputVariable) {
@@ -123,23 +139,21 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
         name = "Density";
         dim[3] = 1;
         break;
+      case OUTPUT_CELL_DENSITY:
+        for (unsigned int i = 0 ; i < cellfields.size() ; i++) {
+          output = outputCellDensity(cellfields[i]->name);
+          name = "CellDensity_" + cellfields[i]->name;
+          dim[3] = 1;
+          outputHDF5(dim,chunk,file_id,name,output);
+          delete[] output;
+        }
+        continue;
       default:
         continue;
     }
 
-    //We can calulate nvalues through the dims
-    chunk[3] = dim[3];
-    //unsigned int nvalues = dim[0]*dim[1]*dim[2]*dim[3];
 
-    int sid = H5Screate_simple(4,dim,NULL);
-      int plist_id = H5Pcreate (H5P_DATASET_CREATE);
-        H5Pset_chunk(plist_id, 4, chunk); 
-        H5Pset_deflate(plist_id, 7);
-        int did = H5Dcreate2(file_id,name.c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
-        H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output);
-      H5Dclose(did);
-    H5Sclose(sid);
-
+    outputHDF5(dim,chunk,file_id,name,output);
     delete[] output;
 
   }
@@ -218,5 +232,37 @@ float * WriteFluidField::outputDensity() {
   
   return output;
 }
+
+float * WriteFluidField::outputCellDensity(string name) {
+  float * output = new float [(*nCells)];
+  memset(output, 0, sizeof(float)*(*nCells));
+  
+  vector<HemoCellParticle*> found;
+  particlefield->findParticles(particlefield->localDomain,found,cellfields[name]->ctype);
+
+  int Ystride = ((odomain->x1-odomain->x0)+3);
+  int Zstride = Ystride*((odomain->y1-odomain->y0)+3);
+
+  for (HemoCellParticle * particle : found) {
+    plint iX,iY,iZ;
+    //Coordinates are relative
+    const Dot3D tmpDot = ablock->getLocation(); 
+    iX = plint((particle->position[0]-tmpDot.x)+0.5);
+    iY = plint((particle->position[1]-tmpDot.y)+0.5);
+    iZ = plint((particle->position[2]-tmpDot.z)+0.5);
+
+    output[(iX)+(iY)*Ystride+(iZ)*Zstride] += 1;
+  }
+    
+  if (cellfields.hemocell.outputInSiUnits) {
+    for (unsigned int i = 0 ; i < (*nCells) ; i++) {
+      output[i] *= cellfields[name]->volumeFractionOfLspPerNode;
+    }
+  }
+  
+  return output;
+}
+
+
 
 #endif

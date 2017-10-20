@@ -32,12 +32,15 @@ private:
     double dt;
     Box3D * odomain;
     BlockLattice3D<double,DESCRIPTOR> * ablock;
+    HemoCellParticleField * particlefield;
+    int blockid;
     hsize_t * nCells;
 
     float * outputVelocity();
     float * outputForce();
     float * outputDensity();
-
+    float * outputCellDensity(string name);
+    
 };
 
 #endif
