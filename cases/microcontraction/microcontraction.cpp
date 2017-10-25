@@ -10,7 +10,7 @@
 template<typename T>
 class StenosisShapeDomain3D : public plb::DomainFunctional3D {
 public:
-    StenosisShapeDomain3D(plint xbottomL_, plint xbottomR_, plint xtopL_, plint xtopR_, plint xcircL_, plint xcircR_, plint ycirc_, plint ybottom_, plint ytop_, plint radiusCyl_)
+    StenosisShapeDomain3D(plint xbottomL_, plint xbottomR_, plint xtopL_, plint xtopR_, plint xcircL_, plint xcircR_, plint ycirc_, plint ybottom_, plint ytop_, plint radiusCyl_,double a_, double bL_, double bR_, double y_)
         : xbottomL(xbottomL_),
           xbottomR(xbottomR_),
           xtopL(xtopL_),
@@ -21,14 +21,20 @@ public:
           ybottom(ybottom_),
           ytop(ytop_),
           radiusCyl(radiusCyl_),
-          radiusSqr(radiusCyl*radiusCyl)
+          radiusSqr(radiusCyl*radiusCyl),
+          a(a_),
+          bL(bL_),
+          bR(bR_),
+          y(y_)
+
     {}
     virtual bool operator() (plint iX, plint iY, plint iZ) const {
         return ((iX-xcircL)*(iX-xcircL) + (iY-ycirc)*(iY-ycirc) <= radiusSqr) ||
                ((iX-xcircR)*(iX-xcircR) + (iY-ycirc)*(iY-ycirc) <= radiusSqr) ||
                (iX <= xcircR && iX >= xcircL && iY <= ytop ) ||
-               (iX >= (iY+193.730669589)/1.73205080757 && iX <= xcircL && iY <= 155) ||
-               (iX <= (iY-568.3716857)/(-1.73205080757) && iX >= xcircR && iY <= 155 );
+               (iX >= (iY-bL)/a && iX <= xcircL && iY <= y) ||
+               (iX <= (iY-bR)/(-a) && iX >= xcircR && iY <= y );
+
     }
     virtual StenosisShapeDomain3D<T>* clone() const {
         return new StenosisShapeDomain3D<T>(*this);
@@ -45,6 +51,10 @@ private:
     plint ytop;
     plint radiusCyl;
     plint radiusSqr;
+    double a;
+    double bL;
+    double bR;
+    double y;
 
 };
 
@@ -106,7 +116,30 @@ int main(int argc, char *argv[]) {
   //plint ytop = top - radiusCyl;
   plint ybottom = 0;
 
+  double pi = std::acos(-1);
+  plint c_angle_degrees = 60;
+  double angle = (90-c_angle_degrees) * pi/180; //in degrees
+  double c_angle = c_angle_degrees *pi/180;
+  //calculate raakpunten and b from y =ax+b
+  double h = std::sin(angle)*radiusCyl;
+  double w = std::cos(angle)*radiusCyl;
+  
+  double xL = xcircL-w;
+  double y = ycirc+h;
+  double xR = xcircR+w;
+  
+  double a = std::tan(c_angle);
+  
+  double bL = y - a*xL;
+  double bR = y + a*xR;
+  
   pcout << "parameters Stenosis: " <<
+  "pi = " << pi << "," <<
+  "angle = " << angle << "," <<
+  "a = " << a << "," <<
+  "bL = " << bL << "," <<
+  "bR = " << bR << "," <<
+  "y = " << y << "," <<
   "ytopR = " << xtopR << ", " <<
   "xbottomR = " << xbottomR << ", " <<
   "ytopL = " << xtopL << ", " <<
@@ -141,7 +174,7 @@ int main(int argc, char *argv[]) {
  // defineDynamics(*hemocell.lattice, *flagMatrix, (*hemocell.lattice).getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
 
   defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-                new StenosisShapeDomain3D<T>(xbottomL, xbottomR, xtopL, xtopR, xcircL, xcircR, ycirc, ybottom, ytop, radiusCyl),
+                new StenosisShapeDomain3D<T>(xbottomL, xbottomR, xtopL, xtopR, xcircL, xcircR, ycirc, ybottom, ytop, radiusCyl, a, bL, bR, y),
                 new BounceBack<T, DESCRIPTOR> );
 
   Box3D topChannel(0, nx-1, 0, ny-1, nz-1, nz-1);
@@ -162,7 +195,7 @@ int main(int argc, char *argv[]) {
   hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
   double dpdz = (flowQ*12*2.0e-3)/(130e-6*130e-6*130e-6*100e-6); //(shear_rate * 2e-3) / (4*174e-6);
-  double dpdz_lbm = dpdz * ((*cfg)["domain"]["dx"].read<double>() * (*cfg)["domain"]["dx"].read<double>() * (*cfg)["domain"]["dt"].read<double>()*(*cfg)["domain"]["dt"].read<double>() /param::dm);
+  double dpdz_lbm = 1.5e-7;//dpdz * ((*cfg)["domain"]["dx"].read<double>() * (*cfg)["domain"]["dx"].read<double>() * (*cfg)["domain"]["dt"].read<double>()*(*cfg)["domain"]["dt"].read<double>() /param::dm);
   pcout << "dpdz_lbm = " << dpdz_lbm << endl;
 
   //Driving Force
@@ -196,7 +229,7 @@ int main(int argc, char *argv[]) {
   hemocell.setOutputs("RBC_HO", outputs);
   hemocell.setOutputs("PLT", outputs);
 
-  outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE};
+  outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE,OUTPUT_CELL_DENSITY};
   hemocell.setFluidOutputs(outputs);
 
   //todo add statistics here
