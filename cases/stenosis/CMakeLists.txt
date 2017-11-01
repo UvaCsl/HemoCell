@@ -82,6 +82,7 @@ ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES})
 ADD_DEPENDENCIES(${PROJECT_NAME} "hemocell")
 target_link_libraries(${PROJECT_NAME} ${HEMOCELL_DIR}/libhemocell.a)
 
+SET(HDF5_PREFER_PARALLEL 1)
 FIND_PACKAGE(HDF5 COMPONENTS C HL)
 if(NOT ${HDF5_FOUND})
    message(fatal_error "Hdf5 Libraries not found!")

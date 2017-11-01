@@ -19,3 +19,6 @@ Version 0.5
 - Added MESH_FROM_STL for addCellType. Takes a triangulized STL file from xml-file->"MaterialModel"->"StlFile".
 - Added "Volume" option for Celltype xml files
 - Added Celdensity output for fluid field
+- Added preInlet possibility and cases
+- Default is now HDF5 with openmpi support, if not present, using a preInlet
+will generate an error when using multiple processors
