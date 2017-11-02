@@ -25,12 +25,20 @@ void writeCellInfo_CSV(HemoCell * hemocell) {
     csvFiles[i] << "X,Y,Z,area,volume,atomic_block,cellId" << endl;
   }
   
-  for (const auto & pair : CellInformationFunctionals::info_per_cell) {
-    const plint cid = pair.first;
-    const CellInformation & cinfo = pair.second;
+  for (auto & pair : CellInformationFunctionals::info_per_cell) {
+    const plint cid = ((pair.first%hemocell->cellfields->number_of_cells)+hemocell->cellfields->number_of_cells)%hemocell->cellfields->number_of_cells;
+    CellInformation & cinfo = pair.second;
     
-    csvFiles[cinfo.cellType] << cinfo.position[0] << "," << cinfo.position[1] << "," << cinfo.position[2] << ",";
-    csvFiles[cinfo.cellType] << cinfo.area << "," << cinfo.volume << "," << cinfo.blockId << "," << cid << endl;
+    if (hemocell->outputInSiUnits) {
+      cinfo.position *= param::dx;
+      cinfo.area *= param::dx*param::dx;
+      cinfo.volume *= param::dx*param::dx*param::dx;
+    }
+    
+    if (cinfo.centerLocal) {
+      csvFiles[cinfo.cellType] << cinfo.position[0] << "," << cinfo.position[1] << "," << cinfo.position[2] << ",";
+      csvFiles[cinfo.cellType] << cinfo.area << "," << cinfo.volume << "," << cinfo.blockId << "," << cid << endl;
+    }
   }
   
   for (ofstream & file : csvFiles) {
