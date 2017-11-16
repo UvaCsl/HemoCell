@@ -14,7 +14,13 @@ enum Direction : int {
   Xpos, Xneg, Ypos, Yneg, Zpos, Zneg
 };
 
-
+struct particle_hdf5_t {
+  float location[3];
+  float velocity[3];
+  int cell_id;
+  int vertex_id;
+  unsigned int particle_type;
+};
 
 class createPreInlet {
   class createPreInletFunctional: public HemoCellFunctional {
@@ -32,6 +38,7 @@ class createPreInlet {
   int particlePositionTimeStep;
   Direction flowDir;
   int file_id, dataspace_velocity_id,dataset_velocity_id,plist_dataset_collective_id;
+  int particle_type_mem, particle_type_h5;
   
 public:
   createPreInlet(Box3D domain, string outputFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell);
@@ -55,7 +62,10 @@ class PreInlet {
   string sourceFileName;
   int particlePositionTimeStep;
   Direction flowDir;
-  int file_id,dataspace_velocity_id,dataset_velocity_id;
+  int file_id,dataspace_velocity_id,dataset_velocity_id,dataset_particles_id,dataspace_particles_id;
+  int particle_type_mem, particle_type_h5, particles_size;
+  particle_hdf5_t * particles;
+
 
 public:  
   PreInlet(Box3D domain, string sourceFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell);

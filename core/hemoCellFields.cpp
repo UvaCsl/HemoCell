@@ -105,10 +105,7 @@ void HemoCellFields::InitAfterLoadCheckpoint()
     //Calculate neighbours 
     immersedParticles->getSparseBlockStructure().findNeighbors(blocks[iBlock], envelopeSize,
                            immersedParticles->getComponent(blocks[iBlock]).neighbours);
-    if (immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > HEMOCELL_MAX_NEIGHBOURS) {
-      cerr << "(HemoCell) ERROR: More neighbours of atomic block exist than allowed: " << immersedParticles->getComponent(blocks[iBlock]).neighbours.size() << " instead of " << HEMOCELL_MAX_NEIGHBOURS << "!. Check the atomic block structure!\n";
-      exit(0);
-    }
+  
     if (immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > 27) {
       cerr << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << immersedParticles->getComponent(blocks[iBlock]).neighbours.size() << " Usually it should be < 27 ! Check the atomic block structure!\n";
     }
@@ -271,6 +268,18 @@ void HemoCellFields::deleteIncompleteCells(bool verbose) {
   applyTimedProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
 
 }
+void HemoCellFields::HemoGetParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+  HEMOCELL_PARTICLE_FIELD * pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
+  Box3D localDomain;
+  intersect(domain,pf->localDomain,localDomain);
+  pf->findParticles(localDomain,particles);
+}
+void HemoCellFields::getParticles(vector<HemoCellParticle *> & particles, Box3D& domain) {
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  applyProcessingFunctional(new HemoGetParticles(particles),domain,wrapper);
+}
+
 
 HemoCellFields::HemoSeperateForceVectors * HemoCellFields::HemoSeperateForceVectors::clone() const { return new HemoCellFields::HemoSeperateForceVectors(*this);}
 HemoCellFields::HemoUnifyForceVectors *    HemoCellFields::HemoUnifyForceVectors::clone() const    { return new HemoCellFields::HemoUnifyForceVectors(*this);}
@@ -281,6 +290,8 @@ HemoCellFields::HemoApplyConstitutiveModel * HemoCellFields::HemoApplyConstituti
 HemoCellFields::HemoSyncEnvelopes *        HemoCellFields::HemoSyncEnvelopes::clone() const { return new HemoCellFields::HemoSyncEnvelopes(*this);}
 HemoCellFields::HemoRepulsionForce *        HemoCellFields::HemoRepulsionForce::clone() const { return new HemoCellFields::HemoRepulsionForce(*this);}
 HemoCellFields::HemoDeleteIncompleteCells *        HemoCellFields::HemoDeleteIncompleteCells::clone() const { return new HemoCellFields::HemoDeleteIncompleteCells(*this);}
+HemoCellFields::HemoGetParticles *        HemoCellFields::HemoGetParticles::clone() const { return new HemoCellFields::HemoGetParticles(*this);}
+
 
 void HemoCellFields::HemoSyncEnvelopes::getTypeOfModification(std::vector<modif::ModifT>& modified) const {
    for (pluint i = 0; i < modified.size(); i++) {

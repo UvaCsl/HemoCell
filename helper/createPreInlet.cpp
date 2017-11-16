@@ -78,6 +78,38 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
   H5Pclose(plist_dataset_id);
 
   H5Fflush(file_id, H5F_SCOPE_GLOBAL);
+
+  //Create Particle Type
+  size_t particle_type_size = sizeof(particle_hdf5_t);
+  particle_type_mem = H5Tcreate(H5T_COMPOUND,particle_type_size);
+  H5Tinsert (particle_type_mem, "location_X", HOFFSET (particle_hdf5_t, location[0]), H5T_NATIVE_FLOAT);
+  H5Tinsert (particle_type_mem, "location_Y", HOFFSET (particle_hdf5_t, location[1]), H5T_NATIVE_FLOAT);
+  H5Tinsert (particle_type_mem, "location_Z", HOFFSET (particle_hdf5_t, location[2]), H5T_NATIVE_FLOAT);
+  H5Tinsert (particle_type_mem, "velocity_X", HOFFSET (particle_hdf5_t, velocity[0]), H5T_NATIVE_FLOAT);
+  H5Tinsert (particle_type_mem, "velocity_Y", HOFFSET (particle_hdf5_t, velocity[1]), H5T_NATIVE_FLOAT);
+  H5Tinsert (particle_type_mem, "velocity_Z", HOFFSET (particle_hdf5_t, velocity[2]), H5T_NATIVE_FLOAT);
+  H5Tinsert (particle_type_mem, "cell_id", HOFFSET (particle_hdf5_t, cell_id), H5T_NATIVE_INT);
+  H5Tinsert (particle_type_mem, "vertex_id", HOFFSET (particle_hdf5_t, vertex_id), H5T_NATIVE_INT);
+  H5Tinsert (particle_type_mem, "particle_type", HOFFSET (particle_hdf5_t, particle_type), H5T_NATIVE_UINT);
+
+  
+  //TODO immutable particle type, but its at least consistent over ubuntu installations
+  particle_type_size = H5Tget_size(H5T_IEEE_F32LE)*6+H5Tget_size(H5T_STD_I32LE)*2+H5Tget_size(H5T_STD_U32LE);
+  particle_type_h5 = H5Tcreate(H5T_COMPOUND,particle_type_size);
+  if (particle_type_h5  < 0) {
+    cerr << "Error creating particle type hdf5, exiting.." << endl;
+    exit(0);
+  };
+  H5Tinsert (particle_type_h5, "location_X", 0, H5T_IEEE_F32LE); 
+  H5Tinsert (particle_type_h5, "location_Y", H5Tget_size(H5T_IEEE_F32LE), H5T_IEEE_F32LE);
+  H5Tinsert (particle_type_h5, "location_Z", H5Tget_size(H5T_IEEE_F32LE)*2, H5T_IEEE_F32LE);
+  H5Tinsert (particle_type_h5, "velocity_X", H5Tget_size(H5T_IEEE_F32LE)*3, H5T_IEEE_F32LE);
+  H5Tinsert (particle_type_h5, "velocity_Y", H5Tget_size(H5T_IEEE_F32LE)*4, H5T_IEEE_F32LE);
+  H5Tinsert (particle_type_h5, "velocity_Z", H5Tget_size(H5T_IEEE_F32LE)*5, H5T_IEEE_F32LE);
+  H5Tinsert (particle_type_h5, "cell_id", H5Tget_size(H5T_IEEE_F32LE)*6, H5T_STD_I32LE);
+  H5Tinsert (particle_type_h5, "vertex_id", H5Tget_size(H5T_IEEE_F32LE)*6+H5Tget_size(H5T_STD_I32LE), H5T_STD_I32LE);
+  H5Tinsert (particle_type_h5, "particle_type", H5Tget_size(H5T_IEEE_F32LE)*6+H5Tget_size(H5T_STD_I32LE)*2, H5T_STD_U32LE);
+
       
   plist_dataset_collective_id = H5Pcreate(H5P_DATASET_XFER);
   H5Pset_dxpl_mpio(plist_dataset_collective_id, H5FD_MPIO_INDEPENDENT);  
@@ -88,18 +120,13 @@ createPreInlet::~createPreInlet() {
   H5Dclose(dataset_velocity_id);
   H5Sclose(dataspace_velocity_id);
   H5Fclose(file_id);
-
+  H5Tclose(particle_type_h5);
+  H5Tclose(particle_type_mem);
 }
 
 void createPreInlet::createPreInletFunctional::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   BlockLattice3D<double,DESCRIPTOR> * fluidfield = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
-  HemoCellParticleField * particlefield = dynamic_cast<HemoCellParticleField*>(blocks[1]);
    
-  //When we are also saving particles
-  if (parent.hemocell.iter%parent.particlePositionTimeStep==0) {
-    
-  }
-  
   Box3D fluidBox; 
   Box3D shiftedBox = domain.shift(fluidfield->getLocation().x,fluidfield->getLocation().y,fluidfield->getLocation().z);
   
@@ -143,11 +170,69 @@ void createPreInlet::createPreInletFunctional::processGenericBlocks(Box3D domain
     exit(0);
   };
   H5Sclose(memspace_id);
-  free(data);
+  delete[] data;
 
 }
 
 void createPreInlet::saveCurrent() {    
+   //When we are also saving particles
+  if (hemocell.iter%particlePositionTimeStep==0) {
+    map<int,int> particles_per_proc;
+    vector<HemoCellParticle *> particles;
+    hemocell.cellfields->getParticles(particles,domain);
+    particles_per_proc[global::mpi().getRank()] = particles.size();
+    
+    HemoCellGatheringFunctional<int>::gather(particles_per_proc,global::mpi().getSize());
+    hsize_t offset[1] = {0}, count[1] = {(hsize_t)particles.size()}, total[1] = {0};
+    for (auto & pair : particles_per_proc)  {
+      if (pair.first == global::mpi().getRank()) {
+        break;
+      }
+      offset[0] += pair.second;
+    }
+    for (auto & pair : particles_per_proc) {
+      total[0] += pair.second;
+    }
+    particle_hdf5_t * particles_hdf5 = new particle_hdf5_t[particles.size()];
+    
+    int i = 0;
+    for (HemoCellParticle * particle : particles) {
+      particles_hdf5[i].location[0] = particle->position[0]-domain.x0;
+      particles_hdf5[i].location[1] = particle->position[1]-domain.y0;
+      particles_hdf5[i].location[2] = particle->position[2]-domain.z0;
+      particles_hdf5[i].velocity[0] = particle->v[0];
+      particles_hdf5[i].velocity[1] = particle->v[1];
+      particles_hdf5[i].velocity[2] = particle->v[2];
+      particles_hdf5[i].cell_id = particle->cellId;
+      particles_hdf5[i].vertex_id = particle->vertexId;
+      particles_hdf5[i].particle_type = particle->celltype;
+      i++;
+    }
+    hid_t plist_dataset_id = H5Pcreate(H5P_DATASET_CREATE);
+      hid_t dataspace_particles_id = H5Screate_simple(1,total,NULL);
+        hid_t memspace_id = H5Screate_simple (1, count, NULL); 
+
+          std::string dataset_name = "particles_" + std::to_string(hemocell.iter);
+          hid_t dataset_particles_id = H5Dcreate2(file_id, dataset_name.c_str() ,particle_type_h5,dataspace_particles_id,H5P_DEFAULT,plist_dataset_id,H5P_DEFAULT);    
+            if (dataset_particles_id < 0) {
+              cerr << "Error creating particle dataset, exiting.." <<endl;
+              exit(0);
+            }
+            if (H5Sselect_hyperslab(dataspace_particles_id,H5S_SELECT_SET,offset,NULL,count,NULL) < 0 ) {
+              cerr << "Error selecting particle hyperslab, exiting.." <<endl;
+              exit(0);
+            }
+            if (H5Dwrite(dataset_particles_id,particle_type_mem,memspace_id,dataspace_particles_id,plist_dataset_collective_id,particles_hdf5) < 0) {
+              cerr << "Error writing particles, exiting..." <<endl;
+              exit(0);
+            }
+          H5Dclose(dataset_particles_id);
+          H5Sclose(memspace_id);
+      H5Sclose(dataspace_particles_id); 
+    H5Pclose(plist_dataset_id);
+    delete[] particles_hdf5;
+  }
+    
   hsize_t size[5] = {hemocell.iter+1,(hsize_t)fluidDomain.getNx(),(hsize_t)fluidDomain.getNy(),(hsize_t)fluidDomain.getNz(),3};
   if (H5Dset_extent( dataset_velocity_id, size ) < 0) {
     cerr << "Error enlarging extent, exiting.." << endl; 
@@ -159,8 +244,8 @@ void createPreInlet::saveCurrent() {
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell.cellfields->lattice);
   
-  wrapper.push_back(hemocell.cellfields->immersedParticles);
   applyProcessingFunctional(new createPreInletFunctional(*this),domain,wrapper);
+  //H5Fflush(file_id,H5F_SCOPE_GLOBAL);
 }
 
 createPreInlet::createPreInletFunctional * createPreInlet::createPreInletFunctional::clone() const {

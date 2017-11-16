@@ -43,6 +43,15 @@ void LoadBalancer::GatherTimeOfAtomicBlocks::processGenericBlocks(Box3D domain, 
 }
 
 double LoadBalancer::calculateFractionalLoadImbalance() {
+  //Error Checking
+  std::vector<plint> const& blocks = hemocell.cellfields->immersedParticles->getLocalInfo().getBlocks();
+  for (pluint iBlock=0; iBlock<blocks.size(); ++iBlock) {
+    if (hemocell.cellfields->immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > HEMOCELL_MAX_NEIGHBOURS) {
+      cerr << "(HemoCell) ERROR: More neighbours of atomic block exist than allowed: " << hemocell.cellfields->immersedParticles->getComponent(blocks[iBlock]).neighbours.size() << " instead of " << HEMOCELL_MAX_NEIGHBOURS << "!. Check the atomic block structure!\n";
+      exit(0);
+    }
+  }
+    
   //set FLI_iscalled
   FLI_iscalled = true;
   int size = global::mpi().getSize();

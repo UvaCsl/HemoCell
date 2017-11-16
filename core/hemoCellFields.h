@@ -91,6 +91,9 @@ public:
   
   /// Sync the particle envelopes between domains
   void syncEnvelopes();
+
+  /// Get particles in a given domain
+  void getParticles(vector<HemoCellParticle*> & particles, Box3D & domain);
     
   //Class Variables
   
@@ -176,6 +179,13 @@ public:
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
    HemoSyncEnvelopes * clone() const;
    void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+  };
+  class HemoGetParticles: public HemoCellFunctional {
+    vector<HemoCellParticle *> & particles;
+    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+    HemoGetParticles * clone() const;
+  public:
+    HemoGetParticles(vector<HemoCellParticle *> & particles_) : particles(particles_) {}
   };
 };
 #endif
