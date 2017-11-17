@@ -55,6 +55,10 @@ const map<int,vector<int>> & HemoCellParticleField::get_particles_per_cell() {
     if (!ppc_up_to_date) { update_ppc(); }
     return _particles_per_cell;
   }
+const map<int,vector<int>> & HemoCellParticleField::get_preinlet_particles_per_cell() { 
+    update_preinlet_ppc();
+    return _preinlet_particles_per_cell;
+  }
 const map<int,bool> & HemoCellParticleField::get_lpc() { 
     if (!lpc_up_to_date) { update_lpc(); }
     return _lpc;
@@ -62,7 +66,7 @@ const map<int,bool> & HemoCellParticleField::get_lpc() {
 void HemoCellParticleField::update_lpc() {
   _lpc.clear();
   for (const HemoCellParticle & particle : particles) {
-     if (isContainedABS(particle.position, localDomain)) {
+     if (isContainedABS(particle.position, localDomain) && ! particle.fromPreInlet) {
        _lpc[particle.cellId] = true;
      }
   }
@@ -81,9 +85,23 @@ void HemoCellParticleField::update_ppc() {
   _particles_per_cell.clear();
   
   for (unsigned int i = 0 ; i <  particles.size() ; i++) { 
-    insert_ppc(&particles[i],i);
+    if (!particles[i].fromPreInlet) {
+     insert_ppc(&particles[i],i);
+    }
   }
   ppc_up_to_date = true;
+}
+void HemoCellParticleField::update_preinlet_ppc() {
+  _preinlet_particles_per_cell.clear();
+  
+  for (unsigned int i = 0 ; i <  particles.size() ; i++) {
+    if (particles[i].fromPreInlet) {
+      insert_preinlet_ppc(&particles[i],i);
+    }
+  }
+  preinlet_ppc_up_to_date = true;
+  ppc_up_to_date = false;
+  lpc_up_to_date = false;
 }
 
 void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle) {
@@ -123,11 +141,12 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
       //invalidate ppt
       ppt_up_to_date=false;
       //_particles_per_type[particle->celltype].push_back(particles.size()-1); //last entry
-      if(this->isContainedABS(pos, localDomain)) {
-        _lpc[particle->cellId] = true;
+      if(!particle->fromPreInlet) {
+        if(this->isContainedABS(pos, localDomain)) {
+          _lpc[particle->cellId] = true;
+        }
+        insert_ppc(particle, particles.size()-1);
       }
-
-      insert_ppc(particle, particles.size()-1);
     }
     particle->setTag(-1);
   }
@@ -143,7 +162,16 @@ void inline HemoCellParticleField::insert_ppc(HemoCellParticle* sparticle, unsig
   _particles_per_cell.at(sparticle->cellId)[sparticle->vertexId] = index;
 
 }
+void inline HemoCellParticleField::insert_preinlet_ppc(HemoCellParticle* sparticle, unsigned int index) {
+  if (_preinlet_particles_per_cell.find(sparticle->cellId) == _preinlet_particles_per_cell.end()) {
+    _preinlet_particles_per_cell[sparticle->cellId].resize((*cellFields)[sparticle->celltype]->numVertex);
+    for (unsigned int i = 0; i < _preinlet_particles_per_cell[sparticle->cellId].size(); i++) {
+      _preinlet_particles_per_cell[sparticle->cellId][i] = -1;
+    }
+  }
+  _preinlet_particles_per_cell.at(sparticle->cellId)[sparticle->vertexId] = index;
 
+}
 
 void HemoCellParticleField::removeParticles(plint tag) {
 //Almost the same, but we save a lot of branching by making a seperate function
@@ -503,6 +531,7 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
 
   for (pluint i = 0; i < localParticles.size(); i++ ) {
     sparticle = localParticles[i];
+    if (sparticle->fromPreInlet) { continue; }
     //Clever trick to allow for different kernels for different particle types.
     (*cellFields)[sparticle->celltype]->kernelMethod(*atomicLattice,sparticle);
 
@@ -526,6 +555,8 @@ void HemoCellParticleField::spreadParticleForce(Box3D domain) {
 
   for (pluint i = 0; i < localParticles.size(); i++ ) {
     sparticle = localParticles[i];
+    if (sparticle->fromPreInlet) { continue; }
+
     //Clever trick to allow for different kernels for different particle types.
     (*cellFields)[sparticle->celltype]->kernelMethod(*atomicLattice,sparticle);
 

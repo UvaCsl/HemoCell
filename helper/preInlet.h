@@ -30,7 +30,7 @@ class createPreInlet {
   public:
     createPreInletFunctional(createPreInlet & parent_) : parent(parent_) {}
   };
-  
+
   HemoCell & hemocell;
   Box3D domain;
   Box3D fluidDomain;
@@ -56,6 +56,15 @@ class PreInlet {
   public:
     PreInletFunctional(PreInlet & parent_) : parent(parent_) {}
   };
+  class DeletePreInletParticles: public HemoCellFunctional {
+    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+    DeletePreInletParticles * clone() const;
+  };
+  class ImmersePreInletParticles: public HemoCellFunctional {
+    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+    ImmersePreInletParticles * clone() const;
+  };
+  
   HemoCell & hemocell;
   Box3D domain;
   Box3D fluidDomain;
@@ -65,6 +74,7 @@ class PreInlet {
   int file_id,dataspace_velocity_id,dataset_velocity_id,dataset_particles_id,dataspace_particles_id;
   int particle_type_mem, particle_type_h5, particles_size;
   particle_hdf5_t * particles;
+  int nCellsOffset, nCellsSelf;
 
 
 public:  

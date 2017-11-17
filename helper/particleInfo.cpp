@@ -108,21 +108,31 @@ ParticleStatistics ParticleInfo::calculateForceStatistics(HemoCell* hemocell) {
   int numAtomicBlock = hemocell->lattice->getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
   HemoCellGatheringFunctional<ParticleStatistics>::gather(gatherValues,numAtomicBlock);
   
-  ParticleStatistics result = gatherValues.begin()->second;
-  result.avg = 0.;
-  result.ncells = 0;
-  
-  for (const auto & pair : gatherValues) {
-    const ParticleStatistics & cur = pair.second;
-    result.avg += (cur.avg * cur.ncells);
-    result.ncells += cur.ncells;
-    result.min = result.min > cur.min ? cur.min : result.min;
-    result.max = result.max < cur.max ? cur.max : result.max;
-  }
-  
-  result.avg /= result.ncells;
+  if (gatherValues.size() > 0) {
+    ParticleStatistics result = gatherValues.begin()->second;
+    result.avg = 0.;
+    result.ncells = 0;
 
-  return result;
+
+    for (const auto & pair : gatherValues) {
+      const ParticleStatistics & cur = pair.second;
+      result.avg += (cur.avg * cur.ncells);
+      result.ncells += cur.ncells;
+      result.min = result.min > cur.min ? cur.min : result.min;
+      result.max = result.max < cur.max ? cur.max : result.max;
+    }
+
+    result.avg /= result.ncells;
+
+    return result;
+  } else {
+    ParticleStatistics result;
+    result.avg = 0;
+    result.max = 0;
+    result.min = 0;
+    result.ncells = 0;
+    return result;
+  }
 }
 
 GatherParticleVelocity * GatherParticleVelocity::clone() const { return new GatherParticleVelocity(*this); }

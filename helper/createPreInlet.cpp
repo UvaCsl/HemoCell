@@ -1,6 +1,7 @@
 #include "preInlet.h"
 #include <hdf5.h>
 #include <hdf5_hl.h>
+#include <hdf5/openmpi/H5LTpublic.h>
 
 #ifndef H5_HAVE_PARALLEL
 herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
@@ -57,7 +58,8 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
 
   //Attributes:
   H5LTset_attribute_int (file_id, "/", "flowDirection", (int *)&flowDir, 1);
-
+  H5LTset_attribute_int(file_id, "/", "Number Of Cells", &hemocell.cellfields->number_of_cells,1);
+  
   //Velocity, 1st dim == timestep, 2-4th == space of fluid nodes, one dim will be 1, 5 == all three velocity directions 
   hsize_t dims[5] = {0,(hsize_t)fluidDomain.getNx(),(hsize_t)fluidDomain.getNy(),(hsize_t)fluidDomain.getNz(),3};
   hsize_t maximum_size[5] = {H5S_UNLIMITED,(hsize_t)fluidDomain.getNx(),(hsize_t)fluidDomain.getNy(),(hsize_t)fluidDomain.getNz(),3};

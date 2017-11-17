@@ -100,21 +100,27 @@ private:
   bool lpc_up_to_date = false;
   bool ppt_up_to_date = false;
   bool ppc_up_to_date = false;
+  bool preinlet_ppc_up_to_date = false;
   vector<vector<unsigned int>> _particles_per_type;
   map<int,vector<int>> _particles_per_cell;
+  map<int,vector<int>> _preinlet_particles_per_cell;
   map<int,bool> _lpc;
   void update_lpc();
   void update_ppc();
+  void update_preinlet_ppc();
   void update_ppt();
   void issueWarning(HemoCellParticle & p);
   
 public:
   const vector<vector<unsigned int>> & get_particles_per_type(); 
   const map<int,vector<int>> & get_particles_per_cell();
+  const map<int,vector<int>> & get_preinlet_particles_per_cell();
   const map<int,bool> & get_lpc();
     
     //vector<vector<vector<vector<HemoCellParticle*>>>> particle_grid; //maybe better to make custom data structure, But that would be slower
     void insert_ppc(HemoCellParticle* particle,unsigned int index);
+    void insert_preinlet_ppc(HemoCellParticle* particle,unsigned int index);
+
     HemoCellParticleDataTransfer dataTransfer;
 public:
     Box3D localDomain;

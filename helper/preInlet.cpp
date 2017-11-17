@@ -2,6 +2,16 @@
 #include <hdf5.h>
 #include <hdf5_hl.h>
 
+#ifndef H5_HAVE_PARALLEL
+herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
+  if (global::mpi().getSize() > 1) {
+    pcerr << "Not compiled with HDF5 OpenMPI version, cowardly refusing to generate corrupted hdf5 files" << endl; 
+    exit(0);
+  }
+  return 0;
+}
+#endif
+
 PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTimestep_, Direction flowDir_, HemoCell& hemocell_) 
   : hemocell(hemocell_) {
   this->domain = domain_;
@@ -61,7 +71,12 @@ PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTi
     cout << "Box dimensions do not match, exiting ..." << endl;
     exit(0);
   }
-    
+  if(H5LTget_attribute_int(file_id,"/","Number Of Cells",&nCellsSelf) < 0) { 
+    cout << "Error reading number of cells attribute" << endl; exit(0); 
+  }
+  nCellsOffset = hemocell.cellfields->number_of_cells;
+  hemocell.cellfields->number_of_cells += nCellsSelf;
+     
   dataset_velocity_id = H5Dopen2( file_id, "Velocity Boundary", H5P_DEFAULT);  
   dataspace_velocity_id = H5Dget_space(dataset_velocity_id);
   
@@ -97,19 +112,67 @@ PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTi
   H5Tinsert (particle_type_h5, "particle_type", H5Tget_size(H5T_IEEE_F32LE)*6+H5Tget_size(H5T_STD_I32LE)*2, H5T_STD_U32LE);
 }
 
+void PreInlet::ImmersePreInletParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+  HemoCellParticleField * particlefield = dynamic_cast<HemoCellParticleField*>(blocks[0]);
+  const map<int,vector<int>> & ppc = particlefield->get_preinlet_particles_per_cell();
+  
+  for (auto & pair : ppc) {
+    bool complete = true;
+    for (int entry : pair.second) {
+      if (entry == -1) {
+        complete = false;
+        break;
+      }
+    }
+    if (complete) {
+      for (int entry:pair.second) {
+        particlefield->particles[entry].fromPreInlet = false;
+      }
+    }
+  }
+}
+
+void PreInlet::DeletePreInletParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+  HemoCellParticleField * particlefield = dynamic_cast<HemoCellParticleField*>(blocks[0]);
+  
+  for (HemoCellParticle & particle : particlefield->particles) {
+    if (particle.fromPreInlet) {
+      particle.tag = 1;
+    }
+  }
+  particlefield->removeParticles(1);
+}
+
 void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   BlockLattice3D<double,DESCRIPTOR> * fluidfield = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
   HemoCellParticleField * particlefield = dynamic_cast<HemoCellParticleField*>(blocks[1]);
-   
+  
   //When we are also saving particles
   if (parent.hemocell.iter%parent.particlePositionTimeStep==0) {
+    const map<int,vector<int>> & ppc = particlefield->get_particles_per_cell();
     for (int i = 0 ; i < parent.particles_size ; i++) {
       particle_hdf5_t * particle = &parent.particles[i];
       hemo::Array<double,3> loc; 
       loc[0] = particle->location[0];
       loc[1] = particle->location[1];
       loc[2] = particle->location[2];
+      
+      
+      if (ppc.find(particle->cell_id) != ppc.end()) {
+        if (ppc.at(particle->cell_id)[particle->vertex_id] != -1) {
+          if (! particlefield->particles[ppc.at(particle->cell_id)[particle->vertex_id]].fromPreInlet) {
+            continue;
+          }
+        }
+      }
+
       HemoCellParticle particle_h = HemoCellParticle(loc,particle->cell_id,particle->vertex_id,particle->particle_type);
+      particle_h.fromPreInlet = true;
+      hemo::Array<double,3> vel; 
+      vel[0] = particle->velocity[0];
+      vel[1] = particle->velocity[1];
+      vel[2] = particle->velocity[2];
+      particle_h.v = vel;
       particlefield->addParticle(domain,&particle_h);
     }
   }
@@ -163,7 +226,7 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
     zz++;
   }
   H5Sclose(memspace_id);
-  free(data);
+  delete[] data;
 }
 void PreInlet::update() {  
   //When we are also saving particles
@@ -175,21 +238,44 @@ void PreInlet::update() {
     H5Sget_simple_extent_dims(dataspace_particles_id,dims,NULL);
     particles_size = dims[0];
     particles = new particle_hdf5_t[particles_size];
-    H5Dread(dataset_particles_id,particle_type_mem,H5S_ALL,file_id,H5P_DEFAULT,particles);
+    H5Dread(dataset_particles_id,particle_type_mem,H5S_ALL,dataspace_particles_id,H5P_DEFAULT,particles);
     for(int i = 0 ; i < particles_size ; i++) {
       particles[i].location[0] += domain.x0;
       particles[i].location[1] += domain.y0;
       particles[i].location[2] += domain.z0;
+      
+      //Generate unique id, we know everything to calculate it, quite complex
+      int wraps = 0;
+      if (particles[i].cell_id < 0) {
+        wraps = ((particles[i].cell_id*-1)/nCellsSelf)*-1; //Negative rounding is implementation defined, therefore avoid it;
+      } else {
+        wraps = particles[i].cell_id/nCellsSelf;
+      }
+      int particleBaseId = (((particles[i].cell_id % nCellsSelf) + particles[i].cell_id) % nCellsSelf) + nCellsOffset; //Modulo from remainder operation
+      particles[i].cell_id = particleBaseId+(wraps*hemocell.cellfields->number_of_cells);
     }
   }
+  
+  
   vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(hemocell.cellfields->immersedParticles);
+  applyProcessingFunctional(new DeletePreInletParticles(),hemocell.cellfields->immersedParticles->getBoundingBox(),wrapper);
+  
+  wrapper.clear();
   wrapper.push_back(hemocell.cellfields->lattice);
   wrapper.push_back(hemocell.cellfields->immersedParticles);
   applyProcessingFunctional(new PreInletFunctional(*this),domain,wrapper);
   
+  hemocell.cellfields->syncEnvelopes();
+  
+  wrapper.clear();
+  wrapper.push_back(hemocell.cellfields->immersedParticles);
+  applyProcessingFunctional(new ImmersePreInletParticles(),domain,wrapper);
+  
   if (hemocell.iter%particlePositionTimeStep==0) {
    H5Dclose(dataset_particles_id); 
    H5Sclose(dataspace_particles_id);
+   delete[] particles;
   }
 }
 
@@ -199,6 +285,6 @@ PreInlet::~PreInlet() {
   H5Fclose(file_id);
 }
 
-PreInlet::PreInletFunctional * PreInlet::PreInletFunctional::clone() const {
-  return new PreInletFunctional(*this);
-}
+PreInlet::PreInletFunctional * PreInlet::PreInletFunctional::clone() const { return new PreInletFunctional(*this); }
+PreInlet::DeletePreInletParticles * PreInlet::DeletePreInletParticles::clone() const { return new DeletePreInletParticles(*this); }
+PreInlet::ImmersePreInletParticles * PreInlet::ImmersePreInletParticles::clone() const { return new ImmersePreInletParticles(*this); }

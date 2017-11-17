@@ -13,6 +13,7 @@ class HemoCellParticle {
     hemo::Array<double,3> position;
     hemo::Array<double,3> force;
     hemo::Array<double,3> force_repulsion;
+    bool fromPreInlet;
     plint cellId;
     plint vertexId;
     pluint celltype;
@@ -41,6 +42,7 @@ class HemoCellParticle {
     hemo::Array<double,3> *force_area = &force; //Default to pointing to force, if output is desired, it can be stored seperately
     hemo::Array<double,3> *force_visc = &force;
     hemo::Array<double,3> *force_inner_link = &force;
+    bool & fromPreInlet;
     plint tag;
     plint & cellId;// = serializeValues.sv.cellId;
     plint & vertexId;// = serializeValues.sv.vertexId;
@@ -54,6 +56,7 @@ public:
   HemoCellParticle(const HemoCellParticle & copy) :
     position(serializeValues.position), v(serializeValues.v),
     force(serializeValues.force), force_repulsion(serializeValues.force_repulsion),
+    fromPreInlet(serializeValues.fromPreInlet),
     cellId(serializeValues.cellId), vertexId(serializeValues.vertexId),
     celltype(serializeValues.celltype)
   {
@@ -82,6 +85,7 @@ public:
       force_inner_link = copy.force_inner_link;
     }
     force_repulsion = copy.force_repulsion;
+    fromPreInlet = copy.fromPreInlet;
     tag = copy.tag;
     cellId = copy.cellId;
     vertexId = copy.vertexId;
@@ -92,6 +96,7 @@ public:
     HemoCellParticle() :
     position(serializeValues.position), v(serializeValues.v),
     force(serializeValues.force), force_repulsion(serializeValues.force_repulsion),
+    fromPreInlet(serializeValues.fromPreInlet),
     cellId(serializeValues.cellId), vertexId(serializeValues.vertexId),
     celltype(serializeValues.celltype)
     {
@@ -101,6 +106,7 @@ public:
 #if HEMOCELL_MATERIAL_INTEGRATION == 2
       vPrevious = {0.0,0.0,0.0};
 #endif
+      fromPreInlet = false;
       tag = -1;
       cellId = 0;
       vertexId = 0;
@@ -115,6 +121,7 @@ public:
     HemoCellParticle (hemo::Array<double,3> position_, plint cellId_, plint vertexId_,pluint celltype_) :
     position(serializeValues.position), v(serializeValues.v),
     force(serializeValues.force), force_repulsion(serializeValues.force_repulsion),
+    fromPreInlet(serializeValues.fromPreInlet),
     cellId(serializeValues.cellId), vertexId(serializeValues.vertexId),
     celltype(serializeValues.celltype)
 {
@@ -128,6 +135,7 @@ public:
 #if HEMOCELL_MATERIAL_INTEGRATION == 2
       vPrevious = {0.0,0.0,0.0};
 #endif
+      fromPreInlet = false;
       tag = -1;
       force_volume = &force; //These pointers are only changed for nice outputs
       force_area = &force; //These pointers are only changed for nice outputs
@@ -163,6 +171,7 @@ public:
       force_inner_link = copy.force_inner_link;
     }
     force_repulsion = copy.force_repulsion;
+    fromPreInlet = copy.fromPreInlet;
     tag = copy.tag;
     cellId = copy.cellId;
     vertexId = copy.vertexId;

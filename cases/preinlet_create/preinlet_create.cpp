@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
   unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
   //Setting Preinlet creation
-  Box3D preinletBox(0,5,0,hemocell.lattice->getBoundingBox().y1,0,hemocell.lattice->getBoundingBox().z1);
+  Box3D preinletBox(0,20,0,hemocell.lattice->getBoundingBox().y1,0,hemocell.lattice->getBoundingBox().z1);
   createPreInlet preinlet(preinletBox,"preinlet",(*cfg)["ibm"]["stepMaterialEvery"].read<int>(),Direction::Xpos,hemocell);
   
   
