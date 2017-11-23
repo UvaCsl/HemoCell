@@ -1,7 +1,7 @@
 #include "preInlet.h"
 #include <hdf5.h>
 #include <hdf5_hl.h>
-#include <hdf5/openmpi/H5LTpublic.h>
+#include <H5LTpublic.h>
 
 #ifndef H5_HAVE_PARALLEL
 herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
