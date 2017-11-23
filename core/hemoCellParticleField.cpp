@@ -456,22 +456,20 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
 
   deleteIncompleteCells();
 
-  map<int,vector<HemoCellParticle*>>  ppc_new;
-  lpc_up_to_date = false;
-  ppc_up_to_date = false;
+  map<int,vector<HemoCellParticle*>> * ppc_new = new map<int,vector<HemoCellParticle*>>();
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   const map<int,bool> & lpc = get_lpc();
   
   //Fill it here, probably needs optimization, ah well ...
-  for (const auto & pair : lpc) {
+  for (const auto & pair : particles_per_cell) {
     const int & cid = pair.first;
-    const vector<int> & cell = particles_per_cell.at(cid); 
-    ppc_new.insert(std::pair<int,vector<HemoCellParticle*>>(cid,vector<HemoCellParticle*>(cell.size())));
+    const vector<int> & cell = pair.second; 
+    (*ppc_new)[cid].resize(cell.size());
     for (unsigned int i = 0 ; i < cell.size() ; i++) {
       if (cell[i] == -1) {
-        ppc_new[cid][i] = NULL;
+        (*ppc_new)[cid][i] = NULL;
       } else {
-        ppc_new[cid][i] = &particles[cell[i]];
+        (*ppc_new)[cid][i] = &particles[cell[i]];
       }
     }
   }
@@ -483,9 +481,12 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
       for (HemoCellParticle* particle : found) {
         particle->force = {0.,0.,0.};        
       }
-      (*cellFields)[ctype]->mechanics->ParticleMechanics(ppc_new,lpc,ctype);
+      (*cellFields)[ctype]->mechanics->ParticleMechanics(*ppc_new,lpc,ctype);
     }
   }
+  
+  delete ppc_new;
+  
 }
 
 void HemoCellParticleField::applyRepulsionForce(bool forced) {
