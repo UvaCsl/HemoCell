@@ -39,6 +39,7 @@ class createPreInlet {
   Direction flowDir;
   int file_id, dataspace_velocity_id,dataset_velocity_id,plist_dataset_collective_id;
   int particle_type_mem, particle_type_h5;
+  //ofstream counter;
   
 public:
   createPreInlet(Box3D domain, string outputFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell);
@@ -75,6 +76,8 @@ class PreInlet {
   int particle_type_mem, particle_type_h5, particles_size;
   particle_hdf5_t * particles;
   int nCellsOffset, nCellsSelf;
+  //ifstream counter;
+
 
 
 public:  

@@ -45,7 +45,6 @@ INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -Wformat -Wformat-security")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=format-security")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
 #ENDIF (NOT CMAKE_CXX_FLAGS)
 
 #SET(DEFAULT ON CACHE INTERNAL "Default value for enabled by default options")

@@ -49,7 +49,9 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
       break;
   }
   
-  
+  //counter.open(global::directories().getOutputDir() + "/preinlet.counter",ios::trunc);
+  //counter << 0;
+
   hid_t plist_file_id = H5Pcreate(H5P_FILE_ACCESS);
     MPI_Info info  = MPI_INFO_NULL;
     H5Pset_fapl_mpio(plist_file_id, global::mpi().getGlobalCommunicator(), info);  
@@ -118,6 +120,7 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
 }
 
 createPreInlet::~createPreInlet() {
+  //counter.close();
   H5Pclose(plist_dataset_collective_id);
   H5Dclose(dataset_velocity_id);
   H5Sclose(dataspace_velocity_id);
@@ -247,7 +250,14 @@ void createPreInlet::saveCurrent() {
   wrapper.push_back(hemocell.cellfields->lattice);
   
   applyProcessingFunctional(new createPreInletFunctional(*this),domain,wrapper);
-  //H5Fflush(file_id,H5F_SCOPE_GLOBAL);
+
+  H5LTset_attribute_uint (file_id, "/", "Iterations", &hemocell.iter, 1);
+  H5Fflush(file_id,H5F_SCOPE_GLOBAL);
+  
+  /*if (global::mpi().getRank() == 0) {
+    counter.seekp(0);
+    counter <<  hemocell.iter;
+  }*/
 }
 
 createPreInlet::createPreInletFunctional * createPreInlet::createPreInletFunctional::clone() const {

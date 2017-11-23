@@ -41,6 +41,12 @@ PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTi
       break;
   }
 
+  /*counter.open(global::directories().getOutputDir() + "/preinlet.counter");
+  if (counter.fail()) {
+    pcout << "Error opening preinlet.counter, make sure it exists";
+    exit(0);
+  }*/
+  
   OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
   boundary->setVelocityConditionOnBlockBoundaries(*hemocell.lattice,fluidDomain);
   setBoundaryVelocity(*hemocell.lattice, fluidDomain, plb::Array<T,3>(0.,0.,0.));
@@ -229,7 +235,20 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
   delete[] data;
 }
 void PreInlet::update() {  
-  //When we are also saving particles
+  /*unsigned int iter;
+  while(true) {
+    counter.seekg(0);
+    counter >> iter;
+    if (counter.fail()) {
+      counter.close();
+      counter.open(global::directories().getOutputDir() + "/preinlet.counter");
+    }
+
+    if (iter > hemocell.iter + 1000) { //1000 is a reasonable offset until swmr support
+      break;
+    }
+  }*/
+  //When we are also reading particles
   if (hemocell.iter%particlePositionTimeStep==0) {
     std::string filename = "particles_" + std::to_string(hemocell.iter);
     dataset_particles_id = H5Dopen2( file_id, filename.c_str() , H5P_DEFAULT);  
