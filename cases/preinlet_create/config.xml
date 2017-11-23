@@ -33,7 +33,7 @@
 </domain>
 
 <sim>
-    <tmax> 50000 </tmax> <!-- total number of iterations -->
+    <tmax> 20000 </tmax> <!-- total number of iterations -->
     <tmeas>  1000 </tmeas> <!-- interval after which data is written --> 
     <tcheckpoint> 200000 </tcheckpoint> 
     <tbalance> 1000 </tbalance> <!-- interval after which balance is performed --> 
