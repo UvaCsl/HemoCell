@@ -149,12 +149,15 @@ void HemoCellFields::save(XMLreader * documentXML, unsigned int iter)
     if (global::mpi().isMainProcessor()) {
         renameFileToDotOld(outDir + "lattice.dat");
         renameFileToDotOld(outDir + "lattice.plb");
-        renameFileToDotOld(outDir + "checkpoint.xml");
         renameFileToDotOld(outDir + "cellfields.dat");
         renameFileToDotOld(outDir + "cellfields.plb");
-    } else {
-        usleep(1000); // Sleep for 1000 milliseconds
-    }
+        renameFileToDotOld(outDir + "particleField.dat");
+        renameFileToDotOld(outDir + "particleField.plb");
+        renameFileToDotOld(outDir + "checkpoint.xml");
+    } 
+    
+    global::mpi().barrier();
+    
     /* Save XML & Data */
     xmlw["Checkpoint"]["General"]["Iteration"].set(iter);
     xmlw.print(outDir + "checkpoint.xml");
