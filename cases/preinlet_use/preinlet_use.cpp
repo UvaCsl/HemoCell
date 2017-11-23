@@ -62,10 +62,6 @@ int main(int argc, char *argv[]) {
   hemocell.setMaterialTimeScaleSeparation("RBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
   hemocell.setMinimumDistanceFromSolid("RBC_HO", 1); //Micrometer! not LU
 
-  hemocell.addCellType<WbcHighOrderModel>("WBC_HO", WBC_SPHERE);
-  hemocell.setMaterialTimeScaleSeparation("WBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  hemocell.setMinimumDistanceFromSolid("WBC_HO", 1); //Micrometer! not LU
-
   hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
   
@@ -76,7 +72,6 @@ int main(int argc, char *argv[]) {
 
   vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
   hemocell.setOutputs("RBC_HO", outputs);
-  hemocell.setOutputs("WBC_HO", outputs);
   hemocell.setOutputs("PLT", outputs);
 
   outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE};
@@ -138,7 +133,6 @@ int main(int argc, char *argv[]) {
       pcout << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
       pcout << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
       pcout << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC_HO");
-      pcout << ", WBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "WBC_HO");
       pcout << ", PLT: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "PLT") << endl;
       FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell); double toMpS = param::dx / param::dt;
       pcout << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg * toMpS<< " m/s, rel. app. viscosity: " << (param::u_lbm_max*0.5) / finfo.avg << endl;

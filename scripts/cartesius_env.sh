@@ -4,5 +4,6 @@ module rm mpi fortran c
 module load mpi/openmpi/1.10.2
 module load gcc/5.2.0
 module load hdf5/ompi/gnu
+module load cmake/3.7.2
 module load python
 module list

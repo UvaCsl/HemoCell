@@ -19,7 +19,7 @@ MESSAGE( STATUS "PALABOS_BASE_DIR:         " ${PALABOS_BASE_DIR} )
 #=======================================
 ##### Beginning of build script
 
-PROJECT(${PROJECT_NAME} CXX)
+PROJECT(${PROJECT_NAME} CXX C)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 SET(CMAKE_VERBOSE_MAKEFILE 1)
 INCLUDE(GNUInstallDirs)
@@ -82,6 +82,7 @@ ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES})
 ADD_DEPENDENCIES(${PROJECT_NAME} "hemocell")
 target_link_libraries(${PROJECT_NAME} ${HEMOCELL_DIR}/libhemocell.a)
 
+SET(HDF5_PREFER_PARALLEL 1)
 FIND_PACKAGE(HDF5 COMPONENTS C HL)
 if(NOT ${HDF5_FOUND})
    message(fatal_error "Hdf5 Libraries not found!")
@@ -89,3 +90,10 @@ endif(NOT ${HDF5_FOUND})
 message(STATUS "HDF5 libs:      ${HDF5_LIBRARIES}")
 # This is needed because the static hdf5 libraries dont work
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${HDF5_LIBRARIES})
+if(HDF5_C_LIBRARY_hdf5)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${HDF5_C_LIBRARY_hdf5})
+endif(HDF5_C_LIBRARY_hdf5)
+if(HDF5_C_LIBRARY_hdf5_hl)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${HDF5_C_LIBRARY_hdf5_hl})
+endif(HDF5_C_LIBRARY_hdf5_hl)
+
