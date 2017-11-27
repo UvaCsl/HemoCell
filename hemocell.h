@@ -10,7 +10,7 @@
 #include "hemoCellFunctional.h"
 #include "hemoCellParticle.h"
 #include "hemoCellFields.h"
-#include "hemoCellParticleType.h"
+#include "hemoCellField.h"
 
 /* IO */
 #include "ParticleHdf5IO.h"

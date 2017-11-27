@@ -4,7 +4,7 @@
 #include "hemocell_internal.h"
 #include "hemoCellParticle.h"
 #include "hemoCellFields.h"
-#include "hemoCellParticleType.h"
+#include "hemoCellField.h"
 
 void writeCellField3D_HDF5(HemoCellFields& cellFields, double dx, double dt, plint iter, std::string preString="");
 

@@ -1,7 +1,7 @@
 #ifndef Hemo_CommonCellConstants_CPP
 #define Hemo_CommonCellConstants_CPP
 #include "commonCellConstants.h"
-#include "hemoCellParticleType.h"
+#include "hemoCellField.h"
 
 CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<hemo::Array<plint,3>> triangle_list_,

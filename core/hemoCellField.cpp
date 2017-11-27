@@ -11,7 +11,7 @@
  * Created on 30 March 2017, 11:24
  */
 
-#include "hemoCellParticleType.h"
+#include "hemoCellField.h"
 #include "immersedBoundaryMethod.h"
 #include "config.h"
 
