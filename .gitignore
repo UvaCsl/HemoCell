@@ -13,7 +13,3 @@ build/
 *.plist
 
 # Ignore the default case binary names
-fromSTL
-stretchCell
-stretching
-pipeflow
