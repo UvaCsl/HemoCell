@@ -25,10 +25,10 @@ public:
 	
 	virtual bool operator() (plint iX, plint iY, plint iZ) const {
 		return ((iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= LradiusSqr && iX >= 0 && iX < xbegin) ||
-			((iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= (((LradiusCyl-SradiusCyl)/2)*(1-std::cos((2*iX)/((L_constr/10)*std::acos(-1))))+(SradiusCyl))*(((LradiusCyl-SradiusCyl)/2)*(1-std::cos((2*iX)/((L_constr/10)*std::acos(-1))))+(SradiusCyl)) && iX >= xbegin && iX < xend) || 
+			//((iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= (((LradiusCyl-SradiusCyl)/2)*(1-std::cos((2*iX)/((L_constr/10)*std::acos(-1))))+(SradiusCyl))*(((LradiusCyl-SradiusCyl)/2)*(1-std::cos((2*iX)/((L_constr/10)*std::acos(-1))))+(SradiusCyl)) && iX >= xbegin && iX < xend) || 
 			//((iZ-Sxcirc)*(iZ-Sxcirc) + (iY-Sycirc)*(iY-Sycirc) <= SradiusSqr && iX >=100 && iX <=150) ||
-			
-			((iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= LradiusSqr && iX >= xend && iX <= 200);
+			( (iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= ( ((LradiusCyl-SradiusCyl)/2)*std::cos( (2*std::acos(-1)/L_constr)*iX - (L_constr*xbegin) ) + ( ((LradiusCyl-SradiusCyl)/2) + SradiusCyl ) ) * ( ((LradiusCyl-SradiusCyl)/2)*std::cos( (2*std::acos(-1)/L_constr)*iX - (L_constr*xbegin) ) + ( ((LradiusCyl-SradiusCyl)/2) + SradiusCyl ) )  && iX >= xbegin && iX < xend ) ||
+			((iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= LradiusSqr && iX >= xend && iX <= xend+xbegin);
 			
 	}
 
@@ -67,11 +67,12 @@ int main(int argc, char *argv[]) {
 
   pcout << "(vasoconstriction) setting dimensions ..." << std::endl;
 
-  plint nx = 2*(*cfg)["domain"]["refDirN"].read<int>(); 
-  plint ny = nx/2;
-  plint nz = ny;
+  plint Cfactor = 2;
+  plint nx = 6*(*cfg)["domain"]["refDirN"].read<int>(); //100lu=50um 
+  plint ny = (*cfg)["domain"]["refDirN"].read<int>()+Cfactor;
+  plint nz = ny+Cfactor;
 
-  plint LradiusCyl = ny/2;
+  plint LradiusCyl = (ny-Cfactor)/2;
   plint Lxcirc = ny/2;
   plint Lycirc = ny/2;
 
@@ -79,8 +80,8 @@ int main(int argc, char *argv[]) {
 //  plint Sxcirc = ny/2;
 //  plint Sycirc = ny/2;
 
-  plint L_constr = 100;
-  double perc_constr = 0.6;
+  plint L_constr = 400;
+  double perc_constr = 0.56; //28/50;
   plint xbegin = (nx-L_constr)/2;
   plint xend = xbegin + L_constr;
   
