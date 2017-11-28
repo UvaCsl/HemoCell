@@ -1,0 +1,39 @@
+.. HemoCell documentation master file, created by
+   sphinx-quickstart on Mon Nov 27 16:26:36 2017.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Welcome to HemoCell's User guide and documentation!
+====================================
+
+HemoCell implements an immersed boundary method with a lattice Boltzmann method
+and langrangian structure points for the cells. The lattice Boltzmann method is
+implemented with the help of the palabos library (`palabos.org`_). On top of that
+HemoCell manages the structures (material, cells) and the interactions between
+these and the fluid. The update of the forces of the mechanical model of a cell
+are highly optimized as is the interaction between the fluid and the mechanical
+model. 
+
+When using HemoCell please cite [#HC]_.
+
+Contents:
+
+.. toctree::
+   :maxdepth: 2
+
+   QuickStart
+   Downloads
+
+
+..
+  Indices and tables
+  ==================
+
+  * :ref:`genindex`
+  * :ref:`modindex`
+  * :ref:`search`
+
+.. rubric:: References
+.. [#HC] Zavodszky, G., van Rooij, B., Azizi, V., Alowayyed, S., & Hoekstra, A. (2017).  Hemocell: a high-performance microscopic cellular library. Procedia Computer Science, 108, 159-165.
+
+.. _palabos.org: http://palabos.org
