@@ -33,6 +33,17 @@
 /* EXTERNALS */
 #include "diagonalize.hpp"  // TODO: Do we need this file?
 
+/**
+ * The HemoCell class contains all the information, data and methods to set up a
+ * basic HemoCell simulation.
+ *  
+ * Most importantly:
+ *  It contains one Palabos FluidField
+ *  It contains one CellFields
+ *
+ * After everything is set HemoCell::iterate() is used to iterate the
+ * simulation.
+ */
 
 class HemoCell {
   public:
