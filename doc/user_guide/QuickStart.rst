@@ -1,11 +1,9 @@
+
 HemoCell Getting Started
 ===================
 
 To get quickly started with HemoCell we recommend using our singularity [#SL]_
-which can be downloaded from here: `target_for_download`_
-
-.. todo::
-  create target_for_download
+which can be downloaded from here: :ref:`downloads`.
 
 Setting up HemoCell with singularity
 ------------------------------------
@@ -25,7 +23,7 @@ version requirement of singularity. Singularity is still in *beta* and
 regularily making breaking changes. 
 
 After you finished setting up singularity you can download the HemoCell
-singularity image from here: `target_for_download`_. 
+singularity image from here: :ref:`downloads`. 
 
 The singularity image supports the following commands which should enable you to
 compile, run and parse output from HemoCell:
@@ -53,7 +51,7 @@ singularity exec hemocell.img **post_process** [*<case>*,...]
 Setting up HemoCell from source
 -------------------------------
 
-Requirements for running HemoCell from source:
+Requirements for compiling and/or running HemoCell from source:
 
   +-------------+---------+
   |Dependency   |Version  |
@@ -72,9 +70,63 @@ Requirements for running HemoCell from source:
   +-------------+---------+
   | h5py        | 2.6.0-1 |
   +-------------+---------+
+  | (Optional)  | 4.0.3   |
+  | ParMetis    |         |
+  +-------------+---------+
+  | Palabos     | 2.0     |
+  +-------------+---------+
 
-.. _target_for_download: about:blank 
+On ubuntu 16.04 most of these dependencies can be installed by running::
+  
+  sudo apt-get install make cmake g++-5 g++ libopenmpi-dev libhdf5-dev patch python-h5py
+
+This leaves the palabos and Parmetis dependencies. Palabos can be downloaded
+from `palabos.org`_. After downloading Palabos must be extracted to ``./hemocell/palabos`` which can
+be done like so::
+  
+  tar -xzf palabos-v2.0r0.tgz 
+  mv palabos-v2.0r0 ./hemocell/palabos
+
+After this palabos must be patched. This can be done by running
+``./patchPLB.sh`` from the ``./hemocell/patch/`` directory, like so::
+
+  cd hemocell/patch && ./patchPLB.sh
+
+The patching should succeed even though there can be an offset in some files.
+
+Parmetis is included in the ``./hemocell/external/`` directory. If you need it
+because you want load balancing to be enabled you should extract it with::
+
+  cd hemocell/external && tar -xzf parmetis-4.0.3.tar.gz 
+
+Compiling HemoCell from source
+------------------------------
+
+To compile HemoCell you can simply navigate to a case and invoke ``cmake``
+there. We recommend to do it in the following way::
+
+  cd <path/to/case>
+  mkdir build
+  cd build
+  cmake ../
+  make
+
+Cmake might sometimes fail while using the -j flag with make. Then simply try again.
+
+Each case depends on the hemocell build located in ``hemocell/build/hemocell``.
+Cmake is ran in this directory as a dependency of each case. It is also possible
+to first run ``cmake`` in the ``hemocell/build/hemocell`` directory to first
+build the library.
+
+Furthermore a ``MakeFile`` is provided in the ``hemocell/cases`` directory. this
+makefile can be used to update build files for all cases (see :ref:`cases_make`
+for more info)
+
+
+
 
 .. [#PF] `https://paraview.org <https://paraview.org>`_
 
 .. [#SL] `singularity.lbl.gov <http://singularity.lbl.gov/>`_
+
+.. _palabos.org: http://palabos.org

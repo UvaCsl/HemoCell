@@ -31,7 +31,12 @@ import os
 extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
+    'sphinxcontrib.inlinesyntaxhighlight',
+    'breathe',
 ]
+
+breathe_projects = {"hemocell": "../doxygen/xml/"}
+breathe_default_project = "hemocell"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

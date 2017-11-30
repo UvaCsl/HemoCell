@@ -14,15 +14,45 @@ these and the fluid. The update of the forces of the mechanical model of a cell
 are highly optimized as is the interaction between the fluid and the mechanical
 model. 
 
-When using HemoCell please cite [#HC]_.
-
-Contents:
 
 .. toctree::
    :maxdepth: 2
 
    QuickStart
+   Case
    Downloads
+
+.. toctree::
+   :maxdepth: 1
+
+   Scripts
+
+.. toctree::
+   :maxdepth: 2
+
+   Case_edit
+   hemocell_doxygen
+
+Acknowledgments
+----------------
+
+HemoCell is developed and maintained by the following persons. Any questions
+about hemocell can be directed toward: .
+
+.. list-table::
+  :header-rows: 0
+
+  * - Victor azizi  
+    - Lead Programmer
+    - V.W.AziziTarksalooyeh at uva.nl
+  * - Gábor Zavodszky 
+    - Developer and user 
+    - G.Zavodszky at uva.nl
+  * - Britt van Rooij 
+    - Developer and user 
+    - B.J.M.vanRooij at uva.nl
+
+*When using HemoCell please* **cite** *the HemoCell paper* [#HC]_.
 
 
 ..

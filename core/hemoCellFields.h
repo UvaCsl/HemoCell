@@ -10,10 +10,11 @@ class HemoCellFields;
 #include <unistd.h>
 
 class HemoCell;
-/*
+
+/*!
  * This class can contain many cellTypes, it keeps track of all the particles
  * of all types. The option exists to get exclusive access to a single
- * cellType if necessary.`
+ * cellType if necessary. all the particles are stored in a single particlefield
  */
 class HemoCellFields
 {
@@ -35,8 +36,6 @@ public:
   ///Generic Destructor
   ~HemoCellFields();
   
-  
-
   ///Add an celltype with a certain mesh, the name also specifies <name_>.xml and <name_>.pos
   HemoCellField * addCellType(TriangularSurfaceMesh<double> & meshElement, std::string name_);
   
