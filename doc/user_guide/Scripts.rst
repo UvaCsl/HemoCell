@@ -32,6 +32,8 @@ hemocell/patch/patchPLB.sh
 used to patch Palabos to add some features that HemoCell needs but are by
 default not available.
 
+.. _bpp:
+
 hemocell/scripts/batchPostProcess.sh
 ------------------------------------
 
@@ -50,3 +52,14 @@ These files contain the corresponding build dependencies on the cartesius system
 of SurfSara. They should be sourced instead of executed::
 
   . ./scripts/cartesius_env.sh
+
+.. _ccsv:
+
+hemocell/scripts/CellInfoMergeCSV.sh
+------------------------------------
+
+This script merges the CSV output from multiple processors into a single one in
+the current directory. Use it in the ``tmp`` directory like this::
+
+  cd hemocell/cases/<case>/tmp/
+  . ./scripts/CellInfoMergeCSV.sh

@@ -3,8 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to HemoCell's User guide and documentation!
+HemoCell's User guide
 ====================================
+
+*When using HemoCell please* **cite** *the HemoCell paper* [#HC]_.
 
 HemoCell implements an immersed boundary method with a lattice Boltzmann method
 and langrangian structure points for the cells. The lattice Boltzmann method is
@@ -30,14 +32,13 @@ model.
 .. toctree::
    :maxdepth: 2
 
-   Case_edit
    hemocell_doxygen
 
 Acknowledgments
 ----------------
 
 HemoCell is developed and maintained by the following persons. Any questions
-about hemocell can be directed toward: .
+about hemocell can be directed toward: info@hemocell.eu.
 
 .. list-table::
   :header-rows: 0

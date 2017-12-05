@@ -5,7 +5,7 @@ HemoCell Getting Started
 To get quickly started with HemoCell we recommend using our singularity [#SL]_
 which can be downloaded from here: :ref:`downloads`.
 
-Setting up HemoCell with singularity
+HemoCell with singularity
 ------------------------------------
 
 Requirements for running HemoCell with singularity:
@@ -123,10 +123,42 @@ makefile can be used to update build files for all cases (see :ref:`cases_make`
 for more info)
 
 
+Running a HemoCell case
+-----------------------
+
+A HemoCell case should be run within the folder containing the ``.xml`` and
+``.pos`` files. You can specify the number of desired processors with
+``mpirun``. The only argument for the case should be the ``config.xml`` file.
+A typical command looks like this::
+
+  cd hemocell/cases/pipeflow
+  mpirun -n 4 ./pipeflow config.xml
+
+
+.. _read_output:
+
+Parsing the output of a HemoCell case
+--------------------------------------
+
+a HemoCell case produces multiple types of output. The simplest is the ``csv``
+output which consists of all the information about cells in csv files. To merge
+the csv files into a single one per timestep you can use the script :any:`ccsv`
+in the `tmp` directory. This will generate them for you.
+
+The more detailed ouput on both the fluid field and particle field is stored in
+``hdf5`` format. We recommend using the xdmf [#XDMF]_ format to make these
+readable for paraview [#PF]_ . To generate ``.xmf`` files run the :any:`bpp`
+script.
+
+When you have created the ``.xmf`` files you can load them into paraview, please
+select the *Legacy* xdmf file format when loading them in. the HemoCell ``.xmf``
+files are not yet Xdmf3 compatible.
 
 
 .. [#PF] `https://paraview.org <https://paraview.org>`_
 
 .. [#SL] `singularity.lbl.gov <http://singularity.lbl.gov/>`_
+
+.. [#XDMF] `Xdmf.org <www.xdmf.org>`_
 
 .. _palabos.org: http://palabos.org
