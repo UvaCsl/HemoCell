@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
 
   //Setting Preinlet creation
   Box3D preinletBox(0,20,0,hemocell.lattice->getBoundingBox().y1,0,hemocell.lattice->getBoundingBox().z1);
-  PreInlet preinlet(preinletBox,"preinlet",(*cfg)["ibm"]["stepMaterialEvery"].read<int>(),Direction::Xpos,hemocell);
+  PreInlet preinlet(preinletBox,"preinlet",(*cfg)["ibm"]["stepMaterialEvery"].read<int>(),Direction::Xpos,hemocell, true);
   
   
   pcout << "(PipeFlow) Starting simulation..." << endl;

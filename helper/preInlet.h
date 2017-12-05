@@ -39,10 +39,12 @@ class createPreInlet {
   Direction flowDir;
   int file_id, dataspace_velocity_id,dataset_velocity_id,plist_dataset_collective_id;
   int particle_type_mem, particle_type_h5;
+  bool reducedPrecision;
+  int reducedPrecisionDirection;
   //ofstream counter;
   
 public:
-  createPreInlet(Box3D domain, string outputFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell);
+  createPreInlet(Box3D domain, string outputFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell, bool reducedPrecision_ = false);
   void saveCurrent();
   ~createPreInlet();
 };
@@ -77,11 +79,12 @@ class PreInlet {
   particle_hdf5_t * particles;
   int nCellsOffset, nCellsSelf;
   //ifstream counter;
-
+  bool reducedPrecision;
+  int reducedPrecisionDirection;
 
 
 public:  
-  PreInlet(Box3D domain, string sourceFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell);
+  PreInlet(Box3D domain, string sourceFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell, bool reducedPrecision_ = false);
   void update();
   ~PreInlet();
 };

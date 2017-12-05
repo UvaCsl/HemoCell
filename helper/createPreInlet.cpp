@@ -20,12 +20,13 @@ herr_t H5Pset_dxpl_mpio( hid_t dxpl_id, H5FD_mpio_xfer_t xfer_mode ) {
 }
 #endif
 
-createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particlePositionTimestep_, Direction flowDir_, HemoCell & hemocell_) 
+createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particlePositionTimestep_, Direction flowDir_, HemoCell & hemocell_, bool reducedPrecision_) 
 : hemocell(hemocell_) {
   this->domain = domain_;
   this->outputFileName = global::directories().getOutputDir() + "/" + outputFileName_  + ".hdf5";
   this->particlePositionTimeStep = particlePositionTimestep_;
   this->flowDir = flowDir_;
+  this->reducedPrecision = reducedPrecision_;
 
   fluidDomain = domain;
   switch(flowDir) {
@@ -61,10 +62,23 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
   //Attributes:
   H5LTset_attribute_int (file_id, "/", "flowDirection", (int *)&flowDir, 1);
   H5LTset_attribute_int(file_id, "/", "Number Of Cells", &hemocell.cellfields->number_of_cells,1);
-  
+  int rP;
+  if (reducedPrecision) {
+    rP = 1;
+    reducedPrecisionDirection = (int)flowDir/2;
+  } else {
+    rP = 0;
+  }
+  H5LTset_attribute_int (file_id, "/", "reduced precision", &rP, 1);
+
   //Velocity, 1st dim == timestep, 2-4th == space of fluid nodes, one dim will be 1, 5 == all three velocity directions 
   hsize_t dims[5] = {0,(hsize_t)fluidDomain.getNx(),(hsize_t)fluidDomain.getNy(),(hsize_t)fluidDomain.getNz(),3};
   hsize_t maximum_size[5] = {H5S_UNLIMITED,(hsize_t)fluidDomain.getNx(),(hsize_t)fluidDomain.getNy(),(hsize_t)fluidDomain.getNz(),3};
+  if (reducedPrecision) {
+    dims[4] = 1;
+    maximum_size[4] = 1;
+    }
+
   hsize_t chunks[5] = {1,dims[1],dims[2],dims[3],dims[4]};
   int sizes[3] = {(int)domain.getNx(),(int)domain.getNy(),(int)domain.getNz()};
   
@@ -78,7 +92,11 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
   //  H5Pset_deflate(plist_dataset_id, 7);
 
     dataspace_velocity_id = H5Screate_simple(5, dims, maximum_size);
-    dataset_velocity_id = H5Dcreate2(file_id,"Velocity Boundary",H5T_NATIVE_DOUBLE,dataspace_velocity_id,H5P_DEFAULT,plist_dataset_id,H5P_DEFAULT);
+    if (reducedPrecision) {
+      dataset_velocity_id = H5Dcreate2(file_id,"Velocity Boundary",H5T_IEEE_F32LE,dataspace_velocity_id,H5P_DEFAULT,plist_dataset_id,H5P_DEFAULT);
+    } else {
+      dataset_velocity_id = H5Dcreate2(file_id,"Velocity Boundary",H5T_IEEE_F64LE,dataspace_velocity_id,H5P_DEFAULT,plist_dataset_id,H5P_DEFAULT);
+    }
   H5Pclose(plist_dataset_id);
 
   H5Fflush(file_id, H5F_SCOPE_GLOBAL);
@@ -139,43 +157,72 @@ void createPreInlet::createPreInletFunctional::processGenericBlocks(Box3D domain
   
   hsize_t offset[5]={parent.hemocell.iter,(hsize_t)fluidBox.x0-parent.fluidDomain.x0,(hsize_t)fluidBox.y0-parent.fluidDomain.y0,(hsize_t)fluidBox.z0-parent.fluidDomain.z0,0};
   hsize_t count[5]= {1,(hsize_t)fluidBox.getNx(),(hsize_t)fluidBox.getNy(),(hsize_t)fluidBox.getNz(),3};
+  if(parent.reducedPrecision) {
+    count[4]=1;
+  }
   if(H5Sselect_hyperslab(parent.dataspace_velocity_id, H5S_SELECT_SET, offset, NULL, count, NULL ) < 0 ) {
     cerr << "Error selecting hyperslab, exiting.." << endl; 
     exit(0);
   }
   hid_t memspace_id = H5Screate_simple (5, count, NULL); 
-
-  double *data = new double[count[1]*count[2]*count[3]*count[4]];
+  
   plb::Array<double,3> vel;
   Box3D unshiftedfluidBox = fluidBox.shift(-fluidfield->getLocation().x,-fluidfield->getLocation().y,-fluidfield->getLocation().z);
   plint xx = unshiftedfluidBox.x0;
   plint yy = unshiftedfluidBox.y0;
   plint zz = unshiftedfluidBox.z0;
   plint index = 0;
-  for (plint z = 0 ; z < fluidBox.getNz() ; z++) {
-    for (plint y = 0 ; y < fluidBox.getNy() ; y++) {
-      for (plint x = 0; x < fluidBox.getNx() ; x++) {
-        fluidfield->grid[xx][yy][zz].computeVelocity(vel);
-        data[index] = vel[0];
-        data[index+1] = vel[1];
-        data[index+2] = vel[2];
-        index+=3;
-        
-        xx++;
+  herr_t err = 0;
+  if (parent.reducedPrecision) {
+    static_assert(sizeof(float)==4, "Plattform float is not 32 bit, preinlet will not work");
+    float * data = new float[count[1]*count[2]*count[3]*count[4]];
+    
+    for (plint z = 0 ; z < fluidBox.getNz() ; z++) {
+      for (plint y = 0 ; y < fluidBox.getNy() ; y++) {
+        for (plint x = 0; x < fluidBox.getNx() ; x++) {
+          fluidfield->grid[xx][yy][zz].computeVelocity(vel);
+          data[index] = vel[parent.reducedPrecisionDirection];
+          index++;
+    
+          xx++;
+        }
+        xx = unshiftedfluidBox.x0;
+        yy++;
       }
-      xx = unshiftedfluidBox.x0;
-      yy++;
+      yy = unshiftedfluidBox.y0;
+      zz++;
     }
-    yy = unshiftedfluidBox.y0;
-    zz++;
+    err = H5Dwrite(parent.dataset_velocity_id,H5T_IEEE_F32LE,memspace_id,parent.dataspace_velocity_id,parent.plist_dataset_collective_id,data);
+    delete[] data;
+  } else {
+    static_assert(sizeof(double)==8, "Plattform double is not 64 bit, preinlet will not work");
+    double * data = new double[count[1]*count[2]*count[3]*count[4]];
+    for (plint z = 0 ; z < fluidBox.getNz() ; z++) {
+      for (plint y = 0 ; y < fluidBox.getNy() ; y++) {
+        for (plint x = 0; x < fluidBox.getNx() ; x++) {
+          fluidfield->grid[xx][yy][zz].computeVelocity(vel);
+          data[index] = vel[0];
+          data[index+1] = vel[1];
+          data[index+2] = vel[2];
+          index+=3;
+        
+          xx++;
+        }
+        xx = unshiftedfluidBox.x0;
+        yy++;
+      }
+      yy = unshiftedfluidBox.y0;
+      zz++;
+    }
+    err = H5Dwrite(parent.dataset_velocity_id,H5T_IEEE_F64LE,memspace_id,parent.dataspace_velocity_id,parent.plist_dataset_collective_id,data);
+    delete[] data;
   }
-
-  if (H5Dwrite(parent.dataset_velocity_id,H5T_NATIVE_DOUBLE,memspace_id,parent.dataspace_velocity_id,parent.plist_dataset_collective_id,data) < 0) {
+ 
+  if ( err < 0) {
     cerr << "Error writing to hyperslab, exiting.." << endl; 
     exit(0);
   };
   H5Sclose(memspace_id);
-  delete[] data;
 
 }
 
@@ -237,9 +284,15 @@ void createPreInlet::saveCurrent() {
     H5Pclose(plist_dataset_id);
     delete[] particles_hdf5;
   }
-    
-  hsize_t size[5] = {hemocell.iter+1,(hsize_t)fluidDomain.getNx(),(hsize_t)fluidDomain.getNy(),(hsize_t)fluidDomain.getNz(),3};
-  if (H5Dset_extent( dataset_velocity_id, size ) < 0) {
+  herr_t err = 0;
+  if (reducedPrecision) {  
+    hsize_t size[5] = {hemocell.iter+1,(hsize_t)fluidDomain.getNx(),(hsize_t)fluidDomain.getNy(),(hsize_t)fluidDomain.getNz(),1};
+    err= H5Dset_extent( dataset_velocity_id, size );
+  } else {
+    hsize_t size[5] = {hemocell.iter+1,(hsize_t)fluidDomain.getNx(),(hsize_t)fluidDomain.getNy(),(hsize_t)fluidDomain.getNz(),3};
+    err = H5Dset_extent( dataset_velocity_id, size );
+  }
+  if (err < 0) {
     cerr << "Error enlarging extent, exiting.." << endl; 
     exit(0);
   }

@@ -12,13 +12,16 @@ herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
 }
 #endif
 
-PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTimestep_, Direction flowDir_, HemoCell& hemocell_) 
+PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTimestep_, Direction flowDir_, HemoCell& hemocell_, bool reducedPrecision_) 
   : hemocell(hemocell_) {
   this->domain = domain_;
   this->sourceFileName = global::directories().getOutputDir() + "/" + sourceFileName_  + ".hdf5";
   this->particlePositionTimeStep = particlePositionTimestep_;
   this->flowDir = flowDir_;
-
+  this->reducedPrecision = reducedPrecision_;
+  if (reducedPrecision) {
+    this->reducedPrecisionDirection = flowDir/2;
+  }
   fluidDomain = domain;
   switch(flowDir) {
     case Xpos:
@@ -80,6 +83,15 @@ PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTi
   if(H5LTget_attribute_int(file_id,"/","Number Of Cells",&nCellsSelf) < 0) { 
     cout << "Error reading number of cells attribute" << endl; exit(0); 
   }
+  
+  int rp;
+  if(H5LTget_attribute_int(file_id,"/","reduced precision",&rp) < 0) { 
+    cout << "Error reading reduced precision attribute" << endl; exit(0); 
+  }
+  if ((rp == 0 && reducedPrecision) || (rp == 1 && !reducedPrecision)) {
+    cout << "Dataset is reduced precision, none requested or the other way around" << endl; exit(0);
+  }
+  
   nCellsOffset = hemocell.cellfields->number_of_cells;
   hemocell.cellfields->number_of_cells += nCellsSelf;
      
@@ -190,49 +202,88 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
   
   hsize_t offset[5]={parent.hemocell.iter,(hsize_t)fluidBox.x0-parent.fluidDomain.x0,(hsize_t)fluidBox.y0-parent.fluidDomain.y0,(hsize_t)fluidBox.z0-parent.fluidDomain.z0,0};
   hsize_t count[5]= {1,(hsize_t)fluidBox.getNx(),(hsize_t)fluidBox.getNy(),(hsize_t)fluidBox.getNz(),3};
+  if (parent.reducedPrecision) {
+    count[4] = 1;
+  }
   if(H5Sselect_hyperslab(parent.dataspace_velocity_id, H5S_SELECT_SET, offset, NULL, count, NULL ) < 0 ) {
     cerr << "Error selecting hyperslab, exiting.." << endl; 
     exit(0);
   }
   hid_t memspace_id = H5Screate_simple (5, count, NULL); 
-
-  double *data = new double[count[1]*count[2]*count[3]*count[4]];
-
-  H5Dread(parent.dataset_velocity_id,H5T_NATIVE_DOUBLE,memspace_id,parent.dataspace_velocity_id,H5P_DEFAULT,data);
-  
   plb::Array<double,3> vel;
   Box3D unshiftedfluidBox = fluidBox.shift(-fluidfield->getLocation().x,-fluidfield->getLocation().y,-fluidfield->getLocation().z);
   plint xx = unshiftedfluidBox.x0;
   plint yy = unshiftedfluidBox.y0;
   plint zz = unshiftedfluidBox.z0;
   plint index = 0;
-  for (plint z = 0 ; z < fluidBox.getNz() ; z++) {
-    for (plint y = 0 ; y < fluidBox.getNy() ; y++) {
-      for (plint x = 0; x < fluidBox.getNx() ; x++) {
-        //Skip boundaries
-        /*if (fluidfield->get(xx,yy,zz).getDynamics().isBoundary()) {
+
+  if(parent.reducedPrecision) {
+    static_assert(sizeof(float) == 4, "float size not 32 bits, exiting");
+    float *data = new float[count[1]*count[2]*count[3]*count[4]];
+    H5Dread(parent.dataset_velocity_id,H5T_IEEE_F32LE,memspace_id,parent.dataspace_velocity_id,H5P_DEFAULT,data);
+  
+  
+    for (plint z = 0 ; z < fluidBox.getNz() ; z++) {
+      for (plint y = 0 ; y < fluidBox.getNy() ; y++) {
+        for (plint x = 0; x < fluidBox.getNx() ; x++) {
+          //Skip boundaries
+          /*if (fluidfield->get(xx,yy,zz).getDynamics().isBoundary()) {
+            index+=3;
+            xx++;
+            continue;
+          };*/
+
+          vel[0] = 0;
+          vel[1] = 0;
+          vel[2] = 0;
+          vel[parent.reducedPrecisionDirection] = data[index];
+          fluidfield->get(xx,yy,zz).defineVelocity(vel);
+
+          index++;
+          xx++;
+        }
+        xx = unshiftedfluidBox.x0;
+        yy++;
+      }
+      yy = unshiftedfluidBox.y0;
+      zz++;
+    }
+    delete[] data;
+  } else {
+    static_assert(sizeof(double) == 8, "double size not 64 bits, exiting");
+    double *data = new double[count[1]*count[2]*count[3]*count[4]];
+    H5Dread(parent.dataset_velocity_id,H5T_IEEE_F64LE,memspace_id,parent.dataspace_velocity_id,H5P_DEFAULT,data);
+  
+  
+    for (plint z = 0 ; z < fluidBox.getNz() ; z++) {
+      for (plint y = 0 ; y < fluidBox.getNy() ; y++) {
+        for (plint x = 0; x < fluidBox.getNx() ; x++) {
+          //Skip boundaries
+          /*if (fluidfield->get(xx,yy,zz).getDynamics().isBoundary()) {
+            index+=3;
+            xx++;
+            continue;
+          };*/
+
+          vel[0] = data[index];
+          vel[1] = data[index+1];
+          vel[2] = data[index+2];
+
+          fluidfield->get(xx,yy,zz).defineVelocity(vel);
+
           index+=3;
           xx++;
-          continue;
-        };*/
-
-        vel[0] = data[index];
-        vel[1] = data[index+1];
-        vel[2] = data[index+2];
-
-        fluidfield->get(xx,yy,zz).defineVelocity(vel);
-
-        index+=3;
-        xx++;
+        }
+        xx = unshiftedfluidBox.x0;
+        yy++;
       }
-      xx = unshiftedfluidBox.x0;
-      yy++;
+      yy = unshiftedfluidBox.y0;
+      zz++;
     }
-    yy = unshiftedfluidBox.y0;
-    zz++;
+    delete[] data;
   }
+  
   H5Sclose(memspace_id);
-  delete[] data;
 }
 void PreInlet::update() {  
   /*unsigned int iter;
