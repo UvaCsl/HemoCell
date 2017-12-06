@@ -26,9 +26,12 @@ using namespace std;
  */
 void weakScaling(int Nx, int Ny, int Nz, int numberOfProcesses, vector<int> & newNxNyNz);
 
-/* Checks if a file exists */
+inline bool file_exists (const std::string& name) {
+    /* Checks if a file exists */
 // http://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exist-using-standard-c-c11-c
-inline bool file_exists (const std::string& name);
+  struct stat buffer;
+  return (stat (name.c_str(), &buffer) == 0);
+}
 
 int renameFileToDotOld(std::string fName);
 

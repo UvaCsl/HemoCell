@@ -1,9 +1,15 @@
 #include "config.h"
+#include "genericFunctions.h"
 #include <stdexcept>
+#include <sys/stat.h>
 
 namespace hemo {
   Config::Config(std::string paramXmlFileName) 
   {  
+    if (!file_exists(paramXmlFileName)) {
+      pcout << paramXmlFileName + " is not an existing config file, exiting ..." << endl;
+      exit(0);
+    }
     orig = new tinyxml2::XMLDocument();
     orig->LoadFile(paramXmlFileName.c_str());
    // Check if it is a fresh start or a checkpointed run 
