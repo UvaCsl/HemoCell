@@ -1,4 +1,8 @@
 #!/bin/bash
+if [ ! -d ./csv ]; then
+  echo "No csv folder, exiting"
+  exit 0
+fi
 for dir in ./csv/*/
 do
   timestep=`echo ${dir} | cut -d/ -f3`
