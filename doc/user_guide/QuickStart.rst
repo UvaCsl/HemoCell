@@ -39,14 +39,14 @@ singularity exec hemocell.img **compile** [*<case>*,...]
 singularity exec hemocell.img **compile_all**
   This will try to compile all the cases within the ``./hemocell/cases/`` folder.
   While compiling it will use the dependencies from the singularity image.                                                                
-singularity exec hemocell.img **run** [--optional mpirun arguments] *<case>*
+singularity exec hemocell.img **run** [--optional mpirun args] *<case>* <config>.xml
   This runs the HemoCell *case* within ``./hemocell/cases/<case>``. The executable
   is called with mpirun and optional arguments (like -n 4). The output is thus
   stored in ``./hemocell/cases/<case>/tmp/``
 
 singularity exec hemocell.img **post_process** [*<case>*,...]
   This creates the ``*.xmf`` and ``*.csv`` files in the ``./hemocell/cases/<case>/tmp`` 
-  directory. These files can be used to analyze the data (e.g. with Paraview [#PF]_)
+  directory. These files can be used to analyze the data (e.g. with Paraview [#PF]_). This script removes previously generated csv and xmf files
 
 Setting up HemoCell from source
 -------------------------------

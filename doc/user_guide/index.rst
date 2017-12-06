@@ -30,6 +30,11 @@ model.
    Scripts
 
 .. toctree::
+   :maxdepth: 1
+
+   FAQ
+
+.. toctree::
    :maxdepth: 2
 
    hemocell_doxygen
