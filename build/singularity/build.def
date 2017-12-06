@@ -1,0 +1,108 @@
+Bootstrap:docker
+From:ubuntu:16.04
+
+%setup
+  echo "Getting HemoCell from Repository... "
+  git clone --branch stable_latest --depth 1 https://gitlab.computationalscience.nl/zega/hemocell.git $SINGULARITY_ROOTFS/hemocell ||:
+  echo "Done."
+
+%post
+  echo "Installing required ubuntu packages... "
+  apt-get update
+  apt-get -y install make cmake g++-5 g++ libopenmpi-dev libhdf5-dev patch python-h5py
+  rm -rf /hemocell/palabos || :
+  (cd /hemocell;tar -xzf palabos_dev.tgz)
+  (cd /hemocell/patch;./patchPLB.sh)
+
+  #Create our scripts, compatible with 2.2 and lower
+  cat <<EOF > /usr/local/bin/compile
+#!/bin/bash
+if [ ! -d "hemocell/cases" ]; then
+echo "hemocell/cases folder doesn't exists, did you ran make_library first?"
+exit 1
+fi
+cd hemocell/cases
+if [ "\$#" -lt 1 ]; then
+  echo "Usage: compile <case>"
+  exit 1
+fi
+for case; do
+if [ ! -d "\${case}" ]; then
+  echo "Case doesn't exist. exiting ..."
+  exit 1
+fi
+  (cd \${case}/;rm -rf build)
+  (cd \${case}/;mkdir -p build)
+  (cd \${case}/build;cmake ../)
+  (cd \${case}/build;make)
+done 
+EOF
+
+  cat <<EOF > /usr/local/bin/compile_all
+#!/bin/bash
+if [ ! -d "hemocell/cases" ]; then
+echo "hemocell/cases folder doesn't exists, did you ran make_library first?"
+exit 1
+fi
+cd hemocell/cases
+make
+EOF
+
+  cat <<EOF > /usr/local/bin/make_library
+cp -r /hemocell .
+(cd hemocell/build/hemocell;cmake .)
+(cd hemocell/build/hemocell;make -j8)
+EOF
+
+  cat <<EOF > /usr/local/bin/run
+#!/bin/bash
+if [[ ! -d "hemocell/cases/\${@:(-2):1}/" ]]; then
+echo "hemocell/cases/\${@:(-2):1}/ doesn't exists. are you in the right directory?  is the case name the second to last argument?"
+exit 1
+fi
+(cd hemocell/cases/\${@:(-2):1};mpirun \$@)
+EOF
+
+  cat <<EOF > /usr/local/bin/post_process
+#!/bin/bash
+if [ \$# -lt 1 ]; then
+  echo "Usage post_process [case,...]"
+  exit 1
+fi
+for case; do
+if [ ! -d "hemocell/cases/\${case}" ]; then
+  echo "Case \${case} doesn't exist. exiting ..."
+  exit 1
+fi
+(cd hemocell/cases/\${case}/tmp;rm *.xmf *.csv)
+(cd hemocell/cases/\${case};../../scripts/batchPostProcess.sh)
+(cd hemocell/cases/\${case}/tmp;../../../scripts/CellInfoMergeCSV.sh)
+done
+EOF
+
+chmod +x /usr/local/bin/compile
+chmod +x /usr/local/bin/compile_all
+chmod +x /usr/local/bin/make_library
+chmod +x /usr/local/bin/run
+chmod +x /usr/local/bin/post_process
+
+#This is for cartesius.surfsara.nl, no harm in creating these directories ...
+mkdir -p /cvmfs /scratch /tmpdir /scratch-shared /scratch-local /hpc /projects /lustre1 /lustre2 /lustre4
+
+%runscript
+  echo "HemoCell does not have a "running environment" exiting ..."
+
+%apprun compile
+  compile "$@"
+
+%apprun compile_all
+  compile_all
+  
+%apprun make_library
+  make_library
+
+%apprun run
+  run
+
+%apprun post_process
+  post_process
