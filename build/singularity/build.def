@@ -12,6 +12,7 @@ From:ubuntu:16.04
   apt-get -y install make cmake g++-5 g++ libopenmpi-dev libhdf5-dev patch python-h5py
   rm -rf /hemocell/palabos || :
   (cd /hemocell;tar -xzf palabos_dev.tgz)
+  (cd /hemocell;mv palabos-* palabos)
   (cd /hemocell/patch;./patchPLB.sh)
 
   #Create our scripts, compatible with 2.2 and lower
