@@ -44,7 +44,7 @@ class createPreInlet {
   //ofstream counter;
   
 public:
-  createPreInlet(Box3D domain, string outputFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell, bool reducedPrecision_ = false);
+  createPreInlet(Box3D domain, string outputFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell, int desired_iterations, bool reducedPrecision_ = false);
   void saveCurrent();
   ~createPreInlet();
 };
