@@ -96,16 +96,15 @@ public:
 
 
 double Packing::calc_forces(Ellipsoid_2& e, Ellipsoid& ei, Ellipsoid& ej) {
-  //double lambda = e.newton();
+
   double lambda = zeroin(e, 0., 1.);
   e.get_lambda() = lambda;
-  //cout << "lambda = " << lambda << " " << e.f_AB(lambda) << " " << e.f_AB_d(lambda) << endl;
+
   if (fabs(lambda) < 1e-10) {
     cout << "e1" << endl << ei << endl;
     cout << "e2" << endl << ej << endl;
     cout << "lambda too small, returning!"<<endl;
     return 0;
-    //exit(1);
   }
   double f_AB_scl = 4 * e.f_AB(lambda);
   double f_AB = f_AB_scl / Dout2;
@@ -264,7 +263,7 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
     No_cells_y = ceil(domainSize[1] * Sizing);
     No_cells_z = ceil(domainSize[2] * Sizing);
     
-    Ntau = 102400;//150000000;//102400;
+    Ntau = 102400;
 
     if(rndRotation)
     	Nrot_step = 1;	// Execute rotation every n-th step
@@ -277,7 +276,7 @@ void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> dia
     species = new Species*[No_species];
     for(int i = 0; i < No_species; i++)
         species[i] = new Species(nPartsPerComponent[i],
-                                 diametersPerComponent[i] * OVERSIZE * Sizing); // Inflate by 10% TODO: check if it is necessary
+                                 diametersPerComponent[i] * OVERSIZE * Sizing); // Inflate by 10%
 
     // Get nominal volume ratio
     Pnom0 = nominalPackingDensity * OVERSIZE;
@@ -384,7 +383,6 @@ void Packing::stepon() {
 	Pactual = Din * Din * Din / Diam_dens;
 	
 	// Stop criterion
-	//Lend = (Dout <= Din);
 	Lend = (Force_step < 1e-15);
 
 	if (Lend) {
@@ -422,7 +420,7 @@ void Packing::forces() {
 		Species* k = parts[ipart]->get_k();
 		Rcut = 0.55 * Dout * ((k->getr())[0] + Rc_max);
 		Rcut2 = Rcut * Rcut;
-//		cout << "i = " << ipart << endl;
+
 		if ((int) (2.0 * Rcut) < Ncell_min - 1) force_part(ipart);
 		else force_all(ipart);
 	}
@@ -430,12 +428,11 @@ void Packing::forces() {
 }
 
 void Packing::motion() {
-//	cout << "motion" << endl;
 	vector3 buff;
 	Force_step = 0;
 	Epsilon_scl = Epsilon * Dout0;
 	int i;
-	//4 pragma gave 3 min 24 sec
+
 	#pragma omp parallel for private(i,buff)
 	for (i = 0; i < No_parts; i++) {
 		Ellipsoid *p = parts[i];
@@ -444,13 +441,11 @@ void Packing::motion() {
 		buff = p->get_pos() + p->get_f() * Epsilon_scl;
 		buff.pbc(Box);
 		p->get_pos() = buff;
-//		if (i == 0) cout << p->get_f() << endl << p->get_pos() << endl;
 
 //	rotation
 		if ((Nstep+1) % Nrot_step) continue;
 		if (fabs(Eps_rot) < 1e-5) continue;
 		if (p->get_k()->gets()) continue;	//	sphere
-//		cout << i << " " << p->get_fu() << endl;
 		double len = Eps_rot * sqrt(p->get_fu()*p->get_fu());
 		double cp = 1 / sqrt(1 + len*len);
 		double sp = len * cp;
@@ -459,8 +454,7 @@ void Packing::motion() {
 		Quaternion q(cp2, sp2*p->get_fu());
 		p->rotate(q);
 	}
-//	cout << *parts[0] << endl;
-	//Force_step *= Epsilon_scl / (Dout0 * No_parts);
+
 	Force_step /= No_parts;
 }
 
@@ -478,192 +472,32 @@ void Packing::force_part(int ipart_p) {
 	int lim_cell_x = (int) (pos[0] + No_cells_x + Rcut);
 	int lim_cell_y = (int) (pos[1] + No_cells_y + Rcut);
 	int lim_cell_z = (int) (pos[2] + No_cells_z + Rcut);
+
 	int idif_x = (Ncell_bound_x[lim_cell_x] > Ncell_bound_x[low_cell_x]) ? 0 : 4;
 	int idif_y = (Ncell_bound_y[lim_cell_y] > Ncell_bound_y[low_cell_y]) ? 0 : 2;
 	int idif_z = (Ncell_bound_z[lim_cell_z] > Ncell_bound_z[low_cell_z]) ? 0 : 1;
 	int idif = idif_x + idif_y + idif_z;
-	switch (idif) {
-	case 0:
+
 	#pragma omp  parallel
-		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
-			icell_x = Ncell_bound_x[leap_x];
-			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
-				icell_xy = Ncell_bound_y[leap_y] + icell_x;
-				#pragma omp for private(leap_z)
-				for (leap_z=low_cell_z; leap_z<=lim_cell_z; leap_z++) {
-					icell = Ncell_bound_z[leap_z] + icell_xy;
-					jpart = Link_head[icell];
-					while (jpart != -1) {
-						pj = parts[jpart];
-						rij = pj->get_pos() - pi->get_pos();
-						Ellipsoid_2 eij(*pi, *pj, rij);
-						calc_forces(eij, *pi, *pj);
-						jpart = Link_list[jpart];
-					}
-				}
-			}
-		}
-		break;
-	case 1:
-	#pragma omp parallel
-		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
-			icell_x = Ncell_bound_x[leap_x];
-			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
-				icell_xy = Ncell_bound_y[leap_y] + icell_x;
-				#pragma omp for private(leap_z)
-				for (leap_z=low_cell_z; leap_z<=lim_cell_z; leap_z++) {
-					icell = Ncell_bound_z[leap_z] + icell_xy;
-					jpart = Link_head[icell];
-					while (jpart != -1) {
-						pj = parts[jpart];
-						rij = pj->get_pos() - pi->get_pos();
-						rij.pbc_z(Pbc_z[leap_z]);
-						Ellipsoid_2 eij(*pi, *pj, rij);
-						calc_forces(eij, *pi, *pj);
-						jpart = Link_list[jpart];
-					}
-				}
-			}
-		}
-		break;
-	case 2:
-	#pragma omp parallel
-		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
-			icell_x = Ncell_bound_x[leap_x];
-			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
-				icell_xy = Ncell_bound_y[leap_y] + icell_x;
-				#pragma omp for private(leap_z)
-				for (leap_z=low_cell_z; leap_z<=lim_cell_z; leap_z++) {
-					icell = Ncell_bound_z[leap_z] + icell_xy;
-					jpart = Link_head[icell];
-					while (jpart != -1) {
-						pj = parts[jpart];
-						rij = pj->get_pos() - pi->get_pos();
-						rij.pbc_y(Pbc_y[leap_y]);
-						Ellipsoid_2 eij(*pi, *pj, rij);
-						calc_forces(eij, *pi, *pj);
-						jpart = Link_list[jpart];
-					}
-				}
-			}
-		}
-		break;
-	case 3:
-	#pragma omp parallel
-		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
-			icell_x = Ncell_bound_x[leap_x];
-			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
-				icell_xy = Ncell_bound_y[leap_y] + icell_x;
-				#pragma omp for private(leap_z)
-				for (leap_z=low_cell_z; leap_z<=lim_cell_z; leap_z++) {
-					icell = Ncell_bound_z[leap_z] + icell_xy;
-					jpart = Link_head[icell];
-					while (jpart != -1) {
-						pj = parts[jpart];
-						rij = pj->get_pos() - pi->get_pos();
-						rij.pbc_y(Pbc_y[leap_y]);
-						rij.pbc_z(Pbc_z[leap_z]);
-						Ellipsoid_2 eij(*pi, *pj, rij);
-						calc_forces(eij, *pi, *pj);
-						jpart = Link_list[jpart];
-					}
-				}
-			}
-		}
-		break;
-	case 4:
-	#pragma omp parallel
-		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
-			icell_x = Ncell_bound_x[leap_x];
-			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
-				icell_xy = Ncell_bound_y[leap_y] + icell_x;
-				#pragma omp for private(leap_z)
-				for (leap_z=low_cell_z; leap_z<=lim_cell_z; leap_z++) {
-					icell = Ncell_bound_z[leap_z] + icell_xy;
-					jpart = Link_head[icell];
-					while (jpart != -1) {
-						pj = parts[jpart];
-						rij = pj->get_pos() - pi->get_pos();
-						rij.pbc_x(Pbc_x[leap_x]);
-						Ellipsoid_2 eij(*pi, *pj, rij);
-						calc_forces(eij, *pi, *pj);
-						jpart = Link_list[jpart];
-					}
-				}
-			}
-		}
-		break;
-	case 5:
-	#pragma omp parallel
-		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
-			icell_x = Ncell_bound_x[leap_x];
-			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
-				icell_xy = Ncell_bound_y[leap_y] + icell_x;
-				#pragma omp for private(leap_z)
-				for (leap_z=low_cell_z; leap_z<=lim_cell_z; leap_z++) {
-					icell = Ncell_bound_z[leap_z] + icell_xy;
-					jpart = Link_head[icell];
-					while (jpart != -1) {
-						pj = parts[jpart];
-						rij = pj->get_pos() - pi->get_pos();
-						rij.pbc_x(Pbc_x[leap_x]);
-						rij.pbc_z(Pbc_z[leap_z]);
-						Ellipsoid_2 eij(*pi, *pj, rij);
-						calc_forces(eij, *pi, *pj);
-						jpart = Link_list[jpart];
-					}
-				}
-			}
-		}
-		break;
-	case 6:
-	#pragma omp parallel
-		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
-			icell_x = Ncell_bound_x[leap_x];
-			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
-				icell_xy = Ncell_bound_y[leap_y] + icell_x;
-				#pragma omp for private(leap_z)
-				for (leap_z=low_cell_z; leap_z<=lim_cell_z; leap_z++) {
-					icell = Ncell_bound_z[leap_z] + icell_xy;
-					jpart = Link_head[icell];
-					while (jpart != -1) {
-						pj = parts[jpart];
-						rij = pj->get_pos() - pi->get_pos();
-						rij.pbc_x(Pbc_x[leap_x]);
-						rij.pbc_y(Pbc_y[leap_y]);
-						Ellipsoid_2 eij(*pi, *pj, rij);
-						calc_forces(eij, *pi, *pj);
-						jpart = Link_list[jpart];
-					}
-				}
-			}
-		}
-		break;
-	case 7:
-	#pragma omp parallel
-		for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
-			icell_x = Ncell_bound_x[leap_x];
-			for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
-				icell_xy = Ncell_bound_y[leap_y] + icell_x;
-				#pragma omp for private(leap_z)
-				for (leap_z=low_cell_z; leap_z<=lim_cell_z; leap_z++) {
-					icell = Ncell_bound_z[leap_z] + icell_xy;
-					jpart = Link_head[icell];
-					while (jpart != -1) {
-						pj = parts[jpart];
-						rij = pj->get_pos() - pi->get_pos();
-						rij.pbc_x(Pbc_x[leap_x]);
-						rij.pbc_y(Pbc_y[leap_y]);
-						rij.pbc_z(Pbc_z[leap_z]);
-						Ellipsoid_2 eij(*pi, *pj, rij);
-						calc_forces(eij, *pi, *pj);
-						jpart = Link_list[jpart];
-					}
-				}
-			}
-		}
-		break;
-	}
+    for (leap_x=low_cell_x; leap_x<=lim_cell_x; leap_x++) {
+        icell_x = Ncell_bound_x[leap_x];
+        for (leap_y=low_cell_y; leap_y<=lim_cell_y; leap_y++) {
+            icell_xy = Ncell_bound_y[leap_y] + icell_x;
+            #pragma omp for private(leap_z)
+            for (leap_z=low_cell_z; leap_z<=lim_cell_z; leap_z++) {
+                icell = Ncell_bound_z[leap_z] + icell_xy;
+                jpart = Link_head[icell];
+                while (jpart != -1) {
+                    pj = parts[jpart];
+                    rij = pj->get_pos() - pi->get_pos();
+                    Ellipsoid_2 eij(*pi, *pj, rij);
+                    calc_forces(eij, *pi, *pj);
+                    jpart = Link_list[jpart];
+                }
+            }
+        }
+    }
+
 	icell_x = (int) pos[0];
 	icell_y = (int) pos[1];
 	icell_z = (int) pos[2];
@@ -678,7 +512,6 @@ void Packing::force_all(int ipart_p) {
 	vector3 pos = pi->get_pos();
 	vector3 rij;
 	int jpart;
-	// pragma 5 gave 3 min 13 sek
 
 	#pragma omp parallel for private(jpart)
 	for (jpart = 0; jpart < ipart_p; jpart++) {
@@ -768,31 +601,7 @@ void Packing::savePov(const char *fileName, int wbcNumber)
     povf.setf (ios::fixed, ios::floatfield);
     povf.precision (6);
     
-    // Povray header
-    /*
-    povf << "#version  3.7;" << endl;
-    povf << "#include \"colors.inc\"" << endl;
-    povf << "global_settings{assumed_gamma 1.0}" << endl;
-    povf << "#default{ finish{ ambient 0.1 diffuse 0.65 phong 0.05 phong_size 50 roughness 0.1 }}" << endl;
-    povf << "#default{ pigment { color Red }}" << endl << endl;
-    povf << " background { color White }" << endl;
-    povf << " camera {" << endl;
-    povf << "    location <" << 2*sx <<", " << 2*sy << ", " << sz <<">" << endl;
-    povf << "    look_at  <" << sx/2.0 <<", " << sy/2.0 << ", " << sz/2.0 << ">" << endl;
-    povf << "  }" << endl << endl;
-    povf << "light_source { <1500, 0, 0> color White}" << endl;
-    povf << "light_source { <-100, 0, 0> color White}" << endl;
-    povf << "light_source { <0, 1500, 0> color White}" << endl;
-    povf << "light_source { <0, -100, 0> color White}" << endl;
-    povf << "light_source { <0, 0, 1500> color White}" << endl;
-    povf << "light_source { <0, 0, -100> color White}" << endl << endl;
 
-    povf << "// Use RBC.pov for biconcave shape" << endl;
-    povf << "//#include \"RBC.pov\"" << endl;
-    povf << "#declare RBC = sphere {<0, 0, 0>, 1}" << endl;
-    povf << "#declare PLT = sphere {<0, 0, 0>, 1}" << endl;
-    povf << "#declare WBC = sphere {<0, 0, 0>, 1}" << endl << endl;
-*/
     // Write out ellipsoids
     for (int i = 0; i < No_parts; i++) {
         Ellipsoid *pi = parts[i];
@@ -875,34 +684,6 @@ void Packing::saveBloodCellPositions()
 	}
 
 }
-
-/*void Packing::testOutput()
-{
-	vector<vector<vector3> > positions; 
-    vector<vector<vector3> > angles;
-
-    getOutput(positions, angles);
-
-    ofstream of;
-    of.open("test_coord.txt");
-
-    for(int i = 0; i < positions.size(); i++)
-    {
-    	for(int j = 0; j < positions[i].size(); j++)
-    	{
-    		of << positions[i][j][0] << " " << positions[i][j][1] << " " << positions[i][j][2] << " " << angles[i][j][0] << " " << angles[i][j][1] << " " << angles[i][j][2] << endl;
-    	}	
-    }
-
-    of.close();
-}*/
-
-/*void copy(Ellipsoid_basic &eb, const Ellipsoid& e) {
-	eb.set_k(e.get_k());
-	eb.get_pos() = e.get_pos();
-	eb.get_q() = e.get_q();
-}*/
-
 
 /*
  ************************************************************************
