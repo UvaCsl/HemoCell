@@ -134,7 +134,8 @@ int main(int argc, char *argv[])
     }
   }
   if (optind + 3 > argc) {
-    cout << "Insufficient arguments, did you forget the domain size? exiting ..." << endl;
+    cout << "Insufficient arguments." << endl << endl;
+    PrintHelp();
     return 1;
   }
   sX = atoi(argv[optind]);
@@ -142,7 +143,7 @@ int main(int argc, char *argv[])
   sZ = atoi(argv[optind+2]);
   
   if (!hematocrit_set && cellTypes.size() == 0) {
-    cout << "You need to specify at least a celltype (--RBC, --PLT, --WBC, --CELL) or an hematocrit (--hematocrit), exiting..." << endl;
+    cout << "You need to specify at least a celltype (--RBC, --PLT, --WBC, --CELL) or the hematocrit (--hematocrit), exiting..." << endl;
     return 1;
   }
   if (hematocrit_set) {

@@ -18,16 +18,15 @@ class Species {
 public:
         string name;
 
-	//Species () : number(0), rad(vector3()), sph(0) {}
 	Species (string & name_, int n, vector3 r) :  number(n), rad(r),name(name_) {
 		sph = ((fabs(rad[0] - rad[2]) < 1e-5) && (fabs(rad[0] - rad[1]) < 1e-5) ) ? 1 : 0;
 	}
         Species (int n, vector3 r) :  number(n), rad(r), name("") {
 		sph = ((fabs(rad[0] - rad[2]) < 1e-5) && (fabs(rad[0] - rad[1]) < 1e-5) ) ? 1 : 0;
 	}
-	int getn() { return number; }
-	vector3 getr() { return rad; }
-	bool gets() { return sph; }
+	int getNum() { return number; }
+	vector3 getRot() { return rad; }
+	bool getIsSphere() { return sph; }
 	friend ostream& operator<< (ostream& o, const Species& s) {
 		o << s.number << endl;
 		o << s.rad << endl;
@@ -36,17 +35,18 @@ public:
 	}
 };
 
-class Ellipsoid_basic {
+class Ellipsoid {
+	vector3 f, fu;
 protected:
 	Species* kind;
 	vector3 pos;
 	Quaternion q;
 public:
-	Ellipsoid_basic() {}
-	Ellipsoid_basic(Species* k, vector3 box) : kind(k), q(vector3(0.0,0.0,0.0)) { pos.random().scale(box); }
-	Ellipsoid_basic(Species* k, const vector3& ps, const Quaternion& qq) : kind(k), pos(ps), q(qq) {}
+	Ellipsoid() {}
+	Ellipsoid(Species* k, vector3 box) : kind(k), q(vector3(0.0,0.0,0.0)) { pos.random().scale(box); }
+	Ellipsoid(Species* k, const vector3& ps, const Quaternion& qq) : kind(k), pos(ps), q(qq) {}
 	matrix33 countX() const {
-		vector3 r(kind->getr());
+		vector3 r(kind->getRot());
 		matrix33 Q, O;
 		O(0,0) = 1 / (r[0]*r[0]);
 		O(1,1) = 1 / (r[1]*r[1]);
@@ -55,7 +55,7 @@ public:
 		return transp(Q) * O * Q;
 	}
 	matrix33 countX_12() const {
-		vector3 r(kind->getr());
+		vector3 r(kind->getRot());
 		matrix33 Q, O;
 		O(0,0) = 1 / r[0];
 		O(1,1) = 1 / r[1];
@@ -64,7 +64,7 @@ public:
 		return transp(Q) * O * Q;
 	}
 	matrix33 countX_m1() const {
-		vector3 r(kind->getr());
+		vector3 r(kind->getRot());
 		matrix33 Q, O;
 		O(0,0) = r[0]*r[0];
 		O(1,1) = r[1]*r[1];
@@ -72,7 +72,7 @@ public:
 		Q = q.countQ();
 		return transp(Q) * O * Q;
 	}
-	Ellipsoid_basic& rotate(const Quaternion& qr) {
+	Ellipsoid& rotate(const Quaternion& qr) {
 		q *= qr;
 		return *this;
 	}
@@ -82,11 +82,16 @@ public:
 	const vector3& get_pos() const {
 		return pos;
 	}
-	Species* get_k() const { return kind; }
-	void set_k(Species * k) { kind = k; }
+	void set_force(vector3 ff = vector3()) { f = ff; }
+    void set_forceu(vector3 ffu = vector3()) { fu = ffu; }
+    vector3& get_f() { return f; }
+    vector3& get_fu() { return fu; }
+	Species* getSpecies() const { return kind; }
+	void setSpecies(Species * k) { kind = k; }
 	const Quaternion& get_q() const { return q; }
 	Quaternion& get_q() { return q; }
-	friend ostream &operator<< (ostream &o, Ellipsoid_basic &e) {
+	
+	friend ostream &operator<< (ostream &o, Ellipsoid &e) {
 		o << *e.kind << endl;
 		o << e.pos << endl;
 		o << e.q << endl;
@@ -94,49 +99,6 @@ public:
 	}
 };
 
-class Ellipsoid : public Ellipsoid_basic {
-    vector3 f, fu;
-public:
-    Ellipsoid (Species* k, vector3 box) : Ellipsoid_basic(k, box) {}
-    void set_force(vector3 ff = vector3()) { f = ff; }
-    void set_forceu(vector3 ffu = vector3()) { fu = ffu; }
-    vector3& get_f() { return f; }
-    vector3& get_fu() { return fu; }
-};
-
-class Poly2 {
-	double p[3];
-public:
-	Poly2(double p0, double p1, double p2) {
-		p[0] = p0;
-		p[1] = p1;
-		p[2] = p2;
-	}
-	Poly2(double* pp = 0) {
-		if (pp == 0) return;
-		p[0] = pp[0];
-		p[1] = pp[1];
-		p[2] = pp[2];
-	}
-	void set(double p0, double p1, double p2) {
-		p[0] = p0;
-		p[1] = p1;
-		p[2] = p2;
-	}
-	double operator[] (int i) const { return p[i]; }
-	double val(double x) {
-		return p[0] + x*(p[1] + x*p[2]);
-	}
-	double vald(double x) {
-		return p[1] + 2*x*p[2];
-	}
-	friend ostream& operator<<(ostream& out, const Poly2& p) {
-		out << "p[0] = " << p.p[0] << endl;
-		out << "p[1] = " << p.p[1] << endl;
-		out << "p[2] = " << p.p[2] << endl;
-		return out << endl;
-	}
-};
 
 class Poly3 {
 	double p[4];
@@ -314,7 +276,7 @@ public:
 	}
 };
 
-class Ellipsoid_2 {
+class BinaryEllipsoidSystem {
 	matrix33 XA_m1, XB_m1, XB_12;
 	vector3 r_AB, n, r_AC, r_BC;
 	matrix33 A_AB;
@@ -327,19 +289,14 @@ class Ellipsoid_2 {
 		return lambda * XB_m1 + (1-lambda) * XA_m1;
 	}
 public:
-	Ellipsoid_2(const Ellipsoid_basic& a, const Ellipsoid_basic& b, const vector3 rij) :
+	BinaryEllipsoidSystem(const Ellipsoid& a, const Ellipsoid& b, const vector3 rij) :
 		XA_m1(a.countX_m1()), XB_m1(b.countX_m1()),
 		XB_12(b.countX_12()),
 		r_AB(rij), n(0, 0, 0),
 		r_AC(0, 0, 0), r_BC(0, 0, 0),
 		A_AB(XB_12 * XA_m1 * XB_12), a_AB(XB_12 * r_AB),
-		lambda(0), lam0((a.get_k()->getr())[0] / ((a.get_k()->getr())[0] + (b.get_k()->getr())[0])) {
-/*
-		if (A_AB.not_sym()) {
-			cout << "A_AB" << endl << A_AB << endl;
-			exit(1);
-		}
-*/
+		lambda(0), lam0((a.getSpecies()->getRot())[0] / ((a.getSpecies()->getRot())[0] + (b.getSpecies()->getRot())[0])) {
+
 		double detA = det(A_AB);
 		matrix33 Z = adj(A_AB);
 		matrix33 C0(Z), C1(Z), C2(Z);
@@ -382,8 +339,6 @@ public:
 		}
 	}
 	double f_AB(double l) { 
-//		if (fabs(q.val(l)) < 1e-5)
-//			cout << "******************* " << l << " " << p.val(l) << " " << q.val(l) << endl;
 		return p.val(l) / q.val(l);
 	}
 	double f_AB_d(double l) { return h.val(l); }
@@ -392,17 +347,7 @@ public:
 		double x = lam0, fv = f_AB_d(x), fvd = f_AB_d2(x);
 		while (fabs(fv) > 1e-10) {
 			x -= (fv = f_AB_d(x)) / (fvd = f_AB_d2(x));
-/*
-			cout << x << " " << fv << " " << fvd << endl;
-			if (x < 0 || x > 1) {
-				cout << "------------------------------------------" << endl;
-				cout << "A_AB " << endl << A_AB << endl;
-				for (double ll = 0; ll <= 1; ll += 0.01) 
-					cout << ll << " " << f_AB(ll) << " " << f_AB_d(ll) << " " <<
-					f_AB_d2(ll) << " " << p.val(ll) << " " << q.val(ll) << " " << det(A_AB) << endl;
-				cout << "------------------------------------------" << endl;
-			}
-*/
+
 		}
 		return lambda = x;
 	}
@@ -419,7 +364,7 @@ public:
 	vector3 get_n() { return n; }
 	vector3& get_rab() { return r_AB; }
 	double& get_lambda() { return lambda; }
-	friend ostream& operator <<(ostream& o, const Ellipsoid_2& e) {
+	friend ostream& operator <<(ostream& o, const BinaryEllipsoidSystem& e) {
 		o << "rab:" << endl;
 		o << e.r_AB << endl;
 		o << "XA_m1:" << endl;

@@ -30,9 +30,9 @@ public:
         vec[2] = v2;
     }
     vector3& random() {
-        vec[0] = Random::ran();
-        vec[1] = Random::ran();
-        vec[2] = Random::ran();
+        vec[0] = Random::getRand();
+        vec[1] = Random::getRand();
+        vec[2] = Random::getRand();
         return *this;
     }
     vector3& scale(const vector3& v) {
@@ -148,15 +148,15 @@ public:
         memcpy((void*) mat, (void*) val, 9*sizeof(double));
     }
     matrix33& random() {
-        mat[0][0] = Random::ran();
-        mat[0][1] = Random::ran();
-        mat[0][2] = Random::ran();
-        mat[1][0] = Random::ran();
-        mat[1][1] = Random::ran();
-        mat[1][2] = Random::ran();
-        mat[2][0] = Random::ran();
-        mat[2][1] = Random::ran();
-        mat[2][2] = Random::ran();
+        mat[0][0] = Random::getRand();
+        mat[0][1] = Random::getRand();
+        mat[0][2] = Random::getRand();
+        mat[1][0] = Random::getRand();
+        mat[1][1] = Random::getRand();
+        mat[1][2] = Random::getRand();
+        mat[2][0] = Random::getRand();
+        mat[2][1] = Random::getRand();
+        mat[2][2] = Random::getRand();
         return *this;
     }
     matrix33& operator*=(const matrix33& m) {
@@ -390,7 +390,7 @@ public:
     }
 
     Quaternion& random() {
-        double phi = Random::ran1(0, PI);
+        double phi = Random::getRandLimits(0, PI);
         s = cos(phi);
         p.random();
         p *= sin(phi);
