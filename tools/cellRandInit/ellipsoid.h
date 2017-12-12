@@ -5,13 +5,24 @@
 
 using namespace std;
 
+struct CellType {
+  string name;
+  double dx,dy,dz;
+  int number;
+};
+
 class Species {
 	int number;
 	vector3 rad;
 	bool sph;
 public:
-	Species () : number(0), rad(vector3()), sph(0) {}
-	Species (int n, vector3 r) : number(n), rad(r) {
+        string name;
+
+	//Species () : number(0), rad(vector3()), sph(0) {}
+	Species (string & name_, int n, vector3 r) :  number(n), rad(r),name(name_) {
+		sph = ((fabs(rad[0] - rad[2]) < 1e-5) && (fabs(rad[0] - rad[1]) < 1e-5) ) ? 1 : 0;
+	}
+        Species (int n, vector3 r) :  number(n), rad(r), name("") {
 		sph = ((fabs(rad[0] - rad[2]) < 1e-5) && (fabs(rad[0] - rad[1]) < 1e-5) ) ? 1 : 0;
 	}
 	int getn() { return number; }
