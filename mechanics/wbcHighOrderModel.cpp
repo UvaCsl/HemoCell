@@ -10,8 +10,10 @@ WbcHighOrderModel::WbcHighOrderModel(Config & modelCfg_, HemoCellField & cellFie
                   k_bend( WbcHighOrderModel::calculate_kBend(modelCfg_,*cellField_.meshmetric) ),
                   eta_m( WbcHighOrderModel::calculate_etaM(modelCfg_) ),
                   eta_v( WbcHighOrderModel::calculate_etaV(modelCfg_) ),
-                  k_inner( WbcHighOrderModel::calculate_kInner(modelCfg_) ),
-                  core_radius(WbcHighOrderModel::calculate_coreRadius(modelCfg_))
+                  k_inner_rigid( WbcHighOrderModel::calculate_kInnerRigid(modelCfg_) ),
+                  k_cytoskeleton( WbcHighOrderModel::calculate_kCytoskeleton(modelCfg_) ),
+                  core_radius(WbcHighOrderModel::calculate_coreRadius(modelCfg_)),
+                  radius(WbcHighOrderModel::calculate_radius(modelCfg_))
     {};
 
 void WbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> & lpc, size_t ctype) {
@@ -204,9 +206,16 @@ void WbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const hemo::Array<double,3> edge_vec = p1-p0;
       const double edge_length = norm(edge_vec);
 
+      if (edge_length < 2*radius && edge_length >= 2*core_radius){
+        const hemo::Array<double,3> edge_uv = edge_vec/edge_length;
+        const hemo::Array<double,3> force = edge_uv*(2*radius-edge_length)*k_cytoskeleton;
+        *cell[edge[0]]->force_inner_link -= force;
+        *cell[edge[1]]->force_inner_link += force;
+      }
+
       if (edge_length < 2*core_radius){
         const hemo::Array<double,3> edge_uv = edge_vec/edge_length;
-        const hemo::Array<double,3> force = edge_uv*(2*core_radius-edge_length)*k_inner;
+        const hemo::Array<double,3> force = edge_uv*(2*core_radius-edge_length)*k_inner_rigid;
         *cell[edge[0]]->force_inner_link -= force;
         *cell[edge[1]]->force_inner_link += force;
       }
@@ -220,9 +229,11 @@ void WbcHighOrderModel::statistics() {
     pcout << "\t k_area:   " << k_area << std::endl; 
     pcout << "\t k_bend: : " << k_bend << std::endl; 
     pcout << "\t k_volume: " << k_volume << std::endl;
-    pcout << "\t k_inner: " << k_inner << std::endl;
+    pcout << "\t k_cytoskeleton: " << k_cytoskeleton<< std::endl;
+    pcout << "\t k_inner_rigid: " << k_inner_rigid << std::endl;
     pcout << "\t eta_m:    " << eta_m << std::endl;
     pcout << "\t eta_v:    " << eta_v << std::endl;
+    pcout << "\t wbc_radius:    " << radius << std::endl;
     pcout << "\t core_radius:    " << core_radius << std::endl;
 };
 
@@ -266,13 +277,23 @@ double WbcHighOrderModel::calculate_kLink(Config & cfg, MeshMetrics<double> & me
   return kLink;
 };
 
-double WbcHighOrderModel::calculate_kInner(Config & cfg){
-  double kInner = cfg["MaterialModel"]["kInner"].read<double>();
+double WbcHighOrderModel::calculate_kInnerRigid(Config & cfg){
+  double kInnerRigid = cfg["MaterialModel"]["kInnerRigid"].read<double>();
   //TODO: convert to proper dimension
-  return kInner;
+  return kInnerRigid;
+};
+
+double WbcHighOrderModel::calculate_kCytoskeleton(Config & cfg){
+  double kCytoskeleton = cfg["MaterialModel"]["kCytoskeleton"].read<double>();
+  return kCytoskeleton;
 };
 
 double WbcHighOrderModel::calculate_coreRadius(Config & cfg){
-  double coreRadius = cfg["MaterialModel"]["core_radius"].read<double>();
+  double coreRadius = cfg["MaterialModel"]["coreRadius"].read<double>();
   return coreRadius/param::dx;
+};
+
+double WbcHighOrderModel::calculate_radius(Config & cfg){
+  double radius = cfg["MaterialModel"]["radius"].read<double>();
+  return radius/param::dx;
 };

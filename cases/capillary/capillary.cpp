@@ -24,9 +24,8 @@ public:
           yBottom(yBottom_)           // The endpoint of the outer (clipped) ellipse have to be continuous with the contracted domain
     {}
     virtual bool operator() (plint iX, plint iY, plint iZ) const {
-        return ( (iX <= xTo && iX >= xFrom ) &&
-        	   ( ( ( ((iX-centerX)*(iX-centerX)*outerBSqr + (iY-centerY) * (iY-centerY) * outerASqr ) >= outerBSqr*outerASqr) && (iY >= yTop || iY <= yBottom ) ) || // large ellipse
-                 ( ((iX-centerX)*(iX-centerX)*innerBSqr + (iY-centerY) * (iY-centerY) * innerASqr ) <= innerASqr*innerBSqr) )); // small ellipse
+        return ( ( (iX < xTo && iX > xFrom ) && ( ((iX-centerX)*(iX-centerX)*outerBSqr + (iY-centerY) * (iY-centerY) * outerASqr ) >= outerBSqr*outerASqr) && (iY >= yTop || iY <= yBottom ) ) || // large ellipse
+                 ( (iX <= xTo && iX >= xFrom ) && ((iX-centerX)*(iX-centerX)*innerBSqr + (iY-centerY) * (iY-centerY) * innerASqr ) <= innerASqr*innerBSqr) ); // small ellipse
 
     }
     virtual CapillaryEllipseDomain3D<T>* clone() const {
@@ -136,32 +135,28 @@ int main(int argc, char *argv[]) {
   double ellipseCutX = (double) 0.1875*nx; // If we have heightChannel=60, then nx = 480 and 0.1875*480 = 90 --> the straight capillary is 480-2*90= 300 cell long (150 um) 
   double wallNy = 2 ;    // number of wall nodes at the middle domain
 
-
   double outerMajorR = (double) ny-2*wallNy;
   double outerMinorR = (double) 0.5*(ny-2*wallNy); 
-
   
   double ellipseLineFrontIntersect = ellipseCutX-outerMajorR+capillaryD;
   double ellipseLineEndIntersect = (double) nx-ellipseCutX+outerMajorR-capillaryD;
 
-  double innerMajorR = outerMajorR - capillaryD;
   double innerMinorR = outerMinorR - capillaryD; 
-
+  double innerMajorR = outerMajorR * innerMinorR / outerMinorR;
+  // pcout << "(Capillary) oMajR: " << outerMajorR << " oMinR: " << outerMinorR << " inMInR: " << innerMinorR << " inMajR: " << innerMajorR << std::endl;
   if (innerMinorR < 1 || innerMajorR < 1) {
     pcout << "(Capillary) The generation of the capillary geometry is not possible";
     return -1;
   }
 
-
   double centerX = ellipseCutX;
   double centerY = (double) ny*0.5;
-
   // Solving a quadratic equation for ellipse and line intersection (cutting an ellipse with a vertical line)
   // a*x**2 + b*x + c = 0
-  double a = 1;
-  double b = -2* centerY;
+  double a = 1.0;
+  double b = -2.0*centerY;
   double c = centerY*centerY - outerMinorR*outerMinorR *(1 - (ellipseLineFrontIntersect-centerX)*(ellipseLineFrontIntersect-centerX) / (outerMajorR*outerMajorR));
-  double d = b*b-4*a*c;
+  double d = b*b-4.0*a*c;
   double yTop = 0.0;
   double yBottom = 0.0;
 
@@ -170,7 +165,7 @@ int main(int argc, char *argv[]) {
     return -1;
   }
   else if (d == 0){
-    yTop = -b / (2*a);
+    yTop = -b / (2.0*a);
     yBottom = yTop;
   }
   else {
@@ -190,8 +185,7 @@ int main(int argc, char *argv[]) {
 
   // Front contraction with a rectangle
   defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-                new CapillaryRectangleDomain3D<T>(0.0, ellipseLineFrontIntersect, yTop, yBottom ), new BounceBack<T, DESCRIPTOR> );
-
+                new CapillaryRectangleDomain3D<T>(0.0, ellipseLineFrontIntersect+1, yTop+1, yBottom-1 ), new BounceBack<T, DESCRIPTOR> );
   
   // Left half ellipse
   defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
@@ -202,35 +196,19 @@ int main(int argc, char *argv[]) {
   defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                 new CapillaryMiddleRectangleDomain3D<T>(ellipseCutX, (double) nx-ellipseCutX, wallNy, (double) ny, capillaryD), new BounceBack<T, DESCRIPTOR> );
 
-
   // Right half ellipse
   defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                 new CapillaryEllipseDomain3D<T>(nx-centerX, centerY, outerMajorR, outerMinorR, innerMajorR, innerMinorR,
                 (double) nx-ellipseCutX, ellipseLineEndIntersect-1, yTop, yBottom), new BounceBack<T, DESCRIPTOR> );
 
-
   // End contraction
   defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-                new CapillaryRectangleDomain3D<T>(ellipseLineEndIntersect, (double) nx , yTop, yBottom), new BounceBack<T, DESCRIPTOR> );
-
-
-
-  //Box3D topChannel(0, nx-1, 0, ny-1, nz-1, nz-1);
-  //Box3D bottomChannel( 0, nx-1, 0, ny-1, 0, 0);
-  //Box3D backChannel( 0, nx-1, ny-1, ny-1, 0, nz-1);
-  //Box3D frontChannel( 0, nx-1, 0, 0, 0, nz-1);
-
-  //defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR> );
-  //defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
-  //defineDynamics(*hemocell.lattice, backChannel, new BounceBack<T, DESCRIPTOR> );
-  //defineDynamics(*hemocell.lattice, frontChannel, new BounceBack<T, DESCRIPTOR> );
+                new CapillaryRectangleDomain3D<T>(ellipseLineEndIntersect-1, (double) nx , yTop+1, yBottom-1), new BounceBack<T, DESCRIPTOR> );
 
   hemocell.lattice->toggleInternalStatistics(false);
   //hemocell.lattice->periodicity().toggleAll(false);
   hemocell.lattice->periodicity().toggle(0,true);
   //hemocell.lattice->periodicity().toggle(2,true);
-
- 
 
   hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
@@ -259,7 +237,6 @@ int main(int argc, char *argv[]) {
   
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
-
   vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK, OUTPUT_FORCE_INNER_LINK, OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC, OUTPUT_VERTEX_ID, OUTPUT_CELL_ID};
   hemocell.setOutputs("WBC_HO", outputs);
   //hemocell.setOutputs("PLT", outputs);
@@ -267,7 +244,6 @@ int main(int argc, char *argv[]) {
   outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE};
   hemocell.setFluidOutputs(outputs);
 
-  
   //loading the cellfield
   if (not cfg->checkpointed) {
     hemocell.loadParticles();
