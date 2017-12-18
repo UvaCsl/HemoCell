@@ -31,15 +31,20 @@ class LoadBalancer;
 
 class LoadBalancer {  
   public:
-  LoadBalancer(HemoCell & hemocell);
+  LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_), original_block_structure(0,0,0) { }
+#ifdef HEMO_PARMETIS
   double calculateFractionalLoadImbalance();
-  void doLoadBalance();
-  
   /**
    * Restructure blocks to reduce communication on one processor
    * Set checkpoint_available to false if not called in the same iteration right after doLoadBalance()
    */
   void restructureBlocks(bool checkpoint_available=true);
+#else
+  double calculateFractionalLoadImbalance() {return 0.0;}
+  void restructureBlocks(bool checkpoint_available=true) {}
+#endif
+
+  void doLoadBalance();
 
   /**
    * used to reload a checkpoint, but first reload the config file
