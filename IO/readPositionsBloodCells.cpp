@@ -22,7 +22,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "readPositionsBloodCells.h"
-#include "tools/cellRandInit/geometry.h"
+#include "tools/packCells/geometry.h"
 #include "vWFModel.h"
 #include <sstream>
 

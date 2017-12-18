@@ -24,7 +24,6 @@
 #include "voxelizeDomain.h"
 #include "meshGeneratingFunctions.h"
 #include "loadBalancer.h"
-#include "preInlet.h"
 
 /* MECHANICS */
 #include "cellMechanics.h"
