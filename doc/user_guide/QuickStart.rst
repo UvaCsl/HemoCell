@@ -143,7 +143,7 @@ The result should be a ``packCells`` binary. This program offers a rich suite of
 options to generate initial conditions for cells. Just type ``./packCells --help`` 
 to see how it works.
 
-The resultins ``*.pos`` files can be copied to the case where you want to use
+The resulting ``*.pos`` files can be copied to the case where you want to use
 them.
 
 
