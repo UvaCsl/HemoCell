@@ -8,6 +8,7 @@ fi
 
 echo "=================== Uncompressing palabos ==========================="
 tar -xvzf palabos_dev.tgz
+mv palabos-* palabos
 
 echo "=================== Patching palabos ============================="
 cd patch

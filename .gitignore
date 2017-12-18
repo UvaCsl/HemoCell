@@ -6,6 +6,13 @@ build/
 !build/*/CMakeLists.txt
 !build/*/build.def
 
+doc/doxygen/*/
+doc/user_guide/_build/*
+
+external/parmetis-*/
+tools/cellRandInit/*.pos
+tools/cellRandInit/packCells
+
 # Ignore IDE, buildsystem and OS specific cache directories and object files
 .idea/
 *sconsign.dblite

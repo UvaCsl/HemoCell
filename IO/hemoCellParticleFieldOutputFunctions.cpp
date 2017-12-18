@@ -1,6 +1,26 @@
-#ifndef HEMOCELL_PARTICLE_FIELD_OUTPUT_FUNCTIONS_CPP
-#define HEMOCELL_PARTICLE_FIELD_OUTPUT_FUNCTIONS_CPP
+/*
+This file is part of the HemoCell library
 
+HemoCell is developed and maintained by the Computational Science Lab 
+in the University of Amsterdam. Any questions or remarks regarding this library 
+can be sent to: info@hemocell.eu
+
+When using the HemoCell library in scientific work please cite the
+corresponding paper: https://doi.org/10.3389/fphys.2017.00563
+
+The HemoCell library is free software: you can redistribute it and/or
+modify it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+The library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "hemoCellParticleField.h"
 #include "hemocell.h"
 
@@ -265,22 +285,6 @@ void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>>&
       vector<plint> triangle = {(*cellFields)[ctype]->triangle_list[i][0] + counter,
                           (*cellFields)[ctype]->triangle_list[i][1] + counter,
                           (*cellFields)[ctype]->triangle_list[i][2] + counter};
-      //Do not add triangles over periodic boundaries
-/*      bool toolarge = false;
-      for (pluint x = 0; x < 3; x++) {
-        for (pluint y = x +1; y < 3; y++) {
-          if ((abs(positions[triangle[x]][0] - positions[triangle[y]][0]) > 2.0) ||
-              (abs(positions[triangle[x]][1] - positions[triangle[y]][1]) > 2.0) ||
-              (abs(positions[triangle[x]][2] - positions[triangle[y]][2]) > 2.0))
-          {
-            toolarge = true;
-            break;
-          }
-        }
-      }
-      if (!toolarge) {*/
-         output.push_back(triangle);
-      //}
     }
     counter += (*cellFields)[ctype]->numVertex;
   }
@@ -347,4 +351,3 @@ void HemoCellParticleField::outputCellId(Box3D domain,vector<vector<double>>& ou
     }
   }
 }
-#endif

@@ -19,7 +19,7 @@
 #include "readPositionsBloodCells.h"
 
 /* HELPERS */
-#include "genericTools.h"
+#include "genericFunctions.h"
 #include "meshMetrics.h"
 #include "voxelizeDomain.h"
 #include "meshGeneratingFunctions.h"
@@ -31,7 +31,7 @@
 #include "constantConversion.h"
 
 /* EXTERNALS */
-#include "diagonalize.hpp"  // TODO: Do we need this file?
+//#include "diagonalize.hpp"  // TODO: Do we need this file?
 
 /*!
  * The HemoCell class contains all the information, data and methods to set up a

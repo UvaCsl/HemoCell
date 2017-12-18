@@ -1,2 +1,14 @@
 The source of this tool uses algorithms and data structures from the work of Monika Bargieł. 
 For the original code please visit: https://github.com/malawski/ellipsoids
+
+This tool is created by Gábor Zavodszky and Victor Azizi from the Computational Science Lab 
+in the University of Amsterdam. Any questions or remarks regarding this library 
+can be sent to: info@hemocell.eu
+
+## Publications
+
+When using this code, please cite:
+
+1. Bargieł, M., Szczygłowski, Ł., Trzcionkowski, R., Malawski, M., Towards large-scale parallel simulated packings of ellipsoids with OpenMP and HyperFlow, CGW workshop'15 : October 26–28, 2015 Kraków, Poland. Proceedings: eds. Marian Bubak, Michał Turała, Kazimierz Wiatr, Kraków, Academic Computer Centre CYFRONET AGH, 2015. ISBN: 978-83-61433-14-9, 117–118.
+
+2. Bargieł, M., Geometrical properties of simulated packings of ellipsoids, CGW workshop'14 : October 27–29, 2014, Krakow, Poland. Proceedings: eds. Marian Bubak, Michał Turała, Kazimierz Wiatr, Kraków: Academic Computer Centre CYFRONET AGH, 2014. ISBN: 978-83-61433-10-1, 123–124.

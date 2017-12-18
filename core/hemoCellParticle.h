@@ -1,9 +1,35 @@
+/*
+This file is part of the HemoCell library
+
+HemoCell is developed and maintained by the Computational Science Lab 
+in the University of Amsterdam. Any questions or remarks regarding this library 
+can be sent to: info@hemocell.eu
+
+When using the HemoCell library in scientific work please cite the
+corresponding paper: https://doi.org/10.3389/fphys.2017.00563
+
+The HemoCell library is free software: you can redistribute it and/or
+modify it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+The library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #ifndef SURFACE_PARTICLE_3D_H
 #define SURFACE_PARTICLE_3D_H
 
 class HemoCellParticle;
 #include "hemocell_internal.h"
 
+#ifndef PARTICLE_ID
+#define PARTICLE_ID 0
+#endif
 
 class HemoCellParticle {
   //VARIABLES
@@ -235,9 +261,7 @@ public:
         
     }
 
-    static int id;
-    inline int getId() const {return id;}
-
+    inline int getId() const {return PARTICLE_ID;}
     //inline hemo::Array<double,3> & getPosition() {return position;} 
     inline plint getTag() { return tag; } //TODO remove for direct access
     inline void setTag(plint tag_) { tag = tag_; }
@@ -246,10 +270,9 @@ public:
 
 //TODO better way to override this function
 inline void serialize(HemoCellParticle& particle, vector<char>& data) {
-  HierarchicSerializer serializer(data, HemoCellParticle::id);
+  HierarchicSerializer serializer(data,PARTICLE_ID);
   particle.serialize(serializer);
 }
-
 
 #endif  // SURFACE_PARTICLE_3D_H
 

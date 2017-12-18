@@ -1,7 +1,27 @@
-#ifndef FCN_GENERIC_FUNCTIONS_HH
-#define FCN_GENERIC_FUNCTIONS_HH
-#include "genericFunctions.h"
+/*
+This file is part of the HemoCell library
 
+HemoCell is developed and maintained by the Computational Science Lab 
+in the University of Amsterdam. Any questions or remarks regarding this library 
+can be sent to: info@hemocell.eu
+
+When using the HemoCell library in scientific work please cite the
+corresponding paper: https://doi.org/10.3389/fphys.2017.00563
+
+The HemoCell library is free software: you can redistribute it and/or
+modify it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+The library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+#include "genericFunctions.h"
 
 void weakScaling(int Nx, int Ny, int Nz, int numberOfProcesses, vector<int> & newNxNyNz) {
     int fmod = int(log2(numberOfProcesses))%3;
@@ -86,4 +106,23 @@ std::string zeroPadNumber(int num)
     return ss.str();
 }
 
-#endif // FCN_GENERIC_FUNCTIONS_HH
+void checkParameterSanity(T nu_lbm, T u_max_lbm)
+{
+	// Check lattice viscosity [0.01, 0.45]
+    if(nu_lbm < 0.01 || nu_lbm > 0.45)
+        pcout << "(WARNING!!!) lattice viscosity [" << nu_lbm << "] is not in the stable range for LBM [0.01, 0.45]!" << std::endl;
+
+    // Check for lattice velocity to ensure low Courant number (LBM is explicit afterall...)
+    if(u_max_lbm > 0.1)
+        pcout << "(WARNING!!!) lattice velocity [" << u_max_lbm << "] is too high [>0.1]!" << std::endl;
+}
+
+void printHeader()
+{
+	pcout << " _   _   ____   __  __   _____    ___   ____   __     __ " << endl;
+	pcout << "( )_( ) ( ___) (  \\/  ) (  _  )  / __) ( ___) (  )   (  )" << endl;
+	pcout << " ) _ (   )__)   )    (   )(_)(  ( (__   )__)   )(__   )(__ " << endl;
+	pcout << "(_) (_) (____) (_/\\/\\_) (_____)  \\___) (____) (____) (____) " << endl;
+	pcout << "                         v." << VERSION_MAJOR << "." << VERSION_MINOR << endl;
+	pcout << endl;
+}

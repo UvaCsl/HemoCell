@@ -1,8 +1,26 @@
-#ifndef READ_POSISIONS_OF_MULTIPLE_CELLS_CPP
-#define READ_POSISIONS_OF_MULTIPLE_CELLS_CPP
+/*
+This file is part of the HemoCell library
 
-//TODO rewrite this whole class to call a read particle per celltype, following OO-paradigms
+HemoCell is developed and maintained by the Computational Science Lab 
+in the University of Amsterdam. Any questions or remarks regarding this library 
+can be sent to: info@hemocell.eu
 
+When using the HemoCell library in scientific work please cite the
+corresponding paper: https://doi.org/10.3389/fphys.2017.00563
+
+The HemoCell library is free software: you can redistribute it and/or
+modify it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+The library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "readPositionsBloodCells.h"
 #include "tools/cellRandInit/geometry.h"
 #include "vWFModel.h"
@@ -84,7 +102,7 @@ void readvonWillibrands(Box3D realDomain, pluint celltype, HemoCellFields & cell
         }
 
         fIn >> ncells;
-        pcout << "(readPositionsBloodCels) Particle count (" << cellFields[celltype]->name << "): " << ncells << "." << endl;
+        pcout << "(readPositionsBloodCels) Particle count in file (" << cellFields[celltype]->name << "): " << ncells << "." << endl;
         getline(fIn,line);
         
         for (unsigned i = 0 ; i < ncells ; i++) {
@@ -130,7 +148,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
                                             HemoCellParticleField & particleField)
 {
 
-    pcout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
+    
 
 
     vector<vector3> packPositions[cellFields.size()];
@@ -157,7 +175,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
         }
 
         fIn >> Np[j];
-        pcout << "(readPositionsBloodCels) Particle count (" << cellFields[j]->name << "): " << Np[j] << "." << endl;
+        pcout << "(readPositionsBloodCels) Particle count in file (" << cellFields[j]->name << "): " << Np[j] << "." << endl;
 
         packPositions[j].resize(Np[j]); packAngles[j].resize(Np[j]);cellIdss[j].resize(Np[j]);
         int less = 0;
@@ -191,12 +209,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
     }
     
     cellFields.number_of_cells = getTotalNumberOfCells(cellFields);
-    //cout << "Realdomain " << realDomain.x0 << " " << realDomain.x1 << " "
-    //  << realDomain.y0 << " " << realDomain.y1 << " " << realDomain.z0 << " "
-    //  << realDomain.z1 << endl;
-    // cout << "Readed Cells " << Np[0] << " " << Np[1] << endl;
-    pcout << "(readPositionsBloodCels) Reading done." << std::endl;
-
+    
     // Copy results of packing to appropriate hemo::Arrays for ficsion
     positions.clear();	positions.resize(Np.size());
     randomAngles.clear(); randomAngles.resize(Np.size());
@@ -281,7 +294,6 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     {
       if (dynamic_cast<vWFModel*>(cellFields[iCF]->mechanics)) { continue; }
   
-      cout << "(ReadPositionsBloodCellField3D) " ;
         for (pluint c = 0; c < positions[iCF].size(); ++c)
         {
             ElementsOfTriangularSurfaceMesh<double> emptyEoTSMCopy;
@@ -299,14 +311,14 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         //cellFields.syncEnvelopes();
         // DELETE CELLS THAT ARE NOT WHOLE
         plint nVertices=meshes[iCF]->getNumVertices();
-        cout << "Atomic Block ID: " << particleFields[iCF]->atomicBlockId;
-        plint cellsDeleted = particleFields[iCF]->deleteIncompleteCells(iCF,false)/(float)nVertices;
+        particleFields[iCF]->deleteIncompleteCells(iCF,false);
         std::vector<HemoCellParticle*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);
-        cout    << " Total cells: " << particles.size()/(float)nVertices << " (deleted cells:" << cellsDeleted << ") CT: " << cellFields[iCF]->name << std::endl;
+        
 //delete meshes[iCF];
     }
-   
+    cout << "Atomic Block ID: " << particleFields[0]->atomicBlockId;
+    cout    << " Total complete cells (with periodicity): " << particleFields[0]->get_lpc().size() << std::endl;
 }
 
 
@@ -347,10 +359,10 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, Confi
         fluidAndParticleFieldsArg.push_back(cellFields[icf]->getParticleField3D());
     }
 
+    pcout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
+    
     applyProcessingFunctional(
             new ReadPositionsBloodCellField3D(cellFields, dx, cfg),
             cellFields.lattice->getBoundingBox(), fluidAndParticleFieldsArg);
 
 }
-
-#endif
