@@ -43,7 +43,18 @@ class vWFModel : public CellMechanics {
   const double eta_v;
 
   public:
-  vWFModel(Config & modelCfg_, HemoCellField & cellField_) ;
+  vWFModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_),
+                    cellField(cellField_),
+                    k_link( vWFModel::calculate_kLink(modelCfg_) ), 
+                    k_bend( vWFModel::calculate_kBend(modelCfg_) ),
+                    link_eq(vWFModel::calculate_link_eq(modelCfg_) ),
+                    bend_eq(vWFModel::calculate_bend_eq(modelCfg_) ),
+                    eta_m( vWFModel::calculate_etaM(modelCfg_) ),
+                    eta_v( vWFModel::calculate_etaV(modelCfg_) )
+  {
+    cellField.deleteIncomplete = false;
+    cellField.numVertex = modelCfg_["MaxVertices"].read<unsigned int>();
+  };
 
   void ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> &lpc, pluint ctype) ;
 

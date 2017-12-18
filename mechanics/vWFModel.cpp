@@ -24,20 +24,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "vWFModel.h"
 //TODO Make all inner hemo::Array variables constant as well
 
-
-vWFModel::vWFModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_),
-                  cellField(cellField_),
-                  k_link( vWFModel::calculate_kLink(modelCfg_) ), 
-                  k_bend( vWFModel::calculate_kBend(modelCfg_) ),
-                  link_eq(vWFModel::calculate_link_eq(modelCfg_) ),
-                  bend_eq(vWFModel::calculate_bend_eq(modelCfg_) ),
-                  eta_m( vWFModel::calculate_etaM(modelCfg_) ),
-                  eta_v( vWFModel::calculate_etaV(modelCfg_) )
-{
-  cellField.deleteIncomplete = false;
-  cellField.numVertex = modelCfg_["MaxVertices"].read<unsigned int>();
-};
-
 void vWFModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> & lpc, pluint ctype) {
 
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
