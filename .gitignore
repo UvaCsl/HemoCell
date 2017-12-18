@@ -10,8 +10,8 @@ doc/doxygen/*/
 doc/user_guide/_build/*
 
 external/parmetis-*/
-tools/cellRandInit/*.pos
-tools/cellRandInit/packCells
+tools/packCells/*.pos
+tools/packCells/packCells
 
 # Ignore IDE, buildsystem and OS specific cache directories and object files
 .idea/

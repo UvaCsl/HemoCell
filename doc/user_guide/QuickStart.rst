@@ -125,6 +125,27 @@ Furthermore a ``MakeFile`` is provided in the ``hemocell/cases`` directory. this
 makefile can be used to update build files for all cases (see :ref:`cases_make`
 for more info)
 
+Generating initial positions for cells
+--------------------------------------
+
+At some point you might want to run a slighty different geometry, or run your
+simulation with a different concentration of cells. For this we offer the
+``packCells`` tool which can be found in the ``./hemocell/packCells`` directory.
+
+This tool has a CMake file and can be build with::
+  
+  cd ./tools/packCells
+  mkdir build && cd build
+  cmake ../
+  make
+
+The result should be a ``packCells`` binary. This program offers a rich suite of
+options to generate initial conditions for cells. Just type ``./packCells --help`` 
+to see how it works.
+
+The resultins ``*.pos`` files can be copied to the case where you want to use
+them.
+
 
 Running a HemoCell case
 -----------------------
