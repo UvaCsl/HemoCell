@@ -285,6 +285,7 @@ void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>>&
       vector<plint> triangle = {(*cellFields)[ctype]->triangle_list[i][0] + counter,
                           (*cellFields)[ctype]->triangle_list[i][1] + counter,
                           (*cellFields)[ctype]->triangle_list[i][2] + counter};
+      output.push_back(triangle);
     }
     counter += (*cellFields)[ctype]->numVertex;
   }
