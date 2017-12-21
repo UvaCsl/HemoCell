@@ -246,9 +246,9 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
     H5Dread(parent.dataset_velocity_id,H5T_IEEE_F32LE,memspace_id,parent.dataspace_velocity_id,H5P_DEFAULT,data);
   
   
-    for (plint z = 0 ; z < fluidBox.getNz() ; z++) {
+    for (plint x = 0 ; x < fluidBox.getNx() ; x++) {
       for (plint y = 0 ; y < fluidBox.getNy() ; y++) {
-        for (plint x = 0; x < fluidBox.getNx() ; x++) {
+        for (plint z = 0; z < fluidBox.getNz() ; z++) {
           //Skip boundaries
           /*if (fluidfield->get(xx,yy,zz).getDynamics().isBoundary()) {
             index+=3;
@@ -263,13 +263,13 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
           fluidfield->get(xx,yy,zz).defineVelocity(vel);
 
           index++;
-          xx++;
+          zz++;
         }
-        xx = unshiftedfluidBox.x0;
+        zz = unshiftedfluidBox.z0;
         yy++;
       }
       yy = unshiftedfluidBox.y0;
-      zz++;
+      xx++;
     }
     delete[] data;
   } else {
@@ -278,9 +278,9 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
     H5Dread(parent.dataset_velocity_id,H5T_IEEE_F64LE,memspace_id,parent.dataspace_velocity_id,H5P_DEFAULT,data);
   
   
-    for (plint z = 0 ; z < fluidBox.getNz() ; z++) {
+    for (plint x = 0 ; x < fluidBox.getNx() ; x++) {
       for (plint y = 0 ; y < fluidBox.getNy() ; y++) {
-        for (plint x = 0; x < fluidBox.getNx() ; x++) {
+        for (plint z = 0; z < fluidBox.getNz() ; z++) {
           //Skip boundaries
           /*if (fluidfield->get(xx,yy,zz).getDynamics().isBoundary()) {
             index+=3;
@@ -295,13 +295,13 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
           fluidfield->get(xx,yy,zz).defineVelocity(vel);
 
           index+=3;
-          xx++;
+          zz++;
         }
-        xx = unshiftedfluidBox.x0;
+        zz = unshiftedfluidBox.z0;
         yy++;
       }
       yy = unshiftedfluidBox.y0;
-      zz++;
+      xx++;
     }
     delete[] data;
   }

@@ -200,42 +200,42 @@ void createPreInlet::createPreInletFunctional::processGenericBlocks(Box3D domain
     static_assert(sizeof(float)==4, "Plattform float is not 32 bit, preinlet will not work");
     float * data = new float[count[1]*count[2]*count[3]*count[4]];
     
-    for (plint z = 0 ; z < fluidBox.getNz() ; z++) {
+    for (plint x = 0 ; x < fluidBox.getNx() ; x++) {
       for (plint y = 0 ; y < fluidBox.getNy() ; y++) {
-        for (plint x = 0; x < fluidBox.getNx() ; x++) {
+        for (plint z = 0; z < fluidBox.getNz() ; z++) {
           fluidfield->grid[xx][yy][zz].computeVelocity(vel);
           data[index] = vel[parent.reducedPrecisionDirection];
           index++;
     
-          xx++;
+          zz++;
         }
-        xx = unshiftedfluidBox.x0;
+        zz = unshiftedfluidBox.z0;
         yy++;
       }
       yy = unshiftedfluidBox.y0;
-      zz++;
+      xx++;
     }
     err = H5Dwrite(parent.dataset_velocity_id,H5T_IEEE_F32LE,memspace_id,parent.dataspace_velocity_id,parent.plist_dataset_collective_id,data);
     delete[] data;
   } else {
     static_assert(sizeof(double)==8, "Plattform double is not 64 bit, preinlet will not work");
     double * data = new double[count[1]*count[2]*count[3]*count[4]];
-    for (plint z = 0 ; z < fluidBox.getNz() ; z++) {
+    for (plint x = 0 ; x < fluidBox.getNx() ; x++) {
       for (plint y = 0 ; y < fluidBox.getNy() ; y++) {
-        for (plint x = 0; x < fluidBox.getNx() ; x++) {
+        for (plint z = 0; z < fluidBox.getNz() ; z++) {
           fluidfield->grid[xx][yy][zz].computeVelocity(vel);
           data[index] = vel[0];
           data[index+1] = vel[1];
           data[index+2] = vel[2];
           index+=3;
         
-          xx++;
+          zz++;
         }
-        xx = unshiftedfluidBox.x0;
+        zz = unshiftedfluidBox.z0;
         yy++;
       }
       yy = unshiftedfluidBox.y0;
-      zz++;
+      xx++;
     }
     err = H5Dwrite(parent.dataset_velocity_id,H5T_IEEE_F64LE,memspace_id,parent.dataspace_velocity_id,parent.plist_dataset_collective_id,data);
     delete[] data;
