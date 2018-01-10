@@ -22,6 +22,14 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "hemocell.h"
+#include <signal.h>
+#include <stdio.h>
+#include <unistd.h>
+
+volatile sig_atomic_t interrupted = 0;
+void set_interrupt(int signum) {
+  interrupted = 1;
+}
 
 HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   plbInit(&(argc),&(argv));
@@ -48,6 +56,20 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
 #ifdef FORCE_LIMIT
   pcout << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT << " pN. Results can be inaccurate due to force capping." << endl;
 #endif
+  
+  ///Set signal handlers to exit gracefully on many signals
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(struct sigaction));
+  sa.sa_handler = set_interrupt;
+  sigaction(SIGINT,&sa,0);
+  sigaction(SIGTERM,&sa,0);
+  sigaction(SIGHUP,&sa,0);
+  sigaction(SIGQUIT,&sa,0);
+  sigaction(SIGABRT,&sa,0);
+  sigaction(SIGUSR1,&sa,0);
+  sigaction(SIGUSR2,&sa,0);
+ 
+  
 }
 
 void HemoCell::latticeEquilibrium(double rho, hemo::Array<double, 3> vel) {
@@ -152,6 +174,10 @@ void HemoCell::writeOutput() {
 }
 
 void HemoCell::iterate() {
+  if (interrupted == 1) {
+    cout << "Caught Signal, aborting and saving work" << endl;
+    exit(1);
+  }
   cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
 
   // Calculate repulsion Force
