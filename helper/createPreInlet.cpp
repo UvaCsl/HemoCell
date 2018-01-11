@@ -80,7 +80,6 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
     MPI_Info info  = MPI_INFO_NULL;
     H5Pset_fapl_mpio(plist_file_id, global::mpi().getGlobalCommunicator(), info);  
     file_id = H5Fcreate(outputFileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, plist_file_id);
-  H5Pclose(plist_file_id);   
 
   //Attributes:
   H5LTset_attribute_int (file_id, "/", "flowDirection", (int *)&flowDir, 1);
@@ -107,20 +106,38 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
   
   H5LTset_attribute_int (file_id, "/", "boxSize", sizes, 3);  
   
-  hid_t plist_dataset_id = H5Pcreate(H5P_DATASET_CREATE);
-    if (H5Pset_chunk(plist_dataset_id, 5, chunks) < 0) { 
-      cerr << "Error creating PreInlet HDF5 File, exiting.." << endl; 
-      exit(0);
-    }
+ 
   //  H5Pset_deflate(plist_dataset_id, 7);
-
+    H5Fclose(file_id); //Close for single rank access
     dataspace_velocity_id = H5Screate_simple(5, dims, maximum_size);
-    if (reducedPrecision) {
-      dataset_velocity_id = H5Dcreate2(file_id,"Velocity Boundary",H5T_IEEE_F32LE,dataspace_velocity_id,H5P_DEFAULT,plist_dataset_id,H5P_DEFAULT);
-    } else {
-      dataset_velocity_id = H5Dcreate2(file_id,"Velocity Boundary",H5T_IEEE_F64LE,dataspace_velocity_id,H5P_DEFAULT,plist_dataset_id,H5P_DEFAULT);
+
+    //Create in single thread because god knows why, otherwise it doesnt work
+    if (global::mpi().getRank() == 0) {
+      hid_t plist_dataset_id = H5Pcreate(H5P_DATASET_CREATE);
+      if (H5Pset_chunk(plist_dataset_id, 5, chunks) < 0) { 
+        cerr << "Error creating PreInlet HDF5 File, exiting.." << endl; 
+        exit(0);
+      }
+      hid_t file_id_single = H5Fopen(outputFileName.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+      if (reducedPrecision) {
+        hid_t temp = H5Dcreate2(file_id_single,"Velocity Boundary",H5T_IEEE_F32LE,dataspace_velocity_id,H5P_DEFAULT,plist_dataset_id,H5P_DEFAULT);
+        H5Dclose(temp);
+      } else {
+        hid_t temp = H5Dcreate2(file_id_single,"Velocity Boundary",H5T_IEEE_F64LE,dataspace_velocity_id,H5P_DEFAULT,plist_dataset_id,H5P_DEFAULT);
+        H5Dclose(temp);
+      }
+      H5Pclose(plist_dataset_id);
+      H5Fflush(file_id_single,H5F_SCOPE_GLOBAL);
+      H5Fclose(file_id_single);
     }
-  H5Pclose(plist_dataset_id);
+    
+    global::mpi().barrier();
+    
+    file_id = H5Fopen(outputFileName.c_str(), H5F_ACC_RDWR, plist_file_id);
+    //Open dataset in all threads
+    dataset_velocity_id = H5Dopen2(file_id, "Velocity Boundary",H5P_DEFAULT);
+    H5Pclose(plist_file_id);   
+
 
   H5Fflush(file_id, H5F_SCOPE_GLOBAL);
 
