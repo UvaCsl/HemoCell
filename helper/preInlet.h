@@ -26,6 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "hemocell.h"
 
+#define DSET_SLICE 1000
+
 enum Direction : int {
   Xpos, Xneg, Ypos, Yneg, Zpos, Zneg
 };
@@ -53,12 +55,13 @@ class createPreInlet {
   string outputFileName;
   int particlePositionTimeStep;
   Direction flowDir;
-  int file_id, dataspace_velocity_id,dataset_velocity_id,plist_dataset_collective_id;
+  int file_id, dataspace_velocity_id,dataset_velocity_id = -1,plist_dataset_collective_id;
   int particle_type_mem, particle_type_h5;
   bool reducedPrecision;
   int reducedPrecisionDirection;
+  int desired_iterations;
   //ofstream counter;
-  
+  int current_velocity_field = -1;  
 public:
   createPreInlet(Box3D domain, string outputFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell, int desired_iterations, bool reducedPrecision_ = false);
   void saveCurrent();

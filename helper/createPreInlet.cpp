@@ -43,8 +43,9 @@ herr_t H5Pset_dxpl_mpio( hid_t dxpl_id, H5FD_mpio_xfer_t xfer_mode ) {
 }
 #endif
 
-createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particlePositionTimestep_, Direction flowDir_, HemoCell & hemocell_, int desired_iterations, bool reducedPrecision_) 
+createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particlePositionTimestep_, Direction flowDir_, HemoCell & hemocell_, int desired_iterations_, bool reducedPrecision_) 
 : hemocell(hemocell_) {
+  this->desired_iterations = desired_iterations_;
   this->domain = domain_;
   this->outputFileName = global::directories().getOutputDir() + "/" + outputFileName_  + ".hdf5";
   this->particlePositionTimeStep = particlePositionTimestep_;
@@ -73,13 +74,25 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
       break;
   }
   
-  //counter.open(global::directories().getOutputDir() + "/preinlet.counter",ios::trunc);
-  //counter << 0;
-
   hid_t plist_file_id = H5Pcreate(H5P_FILE_ACCESS);
     MPI_Info info  = MPI_INFO_NULL;
     H5Pset_fapl_mpio(plist_file_id, global::mpi().getGlobalCommunicator(), info);  
-    file_id = H5Fcreate(outputFileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, plist_file_id);
+    
+    if(access(outputFileName.c_str(),F_OK) == 0) {
+      pcout << "WARNING: Appending to existing preinlet file, sanity and dimension checks are not performed" << endl;
+      file_id = H5Fopen(outputFileName.c_str(),H5F_ACC_RDWR,plist_file_id);
+      if (file_id < 0) {
+        pcout << "Error opening existing preinlet file, exiting" << endl;
+        exit(0);
+      }
+    } else {
+      file_id = H5Fcreate(outputFileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, plist_file_id);      
+      if (file_id < 0) {
+        pcout << "Error creating preinlet file, exiting" << endl;
+        exit(0);
+      }
+    }
+  H5Pclose(plist_file_id);   
 
   //Attributes:
   H5LTset_attribute_int (file_id, "/", "flowDirection", (int *)&flowDir, 1);
@@ -93,53 +106,12 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
   }
   H5LTset_attribute_int (file_id, "/", "reduced precision", &rP, 1);
 
-  //Velocity, 1st dim == timestep, 2-4th == space of fluid nodes, one dim will be 1, 5 == all three velocity directions 
-  hsize_t dims[5] = {(hsize_t)desired_iterations,(hsize_t)fluidDomain.getNx(),(hsize_t)fluidDomain.getNy(),(hsize_t)fluidDomain.getNz(),3};
-  hsize_t maximum_size[5] = {H5S_UNLIMITED,(hsize_t)fluidDomain.getNx(),(hsize_t)fluidDomain.getNy(),(hsize_t)fluidDomain.getNz(),3};
-  if (reducedPrecision) {
-    dims[4] = 1;
-    maximum_size[4] = 1;
-    }
-
-  hsize_t chunks[5] = {1,dims[1],dims[2],dims[3],dims[4]};
   int sizes[3] = {(int)domain.getNx(),(int)domain.getNy(),(int)domain.getNz()};
   
   H5LTset_attribute_int (file_id, "/", "boxSize", sizes, 3);  
   
- 
-  //  H5Pset_deflate(plist_dataset_id, 7);
-    H5Fclose(file_id); //Close for single rank access
-    dataspace_velocity_id = H5Screate_simple(5, dims, maximum_size);
+  
 
-    //Create in single thread because god knows why, otherwise it doesnt work
-    if (global::mpi().getRank() == 0) {
-      hid_t plist_dataset_id = H5Pcreate(H5P_DATASET_CREATE);
-      if (H5Pset_chunk(plist_dataset_id, 5, chunks) < 0) { 
-        cerr << "Error creating PreInlet HDF5 File, exiting.." << endl; 
-        exit(0);
-      }
-      hid_t file_id_single = H5Fopen(outputFileName.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
-      if (reducedPrecision) {
-        hid_t temp = H5Dcreate2(file_id_single,"Velocity Boundary",H5T_IEEE_F32LE,dataspace_velocity_id,H5P_DEFAULT,plist_dataset_id,H5P_DEFAULT);
-        H5Dclose(temp);
-      } else {
-        hid_t temp = H5Dcreate2(file_id_single,"Velocity Boundary",H5T_IEEE_F64LE,dataspace_velocity_id,H5P_DEFAULT,plist_dataset_id,H5P_DEFAULT);
-        H5Dclose(temp);
-      }
-      H5Pclose(plist_dataset_id);
-      H5Fflush(file_id_single,H5F_SCOPE_GLOBAL);
-      H5Fclose(file_id_single);
-    }
-    
-    global::mpi().barrier();
-    
-    file_id = H5Fopen(outputFileName.c_str(), H5F_ACC_RDWR, plist_file_id);
-    //Open dataset in all threads
-    dataset_velocity_id = H5Dopen2(file_id, "Velocity Boundary",H5P_DEFAULT);
-    H5Pclose(plist_file_id);   
-
-
-  H5Fflush(file_id, H5F_SCOPE_GLOBAL);
 
   //Create Particle Type
   size_t particle_type_size = sizeof(particle_hdf5_t);
@@ -178,10 +150,9 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
 }
 
 createPreInlet::~createPreInlet() {
-  //counter.close();
+  H5Fflush(file_id,H5F_SCOPE_GLOBAL);
   H5Pclose(plist_dataset_collective_id);
   H5Dclose(dataset_velocity_id);
-  H5Sclose(dataspace_velocity_id);
   H5Fclose(file_id);
   H5Tclose(particle_type_h5);
   H5Tclose(particle_type_mem);
@@ -195,7 +166,7 @@ void createPreInlet::createPreInletFunctional::processGenericBlocks(Box3D domain
   
   if (!intersect(shiftedBox,parent.fluidDomain,fluidBox)) {return;}
   
-  hsize_t offset[5]={parent.hemocell.iter,(hsize_t)fluidBox.x0-parent.fluidDomain.x0,(hsize_t)fluidBox.y0-parent.fluidDomain.y0,(hsize_t)fluidBox.z0-parent.fluidDomain.z0,0};
+  hsize_t offset[5]={parent.hemocell.iter%DSET_SLICE,(hsize_t)fluidBox.x0-parent.fluidDomain.x0,(hsize_t)fluidBox.y0-parent.fluidDomain.y0,(hsize_t)fluidBox.z0-parent.fluidDomain.z0,0};
   hsize_t count[5]= {1,(hsize_t)fluidBox.getNx(),(hsize_t)fluidBox.getNy(),(hsize_t)fluidBox.getNz(),3};
   if(parent.reducedPrecision) {
     count[4]=1;
@@ -307,6 +278,9 @@ void createPreInlet::saveCurrent() {
           hid_t memspace_id = H5Screate_simple (1, count, NULL); 
 
             std::string dataset_name = "particles_" + std::to_string(hemocell.iter);
+            if(H5Lexists(file_id,dataset_name.c_str(),H5P_DEFAULT)) {
+              H5Ldelete(file_id,dataset_name.c_str(),H5P_DEFAULT);
+            }
             hid_t dataset_particles_id = H5Dcreate2(file_id, dataset_name.c_str() ,particle_type_h5,dataspace_particles_id,H5P_DEFAULT,plist_dataset_id,H5P_DEFAULT);    
               if (dataset_particles_id < 0) {
                 cerr << "Error creating particle dataset, exiting.." <<endl;
@@ -328,11 +302,42 @@ void createPreInlet::saveCurrent() {
     delete[] particles_hdf5;
   }
   
-  vector<MultiBlock3D*> wrapper;
-  wrapper.push_back(hemocell.cellfields->lattice);
-  
-  applyProcessingFunctional(new createPreInletFunctional(*this),domain,wrapper);
+  //Velocity, 1st dim == timestep, 2-4th == space of fluid nodes, one dim will be 1, 5 == all three velocity directions 
+  hsize_t dims[5] = {(hsize_t)DSET_SLICE,(hsize_t)fluidDomain.getNx(),(hsize_t)fluidDomain.getNy(),(hsize_t)fluidDomain.getNz(),3};
+  if (reducedPrecision) {
+    dims[4] = 1;
+  }
+  dataspace_velocity_id = H5Screate_simple(5, dims, NULL);
+ 
+    //Open a new dataset for every slice of DSET_SLICE timesteps
+    if ((int)(hemocell.iter/DSET_SLICE) != current_velocity_field) {
+      current_velocity_field = hemocell.iter/DSET_SLICE;
 
+      if (dataset_velocity_id != -1) {
+        H5Dclose(dataset_velocity_id);
+      }
+      string dataset_name = "Velocity Boundary_" + to_string(current_velocity_field * DSET_SLICE);
+  
+      dataset_velocity_id = -1;
+      if(H5Lexists(file_id,dataset_name.c_str(),H5P_DEFAULT)) {
+        dataset_velocity_id = H5Dopen(file_id,dataset_name.c_str(),H5P_DEFAULT);
+      }
+      if(dataset_velocity_id < 0) {
+        if (reducedPrecision) {
+          dataset_velocity_id = H5Dcreate2(file_id,dataset_name.c_str(),H5T_IEEE_F32LE,dataspace_velocity_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        } else {
+          dataset_velocity_id = H5Dcreate2(file_id,dataset_name.c_str(),H5T_IEEE_F64LE,dataspace_velocity_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        }
+      }
+    }
+
+    vector<MultiBlock3D*> wrapper;
+    wrapper.push_back(hemocell.cellfields->lattice);
+
+    applyProcessingFunctional(new createPreInletFunctional(*this),domain,wrapper);
+
+  H5Sclose(dataspace_velocity_id);
+  
   H5LTset_attribute_uint (file_id, "/", "Iterations", &hemocell.iter, 1);
 }
 
