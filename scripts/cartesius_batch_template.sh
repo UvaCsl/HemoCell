@@ -10,12 +10,11 @@
 		# gpu_short   01:00:00     64       gpu       gpu nodes for test runs
 		# staging   5-00:00:00   1 core     server    for accessing the archive and external systems
 module rm mpi fortran c
-module load mpi/openmpi/1.10.2
-module load gcc/5.2.0
+module load mpi/openmpi/2.0.1
 
 # This is necessary for runs over 128 nodes -> otherwise the communication queue overflows
-export OMPI_MCA_btl_openib_receive_queues="X,128,256,192,128:X,2048,256,128,32:X,12288,256,128,32:X,65536,256,128,32"
+#export OMPI_MCA_btl_openib_receive_queues="X,128,256,192,128:X,2048,256,128,32:X,12288,256,128,32:X,65536,256,128,32"
 
 #Place the actual command here
 #Dont forget to place this file in the directory you want to run from
-mpirun -n 40 ./pipeflow tmp/checkpoint.xml #dont forget to adjust -n !!
+srun ./pipeflow tmp/checkpoint.xml #dont forget to adjust -n !!
