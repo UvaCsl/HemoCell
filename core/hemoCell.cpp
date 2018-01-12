@@ -174,7 +174,6 @@ void HemoCell::writeOutput() {
 }
 
 void HemoCell::iterate() {
-  global::mpi().barrier();
   if (interrupted == 1) {
     cout << "Caught Signal, aborting and saving work" << endl;
     exit(1);

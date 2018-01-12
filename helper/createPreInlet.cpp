@@ -300,6 +300,7 @@ void createPreInlet::saveCurrent() {
       H5Pclose(plist_dataset_id);
     H5Pclose(plist_dataset_mpi_id);
     delete[] particles_hdf5;
+    H5Fflush(file_id,H5F_SCOPE_GLOBAL);
   }
   
   //Velocity, 1st dim == timestep, 2-4th == space of fluid nodes, one dim will be 1, 5 == all three velocity directions 
