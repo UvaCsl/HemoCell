@@ -166,8 +166,13 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
           dim[3] = 1;
           outputHDF5(dim,chunk,file_id,name,output);
           delete[] output;
-        }
-        continue;
+ 	}
+	continue;
+      case OUTPUT_SHEAR_STRESS:
+	output = outputShearStress();
+	name = "ShearStress";
+        dim[3] = 6;
+        break;
       default:
         continue;
     }
@@ -282,3 +287,34 @@ float * WriteFluidField::outputCellDensity(string name) {
   
   return output;
 }
+
+float * WriteFluidField::outputShearStress() {
+  float * output = new float [(*nCells)*6];
+  unsigned int n = 0;
+  plb::Array<double,6> stress;
+  for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
+    for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
+      for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
+
+        ablock->grid[iX][iY][iZ].computeShearStress(stress);
+	//Array<T,6> stress_vec = stress.get(iX,iY,iZ);
+	output[n] = stress[0];
+	output[n+1] = stress[1];
+	output[n+2] = stress[2];
+	output[n+3] = stress[3];
+	output[n+4] = stress[4];
+	output[n+5] = stress[5];
+	n += 6;
+      }
+    }
+  }
+
+  if (cellfields.hemocell.outputInSiUnits) {
+    for (unsigned int i = 0 ; i < (*nCells)*6 ; i++) {
+      output[i] = output[i]*param::dm*((param::dx*param::dx)/(param::dt*param::dt));
+    }
+  }
+
+  return output;
+}
+

@@ -63,7 +63,7 @@ private:
     float * outputForce();
     float * outputDensity();
     float * outputCellDensity(string name);
-    
+    float * outputShearStress();    
 };
 
 #endif

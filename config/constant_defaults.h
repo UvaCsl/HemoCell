@@ -132,6 +132,7 @@ class HemoCellParticleField;
 #define OUTPUT_VERTEX_ID 7
 #define OUTPUT_CELL_ID 8
 #define OUTPUT_CELL_DENSITY 9
+#define OUTPUT_SHEAR_STRESS 10
 
 //==================== Not really an option but a nice shortcut
 #define param Parameters
