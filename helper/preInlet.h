@@ -93,7 +93,8 @@ class PreInlet {
   string sourceFileName;
   int particlePositionTimeStep;
   Direction flowDir;
-  int file_id,dataspace_velocity_id,dataset_velocity_id,dataset_particles_id,dataspace_particles_id;
+  int file_id,dataspace_velocity_id,dataset_velocity_id = -1,dataset_particles_id,dataspace_particles_id;
+  int current_velocity_field = -1;
   int particle_type_mem, particle_type_h5, particles_size;
   particle_hdf5_t * particles;
   int nCellsOffset, nCellsSelf;

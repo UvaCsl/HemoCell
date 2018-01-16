@@ -117,9 +117,6 @@ PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTi
   
   nCellsOffset = hemocell.cellfields->number_of_cells;
   hemocell.cellfields->number_of_cells += nCellsSelf;
-     
-  dataset_velocity_id = H5Dopen2( file_id, "Velocity Boundary", H5P_DEFAULT);  
-  dataspace_velocity_id = H5Dget_space(dataset_velocity_id);
   
   //Create Particle Type
   size_t particle_type_size = sizeof(particle_hdf5_t);
@@ -223,7 +220,7 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
   
   if (!intersect(shiftedBox,parent.fluidDomain,fluidBox)) {return;}
   
-  hsize_t offset[5]={parent.hemocell.iter,(hsize_t)fluidBox.x0-parent.fluidDomain.x0,(hsize_t)fluidBox.y0-parent.fluidDomain.y0,(hsize_t)fluidBox.z0-parent.fluidDomain.z0,0};
+  hsize_t offset[5]={parent.hemocell.iter%DSET_SLICE,(hsize_t)fluidBox.x0-parent.fluidDomain.x0,(hsize_t)fluidBox.y0-parent.fluidDomain.y0,(hsize_t)fluidBox.z0-parent.fluidDomain.z0,0};
   hsize_t count[5]= {1,(hsize_t)fluidBox.getNx(),(hsize_t)fluidBox.getNy(),(hsize_t)fluidBox.getNz(),3};
   if (parent.reducedPrecision) {
     count[4] = 1;
@@ -309,19 +306,7 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
   H5Sclose(memspace_id);
 }
 void PreInlet::update() {  
-  /*unsigned int iter;
-  while(true) {
-    counter.seekg(0);
-    counter >> iter;
-    if (counter.fail()) {
-      counter.close();
-      counter.open(global::directories().getOutputDir() + "/preinlet.counter");
-    }
-
-    if (iter > hemocell.iter + 1000) { //1000 is a reasonable offset until swmr support
-      break;
-    }
-  }*/
+ 
   //When we are also reading particles
   if (hemocell.iter%particlePositionTimeStep==0) {
     std::string filename = "particles_" + std::to_string(hemocell.iter);
@@ -349,15 +334,36 @@ void PreInlet::update() {
     }
   }
   
+  //Load in correct dataset for the fluid field
+  if ((int)(hemocell.iter/DSET_SLICE) != current_velocity_field) {
+    current_velocity_field = hemocell.iter/DSET_SLICE;
+    
+    if(dataset_velocity_id != -1){
+      H5Dclose(dataset_velocity_id);
+    }
+    string dataset_name = "Velocity Boundary_" + to_string(current_velocity_field * DSET_SLICE);
+    
+    dataset_velocity_id = H5Dopen(file_id,dataset_name.c_str(),H5P_DEFAULT);
+    if (dataset_velocity_id < 0) {
+      pcout << "Error opening dataset " << dataset_name << " from preinlet file. Exiting ..." << endl;
+      exit(0);
+    }
+  }
+    
   
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell.cellfields->immersedParticles);
   applyProcessingFunctional(new DeletePreInletParticles(),hemocell.cellfields->immersedParticles->getBoundingBox(),wrapper);
   
-  wrapper.clear();
-  wrapper.push_back(hemocell.cellfields->lattice);
-  wrapper.push_back(hemocell.cellfields->immersedParticles);
-  applyProcessingFunctional(new PreInletFunctional(*this),domain,wrapper);
+  
+  dataspace_velocity_id = H5Dget_space(dataset_velocity_id);
+  
+    wrapper.clear();
+    wrapper.push_back(hemocell.cellfields->lattice);
+    wrapper.push_back(hemocell.cellfields->immersedParticles);
+    applyProcessingFunctional(new PreInletFunctional(*this),domain,wrapper);
+
+  H5Sclose(dataspace_velocity_id);
   
   hemocell.cellfields->syncEnvelopes();
   
@@ -374,7 +380,6 @@ void PreInlet::update() {
 
 PreInlet::~PreInlet() {
   H5Dclose(dataset_velocity_id);
-  H5Sclose(dataspace_velocity_id);
   H5Fclose(file_id);
 }
 
