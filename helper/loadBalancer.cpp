@@ -139,8 +139,8 @@ void LoadBalancer::doLoadBalance() {
   if (original_block_stored) {
     plint envelopeWidth = hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth();
     plint refinementLevel = hemocell.lattice->getMultiBlockManagement().getRefinementLevel();
-    const BlockCommunicator3D * blockCommunicator = hemocell.lattice->getBlockCommunicator().clone();
-    const CombinedStatistics& cStatistics = hemocell.lattice->getCombinedStatistics().clone();
+    const BlockCommunicator3D & blockCommunicator = hemocell.lattice->getBlockCommunicator().clone();
+    const CombinedStatistics & cStatistics = hemocell.lattice->getCombinedStatistics().clone();
     const Dynamics<double,DESCRIPTOR> & dynamics = hemocell.lattice->getBackgroundDynamics().clone();
     bool perX = hemocell.lattice->periodicity().get(0);
     bool perY = hemocell.lattice->periodicity().get(1);
@@ -252,24 +252,37 @@ void LoadBalancer::doLoadBalance() {
 
   map<plint,plint> nTA; //Conversion is necessary for next function
   for (auto & pair : newProc) { nTA[pair.first] = pair.second; }
-  ThreadAttribution* newThreadAttribution = new ExplicitThreadAttribution(nTA);        
+  ThreadAttribution* newThreadAttribution = new ExplicitThreadAttribution(nTA);
+  
+  const SparseBlockStructure3D & sbStructure = hemocell.lattice->getSparseBlockStructure();
+
+  plint envelopeWidth = hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth();
+  plint refinementLevel = hemocell.lattice->getMultiBlockManagement().getRefinementLevel();
+  const BlockCommunicator3D & blockCommunicator = hemocell.lattice->getBlockCommunicator().clone();
+  const CombinedStatistics & cStatistics = hemocell.lattice->getCombinedStatistics().clone();
+  const Dynamics<double,DESCRIPTOR> & dynamics = hemocell.lattice->getBackgroundDynamics().clone();
+  bool perX = hemocell.lattice->periodicity().get(0);
+  bool perY = hemocell.lattice->periodicity().get(1);
+  bool perZ = hemocell.lattice->periodicity().get(2);
+  bool internalStat = hemocell.lattice->isInternalStatisticsOn();
+  
+  delete hemocell.lattice;
+  
   MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
                 MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
-                hemocell.lattice->getSparseBlockStructure(),
+                sbStructure,
                 newThreadAttribution,
-                //hemocell.lattice->getMultiBlockManagement().getThreadAttribution().clone(),
-                hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth(),
-                hemocell.lattice->getMultiBlockManagement().getRefinementLevel() ),
-                hemocell.lattice->getBlockCommunicator().clone(),
-                hemocell.lattice->getCombinedStatistics().clone(),
+                envelopeWidth,
+                refinementLevel),
+                blockCommunicator,
+                cStatistics,
                 defaultMultiBlockPolicy3D().getMultiCellAccess<double,DESCRIPTOR>(),
-                hemocell.lattice->getBackgroundDynamics().clone() );
-  newlattice->periodicity().toggle(0, hemocell.lattice->periodicity().get(0));
-  newlattice->periodicity().toggle(1, hemocell.lattice->periodicity().get(1));
-  newlattice->periodicity().toggle(2, hemocell.lattice->periodicity().get(2));
-  newlattice->toggleInternalStatistics(hemocell.lattice->isInternalStatisticsOn());
+                dynamics );
+  newlattice->periodicity().toggle(0, perX);
+  newlattice->periodicity().toggle(1, perY);
+  newlattice->periodicity().toggle(2, perZ);
+  newlattice->toggleInternalStatistics(internalStat);
 
-  delete hemocell.lattice;
   hemocell.lattice = newlattice;
   hemocell.cellfields->lattice = newlattice;
   
@@ -369,22 +382,34 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
   }
   ThreadAttribution* newThreadAttribution = new ExplicitThreadAttribution(nTA);        
   
+
+  plint envelopeWidth = hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth();
+  plint refinementLevel = hemocell.lattice->getMultiBlockManagement().getRefinementLevel();
+  const BlockCommunicator3D & blockCommunicator = hemocell.lattice->getBlockCommunicator().clone();
+  const CombinedStatistics & cStatistics = hemocell.lattice->getCombinedStatistics().clone();
+  const Dynamics<double,DESCRIPTOR> & dynamics = hemocell.lattice->getBackgroundDynamics().clone();
+  bool perX = hemocell.lattice->periodicity().get(0);
+  bool perY = hemocell.lattice->periodicity().get(1);
+  bool perZ = hemocell.lattice->periodicity().get(2);
+  bool internalStat = hemocell.lattice->isInternalStatisticsOn();
+  
+  delete hemocell.lattice;
+  
   MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
                 MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
                 new_structure,
                 newThreadAttribution,
-                hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth(),
-                hemocell.lattice->getMultiBlockManagement().getRefinementLevel() ),
-                hemocell.lattice->getBlockCommunicator().clone(),
-                hemocell.lattice->getCombinedStatistics().clone(),
+                envelopeWidth,
+                refinementLevel),
+                blockCommunicator,
+                cStatistics,
                 defaultMultiBlockPolicy3D().getMultiCellAccess<double,DESCRIPTOR>(),
-                hemocell.lattice->getBackgroundDynamics().clone() );
-  newlattice->periodicity().toggle(0, hemocell.lattice->periodicity().get(0));
-  newlattice->periodicity().toggle(1, hemocell.lattice->periodicity().get(1));
-  newlattice->periodicity().toggle(2, hemocell.lattice->periodicity().get(2));
-  newlattice->toggleInternalStatistics(hemocell.lattice->isInternalStatisticsOn());
-
-  delete hemocell.lattice;
+                dynamics );
+  newlattice->periodicity().toggle(0, perX);
+  newlattice->periodicity().toggle(1, perY);
+  newlattice->periodicity().toggle(2, perZ);
+  newlattice->toggleInternalStatistics(internalStat);
+  
   hemocell.lattice = newlattice;
   hemocell.cellfields->lattice = newlattice;
   
