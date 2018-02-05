@@ -131,7 +131,7 @@ def updateDictForXDMFStringsCell(h5File, h5dict):
         }
         return d
 
-    h5dict['DataSets'] =  map(dictFromObject,  h5File.items())
+    h5dict['DataSets'] =  list(map(dictFromObject,  list(h5File.items())))
     return h5dict
 
 
@@ -157,7 +157,7 @@ def readH5FileToDictionary(h5fname, close=True):
     h5dict = {}
     h5File = h5.File(h5fname, 'r')
     h5dict['pathToHDF5'] = h5fname.replace('//','/')
-    for key, val in h5File.attrs.iteritems():
+    for key, val in h5File.attrs.items():
         h5dict[key] = val[0] if len(val) == 1 else val
     updateDictForXDMFStringsCell(h5File, h5dict)
     if close:
@@ -283,7 +283,7 @@ def createXDMF(fnameString, processorStrings, iterDir):
         xdmfFile.writeSubDomain(h5dict, "Subdomain " + p)
     xdmfFile.closeCollection()
     xdmfFile.close()
-    print "Created file:", fnameToSave
+    print("Created file:", fnameToSave)
 
 
 if __name__ == '__main__':
@@ -302,11 +302,11 @@ if __name__ == '__main__':
             directories = sorted(os.listdir(dirname))
             for iterDir in directories:
                 fluidH5files = sorted( glob(dirname + '/' + iterDir + '/' + identifier + '.*p*.h5') )
-                fluidIDs = map(lambda x: x[:-3], fluidH5files)
-                iterationStrings, processorStrings  = zip(*map(lambda f: [f.split('.')[-3], f.split('.')[-1]], fluidIDs))
-                iterationStrings, processorStrings = map(lambda l: sorted(set(l)), (iterationStrings, processorStrings))
+                fluidIDs = [x[:-3] for x in fluidH5files]
+                iterationStrings, processorStrings  = list(zip(*[[f.split('.')[-3], f.split('.')[-1]] for f in fluidIDs]))
+                iterationStrings, processorStrings = [sorted(set(l)) for l in (iterationStrings, processorStrings)]
                 for iterString in iterationStrings:
                     fnameString = dirname + '/' + iterDir + '/' + identifier + "." + iterString + ".p.%s.h5"
                     createXDMF(fnameString, processorStrings, iterDir)
         except (ValueError, TypeError, NameError) as e:
-            print '## WARNING ## There are no', identifier, 'to unpack. ', e
+            print('## WARNING ## There are no', identifier, 'to unpack. ', e)

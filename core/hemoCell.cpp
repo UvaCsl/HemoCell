@@ -54,7 +54,8 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   global::timer("atOutput").start();
   
 #ifdef FORCE_LIMIT
-  pcout << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT << " pN. Results can be inaccurate due to force capping." << endl;
+  if(LOG_LEVEL >= 2)
+    pcout << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT << " pN. Results can be inaccurate due to force capping." << endl;
 #endif
   
   ///Set signal handlers to exit gracefully on many signals

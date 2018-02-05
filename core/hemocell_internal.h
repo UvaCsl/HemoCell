@@ -26,8 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef WITHOUT_PLB
 
-#define VERSION_MAJOR 0
-#define VERSION_MINOR 2
+#define VERSION_MAJOR 1
+#define VERSION_MINOR 1
 
 //Load Constants
 #include "constant_defaults.h"

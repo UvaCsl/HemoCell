@@ -26,6 +26,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ============== Compile time options - Set these
 
 /*
+Choose default log level.
+0 - no clutter, no warning, etc.
+1 - serious warnings/possible errors
+2 - every warning
+*/
+#ifndef LOG_LEVEL
+#define LOG_LEVEL 1
+#endif
+
+/*
 Choose kernel. 
 Phi1 [1], Phi2 [2] - Default, Phi3 [3], Phi4 [4],  Phi4c [5]
 */
@@ -44,7 +54,7 @@ Phi1 [1], Phi2 [2] - Default, Phi3 [3], Phi4 [4],  Phi4c [5]
 /*
 Choose material model.
 1 - Dao/Suresh model (+Fedosov 2010 improvements)
-2 - HO model (Under testing)
+2 - HO model (Default - this is the validated model)
 */
 #ifndef HEMOCELL_MATERIAL_MODEL
 #define HEMOCELL_MATERIAL_MODEL 2

@@ -44,7 +44,8 @@ void outputHDF5(hsize_t* dim, hsize_t* chunk, hid_t& file_id, string& name, floa
 
 void writeFluidField_HDF5(HemoCellFields& cellfields, double dx, double dt, plint iter, string preString) {
   if(std::find(cellfields.desiredFluidOutputVariables.begin(), cellfields.desiredFluidOutputVariables.end(), OUTPUT_FORCE) != cellfields.desiredFluidOutputVariables.end()) {
-    pcout << "(FluidOutput) (OutputForce) The force on the fluid field is reset to zero, If there is a bodyforce, reset it after this function" << endl; 
+    if(LOG_LEVEL >= 2)
+      pcout << "(FluidOutput) (OutputForce) The force on the fluid field is reset to zero, If there is a bodyforce, reset it after this function" << endl; 
     cellfields.spreadParticleForce();
   }
   WriteFluidField * wff = new WriteFluidField(cellfields, *cellfields.lattice,iter,"Fluid",dx,dt);
