@@ -48,7 +48,8 @@ const option long_opts[] = {
             {"allowRotate",0, nullptr, 6},
             {"scale",      1, nullptr, 7},
             {"maxiter",    1, nullptr, 8},
-            {"help",       0, nullptr, 9}
+            {"help",       0, nullptr, 9},
+            {NULL, 0, 0, 0}
 };
 
 double rbcA = 8.4, rbcB = 4.4, rbcC = 8.4; // Inreased to cover biconcave shape of RBCs
