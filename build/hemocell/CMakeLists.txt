@@ -81,7 +81,8 @@ message(STATUS "HDF5 Include dir:     ${HDF5_INCLUDE_DIRS}")
 #===================================
 
 IF(ENABLE_PARMETIS)
-FIND_PATH(PARMETIS_INCLUDE_DIR parmetis.h)
+FIND_PATH(PARMETIS_INCLUDE_DIR parmetis.h HINTS
+    ${HEMOCELL_BASE_DIR}/external/parmetis-4.0.3/include/)
 IF(NOT PARMETIS_INCLUDE_DIR)
   MESSAGE(FATAL_ERROR "Parmetis include path not found!")
 ENDIF(NOT PARMETIS_INCLUDE_DIR)
