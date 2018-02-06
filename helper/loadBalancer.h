@@ -31,7 +31,7 @@ class LoadBalancer;
 
 class LoadBalancer {  
   public:
-  LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_), original_block_structure(0,0,0) { }
+  LoadBalancer(HemoCell & hemocell_);
 #ifdef HEMO_PARMETIS
   double calculateFractionalLoadImbalance();
   /**
@@ -87,9 +87,9 @@ class LoadBalancer {
   bool FLI_iscalled = false;
   map<int,TOAB_t> gatherValues;
   HemoCell & hemocell;
-  bool original_block_stored = false;
-  SparseBlockStructure3D original_block_structure;
-  ThreadAttribution* original_thread_attribution;
+  bool original_block_stored = true;
+  SparseBlockStructure3D * original_block_structure = 0;
+  ThreadAttribution * original_thread_attribution = 0;
 };
 
 #endif

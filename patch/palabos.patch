@@ -1,5 +1,5 @@
 diff --git a/src/atomicBlock/atomicBlock3D.h b/src/atomicBlock/atomicBlock3D.h
-index c14e7a8..e7580c6 100644
+index 1fb0ad1..6ac865d 100644
 --- a/src/atomicBlock/atomicBlock3D.h
 +++ b/src/atomicBlock/atomicBlock3D.h
 @@ -31,6 +31,7 @@
@@ -21,10 +21,10 @@ index c14e7a8..e7580c6 100644
  };
  
 diff --git a/src/atomicBlock/blockLattice3D.h b/src/atomicBlock/blockLattice3D.h
-index 35412f6..780bd30 100644
+index d672045..6adaa01 100644
 --- a/src/atomicBlock/blockLattice3D.h
 +++ b/src/atomicBlock/blockLattice3D.h
-@@ -191,6 +191,7 @@ private:
+@@ -194,6 +194,7 @@ private:
  private:
      Dynamics<T,Descriptor>* backgroundDynamics;
      Cell<T,Descriptor>     *rawData;
@@ -33,7 +33,7 @@ index 35412f6..780bd30 100644
  public:
      static CachePolicy3D& cachePolicy();
 diff --git a/src/core/cell.h b/src/core/cell.h
-index bed151b..ca7a2bd 100644
+index 8ca5cc2..484c2c8 100644
 --- a/src/core/cell.h
 +++ b/src/core/cell.h
 @@ -49,7 +49,7 @@ public:
@@ -56,7 +56,7 @@ index bed151b..ca7a2bd 100644
      Dynamics<T,Descriptor>*        dynamics;  ///< local LB dynamics
  };
 diff --git a/src/libraryInterfaces/TINYXML_xmlIO.cpp b/src/libraryInterfaces/TINYXML_xmlIO.cpp
-index aff55bc..36c6a50 100644
+index 6149f51..1ae2108 100644
 --- a/src/libraryInterfaces/TINYXML_xmlIO.cpp
 +++ b/src/libraryInterfaces/TINYXML_xmlIO.cpp
 @@ -167,13 +167,13 @@ XMLreader::XMLreader() {
@@ -81,7 +81,7 @@ index aff55bc..36c6a50 100644
  
  void XMLreader::print(int indent) const {
 diff --git a/src/libraryInterfaces/TINYXML_xmlIO.h b/src/libraryInterfaces/TINYXML_xmlIO.h
-index 39d7949..25741c7 100644
+index ec64f81..2333dff 100644
 --- a/src/libraryInterfaces/TINYXML_xmlIO.h
 +++ b/src/libraryInterfaces/TINYXML_xmlIO.h
 @@ -76,6 +76,7 @@ public:
@@ -93,7 +93,7 @@ index 39d7949..25741c7 100644
      template <typename T> void read(std::vector<T>& values) const;
      template <typename T> bool readNoThrow(std::vector<T>& values) const;
 diff --git a/src/libraryInterfaces/TINYXML_xmlIO.hh b/src/libraryInterfaces/TINYXML_xmlIO.hh
-index cbe9bd6..0e50bf0 100644
+index 8ed6c59..e4b5c06 100644
 --- a/src/libraryInterfaces/TINYXML_xmlIO.hh
 +++ b/src/libraryInterfaces/TINYXML_xmlIO.hh
 @@ -52,6 +52,19 @@ void XMLreaderProxy::read(T& value) const {
@@ -117,7 +117,7 @@ index cbe9bd6..0e50bf0 100644
  inline void XMLreaderProxy::read<bool>(bool& value) const {
      if (!reader) return;
 diff --git a/src/multiBlock/multiBlockLattice3D.h b/src/multiBlock/multiBlockLattice3D.h
-index 3aa64f7..09beee4 100644
+index 2677277..ae09d76 100644
 --- a/src/multiBlock/multiBlockLattice3D.h
 +++ b/src/multiBlock/multiBlockLattice3D.h
 @@ -108,6 +108,7 @@ public:
@@ -137,7 +137,7 @@ index 3aa64f7..09beee4 100644
      void allocateAndInitialize();
      void eliminateStatisticsInEnvelope();
 diff --git a/src/multiBlock/multiBlockLattice3D.hh b/src/multiBlock/multiBlockLattice3D.hh
-index f106b83..0fd55ed 100644
+index 3d681c3..64d25f9 100644
 --- a/src/multiBlock/multiBlockLattice3D.hh
 +++ b/src/multiBlock/multiBlockLattice3D.hh
 @@ -345,6 +345,19 @@ void MultiBlockLattice3D<T,Descriptor>::collideAndStream() {
@@ -207,8 +207,72 @@ index f106b83..0fd55ed 100644
  void MultiBlockLattice3D<T,Descriptor>::incrementTime() {
      for ( typename BlockMap::iterator it = blockLattices.begin();
            it != blockLattices.end(); ++it)
+diff --git a/src/multiBlock/sparseBlockStructure3D.cpp b/src/multiBlock/sparseBlockStructure3D.cpp
+index a8ae15e..fe3e896 100644
+--- a/src/multiBlock/sparseBlockStructure3D.cpp
++++ b/src/multiBlock/sparseBlockStructure3D.cpp
+@@ -78,6 +78,20 @@ SparseBlockStructure3D::SparseBlockStructure3D (
+                                                / (double)rhs.boundingBox.getNz() );
+     if (gridNz < 1) gridNz = 1;
+ }
++SparseBlockStructure3D * SparseBlockStructure3D::clone() const{
++  SparseBlockStructure3D * newBlock = new SparseBlockStructure3D(1,1,1);
++  newBlock->boundingBox = boundingBox;
++  newBlock->bulks = bulks;
++  newBlock->uniqueBulks = uniqueBulks;
++  newBlock->grid = grid;
++  newBlock->gridLx = gridLx;
++  newBlock->gridLy = gridLy;
++  newBlock->gridLz = gridLz;
++  newBlock->gridNx = gridNx;
++  newBlock->gridNy = gridNy;
++  newBlock->gridNz = gridNz;
++  return newBlock;
++}
+ 
+ void SparseBlockStructure3D::addBlock(Box3D const& bulk, plint blockId) 
+ {
+@@ -109,7 +123,7 @@ void SparseBlockStructure3D::removeBlock(plint blockId) {
+     }
+ }
+ 
+-bool SparseBlockStructure3D::exists(plint blockId) {
++bool SparseBlockStructure3D::exists(plint blockId) const {
+     return bulks.find(blockId) != bulks.end();
+ }
+ 
+@@ -788,7 +802,6 @@ SparseBlockStructure3D alignDistribution3D (
+     return newSparseBlock;
+ }
+ 
+-
+ EuclideanIterator3D::EuclideanIterator3D(SparseBlockStructure3D const& sparseBlock_)
+     : sparseBlock(sparseBlock_)
+ { }
+diff --git a/src/multiBlock/sparseBlockStructure3D.h b/src/multiBlock/sparseBlockStructure3D.h
+index b8d48a7..1fe555a 100644
+--- a/src/multiBlock/sparseBlockStructure3D.h
++++ b/src/multiBlock/sparseBlockStructure3D.h
+@@ -51,6 +51,8 @@ public:
+                            plint gridNx_, plint gridNy_, plint gridNz_);
+     /// Restrict an existing SparseBlockStructure3D to a sub-domain.
+     SparseBlockStructure3D(SparseBlockStructure3D const& rhs, Box3D boundingBox_);
++    ///Clone the goddamned thing
++    SparseBlockStructure3D * clone() const;
+     /// Add a new block to the sparse block-structure.
+     void addBlock(Box3D const& bulk, Box3D const& uniqueBulk, plint blockId);
+     /// Add a new block to the sparse block-structure; uniqueBulk = bulk.
+@@ -58,7 +60,7 @@ public:
+     /// Remove an existing block from the sparse block-structure.
+     void removeBlock(plint blockId);
+     /// Check if a block with the given ID already exists in the block-structure.
+-    bool exists(plint blockId);
++    bool exists(plint blockId) const;
+     /// Return 1 + the maximum block ID currently found in the structure.
+     plint nextIncrementalId() const;
+     /// Return outer bounding box.
 diff --git a/src/offLattice/triangularSurfaceMesh.h b/src/offLattice/triangularSurfaceMesh.h
-index b78c7c2..13c0262 100644
+index 1455aa9..303d559 100644
 --- a/src/offLattice/triangularSurfaceMesh.h
 +++ b/src/offLattice/triangularSurfaceMesh.h
 @@ -146,6 +146,12 @@ public:
@@ -225,10 +289,10 @@ index b78c7c2..13c0262 100644
      ///   The triangular surface mesh is smoothed by using a spatial
      ///   averaging algorithm. Interior vertices are treated differently
 diff --git a/src/offLattice/triangularSurfaceMesh.hh b/src/offLattice/triangularSurfaceMesh.hh
-index 5f2c9b0..cdb22b0 100644
+index 622aa7d..624e388 100644
 --- a/src/offLattice/triangularSurfaceMesh.hh
 +++ b/src/offLattice/triangularSurfaceMesh.hh
-@@ -284,6 +284,82 @@ void TriangularSurfaceMesh<T>::rotate(T phi, T theta, T psi)
+@@ -291,6 +291,82 @@ void TriangularSurfaceMesh<T>::rotate(T phi, T theta, T psi)
  }
  
  template<typename T>
@@ -312,7 +376,7 @@ index 5f2c9b0..cdb22b0 100644
  {
      PLB_ASSERT(maxiter >= 0);
 diff --git a/src/particles/particleField3D.h b/src/particles/particleField3D.h
-index 5245d30..cb4283a 100644
+index 373596f..0709fa9 100644
 --- a/src/particles/particleField3D.h
 +++ b/src/particles/particleField3D.h
 @@ -70,6 +70,7 @@ public:
@@ -324,7 +388,7 @@ index 5245d30..cb4283a 100644
              Array<T,3> const& position,
              plint& iX, plint& iY, plint& iZ ) const;
 diff --git a/src/particles/particleField3D.hh b/src/particles/particleField3D.hh
-index c0cbd23..5d1916d 100644
+index ed03698..2c723bd 100644
 --- a/src/particles/particleField3D.hh
 +++ b/src/particles/particleField3D.hh
 @@ -40,6 +40,20 @@ ParticleField3D<T,Descriptor>::ParticleField3D(plint nx, plint ny, plint nz, Blo

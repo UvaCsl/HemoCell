@@ -50,7 +50,7 @@ public:
    * Create the particle field seperately, takes the arguments set in the constructor
    * Is called in the constructor as well
    */
-  void createParticleField();
+  void createParticleField(SparseBlockStructure3D* sbStructure_ = 0, ThreadAttribution * tAttribution_ = 0);
   
   ///Used to set variables inside the celltypes for correct access, called through createParticleField
   void InitAfterLoadCheckpoint();
@@ -116,6 +116,9 @@ public:
 
   /// Get particles in a given domain
   void getParticles(vector<HemoCellParticle*> & particles, Box3D & domain);
+  
+  /// Add particles to local processors
+  void addParticles(vector<HemoCellParticle> & particles);
     
   //Class Variables
   
@@ -208,6 +211,13 @@ public:
     HemoGetParticles * clone() const;
   public:
     HemoGetParticles(vector<HemoCellParticle *> & particles_) : particles(particles_) {}
+  };
+  class HemoSetParticles: public HemoCellFunctional {
+    vector<HemoCellParticle> & particles;
+    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+    HemoSetParticles * clone() const;
+  public:
+    HemoSetParticles(vector<HemoCellParticle> & particles_) : particles(particles_) {}
   };
 };
 #endif

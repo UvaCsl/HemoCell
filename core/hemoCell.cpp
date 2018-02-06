@@ -47,7 +47,6 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   cfg = new Config(configFileName);
   documentXML = new XMLreader(configFileName);
 
-  loadBalancer = new LoadBalancer(*this);
 
   // start clock for basic performance feedback
   lastOutputAt = 0;
@@ -81,6 +80,9 @@ void HemoCell::latticeEquilibrium(double rho, hemo::Array<double, 3> vel) {
 
 void HemoCell::initializeCellfield() {
   cellfields = new HemoCellFields(*lattice,(*cfg)["domain"]["particleEnvelope"].read<int>(),*this);
+
+  //Correct place for init
+  loadBalancer = new LoadBalancer(*this);
 }
 
 void HemoCell::setOutputs(string name, vector<int> outputs) {

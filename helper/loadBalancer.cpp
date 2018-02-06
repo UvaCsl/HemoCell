@@ -22,14 +22,18 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "loadBalancer.h"
+LoadBalancer::LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_), original_block_structure(hemocell_.lattice->getSparseBlockStructure().clone()),original_thread_attribution(hemocell_.lattice->getMultiBlockManagement().getThreadAttribution().clone()) { 
+
+}
+
 #ifdef HEMO_PARMETIS
 #include <parmetis.h>
-
 
 void LoadBalancer::reloadCheckpoint() {
   //Firstly reload the config
   delete hemocell.documentXML;
   hemocell.documentXML = new XMLreader(global::directories().getOutputDir() + "checkpoint.xml");
+  hemocell.cellfields->syncEnvelopes();
   hemocell.loadCheckPoint();
 }
 
@@ -86,9 +90,9 @@ double LoadBalancer::calculateFractionalLoadImbalance() {
   vector<double> times(size);
   vector<double> lsps(size);
   
-  for (auto const & entry : gatherValues) {
+  /*for (auto const & entry : gatherValues) {
     pcout << "Atomic block " << entry.first << " is on proc " << entry.second.mpi_proc << " spent " << entry.second.particle_time << " for the particle field, spent " << entry.second.fluid_time << " for the fluid field" << endl;
-  }
+  }*/
 
   this->gatherValues = gatherValues;
   
@@ -139,8 +143,7 @@ void LoadBalancer::doLoadBalance() {
   if (original_block_stored) {
     plint envelopeWidth = hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth();
     plint refinementLevel = hemocell.lattice->getMultiBlockManagement().getRefinementLevel();
-    //BlockCommunicator3D * blockCommunicator = hemocell.lattice->getBlockCommunicator().clone();
-    //CombinedStatistics * cStatistics = hemocell.lattice->getCombinedStatistics().clone();
+
     Dynamics<double,DESCRIPTOR> * dynamics = hemocell.lattice->getBackgroundDynamics().clone();
     bool perX = hemocell.lattice->periodicity().get(0);
     bool perY = hemocell.lattice->periodicity().get(1);
@@ -151,8 +154,8 @@ void LoadBalancer::doLoadBalance() {
 
     MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
                 MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
-                original_block_structure,
-                original_thread_attribution,
+                *original_block_structure->clone(),
+                original_thread_attribution->clone(),
                 envelopeWidth,
                 refinementLevel ),
                 defaultMultiBlockPolicy3D().getBlockCommunicator(),                
@@ -243,23 +246,24 @@ void LoadBalancer::doLoadBalance() {
   int numAtomicBlock = hemocell.lattice->getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
   HemoCellGatheringFunctional<plint>::gather(newProc,numAtomicBlock);
   
-  for (auto & pair : newProc) {
+  /*for (auto & pair : newProc) {
     pcout << "Atomic block " << pair.first << " is assigned to processor " << pair.second << endl;
-  }
+  }*/
 
   
   pcout << "(LoadBalancer) Recreating Fluid field with new Distribution of Atomic Blocks" << endl;
 
   map<plint,plint> nTA; //Conversion is necessary for next function
-  for (auto & pair : newProc) { nTA[pair.first] = pair.second; }
+  for (auto & pair : newProc) { 
+      nTA[pair.first] = pair.second; 
+  }
   ThreadAttribution* newThreadAttribution = new ExplicitThreadAttribution(nTA);
+  delete original_thread_attribution;
+  original_thread_attribution = newThreadAttribution->clone();
   
-  SparseBlockStructure3D sbStructure(hemocell.lattice->getSparseBlockStructure());
-
   plint envelopeWidth = hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth();
   plint refinementLevel = hemocell.lattice->getMultiBlockManagement().getRefinementLevel();
-  //BlockCommunicator3D * blockCommunicator = hemocell.lattice->getBlockCommunicator().clone();
-  //CombinedStatistics * cStatistics = hemocell.lattice->getCombinedStatistics().clone();
+
   Dynamics<double,DESCRIPTOR> * dynamics = hemocell.lattice->getBackgroundDynamics().clone();
   bool perX = hemocell.lattice->periodicity().get(0);
   bool perY = hemocell.lattice->periodicity().get(1);
@@ -269,15 +273,16 @@ void LoadBalancer::doLoadBalance() {
   delete hemocell.lattice;
 
   MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
-                MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
-                sbStructure,
-                newThreadAttribution,
-                envelopeWidth,
-                refinementLevel),
-                defaultMultiBlockPolicy3D().getBlockCommunicator(),                
-                defaultMultiBlockPolicy3D().getCombinedStatistics(),
-                defaultMultiBlockPolicy3D().getMultiCellAccess<double,DESCRIPTOR>(),
-                dynamics );
+            MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
+            *original_block_structure->clone(),
+            newThreadAttribution,
+            envelopeWidth,
+            refinementLevel ),
+            defaultMultiBlockPolicy3D().getBlockCommunicator(),                
+            defaultMultiBlockPolicy3D().getCombinedStatistics(),
+            defaultMultiBlockPolicy3D().getMultiCellAccess<double,DESCRIPTOR>(),
+            dynamics );
+  
   newlattice->periodicity().toggle(0, perX);
   newlattice->periodicity().toggle(1, perY);
   newlattice->periodicity().toggle(2, perZ);
@@ -288,7 +293,7 @@ void LoadBalancer::doLoadBalance() {
   
   delete hemocell.cellfields->immersedParticles;
   hemocell.cellfields->createParticleField();
-   
+
   reloadCheckpoint();
   pcout << "(LoadBalancer) Continuing simulation with balanced application" << endl;
 
@@ -300,24 +305,13 @@ LoadBalancer::GatherTimeOfAtomicBlocks * LoadBalancer::GatherTimeOfAtomicBlocks:
 
 void LoadBalancer::restructureBlocks(bool checkpoint_available) {
 
-  //Store original block structure
-  original_block_structure = hemocell.lattice->getSparseBlockStructure();
-  original_thread_attribution = hemocell.lattice->getMultiBlockManagement().getThreadAttribution().clone();
-
-  original_block_stored = true;
-
-  if(!checkpoint_available) {
-    hemocell.saveCheckPoint();
-  }
-
-  const ThreadAttribution & oldThreads = hemocell.lattice->getMultiBlockManagement().getThreadAttribution();
-  
-  SparseBlockStructure3D old_structure = hemocell.lattice->getSparseBlockStructure();
-  vector<plint> localBlocks = old_structure.getLocalBlocks(hemocell.lattice->getMultiBlockManagement().getThreadAttribution());
+  ThreadAttribution * oldThreads = original_thread_attribution->clone();
+  SparseBlockStructure3D * old_structure = original_block_structure->clone();
+  vector<plint> localBlocks = old_structure->getLocalBlocks(*oldThreads);
   
   vector<Box3D> boxes(localBlocks.size());
   for(unsigned int bid = 0 ; bid < localBlocks.size() ; bid ++) {
-    old_structure.getBulk(localBlocks[bid],boxes[bid]);
+    old_structure->getBulk(localBlocks[bid],boxes[bid]);
   }
   
   //Simple algorithm, check in three directions (the other three are from neigh -> root)
@@ -362,31 +356,30 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
     newBlocks[localBlocks[box]] = boxes[box];
   }
   
-  int numAtomicBlock = old_structure.getNumBlocks();
+  int numAtomicBlock = old_structure->getNumBlocks();
   HemoCellGatheringFunctional<Box3D_simple>::gather(newBlocks,numAtomicBlock);
   
   pcout << "(LoadBalancer) (Restructure) went from " << numAtomicBlock << " to " << newBlocks.size() << " atomic blocks (whole domain)" << endl;
   
   //The new structure we can fill, Initialize such because palabos
-  SparseBlockStructure3D new_structure = old_structure;
-  for (const auto & pair : new_structure.getBulks()) {
-    new_structure.removeBlock(pair.first); //Lol
+  SparseBlockStructure3D * new_structure = old_structure->clone();
+  delete old_structure;
+  for (const auto & pair : new_structure->getBulks()) {
+    new_structure->removeBlock(pair.first); //Lol
   }
   
   map<plint,plint> nTA; //Conversion is necessary for new threadattribution
   plint blockId = 0;
   for (const auto & pair : newBlocks ) {
-    nTA[blockId] = oldThreads.getMpiProcess(pair.first);
-    new_structure.addBlock(pair.second.getBox3D(),blockId);
+    nTA[blockId] = oldThreads->getMpiProcess(pair.first);
+    new_structure->addBlock(pair.second.getBox3D(),blockId);
     blockId++;
+  
   }
   ThreadAttribution* newThreadAttribution = new ExplicitThreadAttribution(nTA);        
-  
 
   plint envelopeWidth = hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth();
   plint refinementLevel = hemocell.lattice->getMultiBlockManagement().getRefinementLevel();
-  BlockCommunicator3D * blockCommunicator = hemocell.lattice->getBlockCommunicator().clone();
-  CombinedStatistics * cStatistics = hemocell.lattice->getCombinedStatistics().clone();
   Dynamics<double,DESCRIPTOR> * dynamics = hemocell.lattice->getBackgroundDynamics().clone();
   bool perX = hemocell.lattice->periodicity().get(0);
   bool perY = hemocell.lattice->periodicity().get(1);
@@ -397,8 +390,8 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
   
   MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
                 MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
-                new_structure,
-                newThreadAttribution,
+                *new_structure->clone(),
+                newThreadAttribution->clone(),
                 envelopeWidth,
                 refinementLevel),
                 defaultMultiBlockPolicy3D().getBlockCommunicator(),                
@@ -414,11 +407,14 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
   hemocell.cellfields->lattice = newlattice;
   
   delete hemocell.cellfields->immersedParticles;
-  hemocell.cellfields->createParticleField();
+  hemocell.cellfields->createParticleField(new_structure->clone(),newThreadAttribution->clone());
 
   reloadCheckpoint();
   pcout << "(LoadBalancer) (Restructure) Continuing simulation with restructured application" << endl;
 
+  delete newThreadAttribution;
+  delete new_structure;
+  
   return;
 }
 #endif
