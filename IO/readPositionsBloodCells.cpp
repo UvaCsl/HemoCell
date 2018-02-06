@@ -138,6 +138,7 @@ int getTotalNumberOfCells(HemoCellFields & cellFields){
   
 }
 
+bool first_time =true;
 void getReadPositionsBloodCellsVector(Box3D realDomain,
                                             std::vector<TriangularSurfaceMesh<double>* > & meshes,
                                             std::vector<plint> & Np,
@@ -175,8 +176,9 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
         }
 
         fIn >> Np[j];
-        pcout << "(readPositionsBloodCels) Particle count in file (" << cellFields[j]->name << "): " << Np[j] << "." << endl;
-
+        if (first_time) {
+          pcout << "(readPositionsBloodCels) Particle count in file (" << cellFields[j]->name << "): " << Np[j] << "." << endl;
+        }
         packPositions[j].resize(Np[j]); packAngles[j].resize(Np[j]);cellIdss[j].resize(Np[j]);
         int less = 0;
         for (plint i = 0; i < Np[j]; i++) {
@@ -232,6 +234,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
         }
     }
+    first_time = false;
 }
 
 
@@ -317,8 +320,8 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         
 //delete meshes[iCF];
     }
-    cout << "Atomic Block ID: " << particleFields[0]->atomicBlockId;
-    cout    << " Total complete cells (with periodicity): " << particleFields[0]->get_lpc().size() << std::endl;
+    //cout << "Atomic Block ID: " << particleFields[0]->atomicBlockId;
+    //cout    << " Total complete cells (with periodicity): " << particleFields[0]->get_lpc().size() << std::endl;
 }
 
 
@@ -364,5 +367,5 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, Confi
     applyProcessingFunctional(
             new ReadPositionsBloodCellField3D(cellFields, dx, cfg),
             cellFields.lattice->getBoundingBox(), fluidAndParticleFieldsArg);
-
+    cout << "Mpi Process: " << global::mpi().getRank()  << " Completed loading particles" << std::endl;
 }
