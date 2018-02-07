@@ -275,7 +275,7 @@ void LoadBalancer::doLoadBalance() {
   MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
             MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
             *original_block_structure->clone(),
-            newThreadAttribution,
+            newThreadAttribution->clone(),
             envelopeWidth,
             refinementLevel ),
             defaultMultiBlockPolicy3D().getBlockCommunicator(),                
@@ -294,9 +294,11 @@ void LoadBalancer::doLoadBalance() {
   delete hemocell.cellfields->immersedParticles;
   hemocell.cellfields->createParticleField(original_block_structure->clone(),newThreadAttribution->clone());
 
+  delete newThreadAttribution;
+  
   reloadCheckpoint();
   pcout << "(LoadBalancer) Continuing simulation with balanced application" << endl;
-
+  
   return;
 }
 
@@ -391,7 +393,7 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
   MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
                 MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
                 *new_structure->clone(),
-                newThreadAttribution,
+                newThreadAttribution->clone(),
                 envelopeWidth,
                 refinementLevel),
                 defaultMultiBlockPolicy3D().getBlockCommunicator(),                

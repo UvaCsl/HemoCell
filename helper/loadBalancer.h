@@ -23,7 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #ifndef LOADBALANCER_H
 #define LOADBALANCER_H
-
 class LoadBalancer;
 
 #include "hemocell_internal.h"
@@ -34,7 +33,7 @@ class LoadBalancer;
  * Used in the loadbalancing library
  */
 #ifndef HEMOCELL_MAX_NEIGHBOURS
-#define HEMOCELL_MAX_NEIGHBOURS 32 //27
+#define HEMOCELL_MAX_NEIGHBOURS 500 //27
 #endif
 
 class LoadBalancer {  
