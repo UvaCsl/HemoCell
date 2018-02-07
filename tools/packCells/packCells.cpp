@@ -10,7 +10,7 @@ void PrintHelp() {
           "\n"
           "OPTIONAL ARGUMENTS:\n"
           "  --hematocrit <0-1.0>                 -h The hematocrit of the solution\n"
-          "  --plt-ratio <ratio>                     The ratio of PLT per RBC, default=0.07\n"
+          "  --plt_ratio <ratio>                     The ratio of PLT per RBC, default=0.07\n"
           "  --rbc <n>                               Number of Red Blood Cells\n"
           "  --plt <n>                               Number of Platelets\n"
           "  --wbc <n>                               Number of White Blood Cells\n"
