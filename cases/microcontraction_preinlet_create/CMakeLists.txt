@@ -34,6 +34,7 @@ IF (NOT CMAKE_CXX_FLAGS)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-qualifiers")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -Wformat -Wformat-security")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=format-security")
@@ -72,6 +73,8 @@ INCLUDE_DIRECTORIES(${PALABOS_BASE_DIR}/src)
 
 LIST(APPEND SRC_FILES ${PROJECT_SRC})
 
+add_custom_target(hemocell_pre COMMAND cd ${HEMOCELL_DIR} && ${CMAKE_COMMAND} .)
+
 include(ExternalProject) 
 ExternalProject_Add("hemocell" PREFIX ${HEMOCELL_DIR} SOURCE_DIR ${HEMOCELL_DIR}
     BINARY_DIR ${HEMOCELL_DIR} INSTALL_COMMAND "")
@@ -79,6 +82,7 @@ ExternalProject_Add_Step("hemocell" update_custom COMMAND cd ${HEMOCELL_DIR}
     && ${CMAKE_COMMAND} . && $(MAKE)  ALWAYS 1)
 
 ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES})
+add_dependencies("hemocell" hemocell_pre)
 ADD_DEPENDENCIES(${PROJECT_NAME} "hemocell")
 target_link_libraries(${PROJECT_NAME} ${HEMOCELL_DIR}/libhemocell.a)
 
