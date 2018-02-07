@@ -257,7 +257,7 @@ void LoadBalancer::doLoadBalance() {
   for (auto & pair : newProc) { 
       nTA[pair.first] = pair.second; 
   }
-  ThreadAttribution* newThreadAttribution = new ExplicitThreadAttribution(nTA);
+  ExplicitThreadAttribution* newThreadAttribution = new ExplicitThreadAttribution(nTA);
   delete original_thread_attribution;
   original_thread_attribution = newThreadAttribution->clone();
   
@@ -292,7 +292,7 @@ void LoadBalancer::doLoadBalance() {
   hemocell.cellfields->lattice = newlattice;
   
   delete hemocell.cellfields->immersedParticles;
-  hemocell.cellfields->createParticleField();
+  hemocell.cellfields->createParticleField(original_block_structure->clone(),newThreadAttribution->clone());
 
   reloadCheckpoint();
   pcout << "(LoadBalancer) Continuing simulation with balanced application" << endl;
@@ -376,7 +376,7 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
     blockId++;
   
   }
-  ThreadAttribution* newThreadAttribution = new ExplicitThreadAttribution(nTA);        
+  ExplicitThreadAttribution* newThreadAttribution = new ExplicitThreadAttribution(nTA);        
 
   plint envelopeWidth = hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth();
   plint refinementLevel = hemocell.lattice->getMultiBlockManagement().getRefinementLevel();
@@ -391,7 +391,7 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
   MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
                 MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
                 *new_structure->clone(),
-                newThreadAttribution->clone(),
+                newThreadAttribution,
                 envelopeWidth,
                 refinementLevel),
                 defaultMultiBlockPolicy3D().getBlockCommunicator(),                

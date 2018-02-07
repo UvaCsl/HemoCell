@@ -116,6 +116,21 @@ index 8ed6c59..e4b5c06 100644
  template <>
  inline void XMLreaderProxy::read<bool>(bool& value) const {
      if (!reader) return;
+diff --git a/src/multiBlock/localMultiBlockInfo3D.cpp b/src/multiBlock/localMultiBlockInfo3D.cpp
+index 8cdd896..6116a8c 100644
+--- a/src/multiBlock/localMultiBlockInfo3D.cpp
++++ b/src/multiBlock/localMultiBlockInfo3D.cpp
+@@ -140,8 +140,9 @@ void LocalMultiBlockInfo3D::computeAllPeriodicOverlaps (
+         sparseBlock.getBulk(blockId, bulk);
+         // Speed optimization: execute the test for periodicity
+         //   only for bulk-domains which touch the bounding box.
++        //BUGFIXED to envelopewidth by HEMOCELL TEAM (victor)
+         if (!contained (
+-                    bulk.enlarge(1), sparseBlock.getBoundingBox() ) )
++                    bulk.enlarge(envelopeWidth), sparseBlock.getBoundingBox() ) )
+         {
+             computePeriodicOverlaps(sparseBlock, blockId);
+         }
 diff --git a/src/multiBlock/multiBlockLattice3D.h b/src/multiBlock/multiBlockLattice3D.h
 index 2677277..ae09d76 100644
 --- a/src/multiBlock/multiBlockLattice3D.h

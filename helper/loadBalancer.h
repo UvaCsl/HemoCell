@@ -29,6 +29,14 @@ class LoadBalancer;
 #include "hemocell_internal.h"
 #include "hemocell.h"
 
+/*
+ * Maximum number of neighbours, a sane setting is 27 (3x3) but it should be increased accordingly with very small blocks and large envelopes
+ * Used in the loadbalancing library
+ */
+#ifndef HEMOCELL_MAX_NEIGHBOURS
+#define HEMOCELL_MAX_NEIGHBOURS 32 //27
+#endif
+
 class LoadBalancer {  
   public:
   LoadBalancer(HemoCell & hemocell_);
