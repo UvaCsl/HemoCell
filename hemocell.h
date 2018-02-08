@@ -170,6 +170,9 @@ public:
   /// it again after calling iterate
   void iterate();
 
+  /// Check if any exis signal was caught
+  void checkExitSignals();
+
   //Load balancing library functions
   /// Calculate and return the fractional load imbalance 
   double calculateFractionalLoadImbalance();

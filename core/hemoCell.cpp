@@ -176,11 +176,16 @@ void HemoCell::writeOutput() {
   global::timer("atOutput").restart();
 }
 
-void HemoCell::iterate() {
+void HemoCell::checkExitSignals() {
   if (interrupted == 1) {
-    cout << "Caught Signal, aborting and saving work" << endl;
+    cout << endl << "Caught Signal, saving work and quitting!" << endl;
     exit(1);
   }
+}
+
+void HemoCell::iterate() {
+  checkExitSignals();
+
   cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
 
   // Calculate repulsion Force

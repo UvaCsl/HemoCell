@@ -137,6 +137,8 @@ int main(int argc, char* argv[])
 
   while (hemocell.iter < tmax ) {  
 
+    hemocell.checkExitSignals();  // Since we do not use the main iterate() loop, we have to check for this manually!
+
     hemocell.cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
 
     cellStretch.applyForce(); //IMPORTANT, not done normally in hemocell.iterate()
