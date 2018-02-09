@@ -3,12 +3,11 @@
 Downloads
 =========
 
-======================== =========================
+======================== =========================================
 HemoCell V1.0            Download Location            
-======================== =========================
-Singularity < v2.0 Image TODO
-Singularity > v2.0 Image TODO       
-Source Code archive      TODO
-Github Link              TODO, make a longer line  
-======================== =========================
+======================== =========================================
+Singularity v2.4 Image   :download:`hemocell-singularity-1.0.img` 
+Source Code archive      :download:`hemocell-1.0.tgz` 
+Github Link              `<https://github.com/UvaCsl/HemoCell>`_
+======================== =========================================
 
