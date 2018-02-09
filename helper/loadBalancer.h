@@ -38,8 +38,8 @@ class LoadBalancer;
 
 class LoadBalancer {  
   public:
-  LoadBalancer(HemoCell & hemocell_);
 #ifdef HEMO_PARMETIS
+  LoadBalancer(HemoCell & hemocell_);
   double calculateFractionalLoadImbalance();
   /**
    * Restructure blocks to reduce communication on one processor
@@ -47,6 +47,7 @@ class LoadBalancer {
    */
   void restructureBlocks(bool checkpoint_available=true);
 #else
+  LoadBalancer(HemoCell & hemocell_){};
   double calculateFractionalLoadImbalance() {return 0.0;}
   void restructureBlocks(bool checkpoint_available=true) {}
 #endif
