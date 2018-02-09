@@ -47,7 +47,7 @@ class LoadBalancer {
    */
   void restructureBlocks(bool checkpoint_available=true);
 #else
-  LoadBalancer(HemoCell & hemocell_){};
+  LoadBalancer(HemoCell & hemocell_):hemocell(hemocell_){};
   double calculateFractionalLoadImbalance() {return 0.0;}
   void restructureBlocks(bool checkpoint_available=true) {}
 #endif
