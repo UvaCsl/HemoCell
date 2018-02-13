@@ -364,11 +364,9 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
   pcout << "(LoadBalancer) (Restructure) went from " << numAtomicBlock << " to " << newBlocks.size() << " atomic blocks (whole domain)" << endl;
   
   //The new structure we can fill, Initialize such because palabos
-  SparseBlockStructure3D * new_structure = old_structure->clone();
+  SparseBlockStructure3D * new_structure = new SparseBlockStructure3D(old_structure->getBoundingBox());
   delete old_structure;
-  for (const auto & pair : new_structure->getBulks()) {
-    new_structure->removeBlock(pair.first); //Lol
-  }
+ 
   
   map<plint,plint> nTA; //Conversion is necessary for new threadattribution
   plint blockId = 0;
@@ -378,6 +376,7 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
     blockId++;
   
   }
+  delete oldThreads;
   ExplicitThreadAttribution* newThreadAttribution = new ExplicitThreadAttribution(nTA);        
 
   plint envelopeWidth = hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth();
