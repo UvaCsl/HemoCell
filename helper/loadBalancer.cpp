@@ -22,12 +22,13 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "loadBalancer.h"
-LoadBalancer::LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_), original_block_structure(hemocell_.lattice->getSparseBlockStructure().clone()),original_thread_attribution(hemocell_.lattice->getMultiBlockManagement().getThreadAttribution().clone()) { 
-
-}
 
 #ifdef HEMO_PARMETIS
 #include <parmetis.h>
+
+LoadBalancer::LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_), original_block_structure(hemocell_.lattice->getSparseBlockStructure().clone()),original_thread_attribution(hemocell_.lattice->getMultiBlockManagement().getThreadAttribution().clone()) { 
+
+}
 
 void LoadBalancer::reloadCheckpoint() {
   //Firstly reload the config
