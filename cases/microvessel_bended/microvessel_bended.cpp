@@ -26,7 +26,7 @@ public:
 		return //((iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= LradiusSqr && iX >= 0 && iX < xbegin) ||
 			//((iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= (((LradiusCyl-SradiusCyl)/2)*(1-std::cos((2*iX)/((L_constr/10)*std::acos(-1))))+(SradiusCyl))*(((LradiusCyl-SradiusCyl)/2)*(1-std::cos((2*iX)/((L_constr/10)*std::acos(-1))))+(SradiusCyl)) && iX >= xbegin && iX < xend) || 
 			//((iZ-Sxcirc)*(iZ-Sxcirc) + (iY-Sycirc)*(iY-Sycirc) <= SradiusSqr && iX >=100 && iX <=150) ||
-			( (iZ-xcirc)*(iZ-xcirc) + (iY-(amplitude*std::cos((2*iX*std::acos(-1))/L_constr)+2*amplitude))*(iY-(amplitude*std::cos((2*iX*std::acos(-1))/L_constr)+2*amplitude)) >= radiusSqr && iX >= xbegin && iX < xend );
+			( (iZ-xcirc)*(iZ-xcirc) + (iY-(amplitude*std::cos((2*iX*std::acos(-1))/L_constr)+amplitude+radiusCyl))*(iY-(amplitude*std::cos((2*iX*std::acos(-1))/L_constr)+amplitude+radiusCyl)) >= radiusSqr && iX >= xbegin && iX < xend );
 			//((iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= LradiusSqr && iX >= xend && iX <= xend+xbegin);
 			
 	}
@@ -67,18 +67,19 @@ int main(int argc, char *argv[]) {
   pcout << "(vasoconstriction) setting dimensions ..." << std::endl;
 
   plint Cfactor = 2;
+  plint amplitude = (*cfg)["domain"]["refDirN"].read<int>()/2; 
   plint nx = 6*(*cfg)["domain"]["refDirN"].read<int>(); //100lu=50um 
-  plint ny = (*cfg)["domain"]["refDirN"].read<int>()*2;
-  plint nz = (*cfg)["domain"]["refDirN"].read<int>()/2+Cfactor;
+  plint nz = (*cfg)["domain"]["refDirN"].read<int>()+Cfactor;
+  plint ny = (2*amplitude)+nz+Cfactor;   
 
   plint radiusCyl = (nz-Cfactor)/2;
-  plint xcirc = nz/2;
-  plint ycirc = nz/2;
+  plint xcirc = (nz)/2;
+  plint ycirc = (nz)/2;
 
-  plint L_constr = 300; //in LU 
+  plint L_constr = 3*(*cfg)["domain"]["refDirN"].read<int>(); //in LU 
   plint xbegin = 0;
   plint xend = nx;
-  plint amplitude = 25; //diamater of vessel = 25 um (so in LU 50)
+//  plint amplitude = (*cfg)["domain"]["refDirN"].read<int>()/2; //diamater of vessel = 25 um (so in LU 50)
   
 //  double SradiusCyl = LradiusCyl * (1.0-perc_constr);
   
