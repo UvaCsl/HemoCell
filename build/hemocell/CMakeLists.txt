@@ -31,25 +31,6 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
 FIND_PACKAGE(MPI REQUIRED)
 INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
 
-#=======================================
-
-#IF (NOT CMAKE_CXX_FLAGS)
-  #If flags are not set, add default flags
-#  SET(CMAKE_BUILD_TYPE ${BUILD_TYPE})
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -std=c++11")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-empty-body")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-qualifiers")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -Wformat -Wformat-security")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=format-security")
-#ENDIF (NOT CMAKE_CXX_FLAGS)
-
-#SET(DEFAULT ON CACHE INTERNAL "Default value for enabled by default options")
-
 #===================================
 #Pasumo options 
 ADD_DEFINITIONS("-DPLB_MPI_PARALLEL")
@@ -68,6 +49,34 @@ IF(MPI_CXX_FOUND)
 ELSE(MPI_CXX_FOUND)
   MESSAGE(FATAL_ERROR "MPI-COMPILER NOT found!")
 ENDIF(MPI_CXX_FOUND)
+
+#=======================================
+
+execute_process(COMMAND ${CMAKE_CXX_COMPILER} --version 
+                COMMAND head -n1
+                COMMAND "cut" "-d " "-f1"
+                OUTPUT_VARIABLE CXX_COMPILER_NAME
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+MESSAGE(STATUS "COMPILER: ${MPI_CXX_COMPILER}, TYPE: ${CXX_COMPILER_NAME}")
+
+#Set up correct flags for compiler
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -std=c++11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -Wformat -Wformat-security")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=format-security")
+IF(${CXX_COMPILER_NAME} STREQUAL "g++")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-empty-body")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-qualifiers")
+ENDIF(${CXX_COMPILER_NAME} STREQUAL "g++")
+IF(${CXX_COMPILER_NAME} STREQUAL "icpc")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-inline-max-size")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ipo")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd858")
+ENDIF(${CXX_COMPILER_NAME} STREQUAL "icpc")
 
 #===================================
 SET(HDF5_PREFER_PARALLEL 1)
@@ -103,6 +112,9 @@ IF(METIS_LIBRARY STREQUAL "METIS_LIBRARY-NOTFOUND")
   external/parmetis-4.0.3? ")
 ENDIF(METIS_LIBRARY STREQUAL "METIS_LIBRARY-NOTFOUND")
 MESSAGE( STATUS "METIS LIBRARY DIR:       " ${METIS_LIBRARY})
+
+INCLUDE_DIRECTORIES(${PARMETIS_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${METIS_INCLUDE_DIR})
 
 ADD_DEFINITIONS("-DHEMO_PARMETIS")
 ENDIF(ENABLE_PARMETIS)
