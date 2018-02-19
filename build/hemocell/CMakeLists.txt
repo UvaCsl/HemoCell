@@ -10,7 +10,7 @@ SET(PALABOS_DIR "${HEMOCELL_BASE_DIR}/palabos")
 
 # Build settings
 SET(ENABLE_MPI 1) # For windows builds set to zero
-SET(ENABLE_PARMETIS 0) # Do we enable load_balancing stuff? 
+SET(ENABLE_PARMETIS 1) # Do we enable load_balancing stuff? 
 SET(BUILD_TYPE Release)  # Debug or Release
 
 
@@ -73,8 +73,6 @@ IF(${CXX_COMPILER_NAME} STREQUAL "g++")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-qualifiers")
 ENDIF(${CXX_COMPILER_NAME} STREQUAL "g++")
 IF(${CXX_COMPILER_NAME} STREQUAL "icpc")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-inline-max-size")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ipo")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd858")
 ENDIF(${CXX_COMPILER_NAME} STREQUAL "icpc")
 
