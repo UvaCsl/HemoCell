@@ -38,7 +38,7 @@ inline bool contained_sane(hemo::Array<plint,3> const& x, Box3D const& box) {
 inline double phi2 (double x) {
     x = fabs(x);
     x = 1.0 - x;
-    return max(x,0.0);
+    return max(x,std::numeric_limits<double>::epsilon());
 }
 
 template<typename T>
@@ -88,6 +88,7 @@ inline void interpolationCoefficientsPhi2 (
     hemo::Array<plint,3> posInBlock;
     double phi[3];
     double weight;
+    double total_weight = 0;
     
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
@@ -98,14 +99,17 @@ inline void interpolationCoefficientsPhi2 (
                     phi[1] = (position[1] - posInBlock[1]);
                     phi[2] = (position[2] - posInBlock[2]);
                     weight = phi2(phi[0]) * phi2(phi[1]) * phi2(phi[2]);
+                    
+                    total_weight+=weight;
 
-                    if (weight>0) {
-                        particle->kernelWeights.push_back(weight);
-                        particle->kernelLocations.push_back(&block.grid[posInBlock[0]][posInBlock[1]][posInBlock[2]]);
-                    }
+                    particle->kernelWeights.push_back(weight);
+                    particle->kernelLocations.push_back(&block.grid[posInBlock[0]][posInBlock[1]][posInBlock[2]]);
                 }
             }
         }
+    }
+    for(double & weight : particle->kernelWeights) { //Normalize weight to 1
+      weight/=total_weight;
     }
 }
 
