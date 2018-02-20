@@ -49,30 +49,13 @@ void LoadBalancer::GatherTimeOfAtomicBlocks::processGenericBlocks(Box3D domain, 
   vector<HemoCellParticle *> found;
   pf->findParticles(pf->localDomain,found);
   gatherValues[pf->atomicBlockId].n_lsp = found.size();
-  
-  gatherValues[pf->atomicBlockId].location[0] = pf->getLocation().x;
-  gatherValues[pf->atomicBlockId].location[1] = pf->getLocation().y;
-  gatherValues[pf->atomicBlockId].location[2] = pf->getLocation().z;
 
-  gatherValues[pf->atomicBlockId].n_neighbours = pf->neighbours.size();
-  for (unsigned int i = 0 ; i < pf->neighbours.size(); i++) {
-    gatherValues[pf->atomicBlockId].neighbours[i] = pf->neighbours[i];
-  }
-    
   pf->timer.reset();
   ff->timer.reset();
 }
 
 double LoadBalancer::calculateFractionalLoadImbalance() {
-  //Error Checking
-  std::vector<plint> const& blocks = hemocell.cellfields->immersedParticles->getLocalInfo().getBlocks();
-  for (pluint iBlock=0; iBlock<blocks.size(); ++iBlock) {
-    if (hemocell.cellfields->immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > HEMOCELL_MAX_NEIGHBOURS) {
-      cerr << "(HemoCell) ERROR: More neighbours of atomic block exist than allowed: " << hemocell.cellfields->immersedParticles->getComponent(blocks[iBlock]).neighbours.size() << " instead of " << HEMOCELL_MAX_NEIGHBOURS << "!. Check the atomic block structure!\n";
-      exit(0);
-    }
-  }
-    
+
   //set FLI_iscalled
   FLI_iscalled = true;
   int size = global::mpi().getSize();
@@ -182,6 +165,24 @@ void LoadBalancer::doLoadBalance() {
   calculateFractionalLoadImbalance();
   }
   
+  
+  //Map atomic blocks to number used in parmetis
+  map<plint,plint> id_parmetis_id_real;
+  map<plint,plint> id_real_id_parmetis;
+  map<plint,vector<plint>> blocks_per_mpi;
+  for (auto & pair :original_block_structure->getBulks()) {
+    blocks_per_mpi[original_thread_attribution->getMpiProcess(pair.first)].push_back(pair.first);
+  }
+  plint id_parmetis = 0;
+  for (auto & pair : blocks_per_mpi) {
+    vector<plint> & blocks = pair.second;
+    for (plint & id : blocks) {
+      id_real_id_parmetis[id] = id_parmetis;
+      id_parmetis_id_real[id_parmetis] = id;
+      id_parmetis++;
+    }
+  }
+  
   //Variable naming according to Parmetis Manual
   idx_t wgtflag = 2;
   idx_t numflag = 0;
@@ -197,10 +198,7 @@ void LoadBalancer::doLoadBalance() {
   
   vector<idx_t> vtxdist(nparts+1);
   for (unsigned int i = 1 ; i < vtxdist.size(); i++){
-    vtxdist[i] = vtxdist[i-1] + partsize;
-    if (i <= remainder) {
-      vtxdist[i]++;
-    }
+    vtxdist[i] = vtxdist[i-1] + blocks_per_mpi[i-1].size();
   }
   
   unsigned int nv = vtxdist[rank+1] - vtxdist[rank];
@@ -210,22 +208,26 @@ void LoadBalancer::doLoadBalance() {
   vector<idx_t> xadj(nv+1);
   xadj[0] = 0;
   for (unsigned int i = 0 ; i + 1 < xadj.size() ; i ++) {
-    xadj[i+1] = xadj[i] + gatherValues[ofs+i].n_neighbours;
+    xadj[i+1] = xadj[i] + hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).neighbours.size();
   }
 
   vector<idx_t> adjncy(xadj.back());
   unsigned int entry = 0;
   for (unsigned int i = 0 ; i < nv ; i ++) {
-    for (int j = 0 ; j < gatherValues[ofs+i].n_neighbours; j++) {
-      adjncy[entry] = gatherValues[ofs+i].neighbours[j];
+    for (int j = 0 ; j < hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).neighbours.size(); j++) {
+      adjncy[entry] = hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).neighbours[j];
       entry++;
     }
   }
 
   vector<real_t> xyz(nv*ndims);
   for (unsigned int i = 0 ; i < xyz.size()/ndims ; i++) {
+    int location[3];
+    location[0] = hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).getLocation().x;
+    location[1] = hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).getLocation().y;
+    location[2] = hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).getLocation().z;
     for (int j = 0 ; j < ndims ; j++ ) {
-      xyz[i*ndims + j] = gatherValues[ofs+i].location[j];
+      xyz[i*ndims + j] = location[j];
     }
   }
 
@@ -242,7 +244,7 @@ void LoadBalancer::doLoadBalance() {
   
   map<int,plint> newProc; //Gather the results to all mpi processes, we can use the gathering functional for that as well!
   for (unsigned int i = 0 ; i < part.size() ; i++){
-    newProc[ofs+i] = part[i];
+    newProc[id_parmetis_id_real[ofs+i]] = part[i];
   }
   int numAtomicBlock = hemocell.lattice->getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
   HemoCellGatheringFunctional<plint>::gather(newProc,numAtomicBlock);
