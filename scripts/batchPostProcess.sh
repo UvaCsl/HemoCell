@@ -15,7 +15,7 @@ fi
 
 
 # Fluid
-${scriptsDir}/FluidHDF5toXMF.py; 
+${scriptsDir}/FluidHDF5.py; 
 
 # Cells of different types
 if [ ! -d ./csv ]; then

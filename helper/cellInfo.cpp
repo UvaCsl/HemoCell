@@ -35,7 +35,7 @@ void CellInformationFunctionals::calculate_vol_pos_area(HemoCell* hemocell) {
 
 void CellInformationFunctionals::CellVolume::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
-  
+
   for (const auto & pair : pf->get_lpc()) {
     double volume = 0.;
     const int & cid = pair.first;
@@ -89,8 +89,12 @@ void CellInformationFunctionals::CellPosition::processGenericBlocks(Box3D domain
       size++;
       position += pf->particles[pid].position;
     }
-    info_per_cell[cid].position = position/double(size);
-    info_per_cell[cid].centerLocal = pf->isContainedABS(info_per_cell[cid].position,pf->localDomain);
+    if ( info_per_cell.find(cid) == info_per_cell.end() || !info_per_cell[cid].centerLocal) {
+      info_per_cell[cid].position = position/double(size);
+      info_per_cell[cid].centerLocal = pf->isContainedABS(info_per_cell[cid].position,pf->localDomain);
+    } else {
+     
+    }
   }
 }
 void CellInformationFunctionals::CellStretch::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -212,7 +216,6 @@ pluint CellInformationFunctionals::getTotalNumberOfCells(HemoCell* hemocell) {
       localCells++;
     }
   }
-  
   map<int,pluint> cells_per_proc;
   cells_per_proc[global::mpi().getRank()] = localCells;
   HemoCellGatheringFunctional<pluint>::gather(cells_per_proc,global::mpi().getSize());
