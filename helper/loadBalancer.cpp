@@ -119,8 +119,7 @@ double LoadBalancer::calculateFractionalLoadImbalance() {
 
 void LoadBalancer::doLoadBalance() {
   if(!FLI_iscalled) {
-    pcerr << "You did not calculate the fractional load imbalance before trying to balance, this is required! Exiting...";
-    exit(0);
+    pcerr << "Warning, You did not calculate the fractional load imbalance before trying to balance, this means gatherValues will be unavailable in this function";
   }
   hemocell.saveCheckPoint(); // Save Checkpoint
 
@@ -232,7 +231,8 @@ void LoadBalancer::doLoadBalance() {
 
   vector<idx_t> vwgt(nv);
   for (unsigned int i = 0 ; i < vwgt.size() ; i++) {
-    vwgt[i] = gatherValues[ofs+i].n_lsp;
+    //Warning: Time measurements will be inaccurate
+    vwgt[i] = hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).particles.size();
   }
   
   vector<real_t> tpwghts(ncon*nparts,1.0/(nparts*ncon));
