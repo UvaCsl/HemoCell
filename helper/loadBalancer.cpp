@@ -192,8 +192,7 @@ void LoadBalancer::doLoadBalance() {
   idx_t options[3] = {1,PARMETIS_DBGLVL_TIME|PARMETIS_DBGLVL_INFO|PARMETIS_DBGLVL_PROGRESS,0};
   idx_t edgecut = 0;
   MPI_Comm mc = MPI_COMM_WORLD;
-  unsigned int remainder = gatherValues.size()%nparts;
-  unsigned int partsize = gatherValues.size()/nparts;
+
   unsigned int rank = global::mpi().getRank();
   
   vector<idx_t> vtxdist(nparts+1);
@@ -215,7 +214,7 @@ void LoadBalancer::doLoadBalance() {
   unsigned int entry = 0;
   for (unsigned int i = 0 ; i < nv ; i ++) {
     for (int j = 0 ; j < hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).neighbours.size(); j++) {
-      adjncy[entry] = hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).neighbours[j];
+      adjncy[entry] = id_real_id_parmetis[hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).neighbours[j]];
       entry++;
     }
   }
