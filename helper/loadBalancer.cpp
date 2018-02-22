@@ -212,7 +212,7 @@ void LoadBalancer::doLoadBalance() {
   vector<idx_t> adjncy(xadj.back());
   unsigned int entry = 0;
   for (unsigned int i = 0 ; i < nv ; i ++) {
-    for (int j = 0 ; j < hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).neighbours.size(); j++) {
+    for (unsigned int j = 0 ; j < hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).neighbours.size(); j++) {
       adjncy[entry] = id_real_id_parmetis[hemocell.cellfields->immersedParticles->getComponent(id_parmetis_id_real[ofs+i]).neighbours[j]];
       entry++;
     }
@@ -308,6 +308,9 @@ void LoadBalancer::doLoadBalance() {
 LoadBalancer::GatherTimeOfAtomicBlocks * LoadBalancer::GatherTimeOfAtomicBlocks::clone() const { return new LoadBalancer::GatherTimeOfAtomicBlocks(*this); }
 
 void LoadBalancer::restructureBlocks(bool checkpoint_available) {
+  if (!checkpoint_available) {
+    hemocell.saveCheckPoint();
+  }
 
   ThreadAttribution * oldThreads = original_thread_attribution->clone();
   SparseBlockStructure3D * old_structure = original_block_structure->clone();
