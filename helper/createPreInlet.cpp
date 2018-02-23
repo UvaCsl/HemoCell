@@ -245,7 +245,7 @@ void createPreInlet::saveCurrent() {
     hemocell.cellfields->getParticles(particles,domain);
     particles_per_proc[global::mpi().getRank()] = particles.size();
     
-    HemoCellGatheringFunctional<int>::gather(particles_per_proc,global::mpi().getSize());
+    HemoCellGatheringFunctional<int>::gather(particles_per_proc);
     hsize_t offset[1] = {0}, count[1] = {(hsize_t)particles.size()}, total[1] = {0};
     for (auto & pair : particles_per_proc)  {
       if (pair.first == global::mpi().getRank()) {

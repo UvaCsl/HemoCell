@@ -69,7 +69,7 @@ double LoadBalancer::calculateFractionalLoadImbalance() {
   wrapper.push_back(hemocell.lattice); //push back fluid field as well
   map<int,TOAB_t> gatherValues;
   applyProcessingFunctional(new GatherTimeOfAtomicBlocks(gatherValues),hemocell.cellfields->immersedParticles->getBoundingBox(), wrapper);
-  HemoCellGatheringFunctional<TOAB_t>::gather(gatherValues,numAtomicBlock);
+  HemoCellGatheringFunctional<TOAB_t>::gather(gatherValues);
   
   vector<double> times(size);
   vector<double> lsps(size);
@@ -246,7 +246,7 @@ void LoadBalancer::doLoadBalance() {
     newProc[id_parmetis_id_real[ofs+i]] = part[i];
   }
   int numAtomicBlock = hemocell.lattice->getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
-  HemoCellGatheringFunctional<plint>::gather(newProc,numAtomicBlock);
+  HemoCellGatheringFunctional<plint>::gather(newProc);
   
   /*for (auto & pair : newProc) {
     pcout << "Atomic block " << pair.first << " is assigned to processor " << pair.second << endl;
@@ -314,6 +314,7 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
 
   ThreadAttribution * oldThreads = original_thread_attribution->clone();
   SparseBlockStructure3D * old_structure = original_block_structure->clone();
+  
   vector<plint> localBlocks = old_structure->getLocalBlocks(*oldThreads);
   
   vector<Box3D> boxes(localBlocks.size());
@@ -363,8 +364,18 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
     newBlocks[localBlocks[box]] = boxes[box];
   }
   
+  map<int,unsigned int> maxBlocks;
+  maxBlocks[global::mpi().getRank()] = newBlocks.size();
+  HemoCellGatheringFunctional<unsigned int>::gather(maxBlocks);
+  unsigned int max = 0;
+  for (auto & pair : maxBlocks) {
+    if (pair.second > max) {
+      max = pair.second;
+    }
+  }
+  
   int numAtomicBlock = old_structure->getNumBlocks();
-  HemoCellGatheringFunctional<Box3D_simple>::gather(newBlocks,numAtomicBlock);
+  HemoCellGatheringFunctional<Box3D_simple>::gather(newBlocks);
   
   pcout << "(LoadBalancer) (Restructure) went from " << numAtomicBlock << " to " << newBlocks.size() << " atomic blocks (whole domain)" << endl;
   

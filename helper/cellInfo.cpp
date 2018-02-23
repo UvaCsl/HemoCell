@@ -218,7 +218,7 @@ pluint CellInformationFunctionals::getTotalNumberOfCells(HemoCell* hemocell) {
   }
   map<int,pluint> cells_per_proc;
   cells_per_proc[global::mpi().getRank()] = localCells;
-  HemoCellGatheringFunctional<pluint>::gather(cells_per_proc,global::mpi().getSize());
+  HemoCellGatheringFunctional<pluint>::gather(cells_per_proc);
   pluint total = 0;
   for (const auto & pair : cells_per_proc) {
     total += pair.second;
@@ -240,7 +240,7 @@ pluint CellInformationFunctionals::getNumberOfCellsFromType(HemoCell* hemocell, 
   
   map<int,pluint> cells_per_proc;
   cells_per_proc[global::mpi().getRank()] = localCells;
-  HemoCellGatheringFunctional<pluint>::gather(cells_per_proc,global::mpi().getSize());
+  HemoCellGatheringFunctional<pluint>::gather(cells_per_proc);
   pluint total = 0;
   for (const auto & pair : cells_per_proc) {
     total += pair.second;

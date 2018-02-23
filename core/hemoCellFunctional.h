@@ -81,14 +81,11 @@ public:
         }
         
     }
-    static void gather(map<int,GatherType> & gatherValues, int numblocks) {
+    static void gather(map<int,GatherType> & gatherValues) {
         int be = 0;
-        int sendsize = sizeof(int) + sizeof(IDandGatherType)*numblocks;
-        int receivesize = sendsize*global::mpi().getSize();
-        vector<unsigned char> sendbuffer;
-        sendbuffer.resize(sendsize);
-        vector<unsigned char> receivebuffer;
-        receivebuffer.resize(receivesize);
+        int sendsize = sizeof(int) + sizeof(IDandGatherType)*gatherValues.size();
+        vector<unsigned char> sendbuffer(sendsize);
+
         byteint local_number;
         local_number.i = gatherValues.size();
         for (unsigned int i = 0; i < sizeof(int) ; i++) {
@@ -105,11 +102,23 @@ public:
             }
         }
         
-        MPI_Allgather(&sendbuffer[0],sendsize,MPI_BYTE,&receivebuffer[0],sendsize,MPI_BYTE,MPI_COMM_WORLD);
+        vector<int> sendcounts(global::mpi().getSize());
+        MPI_Allgather(&sendsize,sizeof(int),MPI_BYTE,&sendcounts[0],sizeof(int),MPI_BYTE,MPI_COMM_WORLD);
+              
+        int receivesize = 0;
+        vector<int> displacements(1,0);
+        for (int & size : sendcounts) {
+          receivesize += size;
+          displacements.push_back(displacements.back() + size);
+        }
+        displacements.pop_back();
+        vector<unsigned char> receivebuffer(receivesize);        
+        
+        MPI_Allgatherv(&sendbuffer[0],sendsize,MPI_BYTE,&receivebuffer[0],&sendcounts[0],&displacements[0],MPI_BYTE,MPI_COMM_WORLD);
         be = 0;
         
         for (int j = 0 ; j < global::mpi().getSize() ; j++) {
-            be = j*sendsize;
+            be = displacements[j];
             for (unsigned int i = 0; i < sizeof(int) ; i++) {
                 local_number.b[i] = receivebuffer[be];
                 be++;
