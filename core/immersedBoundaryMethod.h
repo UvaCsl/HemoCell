@@ -115,13 +115,15 @@ inline void interpolationCoefficientsPhi2 (
             }
         }
     }
-    for(double & weight : particle->kernelWeights) { //Normalize weight to 1
-      weight/=total_weight;
+    const double weight_coeff = 1.0 / total_weight;
+    for(double & weight_ : particle->kernelWeights) { //Normalize weight to 1
+      weight_ *= weight_coeff;
     }
 }
 
 template<typename T, template<typename U> class Descriptor>
 void interpolationCoefficientsPhi3 (
+    
         BlockLattice3D<T,Descriptor> const& block, hemo::Array<T,3> const& position,
         std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
