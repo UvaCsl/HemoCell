@@ -38,7 +38,7 @@ inline bool contained_sane(hemo::Array<plint,3> const& x, Box3D const& box) {
 inline double phi2 (double x) {
     x = fabs(x);
     x = 1.0 - x;
-    return max(x,std::numeric_limits<double>::epsilon());
+    return max(x,0.0);
 }
 
 template<typename T>
@@ -107,6 +107,10 @@ inline void interpolationCoefficientsPhi2 (
                 phi[1] = (position[1] - posInBlock[1]);
                 phi[2] = (position[2] - posInBlock[2]);
                 weight = phi2(phi[0]) * phi2(phi[1]) * phi2(phi[2]);
+                
+                if (weight  == 0.0){
+                  continue;
+                }
 
                 total_weight+=weight;
 
