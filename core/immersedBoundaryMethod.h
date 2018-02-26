@@ -99,10 +99,7 @@ inline void interpolationCoefficientsPhi2 (
                 if (!contained_sane(posInBlock,boundingBox)) {
                   continue;
                 }
-                if (block.grid[posInBlock[0]][posInBlock[1]][posInBlock[2]].getDynamics().isBoundary()) {
-                  continue;
-                }
-                
+
                 phi[0] = (position[0] - posInBlock[0]); //Get absolute distance
                 phi[1] = (position[1] - posInBlock[1]);
                 phi[2] = (position[2] - posInBlock[2]);
@@ -111,7 +108,10 @@ inline void interpolationCoefficientsPhi2 (
                 if (weight  == 0.0){
                   continue;
                 }
-
+                if (block.grid[posInBlock[0]][posInBlock[1]][posInBlock[2]].getDynamics().isBoundary()) {
+                  continue;
+                }              
+                
                 total_weight+=weight;
 
                 particle->kernelWeights.push_back(weight);
