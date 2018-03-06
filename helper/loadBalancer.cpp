@@ -33,7 +33,16 @@ LoadBalancer::LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_), original
 void LoadBalancer::reloadCheckpoint() {
   //Firstly reload the config
   delete hemocell.documentXML;
-  hemocell.documentXML = new XMLreader(global::directories().getOutputDir() + "checkpoint.xml");
+  string outDir = global::directories().getOutputDir();
+  try {  
+    outDir = (*hemocell.cfg)["parameters"]["checkpointDirectory"].read<string>() + "/";
+    if (outDir[0] != '/') {
+          outDir = "./" + outDir;
+    }
+  } catch (std::invalid_argument & exeption) {}
+  hemocell.documentXML = new XMLreader(outDir + "checkpoint.xml");
+  hemocell.cfg->reload(outDir + "checkpoint.xml");
+
   hemocell.cellfields->syncEnvelopes();
   hemocell.loadCheckPoint();
 }

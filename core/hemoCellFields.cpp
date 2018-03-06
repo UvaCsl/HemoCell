@@ -140,10 +140,19 @@ void HemoCellFields::InitAfterLoadCheckpoint()
   }
 }
 
-void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter)
+void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter, Config * cfg)
 {
 
     std::string outDir = global::directories().getOutputDir();
+    if (cfg) {
+      try {
+        outDir = (*cfg)["parameters"]["checkpointDirectory"].read<string>() + "/";
+        if (outDir[0] != '/') {
+          outDir = "./" + outDir;
+        }
+      } catch (std::invalid_argument & exeption) {
+      }
+    }
     std::string firstField = (*(documentXML->getChildren( documentXML->getFirstId() )[0])).getName();
     bool isCheckpointed = (firstField=="Checkpoint");
     if (isCheckpointed) {
@@ -163,7 +172,7 @@ void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter)
     deleteIncompleteCells();
 }
 
-void HemoCellFields::save(XMLreader * documentXML, unsigned int iter)
+void HemoCellFields::save(XMLreader * documentXML, unsigned int iter, Config * cfg)
 {
     XMLreader xmlr = *documentXML;
     XMLwriter xmlw;
@@ -173,6 +182,18 @@ void HemoCellFields::save(XMLreader * documentXML, unsigned int iter)
     else { copyXMLreader2XMLwriter(xmlr["Checkpoint"]["hemocell"], xmlw["Checkpoint"]); }
 
     std::string outDir = global::directories().getOutputDir();
+    if (cfg) {
+      try {
+        outDir = (*cfg)["parameters"]["checkpointDirectory"].read<string>() + "/";
+        if (outDir[0] != '/') {
+          outDir = "./" + outDir;
+        }
+      } catch (std::invalid_argument & exeption) {
+      }
+    }
+    mkpath(outDir.c_str(), 0777);
+
+    
     /* Rename files, for safety reasons */
     if (global::mpi().isMainProcessor()) {
         renameFileToDotOld(outDir + "lattice.dat");
@@ -189,8 +210,8 @@ void HemoCellFields::save(XMLreader * documentXML, unsigned int iter)
     /* Save XML & Data */
     xmlw["Checkpoint"]["General"]["Iteration"].set(iter);
     xmlw.print(outDir + "checkpoint.xml");
-    parallelIO::save(*lattice, "lattice", true);
-    parallelIO::save(*immersedParticles, "particleField", true);
+    parallelIO::save(*lattice, outDir + "lattice", true);
+    parallelIO::save(*immersedParticles, outDir + "particleField", true);
     // Upon success, save xml and rename files!
 
 }

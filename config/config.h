@@ -57,12 +57,17 @@ namespace hemo {
     bool checkpointed;
 
     Config(std::string paramXmlFilename); 
+    ~Config();
     
+    void reload(std::string paramXmlFilename);
+  
     hemo::XMLElement operator[] (std::string name) const;
     
     tinyxml2::XMLNode* ShallowClone(tinyxml2::XMLDocument* document) const;
     bool ShallowEqual(const tinyxml2::XMLNode* compare ) const;
     bool Accept( tinyxml2::XMLVisitor* visitor ) const;
+  private:
+    void load(std::string paramXmlFilename);
   };
 
 }

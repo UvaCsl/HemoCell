@@ -22,3 +22,5 @@ Version 0.5
 - Added preInlet possibility and cases
 - Default is now HDF5 with openmpi support, if not present, using a preInlet
 will generate an error when using multiple processors
+- variables checkpointDirectory and outputdirectory can now be specified in the
+config.xml

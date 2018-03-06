@@ -29,6 +29,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace hemo {
   Config::Config(string paramXmlFileName) 
   {  
+    load(paramXmlFileName);
+  }
+
+  void Config::reload(std::string paramXmlFileName) {
+    delete orig;
+    load(paramXmlFileName);
+  }
+  
+  void Config::load(std::string paramXmlFileName) {
     if (!file_exists(paramXmlFileName)) {
       pcout << paramXmlFileName + " is not an existing config file, exiting ..." << endl;
       exit(0);
@@ -43,7 +52,11 @@ namespace hemo {
       else { checkpointed = 0; }
     }
   }
-
+  
+  Config::~Config() {
+    delete orig;
+  }
+  
   /*
    * Overload the overloaded operator to provide convenient access to
    * this["parameters"]["etc"]

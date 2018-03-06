@@ -30,6 +30,7 @@ class HemoCellFields;
 #include "genericFunctions.h"
 #include "hemoCellFunctional.h"
 #include "hemoCellField.h"
+#include "config.h"
 #include <unistd.h>
 
 class HemoCell;
@@ -77,9 +78,9 @@ private:
   void copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwriter & writer);
 public:
   ///Load a checkpoint, store the current iteration in &iter
-  void load(XMLreader * documentXML, unsigned int & iter);
+  void load(XMLreader * documentXML, unsigned int & iter, Config * cfg = NULL);
   ///Save a checkpoint
-  void save(XMLreader * documentXML, unsigned int iter);
+  void save(XMLreader * documentXML, unsigned int iter, Config * cfg = NULL);
     
   ///Legacy Helper function to get the particle field, mostly unused as direct access is available
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & getParticleField3D();

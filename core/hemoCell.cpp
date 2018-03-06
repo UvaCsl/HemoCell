@@ -47,7 +47,13 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   cfg = new Config(configFileName);
   documentXML = new XMLreader(configFileName);
 
-
+  try {
+    std::string outDir = (*cfg)["parameters"]["outputDirectory"].read<string>() + "/";
+    if (outDir[0] != '/') {
+          outDir = "./" + outDir;
+    }
+    global::directories().setOutputDir(outDir);
+  } catch (std::invalid_argument & exeption) {}
   // start clock for basic performance feedback
   lastOutputAt = 0;
   global::timer("atOutput").start();
@@ -130,12 +136,12 @@ void HemoCell::loadParticles() {
 
 void HemoCell::loadCheckPoint() {
   pcout << "(HemoCell) (Saving Functions) Loading Checkpoint"  << endl;
-  cellfields->load(documentXML, iter);
+  cellfields->load(documentXML, iter, cfg);
 }
 
 void HemoCell::saveCheckPoint() {
   pcout << "(HemoCell) (Saving Functions) Saving Checkpoint at timestep " << iter << endl;
-  cellfields->save(documentXML, iter);
+  cellfields->save(documentXML, iter, cfg);
 }
 
 void HemoCell::writeOutput() {
