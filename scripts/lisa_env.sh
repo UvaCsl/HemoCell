@@ -4,7 +4,7 @@
 #. /sara/sw/modules/module/init/bash
 
 module load gcc/6.3.0
-module load hdf5/gnu
+module load hdf5/intel/1.8.16-parallel
 module load cmake/3.5.1
 module load openmpi/gnu/
 module list
