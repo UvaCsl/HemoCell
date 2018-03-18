@@ -29,7 +29,7 @@ void GatherFluidVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicB
     BlockLattice3D<double,DESCRIPTOR>* ff = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
     HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[1]);
     plb::Array<double,3> vel_vec;
-    ff->grid[domain.x0][domain.y0][domain.z0].computeVelocity(vel_vec);
+    ff->get(domain.x0,domain.y0,domain.z0).computeVelocity(vel_vec);
     double vel = sqrt(vel_vec[0]*vel_vec[0]+vel_vec[1]*vel_vec[1]+vel_vec[2]*vel_vec[2]);
     double min=vel,max=vel,avg=0.;
     
@@ -37,7 +37,7 @@ void GatherFluidVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicB
     for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
       for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
         for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
-          ff->grid[iX][iY][iZ].computeVelocity(vel_vec);
+          ff->get(iX,iY,iZ).computeVelocity(vel_vec);
           vel = sqrt(vel_vec[0]*vel_vec[0]+vel_vec[1]*vel_vec[1]+vel_vec[2]*vel_vec[2]);
           min = min > vel ? vel : min;
           max = max < vel ? vel : max;
@@ -55,9 +55,9 @@ void GatherFluidForce::processGenericBlocks(Box3D domain, std::vector<AtomicBloc
     BlockLattice3D<double,DESCRIPTOR>* ff = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
     HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[1]);
     hemo::Array<double,3> vel_vec;
-    vel_vec[0] = ff->grid[domain.x0][domain.y0][domain.z0].external.data[0];
-    vel_vec[1] = ff->grid[domain.x0][domain.y0][domain.z0].external.data[1];
-    vel_vec[2] = ff->grid[domain.x0][domain.y0][domain.z0].external.data[2];
+    vel_vec[0] = ff->get(domain.x0,domain.y0,domain.z0).external.data[0];
+    vel_vec[1] = ff->get(domain.x0,domain.y0,domain.z0).external.data[1];
+    vel_vec[2] = ff->get(domain.x0,domain.y0,domain.z0).external.data[2];
 
     double vel = sqrt(vel_vec[0]*vel_vec[0]+vel_vec[1]*vel_vec[1]+vel_vec[2]*vel_vec[2]);
     double min=vel,max=vel,avg=0.;
@@ -66,9 +66,9 @@ void GatherFluidForce::processGenericBlocks(Box3D domain, std::vector<AtomicBloc
     for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
       for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
         for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
-          vel_vec[0] = ff->grid[iX][iY][iZ].external.data[0];
-          vel_vec[1] = ff->grid[iX][iY][iZ].external.data[1];
-          vel_vec[2] = ff->grid[iX][iY][iZ].external.data[2];
+          vel_vec[0] = ff->get(iX,iY,iZ).external.data[0];
+          vel_vec[1] = ff->get(iX,iY,iZ).external.data[1];
+          vel_vec[2] = ff->get(iX,iY,iZ).external.data[2];
           
           vel = sqrt(vel_vec[0]*vel_vec[0]+vel_vec[1]*vel_vec[1]+vel_vec[2]*vel_vec[2]);
           min = min > vel ? vel : min;

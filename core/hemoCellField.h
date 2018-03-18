@@ -56,7 +56,7 @@ class HemoCellField{
   bool outputLines = false;
   bool deleteIncomplete = true;
   vector<hemo::Array<plint,3>> triangle_list;
-  void(*kernelMethod)(BlockLattice3D<double,DESCRIPTOR> const&,HemoCellParticle*);
+  void(*kernelMethod)(BlockLattice3D<double,DESCRIPTOR> &,HemoCellParticle*);
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D();
   MultiBlockLattice3D<double,DESCRIPTOR> * getFluidField3D();
   int getNumberOfCells_Global();

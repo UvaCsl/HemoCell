@@ -61,7 +61,7 @@ void interpolationCoefficientsPhi1 (
         std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 inline void interpolationCoefficientsPhi2 (
-        BlockLattice3D<double,DESCRIPTOR> const& block, HemoCellParticle * particle)
+        BlockLattice3D<double,DESCRIPTOR> & block, HemoCellParticle * particle)
 {
     //Clean current
     particle->kernelWeights.clear();
@@ -108,14 +108,14 @@ inline void interpolationCoefficientsPhi2 (
                 if (weight  == 0.0){
                   continue;
                 }
-                if (block.grid[posInBlock[0]][posInBlock[1]][posInBlock[2]].getDynamics().isBoundary()) {
+                if (block.get(posInBlock[0],posInBlock[1],posInBlock[2]).getDynamics().isBoundary()) {
                   continue;
                 }              
                 
                 total_weight+=weight;
 
                 particle->kernelWeights.push_back(weight);
-                particle->kernelLocations.push_back(&block.grid[posInBlock[0]][posInBlock[1]][posInBlock[2]]);
+                particle->kernelLocations.push_back(&block.get(posInBlock[0],posInBlock[1],posInBlock[2]));
             }
         }
     }

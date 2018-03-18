@@ -191,7 +191,7 @@ void createPreInlet::createPreInletFunctional::processGenericBlocks(Box3D domain
     for (plint x = 0 ; x < fluidBox.getNx() ; x++) {
       for (plint y = 0 ; y < fluidBox.getNy() ; y++) {
         for (plint z = 0; z < fluidBox.getNz() ; z++) {
-          fluidfield->grid[xx][yy][zz].computeVelocity(vel);
+          fluidfield->get(xx,yy,zz).computeVelocity(vel);
           data[index] = vel[parent.reducedPrecisionDirection];
           index++;
     
@@ -211,7 +211,7 @@ void createPreInlet::createPreInletFunctional::processGenericBlocks(Box3D domain
     for (plint x = 0 ; x < fluidBox.getNx() ; x++) {
       for (plint y = 0 ; y < fluidBox.getNy() ; y++) {
         for (plint z = 0; z < fluidBox.getNz() ; z++) {
-          fluidfield->grid[xx][yy][zz].computeVelocity(vel);
+          fluidfield->get(xx,yy,zz).computeVelocity(vel);
           data[index] = vel[0];
           data[index+1] = vel[1];
           data[index+2] = vel[2];

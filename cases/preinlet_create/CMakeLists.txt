@@ -90,7 +90,7 @@ add_custom_target(hemocell_pre COMMAND cd ${HEMOCELL_DIR} && ${CMAKE_COMMAND} .)
 
 include(ExternalProject) 
 ExternalProject_Add("hemocell" PREFIX ${HEMOCELL_DIR} SOURCE_DIR ${HEMOCELL_DIR}
-    BINARY_DIR ${HEMOCELL_DIR} INSTALL_COMMAND "")
+    BINARY_DIR ${HEMOCELL_DIR} INSTALL_COMMAND "" BUILD_COMMAND "")
 ExternalProject_Add_Step("hemocell" update_custom COMMAND cd ${HEMOCELL_DIR} 
     && ${CMAKE_COMMAND} . && $(MAKE)  ALWAYS 1)
 

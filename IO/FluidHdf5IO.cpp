@@ -194,7 +194,7 @@ float * WriteFluidField::outputVelocity() {
     for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
       for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
 
-        ablock->grid[iX][iY][iZ].computeVelocity(vel);
+        ablock->get(iX,iY,iZ).computeVelocity(vel);
         output[n] = vel[0];
         output[n+1] = vel[1];
         output[n+2] = vel[2];
@@ -220,9 +220,9 @@ float * WriteFluidField::outputForce() {
     for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
       for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
 
-        output[n] = ablock->grid[iX][iY][iZ].external.data[0];
-        output[n+1] = ablock->grid[iX][iY][iZ].external.data[1];
-        output[n+2] = ablock->grid[iX][iY][iZ].external.data[2];
+        output[n] = ablock->get(iX,iY,iZ).external.data[0];
+        output[n+1] = ablock->get(iX,iY,iZ).external.data[1];
+        output[n+2] = ablock->get(iX,iY,iZ).external.data[2];
         n += 3;
       }
     }
@@ -244,7 +244,7 @@ float * WriteFluidField::outputDensity() {
     for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
       for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
 
-        output[n] = ablock->grid[iX][iY][iZ].computeDensity();
+        output[n] = ablock->get(iX,iY,iZ).computeDensity();
         n++;
       }
     }
@@ -297,7 +297,7 @@ float * WriteFluidField::outputShearStress() {
     for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
       for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
 
-        ablock->grid[iX][iY][iZ].computeShearStress(stress);
+        ablock->get(iX,iY,iZ).computeShearStress(stress);
 	//Array<T,6> stress_vec = stress.get(iX,iY,iZ);
 	output[n] = stress[0];
 	output[n+1] = stress[1];
