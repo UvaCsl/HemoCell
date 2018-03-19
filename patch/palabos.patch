@@ -351,7 +351,7 @@ index 8005825..feda2f7 100644
                      }
                  }
 diff --git a/src/core/cell.h b/src/core/cell.h
-index 8ca5cc2..c851843 100644
+index 8ca5cc2..855c243 100644
 --- a/src/core/cell.h
 +++ b/src/core/cell.h
 @@ -34,6 +34,7 @@
@@ -378,8 +378,8 @@ index 8ca5cc2..c851843 100644
 +    Array<Cell<T,Descriptor>*,Descriptor<T>::numPop/2> & getRawNeighbours() {
 +      return directNeighbours;
 +    }
-+    Cell<T,Descriptor>*getNeighbour(unsigned int i) {
-+      return directNeighbours[i];
++    Cell<T,Descriptor>&getNeighbour(unsigned int i) {
++      return *directNeighbours[i];
 +    }
      /// Attribute all f-values and external scalars from another cell to the present one.
      /** \return a reference to *this
@@ -454,7 +454,7 @@ index 0000000..2c19702
 +#endif
 \ No newline at end of file
 diff --git a/src/latticeBoltzmann/latticeTemplates.h b/src/latticeBoltzmann/latticeTemplates.h
-index 2ab085b..a5dcac4 100644
+index 2ab085b..0152c32 100644
 --- a/src/latticeBoltzmann/latticeTemplates.h
 +++ b/src/latticeBoltzmann/latticeTemplates.h
 @@ -56,18 +56,20 @@ static void swapAndStream2D(Cell<T,Descriptor> **grid, plint iX, plint iY)
@@ -481,13 +481,13 @@ index 2ab085b..a5dcac4 100644
 +    //    plint nextZ = iZ + Descriptor<T>::c[iPop][2];
 +        fTmp                          = local[iPop];
 +        local[iPop]          = local[iPop+half];
-+        local[iPop+half]     = (*local.getNeighbour(iPop))[iPop];
-+        (*local.getNeighbour(iPop))[iPop] = fTmp;
++        local[iPop+half]     = local.getNeighbour(iPop)[iPop];
++        local.getNeighbour(iPop)[iPop] = fTmp;
       }
  }
  
 diff --git a/src/latticeBoltzmann/latticeTemplates3D.h b/src/latticeBoltzmann/latticeTemplates3D.h
-index 0e5feb5..403521b 100644
+index 0e5feb5..5d8f491 100644
 --- a/src/latticeBoltzmann/latticeTemplates3D.h
 +++ b/src/latticeBoltzmann/latticeTemplates3D.h
 @@ -31,35 +31,25 @@
@@ -531,13 +531,13 @@ index 0e5feb5..403521b 100644
 +  for (plint iPop=1; iPop<=9; ++iPop) {
 +      fTmp                         = local[iPop];
 +      local[iPop]                    = local[iPop+9];
-+      local[iPop+9]                  = (*local.getNeighbour(iPop))[iPop];
-+      (*local.getNeighbour(iPop))[iPop] = fTmp;
++      local[iPop+9]                  = local.getNeighbour(iPop)[iPop];
++      local.getNeighbour(iPop)[iPop] = fTmp;
 +  } 
  }
  
  };
-@@ -67,29 +57,18 @@ static void swapAndStream3D(Cell<T,descriptors::D3Q19Descriptor> ***grid,
+@@ -67,29 +57,17 @@ static void swapAndStream3D(Cell<T,descriptors::D3Q19Descriptor> ***grid,
  template<typename T>
  struct latticeTemplates<T, descriptors::ForcedD3Q19Descriptor> {
  
@@ -566,17 +566,16 @@ index 0e5feb5..403521b 100644
 -    swapAndStreamCell(grid, iX, iY, iZ, iX-1, iY  , iZ+1, 7, fTmp);
 -    swapAndStreamCell(grid, iX, iY, iZ, iX  , iY-1, iZ-1, 8, fTmp);
 -    swapAndStreamCell(grid, iX, iY, iZ, iX  , iY-1, iZ+1, 9, fTmp);
-+
 +    for (plint iPop=1; iPop<=9; ++iPop) {
 +        fTmp                         = local[iPop];
 +        local[iPop]                    = local[iPop+9];
-+        local[iPop+9]                  = (*local.getNeighbour(iPop))[iPop];
-+        (*local.getNeighbour(iPop))[iPop] = fTmp;
++        local[iPop+9]                  = local.getNeighbour(iPop)[iPop];
++        local.getNeighbour(iPop)[iPop] = fTmp;
 +    }
  }
  
  };
-@@ -97,57 +76,34 @@ static void swapAndStream3D(Cell<T,descriptors::ForcedD3Q19Descriptor> ***grid,
+@@ -97,57 +75,34 @@ static void swapAndStream3D(Cell<T,descriptors::ForcedD3Q19Descriptor> ***grid,
  template<typename T>
  struct latticeTemplates<T, descriptors::D3Q15Descriptor> {
  
@@ -607,8 +606,8 @@ index 0e5feb5..403521b 100644
 +    for (plint iPop=1; iPop<=7; ++iPop) {
 +        fTmp                         = local[iPop];
 +        local[iPop]                    = local[iPop+7];
-+        local[iPop+7]                  = (*local.getNeighbour(iPop))[iPop];
-+        (*local.getNeighbour(iPop))[iPop] = fTmp;
++        local[iPop+7]                  = local.getNeighbour(iPop)[iPop];
++        local.getNeighbour(iPop)[iPop] = fTmp;
 +    }
  }
 -
@@ -644,8 +643,8 @@ index 0e5feb5..403521b 100644
 +    for (plint iPop=1; iPop<=7; ++iPop) {
 +        fTmp                         = local[iPop];
 +        local[iPop]                    = local[iPop+7];
-+        local[iPop+7]                  = (*local.getNeighbour(iPop))[iPop];
-+        (*local.getNeighbour(iPop))[iPop] = fTmp;
++        local[iPop+7]                  = local.getNeighbour(iPop)[iPop];
++        local.getNeighbour(iPop)[iPop] = fTmp;
 +    }
  }
  
