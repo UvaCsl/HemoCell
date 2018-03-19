@@ -91,7 +91,7 @@ index d672045..566a590 100644
  double getStoredAverageDensity(BlockLattice3D<T,Descriptor> const& blockLattice);
  
 diff --git a/src/atomicBlock/blockLattice3D.hh b/src/atomicBlock/blockLattice3D.hh
-index 8d9eb08..fc6f428 100644
+index 8d9eb08..c6a8334 100644
 --- a/src/atomicBlock/blockLattice3D.hh
 +++ b/src/atomicBlock/blockLattice3D.hh
 @@ -55,7 +55,7 @@ BlockLattice3D<T,Descriptor>::BlockLattice3D (
@@ -213,26 +213,18 @@ index 8d9eb08..fc6f428 100644
  }
  
  template<typename T, template<typename U> class Descriptor>
-@@ -427,6 +425,7 @@ void BlockLattice3D<T,Descriptor>::boundaryStream(Box3D bound, Box3D domain) {
-     for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
-         for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
-             for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
-+              Cell<T,Descriptor> & local = grid(iX,iY,iZ);
-                 for (plint iPop=1; iPop<=Descriptor<T>::q/2; ++iPop) {
-                     plint nextX = iX + Descriptor<T>::c[iPop][0];
-                     plint nextY = iY + Descriptor<T>::c[iPop][1];
-@@ -435,8 +434,8 @@ void BlockLattice3D<T,Descriptor>::boundaryStream(Box3D bound, Box3D domain) {
+@@ -435,8 +433,8 @@ void BlockLattice3D<T,Descriptor>::boundaryStream(Box3D bound, Box3D domain) {
                           nextY>=bound.y0 && nextY<=bound.y1 &&
                           nextZ>=bound.z0 && nextZ<=bound.z1 )
                      {
 -                        std::swap(grid[iX][iY][iZ][iPop+Descriptor<T>::q/2],
 -                                  grid[nextX][nextY][nextZ][iPop]);
-+                        std::swap(local[iPop+Descriptor<T>::q/2],
-+                                  (*local.getNeighbour(iPop))[iPop]);
++                        std::swap(grid(iX,iY,iZ)[iPop+Descriptor<T>::q/2],
++                                  grid(nextX,nextY,nextZ)[iPop]);
                      }
                  }
              }
-@@ -461,8 +460,8 @@ void BlockLattice3D<T,Descriptor>::bulkStream(Box3D domain) {
+@@ -461,8 +459,8 @@ void BlockLattice3D<T,Descriptor>::bulkStream(Box3D domain) {
                      plint nextX = iX + Descriptor<T>::c[iPop][0];
                      plint nextY = iY + Descriptor<T>::c[iPop][1];
                      plint nextZ = iZ + Descriptor<T>::c[iPop][2];
@@ -243,7 +235,7 @@ index 8d9eb08..fc6f428 100644
                  }
              }
          }
-@@ -505,7 +504,7 @@ void BlockLattice3D<T,Descriptor>::linearBulkCollideAndStream(Box3D domain) {
+@@ -505,7 +503,7 @@ void BlockLattice3D<T,Descriptor>::linearBulkCollideAndStream(Box3D domain) {
      for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
          for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
              for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
@@ -252,7 +244,7 @@ index 8d9eb08..fc6f428 100644
                  latticeTemplates<T,Descriptor>::swapAndStream3D(grid, iX, iY, iZ);
              }
          }
-@@ -555,7 +554,7 @@ void BlockLattice3D<T,Descriptor>::blockwiseBulkCollideAndStream(Box3D domain) {
+@@ -555,7 +553,7 @@ void BlockLattice3D<T,Descriptor>::blockwiseBulkCollideAndStream(Box3D domain) {
                               ++innerZ)
                          {
                              // Collide the cell.
@@ -261,7 +253,7 @@ index 8d9eb08..fc6f428 100644
                                      this->getInternalStatistics() );
                              // Swap the populations on the cell, and then with post-collision
                              //   neighboring cell, to perform the streaming step.
-@@ -638,8 +637,8 @@ void BlockLattice3D<T,Descriptor>::periodicDomain(Box3D domain) {
+@@ -638,8 +636,8 @@ void BlockLattice3D<T,Descriptor>::periodicDomain(Box3D domain) {
                          plint nextY = (iY+ny)%ny;
                          plint nextZ = (iZ+nz)%nz;
                          std::swap (
@@ -495,7 +487,7 @@ index 2ab085b..a5dcac4 100644
  }
  
 diff --git a/src/latticeBoltzmann/latticeTemplates3D.h b/src/latticeBoltzmann/latticeTemplates3D.h
-index 0e5feb5..5e4c860 100644
+index 0e5feb5..403521b 100644
 --- a/src/latticeBoltzmann/latticeTemplates3D.h
 +++ b/src/latticeBoltzmann/latticeTemplates3D.h
 @@ -31,35 +31,25 @@
@@ -545,7 +537,7 @@ index 0e5feb5..5e4c860 100644
  }
  
  };
-@@ -67,29 +57,17 @@ static void swapAndStream3D(Cell<T,descriptors::D3Q19Descriptor> ***grid,
+@@ -67,29 +57,18 @@ static void swapAndStream3D(Cell<T,descriptors::D3Q19Descriptor> ***grid,
  template<typename T>
  struct latticeTemplates<T, descriptors::ForcedD3Q19Descriptor> {
  
@@ -574,6 +566,7 @@ index 0e5feb5..5e4c860 100644
 -    swapAndStreamCell(grid, iX, iY, iZ, iX-1, iY  , iZ+1, 7, fTmp);
 -    swapAndStreamCell(grid, iX, iY, iZ, iX  , iY-1, iZ-1, 8, fTmp);
 -    swapAndStreamCell(grid, iX, iY, iZ, iX  , iY-1, iZ+1, 9, fTmp);
++
 +    for (plint iPop=1; iPop<=9; ++iPop) {
 +        fTmp                         = local[iPop];
 +        local[iPop]                    = local[iPop+9];
@@ -583,7 +576,7 @@ index 0e5feb5..5e4c860 100644
  }
  
  };
-@@ -97,57 +75,34 @@ static void swapAndStream3D(Cell<T,descriptors::ForcedD3Q19Descriptor> ***grid,
+@@ -97,57 +76,34 @@ static void swapAndStream3D(Cell<T,descriptors::ForcedD3Q19Descriptor> ***grid,
  template<typename T>
  struct latticeTemplates<T, descriptors::D3Q15Descriptor> {
  
