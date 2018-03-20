@@ -32,7 +32,7 @@ class LoadBalancer {
   public:
 #ifdef HEMO_PARMETIS
   LoadBalancer(HemoCell & hemocell_);
-  double calculateFractionalLoadImbalance();
+  T calculateFractionalLoadImbalance();
   /**
    * Restructure blocks to reduce communication on one processor
    * Set checkpoint_available to false if not called in the same iteration right after doLoadBalance()
