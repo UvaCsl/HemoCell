@@ -42,7 +42,7 @@ void outputHDF5(hsize_t* dim, hsize_t* chunk, hid_t& file_id, string& name, floa
     H5Sclose(sid);
 }
 
-void writeFluidField_HDF5(HemoCellFields& cellfields, double dx, double dt, plint iter, string preString) {
+void writeFluidField_HDF5(HemoCellFields& cellfields, T dx, T dt, plint iter, string preString) {
   if(std::find(cellfields.desiredFluidOutputVariables.begin(), cellfields.desiredFluidOutputVariables.end(), OUTPUT_FORCE) != cellfields.desiredFluidOutputVariables.end()) {
     if(LOG_LEVEL >= 2)
       pcout << "(FluidOutput) (OutputForce) The force on the fluid field is reset to zero, If there is a bodyforce, reset it after this function" << endl; 
@@ -76,16 +76,16 @@ void WriteFluidField::getTypeOfModification ( vector<modif::ModifT>& modified ) 
 }
 
 WriteFluidField::WriteFluidField(HemoCellFields& cellfields_,
-                                 MultiBlockLattice3D<double,DESCRIPTOR>& fluid_,
+                                 MultiBlockLattice3D<T,DESCRIPTOR>& fluid_,
                                  plint iter_, string identifier_, 
-                                 double dx_, double dt_) :
+                                 T dx_, T dt_) :
 cellfields(cellfields_), fluid(fluid_), iter(iter_), identifier(identifier_), dx(dx_), dt(dt_)
 { }
 
 void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*> blocks ) {
 
   int id = global::mpi().getRank();
-  ablock = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
+  ablock = dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[0]);
   particlefield = dynamic_cast<HemoCellParticleField*>(blocks[1]);
   blockid = particlefield->atomicBlockId; //Nasty trick to prevent us from having to overload the fluid field ( palabos domain)
 
@@ -189,7 +189,7 @@ void WriteFluidField::processGenericBlocks( Box3D domain, vector<AtomicBlock3D*>
 float * WriteFluidField::outputVelocity() {
   float * output = new float [(*nCells)*3];
   unsigned int n = 0;
-  plb::Array<double,3> vel;
+  plb::Array<T,3> vel;
   for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
     for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
       for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
@@ -215,7 +215,7 @@ float * WriteFluidField::outputVelocity() {
 float * WriteFluidField::outputForce() {
   float * output = new float [(*nCells)*3];
   unsigned int n = 0;
-  hemo::Array<double,3> vel;
+  hemo::Array<T,3> vel;
   for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
     for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
       for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
@@ -292,7 +292,7 @@ float * WriteFluidField::outputCellDensity(string name) {
 float * WriteFluidField::outputShearStress() {
   float * output = new float [(*nCells)*6];
   unsigned int n = 0;
-  plb::Array<double,6> stress;
+  plb::Array<T,6> stress;
   for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
     for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
       for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {

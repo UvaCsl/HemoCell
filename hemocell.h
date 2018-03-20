@@ -61,7 +61,7 @@ class HemoCell {
    *  @param rho the desired density in lbm units
    *  @param vel the desired macroscopic velocity of each node
    */
-  void latticeEquilibrium(double rho, hemo::Array<double, 3> vel);
+  void latticeEquilibrium(T rho, hemo::Array<T, 3> vel);
 
   /**
    * Initialice the cellfields structure (and thus also the particlefield)
@@ -82,29 +82,29 @@ class HemoCell {
   void addCellType(string name, int constructType) {
     string materialXML = name + ".xml";
     Config *materialCfg = new Config(materialXML.c_str());
-    TriangularSurfaceMesh<double> * meshElement;
+    TriangularSurfaceMesh<T> * meshElement;
     
-    double aspectRatio = 0.3;
+    T aspectRatio = 0.3;
     if (constructType == ELLIPSOID_FROM_SPHERE) {
-      aspectRatio = (*materialCfg)["MaterialModel"]["aspectRatio"].read<double>();
+      aspectRatio = (*materialCfg)["MaterialModel"]["aspectRatio"].read<T>();
     }
     
     if(constructType == STRING_FROM_VERTEXES) {
       meshElement = constructStringMeshFromConfig(*materialCfg);     
     } else {
-      TriangleBoundary3D<double> * boundaryElement = NULL;
+      TriangleBoundary3D<T> * boundaryElement = NULL;
       try {
-        boundaryElement = new TriangleBoundary3D<double>(constructMeshElement(constructType, 
-                           (*materialCfg)["MaterialModel"]["radius"].read<double>()/param::dx, 
-                           (*materialCfg)["MaterialModel"]["minNumTriangles"].read<double>(), param::dx, 
-                           (*materialCfg)["MaterialModel"]["StlFile"].read<string>(), plb::Array<double,3>(0.,0.,0.), aspectRatio));
+        boundaryElement = new TriangleBoundary3D<T>(constructMeshElement(constructType, 
+                           (*materialCfg)["MaterialModel"]["radius"].read<T>()/param::dx, 
+                           (*materialCfg)["MaterialModel"]["minNumTriangles"].read<T>(), param::dx, 
+                           (*materialCfg)["MaterialModel"]["StlFile"].read<string>(), plb::Array<T,3>(0.,0.,0.), aspectRatio));
       } catch (std::invalid_argument & exeption) {
-        boundaryElement = new TriangleBoundary3D<double>(constructMeshElement(constructType, 
-                           (*materialCfg)["MaterialModel"]["radius"].read<double>()/param::dx, 
-                           (*materialCfg)["MaterialModel"]["minNumTriangles"].read<double>(), param::dx, 
-                           string(""), plb::Array<double,3>(0.,0.,0.), aspectRatio));
+        boundaryElement = new TriangleBoundary3D<T>(constructMeshElement(constructType, 
+                           (*materialCfg)["MaterialModel"]["radius"].read<T>()/param::dx, 
+                           (*materialCfg)["MaterialModel"]["minNumTriangles"].read<T>(), param::dx, 
+                           string(""), plb::Array<T,3>(0.,0.,0.), aspectRatio));
       }
-      meshElement = new TriangularSurfaceMesh<double>(boundaryElement->getMesh());
+      meshElement = new TriangularSurfaceMesh<T>(boundaryElement->getMesh());
     }
     HemoCellField * cellfield = cellfields->addCellType(*meshElement, name);
     Mechanics * mechanics = new Mechanics((*materialCfg), *cellfield);
@@ -124,7 +124,7 @@ class HemoCell {
   
   //Sets the repulsion constant and cutoff distance, also enables repulsion
   bool repulsionEnabled = false;
-  void setRepulsion(double repulsionConstant, double repulsionCutoff);
+  void setRepulsion(T repulsionConstant, T repulsionCutoff);
 
   //Set the timescale separation of the particles of a particle type
   void setMaterialTimeScaleSeparation(string name, unsigned int separation);
@@ -136,7 +136,7 @@ class HemoCell {
   void setRepulsionTimeScaleSeperation(unsigned int separation);
   
   //Set the minimum distance of the particles of a type to the solid, must be called BEFORE loadparticles
-  void setMinimumDistanceFromSolid(string name, double distance);
+  void setMinimumDistanceFromSolid(string name, T distance);
   
   //Set the output of the fluid field
   void setFluidOutputs(vector<int> outputs);
@@ -175,7 +175,7 @@ public:
 
   //Load balancing library functions
   /// Calculate and return the fractional load imbalance 
-  double calculateFractionalLoadImbalance();
+  T calculateFractionalLoadImbalance();
   
   ///Load balance the domain (only necessary with nAtomic blocks > nMpi processors, also checkpoints
   void doLoadBalance();
@@ -185,7 +185,7 @@ public:
   
   LoadBalancer * loadBalancer;
   ///The fluid lattice
-  MultiBlockLattice3D<double, DESCRIPTOR> * lattice = 0;
+  MultiBlockLattice3D<T, DESCRIPTOR> * lattice = 0;
 	Config * cfg;
   ///The cellfields contains the particle field and all celltypes
   HemoCellFields * cellfields;

@@ -159,7 +159,7 @@ createPreInlet::~createPreInlet() {
 }
 
 void createPreInlet::createPreInletFunctional::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-  BlockLattice3D<double,DESCRIPTOR> * fluidfield = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
+  BlockLattice3D<T,DESCRIPTOR> * fluidfield = dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[0]);
    
   Box3D fluidBox; 
   Box3D shiftedBox = domain.shift(fluidfield->getLocation().x,fluidfield->getLocation().y,fluidfield->getLocation().z);
@@ -177,7 +177,7 @@ void createPreInlet::createPreInletFunctional::processGenericBlocks(Box3D domain
   }
   hid_t memspace_id = H5Screate_simple (5, count, NULL); 
   
-  plb::Array<double,3> vel;
+  plb::Array<T,3> vel;
   Box3D unshiftedfluidBox = fluidBox.shift(-fluidfield->getLocation().x,-fluidfield->getLocation().y,-fluidfield->getLocation().z);
   plint xx = unshiftedfluidBox.x0;
   plint yy = unshiftedfluidBox.y0;

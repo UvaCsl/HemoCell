@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 class HemoCellStretch {
   public:
 
-  HemoCellStretch(HemoCellField & cellfield_, unsigned int n_forced_lsps_, double external_force_);
+  HemoCellStretch(HemoCellField & cellfield_, unsigned int n_forced_lsps_, T external_force_);
   void applyForce();
   
   class FindForcedLsps: public HemoCellFunctional {
@@ -50,7 +50,7 @@ class HemoCellStretch {
   
   HemoCellField & cellfield;
   static unsigned int n_forced_lsps;
-  static double external_force;
+  static T external_force;
 };
 
 #endif

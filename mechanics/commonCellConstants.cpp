@@ -27,22 +27,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<hemo::Array<plint,3>> triangle_list_,
                       vector<hemo::Array<plint,2>> edge_list_,
-                      vector<double> edge_length_eq_list_,
-                      vector<double> edge_angle_eq_list_,
-                      vector<double> surface_patch_center_dist_eq_list_,
+                      vector<T> edge_length_eq_list_,
+                      vector<T> edge_angle_eq_list_,
+                      vector<T> surface_patch_center_dist_eq_list_,
                       vector<hemo::Array<plint,2>> edge_bending_triangles_list_,
                       vector<hemo::Array<plint,2>> edge_bending_triangles_outer_points_,
-                      vector<double> triangle_area_eq_list_,
+                      vector<T> triangle_area_eq_list_,
                       vector<hemo::Array<plint,6>> vertex_vertexes_,
                       vector<hemo::Array<plint,6>> vertex_edges_,
                       vector<hemo::Array<signed int,6>> vertex_edges_sign_,
                       vector<unsigned int> vertex_n_vertexes_,
                       vector<hemo::Array<hemo::Array<plint,2>,6>> vertex_outer_edges_per_vertex_,
                       vector<hemo::Array<hemo::Array<signed int,2>,6>> vertex_outer_edges_per_vertex_sign_,
-                      double volume_eq_, double area_mean_eq_, 
-                      double edge_mean_eq_, double angle_mean_eq_,
+                      T volume_eq_, T area_mean_eq_, 
+                      T edge_mean_eq_, T angle_mean_eq_,
                       vector<hemo::Array<plint,2>> inner_edge_list_,
-                      vector<double> inner_edge_length_eq_list_) :
+                      vector<T> inner_edge_length_eq_list_) :
     cellField(cellField_),
     triangle_list(triangle_list_),
     edge_list(edge_list_),
@@ -92,18 +92,18 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     }
     
     //Calculate eq edges
-    vector<double> edge_length_eq_list_;
+    vector<T> edge_length_eq_list_;
     for (const hemo::Array<plint,2> & edge : edge_list_) {
       edge_length_eq_list_.push_back(cellField.meshElement.computeEdgeLength(edge[0],edge[1]));
     }
 
     //Calculate eq edges angles
-    vector<double> edge_angle_eq_list_;
-    hemo::Array<double,3> x2 = {0.0,0.0,0.0};
+    vector<T> edge_angle_eq_list_;
+    hemo::Array<T,3> x2 = {0.0,0.0,0.0};
 
     for (const hemo::Array<plint,2> & edge : edge_list_) {
       const vector<plint> adjacentTriangles = cellField.meshElement.getAdjacentTriangleIds(edge[0], edge[1]);
-      //const hemo::Array<double,3> x1 = cellField.meshElement.getVertex(edge[0]);
+      //const hemo::Array<T,3> x1 = cellField.meshElement.getVertex(edge[0]);
 
       for (pluint id = 0 ; id < 3 ; id ++ ) {
         const plint kVertex = cellField.meshElement.getVertexId(adjacentTriangles[0],id);
@@ -113,10 +113,10 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
         }
       }
 
-      const hemo::Array<double,3> V1 = cellField.meshElement.computeTriangleNormal(adjacentTriangles[0]);
-      const hemo::Array<double,3> V2 = cellField.meshElement.computeTriangleNormal(adjacentTriangles[1]);
+      const hemo::Array<T,3> V1 = cellField.meshElement.computeTriangleNormal(adjacentTriangles[0]);
+      const hemo::Array<T,3> V2 = cellField.meshElement.computeTriangleNormal(adjacentTriangles[1]);
 
-      // double angle = angleBetweenVectors(V1, V2);
+      // T angle = angleBetweenVectors(V1, V2);
 
       // ///TODO does this gives us a correct "sign"?
       // const plint sign = dot(x2-x1, V2) >= 0 ? 1 : -1;
@@ -127,13 +127,13 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       // if (angle > PI) {
       //   angle = angle - 2*PI;
       // }
-      const hemo::Array<double,3> p0 = cellField.meshElement.getVertex(edge[0]);
-      const hemo::Array<double,3> p1 = cellField.meshElement.getVertex(edge[1]);
+      const hemo::Array<T,3> p0 = cellField.meshElement.getVertex(edge[0]);
+      const hemo::Array<T,3> p1 = cellField.meshElement.getVertex(edge[1]);
 
-      const hemo::Array<double,3> edge_vec = p1-p0;
-      const double edge_length = norm(edge_vec);
-      const hemo::Array<double,3> edge_uv = edge_vec/edge_length;
-      double angle = getAngleBetweenFaces(V1, V2, edge_uv);
+      const hemo::Array<T,3> edge_vec = p1-p0;
+      const T edge_length = norm(edge_vec);
+      const hemo::Array<T,3> edge_uv = edge_vec/edge_length;
+      T angle = getAngleBetweenFaces(V1, V2, edge_uv);
       
       edge_angle_eq_list_.push_back(angle);
     }
@@ -154,19 +154,19 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     } catch (std::invalid_argument & exeption) {}
 
     //Calculate eq edges lengths
-    vector<double> inner_edge_length_eq_list_;
+    vector<T> inner_edge_length_eq_list_;
     for (const hemo::Array<plint,2> & edge : inner_edge_list_) {
       inner_edge_length_eq_list_.push_back(cellField.meshElement.computeEdgeLength(edge[0],edge[1]));
     }
 
     //Calculate triangle eq
-    vector<double> triangle_area_eq_list_;
+    vector<T> triangle_area_eq_list_;
     for (pluint iTriangle = 0 ; iTriangle < cellField.triangle_list.size(); iTriangle++) {
       triangle_area_eq_list_.push_back(cellField.meshElement.computeTriangleArea(iTriangle));
     }
 
     
-    double volume_eq_ = MeshMetrics<double>(cellField.meshElement).getVolume();
+    T volume_eq_ = MeshMetrics<T>(cellField.meshElement).getVolume();
 
 
     //store important points for bending calculation
@@ -188,22 +188,22 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     }
 
     //Calculate mean face areas
-    double mean_area_eq_ = 0.;
-    for (const double & area : triangle_area_eq_list_) {
+    T mean_area_eq_ = 0.;
+    for (const T & area : triangle_area_eq_list_) {
       mean_area_eq_ += area;
     }
     mean_area_eq_ /= triangle_area_eq_list_.size();
     
     // Calculate mean edge lengths
-    double mean_edge_eq_ = 0;
-    for(const double & edge : edge_length_eq_list_) {
+    T mean_edge_eq_ = 0;
+    for(const T & edge : edge_length_eq_list_) {
       mean_edge_eq_ += edge;
     }
     mean_edge_eq_ /= edge_length_eq_list_.size();
 
     // Calculate mean edge angles
-    double mean_angle_eq_ = 0;
-    for(const double & angle : edge_angle_eq_list_) {
+    T mean_angle_eq_ = 0;
+    for(const T & angle : edge_angle_eq_list_) {
       mean_angle_eq_ += angle;
     }
     mean_angle_eq_ /= edge_angle_eq_list_.size();
@@ -280,34 +280,34 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     
     
     // Calculate center point deviation for surface patches around each vertex
-    vector<double> surface_patch_center_dist_eq_list_;
+    vector<T> surface_patch_center_dist_eq_list_;
     for (long signed int i = 0 ; i < cellField.meshElement.getNumVertices() ; i++) {
       
-      hemo::Array<double,3> vertexes_sum = {0.,0.,0.};
+      hemo::Array<T,3> vertexes_sum = {0.,0.,0.};
       for(unsigned int j = 0; j < vertex_n_vertexes_[i]; j++) 
         vertexes_sum += cellField.meshElement.getVertex(vertex_vertexes_[i][j]);  
       
-      const hemo::Array<double,3> vertexes_middle = vertexes_sum/vertex_n_vertexes_[i];
-      const hemo::Array<double,3> localVertex = cellField.meshElement.getVertex(i);
+      const hemo::Array<T,3> vertexes_middle = vertexes_sum/vertex_n_vertexes_[i];
+      const hemo::Array<T,3> localVertex = cellField.meshElement.getVertex(i);
 
-      const hemo::Array<double,3> dev_vect = vertexes_middle - localVertex;
+      const hemo::Array<T,3> dev_vect = vertexes_middle - localVertex;
       
       // Get the local surface normal
-      hemo::Array<double,3> patch_normal = {0.,0.,0.};
+      hemo::Array<T,3> patch_normal = {0.,0.,0.};
       for(unsigned int j = 0; j < vertex_n_vertexes_[i]-1; j++) {
-        hemo::Array<double,3> triangle_normal = crossProduct(hemo::Array<double,3> (cellField.meshElement.getVertex(vertex_vertexes_[i][j])) - localVertex, 
-                                                             hemo::Array<double,3> (cellField.meshElement.getVertex(vertex_vertexes_[i][j+1])) - localVertex);
+        hemo::Array<T,3> triangle_normal = crossProduct(hemo::Array<T,3> (cellField.meshElement.getVertex(vertex_vertexes_[i][j])) - localVertex, 
+                                                             hemo::Array<T,3> (cellField.meshElement.getVertex(vertex_vertexes_[i][j+1])) - localVertex);
         triangle_normal /= norm(triangle_normal);  
         patch_normal += triangle_normal;                                                   
       }
-      hemo::Array<double,3> triangle_normal = crossProduct(hemo::Array<double,3> (cellField.meshElement.getVertex(vertex_vertexes_[i][vertex_n_vertexes_[i]-1])) -localVertex, 
-                                                           hemo::Array<double,3> (cellField.meshElement.getVertex(vertex_vertexes_[i][0])) -localVertex);
+      hemo::Array<T,3> triangle_normal = crossProduct(hemo::Array<T,3> (cellField.meshElement.getVertex(vertex_vertexes_[i][vertex_n_vertexes_[i]-1])) -localVertex, 
+                                                           hemo::Array<T,3> (cellField.meshElement.getVertex(vertex_vertexes_[i][0])) -localVertex);
       triangle_normal /= norm(triangle_normal);
       patch_normal += triangle_normal;
 
       patch_normal /= norm(patch_normal);
               
-      const double ndev = dot(patch_normal, dev_vect); // distance along patch normal
+      const T ndev = dot(patch_normal, dev_vect); // distance along patch normal
 
       surface_patch_center_dist_eq_list_.push_back(ndev);
     }

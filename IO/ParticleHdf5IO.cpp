@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 WriteCellField3DInMultipleHDF5Files::WriteCellField3DInMultipleHDF5Files (
         HemoCellField & cellField3D_,
         plint iter_, std::string identifier_,
-        double dx_, double dt_, int ctype_) :
+        T dx_, T dt_, int ctype_) :
         cellField3D(cellField3D_), iter(iter_), identifier(identifier_), dx(dx_), dt(dt_), ctype(ctype_) {};
 
 void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
@@ -65,14 +65,14 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
      hsize_t dimVertices[2];
      hsize_t chunk[2];  
  
-     vector<vector<double>> positions;
+     vector<vector<T>> positions;
      
     /************************************************************/
     /**            Write output to HDF5 file                   **/
    /************************************************************/
          
     for (pluint i = 0; i < cellField3D.desiredOutputVariables.size(); i++) {
-        vector<vector<double>> * output = new vector<vector<double>>();
+        vector<vector<T>> * output = new vector<vector<T>>();
         std::string vectorname;
         particleField.passthroughpass(cellField3D.desiredOutputVariables[i],domain,*output,cellField3D.ctype,vectorname);
         dimVertices[0] = (*output).size();
@@ -111,7 +111,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         delete[] output_formatted;
     }
      
-    if (cellField3D.outputTriangles) { //Treat triangles seperately because of double/int issues
+    if (cellField3D.outputTriangles) { //Treat triangles seperately because of T/int issues
         vector<vector<plint>> * output = new vector<vector<plint>>();
         std::string vectorname;
         particleField.outputTriangles(domain,*output,positions, cellField3D.ctype,vectorname);
@@ -147,7 +147,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         delete[] output_formatted;
      }
 
-     if (cellField3D.outputLines) { //Treat triangles seperately because of double/int issues
+     if (cellField3D.outputLines) { //Treat triangles seperately because of T/int issues
         vector<vector<plint>> * output = new vector<vector<plint>>();
         std::string vectorname;
         particleField.outputLines(domain,*output,positions, cellField3D.ctype,vectorname);
@@ -205,7 +205,7 @@ BlockDomain::DomainT WriteCellField3DInMultipleHDF5Files::appliesTo () const {
 
 
 
-void writeCellField3D_HDF5(HemoCellFields& cellFields, double dx, double dt, plint iter, std::string preString)
+void writeCellField3D_HDF5(HemoCellFields& cellFields, T dx, T dt, plint iter, std::string preString)
 {
     for (pluint i = 0; i < cellFields.size(); i++) {
 	std::string identifier = preString + cellFields[i]->getIdentifier();

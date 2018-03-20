@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemocell_internal.h"
 #include "hemoCellFields.h"
 
-void writeFluidField_HDF5(HemoCellFields& cellFields, double dx, double dt, plint iter, string preString="");
+void writeFluidField_HDF5(HemoCellFields& cellFields, T dx, T dt, plint iter, string preString="");
 
 #ifndef hsize_t
 typedef long long unsigned int hsize_t;
@@ -38,9 +38,9 @@ class WriteFluidField : public BoxProcessingFunctional3D
 public:
     WriteFluidField (
             HemoCellFields& cellfields,
-						MultiBlockLattice3D<double,DESCRIPTOR>& fluid,
+						MultiBlockLattice3D<T,DESCRIPTOR>& fluid,
             plint iter_, string identifier_,
-            double dx_, double dt_);
+            T dx_, T dt_);
     ~WriteFluidField(){}; //Fuck C c++
     virtual void processGenericBlocks(Box3D domain, vector<AtomicBlock3D*> fields);
     virtual WriteFluidField* clone() const;
@@ -48,13 +48,13 @@ public:
     virtual BlockDomain::DomainT appliesTo() const;
 private:
     HemoCellFields& cellfields;
-    MultiBlockLattice3D<double,DESCRIPTOR>& fluid;
+    MultiBlockLattice3D<T,DESCRIPTOR>& fluid;
     plint iter;
     string identifier;
     double dx;
     double dt;
     Box3D * odomain;
-    BlockLattice3D<double,DESCRIPTOR> * ablock;
+    BlockLattice3D<T,DESCRIPTOR> * ablock;
     HemoCellParticleField * particlefield;
     int blockid;
     hsize_t * nCells;

@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellFields.h"
 #include "hemoCellField.h"
 
-void writeCellField3D_HDF5(HemoCellFields& cellFields, double dx, double dt, plint iter, std::string preString="");
+void writeCellField3D_HDF5(HemoCellFields& cellFields, T dx, T dt, plint iter, std::string preString="");
 
 
 class WriteCellField3DInMultipleHDF5Files : public BoxProcessingFunctional3D
@@ -38,7 +38,7 @@ public:
     WriteCellField3DInMultipleHDF5Files (
             HemoCellField & cellField3D_,
             plint iter_, std::string identifier_,
-            double dx_, double dt_, int i);
+            T dx_, T dt_, int i);
     /// Arguments: [0] Particle-field. [1] Lattice.
     ~WriteCellField3DInMultipleHDF5Files(){}; //Fuck C c++
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);

@@ -45,7 +45,7 @@ class HemoCellFields
 public:
   
   ///Default constructor, needs an palabos lattice, envelope width (lbm units), and hemocell reference
-  HemoCellFields(MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth,HemoCell &);
+  HemoCellFields(MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth,HemoCell &);
  
   /*
    * Create the particle field seperately, takes the arguments set in the constructor
@@ -61,7 +61,7 @@ public:
   ~HemoCellFields();
   
   ///Add an celltype with a certain mesh, the name also specifies <name_>.xml and <name_>.pos
-  HemoCellField * addCellType(TriangularSurfaceMesh<double> & meshElement, std::string name_);
+  HemoCellField * addCellType(TriangularSurfaceMesh<T> & meshElement, std::string name_);
   
   ///Easy access to contained celltypes
   HemoCellField * operator[](unsigned int index);
@@ -124,7 +124,7 @@ public:
   //Class Variables
   
   ///the fluid lattice
-	MultiBlockLattice3D<double, DESCRIPTOR> * lattice;
+	MultiBlockLattice3D<T, DESCRIPTOR> * lattice;
   ///A vector specifying the output variables (from const_defaults.h)
   vector<int> desiredFluidOutputVariables;
   ///Reference to parent
@@ -137,9 +137,9 @@ public:
 	MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles = 0;
 
   ///Repulsion variable set through hemocell.h
-  double repulsionCutoff = 0.0;
+  T repulsionCutoff = 0.0;
   ///Repulsion variable set through hemocell.h
-  double repulsionConstant = 0.0;
+  T repulsionConstant = 0.0;
   ///Timescale seperation for repulsion, set through hemocell.h
   pluint repulsionTimescale = 1;
   

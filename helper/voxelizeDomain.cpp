@@ -50,7 +50,7 @@ BlockDomain::DomainT CopyFromNeighbor::appliesTo() const {
 // ---------------------- Read in STL geometry ---------------------------------
 
 void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint refDirLength, plint refDir,
-                          VoxelizedDomain3D<double> *&voxelizedDomain, MultiScalarField3D<int> *&flagMatrix, plint blockSize) {
+                          VoxelizedDomain3D<T> *&voxelizedDomain, MultiScalarField3D<int> *&flagMatrix, plint blockSize) {
     plint extraLayer = 0;   // Make the bounding box larger; for visualization purposes
                             //   only. For the simulation, it is OK to have extraLayer=0.
     plint borderWidth = 1;  // Because the Guo boundary condition acts in a one-cell layer.
@@ -58,15 +58,15 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
     // Requirement: margin>=borderWidth.
     plint margin = 1;  // Extra margin of allocated cells around the obstacle.
 
-    TriangleSet<double> *triangleSet = new TriangleSet<double>(meshFileName, DBL);
+    TriangleSet<T> *triangleSet = new TriangleSet<T>(meshFileName, DBL);
 
-    DEFscaledMesh<double> *defMesh =
-            new DEFscaledMesh<double>(*triangleSet, refDirLength, refDir, margin, extraLayer);
-    TriangleBoundary3D<double> boundary(*defMesh);
+    DEFscaledMesh<T> *defMesh =
+            new DEFscaledMesh<T>(*triangleSet, refDirLength, refDir, margin, extraLayer);
+    TriangleBoundary3D<T> boundary(*defMesh);
     delete defMesh;
     boundary.getMesh().inflate();
 
-    voxelizedDomain = new VoxelizedDomain3D<double>(
+    voxelizedDomain = new VoxelizedDomain3D<T>(
             boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, blockSize);
     
     // Print out some info

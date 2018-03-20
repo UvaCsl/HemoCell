@@ -45,7 +45,7 @@ Therefore (again assuming Vn is normalized):
 ==>  (Va x Vb) . Vn == |Va| * |Vb| * sin(beta)
 ==>  tan(beta) = sin(beta) / cos(beta) == ((Va x Vb) . Vn) / (Va . Vb)
 */
-inline double getAngleBetweenFaces(const hemo::Array<double,3> n1, const hemo::Array<double,3> n2, const hemo::Array<double,3> edge) {
+inline T getAngleBetweenFaces(const hemo::Array<T,3> n1, const hemo::Array<T,3> n2, const hemo::Array<T,3> edge) {
 	hemo::Array<T,3> cross = crossProduct (n1, n2);
 	return std::atan2(dot(cross, edge), dot(n1, n2));
 };

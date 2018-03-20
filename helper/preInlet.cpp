@@ -182,7 +182,7 @@ void PreInlet::DeletePreInletParticles::processGenericBlocks(Box3D domain, std::
 }
 
 void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-  BlockLattice3D<double,DESCRIPTOR> * fluidfield = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
+  BlockLattice3D<T,DESCRIPTOR> * fluidfield = dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[0]);
   HemoCellParticleField * particlefield = dynamic_cast<HemoCellParticleField*>(blocks[1]);
   
   //When we are also saving particles
@@ -190,7 +190,7 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
     const map<int,vector<int>> & ppc = particlefield->get_particles_per_cell();
     for (int i = 0 ; i < parent.particles_size ; i++) {
       particle_hdf5_t * particle = &parent.particles[i];
-      hemo::Array<double,3> loc; 
+      hemo::Array<T,3> loc; 
       loc[0] = particle->location[0];
       loc[1] = particle->location[1];
       loc[2] = particle->location[2];
@@ -206,7 +206,7 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
 
       HemoCellParticle particle_h = HemoCellParticle(loc,particle->cell_id,particle->vertex_id,particle->particle_type);
       particle_h.fromPreInlet = true;
-      hemo::Array<double,3> vel; 
+      hemo::Array<T,3> vel; 
       vel[0] = particle->velocity[0];
       vel[1] = particle->velocity[1];
       vel[2] = particle->velocity[2];
@@ -230,7 +230,7 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
     exit(0);
   }
   hid_t memspace_id = H5Screate_simple (5, count, NULL); 
-  plb::Array<double,3> vel;
+  plb::Array<T,3> vel;
   Box3D unshiftedfluidBox = fluidBox.shift(-fluidfield->getLocation().x,-fluidfield->getLocation().y,-fluidfield->getLocation().z);
   plint xx = unshiftedfluidBox.x0;
   plint yy = unshiftedfluidBox.y0;

@@ -26,17 +26,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "vWFModel.h"
 #include <sstream>
 
-inline void meshRotation (TriangularSurfaceMesh<double> * mesh, hemo::Array<double,3> rotationAngles) {
-    plb::Array<double,2> xRange, yRange, zRange;
+inline void meshRotation (TriangularSurfaceMesh<T> * mesh, hemo::Array<T,3> rotationAngles) {
+    plb::Array<T,2> xRange, yRange, zRange;
     mesh->computeBoundingBox (xRange, yRange, zRange);
-    plb::Array<double,3> meshCenter = plb::Array<double,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * 0.5;
-    mesh->translate(-1.0 * meshCenter);
+    plb::Array<T,3> meshCenter = plb::Array<T,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * (T)0.5;
+    mesh->translate((T)-1.0 * meshCenter);
     mesh->rotateXYZ(rotationAngles[0], rotationAngles[1], rotationAngles[2]);
     mesh->translate(meshCenter);
 }
 
-inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, BlockLattice3D<double,DESCRIPTOR>& fluid,
-                                            TriangularSurfaceMesh<double> * mesh, hemo::Array<double,3> startingPoint, plint cellId, pluint celltype) {
+inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, BlockLattice3D<T,DESCRIPTOR>& fluid,
+                                            TriangularSurfaceMesh<T> * mesh, hemo::Array<T,3> startingPoint, plint cellId, pluint celltype) {
     plint nVertices=mesh->getNumVertices();
     Box3D fluidbb = fluid.getBoundingBox();
     Dot3D rrelfluidloc; // used later;
@@ -44,7 +44,7 @@ inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, 
     HemoCellParticle to_add_particle; // used_later
 
     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
-        hemo::Array<double,3> vertex = startingPoint + mesh->getVertex(iVertex);
+        hemo::Array<T,3> vertex = startingPoint + mesh->getVertex(iVertex);
         
         //If we cannot place it in the particle field continue
         if (!particleField.isContainedABS(vertex,particleField.getBoundingBox())) { continue; }
@@ -111,7 +111,7 @@ void readvonWillibrands(Box3D realDomain, pluint celltype, HemoCellFields & cell
           char * gcc4compatibility = (char *)line.c_str();
           for (unsigned int j = 0 ; j < nVertices;j++) {
             int c_is_sane;
-            hemo::Array<double,3> vertex;
+            hemo::Array<T,3> vertex;
             int ret = sscanf(gcc4compatibility, "%lf %lf %lf %n", &vertex[0], &vertex[1], &vertex[2], &c_is_sane);
             if ( ret != 3) {
              pcout << "sscanf consumed too few (von Willibrand) somethings wrong" << endl; 
@@ -140,12 +140,12 @@ int getTotalNumberOfCells(HemoCellFields & cellFields){
 
 bool first_time =true;
 void getReadPositionsBloodCellsVector(Box3D realDomain,
-                                            std::vector<TriangularSurfaceMesh<double>* > & meshes,
+                                            std::vector<TriangularSurfaceMesh<T>* > & meshes,
                                             std::vector<plint> & Np,
-                                            std::vector<std::vector<hemo::Array<double,3> > > & positions,
+                                            std::vector<std::vector<hemo::Array<T,3> > > & positions,
                                             std::vector<std::vector<plint> > & cellIds,
-                                            std::vector<std::vector<hemo::Array<double,3> > > & randomAngles,
-                                            double dx, Config & cfg, HemoCellFields & cellFields,
+                                            std::vector<std::vector<hemo::Array<T,3> > > & randomAngles,
+                                            T dx, Config & cfg, HemoCellFields & cellFields,
                                             HemoCellParticleField & particleField)
 {
 
@@ -228,8 +228,8 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
         {
             // Store mesh positions and rotations
             //randomAngles[i][j] = hemo::Array<T, 3>(1.0,0.0,0.0);
-            randomAngles[i][j] = hemo::Array<double, 3>({packAngles[i][j][0], packAngles[i][j][1], packAngles[i][j][2]});
-            positions[i][j] =hemo::Array<double,3>({packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]});
+            randomAngles[i][j] = hemo::Array<T, 3>({packAngles[i][j][0], packAngles[i][j][1], packAngles[i][j][2]});
+            positions[i][j] =hemo::Array<T,3>({packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]});
             cellIds[i][j] = cellIdss[i][j];
 
         }
@@ -244,25 +244,25 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         Box3D domain, std::vector<AtomicBlock3D*> blocks )
 {
     int numberOfCellFields = blocks.size() -1;
-    //double ratio;
-    BlockLattice3D<double,DESCRIPTOR>& fluid =
-            *dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[0]);
+    //T ratio;
+    BlockLattice3D<T,DESCRIPTOR>& fluid =
+            *dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[0]);
     std::vector<HEMOCELL_PARTICLE_FIELD* > particleFields(numberOfCellFields);
-    std::vector<double> volumes(numberOfCellFields);
-    std::vector<TriangularSurfaceMesh<double>* > meshes(numberOfCellFields);
-    std::vector<ElementsOfTriangularSurfaceMesh<double> > emptyEoTSM(numberOfCellFields);
+    std::vector<T> volumes(numberOfCellFields);
+    std::vector<TriangularSurfaceMesh<T>* > meshes(numberOfCellFields);
+    std::vector<ElementsOfTriangularSurfaceMesh<T> > emptyEoTSM(numberOfCellFields);
     std::vector<plint> Np(numberOfCellFields);
 
-    double totalVolumeFraction=0;
+    T totalVolumeFraction=0;
 
-    //double Vdomain = domain.getNx() * domain.getNy() * domain.getNz();
+    //T Vdomain = domain.getNx() * domain.getNy() * domain.getNz();
 
     Dot3D fLocation(fluid.getLocation());
     Box3D realDomain(
             domain.x0 + fLocation.x, domain.x1 + fLocation.x,
             domain.y0 + fLocation.y, domain.y1 + fLocation.y,
             domain.z0 + fLocation.z, domain.z1 + fLocation.z );
-    plb::Array<double,2> xRange, yRange, zRange;
+    plb::Array<T,2> xRange, yRange, zRange;
 
     for (pluint iCF = 0; iCF < cellFields.size(); ++iCF) {
         if (dynamic_cast<vWFModel*>(cellFields[iCF]->mechanics)) {
@@ -270,9 +270,9 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
           continue; 
         }
 
-        TriangularSurfaceMesh<double> * mesh = copyTriangularSurfaceMesh(cellFields[iCF]->getMesh(), emptyEoTSM[iCF]);
+        TriangularSurfaceMesh<T> * mesh = copyTriangularSurfaceMesh(cellFields[iCF]->getMesh(), emptyEoTSM[iCF]);
         mesh->computeBoundingBox (xRange, yRange, zRange);
-        mesh->translate(plb::Array<double,3>(-(xRange[0]+xRange[1])/2.0, -(yRange[0]+yRange[1])/2.0, -(zRange[0]+zRange[1])/2.0));
+        mesh->translate(plb::Array<T,3>(-(xRange[0]+xRange[1])/2.0, -(yRange[0]+yRange[1])/2.0, -(zRange[0]+zRange[1])/2.0));
         meshes[iCF] = mesh;
         volumes[iCF] = MeshMetrics<T>(*mesh).getVolume();
 
@@ -282,16 +282,16 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     }
    
 
-    std::vector<std::vector<hemo::Array<double,3> > > positions;
+    std::vector<std::vector<hemo::Array<T,3> > > positions;
     std::vector<std::vector<plint> > cellIds;
-    std::vector<std::vector<hemo::Array<double,3> > > randomAngles;
+    std::vector<std::vector<hemo::Array<T,3> > > randomAngles;
 
     // Note: this method uses the center of the particles for location
-    double posRatio = 1e-6/dx;
+    T posRatio = 1e-6/dx;
     getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, posRatio, cfg, cellFields,*particleFields[0]);
 
     // Change positions to match dx (it is in um originally)
-    double wallWidth = 0; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
+    T wallWidth = 0; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
     
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
@@ -299,8 +299,8 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
   
         for (pluint c = 0; c < positions[iCF].size(); ++c)
         {
-            ElementsOfTriangularSurfaceMesh<double> emptyEoTSMCopy;
-    	    TriangularSurfaceMesh<double> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
+            ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;
+    	    TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
     	    
             meshRotation (meshCopy, randomAngles[iCF][c]);
             
@@ -353,7 +353,7 @@ BlockDomain::DomainT ReadPositionsBloodCellField3D::appliesTo() const {
 
 
 
-void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, Config & cfg) {
+void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & cfg) {
     std::vector<MultiBlock3D *> fluidAndParticleFieldsArg;
 
     fluidAndParticleFieldsArg.push_back(cellFields.lattice);

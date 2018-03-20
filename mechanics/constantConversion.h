@@ -32,18 +32,18 @@ namespace hemo {
 
     //Variables for the simulation
     public:
-    static double dt,dx,dm,df;
-    static double nu_p,rho_p,kBT_p;
-    static double tau,re;
-    static double nu_lbm, u_lbm_max, kBT_lbm, shearrate_lbm;
+    static T dt,dx,dm,df;
+    static T nu_p,rho_p,kBT_p;
+    static T tau,re;
+    static T nu_lbm, u_lbm_max, kBT_lbm, shearrate_lbm;
   #ifdef FORCE_LIMIT
-    static double f_limit;
+    static T f_limit;
   #endif
-    static double ef_lbm; //used in cellStretching
+    static T ef_lbm; //used in cellStretching
 
 
     static void lbm_pipe_parameters(Config & cfg, unsigned int ny);
-    static void lbm_shear_parameters(Config & cfg, double nx);
+    static void lbm_shear_parameters(Config & cfg, T nx);
     static void lbm_base_parameters(Config & cfg);
     static void printParameters();
   };

@@ -28,22 +28,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellFields.h"
 #include "config.h"
 #include "constantConversion.h"
-void readPositionsBloodCellField3D(HemoCellFields & cellFields, double dx, Config & cfg);
+void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & cfg);
 int getTotalNumberOfCells(HemoCellFields & cellFields);
 
 void getReadPositionsBloodCellsVector(Box3D realDomain,
-                                           std::vector<TriangularSurfaceMesh<double>* > & meshes,
+                                           std::vector<TriangularSurfaceMesh<T>* > & meshes,
                                            std::vector<plint> & Np,
-                                           std::vector<std::vector<hemo::Array<double,3> > > & positions,
+                                           std::vector<std::vector<hemo::Array<T,3> > > & positions,
                                            std::vector<std::vector<plint> > & cellIds,
-                                           std::vector<std::vector<hemo::Array<double,3> > > & randomAngles,
+                                           std::vector<std::vector<hemo::Array<T,3> > > & randomAngles,
                                            Config & cfg, HemoCellFields & cellFields,
                                            HemoCellParticleField & particleField);
 
 class ReadPositionsBloodCellField3D : public BoxProcessingFunctional3D
 {
 public:
-    ReadPositionsBloodCellField3D (HemoCellFields & cellFields_, double dx_, Config & cfg_)
+    ReadPositionsBloodCellField3D (HemoCellFields & cellFields_, T dx_, Config & cfg_)
             : cellFields(cellFields_), cfg(cfg_) {dx = dx_;}
     /// Arguments: [0] Particle-field.
     virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
@@ -51,7 +51,7 @@ public:
     virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
     void getModificationPattern(std::vector<bool>& isWritten) const;
     virtual BlockDomain::DomainT appliesTo() const;
-    double dx;
+    T dx;
     HemoCellFields & cellFields;
     Config & cfg;
 };

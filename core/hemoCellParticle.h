@@ -35,39 +35,41 @@ class HemoCellParticle {
   //VARIABLES
   //Store variables in struct for fast serialization
   struct serializeValues_t {
-    hemo::Array<double,3> v;
-    hemo::Array<double,3> position;
-    hemo::Array<double,3> force;
-    hemo::Array<double,3> force_repulsion;
-    bool fromPreInlet;
+    hemo::Array<T,3> v;
+    hemo::Array<T,3> position;
+    hemo::Array<T,3> force;
+    hemo::Array<T,3> force_repulsion;
+#if HEMOCELL_MATERIAL_INTEGRATION == 2
+    hemo::Array<T,3> vPrevious;
+#endif
     plint cellId;
     plint vertexId;
     pluint celltype;
-#if HEMOCELL_MATERIAL_INTEGRATION == 2
-    hemo::Array<double,3> vPrevious;
-#endif
+
+    bool fromPreInlet;
+
   };
   
   public:
 
     serializeValues_t serializeValues = {};
     //Is vector, optimize with hemo::Array possible
-    vector<Cell<double,DESCRIPTOR>*> kernelLocations;
-    vector<double>         kernelWeights;
-    hemo::Array<double,3> & position;// = serializeValues.sv.v;
-    hemo::Array<double,3> & v;// = serializeValues.sv.v;
-    hemo::Array<double,3> & force;// = serializeValues.sv.force;
-    hemo::Array<double,3> force_total;
+    vector<Cell<T,DESCRIPTOR>*> kernelLocations;
+    vector<T>         kernelWeights;
+    hemo::Array<T,3> & position;// = serializeValues.sv.v;
+    hemo::Array<T,3> & v;// = serializeValues.sv.v;
+    hemo::Array<T,3> & force;// = serializeValues.sv.force;
+    hemo::Array<T,3> force_total;
 #if HEMOCELL_MATERIAL_INTEGRATION == 2
-    hemo::Array<double,3> vPrevious;
+    hemo::Array<T,3> vPrevious;
 #endif
-    hemo::Array<double,3> *force_volume = &force;
-    hemo::Array<double,3> *force_bending = &force;
-    hemo::Array<double,3> *force_link = &force;
-    hemo::Array<double,3> & force_repulsion;// = serializeValues.sv.force_repulsion;
-    hemo::Array<double,3> *force_area = &force; //Default to pointing to force, if output is desired, it can be stored seperately
-    hemo::Array<double,3> *force_visc = &force;
-    hemo::Array<double,3> *force_inner_link = &force;
+    hemo::Array<T,3> *force_volume = &force;
+    hemo::Array<T,3> *force_bending = &force;
+    hemo::Array<T,3> *force_link = &force;
+    hemo::Array<T,3> & force_repulsion;// = serializeValues.sv.force_repulsion;
+    hemo::Array<T,3> *force_area = &force; //Default to pointing to force, if output is desired, it can be stored seperately
+    hemo::Array<T,3> *force_visc = &force;
+    hemo::Array<T,3> *force_inner_link = &force;
     bool & fromPreInlet;
     plint tag;
     plint & cellId;// = serializeValues.sv.cellId;
@@ -75,7 +77,7 @@ class HemoCellParticle {
     pluint & celltype;// = serializeValues.sv.celltype;
 private:
     std::vector<Dot3D> cellPos;
-    std::vector<double> weights;
+    std::vector<T> weights;
 
 public:
   ~HemoCellParticle(){};
@@ -144,7 +146,7 @@ public:
       force_visc = &force;
       force_inner_link = &force;
     }
-    HemoCellParticle (hemo::Array<double,3> position_, plint cellId_, plint vertexId_,pluint celltype_) :
+    HemoCellParticle (hemo::Array<T,3> position_, plint cellId_, plint vertexId_,pluint celltype_) :
     position(serializeValues.position), v(serializeValues.v),
     force(serializeValues.force), force_repulsion(serializeValues.force_repulsion),
     fromPreInlet(serializeValues.fromPreInlet),
@@ -238,7 +240,7 @@ public:
              //vPrevious = v;    // Store previous velocity for viscosity terms     
 
         #elif HEMOCELL_MATERIAL_INTEGRATION == 2
-              hemo::Array<double,3> dxyz = (1.5*v - 0.5*vPrevious);
+              hemo::Array<T,3> dxyz = (1.5*v - 0.5*vPrevious);
               position +=  dxyz;
               vPrevious = v;  // Store velocity
         #endif
@@ -262,7 +264,7 @@ public:
     }
 
     inline int getId() const {return PARTICLE_ID;}
-    //inline hemo::Array<double,3> & getPosition() {return position;} 
+    //inline hemo::Array<T,3> & getPosition() {return position;} 
     inline plint getTag() { return tag; } //TODO remove for direct access
     inline void setTag(plint tag_) { tag = tag_; }
 

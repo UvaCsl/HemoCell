@@ -61,16 +61,16 @@ public:
 
     void setlocalDomain(Box3D & localDomain_);
 
-    void computeGridPosition ( hemo::Array<double,3> const& position,
+    void computeGridPosition ( hemo::Array<T,3> const& position,
                     plint& iX, plint& iY, plint& iZ ) const;
-    inline void computeGridPosition ( hemo::Array<double,3> const& position,
+    inline void computeGridPosition ( hemo::Array<T,3> const& position,
                     plint* iX, plint* iY, plint* iZ ) const;
     
-    inline bool isContainedABS(hemo::Array<double,3> pos, Box3D box) const {
+    inline bool isContainedABS(hemo::Array<T,3> pos, Box3D box) const {
 	    Dot3D const& location = this->getLocation();
-	    double x = pos[0]-location.x;
-	    double y = pos[1]-location.y;
-	    double z = pos[2]-location.z;
+	    T x = pos[0]-location.x;
+	    T y = pos[1]-location.y;
+	    T z = pos[2]-location.z;
 	    //if (box.z1 < -10000) {
 	    //  exit(0);
 	    //} 
@@ -85,22 +85,22 @@ public:
 	}
 
     //Ugly output functions:
-    void outputPositions(Box3D,vector<vector<double>>&, pluint, std::string&); 
-    void outputForces   (Box3D,vector<vector<double>>&, pluint, std::string&);
-    void outputForceVolume   (Box3D,vector<vector<double>>&, pluint, std::string&);
-    void outputForceArea   (Box3D,vector<vector<double>>&, pluint, std::string&);
-    void outputForceBending   (Box3D,vector<vector<double>>&, pluint, std::string&);
-    void outputForceLink   (Box3D,vector<vector<double>>&, pluint, std::string&);
-    void outputForceVisc    (Box3D,vector<vector<double>>&, pluint, std::string&);
-    void outputTriangles   (Box3D,vector<vector<plint>>&, vector<vector<double>>&, pluint, std::string&);
-    void outputLines   (Box3D,vector<vector<plint>>&, vector<vector<double>>&, plint, std::string&);
-    void outputVertexId    (Box3D,vector<vector<double>>&, pluint, std::string&);
-    void outputCellId    (Box3D,vector<vector<double>>&, pluint, std::string&);
-    void outputForceInnerLink   (Box3D,vector<vector<double>>&, pluint, std::string&);
+    void outputPositions(Box3D,vector<vector<T>>&, pluint, std::string&); 
+    void outputForces   (Box3D,vector<vector<T>>&, pluint, std::string&);
+    void outputForceVolume   (Box3D,vector<vector<T>>&, pluint, std::string&);
+    void outputForceArea   (Box3D,vector<vector<T>>&, pluint, std::string&);
+    void outputForceBending   (Box3D,vector<vector<T>>&, pluint, std::string&);
+    void outputForceLink   (Box3D,vector<vector<T>>&, pluint, std::string&);
+    void outputForceVisc    (Box3D,vector<vector<T>>&, pluint, std::string&);
+    void outputTriangles   (Box3D,vector<vector<plint>>&, vector<vector<T>>&, pluint, std::string&);
+    void outputLines   (Box3D,vector<vector<plint>>&, vector<vector<T>>&, plint, std::string&);
+    void outputVertexId    (Box3D,vector<vector<T>>&, pluint, std::string&);
+    void outputCellId    (Box3D,vector<vector<T>>&, pluint, std::string&);
+    void outputForceInnerLink   (Box3D,vector<vector<T>>&, pluint, std::string&);
 
     void AddOutputMap();
-    map<int,void (HemoCellParticleField::*)(Box3D,vector<vector<double>>&,pluint,std::string&)> outputFunctionMap;
-    void passthroughpass(int,Box3D,vector<vector<double>>&,pluint,std::string&);
+    map<int,void (HemoCellParticleField::*)(Box3D,vector<vector<T>>&,pluint,std::string&)> outputFunctionMap;
+    void passthroughpass(int,Box3D,vector<vector<T>>&,pluint,std::string&);
 
 public:
     virtual HemoCellParticleDataTransfer& getDataTransfer();
@@ -108,14 +108,14 @@ public:
     static std::string getBlockName();
     static HemoCellFields* cellFields;
     pluint atomicBlockId;
-    BlockLattice3D<double, DESCRIPTOR> * atomicLattice;
+    BlockLattice3D<T, DESCRIPTOR> * atomicLattice;
     vector<plint> neighbours;
     pluint envelopeSize;
     pluint getsize() { return particles.size();}
-    plint nearestCell(double const) const;
-    static std::string basicType() {return std::string(NativeType<double>::getName());}
+    plint nearestCell(T const) const;
+    static std::string basicType() {return std::string(NativeType<T>::getName());}
     static std::string descriptorType() {
-      return std::string(DESCRIPTOR<double>::name);
+      return std::string(DESCRIPTOR<T>::name);
     }
     vector<HemoCellParticle> particles;
     

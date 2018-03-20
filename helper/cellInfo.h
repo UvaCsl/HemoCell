@@ -40,11 +40,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 struct CellInformation {
-  hemo::Array<double,3> position;
-  double volume;
-  double area;
-  double stretch;
-  hemo::Array<double,6> bbox;
+  hemo::Array<T,3> position;
+  T volume;
+  T area;
+  T stretch;
+  hemo::Array<T,6> bbox;
   pluint blockId;
   pluint cellType;
   bool centerLocal;

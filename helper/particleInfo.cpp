@@ -32,9 +32,9 @@ void GatherParticleVelocity::processGenericBlocks(Box3D domain, std::vector<Atom
     
     if (localParticles.size() > 0) {
       //initial value
-      hemo::Array<double,3> vel_vec = localParticles[0]->v;
-      double vel = sqrt(vel_vec[0]*vel_vec[0]+vel_vec[1]*vel_vec[1]+vel_vec[2]*vel_vec[2]);
-      double min=vel,max=vel,avg=0.;
+      hemo::Array<T,3> vel_vec = localParticles[0]->v;
+      T vel = sqrt(vel_vec[0]*vel_vec[0]+vel_vec[1]*vel_vec[1]+vel_vec[2]*vel_vec[2]);
+      T min=vel,max=vel,avg=0.;
 
 
       for (const HemoCellParticle * particle : localParticles) {
@@ -59,9 +59,9 @@ void GatherParticleForce::processGenericBlocks(Box3D domain, std::vector<AtomicB
     
     if (localParticles.size() > 0) {
       //initial value
-      hemo::Array<double,3> force_vec = localParticles[0]->force +localParticles[0]->force_repulsion;
-      double force = sqrt(force_vec[0]*force_vec[0]+force_vec[1]*force_vec[1]+force_vec[2]*force_vec[2]);
-      double min=force,max=force,avg=0.;
+      hemo::Array<T,3> force_vec = localParticles[0]->force +localParticles[0]->force_repulsion;
+      T force = sqrt(force_vec[0]*force_vec[0]+force_vec[1]*force_vec[1]+force_vec[2]*force_vec[2]);
+      T min=force,max=force,avg=0.;
 
 
       for (const HemoCellParticle * particle : localParticles) {

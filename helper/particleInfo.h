@@ -28,9 +28,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellFunctional.h"
 
 struct ParticleStatistics {
-  double min;
-  double max;
-  double avg;
+  T min;
+  T max;
+  T avg;
   pluint ncells;
 };
 

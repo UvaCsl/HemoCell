@@ -36,29 +36,29 @@ class HemoCellField{
   static vector<int> default_output;
   public:
 
-  HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<double>& meshElement_, string & name_, unsigned int ctype_);
-  double getVolumeFraction();
-  //ShellModel3D<double> * model;
-  TriangularSurfaceMesh<double> & getMesh();
+  HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<T>& meshElement_, string & name_, unsigned int ctype_);
+  T getVolumeFraction();
+  //ShellModel3D<T> * model;
+  TriangularSurfaceMesh<T> & getMesh();
   std::string name;
   HemoCellFields & cellFields;
   vector<int> desiredOutputVariables;
-  TriangularSurfaceMesh<double> & meshElement;
+  TriangularSurfaceMesh<T> & meshElement;
   pluint ctype;
   
   int numVertex = 0;
-  double volume = 0;
-  double volumeFractionOfLspPerNode = 0;
-  double restingCellVolume = 0;
+  T volume = 0;
+  T volumeFractionOfLspPerNode = 0;
+  T restingCellVolume = 0;
   unsigned int timescale = 1;
   unsigned int minimumDistanceFromSolid = 0;
   bool outputTriangles = false;
   bool outputLines = false;
   bool deleteIncomplete = true;
   vector<hemo::Array<plint,3>> triangle_list;
-  void(*kernelMethod)(BlockLattice3D<double,DESCRIPTOR> &,HemoCellParticle*);
+  void(*kernelMethod)(BlockLattice3D<T,DESCRIPTOR> &,HemoCellParticle*);
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D();
-  MultiBlockLattice3D<double,DESCRIPTOR> * getFluidField3D();
+  MultiBlockLattice3D<T,DESCRIPTOR> * getFluidField3D();
   int getNumberOfCells_Global();
   std::string getIdentifier();
   MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg();
@@ -66,9 +66,9 @@ class HemoCellField{
   CellMechanics * mechanics;
   void statistics();
   /* position is in micrometers, so we still have to convert it*/
-  void addSingleCell(hemo::Array<double,3> position, plint cellId);
-  hemo::Array<double,6> getOriginalBoundingBox();
-  MeshMetrics<double> * meshmetric;
+  void addSingleCell(hemo::Array<T,3> position, plint cellId);
+  hemo::Array<T,6> getOriginalBoundingBox();
+  MeshMetrics<T> * meshmetric;
 };
 
 

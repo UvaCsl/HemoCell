@@ -78,9 +78,9 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   
 }
 
-void HemoCell::latticeEquilibrium(double rho, hemo::Array<double, 3> vel) {
+void HemoCell::latticeEquilibrium(T rho, hemo::Array<T, 3> vel) {
   pcout << "(HemoCell) (Fluid) Setting Fluid Equilibrium" << endl;
-  plb::Array<double,3> vel_plb = {vel[0],vel[1],vel[2]};
+  plb::Array<T,3> vel_plb = {vel[0],vel[1],vel[2]};
   initializeAtEquilibrium(*lattice, (*lattice).getBoundingBox(), rho, vel_plb);
 }
 
@@ -146,8 +146,8 @@ void HemoCell::saveCheckPoint() {
 
 void HemoCell::writeOutput() {
   // Very naive performance approximation
-  double dtSinceLastOutput = global::timer("atOutput").stop();
-  double timePerIter = dtSinceLastOutput / (iter - lastOutputAt);
+  T dtSinceLastOutput = global::timer("atOutput").stop();
+  T timePerIter = dtSinceLastOutput / (iter - lastOutputAt);
   lastOutputAt = iter;
 
 	pcout << "(HemoCell) (Output) writing output at timestep " << iter << " (" << param::dt * iter<< " s). Approx. performance: " << timePerIter << " s / iteration." << endl;
@@ -223,7 +223,7 @@ void HemoCell::iterate() {
   iter++;
 }
 
-double HemoCell::calculateFractionalLoadImbalance() {
+T HemoCell::calculateFractionalLoadImbalance() {
 	pcout << "(HemoCell) (LoadBalancer) Calculating Fractional Load Imbalance at timestep " << iter << endl;
   return loadBalancer->calculateFractionalLoadImbalance();
 }
@@ -246,7 +246,7 @@ void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
   cellfields->repulsionTimescale = separation;
 }
 
-void HemoCell::setMinimumDistanceFromSolid(string name, double distance) {
+void HemoCell::setMinimumDistanceFromSolid(string name, T distance) {
   pcout << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << " micrometer for " << name << endl; 
   if (loadParticlesIsCalled) {
     pcout << "(HemoCell) (Set Distance) WARNING: this function is called after the particles are loaded, so it probably has no effect" << endl;
@@ -254,7 +254,7 @@ void HemoCell::setMinimumDistanceFromSolid(string name, double distance) {
   (*cellfields)[name]->minimumDistanceFromSolid = distance;
 }
 
-void HemoCell::setRepulsion(double repulsionConstant, double repulsionCutoff) {
+void HemoCell::setRepulsion(T repulsionConstant, T repulsionCutoff) {
   pcout << "(HemoCell) (Repulsion) Setting repulsion constant to " << repulsionConstant << ". repulsionCutoff to" << repulsionCutoff << " µm" << endl;
   pcout << "(HemoCell) (Repulsion) Enabling repulsion" << endl;
   cellfields->repulsionConstant = repulsionConstant;

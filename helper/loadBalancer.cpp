@@ -49,7 +49,7 @@ void LoadBalancer::reloadCheckpoint() {
 
 void LoadBalancer::GatherTimeOfAtomicBlocks::processGenericBlocks(Box3D domain, vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
-  BlockLattice3D<double,DESCRIPTOR> * ff = dynamic_cast<BlockLattice3D<double,DESCRIPTOR>*>(blocks[1]);
+  BlockLattice3D<T,DESCRIPTOR> * ff = dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[1]);
 
   gatherValues[pf->atomicBlockId].particle_time = pf->timer.getTime();
   gatherValues[pf->atomicBlockId].fluid_time = ff->timer.getTime();
@@ -63,7 +63,7 @@ void LoadBalancer::GatherTimeOfAtomicBlocks::processGenericBlocks(Box3D domain, 
   ff->timer.reset();
 }
 
-double LoadBalancer::calculateFractionalLoadImbalance() {
+T LoadBalancer::calculateFractionalLoadImbalance() {
 
   //set FLI_iscalled
   FLI_iscalled = true;
@@ -80,8 +80,8 @@ double LoadBalancer::calculateFractionalLoadImbalance() {
   applyProcessingFunctional(new GatherTimeOfAtomicBlocks(gatherValues),hemocell.cellfields->immersedParticles->getBoundingBox(), wrapper);
   HemoCellGatheringFunctional<TOAB_t>::gather(gatherValues);
   
-  vector<double> times(size);
-  vector<double> lsps(size);
+  vector<T> times(size);
+  vector<T> lsps(size);
   
   /*for (auto const & entry : gatherValues) {
     pcout << "Atomic block " << entry.first << " is on proc " << entry.second.mpi_proc << " spent " << entry.second.particle_time << " for the particle field, spent " << entry.second.fluid_time << " for the fluid field" << endl;
@@ -95,16 +95,16 @@ double LoadBalancer::calculateFractionalLoadImbalance() {
   }
   
   // lsps.
-  double sum = 0;
-  double average = 0;
-  double max = 0;
-  double fli = 0;
+  T sum = 0;
+  T average = 0;
+  T max = 0;
+  T fli = 0;
   
   // this one is for time
-  double sum2 = 0;
-  double average2 = 0;
-  double max2 = 0;
-  double fli2 = 0;
+  T sum2 = 0;
+  T average2 = 0;
+  T max2 = 0;
+  T fli2 = 0;
   
   for (unsigned int i = 0 ; i < times.size(); i++){
       sum = sum + times[i];
@@ -136,7 +136,7 @@ void LoadBalancer::doLoadBalance() {
     plint envelopeWidth = hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth();
     plint refinementLevel = hemocell.lattice->getMultiBlockManagement().getRefinementLevel();
 
-    Dynamics<double,DESCRIPTOR> * dynamics = hemocell.lattice->getBackgroundDynamics().clone();
+    Dynamics<T,DESCRIPTOR> * dynamics = hemocell.lattice->getBackgroundDynamics().clone();
     bool perX = hemocell.lattice->periodicity().get(0);
     bool perY = hemocell.lattice->periodicity().get(1);
     bool perZ = hemocell.lattice->periodicity().get(2);
@@ -144,15 +144,15 @@ void LoadBalancer::doLoadBalance() {
 
     delete hemocell.lattice;
 
-    MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
-                MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
+    MultiBlockLattice3D<T,DESCRIPTOR> * newlattice = new
+                MultiBlockLattice3D<T,DESCRIPTOR>(MultiBlockManagement3D (
                 *original_block_structure->clone(),
                 original_thread_attribution->clone(),
                 envelopeWidth,
                 refinementLevel ),
                 defaultMultiBlockPolicy3D().getBlockCommunicator(),                
                 defaultMultiBlockPolicy3D().getCombinedStatistics(),
-                defaultMultiBlockPolicy3D().getMultiCellAccess<double,DESCRIPTOR>(),
+                defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
                 dynamics );
     
     
@@ -275,7 +275,7 @@ void LoadBalancer::doLoadBalance() {
   plint envelopeWidth = hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth();
   plint refinementLevel = hemocell.lattice->getMultiBlockManagement().getRefinementLevel();
 
-  Dynamics<double,DESCRIPTOR> * dynamics = hemocell.lattice->getBackgroundDynamics().clone();
+  Dynamics<T,DESCRIPTOR> * dynamics = hemocell.lattice->getBackgroundDynamics().clone();
   bool perX = hemocell.lattice->periodicity().get(0);
   bool perY = hemocell.lattice->periodicity().get(1);
   bool perZ = hemocell.lattice->periodicity().get(2);
@@ -283,15 +283,15 @@ void LoadBalancer::doLoadBalance() {
 
   delete hemocell.lattice;
 
-  MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
-            MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
+  MultiBlockLattice3D<T,DESCRIPTOR> * newlattice = new
+            MultiBlockLattice3D<T,DESCRIPTOR>(MultiBlockManagement3D (
             *original_block_structure->clone(),
             newThreadAttribution->clone(),
             envelopeWidth,
             refinementLevel ),
             defaultMultiBlockPolicy3D().getBlockCommunicator(),                
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<double,DESCRIPTOR>(),
+            defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
             dynamics );
   
   newlattice->periodicity().toggle(0, perX);
@@ -406,7 +406,7 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
 
   plint envelopeWidth = hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth();
   plint refinementLevel = hemocell.lattice->getMultiBlockManagement().getRefinementLevel();
-  Dynamics<double,DESCRIPTOR> * dynamics = hemocell.lattice->getBackgroundDynamics().clone();
+  Dynamics<T,DESCRIPTOR> * dynamics = hemocell.lattice->getBackgroundDynamics().clone();
   bool perX = hemocell.lattice->periodicity().get(0);
   bool perY = hemocell.lattice->periodicity().get(1);
   bool perZ = hemocell.lattice->periodicity().get(2);
@@ -414,15 +414,15 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
   
   delete hemocell.lattice;
   
-  MultiBlockLattice3D<double,DESCRIPTOR> * newlattice = new
-                MultiBlockLattice3D<double,DESCRIPTOR>(MultiBlockManagement3D (
+  MultiBlockLattice3D<T,DESCRIPTOR> * newlattice = new
+                MultiBlockLattice3D<T,DESCRIPTOR>(MultiBlockManagement3D (
                 *new_structure->clone(),
                 newThreadAttribution->clone(),
                 envelopeWidth,
                 refinementLevel),
                 defaultMultiBlockPolicy3D().getBlockCommunicator(),                
                 defaultMultiBlockPolicy3D().getCombinedStatistics(),
-                defaultMultiBlockPolicy3D().getMultiCellAccess<double,DESCRIPTOR>(),
+                defaultMultiBlockPolicy3D().getMultiCellAccess<T,DESCRIPTOR>(),
                 dynamics );
   newlattice->periodicity().toggle(0, perX);
   newlattice->periodicity().toggle(1, perY);

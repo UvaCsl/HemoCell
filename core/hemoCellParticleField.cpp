@@ -128,7 +128,7 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
   //Box3D finalDomain;
   //plint x,y,z;
   HemoCellParticle * local_sparticle;
-  hemo::Array<double,3> pos = particle->position;
+  hemo::Array<T,3> pos = particle->position;
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
 
   cellFields->celltype_per_cell[particle->cellId] = particle->celltype; 
@@ -299,7 +299,7 @@ void HemoCellParticleField::findParticles (
     
     found.clear();
     PLB_ASSERT( contained(domain, this->getBoundingBox()) );
-    //hemo::Array<double,3> pos; 
+    //hemo::Array<T,3> pos; 
     const vector<vector<unsigned int>> & particles_per_type = get_particles_per_type();
     if (!(particles_per_type.size() > type)) 
       {return;} 
@@ -313,12 +313,12 @@ void HemoCellParticleField::findParticles (
     
 }
 
-inline plint HemoCellParticleField::nearestCell(double const pos) const {
+inline plint HemoCellParticleField::nearestCell(T const pos) const {
   return int(pos + 0.5);
 }
 
 inline void HemoCellParticleField::computeGridPosition (
-            hemo::Array<double,3> const& position,
+            hemo::Array<T,3> const& position,
                     plint* iX, plint* iY, plint* iZ ) const
 {
       Dot3D const& location = this->getLocation();
@@ -328,7 +328,7 @@ inline void HemoCellParticleField::computeGridPosition (
 }
 
 void HemoCellParticleField::computeGridPosition (
-            hemo::Array<double,3> const& position,
+            hemo::Array<T,3> const& position,
                     plint& iX, plint& iY, plint& iZ ) const
 {
       Dot3D const& location = this->getLocation();
@@ -449,12 +449,12 @@ void HemoCellParticleField::separateForceVectors() {
     //want
     ////TODO this can leak if particle is deleted between seperate and unify,
     //rewrite to reference
-    sparticle.force_volume = new hemo::Array<double,3>({0.0,0.0,0.0});
-    sparticle.force_link = new hemo::Array<double,3>({0.0,0.0,0.0});
-    sparticle.force_area = new hemo::Array<double,3>({0.0,0.0,0.0});
-    sparticle.force_bending = new hemo::Array<double,3>({0.0,0.0,0.0});
-    sparticle.force_visc = new hemo::Array<double,3>({0.0,0.0,0.0});
-    sparticle.force_inner_link = new hemo::Array<double,3>({0.0,0.0,0.0});
+    sparticle.force_volume = new hemo::Array<T,3>({0.0,0.0,0.0});
+    sparticle.force_link = new hemo::Array<T,3>({0.0,0.0,0.0});
+    sparticle.force_area = new hemo::Array<T,3>({0.0,0.0,0.0});
+    sparticle.force_bending = new hemo::Array<T,3>({0.0,0.0,0.0});
+    sparticle.force_visc = new hemo::Array<T,3>({0.0,0.0,0.0});
+    sparticle.force_inner_link = new hemo::Array<T,3>({0.0,0.0,0.0});
   }
 }
 
@@ -510,8 +510,8 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
 }
 
 void HemoCellParticleField::applyRepulsionForce(bool forced) {
-  const double r_const = cellFields->repulsionConstant;
-  const double r_cutoff = cellFields->repulsionCutoff;
+  const T r_const = cellFields->repulsionConstant;
+  const T r_cutoff = cellFields->repulsionCutoff;
   
   vector<HemoCellParticle *> found;
   Box3D localDomainplusOne = localDomain;
@@ -527,10 +527,10 @@ void HemoCellParticleField::applyRepulsionForce(bool forced) {
       for (unsigned int i = 0 ; i < found.size() - 1 ; i ++) {
         for (unsigned int j = i + 1 ; j < found.size() ; j++ ) {
           if (found[i]->cellId == found[j]->cellId) { continue; } //No incell repulsion
-          const hemo::Array<double,3> dv = found[i]->position - found[j]->position;
-          const double distance = sqrt(dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2]);
+          const hemo::Array<T,3> dv = found[i]->position - found[j]->position;
+          const T distance = sqrt(dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2]);
           if (distance < r_cutoff) {
-            const hemo::Array<double, 3> rfm = r_const * (1/(distance/r_cutoff))  * (dv/distance);
+            const hemo::Array<T, 3> rfm = r_const * (1/(distance/r_cutoff))  * (dv/distance);
             found[i]->force_repulsion = found[i]->force_repulsion + rfm;
             found[j]->force_repulsion = found[j]->force_repulsion - rfm;
           } 
@@ -546,8 +546,8 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
   //TODO, remove casting
   HemoCellParticle * sparticle;
   //Prealloc is nice
-  hemo::Array<double,3> velocity;
-  plb::Array<double,3> velocity_comp;
+  hemo::Array<T,3> velocity;
+  plb::Array<T,3> velocity_comp;
 
   for (pluint i = 0; i < localParticles.size(); i++ ) {
     sparticle = localParticles[i];
@@ -581,7 +581,7 @@ void HemoCellParticleField::spreadParticleForce(Box3D domain) {
 
     // Capping force to ensure stability -> NOTE: this introduces error!
 #ifdef FORCE_LIMIT
-    const double force_mag = norm(sparticle->force);
+    const T force_mag = norm(sparticle->force);
     if(force_mag > param::f_limit)
       sparticle->force *= param::f_limit/force_mag;
 #endif

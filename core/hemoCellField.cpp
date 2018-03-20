@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config.h"
 
 //HemoCellField
-HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<double>& meshElement_, string & name_, unsigned int ctype_)
+HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<T>& meshElement_, string & name_, unsigned int ctype_)
       :name(name_), cellFields(cellFields_), desiredOutputVariables(default_output), meshElement(meshElement_), ctype(ctype_) {
          numVertex = meshElement.getNumVertices();
          std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
@@ -47,14 +47,14 @@ HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<
                                    meshElement.getVertexId(iTriangle,2) 
                                    });
         }
-        meshmetric = new MeshMetrics<double>(meshElement_);
+        meshmetric = new MeshMetrics<T>(meshElement_);
 
         kernelMethod = interpolationCoefficientsPhi2;
         
         try {
           string materialXML = name + ".xml";
           hemo::Config materialCfg(materialXML.c_str());
-          volume = materialCfg["MaterialModel"]["Volume"].read<double>();
+          volume = materialCfg["MaterialModel"]["Volume"].read<T>();
           volumeFractionOfLspPerNode = (volume/numVertex)/pow(param::dx*1e6,3);
         } catch (std::invalid_argument & exeption) {
           pcout << "(HemoCell) (WARNING) (AddCellType) Volume of celltype not present, volume set to zero" << endl;
@@ -78,14 +78,14 @@ void HemoCellField::setOutputVariables(const vector<int> & outputs) { desiredOut
          }
   }
 
-hemo::Array<double,6> HemoCellField::getOriginalBoundingBox() {
-  hemo::Array<double,6> bb;
+hemo::Array<T,6> HemoCellField::getOriginalBoundingBox() {
+  hemo::Array<T,6> bb;
   bb[0] = bb[1] = meshElement.getVertex(0)[0];
   bb[2] = bb[3] = meshElement.getVertex(0)[1];
   bb[4] = bb[5] = meshElement.getVertex(0)[2];
   
   for (long int i = 0 ; i < meshElement.getNumVertices() ; i++) {
-    const hemo::Array<double,3> vertex(meshElement.getVertex(i));
+    const hemo::Array<T,3> vertex(meshElement.getVertex(i));
     if (bb[0] > vertex[0]) { bb[0] = vertex[0]; }
     if (bb[1] < vertex[0]) { bb[1] = vertex[0]; }
     if (bb[2] > vertex[1]) { bb[2] = vertex[1]; }
@@ -97,7 +97,7 @@ hemo::Array<double,6> HemoCellField::getOriginalBoundingBox() {
 }
 
 /* position is in micrometers, so we still have to convert it*/
-void HemoCellField::addSingleCell(hemo::Array<double,3> position, plint cellId) {
+void HemoCellField::addSingleCell(hemo::Array<T,3> position, plint cellId) {
   pcerr << "(HemoCell) (ParticleType) addSingleCell not implemented, but might definitely be nice to have" << endl;
   exit(0);  
 }
@@ -115,6 +115,6 @@ MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * HemoCellField::getParticleArg() 
   std::string HemoCellField::getIdentifier() {return name;}
 vector<int> HemoCellField::default_output ({OUTPUT_POSITION});
  MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * HemoCellField::getParticleField3D() {return cellFields.immersedParticles;}
-  MultiBlockLattice3D<double,DESCRIPTOR> * HemoCellField::getFluidField3D() {return cellFields.lattice;}
-  TriangularSurfaceMesh<double> & HemoCellField::getMesh() { return meshElement;}
-  //double HemoCellField::getVolumeFraction() { return hematocrit;}   // no need to keep track of the hematocrit
+  MultiBlockLattice3D<T,DESCRIPTOR> * HemoCellField::getFluidField3D() {return cellFields.lattice;}
+  TriangularSurfaceMesh<T> & HemoCellField::getMesh() { return meshElement;}
+  //T HemoCellField::getVolumeFraction() { return hematocrit;}   // no need to keep track of the hematocrit

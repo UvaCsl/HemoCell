@@ -27,11 +27,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.h"
 
 void Parameters::lbm_base_parameters(Config & cfg) {
-    dt = cfg["domain"]["dt"].read<double>();
-    dx = cfg["domain"]["dx"].read<double>();
-    nu_p = cfg["domain"]["nuP"].read<double>();
-    rho_p = cfg["domain"]["rhoP"].read<double>();
-    kBT_p = cfg["domain"]["kBT"].read<double>();
+    dt = cfg["domain"]["dt"].read<T>();
+    dx = cfg["domain"]["dx"].read<T>();
+    nu_p = cfg["domain"]["nuP"].read<T>();
+    rho_p = cfg["domain"]["rhoP"].read<T>();
+    kBT_p = cfg["domain"]["kBT"].read<T>();
 
     if (dt < 0.0 ) { //dt is not set, calculate it from nu_p and dx, tau is set to 1
       tau = 1.0;
@@ -53,13 +53,13 @@ void Parameters::lbm_base_parameters(Config & cfg) {
 
 void Parameters::lbm_pipe_parameters(Config & cfg, unsigned int ny) {
     Parameters::lbm_base_parameters(cfg);
-    re = cfg["domain"]["Re"].read<double>();
+    re = cfg["domain"]["Re"].read<T>();
     u_lbm_max = re * nu_lbm / ny;
 };
 
-void Parameters::lbm_shear_parameters(Config & cfg,double nx) {
+void Parameters::lbm_shear_parameters(Config & cfg,T nx) {
   Parameters::lbm_base_parameters(cfg);
-  double shearrate_p = cfg["domain"]["shearrate"].read<double>();
+  T shearrate_p = cfg["domain"]["shearrate"].read<T>();
   re = (nx* (shearrate_p * (nx*0.5))) / nu_p;
   u_lbm_max = re * nu_lbm / nx;  
   shearrate_lbm = shearrate_p*dt;
@@ -79,21 +79,21 @@ void Parameters::printParameters() {
 #endif
 }
 
-double Parameters::dt = 0.0;
-double Parameters::dx = 0.0;
-double Parameters::dm = 0.0;
-double Parameters::df = 0.0;
-double Parameters::nu_p = 0.0;
-double Parameters::rho_p = 0.0;
-double Parameters::tau = 0.0;
-double Parameters::re = 0.0;
-double Parameters::nu_lbm = 0.0;
-double Parameters::u_lbm_max = 0.0;
-double Parameters::shearrate_lbm = 0.0;
+T Parameters::dt = 0.0;
+T Parameters::dx = 0.0;
+T Parameters::dm = 0.0;
+T Parameters::df = 0.0;
+T Parameters::nu_p = 0.0;
+T Parameters::rho_p = 0.0;
+T Parameters::tau = 0.0;
+T Parameters::re = 0.0;
+T Parameters::nu_lbm = 0.0;
+T Parameters::u_lbm_max = 0.0;
+T Parameters::shearrate_lbm = 0.0;
 
-double Parameters::kBT_lbm = 0.0;
-double Parameters::kBT_p = 0.0;
-double Parameters::ef_lbm = 0.0;
+T Parameters::kBT_lbm = 0.0;
+T Parameters::kBT_p = 0.0;
+T Parameters::ef_lbm = 0.0;
 #ifdef FORCE_LIMIT
-double Parameters::f_limit = 0.0;
+T Parameters::f_limit = 0.0;
 #endif

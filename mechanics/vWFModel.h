@@ -35,12 +35,12 @@ class vWFModel : public CellMechanics {
   public:
   //Variables
   HemoCellField & cellField;
-  const double k_link;
-  const double k_bend;
-  const double link_eq;
-  const double bend_eq;
-  const double eta_m;
-  const double eta_v;
+  const T k_link;
+  const T k_bend;
+  const T link_eq;
+  const T bend_eq;
+  const T eta_m;
+  const T eta_v;
 
   public:
   vWFModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_),
@@ -60,12 +60,12 @@ class vWFModel : public CellMechanics {
 
   void statistics();
 
-  static double calculate_kBend(Config & cfg);
-  static double calculate_kLink(Config & cfg);
-  static double calculate_bend_eq(Config & cfg);
-  static double calculate_link_eq(Config & cfg);
-  static double calculate_etaM(Config & cfg );
-  static double calculate_etaV(Config & cfg );
+  static T calculate_kBend(Config & cfg);
+  static T calculate_kLink(Config & cfg);
+  static T calculate_bend_eq(Config & cfg);
+  static T calculate_link_eq(Config & cfg);
+  static T calculate_etaM(Config & cfg );
+  static T calculate_etaV(Config & cfg );
 
 };
 

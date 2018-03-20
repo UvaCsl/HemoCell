@@ -90,7 +90,7 @@ TriangleBoundary3D<T> constructMeshElement(plint shape, T radius, plint cellNumT
 
 } // namespace plb
 
-TriangularSurfaceMesh<double> * constructStringMeshFromConfig(Config & materialCfg);
+TriangularSurfaceMesh<T> * constructStringMeshFromConfig(Config & materialCfg);
 
 #include "meshGeneratingFunctions.hh"
 

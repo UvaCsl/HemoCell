@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemocell.h"
 
 
-HemoCellFields::HemoCellFields( MultiBlockLattice3D<double, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth, HemoCell & hemocell_) :
+HemoCellFields::HemoCellFields( MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth, HemoCell & hemocell_) :
   lattice(&lattice_), hemocell(hemocell_)
 {   
   envelopeSize=particleEnvelopeWidth;
@@ -59,7 +59,7 @@ void HemoCellFields::createParticleField(SparseBlockStructure3D* sbStructure, Th
   InitAfterLoadCheckpoint();
 }
 
-HemoCellField * HemoCellFields::addCellType(TriangularSurfaceMesh<double> & meshElement, std::string name_)
+HemoCellField * HemoCellFields::addCellType(TriangularSurfaceMesh<T> & meshElement, std::string name_)
 {
   HemoCellField * cf = new HemoCellField(*this, meshElement, name_, cellFields.size());
   cellFields.push_back(cf);

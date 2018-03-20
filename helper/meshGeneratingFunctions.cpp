@@ -23,10 +23,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "meshGeneratingFunctions.h"
 
-TriangularSurfaceMesh<double> * constructStringMeshFromConfig(Config & cfg) {
-  vector<plb::Array<double,3>> * vertexList = new vector<plb::Array<double,3>>();
+TriangularSurfaceMesh<T> * constructStringMeshFromConfig(Config & cfg) {
+  vector<plb::Array<T,3>> * vertexList = new vector<plb::Array<T,3>>();
   vector<plint> * emanatingEdgesList = new vector<plint>();
   vector<Edge> * edgeList = new vector<Edge>();
-  TriangularSurfaceMesh<double> * mesh = new TriangularSurfaceMesh<double>(*vertexList,*emanatingEdgesList,*edgeList);
+  TriangularSurfaceMesh<T> * mesh = new TriangularSurfaceMesh<T>(*vertexList,*emanatingEdgesList,*edgeList);
   return mesh;
 }

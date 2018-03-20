@@ -151,8 +151,8 @@ namespace hemo {
     return ret;
   }
   
-  template<typename _Tp, std::size_t _Nm>
-  inline Array<_Tp, _Nm> operator*(const _Tp mul, const Array<_Tp, _Nm> & one) {
+  template<typename _Tp, std::size_t _Nm, typename _Tp2>
+  inline Array<_Tp, _Nm> operator*(const _Tp2 mul, const Array<_Tp, _Nm> & one) {
     Array<_Tp, _Nm> ret;
     for (std::size_t i = 0 ; i < _Nm ; i++ ) {
       ret[i] = one[i]*mul;
