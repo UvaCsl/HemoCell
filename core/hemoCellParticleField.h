@@ -118,7 +118,7 @@ public:
       return std::string(DESCRIPTOR<T>::name);
     }
     vector<HemoCellParticle> particles;
-    int nFluidCells;
+    int nFluidCells = 0;
     
 private:
   bool lpc_up_to_date = false;

@@ -130,6 +130,7 @@ void HemoCellFields::InitAfterLoadCheckpoint()
     immersedParticles->getComponent(blocks[iBlock]).envelopeSize = envelopeSize;
     
     BlockLattice3D<T,DESCRIPTOR> * fluid = immersedParticles->getComponent(blocks[iBlock]).atomicLattice;
+    immersedParticles->getComponent(blocks[iBlock]).nFluidCells = 0;
     for(unsigned int x = 0; x < fluid->getNx(); x++ ) {
       for(unsigned int y = 0; y < fluid->getNy(); y++ ) {
         for(unsigned int z = 0; z < fluid->getNz(); z++ ) {
