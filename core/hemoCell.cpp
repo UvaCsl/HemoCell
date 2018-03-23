@@ -63,6 +63,10 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
     pcout << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT << " pN. Results can be inaccurate due to force capping." << endl;
 #endif
   
+  if (sizeof(T) == sizeof(float)) {
+    pcout << "(HemoCell) WARNING: Running with single precision, you might want to switch to double precision" << endl;
+  }
+  
   ///Set signal handlers to exit gracefully on many signals
   struct sigaction sa;
   memset(&sa, 0, sizeof(struct sigaction));

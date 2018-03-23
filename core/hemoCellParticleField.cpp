@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 HemoCellParticleField::HemoCellParticleField(plint nx, plint ny, plint nz)
     : AtomicBlock3D(nx,ny,nz, &this->dataTransfer)
 { 
+    boundingBox = Box3D(0,this->getNx()-1, 0, this->getNy()-1, 0, this->getNz()-1);
     dataTransfer.setBlock(*this);
     AddOutputMap(); 
 }
@@ -36,6 +37,7 @@ HemoCellParticleField::HemoCellParticleField(plint nx, plint ny, plint nz)
 HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
     : AtomicBlock3D(rhs)
 {
+    boundingBox = Box3D(0,this->getNx()-1, 0, this->getNy()-1, 0, this->getNz()-1);
     HemoCellParticle tmp;
     dataTransfer.setBlock(*this);
     for (const HemoCellParticle & particle : rhs.particles) {
@@ -45,15 +47,19 @@ HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
     ppc_up_to_date = false;
     lpc_up_to_date = false;
     ppt_up_to_date = false;
+    pg_up_to_date = false;
     AddOutputMap();
 }
 
 HemoCellParticleField::~HemoCellParticleField()
 {
   AtomicBlock3D::dataTransfer = new HemoCellParticleDataTransfer();
-    //for (pluint i=0; i<particles.size(); ++i) {
-    //    delete particles[i];
-    //}
+  if (particle_grid) {
+    delete[] particle_grid;
+  }
+  if(particle_grid_size) {
+    delete[] particle_grid_size;
+  }
 }
 
 HemoCellParticleField& HemoCellParticleField::operator=(HemoCellParticleField const& rhs){
@@ -123,6 +129,36 @@ void HemoCellParticleField::update_preinlet_ppc() {
   ppc_up_to_date = false;
   lpc_up_to_date = false;
 }
+void HemoCellParticleField::update_pg() {
+  //Check if map exists, otherwise create
+  if (!particle_grid) {
+    particle_grid = new hemo::Array<unsigned int, 10>[this->atomicLattice->getNx()*this->atomicLattice->getNy()*this->atomicLattice->getNz()];
+  }
+  if (!particle_grid_size) {
+    particle_grid_size = new unsigned int[this->atomicLattice->getNx()*this->atomicLattice->getNy()*this->atomicLattice->getNz()];
+  }
+  
+  memset(particle_grid_size,0,sizeof(unsigned int)*this->atomicLattice->getNx()*this->atomicLattice->getNy()*this->atomicLattice->getNz());
+  Dot3D const& location = this->atomicLattice->getLocation();
+  hemo::Array<T,3> * pos;
+  const Box3D & box  = this->atomicLattice->getBoundingBox();
+  
+  for (unsigned int i = 0 ; i <  particles.size() ; i++) {
+    pos = &particles[i].position;
+    int x = pos->operator[](0)-location.x+0.5;
+    int y = pos->operator[](1)-location.y+0.5;
+    int z = pos->operator[](2)-location.z+0.5;
+    if ((x >= 0) && (x <= this->atomicLattice->getNx()) &&
+	(y >= 0) && (y <= this->atomicLattice->getNy()) &&
+	(z >= 0) && (z <= this->atomicLattice->getNz()) ) 
+    {
+      unsigned int index = grid_index(x,y,z);
+      particle_grid[index][particle_grid_size[index]] = i;
+      particle_grid_size[index]++;
+    }
+  }
+  pg_up_to_date = true;
+}
 
 void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle) {
   //Box3D finalDomain;
@@ -151,6 +187,7 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
 
         //Invalidate lpc hemo::Array
         lpc_up_to_date = false;
+        pg_up_to_date = false;
 
       }
     } else {
@@ -509,10 +546,71 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
   
 }
 
+#define inner_loop \
+  for (unsigned int i = 0; i < particle_grid_size[grid_index(x,y,z)];i++){ \
+    for (unsigned int j = 0; j < particle_grid_size[grid_index(xx,yy,zz)];j++){ \
+      HemoCellParticle & lParticle = particles[particle_grid[grid_index(x,y,z)][i]]; \
+      HemoCellParticle & nParticle = particles[particle_grid[grid_index(xx,yy,zz)][j]]; \
+      if (&nParticle == &lParticle) { continue; } \
+      if (lParticle.cellId == nParticle.cellId) { continue; } \
+      const hemo::Array<T,3> dv = lParticle.position - nParticle.position; \
+      const T distance = sqrt(dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2]); \
+      if (distance < r_cutoff) { \
+        const hemo::Array<T, 3> rfm = r_const * (1/(distance/r_cutoff))  * (dv/distance); \
+        lParticle.force_repulsion = lParticle.force_repulsion + rfm; \
+        nParticle.force_repulsion = nParticle.force_repulsion - rfm; \
+      } \
+    } \
+  }
+
 void HemoCellParticleField::applyRepulsionForce(bool forced) {
   const T r_const = cellFields->repulsionConstant;
   const T r_cutoff = cellFields->repulsionCutoff;
+  if(!pg_up_to_date) {
+    update_pg();
+  }
+  for (HemoCellParticle & particle : particles) {
+    particle.force_repulsion = {0.,0.,0.};
+  }
   
+  for (int x = 0; x < atomicLattice->getNx()-1; x++) {
+    for (int y = 0; y < atomicLattice->getNy()-1; y++) {
+      for (int z = 0; z < atomicLattice->getNz()-1; z++) {
+        //Manual finding, we could make a map, but for now this should be fast enough
+        //0, 0, 0 //0, 1, 0 //0, 0, 1 //0, 1, 1
+        int xx = x;
+        for (int yy = y; yy <= y+1; yy++) {
+          for (int zz = z; zz <= z+1; zz++) {
+            inner_loop
+          }
+        }
+        //1, 0, 0
+        //1, 1, 0
+        //1, 0, 1
+        //1, 1, 1
+        //1, 0,-1
+        //1,-1, 0
+        //1,-1,-1
+        //1, 1,-1
+        //1,-1, 1
+        xx = x+1;
+        for (int yy = y-1; yy <= y+1; yy++) {
+          for(int zz = z-1; zz <= z+1; zz++) {
+            if (yy < 0) {continue;}
+            if (zz < 0) {continue;}
+            inner_loop
+          }
+        }
+        xx = x;
+        int yy = y+1, zz = z-1;
+        if (zz<0) { continue; }
+        //0, 1,-1
+        inner_loop
+        
+      }
+    }
+  }
+  /*
   vector<HemoCellParticle *> found;
   Box3D localDomainplusOne = localDomain;
   localDomainplusOne.enlarge(1);
@@ -537,7 +635,7 @@ void HemoCellParticleField::applyRepulsionForce(bool forced) {
         }
       }
     }
-  }
+  }*/
 }
 
 void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
