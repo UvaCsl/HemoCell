@@ -349,7 +349,7 @@ index 8005825..feda2f7 100644
                      }
                  }
 diff --git a/src/core/cell.h b/src/core/cell.h
-index 8ca5cc2..484c2c8 100644
+index 8ca5cc2..5e66fd4 100644
 --- a/src/core/cell.h
 +++ b/src/core/cell.h
 @@ -49,7 +49,7 @@ public:
@@ -361,16 +361,90 @@ index 8ca5cc2..484c2c8 100644
      T data[ExternalField::numScalars];
  };
  
-@@ -371,7 +371,9 @@ private:
+@@ -154,12 +154,14 @@ public:
+     /// Get a a reference to dynamics
+     Dynamics<T,Descriptor>& getDynamics();
+     /// Request whether this cell does statistics measurements
++    //memory optimization, return false
+     bool takesStatistics() const {
+-        return takesStat;
++        return false;
+     }
+     /// Specify whether this cell does statistics measurements
++    //memory optimization, do nothing
+     void specifyStatisticsStatus(bool status) {
+-        takesStat = status;
++        //takesStat = status;
+     }
+ private:
+     /// You can't use this method. Use BlockLattice::attributeDynamics instead.
+@@ -371,9 +373,11 @@ private:
      void iniExternal();
  private:
      Array<T,Descriptor<T>::numPop> f;         ///< distribution functions
 +public:
      External                       external;  ///< external scalars
+-    bool                           takesStat; ///< is statistics taken?
 +private:
-     bool                           takesStat; ///< is statistics taken?
      Dynamics<T,Descriptor>*        dynamics;  ///< local LB dynamics
++    //bool                           takesStat; ///< is statistics taken?
  };
+ 
+ template<typename T, template<typename U> class Descriptor>
+diff --git a/src/core/cell.hh b/src/core/cell.hh
+index b9628c4..b319c2a 100644
+--- a/src/core/cell.hh
++++ b/src/core/cell.hh
+@@ -44,7 +44,7 @@ namespace plb {
+  */
+ template<typename T, template<typename U> class Descriptor>
+ Cell<T,Descriptor>::Cell()
+-    : takesStat(true), dynamics(0)
++    : dynamics(0)
+ {
+     iniPop();
+     iniExternal();
+@@ -57,7 +57,7 @@ Cell<T,Descriptor>::Cell()
+  */
+ template<typename T, template<typename U> class Descriptor>
+ Cell<T,Descriptor>::Cell(Dynamics<T,Descriptor>* dynamics_)
+-    : takesStat(true), dynamics(dynamics_)
++    : dynamics(dynamics_)
+ {
+     iniPop();
+     iniExternal();
+diff --git a/src/core/implicitGrid3D.h b/src/core/implicitGrid3D.h
+new file mode 100644
+index 0000000..2c19702
+--- /dev/null
++++ b/src/core/implicitGrid3D.h
+@@ -0,0 +1,25 @@
++#ifndef IMPLICITGRID3D_H
++#define IMPLICITGRID3D_H
++
++namespace plb {
++  template<typename T, template<typename U> class Descriptor> struct ImplicitGrid3D;
++}
++#include "core/globalDefs.h"
++#include "atomicBlock/blockLattice3D.h"
++
++namespace plb {
++  template<typename T, template<typename U> class Descriptor>
++  struct ImplicitGrid3D {
++          BlockLattice3D<T,Descriptor>& parent;
++          const int nX,nY,nZ;
++          ImplicitGrid3D(BlockLattice3D<T,Descriptor>& parent_) 
++         : parent(parent_), nX(parent.getNx()), nY(parent.getNy()), nZ(parent.getNz()) {}
++          const Cell<T,Descriptor> & operator () (int x,int y,int z) const {
++            return parent.rawData[z + nZ*(y+nY*x)];
++          };
++          Cell<T,Descriptor> & operator () (int x,int y,int z) {
++            return parent.rawData[z + nZ*(y+nY*x)];
++          };
++  };
++}
++#endif
+\ No newline at end of file
 diff --git a/src/latticeBoltzmann/latticeTemplates.h b/src/latticeBoltzmann/latticeTemplates.h
 index 2ab085b..83d726c 100644
 --- a/src/latticeBoltzmann/latticeTemplates.h

@@ -129,6 +129,17 @@ void HemoCellFields::InitAfterLoadCheckpoint()
     immersedParticles->getComponent(blocks[iBlock]).atomicLattice = &lattice->getComponent(blocks[iBlock]);
     immersedParticles->getComponent(blocks[iBlock]).envelopeSize = envelopeSize;
     
+    BlockLattice3D<T,DESCRIPTOR> * fluid = immersedParticles->getComponent(blocks[iBlock]).atomicLattice;
+    for(unsigned int x = 0; x < fluid->getNx(); x++ ) {
+      for(unsigned int y = 0; y < fluid->getNy(); y++ ) {
+        for(unsigned int z = 0; z < fluid->getNz(); z++ ) {
+          if (!fluid->get(x,y,z).getDynamics().isBoundary()) {
+            immersedParticles->getComponent(blocks[iBlock]).nFluidCells++;
+          }
+        }
+      }
+    }
+    
     //Calculate neighbours 
     immersedParticles->getSparseBlockStructure().findNeighbors(blocks[iBlock], envelopeSize,
                            immersedParticles->getComponent(blocks[iBlock]).neighbours);
