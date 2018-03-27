@@ -88,6 +88,7 @@ public:
     void outputForceBending   (Box3D,vector<vector<T>>&, pluint, std::string&);
     void outputForceLink   (Box3D,vector<vector<T>>&, pluint, std::string&);
     void outputForceVisc    (Box3D,vector<vector<T>>&, pluint, std::string&);
+    void outputForceRepulsion  (Box3D,vector<vector<T>>&, pluint, std::string&);
     void outputTriangles   (Box3D,vector<vector<plint>>&, vector<vector<T>>&, pluint, std::string&);
     void outputLines   (Box3D,vector<vector<plint>>&, vector<vector<T>>&, plint, std::string&);
     void outputVertexId    (Box3D,vector<vector<T>>&, pluint, std::string&);
@@ -104,7 +105,7 @@ public:
     static std::string getBlockName();
     static HemoCellFields* cellFields;
     pluint atomicBlockId;
-    BlockLattice3D<T, DESCRIPTOR> * atomicLattice;
+    BlockLattice3D<T, DESCRIPTOR> * atomicLattice = 0;
     vector<plint> neighbours;
     pluint envelopeSize;
     pluint getsize() { return particles.size();}

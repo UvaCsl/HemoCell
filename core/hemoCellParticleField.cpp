@@ -56,9 +56,11 @@ HemoCellParticleField::~HemoCellParticleField()
   AtomicBlock3D::dataTransfer = new HemoCellParticleDataTransfer();
   if (particle_grid) {
     delete[] particle_grid;
+    particle_grid = 0;
   }
   if(particle_grid_size) {
     delete[] particle_grid_size;
+    particle_grid_size = 0;
   }
 }
 
@@ -137,20 +139,22 @@ void HemoCellParticleField::update_pg() {
   if (!particle_grid_size) {
     particle_grid_size = new unsigned int[this->atomicLattice->getNx()*this->atomicLattice->getNy()*this->atomicLattice->getNz()];
   }
+  if (!this->atomicLattice) {
+    return;
+  }
   
   memset(particle_grid_size,0,sizeof(unsigned int)*this->atomicLattice->getNx()*this->atomicLattice->getNy()*this->atomicLattice->getNz());
   Dot3D const& location = this->atomicLattice->getLocation();
   hemo::Array<T,3> * pos;
-  const Box3D & box  = this->atomicLattice->getBoundingBox();
   
   for (unsigned int i = 0 ; i <  particles.size() ; i++) {
     pos = &particles[i].position;
     int x = pos->operator[](0)-location.x+0.5;
     int y = pos->operator[](1)-location.y+0.5;
     int z = pos->operator[](2)-location.z+0.5;
-    if ((x >= 0) && (x <= this->atomicLattice->getNx()) &&
-	(y >= 0) && (y <= this->atomicLattice->getNy()) &&
-	(z >= 0) && (z <= this->atomicLattice->getNz()) ) 
+    if ((x >= 0) && (x < this->atomicLattice->getNx()) &&
+	(y >= 0) && (y < this->atomicLattice->getNy()) &&
+	(z >= 0) && (z < this->atomicLattice->getNz()) ) 
     {
       unsigned int index = grid_index(x,y,z);
       particle_grid[index][particle_grid_size[index]] = i;
@@ -164,7 +168,7 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
   //Box3D finalDomain;
   //plint x,y,z;
   HemoCellParticle * local_sparticle;
-  hemo::Array<T,3> pos = particle->position;
+  hemo::Array<T,3> & pos = particle->position;
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
 
   cellFields->celltype_per_cell[particle->cellId] = particle->celltype; 
@@ -197,12 +201,31 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
       
       //invalidate ppt
       ppt_up_to_date=false;
+
       //_particles_per_type[particle->celltype].push_back(particles.size()-1); //last entry
       if(!particle->fromPreInlet) {
         if(this->isContainedABS(pos, localDomain)) {
           _lpc[particle->cellId] = true;
         }
-        insert_ppc(particle, particles.size()-1);
+        if (ppc_up_to_date) { //Otherwise its rebuild anyway
+         insert_ppc(particle, particles.size()-1);
+        }
+      }
+      
+      if (pg_up_to_date) {
+        Dot3D const& location = this->atomicLattice->getLocation();
+        hemo::Array<T,3>  & pos = particle->position;
+        int x = pos[0]-location.x+0.5;
+        int y = pos[1]-location.y+0.5;
+        int z = pos[2]-location.z+0.5;
+        if ((x >= 0) && (x <= this->atomicLattice->getNx()) &&
+            (y >= 0) && (y <= this->atomicLattice->getNy()) &&
+            (z >= 0) && (z <= this->atomicLattice->getNz()) ) 
+        {
+          unsigned int index = grid_index(x,y,z);
+          particle_grid[index][particle_grid_size[index]] = particles.size()-1;
+          particle_grid_size[index]++;
+        }
       }
     }
     particle->setTag(-1);
@@ -245,6 +268,7 @@ void HemoCellParticleField::removeParticles(plint tag) {
     lpc_up_to_date = false;
     ppt_up_to_date = false;
     ppc_up_to_date = false;
+    pg_up_to_date = false;
   } 
 }
 
@@ -266,6 +290,7 @@ void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
     lpc_up_to_date = false;
     ppt_up_to_date = false;
     ppc_up_to_date = false;
+    pg_up_to_date = false;
   } 
 }
 
@@ -288,6 +313,7 @@ void HemoCellParticleField::removeParticles(Box3D domain) {
     lpc_up_to_date = false;
     ppt_up_to_date = false;
     ppc_up_to_date = false;
+    pg_up_to_date = false;
   } 
 }
 
@@ -311,6 +337,7 @@ void HemoCellParticleField::removeParticles_inverse(Box3D domain) {
     lpc_up_to_date = false;
     ppt_up_to_date = false;
     ppc_up_to_date = false;
+    pg_up_to_date = false;
   } 
 }
 
@@ -471,6 +498,8 @@ void HemoCellParticleField::advanceParticles() {
   for(HemoCellParticle & particle:particles){
     particle.advance();
   }
+  lpc_up_to_date = false;
+  pg_up_to_date = false;
   removeParticles(1);
 }
 
@@ -610,32 +639,6 @@ void HemoCellParticleField::applyRepulsionForce(bool forced) {
       }
     }
   }
-  /*
-  vector<HemoCellParticle *> found;
-  Box3D localDomainplusOne = localDomain;
-  localDomainplusOne.enlarge(1);
-  findParticles(localDomainplusOne,found);
-  
-  if (cellFields->hemocell.iter % cellFields->repulsionTimescale == 0 || forced) {  
-    for (HemoCellParticle * particle : found) {
-      particle->force_repulsion = {0.,0.,0.};
-    }
-    
-    if (found.size() > 1) {
-      for (unsigned int i = 0 ; i < found.size() - 1 ; i ++) {
-        for (unsigned int j = i + 1 ; j < found.size() ; j++ ) {
-          if (found[i]->cellId == found[j]->cellId) { continue; } //No incell repulsion
-          const hemo::Array<T,3> dv = found[i]->position - found[j]->position;
-          const T distance = sqrt(dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2]);
-          if (distance < r_cutoff) {
-            const hemo::Array<T, 3> rfm = r_const * (1/(distance/r_cutoff))  * (dv/distance);
-            found[i]->force_repulsion = found[i]->force_repulsion + rfm;
-            found[j]->force_repulsion = found[j]->force_repulsion - rfm;
-          } 
-        }
-      }
-    }
-  }*/
 }
 
 void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
