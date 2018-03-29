@@ -33,7 +33,7 @@ void HemoCellStretch::FindForcedLsps::processGenericBlocks(Box3D domain, std::ve
   HemoCellParticle * tmp;
   for (unsigned int i = 0 ; i <  found.size() - 1 ; i++) {
     for (unsigned int j = 1 ; j < found.size() - i ; j++) {
-      if (found[j-1]->position[0] > found[j]->position[0]) {
+      if (found[j-1]->sv.position[0] > found[j]->sv.position[0]) {
         tmp = found[j-1];
         found[j-1] = found[j];
         found[j] = tmp;
@@ -41,8 +41,8 @@ void HemoCellStretch::FindForcedLsps::processGenericBlocks(Box3D domain, std::ve
     }
   }
   for (unsigned int i = 0 ; i < n_forced_lsps; i ++) {
-    lower_lsps.push_back(found[i]->vertexId);
-    upper_lsps.push_back(found[found.size()-1-i]->vertexId);
+    lower_lsps.push_back(found[i]->sv.vertexId);
+    upper_lsps.push_back(found[found.size()-1-i]->sv.vertexId);
   }
 }
 
@@ -54,10 +54,10 @@ void HemoCellStretch::ForceForcedLsps::processGenericBlocks(Box3D domain, std::v
 
   hemo::Array<T,3> ex_force = {external_force,0.,0.};
   for (unsigned int vi : lower_lsps) {
-    (*particles)[ppc.at(0)[vi]].force -= ex_force;
+    (*particles)[ppc.at(0)[vi]].sv.force -= ex_force;
   }
   for (unsigned int vi : upper_lsps) {
-    (*particles)[ppc.at(0)[vi]].force += ex_force;
+    (*particles)[ppc.at(0)[vi]].sv.force += ex_force;
   }
 }
 

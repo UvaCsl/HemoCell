@@ -42,8 +42,8 @@ class WbcHighOrderModel : public CellMechanics {
   const T k_bend;
   const T eta_m;
   const T eta_v;
-  const T k_cytoskeleton;
   const T k_inner_rigid;
+  const T k_cytoskeleton;
   const T core_radius;
   const T radius;
 

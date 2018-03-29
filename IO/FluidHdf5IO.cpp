@@ -273,9 +273,9 @@ float * WriteFluidField::outputCellDensity(string name) {
     plint iX,iY,iZ;
     //Coordinates are relative
     const Dot3D tmpDot = ablock->getLocation(); 
-    iX = plint((particle->position[0]-tmpDot.x)+0.5);
-    iY = plint((particle->position[1]-tmpDot.y)+0.5);
-    iZ = plint((particle->position[2]-tmpDot.z)+0.5);
+    iX = plint((particle->sv.position[0]-tmpDot.x)+0.5);
+    iY = plint((particle->sv.position[1]-tmpDot.y)+0.5);
+    iZ = plint((particle->sv.position[2]-tmpDot.z)+0.5);
 
     output[(iX)+(iY)*Ystride+(iZ)*Zstride] += 1;
   }

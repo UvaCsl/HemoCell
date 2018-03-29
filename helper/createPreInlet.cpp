@@ -260,15 +260,15 @@ void createPreInlet::saveCurrent() {
     
     int i = 0;
     for (HemoCellParticle * particle : particles) {
-      particles_hdf5[i].location[0] = particle->position[0]-domain.x0;
-      particles_hdf5[i].location[1] = particle->position[1]-domain.y0;
-      particles_hdf5[i].location[2] = particle->position[2]-domain.z0;
-      particles_hdf5[i].velocity[0] = particle->v[0];
-      particles_hdf5[i].velocity[1] = particle->v[1];
-      particles_hdf5[i].velocity[2] = particle->v[2];
-      particles_hdf5[i].cell_id = particle->cellId;
-      particles_hdf5[i].vertex_id = particle->vertexId;
-      particles_hdf5[i].particle_type = particle->celltype;
+      particles_hdf5[i].location[0] = particle->sv.position[0]-domain.x0;
+      particles_hdf5[i].location[1] = particle->sv.position[1]-domain.y0;
+      particles_hdf5[i].location[2] = particle->sv.position[2]-domain.z0;
+      particles_hdf5[i].velocity[0] = particle->sv.v[0];
+      particles_hdf5[i].velocity[1] = particle->sv.v[1];
+      particles_hdf5[i].velocity[2] = particle->sv.v[2];
+      particles_hdf5[i].cell_id = particle->sv.cellId;
+      particles_hdf5[i].vertex_id = particle->sv.vertexId;
+      particles_hdf5[i].particle_type = particle->sv.celltype;
       i++;
     }
     hid_t plist_dataset_mpi_id = H5Pcreate(H5P_DATASET_XFER);

@@ -36,7 +36,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;
     vector<HemoCellParticle*> & cell = particles_per_cell[cid];
-    if (cell[0]->celltype != ctype) continue; //only execute on correct particle
+    if (cell[0]->sv.celltype != ctype) continue; //only execute on correct particle
 
     //Calculate Cell Values that need all particles (but do it efficiently,
     //tailored to this class)
@@ -47,9 +47,9 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 
     // Per-triangle calculations
     for (const hemo::Array<plint,3> & triangle : cellConstants.triangle_list) {
-      const hemo::Array<T,3> & v0 = cell[triangle[0]]->position;
-      const hemo::Array<T,3> & v1 = cell[triangle[1]]->position;
-      const hemo::Array<T,3> & v2 = cell[triangle[2]]->position;
+      const hemo::Array<T,3> & v0 = cell[triangle[0]]->sv.position;
+      const hemo::Array<T,3> & v1 = cell[triangle[1]]->sv.position;
+      const hemo::Array<T,3> & v2 = cell[triangle[2]]->sv.position;
       
       //Volume
       const T v210 = v2[0]*v1[1]*v0[2];
@@ -112,8 +112,8 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
     // Per-edge calculations
     int edge_n=0;
     for (const hemo::Array<plint,2> & edge : cellConstants.edge_list) {
-      const hemo::Array<T,3> & v0 = cell[edge[0]]->position;
-      const hemo::Array<T,3> & v1 = cell[edge[1]]->position;
+      const hemo::Array<T,3> & v0 = cell[edge[0]]->sv.position;
+      const hemo::Array<T,3> & v1 = cell[edge[1]]->sv.position;
 
       // Link force
       const hemo::Array<T,3> edge_v = v1-v0;
@@ -129,7 +129,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 
       // Membrane viscosity of bilipid layer
       // F = eta * (dv/l) * l. 
-      const hemo::Array<T,3> rel_vel = cell[edge[1]]->v - cell[edge[0]]->v;
+      const hemo::Array<T,3> rel_vel = cell[edge[1]]->sv.v - cell[edge[0]]->sv.v;
       const hemo::Array<T,3> rel_vel_projection = dot(rel_vel, edge_uv) * edge_uv;
       hemo::Array<T,3> Fvisc_memb = eta * rel_vel_projection;
 
@@ -146,13 +146,13 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       const plint b0 = cellConstants.edge_bending_triangles_list[edge_n][0];
       const plint b1 = cellConstants.edge_bending_triangles_list[edge_n][1];
 
-      const hemo::Array<T,3> b00 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,0)]->position;
-      const hemo::Array<T,3> b01 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,1)]->position;
-      const hemo::Array<T,3> b02 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,2)]->position;
+      const hemo::Array<T,3> b00 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,0)]->sv.position;
+      const hemo::Array<T,3> b01 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,1)]->sv.position;
+      const hemo::Array<T,3> b02 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,2)]->sv.position;
       
-      const hemo::Array<T,3> b10 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,0)]->position;
-      const hemo::Array<T,3> b11 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,1)]->position;
-      const hemo::Array<T,3> b12 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,2)]->position;
+      const hemo::Array<T,3> b10 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,0)]->sv.position;
+      const hemo::Array<T,3> b11 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,1)]->sv.position;
+      const hemo::Array<T,3> b12 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,2)]->sv.position;
 
       const hemo::Array<T,3> V1 = computeTriangleNormal(b00,b01,b02, false);
       const hemo::Array<T,3> V2 = computeTriangleNormal(b10,b11,b12, false);
@@ -189,8 +189,8 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
     // Per-inner-edge caluclations
     int inner_edge_n=0;
     for (const hemo::Array<plint,2> & edge : cellConstants.inner_edge_list) {
-      const hemo::Array<T,3> & v0 = cell[edge[0]]->position;
-      const hemo::Array<T,3> & v1 = cell[edge[1]]->position;
+      const hemo::Array<T,3> & v0 = cell[edge[0]]->sv.position;
+      const hemo::Array<T,3> & v1 = cell[edge[1]]->sv.position;
 
       // Link force
       const hemo::Array<T,3> edge_v = v1-v0;

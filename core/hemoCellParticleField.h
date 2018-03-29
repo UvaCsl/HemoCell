@@ -68,7 +68,7 @@ public:
     inline void computeGridPosition ( hemo::Array<T,3> const& position,
                     plint* iX, plint* iY, plint* iZ ) const;
     
-    inline bool isContainedABS(hemo::Array<T,3> & pos, Box3D & box) const {
+    inline bool isContainedABS(const hemo::Array<T,3> & pos, const Box3D & box) const {
 	    Dot3D const& location = this->getLocation();
 	    T x = pos[0]-location.x;
 	    T y = pos[1]-location.y;

@@ -164,7 +164,7 @@ void PreInlet::ImmersePreInletParticles::processGenericBlocks(Box3D domain, std:
     }
     if (complete) {
       for (int entry:pair.second) {
-        particlefield->particles[entry].fromPreInlet = false;
+        particlefield->particles[entry].sv.fromPreInlet = false;
       }
     }
   }
@@ -174,7 +174,7 @@ void PreInlet::DeletePreInletParticles::processGenericBlocks(Box3D domain, std::
   HemoCellParticleField * particlefield = dynamic_cast<HemoCellParticleField*>(blocks[0]);
   
   for (HemoCellParticle & particle : particlefield->particles) {
-    if (particle.fromPreInlet) {
+    if (particle.sv.fromPreInlet) {
       particle.tag = 1;
     }
   }
@@ -198,19 +198,19 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
       
       if (ppc.find(particle->cell_id) != ppc.end()) {
         if (ppc.at(particle->cell_id)[particle->vertex_id] != -1) {
-          if (! particlefield->particles[ppc.at(particle->cell_id)[particle->vertex_id]].fromPreInlet) {
+          if (! particlefield->particles[ppc.at(particle->cell_id)[particle->vertex_id]].sv.fromPreInlet) {
             continue;
           }
         }
       }
 
       HemoCellParticle particle_h = HemoCellParticle(loc,particle->cell_id,particle->vertex_id,particle->particle_type);
-      particle_h.fromPreInlet = true;
+      particle_h.sv.fromPreInlet = true;
       hemo::Array<T,3> vel; 
       vel[0] = particle->velocity[0];
       vel[1] = particle->velocity[1];
       vel[2] = particle->velocity[2];
-      particle_h.v = vel;
+      particle_h.sv.v = vel;
       particlefield->addParticle(domain,&particle_h);
     }
   }

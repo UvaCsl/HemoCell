@@ -40,7 +40,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;
     vector<HemoCellParticle*> & cell = particles_per_cell[cid];
-    if (cell[0]->celltype != ctype) continue; //only execute on correct particle
+    if (cell[0]->sv.celltype != ctype) continue; //only execute on correct particle
 
     //Calculate Cell Values that need all particles (but do it most efficient
     //tailored to this class)
@@ -53,9 +53,9 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 
     // Per-triangle calculations
     for (const hemo::Array<plint,3> & triangle : cellConstants.triangle_list) {
-      const hemo::Array<T,3> & v0 = cell[triangle[0]]->position;
-      const hemo::Array<T,3> & v1 = cell[triangle[1]]->position;
-      const hemo::Array<T,3> & v2 = cell[triangle[2]]->position;
+      const hemo::Array<T,3> & v0 = cell[triangle[0]]->sv.position;
+      const hemo::Array<T,3> & v1 = cell[triangle[1]]->sv.position;
+      const hemo::Array<T,3> & v2 = cell[triangle[2]]->sv.position;
       
       //Volume
       const T v210 = v2[0]*v1[1]*v0[2];
@@ -120,25 +120,25 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       hemo::Array<T,3> vertices_vel_sum = {0.,0.,0.};
 
       for(unsigned int j = 0; j < cellConstants.vertex_n_vertexes[i]; j++) {
-        vertexes_sum += cell[cellConstants.vertex_vertexes[i][j]]->position;
-        vertices_vel_sum += cell[cellConstants.vertex_vertexes[i][j]]->v;
+        vertexes_sum += cell[cellConstants.vertex_vertexes[i][j]]->sv.position;
+        vertices_vel_sum += cell[cellConstants.vertex_vertexes[i][j]]->sv.v;
       }
       const hemo::Array<T,3> vertexes_middle = vertexes_sum/cellConstants.vertex_n_vertexes[i];
       const hemo::Array<T,3> vertices_vavg = vertices_vel_sum/cellConstants.vertex_n_vertexes[i];
 
-      const hemo::Array<T,3> dev_vect = vertexes_middle - cell[i]->position;
+      const hemo::Array<T,3> dev_vect = vertexes_middle - cell[i]->sv.position;
       
       
       // Get the local surface normal
       hemo::Array<T,3> patch_normal = {0.,0.,0.};
       for(unsigned int j = 0; j < cellConstants.vertex_n_vertexes[i]-1; j++) {
-        hemo::Array<T,3> triangle_normal = crossProduct(cell[cellConstants.vertex_vertexes[i][j]]->position - cell[i]->position, 
-                                                             cell[cellConstants.vertex_vertexes[i][j+1]]->position - cell[i]->position);
+        hemo::Array<T,3> triangle_normal = crossProduct(cell[cellConstants.vertex_vertexes[i][j]]->sv.position - cell[i]->sv.position, 
+                                                             cell[cellConstants.vertex_vertexes[i][j+1]]->sv.position - cell[i]->sv.position);
         triangle_normal /= norm(triangle_normal);  
         patch_normal += triangle_normal;                                                   
       }
-      hemo::Array<T,3> triangle_normal = crossProduct(cell[cellConstants.vertex_vertexes[i][cellConstants.vertex_n_vertexes[i]-1]]->position - cell[i]->position, 
-                                                           cell[cellConstants.vertex_vertexes[i][0]]->position - cell[i]->position);
+      hemo::Array<T,3> triangle_normal = crossProduct(cell[cellConstants.vertex_vertexes[i][cellConstants.vertex_n_vertexes[i]-1]]->sv.position - cell[i]->sv.position, 
+                                                           cell[cellConstants.vertex_vertexes[i][0]]->sv.position - cell[i]->sv.position);
       triangle_normal /= norm(triangle_normal);
       patch_normal += triangle_normal;
  
@@ -156,7 +156,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const hemo::Array<T,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.055-dDev*dDev)) * patch_normal; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
       
       // Calculating viscous term
-      const hemo::Array<T,3> rel_vel_v = vertices_vavg - cell[i]->v;
+      const hemo::Array<T,3> rel_vel_v = vertices_vavg - cell[i]->sv.v;
       const hemo::Array<T,3> rel_vel_proj = dot(patch_normal, rel_vel_v) * patch_normal;
       hemo::Array<T,3> Fvisc_vol = eta_v * rel_vel_proj * 0.866 * cellConstants.edge_mean_eq; // last term is triangle area from equilateral approx. x ratio of #triangle/#vertices -> surface area belonging to a vertex
 
@@ -183,8 +183,8 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
     // Per-edge calculations
     int edge_n=0;
     for (const hemo::Array<plint,2> & edge : cellConstants.edge_list) {
-      const hemo::Array<T,3> & p0 = cell[edge[0]]->position;
-      const hemo::Array<T,3> & p1 = cell[edge[1]]->position;
+      const hemo::Array<T,3> & p0 = cell[edge[0]]->sv.position;
+      const hemo::Array<T,3> & p1 = cell[edge[1]]->sv.position;
 
       // Link force
       const hemo::Array<T,3> edge_vec = p1-p0;
@@ -200,7 +200,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 
       // Membrane viscosity of bilipid layer
       // F = eta * (dv/l) * l. 
-      const hemo::Array<T,3> rel_vel = cell[edge[1]]->v - cell[edge[0]]->v;
+      const hemo::Array<T,3> rel_vel = cell[edge[1]]->sv.v - cell[edge[0]]->sv.v;
       const hemo::Array<T,3> rel_vel_projection = dot(rel_vel, edge_uv) * edge_uv;
       hemo::Array<T,3> Fvisc_memb = eta_m * rel_vel_projection;
 

@@ -75,7 +75,7 @@ inline void interpolationCoefficientsPhi2 (
     const hemo::Array<plint,3> relLoc = {tmpDot.x, tmpDot.y, tmpDot.z};
 
     //Get position, relative
-    const hemo::Array<T,3> position_tmp = particle->position;
+    const hemo::Array<T,3> position_tmp = particle->sv.position;
     const hemo::Array<T,3> position = {position_tmp[0] -relLoc[0], position_tmp[1]-relLoc[1],position_tmp[2]-relLoc[2]};
 
     //Get our reference node (0,0)

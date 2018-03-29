@@ -40,11 +40,11 @@ void CellInformationFunctionals::CellVolume::processGenericBlocks(Box3D domain, 
     T volume = 0.;
     const int & cid = pair.first;
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
-    const pluint ctype = pf->particles[cell[0]].celltype;
+    const pluint ctype = pf->particles[cell[0]].sv.celltype;
     for (hemo::Array<plint,3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
-      const hemo::Array<T,3> & v0 = pf->particles[cell[triangle[0]]].position;
-      const hemo::Array<T,3> & v1 = pf->particles[cell[triangle[1]]].position;
-      const hemo::Array<T,3> & v2 = pf->particles[cell[triangle[2]]].position;
+      const hemo::Array<T,3> & v0 = pf->particles[cell[triangle[0]]].sv.position;
+      const hemo::Array<T,3> & v1 = pf->particles[cell[triangle[1]]].sv.position;
+      const hemo::Array<T,3> & v2 = pf->particles[cell[triangle[2]]].sv.position;
       
       //Volume
       const T v210 = v2[0]*v1[1]*v0[2];
@@ -65,11 +65,11 @@ void CellInformationFunctionals::CellArea::processGenericBlocks(Box3D domain, st
     T total_area = 0.;
     const int & cid = pair.first;
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
-    const pluint ctype = pf->particles[cell[0]].celltype;
+    const pluint ctype = pf->particles[cell[0]].sv.celltype;
     for (hemo::Array<plint,3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
-      const hemo::Array<T,3> & v0 = pf->particles[cell[triangle[0]]].position;
-      const hemo::Array<T,3> & v1 = pf->particles[cell[triangle[1]]].position;
-      const hemo::Array<T,3> & v2 = pf->particles[cell[triangle[2]]].position;
+      const hemo::Array<T,3> & v0 = pf->particles[cell[triangle[0]]].sv.position;
+      const hemo::Array<T,3> & v1 = pf->particles[cell[triangle[1]]].sv.position;
+      const hemo::Array<T,3> & v2 = pf->particles[cell[triangle[2]]].sv.position;
 
       total_area += computeTriangleArea(v0,v1,v2);  
     }
@@ -87,7 +87,7 @@ void CellInformationFunctionals::CellPosition::processGenericBlocks(Box3D domain
     for (const int pid : cell ) {
       if (pid == -1) { continue; }
       size++;
-      position += pf->particles[pid].position;
+      position += pf->particles[pid].sv.position;
     }
     if ( info_per_cell.find(cid) == info_per_cell.end() || !info_per_cell[cid].centerLocal) {
       info_per_cell[cid].position = position/T(size);
@@ -107,9 +107,9 @@ void CellInformationFunctionals::CellStretch::processGenericBlocks(Box3D domain,
     for (unsigned int i = 0 ; i < cell.size() - 1 ; i++ ) {
       for (unsigned int j = i + 1 ; j < cell.size() ; j ++) {
         if (cell[i] == -1 || cell[j] == -1) {continue;}
-        T distance = sqrt( pow(pf->particles[cell[i]].position[0]-pf->particles[cell[j]].position[0],2) +
-                                pow(pf->particles[cell[i]].position[1]-pf->particles[cell[j]].position[1],2) +
-                                pow(pf->particles[cell[i]].position[2]-pf->particles[cell[j]].position[2],2));
+        T distance = sqrt( pow(pf->particles[cell[i]].sv.position[0]-pf->particles[cell[j]].sv.position[0],2) +
+                                pow(pf->particles[cell[i]].sv.position[1]-pf->particles[cell[j]].sv.position[1],2) +
+                                pow(pf->particles[cell[i]].sv.position[2]-pf->particles[cell[j]].sv.position[2],2));
         max_stretch = max_stretch < distance ? distance : max_stretch;
       }
     }
@@ -125,21 +125,21 @@ void CellInformationFunctionals::CellBoundingBox::processGenericBlocks(Box3D dom
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
     HemoCellParticle * particle = &pf->particles[cell[0]];
     
-    bbox[0] = particle->position[0];
-    bbox[1] = particle->position[0];
-    bbox[2] = particle->position[1];
-    bbox[3] = particle->position[1];
-    bbox[4] = particle->position[2];
-    bbox[5] = particle->position[2];
+    bbox[0] = particle->sv.position[0];
+    bbox[1] = particle->sv.position[0];
+    bbox[2] = particle->sv.position[1];
+    bbox[3] = particle->sv.position[1];
+    bbox[4] = particle->sv.position[2];
+    bbox[5] = particle->sv.position[2];
     
     for (const int pid : cell ) {
       particle = &pf->particles[pid];
-      bbox[0] = bbox[0] > particle->position[0] ? particle->position[0] : bbox[0];
-      bbox[1] = bbox[1] < particle->position[0] ? particle->position[0] : bbox[1];
-      bbox[2] = bbox[2] > particle->position[1] ? particle->position[1] : bbox[2];
-      bbox[3] = bbox[3] < particle->position[1] ? particle->position[1] : bbox[3];
-      bbox[4] = bbox[4] > particle->position[2] ? particle->position[2] : bbox[4];
-      bbox[5] = bbox[5] < particle->position[2] ? particle->position[2] : bbox[5];
+      bbox[0] = bbox[0] > particle->sv.position[0] ? particle->sv.position[0] : bbox[0];
+      bbox[1] = bbox[1] < particle->sv.position[0] ? particle->sv.position[0] : bbox[1];
+      bbox[2] = bbox[2] > particle->sv.position[1] ? particle->sv.position[1] : bbox[2];
+      bbox[3] = bbox[3] < particle->sv.position[1] ? particle->sv.position[1] : bbox[3];
+      bbox[4] = bbox[4] > particle->sv.position[2] ? particle->sv.position[2] : bbox[4];
+      bbox[5] = bbox[5] < particle->sv.position[2] ? particle->sv.position[2] : bbox[5];
 
     }
     info_per_cell[cid].bbox = bbox;
@@ -160,7 +160,7 @@ void CellInformationFunctionals::CellType::processGenericBlocks(Box3D domain, st
   for (const auto & pair : pf->get_lpc()) {
     const int & cid = pair.first;
 
-    info_per_cell[cid].cellType = pf->particles[pf->get_particles_per_cell().at(cid)[0]].celltype;
+    info_per_cell[cid].cellType = pf->particles[pf->get_particles_per_cell().at(cid)[0]].sv.celltype;
   }
 }
 
