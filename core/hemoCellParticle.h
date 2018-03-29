@@ -32,6 +32,8 @@ class HemoCellParticle;
 #endif
 
 class HemoCellParticle {
+public:
+
   //VARIABLES
   //Store variables in struct for fast serialization
   struct serializeValues_t {
@@ -50,23 +52,22 @@ class HemoCellParticle {
 
   };
   
-  public:
+  serializeValues_t sv;
 
-    serializeValues_t sv;
-  
-    hemo::Array<T,3> force_total;
-    plint tag;
+  hemo::Array<T,3> force_total;
+  plint tag;
+  //Is vector, optimize with hemo::Array possible
+  vector<Cell<T,DESCRIPTOR>*> kernelLocations;
+  vector<T>         kernelWeights;
 
-    hemo::Array<T,3> *force_volume = &sv.force;
-    hemo::Array<T,3> *force_bending = &sv.force;
-    hemo::Array<T,3> *force_link = &sv.force;
-    hemo::Array<T,3> *force_area = &sv.force; //Default to pointing to force, if output is desired, it can be stored seperately
-    hemo::Array<T,3> *force_visc = &sv.force;
-    hemo::Array<T,3> *force_inner_link = &sv.force;
-     
-    //Is vector, optimize with hemo::Array possible
-    vector<Cell<T,DESCRIPTOR>*> kernelLocations;
-    vector<T>         kernelWeights;
+  hemo::Array<T,3> *force_volume = &sv.force;
+  hemo::Array<T,3> *force_bending = &sv.force;
+  hemo::Array<T,3> *force_link = &sv.force;
+  hemo::Array<T,3> *force_area = &sv.force; //Default to pointing to force, if output is desired, it can be stored seperately
+  hemo::Array<T,3> *force_visc = &sv.force;
+  hemo::Array<T,3> *force_inner_link = &sv.force;
+
+
 public:
   ~HemoCellParticle(){};
   HemoCellParticle(const HemoCellParticle & copy) {
@@ -87,11 +88,11 @@ public:
   }
   HemoCellParticle() {
     sv = {};
+    force_total = {0.,0.,0.};
     tag = -1;
   }
   
   HemoCellParticle (hemo::Array<T,3> position_, plint cellId_, plint vertexId_,pluint celltype_) {
-    sv = {};
     sv.v = {0.,0.,0.};
     sv.position = position_;
     sv.force = {0.,0.,0.};
@@ -100,6 +101,13 @@ public:
     sv.vertexId = vertexId_;
     sv.celltype=celltype_;
     sv.fromPreInlet = false;
+    force_total = {0.,0.,0.};
+    tag = -1;
+  }
+  
+  HemoCellParticle (const serializeValues_t & sv_) {
+    sv = sv_;
+    force_total = {0.,0.,0.};
     tag = -1;
   }
 

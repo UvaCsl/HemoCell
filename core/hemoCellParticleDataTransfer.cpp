@@ -73,7 +73,7 @@ void HemoCellParticleDataTransfer::receive (
             HierarchicUnserializer unserializer(buffer, posInBuffer);
             newParticle.unserialize(unserializer);
             posInBuffer = unserializer.getCurrentPos();
-            particleField->addParticle(domain, &newParticle);
+            particleField->addParticle(domain, newParticle.sv);
         }
     }
 }
@@ -115,7 +115,7 @@ void HemoCellParticleDataTransfer::receive (
       posInBuffer = unserializer.getCurrentPos();
       newParticle.sv.position += realAbsoluteOffset;
       newParticle.sv.cellId += offset;
-      particleField->addParticle(domain, &newParticle);
+      particleField->addParticle(domain, newParticle.sv);
     }
   }
 }

@@ -39,6 +39,8 @@ public:
     void swap(HemoCellParticleField& rhs);
     virtual void applyConstitutiveModel(bool forced = false);
     virtual void addParticle(Box3D domain, HemoCellParticle* particle);
+    void addParticle(Box3D domain, const HemoCellParticle::serializeValues_t & sv);
+
     virtual void removeParticles(Box3D domain);
     virtual void removeParticles_inverse(Box3D domain);
     virtual void removeParticles(Box3D domain,plint tag);

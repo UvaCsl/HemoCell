@@ -165,29 +165,31 @@ void HemoCellParticleField::update_pg() {
 }
 
 void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle) {
-  //Box3D finalDomain;
-  //plint x,y,z;
-  HemoCellParticle * local_sparticle;
-  hemo::Array<T,3> & pos = particle->sv.position;
+  addParticle(domain,particle->sv);
+}  
+void HemoCellParticleField::addParticle(Box3D domain, const HemoCellParticle::serializeValues_t & sv) {
+  HemoCellParticle * local_sparticle, * particle;
+  const hemo::Array<T,3> & pos = sv.position;
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
 
-  cellFields->celltype_per_cell[particle->sv.cellId] = particle->sv.celltype; 
+  cellFields->celltype_per_cell[sv.cellId] = sv.celltype; 
   
   if( this->isContainedABS(pos, this->getBoundingBox()) )
   {
     //check if we have particle already, if so, we must overwrite but not
     //forget to delete the old entry
-    if ((!(particles_per_cell.find(particle->sv.cellId) == 
-      particles_per_cell.end())) && particles_per_cell.at(particle->sv.cellId)[particle->sv.vertexId] != -1) {
-      local_sparticle =  &particles[particles_per_cell.at(particle->sv.cellId)[particle->sv.vertexId]];
+    if ((!(particles_per_cell.find(sv.cellId) == 
+      particles_per_cell.end())) && particles_per_cell.at(sv.cellId)[sv.vertexId] != -1) {
+      local_sparticle =  &particles[particles_per_cell.at(sv.cellId)[sv.vertexId]];
 
       //If our particle is local, do not replace it, envelopes are less important
       if (isContainedABS(local_sparticle->sv.position, localDomain)) {
 
       } else {
         //We have the particle already, replace it
-        *local_sparticle = *particle;
+        local_sparticle->sv = sv;
         particle = local_sparticle;
+        particle->setTag(-1);
 
         //Invalidate lpc hemo::Array
         lpc_up_to_date = false;
@@ -196,7 +198,7 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
       }
     } else {
       //new entry
-      particles.push_back(*particle);
+      particles.emplace_back(sv);
       particle = &particles.back();
       
       //invalidate ppt
@@ -228,7 +230,6 @@ void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle
         }
       }
     }
-    particle->setTag(-1);
   }
 }
 

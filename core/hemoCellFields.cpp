@@ -145,9 +145,9 @@ void HemoCellFields::InitAfterLoadCheckpoint()
     immersedParticles->getSparseBlockStructure().findNeighbors(blocks[iBlock], envelopeSize,
                            immersedParticles->getComponent(blocks[iBlock]).neighbours);
   
-    if (immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > 27 && !error_shown) {
+    if (immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > 30 && !error_shown) {
       error_shown = true;
-      cerr << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << immersedParticles->getComponent(blocks[iBlock]).neighbours.size() << " Usually it should be < 27 ! Check the atomic block structure!\n";
+      cerr << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << immersedParticles->getComponent(blocks[iBlock]).neighbours.size() << " Usually it should be < 30 ! Check the atomic block structure!\n";
     }
   }
 }
