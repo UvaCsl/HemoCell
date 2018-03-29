@@ -58,7 +58,9 @@ public:
     int deleteIncompleteCells(pluint ctype, bool verbose=true);
     int deleteIncompleteCells(bool verbose=true);
     void syncEnvelopes();
-
+    void populateBoundaryParticles();
+    void applyBoundaryRepulsionForce();
+    
     void setlocalDomain(Box3D & localDomain_);
 
     void computeGridPosition ( hemo::Array<T,3> const& position,
@@ -107,6 +109,7 @@ public:
     pluint atomicBlockId;
     BlockLattice3D<T, DESCRIPTOR> * atomicLattice = 0;
     vector<plint> neighbours;
+    vector<Dot3D> boundaryParticles;
     pluint envelopeSize;
     pluint getsize() { return particles.size();}
     plint nearestCell(T const) const;
@@ -137,7 +140,7 @@ private:
   
   hemo::Array<unsigned int,10> * particle_grid = 0;
   unsigned int * particle_grid_size = 0;
-  unsigned int grid_index(int nx,int ny,int nz) {
+  unsigned int grid_index(int & nx,int & ny,int & nz) {
     return nz+this->atomicLattice->getNz()*(ny+(this->atomicLattice->getNy()*nx));
   }
   

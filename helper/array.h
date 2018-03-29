@@ -159,6 +159,15 @@ namespace hemo {
     }
     return ret;
   }
+
+  template<typename _Tp>
+  inline Array<_Tp, 3> operator-(const Array<_Tp,3> & one, plb::Dot3D two) {
+    Array<_Tp, 3> ret;
+    ret[0] = one[0]-two.x;
+    ret[1] = one[1]-two.y;
+    ret[2] = one[2]-two.z;
+    return ret;
+  }
   
   template<typename _Tp>
   inline void crossProduct (const Array<_Tp, 3>& one, const Array<_Tp,3> & two, Array<_Tp,3> & result) {

@@ -156,7 +156,10 @@ void HemoCell::writeOutput() {
 
 	pcout << "(HemoCell) (Output) writing output at timestep " << iter << " (" << param::dt * iter<< " s). Approx. performance: " << timePerIter << " s / iteration." << endl;
   if(repulsionEnabled) {
-    cellfields->applyRepulsionForce(true);
+    cellfields->applyRepulsionForce();
+  }
+  if(boundaryRepulsionEnabled) {
+    cellfields->applyBoundaryRepulsionForce();
   }
   cellfields->syncEnvelopes();
 
@@ -198,8 +201,11 @@ void HemoCell::iterate() {
   checkExitSignals();
 
   // Calculate repulsion Force
-  if(repulsionEnabled) {
+  if(repulsionEnabled && iter % cellfields->repulsionTimescale == 0) {
     cellfields->applyRepulsionForce();
+  }
+  if(boundaryRepulsionEnabled && iter % cellfields->boundaryRepulsionTimescale == 0) {
+    cellfields->applyBoundaryRepulsionForce();
   }
 
   //Important, also deletes incomplete cells
@@ -248,7 +254,6 @@ void HemoCell::setParticleVelocityUpdateTimeScaleSeparation(unsigned int separat
 
 void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
   pcout << "(HemoCell) (Repulsion Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
-  //pcout << "(HemoCell) WARNING if the timescale separation is not dividable by tmeasure, checkpointing is non-deterministic!"<<endl; // not true anymore, with checkpointing remaining force is saved
   cellfields->repulsionTimescale = separation;
 }
 
@@ -267,6 +272,17 @@ void HemoCell::setRepulsion(T repulsionConstant, T repulsionCutoff) {
   cellfields->repulsionCutoff = repulsionCutoff*(1e-6/param::dx);
   repulsionEnabled = true;
 }
+
+void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRepulsionCutoff, unsigned int timestep) {
+  cellfields->populateBoundaryParticles();
+  pcout << "(HemoCell) (Repulsion) Setting boundary repulsion constant to " << boundaryRepulsionConstant << ". boundary repulsionCutoff to" << boundaryRepulsionCutoff << " µm" << endl;
+  pcout << "(HemoCell) (Repulsion) Enabling boundary repulsion" << endl;
+  cellfields->boundaryRepulsionConstant = boundaryRepulsionConstant;
+  cellfields->boundaryRepulsionCutoff = boundaryRepulsionCutoff*(1e-6/param::dx);
+  cellfields->boundaryRepulsionTimescale = timestep;
+  boundaryRepulsionEnabled = true;
+}
+
 
 
 #ifdef HEMO_PARMETIS

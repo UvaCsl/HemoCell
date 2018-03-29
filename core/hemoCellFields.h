@@ -104,7 +104,10 @@ public:
   void unify_force_vectors();
   
   /// Apply (and calculate) the repulsion force between particles
-  void applyRepulsionForce(bool forced = false);
+  void applyRepulsionForce();
+
+  /// Apply (and calculate) the repulsion force between particles and the boundary
+  void applyBoundaryRepulsionForce();
   
   /// Delete any incomplete cells on a block
   void deleteIncompleteCells(bool verbose = true);
@@ -120,6 +123,9 @@ public:
   
   /// Add particles to local processors
   void addParticles(vector<HemoCellParticle> & particles);
+
+  /// Add boundary particles on the fluid-solid boundary
+  void populateBoundaryParticles();
     
   //Class Variables
   
@@ -142,6 +148,13 @@ public:
   T repulsionConstant = 0.0;
   ///Timescale seperation for repulsion, set through hemocell.h
   pluint repulsionTimescale = 1;
+
+  ///Boundary repulsion variable set through hemocell.h
+  T boundaryRepulsionCutoff = 0.0;
+  ///Boundary repulsion variable set through hemocell.h
+  T boundaryRepulsionConstant = 0.0;
+  ///Timescale seperation for boundary repulsion, set through hemocell.h
+  pluint boundaryRepulsionTimescale = 1;
   
   ///Timescale seperation for the velocity interpolation from the fluid to the particle
   pluint particleVelocityUpdateTimescale = 1;
@@ -192,8 +205,10 @@ public:
   class HemoRepulsionForce: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
    HemoRepulsionForce * clone() const;
-  public:
-   bool forced = false;
+  };
+  class HemoBoundaryRepulsionForce: public HemoCellFunctional {
+   void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+   HemoBoundaryRepulsionForce * clone() const;
   };
   class HemoDeleteIncompleteCells: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
@@ -219,6 +234,10 @@ public:
     HemoSetParticles * clone() const;
   public:
     HemoSetParticles(vector<HemoCellParticle> & particles_) : particles(particles_) {}
+  };
+  class HemoPopulateBoundaryParticles: public HemoCellFunctional {
+   void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+   HemoPopulateBoundaryParticles * clone() const;
   };
 };
 #endif

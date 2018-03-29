@@ -124,6 +124,7 @@ class HemoCell {
   
   //Sets the repulsion constant and cutoff distance, also enables repulsion
   bool repulsionEnabled = false;
+  bool boundaryRepulsionEnabled = false;
   void setRepulsion(T repulsionConstant, T repulsionCutoff);
 
   //Set the timescale separation of the particles of a particle type
@@ -134,6 +135,9 @@ class HemoCell {
 
   //Set the timescale separation of the repulsion force for all particles
   void setRepulsionTimeScaleSeperation(unsigned int separation);
+
+  //Enable Boundary particles and set the boundary particle constants
+  void enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRepulsionCutoff, unsigned int timestep = 1);
   
   //Set the minimum distance of the particles of a type to the solid, must be called BEFORE loadparticles
   void setMinimumDistanceFromSolid(string name, T distance);

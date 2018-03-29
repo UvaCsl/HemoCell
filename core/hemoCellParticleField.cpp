@@ -576,10 +576,12 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
 }
 
 #define inner_loop \
-  for (unsigned int i = 0; i < particle_grid_size[grid_index(x,y,z)];i++){ \
-    for (unsigned int j = 0; j < particle_grid_size[grid_index(xx,yy,zz)];j++){ \
-      HemoCellParticle & lParticle = particles[particle_grid[grid_index(x,y,z)][i]]; \
-      HemoCellParticle & nParticle = particles[particle_grid[grid_index(xx,yy,zz)][j]]; \
+  const int & l_index = grid_index(x,y,z); \
+  const int & n_index = grid_index(xx,yy,zz); \
+  for (unsigned int i = 0; i < particle_grid_size[l_index];i++){ \
+    for (unsigned int j = 0; j < particle_grid_size[n_index];j++){ \
+      HemoCellParticle & lParticle = particles[particle_grid[l_index][i]]; \
+      HemoCellParticle & nParticle = particles[particle_grid[n_index][j]]; \
       if (&nParticle == &lParticle) { continue; } \
       if (lParticle.cellId == nParticle.cellId) { continue; } \
       const hemo::Array<T,3> dv = lParticle.position - nParticle.position; \
@@ -641,6 +643,8 @@ void HemoCellParticleField::applyRepulsionForce(bool forced) {
   }
 }
 
+
+
 void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
   vector<HemoCellParticle*> localParticles;
   findParticles(domain,localParticles);
@@ -696,6 +700,62 @@ void HemoCellParticleField::spreadParticleForce(Box3D domain) {
       sparticle->kernelLocations[j]->external.data[2] += ((sparticle->force_repulsion[2] + sparticle->force[2]) * sparticle->kernelWeights[j]);
     }
 
+  }
+}
+
+void HemoCellParticleField::populateBoundaryParticles() {
+  //qqw2qswws32 <- Greatly appreciated input of Gábor
+
+  for (int x = 0; x < this->atomicLattice->getNx()-1; x++) {
+    for (int y = 0; y < this->atomicLattice->getNy()-1; y++) {
+      for (int z = 0; z < this->atomicLattice->getNz()-1; z++) {
+        if (this->atomicLattice->get(x,y,z).getDynamics().isBoundary()) {
+          for (int xx = x-1; xx <= x+1; xx++) {
+            if (xx < 0 || xx > this->atomicLattice->getNx()-1) {continue;}
+            for (int yy = y-1; yy <= y+1; yy++) {
+              if (yy < 0 || yy > this->atomicLattice->getNy()-1) {continue;}
+              for (int zz = z-1; zz <= z+1; zz++) {
+                if (zz < 0 || zz > this->atomicLattice->getNz()-1) {continue;}
+                if (!this->atomicLattice->get(xx,yy,zz).getDynamics().isBoundary()) {
+                  boundaryParticles.push_back({x,y,z}); 
+                  goto end_inner_loop;
+                }
+              }
+            }
+          }
+        }
+end_inner_loop:;
+      }
+    }
+  }
+}
+
+void HemoCellParticleField::applyBoundaryRepulsionForce() {
+    if(!pg_up_to_date) {
+    update_pg();
+  }
+  const T & br_cutoff = cellFields->boundaryRepulsionCutoff;
+  const T & br_const = cellFields->boundaryRepulsionConstant;
+  for (Dot3D & b_particle : boundaryParticles) {
+    for (int x = b_particle.x-1; x <= b_particle.x+1; x++) {
+      if (x < 0 || x > this->atomicLattice->getNx()-1) {continue;}
+      for (int y = b_particle.y-1; y <= b_particle.y+1; y++) {
+        if (y < 0 || y > this->atomicLattice->getNy()-1) {continue;}
+        for (int z = b_particle.z-1; z <= b_particle.z+1; z++) {
+          if (z < 0 || z > this->atomicLattice->getNz()-1) {continue;}
+          const int & index = grid_index(x,y,z);
+          for (unsigned int i = 0 ; i < particle_grid_size[index] ; i++ ) {
+            HemoCellParticle & lParticle = particles[particle_grid[index][i]];
+            const hemo::Array<T,3> dv = lParticle.position - (b_particle + this->atomicLattice->getLocation()); 
+            const T distance = sqrt(dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2]); 
+            if (distance < br_cutoff) { 
+              const hemo::Array<T, 3> rfm = br_const * (1/(distance/br_cutoff))  * (dv/distance);
+              lParticle.force_repulsion = lParticle.force_repulsion + rfm; 
+            } 
+          }
+        }
+      }
+    }
   }
 }
 
