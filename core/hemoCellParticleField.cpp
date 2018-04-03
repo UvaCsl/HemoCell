@@ -128,8 +128,8 @@ void HemoCellParticleField::update_preinlet_ppc() {
     }
   }
   preinlet_ppc_up_to_date = true;
-  ppc_up_to_date = false;
-  lpc_up_to_date = false;
+  //ppc_up_to_date = false;
+  //lpc_up_to_date = false;
 }
 void HemoCellParticleField::update_pg() {
   //Check if map exists, otherwise create
@@ -512,7 +512,6 @@ void HemoCellParticleField::advanceParticles() {
   }
   lpc_up_to_date = false;
   pg_up_to_date = false;
-  removeParticles(1);
 }
 
 void HemoCellParticleField::separateForceVectors() {

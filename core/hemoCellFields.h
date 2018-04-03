@@ -126,7 +126,10 @@ public:
 
   /// Add boundary particles on the fluid-solid boundary
   void populateBoundaryParticles();
-    
+  
+  /// Delete non local particles (do not delete in envelopesize)
+  void deleteNonLocalParticles(int envelope);
+  
   //Class Variables
   
   ///the fluid lattice
@@ -238,6 +241,13 @@ public:
   class HemoPopulateBoundaryParticles: public HemoCellFunctional {
    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
    HemoPopulateBoundaryParticles * clone() const;
+  };
+  class HemoDeleteNonLocalParticles: public HemoCellFunctional {
+   void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+   HemoDeleteNonLocalParticles * clone() const;
+   public:
+    int envelopeSize;
+    HemoDeleteNonLocalParticles(int envelope_) : envelopeSize(envelope_) {}
   };
 };
 #endif

@@ -163,8 +163,8 @@ void HemoCell::writeOutput() {
   }
   cellfields->syncEnvelopes();
 
-	//Repoint surfaceparticle forces for output
-	cellfields->separate_force_vectors();
+  //Repoint surfaceparticle forces for output
+  cellfields->separate_force_vectors();
 
   //Recalculate the forces
   cellfields->applyConstitutiveModel(true);
@@ -208,7 +208,6 @@ void HemoCell::iterate() {
     cellfields->applyBoundaryRepulsionForce();
   }
 
-  //Important, also deletes incomplete cells
   cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
 
   // ##### Particle Force to Fluid ####
@@ -224,6 +223,10 @@ void HemoCell::iterate() {
   //### 6 ### Might be together with interpolation
   cellfields->syncEnvelopes();
 
+  if(iter %cellfields->particleVelocityUpdateTimescale == 0) {
+    cellfields->deleteIncompleteCells(false);
+  }
+  
   //### 7 ### 
   cellfields->advanceParticles();
 
