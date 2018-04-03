@@ -200,7 +200,7 @@ void HemoCell::checkExitSignals() {
 void HemoCell::iterate() {
   checkExitSignals();
 
-  // Calculate repulsion Force
+  // ### 1 ### Calculate repulsion Force
   if(repulsionEnabled && iter % cellfields->repulsionTimescale == 0) {
     cellfields->applyRepulsionForce();
   }
@@ -208,26 +208,31 @@ void HemoCell::iterate() {
     cellfields->applyBoundaryRepulsionForce();
   }
 
+  //### 3 ###
   cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
+  //We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
+  if(iter % cellfields->particleVelocityUpdateTimescale == 1) {
+    cellfields->deleteNonLocalParticles(1);
+  }
 
   // ##### Particle Force to Fluid ####
   cellfields->spreadParticleForce();
 
-  // ##### 3 ##### LBM
+  // ##### 4 ##### LBM
   lattice->timedCollideAndStream();
 
-
-  // ##### 4 ##### IBM interpolation
-  cellfields->interpolateFluidVelocity();
-
-  //### 6 ### Might be together with interpolation
-  cellfields->syncEnvelopes();
-
   if(iter %cellfields->particleVelocityUpdateTimescale == 0) {
+    // ##### 5 ##### IBM interpolation
+    cellfields->interpolateFluidVelocity();
+
+    //### 6 ### Might be together with interpolation
+    cellfields->syncEnvelopes();
+
+    //### 7 ###
     cellfields->deleteIncompleteCells(false);
   }
   
-  //### 7 ### 
+  //### 8 ###
   cellfields->advanceParticles();
 
   // Reset Forces on the lattice, TODO do own efficient implementation

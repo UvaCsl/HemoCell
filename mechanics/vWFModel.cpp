@@ -29,6 +29,7 @@ void vWFModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;
     vector<HemoCellParticle*> & cell = particles_per_cell[cid];
+    if (cell.size() == 0) continue;
     if (cell[0]->sv.celltype != ctype) continue; //only execute on correct particle
 
     //Since this is a very special class we only need the separate vertexes, no volume force etc

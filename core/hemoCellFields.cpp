@@ -243,24 +243,18 @@ void HemoCellFields::HemoInterpolateFluidVelocity::processGenericBlocks(Box3D do
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->interpolateFluidVelocity(domain);
 }
 void HemoCellFields::interpolateFluidVelocity() {
-  if (hemocell.iter % particleVelocityUpdateTimescale == 0) {
-
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
   applyTimedProcessingFunctional(new HemoInterpolateFluidVelocity(),immersedParticles->getBoundingBox(),wrapper);
-  
-  }
 }
 
 void HemoCellFields::HemoSyncEnvelopes::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->syncEnvelopes();
 }
 void HemoCellFields::syncEnvelopes() {
-  if (hemocell.iter % particleVelocityUpdateTimescale == 0) {
     vector<MultiBlock3D*> wrapper;
     wrapper.push_back(immersedParticles);
     applyTimedProcessingFunctional(new HemoSyncEnvelopes(),immersedParticles->getBoundingBox(),wrapper);
-  }
 }
 
 void HemoCellFields::HemoAdvanceParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
