@@ -437,15 +437,19 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
     }
     if (!broken) {continue;}
 
-    //actually add to tobedeleted list
     bool warningIssued = false;
     for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
       if (particles_per_cell.at(cellid)[i] == -1) {continue;}
-      if (particles[particles_per_cell.at(cellid)[i]].sv.celltype != ctype) {break;} //certainly a entry, therefore we check here if it is the right type, if not, exit
-      if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].sv.position,localDomain) && verbose && !warningIssued) {
-      	issueWarning(particles[particles_per_cell.at(cellid)[i]]);
-        warningIssued = true;
+
+      //issue warning
+      if (verbose) {
+        if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].sv.position,localDomain) && !warningIssued) {
+                  issueWarning(particles[particles_per_cell.at(cellid)[i]]);
+          warningIssued = true;
+        }
       }
+      
+      //actually add to tobedeleted list
       particles[particles_per_cell.at(cellid)[i]].setTag(1);
       deleted++;
     }
@@ -457,7 +461,7 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
   return deleted; 
 }
 
-int HemoCellParticleField::deleteIncompleteCells(bool verbose) {
+int HemoCellParticleField::deleteIncompleteCells(const bool verbose) {
   int deleted = 0;
 
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
@@ -475,14 +479,19 @@ int HemoCellParticleField::deleteIncompleteCells(bool verbose) {
     }
     if (!broken) {continue;}
 
-    //actually add to tobedeleted list
     bool warningIssued = false;
     for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
       if (particles_per_cell.at(cellid)[i] == -1) {continue;}
-      if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].sv.position,localDomain) && verbose && !warningIssued) {
-		issueWarning(particles[particles_per_cell.at(cellid)[i]]);
-        warningIssued = true;
+
+      //issue warning
+      if (verbose) {
+        if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].sv.position,localDomain) && !warningIssued) {
+                  issueWarning(particles[particles_per_cell.at(cellid)[i]]);
+          warningIssued = true;
+        }
       }
+      
+      //actually add to tobedeleted list
       particles[particles_per_cell.at(cellid)[i]].setTag(1);
       deleted++;
     }
@@ -554,7 +563,6 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
   map<int,vector<HemoCellParticle*>> * ppc_new = new map<int,vector<HemoCellParticle*>>();
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   const map<int,bool> & lpc = get_lpc();
-  
   //Fill it here, probably needs optimization, ah well ...
   for (const auto & pair : particles_per_cell) {
     if (lpc.find(pair.first) == lpc.end() || !lpc.at(pair.first)) { continue; } //Not local, continue
