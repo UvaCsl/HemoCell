@@ -148,6 +148,8 @@ private:
     return nz+this->atomicLattice->getNz()*(ny+(this->atomicLattice->getNy()*nx));
   }
   
+  vector<hemo::Array<T,3>*> allocated_for_output;
+  
 public:
   const vector<vector<unsigned int>> & get_particles_per_type(); 
   const map<int,vector<int>> & get_particles_per_cell();

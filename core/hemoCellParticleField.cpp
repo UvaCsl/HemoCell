@@ -525,47 +525,47 @@ void HemoCellParticleField::separateForceVectors() {
 
     //Just repoint all possible outputs for now //TODO only repoint the ones we
     //want
-    ////TODO this can leak if particle is deleted between seperate and unify,
-    //rewrite to reference
+
     sparticle.force_volume = new hemo::Array<T,3>({0.0,0.0,0.0});
+    allocated_for_output.push_back(sparticle.force_volume);
     sparticle.force_link = new hemo::Array<T,3>({0.0,0.0,0.0});
+    allocated_for_output.push_back(sparticle.force_link);
     sparticle.force_area = new hemo::Array<T,3>({0.0,0.0,0.0});
+    allocated_for_output.push_back(sparticle.force_area);
     sparticle.force_bending = new hemo::Array<T,3>({0.0,0.0,0.0});
+    allocated_for_output.push_back(sparticle.force_bending);
     sparticle.force_visc = new hemo::Array<T,3>({0.0,0.0,0.0});
+    allocated_for_output.push_back(sparticle.force_visc);
     sparticle.force_inner_link = new hemo::Array<T,3>({0.0,0.0,0.0});
+    allocated_for_output.push_back(sparticle.force_inner_link);
   }
 }
 
 void HemoCellParticleField::unifyForceVectors() {
+  for (const hemo::Array<T,3>* mem : allocated_for_output) {
+    delete mem;
+  }
+  allocated_for_output.clear();
   for (HemoCellParticle& sparticle : particles) {
-    //Just repoint all possible outputs for now //TODO only repoint the ones we
-    //want
-    delete sparticle.force_volume;
-    delete sparticle.force_link;
-    delete sparticle.force_area;
-    delete sparticle.force_bending;
-    delete sparticle.force_visc;
-    delete sparticle.force_inner_link;
     sparticle.repoint_force_vectors();
   }
 }
 
 void HemoCellParticleField::applyConstitutiveModel(bool forced) {
-
-  deleteIncompleteCells();
-
   map<int,vector<HemoCellParticle*>> * ppc_new = new map<int,vector<HemoCellParticle*>>();
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   const map<int,bool> & lpc = get_lpc();
   
   //Fill it here, probably needs optimization, ah well ...
   for (const auto & pair : particles_per_cell) {
+    if (lpc.find(pair.first) == lpc.end() || !lpc.at(pair.first)) { continue; } //Not local, continue
     const int & cid = pair.first;
     const vector<int> & cell = pair.second; 
     (*ppc_new)[cid].resize(cell.size());
     for (unsigned int i = 0 ; i < cell.size() ; i++) {
       if (cell[i] == -1) {
-        (*ppc_new)[cid][i] = NULL;
+        (*ppc_new).erase(cid); //not complete, remove entry
+        break;
       } else {
         (*ppc_new)[cid][i] = &particles[cell[i]];
       }
