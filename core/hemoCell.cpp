@@ -212,7 +212,7 @@ void HemoCell::iterate() {
   cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
   //We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
   if(iter % cellfields->particleVelocityUpdateTimescale == 1) {
-    cellfields->deleteNonLocalParticles(1);
+    cellfields->deleteNonLocalParticles(3);
   }
 
   // ##### Particle Force to Fluid ####
