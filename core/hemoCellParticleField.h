@@ -47,6 +47,8 @@ public:
     virtual void removeParticles(plint tag);
     virtual void findParticles(Box3D domain,
                                std::vector<HemoCellParticle*>& found);
+    virtual void findParticles(Box3D domain,
+                               std::vector<const HemoCellParticle*>& found) const;
     void findParticles(Box3D domain,
                                std::vector<HemoCellParticle*>& found,
                                pluint type);

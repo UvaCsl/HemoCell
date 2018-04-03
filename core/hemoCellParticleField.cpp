@@ -346,13 +346,24 @@ void HemoCellParticleField::syncEnvelopes() {
   removeParticles_inverse(localDomain);
 }
 
-
 void HemoCellParticleField::findParticles (
-        Box3D domain, std::vector<HemoCellParticle*>& found ) 
+        Box3D domain, std::vector<HemoCellParticle*>& found )
 {
     found.clear();
     PLB_ASSERT( contained(domain, this->getBoundingBox()) );
     for (HemoCellParticle & particle : particles) {
+        if (this->isContainedABS(particle.sv.position,domain)) {
+            found.push_back(&particle);
+        }
+    }
+}
+
+void HemoCellParticleField::findParticles (
+        Box3D domain, std::vector<const HemoCellParticle*>& found ) const
+{
+    found.clear();
+    PLB_ASSERT( contained(domain, this->getBoundingBox()) );
+    for (const HemoCellParticle & particle : particles) {
         if (this->isContainedABS(particle.sv.position,domain)) {
             found.push_back(&particle);
         }

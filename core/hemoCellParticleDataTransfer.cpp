@@ -26,6 +26,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /* *************** class HemoParticleDataTransfer3D ************************ */
 
+inline plint HemoCellParticleDataTransfer::getOffset(Dot3D & absoluteOffset) {
+      int offset = 0;
+      hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
+      //Offset only happens for wrapping around. Decide the new (or old) CellID to use
+      if (absoluteOffset.x > 0) {
+        offset ++;
+      } else if (absoluteOffset.x < 0) {
+        offset --;
+      }
+      if (absoluteOffset.y > 0) {
+        offset += particleField->cellFields->periodicity_limit_offset_y;
+      } else if (absoluteOffset.y < 0) {
+        offset -= particleField->cellFields->periodicity_limit_offset_y;
+      }
+      if (absoluteOffset.z > 0) {
+        offset += particleField->cellFields->periodicity_limit_offset_z;
+      } else if (absoluteOffset.z < 0) {
+        offset -= particleField->cellFields->periodicity_limit_offset_z;
+      }
+
+      offset*=particleField->cellFields->number_of_cells;
+
+      return offset;
+}
+
 HemoCellParticleDataTransfer::HemoCellParticleDataTransfer () {};
 
 plint HemoCellParticleDataTransfer::staticCellSize() const {
@@ -81,31 +106,13 @@ void HemoCellParticleDataTransfer::receive (
 void HemoCellParticleDataTransfer::receive (
         Box3D domain, std::vector<char> const& buffer, modif::ModifT kind, Dot3D absoluteOffset )
 {
-  int offset = 0;
-  hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
-  //Offset only happens for wrapping around. Decide the new (or old) CellID to use
-  if (absoluteOffset.x > 0) {
-    offset ++;
-  } else if (absoluteOffset.x < 0) {
-    offset --;
-  }
-  if (absoluteOffset.y > 0) {
-    offset += particleField->cellFields->periodicity_limit_offset_y;
-  } else if (absoluteOffset.y < 0) {
-    offset -= particleField->cellFields->periodicity_limit_offset_y;
-  }
-  if (absoluteOffset.z > 0) {
-    offset += particleField->cellFields->periodicity_limit_offset_z;
-  } else if (absoluteOffset.z < 0) {
-    offset -= particleField->cellFields->periodicity_limit_offset_z;
-  }
   
-  offset*=particleField->cellFields->number_of_cells;
   
   if ( (kind==modif::dynamicVariables) ||
        (kind==modif::allVariables) ||
        (kind==modif::dataStructure) )
   {
+    int offset = getOffset(absoluteOffset);
     pluint posInBuffer = 0;
     HemoCellParticle newParticle = HemoCellParticle();
     while (posInBuffer < buffer.size()) {
@@ -113,7 +120,7 @@ void HemoCellParticleDataTransfer::receive (
       HierarchicUnserializer unserializer(buffer, posInBuffer);
       newParticle.unserialize(unserializer);
       posInBuffer = unserializer.getCurrentPos();
-      newParticle.sv.position += realAbsoluteOffset;
+      newParticle.sv.position += absoluteOffset;
       newParticle.sv.cellId += offset;
       particleField->addParticle(domain, newParticle.sv);
     }
@@ -134,22 +141,43 @@ void HemoCellParticleDataTransfer::attribute (
         Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
         AtomicBlock3D const& from, modif::ModifT kind )
 {
-    Box3D fromDomain(toDomain.shift(deltaX,deltaY,deltaZ));
-    std::vector<char> buffer;
-    HemoCellParticleField const& fromParticleField =
-        dynamic_cast<HemoCellParticleField const&>(from);
-    fromParticleField.getDataTransfer().send(fromDomain, buffer, kind);
-    receive(toDomain, buffer, kind);
+    if ( (kind==modif::dynamicVariables) ||
+         (kind==modif::allVariables) ||
+         (kind==modif::dataStructure) )
+    {
+      Box3D fromDomain(toDomain.shift(deltaX,deltaY,deltaZ));
+      HemoCellParticleField const& fromParticleField =
+          dynamic_cast<HemoCellParticleField const&>(from);
+      vector<const HemoCellParticle *> particles;
+      fromParticleField.findParticles(fromDomain, particles);
+      for (const HemoCellParticle * particle : particles) {
+        particleField->addParticle(toDomain,particle->sv);
+      }
+    }
 }
 
 void HemoCellParticleDataTransfer::attribute (
         Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
         AtomicBlock3D const& from, modif::ModifT kind, Dot3D absoluteOffset )
 {
+  if ( (kind==modif::dynamicVariables) ||
+       (kind==modif::allVariables) ||
+       (kind==modif::dataStructure) )
+  { 
+  
     Box3D fromDomain(toDomain.shift(deltaX,deltaY,deltaZ));
-    std::vector<char> buffer;
     HemoCellParticleField const& fromParticleField =
         dynamic_cast<HemoCellParticleField const&>(from);
-    fromParticleField.getDataTransfer().send(fromDomain, buffer, kind);
-    receive(toDomain, buffer, kind, absoluteOffset);
+    vector<const HemoCellParticle *> particles;
+    fromParticleField.findParticles(fromDomain, particles);
+    int offset = getOffset(absoluteOffset);
+
+    HemoCellParticle::serializeValues_t sv;
+    for (const HemoCellParticle * particle : particles) {
+      sv = particle->sv;
+      sv.position += absoluteOffset;
+      sv.cellId += offset;
+      particleField->addParticle(toDomain, sv);
+    }     
+  }
 }

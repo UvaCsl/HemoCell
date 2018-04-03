@@ -62,7 +62,17 @@ namespace hemo {
       }
       return *this;
     }
-        
+    
+    inline Array<_Tp, 3> &
+    operator+=(const plb::Dot3D & __two) {
+      for(std::size_t i = 0 ; i < _Nm ; i++ ) {
+        (*this)[0] += __two.x;
+        (*this)[1] += __two.y;
+        (*this)[2] += __two.z;
+
+      }
+      return *this;
+    }    
     inline Array<_Tp, _Nm> &
     operator*=(const _Tp & mul) {
       for(std::size_t i = 0 ; i < _Nm ; i++ ) {
