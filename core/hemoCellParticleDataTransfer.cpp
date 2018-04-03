@@ -28,7 +28,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 inline plint HemoCellParticleDataTransfer::getOffset(Dot3D & absoluteOffset) {
       int offset = 0;
-      hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
       //Offset only happens for wrapping around. Decide the new (or old) CellID to use
       if (absoluteOffset.x > 0) {
         offset ++;
@@ -113,6 +112,7 @@ void HemoCellParticleDataTransfer::receive (
        (kind==modif::dataStructure) )
   {
     int offset = getOffset(absoluteOffset);
+    hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
     pluint posInBuffer = 0;
     HemoCellParticle newParticle = HemoCellParticle();
     while (posInBuffer < buffer.size()) {
@@ -120,7 +120,7 @@ void HemoCellParticleDataTransfer::receive (
       HierarchicUnserializer unserializer(buffer, posInBuffer);
       newParticle.unserialize(unserializer);
       posInBuffer = unserializer.getCurrentPos();
-      newParticle.sv.position += absoluteOffset;
+      newParticle.sv.position += realAbsoluteOffset;
       newParticle.sv.cellId += offset;
       particleField->addParticle(domain, newParticle.sv);
     }
@@ -171,11 +171,12 @@ void HemoCellParticleDataTransfer::attribute (
     vector<const HemoCellParticle *> particles;
     fromParticleField.findParticles(fromDomain, particles);
     int offset = getOffset(absoluteOffset);
+    hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
 
     HemoCellParticle::serializeValues_t sv;
     for (const HemoCellParticle * particle : particles) {
       sv = particle->sv;
-      sv.position += absoluteOffset;
+      sv.position += realAbsoluteOffset;
       sv.cellId += offset;
       particleField->addParticle(toDomain, sv);
     }     
