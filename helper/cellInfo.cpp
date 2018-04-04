@@ -28,6 +28,7 @@ void CellInformationFunctionals::clear_list() {
   info_per_cell.clear();
 }
 void CellInformationFunctionals::calculate_vol_pos_area(HemoCell* hemocell) {
+  hemocell->cellfields->deleteIncompleteCells(false);
   calculateCellArea(hemocell);
   calculateCellVolume(hemocell);
   calculateCellPosition(hemocell);
