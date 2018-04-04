@@ -200,40 +200,36 @@ void HemoCell::checkExitSignals() {
 void HemoCell::iterate() {
   checkExitSignals();
 
-  // ### 1 ### Calculate repulsion Force
+  // ### 1 ### Particle Force to Fluid
   if(repulsionEnabled && iter % cellfields->repulsionTimescale == 0) {
     cellfields->applyRepulsionForce();
   }
   if(boundaryRepulsionEnabled && iter % cellfields->boundaryRepulsionTimescale == 0) {
     cellfields->applyBoundaryRepulsionForce();
   }
-
-  //### 3 ###
-  cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
-  //We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
-  if(iter % cellfields->particleVelocityUpdateTimescale == 1) {
-    cellfields->deleteNonLocalParticles(3);
-  }
-
-  // ##### Particle Force to Fluid ####
   cellfields->spreadParticleForce();
-
-  // ##### 4 ##### LBM
+  
+  // #### 2 #### LBM
   lattice->timedCollideAndStream();
 
   if(iter %cellfields->particleVelocityUpdateTimescale == 0) {
-    // ##### 5 ##### IBM interpolation
+    // #### 3 #### IBM interpolation
     cellfields->interpolateFluidVelocity();
 
-    //### 6 ### Might be together with interpolation
+    // ### 4 ### sync the particles
     cellfields->syncEnvelopes();
-
-    //### 7 ###
-    cellfields->deleteIncompleteCells(false);
   }
   
-  //### 8 ###
+  // ### 5 ###
   cellfields->advanceParticles();
+
+  // ### 6 ###
+  cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
+  
+  //We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
+  if(iter % cellfields->particleVelocityUpdateTimescale == 0) {
+    cellfields->deleteNonLocalParticles(3);
+  }
 
   // Reset Forces on the lattice, TODO do own efficient implementation
   setExternalVector(*lattice, (*lattice).getBoundingBox(),
@@ -252,17 +248,31 @@ void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separati
   pcout << "(HemoCell) (Timescale Seperation) Setting seperation of " << name << " to " << separation << " timesteps"<<endl;
   //pcout << "(HemoCell) WARNING if the timescale separation is not dividable by tmeasure, checkpointing is non-deterministic!"<<endl; //not true anymore, with checkpointing remaining force is saved
   (*cellfields)[name]->timescale = separation;
+  if (separation%cellfields->particleVelocityUpdateTimescale!=0) {
+     pcout << "(HemoCell) Error, Velocity timescale separation cannot divide this material timescale separation, exiting ..." <<endl;
+     exit(0);
+  }
 }
 
 void HemoCell::setParticleVelocityUpdateTimeScaleSeparation(unsigned int separation) {
   pcout << "(HemoCell) (Timescale separation) Setting update separation of all particles to " << separation << " timesteps" << endl;
-  pcout << "(HemoCell) WARNING this introduces great errors, WARNING make sure tmeasure and the material timescale separation are dividable by this value" << endl;
+  pcout << "(HemoCell) WARNING this introduces great errors" << endl;
+  for (unsigned int i = 0; i < cellfields->size() ; i++) {
+    if ((*cellfields)[i]->timescale%separation !=0) {
+      pcout << "(HemoCell) Error, Velocity timescale separation cannot divide all material timescale separations, exiting ..." <<endl;
+      exit(0);
+    }
+  }
   cellfields->particleVelocityUpdateTimescale = separation;
 }
 
 void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
   pcout << "(HemoCell) (Repulsion Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
   cellfields->repulsionTimescale = separation;
+  if (separation%cellfields->particleVelocityUpdateTimescale!=0) {
+     pcout << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
+     exit(0);
+  }
 }
 
 void HemoCell::setMinimumDistanceFromSolid(string name, T distance) {
@@ -285,6 +295,10 @@ void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRe
   cellfields->populateBoundaryParticles();
   pcout << "(HemoCell) (Repulsion) Setting boundary repulsion constant to " << boundaryRepulsionConstant << ". boundary repulsionCutoff to" << boundaryRepulsionCutoff << " µm" << endl;
   pcout << "(HemoCell) (Repulsion) Enabling boundary repulsion" << endl;
+  if (timestep%cellfields->particleVelocityUpdateTimescale!=0) {
+     pcout << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
+     exit(0);
+  }
   cellfields->boundaryRepulsionConstant = boundaryRepulsionConstant;
   cellfields->boundaryRepulsionCutoff = boundaryRepulsionCutoff*(1e-6/param::dx);
   cellfields->boundaryRepulsionTimescale = timestep;

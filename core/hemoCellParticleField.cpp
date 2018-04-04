@@ -694,10 +694,8 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
 
 void HemoCellParticleField::spreadParticleForce(Box3D domain) {
   HemoCellParticle * sparticle;
-  vector<HemoCellParticle*> localParticles;
-  findParticles(localDomain,localParticles);
-  for (pluint i = 0; i < localParticles.size(); i++ ) {
-    sparticle = localParticles[i];
+  for( HemoCellParticle &particle:particles) {
+    sparticle = &particle;
     if (sparticle->sv.fromPreInlet) { continue; }
 
     //Clever trick to allow for different kernels for different particle types.
