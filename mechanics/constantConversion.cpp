@@ -66,6 +66,7 @@ void Parameters::lbm_shear_parameters(Config & cfg,T nx) {
 }
 
 void Parameters::printParameters() {
+  if(verbose >= 1) {
   pcout << "(HemoCell) System parameters:" << std::endl;
   pcout << "\t dx: \t" << dx << std::endl;
   pcout << "\t dt: \t" << dt << std::endl;
@@ -77,6 +78,7 @@ void Parameters::printParameters() {
 #ifdef FORCE_LIMIT
   pcout << "\t f_limit: \t" << f_limit << std::endl;
 #endif
+  }
 }
 
 T Parameters::dt = 0.0;

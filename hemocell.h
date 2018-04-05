@@ -109,7 +109,9 @@ class HemoCell {
     HemoCellField * cellfield = cellfields->addCellType(*meshElement, name);
     Mechanics * mechanics = new Mechanics((*materialCfg), *cellfield);
     cellfield->mechanics = mechanics;
-    cellfield->statistics();
+    if(verbose >= 1) {
+      cellfield->statistics();
+    }
   }
 
   /**

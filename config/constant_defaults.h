@@ -26,16 +26,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ============== Compile time options - Set these
 
 /*
-Choose default log level.
-0 - no clutter, no warning, etc.
-1 - serious warnings/possible errors
-2 - every warning
-*/
-#ifndef LOG_LEVEL
-#define LOG_LEVEL 1
-#endif
-
-/*
 Choose kernel. 
 Phi1 [1], Phi2 [2] - Default, Phi3 [3], Phi4 [4],  Phi4c [5]
 */
@@ -155,5 +145,8 @@ typedef long int plint;
 #ifndef pluint
 typedef long unsigned int pluint;
 #endif
+
+//easily accessible verbose argument;
+extern int verbose;
 
 #endif

@@ -57,7 +57,7 @@ HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<
           volume = materialCfg["MaterialModel"]["Volume"].read<T>();
           volumeFractionOfLspPerNode = (volume/numVertex)/pow(param::dx*1e6,3);
         } catch (std::invalid_argument & exeption) {
-          pcout << "(HemoCell) (WARNING) (AddCellType) Volume of celltype not present, volume set to zero" << endl;
+            pcout << "(HemoCell) (WARNING) (AddCellType) Volume of celltype " << name << " not present, volume set to zero" << endl;
         }
 }
 

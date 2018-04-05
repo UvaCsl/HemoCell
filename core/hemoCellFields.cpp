@@ -29,7 +29,9 @@ HemoCellFields::HemoCellFields( MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, u
   lattice(&lattice_), hemocell(hemocell_)
 {   
   envelopeSize=particleEnvelopeWidth;
-  pcout << "(Hemocell) (HemoCellFields) (Init) particle envelope: " << particleEnvelopeWidth << " [lu]" << std::endl;
+  if(verbose >= 1) {
+    pcout << "(Hemocell) (HemoCellFields) (Init) particle envelope: " << particleEnvelopeWidth << " [lu]" << std::endl;
+  }
   
   createParticleField();
 }
@@ -147,7 +149,9 @@ void HemoCellFields::InitAfterLoadCheckpoint()
   
     if (immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > 30 && !error_shown) {
       error_shown = true;
-      cerr << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << immersedParticles->getComponent(blocks[iBlock]).neighbours.size() << " Usually it should be < 30 ! Check the atomic block structure!\n";
+      if(verbose >= 1) {
+        cerr << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << immersedParticles->getComponent(blocks[iBlock]).neighbours.size() << " Usually it should be < 30 ! Check the atomic block structure!\n";
+      }
     }
   }
 }

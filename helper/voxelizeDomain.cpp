@@ -70,8 +70,10 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
             boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, blockSize);
     
     // Print out some info
-    pcout << "(main) Voxelisation is done. Resulting domain parameters are: " << endl;
-    pcout << getMultiBlockInfo(voxelizedDomain->getVoxelMatrix()) << std::endl;
+    if(verbose >= 1) {
+      pcout << "(main) Voxelisation is done. Resulting domain parameters are: " << endl;
+      pcout << getMultiBlockInfo(voxelizedDomain->getVoxelMatrix()) << std::endl;
+    }
 
 
     flagMatrix = new MultiScalarField3D<int>((MultiBlock3D &) voxelizedDomain->getVoxelMatrix());

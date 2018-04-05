@@ -26,6 +26,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <unistd.h>
 
+//Required as extern from constant_defaults
+int verbose = 0;
+
 volatile sig_atomic_t interrupted = 0;
 void set_interrupt(int signum) {
   interrupted = 1;
@@ -42,11 +45,15 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   global::IOpolicy().activateParallelIO(true);
   global::IOpolicy().setStlFilesHaveLowerBound(false);
   mkpath("./tmp/hdf5/", 0777);
-
-  pcout << "(HemoCell) (Config) reading " << configFileName << endl;
+  if(verbose >= 1) {
+    pcout << "(HemoCell) (Config) reading " << configFileName << endl;
+  }
   cfg = new Config(configFileName);
   documentXML = new XMLreader(configFileName);
-
+  try {
+    verbose = (*cfg)["verbose"].read<int>();
+  } catch (std::invalid_argument & exeption) {}
+  
   try {
     std::string outDir = (*cfg)["parameters"]["outputDirectory"].read<string>() + "/";
     if (outDir[0] != '/') {
@@ -59,12 +66,14 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   global::timer("atOutput").start();
   
 #ifdef FORCE_LIMIT
-  if(LOG_LEVEL >= 2)
+  if(verbose >= 1) {
     pcout << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT << " pN. Results can be inaccurate due to force capping." << endl;
+  }
 #endif
-  
+  if(verbose >= 1) {
   if (sizeof(T) == sizeof(float)) {
     pcout << "(HemoCell) WARNING: Running with single precision, you might want to switch to double precision" << endl;
+  }
   }
   
   ///Set signal handlers to exit gracefully on many signals
@@ -83,7 +92,9 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
 }
 
 void HemoCell::latticeEquilibrium(T rho, hemo::Array<T, 3> vel) {
-  pcout << "(HemoCell) (Fluid) Setting Fluid Equilibrium" << endl;
+  if(verbose >= 1) {
+    pcout << "(HemoCell) (Fluid) Setting Fluid Equilibrium" << endl;
+  }
   plb::Array<T,3> vel_plb = {vel[0],vel[1],vel[2]};
   initializeAtEquilibrium(*lattice, (*lattice).getBoundingBox(), rho, vel_plb);
 }
@@ -96,13 +107,17 @@ void HemoCell::initializeCellfield() {
 }
 
 void HemoCell::setOutputs(string name, vector<int> outputs) {
-  pcout << "(HemoCell) (CellField) Setting output variables for " << name << " cells" << endl;
+  if(verbose >= 1) {
+    pcout << "(HemoCell) (CellField) Setting output variables for " << name << " cells" << endl;
+  }
   vector<int> outputs_c = outputs;
   (*cellfields)[name]->setOutputVariables(outputs_c);
 }
 
 void HemoCell::setFluidOutputs(vector<int> outputs) {
-  pcout << "(HemoCell) (Fluid) Setting output variables for fluid field" << endl;
+  if(verbose >= 1) {
+    pcout << "(HemoCell) (Fluid) Setting output variables for fluid field" << endl;
+  }
   vector<int> outputs_c = outputs;
   cellfields->desiredFluidOutputVariables = outputs_c;
 }
@@ -122,7 +137,9 @@ void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
 }
 
 void HemoCell::setSystemPeriodicityLimit(unsigned int axis, int limit) {
-  pcout << "(HemoCell) (Periodicity) Setting periodicity limit of axis " << axis << " to " << limit << endl;
+  if(verbose >= 1) {
+    pcout << "(HemoCell) (Periodicity) Setting periodicity limit of axis " << axis << " to " << limit << endl;
+  }
   cellfields->periodicity_limit[axis] = limit;
   
   //recalculate offsets :
@@ -131,7 +148,9 @@ void HemoCell::setSystemPeriodicityLimit(unsigned int axis, int limit) {
 }
 
 void HemoCell::loadParticles() {
-  pcout << "(HemoCell) (CellField) Loading particle positions "  << endl;
+  if(verbose >= 1) {
+    pcout << "(HemoCell) (CellField) Loading particle positions "  << endl;
+  }
   loadParticlesIsCalled = true;
   readPositionsBloodCellField3D(*cellfields, param::dx, *cfg);
   cellfields->syncEnvelopes();
@@ -241,12 +260,16 @@ void HemoCell::iterate() {
 }
 
 T HemoCell::calculateFractionalLoadImbalance() {
-	pcout << "(HemoCell) (LoadBalancer) Calculating Fractional Load Imbalance at timestep " << iter << endl;
+    if(verbose >= 1) {
+      pcout << "(HemoCell) (LoadBalancer) Calculating Fractional Load Imbalance at timestep " << iter << endl;
+    }
   return loadBalancer->calculateFractionalLoadImbalance();
 }
 
 void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separation){
-  pcout << "(HemoCell) (Timescale Seperation) Setting seperation of " << name << " to " << separation << " timesteps"<<endl;
+  if(verbose >= 1) {
+    pcout << "(HemoCell) (Timescale Seperation) Setting seperation of " << name << " to " << separation << " timesteps"<<endl;
+  }
   //pcout << "(HemoCell) WARNING if the timescale separation is not dividable by tmeasure, checkpointing is non-deterministic!"<<endl; //not true anymore, with checkpointing remaining force is saved
   (*cellfields)[name]->timescale = separation;
   if (separation%cellfields->particleVelocityUpdateTimescale!=0) {
@@ -256,8 +279,12 @@ void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separati
 }
 
 void HemoCell::setParticleVelocityUpdateTimeScaleSeparation(unsigned int separation) {
-  pcout << "(HemoCell) (Timescale separation) Setting update separation of all particles to " << separation << " timesteps" << endl;
-  pcout << "(HemoCell) WARNING this introduces great errors" << endl;
+  if(verbose >= 1) {
+    pcout << "(HemoCell) (Timescale separation) Setting update separation of all particles to " << separation << " timesteps" << endl;
+  }
+  if(verbose >= 2) {
+    pcout << "(HemoCell) WARNING this introduces great errors" << endl;
+  }
   for (unsigned int i = 0; i < cellfields->size() ; i++) {
     if ((*cellfields)[i]->timescale%separation !=0) {
       pcout << "(HemoCell) Error, Velocity timescale separation cannot divide all material timescale separations, exiting ..." <<endl;
@@ -268,7 +295,9 @@ void HemoCell::setParticleVelocityUpdateTimeScaleSeparation(unsigned int separat
 }
 
 void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
-  pcout << "(HemoCell) (Repulsion Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
+  if(verbose >= 1) {
+    pcout << "(HemoCell) (Repulsion Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
+  }
   cellfields->repulsionTimescale = separation;
   if (separation%cellfields->particleVelocityUpdateTimescale!=0) {
      pcout << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
@@ -277,16 +306,22 @@ void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
 }
 
 void HemoCell::setMinimumDistanceFromSolid(string name, T distance) {
-  pcout << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << " micrometer for " << name << endl; 
-  if (loadParticlesIsCalled) {
-    pcout << "(HemoCell) (Set Distance) WARNING: this function is called after the particles are loaded, so it probably has no effect" << endl;
+  if(verbose >= 1) {
+    pcout << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << " micrometer for " << name << endl; 
+    if (loadParticlesIsCalled) {
+      pcout << "(HemoCell) (Set Distance) WARNING: this function is called after the particles are loaded, so it probably has no effect" << endl;
+    }
   }
   (*cellfields)[name]->minimumDistanceFromSolid = distance;
 }
 
 void HemoCell::setRepulsion(T repulsionConstant, T repulsionCutoff) {
-  pcout << "(HemoCell) (Repulsion) Setting repulsion constant to " << repulsionConstant << ". repulsionCutoff to" << repulsionCutoff << " µm" << endl;
-  pcout << "(HemoCell) (Repulsion) Enabling repulsion" << endl;
+  if(verbose >= 1) {
+    pcout << "(HemoCell) (Repulsion) Setting repulsion constant to " << repulsionConstant << ". repulsionCutoff to" << repulsionCutoff << " µm" << endl;
+  }
+  if(verbose >= 2) {
+    pcout << "(HemoCell) (Repulsion) Enabling repulsion" << endl;
+  }
   cellfields->repulsionConstant = repulsionConstant;
   cellfields->repulsionCutoff = repulsionCutoff*(1e-6/param::dx);
   repulsionEnabled = true;
@@ -294,8 +329,12 @@ void HemoCell::setRepulsion(T repulsionConstant, T repulsionCutoff) {
 
 void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRepulsionCutoff, unsigned int timestep) {
   cellfields->populateBoundaryParticles();
-  pcout << "(HemoCell) (Repulsion) Setting boundary repulsion constant to " << boundaryRepulsionConstant << ". boundary repulsionCutoff to" << boundaryRepulsionCutoff << " µm" << endl;
-  pcout << "(HemoCell) (Repulsion) Enabling boundary repulsion" << endl;
+  if(verbose >= 1) {
+    pcout << "(HemoCell) (Repulsion) Setting boundary repulsion constant to " << boundaryRepulsionConstant << ". boundary repulsionCutoff to" << boundaryRepulsionCutoff << " µm" << endl;
+  }
+  if(verbose >= 2) {
+    pcout << "(HemoCell) (Repulsion) Enabling boundary repulsion" << endl;
+  }
   if (timestep%cellfields->particleVelocityUpdateTimescale!=0) {
      pcout << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
      exit(0);
@@ -316,6 +355,8 @@ void HemoCell::doLoadBalance() {
 #endif
 
 void HemoCell::doRestructure(bool checkpoint_avail) {
+    if(verbose >= 1) {
 	pcout << "(HemoCell) (LoadBalancer) Restructuring Atomic Blocks on processors" << endl;
+    }
   loadBalancer->restructureBlocks(checkpoint_avail);
 }
