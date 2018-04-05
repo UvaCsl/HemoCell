@@ -1,5 +1,8 @@
 #!/bin/bash
-[[ $_ != $0 ]] || (echo "Script is a subshell, this wont work, source it instead!"; exit)
+if [[ "$0" == "$BASH_SOURCE" ]]; then
+ echo "Script is a subshell, this wont work, source it instead!"
+ exit 1
+fi
 module rm mpi fortran c
 module load mpi/openmpi/2.0.1
 module load gcc/5.2.0
