@@ -8,6 +8,8 @@
     <maxFlin> 0.0035 </maxFlin>
     <checkpointDirectory>tmp</checkpointDirectory>
     <outputDirectory>tmp</outputDirectory>
+    <logDirectory>log</logDirectory>
+    <logFile>logfile</logFile>
 </parameters>
 
 

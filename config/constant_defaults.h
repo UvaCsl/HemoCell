@@ -149,4 +149,6 @@ typedef long unsigned int pluint;
 //easily accessible verbose argument;
 extern int verbose;
 
+#include <fstream>
+extern std::fstream logfile;
 #endif

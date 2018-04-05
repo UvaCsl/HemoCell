@@ -60,13 +60,13 @@ void vWFModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles
 };
 
 void vWFModel::statistics() {
-    pcout << "(Cell-mechanics model) High Order model parameters for " << cellField.name << " cellfield" << std::endl; 
-    pcout << "\t k_link:   " << k_link << endl; 
-    pcout << "\t k_bend:   " << k_bend << endl; 
-    pcout << "\t bend_eq:  " << bend_eq << endl;
-    pcout << "\t link_eq:  " << link_eq << endl;
-    pcout << "\t eta_m:    " << eta_m << endl;
-    pcout << "\t eta_v:    " << eta_v << endl;
+    logfile << "(Cell-mechanics model) High Order model parameters for " << cellField.name << " cellfield" << std::endl; 
+    logfile << "\t k_link:   " << k_link << endl; 
+    logfile << "\t k_bend:   " << k_bend << endl; 
+    logfile << "\t bend_eq:  " << bend_eq << endl;
+    logfile << "\t link_eq:  " << link_eq << endl;
+    logfile << "\t eta_m:    " << eta_m << endl;
+    logfile << "\t eta_v:    " << eta_v << endl;
 };
 
 

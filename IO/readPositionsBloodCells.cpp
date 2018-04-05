@@ -89,9 +89,7 @@ no_add:;
 
 void readvonWillibrands(Box3D realDomain, pluint celltype, HemoCellFields & cellFields,int & cellid, HemoCellParticleField & particleField)
 {
-  if(verbose >= 1) {
-    pcout << "(HemoCell) (ReadPositions) reading von willibrands" << endl;
-  }
+  logfile << "(HemoCell) (ReadPositions) reading von willibrands" << endl;
   unsigned int ncells;
   fstream fIn;
   string line;
@@ -104,9 +102,7 @@ void readvonWillibrands(Box3D realDomain, pluint celltype, HemoCellFields & cell
         }
 
         fIn >> ncells;
-        if(verbose >= 1) {
-          pcout << "(readPositionsBloodCels) Particle count in file (" << cellFields[celltype]->name << "): " << ncells << "." << endl;
-        }
+        logfile << "(readPositionsBloodCels) Particle count in file (" << cellFields[celltype]->name << "): " << ncells << "." << endl;
         getline(fIn,line);
         
         for (unsigned i = 0 ; i < ncells ; i++) {
@@ -181,9 +177,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
         fIn >> Np[j];
         if (first_time) {
-          if(verbose >= 1) {
-            pcout << "(readPositionsBloodCels) Particle count in file (" << cellFields[j]->name << "): " << Np[j] << "." << endl;
-          }
+          logfile << "(readPositionsBloodCels) Particle count in file (" << cellFields[j]->name << "): " << Np[j] << "." << endl;
         }
         packPositions[j].resize(Np[j]); packAngles[j].resize(Np[j]);cellIdss[j].resize(Np[j]);
         int less = 0;
@@ -367,9 +361,7 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & c
     for (pluint icf = 0; icf < cellFields.size(); ++icf) {
         fluidAndParticleFieldsArg.push_back(cellFields[icf]->getParticleField3D());
     }
-    if(verbose >= 1) {
-      pcout << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
-    }
+    logfile << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
     
     applyProcessingFunctional(
             new ReadPositionsBloodCellField3D(cellFields, dx, cfg),

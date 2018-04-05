@@ -128,8 +128,6 @@ void HemoCellParticleField::update_preinlet_ppc() {
     }
   }
   preinlet_ppc_up_to_date = true;
-  //ppc_up_to_date = false;
-  //lpc_up_to_date = false;
 }
 void HemoCellParticleField::update_pg() {
   //Check if map exists, otherwise create

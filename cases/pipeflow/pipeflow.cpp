@@ -69,10 +69,10 @@ int main(int argc, char *argv[]) {
   
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
-  hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<T>(), (*cfg)["domain"]["RepCutoff"].read<T>());
-  hemocell.setRepulsionTimeScaleSeperation((*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  //hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<T>(), (*cfg)["domain"]["RepCutoff"].read<T>());
+  //hemocell.setRepulsionTimeScaleSeperation((*cfg)["ibm"]["stepMaterialEvery"].read<int>());
 
-  vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC,OUTPUT_FORCE_REPULSION};
+  vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
   hemocell.setOutputs("RBC_HO", outputs);
   hemocell.setOutputs("WBC_HO", outputs);
   hemocell.setOutputs("PLT", outputs);
@@ -83,6 +83,8 @@ int main(int argc, char *argv[]) {
   // Turn on periodicity in the X direction
   hemocell.setSystemPeriodicity(0, true);
 
+  // Enable boundary particles
+  //hemocell.enableBoundaryParticles((*cfg)["domain"]["kRep"].read<T>(), (*cfg)["domain"]["BRepCutoff"].read<T>(),(*cfg)["ibm"]["stepMaterialEvery"].read<int>());
   
   //loading the cellfield
   if (not cfg->checkpointed) {
@@ -127,7 +129,6 @@ int main(int argc, char *argv[]) {
      }
    */
     if (hemocell.iter % tmeas == 0) {
-      if (verbose) {
         pcout << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
         pcout << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
         pcout << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC_HO");
@@ -149,7 +150,6 @@ int main(int argc, char *argv[]) {
         // pcout << "Particle velocity, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << endl;
       }
       hemocell.writeOutput();
-    }
     if (hemocell.iter % tcheckpoint == 0) {
       hemocell.saveCheckPoint();
     }

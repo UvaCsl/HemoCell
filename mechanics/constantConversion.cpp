@@ -66,19 +66,17 @@ void Parameters::lbm_shear_parameters(Config & cfg,T nx) {
 }
 
 void Parameters::printParameters() {
-  if(verbose >= 1) {
-  pcout << "(HemoCell) System parameters:" << std::endl;
-  pcout << "\t dx: \t" << dx << std::endl;
-  pcout << "\t dt: \t" << dt << std::endl;
-  pcout << "\t dm: \t" << dm << std::endl;
-  pcout << "\t dN: \t" << df << std::endl;
-  pcout << "\t tau: \t" << tau << std::endl;
-  pcout << "\t nu_lbm: \t" << nu_lbm << std::endl;
-  pcout << "\t u_lb_max: \t" << u_lbm_max << std::endl;
+  logfile << "(HemoCell) System parameters:" << std::endl;
+  logfile << "\t dx: \t" << dx << std::endl;
+  logfile << "\t dt: \t" << dt << std::endl;
+  logfile << "\t dm: \t" << dm << std::endl;
+  logfile << "\t dN: \t" << df << std::endl;
+  logfile << "\t tau: \t" << tau << std::endl;
+  logfile << "\t nu_lbm: \t" << nu_lbm << std::endl;
+  logfile << "\t u_lb_max: \t" << u_lbm_max << std::endl;
 #ifdef FORCE_LIMIT
-  pcout << "\t f_limit: \t" << f_limit << std::endl;
+  logfile << "\t f_limit: \t" << f_limit << std::endl;
 #endif
-  }
 }
 
 T Parameters::dt = 0.0;

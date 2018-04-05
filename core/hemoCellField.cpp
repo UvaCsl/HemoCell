@@ -103,9 +103,9 @@ void HemoCellField::addSingleCell(hemo::Array<T,3> position, plint cellId) {
 }
 
 void HemoCellField::statistics() {
-  pcout << "Cellfield  (+ material model) of " << name << std::endl;
-  pcout << "  Volume :" << volume << " µm³ VolumeFraction of lsp per fluid node: " << volumeFractionOfLspPerNode << " %" << endl;
-  pcout << "  Nvertex: " << numVertex << endl;
+  logfile << "Cellfield  (+ material model) of " << name << std::endl;
+  logfile << "  Volume :" << volume << " µm³ VolumeFraction of lsp per fluid node: " << volumeFractionOfLspPerNode << " %" << endl;
+  logfile << "  Nvertex: " << numVertex << endl;
   mechanics->statistics();
 
 }

@@ -233,13 +233,13 @@ void RbcHighOrderModelnewBending::ParticleMechanics(map<int,vector<HemoCellParti
 };
 
 void RbcHighOrderModelnewBending::statistics() {
-    pcout << "(Cell-mechanics model) High Order model parameters for " << cellField.name << " cellfield" << std::endl; 
-    pcout << "\t k_link:   " << k_link << std::endl; 
-    pcout << "\t k_area:   " << k_area << std::endl; 
-    pcout << "\t k_bend: : " << k_bend << std::endl; 
-    pcout << "\t k_volume: " << k_volume << std::endl;
-    pcout << "\t eta_m:    " << eta_m << std::endl;
-    pcout << "\t eta_v:    " << eta_v << std::endl;
+    logfile << "(Cell-mechanics model) High Order model parameters for " << cellField.name << " cellfield" << std::endl; 
+    logfile << "\t k_link:   " << k_link << std::endl; 
+    logfile << "\t k_area:   " << k_area << std::endl; 
+    logfile << "\t k_bend: : " << k_bend << std::endl; 
+    logfile << "\t k_volume: " << k_volume << std::endl;
+    logfile << "\t eta_m:    " << eta_m << std::endl;
+    logfile << "\t eta_v:    " << eta_v << std::endl;
 };
 
 
