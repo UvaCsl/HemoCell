@@ -28,8 +28,6 @@ void CellInformationFunctionals::clear_list() {
   info_per_cell.clear();
 }
 void CellInformationFunctionals::calculate_vol_pos_area(HemoCell* hemocell) {
-  hemocell->cellfields->syncEnvelopes();
-  hemocell->cellfields->deleteIncompleteCells(false);
   calculateCellArea(hemocell);
   calculateCellVolume(hemocell);
   calculateCellPosition(hemocell);
@@ -169,6 +167,7 @@ void CellInformationFunctionals::CellType::processGenericBlocks(Box3D domain, st
 void CellInformationFunctionals::calculateCellVolume(HemoCell * hemocell_) {
   hemocell = hemocell_;
   hemocell->cellfields->syncEnvelopes();
+  hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellVolume(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
@@ -176,6 +175,7 @@ void CellInformationFunctionals::calculateCellVolume(HemoCell * hemocell_) {
 void CellInformationFunctionals::calculateCellArea(HemoCell * hemocell_) {
   hemocell = hemocell_;
   hemocell->cellfields->syncEnvelopes();
+  hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellArea(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
@@ -183,6 +183,7 @@ void CellInformationFunctionals::calculateCellArea(HemoCell * hemocell_) {
 void CellInformationFunctionals::calculateCellPosition(HemoCell * hemocell_) {
   hemocell = hemocell_;
   hemocell->cellfields->syncEnvelopes();
+  hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellPosition(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
@@ -190,6 +191,7 @@ void CellInformationFunctionals::calculateCellPosition(HemoCell * hemocell_) {
 void CellInformationFunctionals::calculateCellStretch(HemoCell * hemocell_) {
   hemocell = hemocell_;
   hemocell->cellfields->syncEnvelopes();
+  hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellStretch(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
@@ -197,6 +199,7 @@ void CellInformationFunctionals::calculateCellStretch(HemoCell * hemocell_) {
 void CellInformationFunctionals::calculateCellBoundingBox(HemoCell * hemocell_) {
   hemocell = hemocell_;
   hemocell->cellfields->syncEnvelopes();
+  hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellBoundingBox(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
@@ -204,6 +207,7 @@ void CellInformationFunctionals::calculateCellBoundingBox(HemoCell * hemocell_) 
 void CellInformationFunctionals::calculateCellAtomicBlock(HemoCell* hemocell_) {
   hemocell = hemocell_;
   hemocell->cellfields->syncEnvelopes();
+  hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellAtomicBlock(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
@@ -211,6 +215,7 @@ void CellInformationFunctionals::calculateCellAtomicBlock(HemoCell* hemocell_) {
 void CellInformationFunctionals::calculateCellType(HemoCell* hemocell_) {
   hemocell = hemocell_;
   hemocell->cellfields->syncEnvelopes();
+  hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyTimedProcessingFunctional(new CellType(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);

@@ -162,6 +162,7 @@ void HemoCell::writeOutput() {
     cellfields->applyBoundaryRepulsionForce();
   }
   cellfields->syncEnvelopes();
+  cellfields->deleteIncompleteCells(false);
 
   //Repoint surfaceparticle forces for output
   cellfields->separate_force_vectors();
