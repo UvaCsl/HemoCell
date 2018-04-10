@@ -3,10 +3,10 @@
 @author: Gabor Zavodszky
 """
 import numpy as np
-from cellModel import CellModel
-from mesh import Mesh
+from getModuli.cellModel import CellModel
+from getModuli.mesh import Mesh
 
-class WbcHO(CellModel):
+class Cell(CellModel):
     
     def __init__(self, l=1e-6):
         self.mesh = Mesh(l=l)

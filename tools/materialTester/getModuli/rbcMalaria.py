@@ -8,7 +8,7 @@ from getModuli.mesh import Mesh
 
 class Cell(CellModel):
     
-    def __init__(self, l=1e-6):
+    def __init__(self, l=1.0e-6):
         self.mesh = Mesh(l=l)
         self.l_eq = self.mesh.l_eq
         self.area_eq = self.mesh.getAreaEq()
