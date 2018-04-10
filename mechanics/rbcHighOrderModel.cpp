@@ -228,6 +228,8 @@ void RbcHighOrderModel::statistics() {
     logfile << "\t k_volume: " << k_volume << std::endl;
     logfile << "\t eta_m:    " << eta_m << std::endl;
     logfile << "\t eta_v:    " << eta_v << std::endl;
+    logfile << "\t mean_edge:" << cellConstants.edge_mean_eq << std::endl;
+    logfile << "\t N faces:  " << cellConstants.triangle_list.size() << std::endl;
 };
 
 

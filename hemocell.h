@@ -96,7 +96,7 @@ class HemoCell {
       try {
         boundaryElement = new TriangleBoundary3D<T>(constructMeshElement(constructType, 
                            (*materialCfg)["MaterialModel"]["radius"].read<T>()/param::dx, 
-                           (*materialCfg)["MaterialModel"]["minNumTriangles"].read<T>(), param::dx, 
+                           0, param::dx, 
                            (*materialCfg)["MaterialModel"]["StlFile"].read<string>(), plb::Array<T,3>(0.,0.,0.), aspectRatio));
       } catch (std::invalid_argument & exeption) {
         boundaryElement = new TriangleBoundary3D<T>(constructMeshElement(constructType, 
