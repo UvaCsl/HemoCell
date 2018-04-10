@@ -26,8 +26,17 @@ HemoCellStretch::FindForcedLsps * HemoCellStretch::FindForcedLsps::clone() const
 
 void HemoCellStretch::FindForcedLsps::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   vector<HemoCellParticle*> found;
-  dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->findParticles(domain,found);
+  HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
+  const map<int,vector<int>> & ppc = pf->get_particles_per_cell();
   
+  const vector<int> & p_indices = ppc.at(0);
+  for (int p_index : p_indices) {
+    if (p_index == -1) {
+      cout << "Error -1 found in cell, exiting" << endl;
+      exit(1);
+    }
+    found.push_back(&pf->particles[p_index]);
+  }
   //sort found on first dimension
   //Use simple sort, dont want to overload < operator of particle
   HemoCellParticle * tmp;
@@ -64,10 +73,16 @@ void HemoCellStretch::ForceForcedLsps::processGenericBlocks(Box3D domain, std::v
 HemoCellStretch::HemoCellStretch(HemoCellField & cellfield_, unsigned int n_forced_lsps_, T external_force_) 
                 : cellfield(cellfield_)
 {
+  //Sanity Checks
+  if (cellfield.cellFields.number_of_cells != 1) {
+    pcout << "(HemoCellStretch) Refusing to run with more or less than 1 cell" << endl;
+    exit(1);
+  }
   n_forced_lsps = n_forced_lsps_;
   external_force = external_force_/n_forced_lsps;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(cellfield.getParticleField3D());
+  cellfield.cellFields.syncEnvelopes();
   applyProcessingFunctional(new FindForcedLsps(),cellfield.getParticleField3D()->getBoundingBox(),wrapper);
 }
 
