@@ -14,6 +14,7 @@ void PrintHelp() {
           "  --rbc <n>                               Number of Red Blood Cells\n"
           "  --plt <n>                               Number of Platelets\n"
           "  --wbc <n>                               Number of White Blood Cells\n"
+          "  --vrbc <n>                              Number of Stage V gametocytes\n"
           "  --cell <name> <n> <e1, e2, diameter>    Custom Celltype described by ellipsoid\n"
           "  --allowRotate                        -r Allow for rotation of ellipsoids\n"
           "  --scale <ratio>                         Scales the simulated annealing and can affect performance, default=0.3\n"
@@ -44,6 +45,7 @@ const option long_opts[] = {
             {"rbc",        1, nullptr, 2},
             {"plt",        1, nullptr, 3},
             {"wbc",        1, nullptr, 4},
+            {"vrbc",       1, nullptr, 11},
             {"cell",       1, nullptr, 5},
             {"allowRotate",0, nullptr, 6},
             {"scale",      1, nullptr, 7},
@@ -55,6 +57,7 @@ const option long_opts[] = {
 double rbcA = 8.4, rbcB = 4.4, rbcC = 8.4; // Inreased to cover biconcave shape of RBCs
 double pltA = 2.4 , pltB = 1.05, pltC = 2.4;
 double wbcA = 8.4, wbcB = 8.4, wbcC = 8.4;
+double vrbcA= 11.0, vrbcB=3.0, vrbcC= 5.0; 
 
 
 int main(int argc, char *argv[]) 
@@ -110,6 +113,9 @@ int main(int argc, char *argv[])
       case(4):
         cellTypes.push_back({"WBC",wbcA,wbcB,wbcC,atoi(optarg)});
         break;
+      case(11):
+        cellTypes.push_back({"vRBC",vrbcA,vrbcB,vrbcC,atoi(optarg)});
+        break;  
       case(5):
         if (optind+3 > argc) {
           PrintHelp();
