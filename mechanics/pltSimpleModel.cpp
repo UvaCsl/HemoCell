@@ -211,11 +211,11 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 }
 
 void PltSimpleModel::statistics() {
-    logfile << "(Cell-mechanics model) Reduced-model parameters for " << cellField.name << " cellfield" << std::endl;
-    logfile << "\t k_link:   " << k_link << std::endl; 
-    logfile << "\t k_bend: : " << k_bend << std::endl; 
-    logfile << "\t k_volume: " << k_volume << std::endl; 
-    logfile << "\t eta:      " << eta << std::endl;
+    hlog << "(Cell-mechanics model) Reduced-model parameters for " << cellField.name << " cellfield" << std::endl;
+    hlog << "\t k_link:   " << k_link << std::endl; 
+    hlog << "\t k_bend: : " << k_bend << std::endl; 
+    hlog << "\t k_volume: " << k_volume << std::endl; 
+    hlog << "\t eta:      " << eta << std::endl;
 };
 
 

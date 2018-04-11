@@ -248,17 +248,17 @@ void WbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 };
 
 void WbcHighOrderModel::statistics() {
-    logfile << "(Cell-mechanics model) High Order model parameters for " << cellField.name << " cellfield" << std::endl; 
-    logfile << "\t k_link:   " << k_link << std::endl; 
-    logfile << "\t k_area:   " << k_area << std::endl; 
-    logfile << "\t k_bend: : " << k_bend << std::endl; 
-    logfile << "\t k_volume: " << k_volume << std::endl;
-    logfile << "\t k_cytoskeleton: " << k_cytoskeleton<< std::endl;
-    logfile << "\t k_inner_rigid: " << k_inner_rigid << std::endl;
-    logfile << "\t eta_m:    " << eta_m << std::endl;
-    logfile << "\t eta_v:    " << eta_v << std::endl;
-    logfile << "\t wbc_radius:    " << radius << std::endl;
-    logfile << "\t core_radius:    " << core_radius << std::endl;
+    hlog << "(Cell-mechanics model) High Order model parameters for " << cellField.name << " cellfield" << std::endl; 
+    hlog << "\t k_link:   " << k_link << std::endl; 
+    hlog << "\t k_area:   " << k_area << std::endl; 
+    hlog << "\t k_bend: : " << k_bend << std::endl; 
+    hlog << "\t k_volume: " << k_volume << std::endl;
+    hlog << "\t k_cytoskeleton: " << k_cytoskeleton<< std::endl;
+    hlog << "\t k_inner_rigid: " << k_inner_rigid << std::endl;
+    hlog << "\t eta_m:    " << eta_m << std::endl;
+    hlog << "\t eta_v:    " << eta_v << std::endl;
+    hlog << "\t wbc_radius:    " << radius << std::endl;
+    hlog << "\t core_radius:    " << core_radius << std::endl;
 };
 
 

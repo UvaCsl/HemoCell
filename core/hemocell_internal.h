@@ -31,6 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 //Load Constants
 #include "constant_defaults.h"
+//Include logging stuff
+#include "logfile.h"
 
 #include "palabos3D.h"
 #include "palabos3D.hh"

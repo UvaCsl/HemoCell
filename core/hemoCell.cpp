@@ -29,7 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 //Required as extern from constant_defaults
 int verbose = 0;
-fstream logfile;
 
 volatile sig_atomic_t interrupted = 0;
 void set_interrupt(int signum) {
@@ -45,7 +44,7 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   global::directories().setInputDir("./");
   global::IOpolicy().activateParallelIO(true);
   global::IOpolicy().setStlFilesHaveLowerBound(false);
-    logfile << "(HemoCell) (Config) reading " << configFileName << endl;
+    hlog << "(HemoCell) (Config) reading " << configFileName << endl;
   cfg = new Config(configFileName);
   documentXML = new XMLreader(configFileName);
   try {
@@ -80,17 +79,17 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   if (global::mpi().getRank() == 0) {
     string filename =  global::directories().getLogOutDir() + logfilename;
     if (!file_exists(filename)) { 
-      logfile.open(global::directories().getLogOutDir() + logfilename , std::fstream::out );
+      hlog.logfile.open(global::directories().getLogOutDir() + logfilename , std::fstream::out );
       goto logfile_open_done; 
     }
     for (int i = 0; i < INT_MAX; i++) {
       if (!file_exists(filename + "." + to_string(i))) {
-        logfile.open(filename + "." + to_string(i) , std::fstream::out);
+        hlog.logfile.open(filename + "." + to_string(i) , std::fstream::out);
         goto logfile_open_done; 
       }
     }
     logfile_open_done:
-    if (!logfile.good()) {
+    if (!hlog.logfile.good()) {
       pcerr << "(HemoCell) (LogFile) Error opening logfile, exiting" << endl;
       exit(1);
     }
@@ -101,10 +100,10 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   global::timer("atOutput").start();
   
 #ifdef FORCE_LIMIT
-    logfile << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT << " pN. Results can be inaccurate due to force capping." << endl;
+    hlogfile << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT << " pN. Results can be inaccurate due to force capping." << endl;
 #endif
   if (sizeof(T) == sizeof(float)) {
-    logfile << "(HemoCell) WARNING: Running with single precision, you might want to switch to double precision" << endl;
+    hlog << "(HemoCell) WARNING: Running with single precision, you might want to switch to double precision" << endl;
   }
   
   ///Set signal handlers to exit gracefully on many signals
@@ -123,7 +122,7 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
 }
 
 void HemoCell::latticeEquilibrium(T rho, hemo::Array<T, 3> vel) {
-  logfile << "(HemoCell) (Fluid) Setting Fluid Equilibrium" << endl;
+  hlog << "(HemoCell) (Fluid) Setting Fluid Equilibrium" << endl;
   plb::Array<T,3> vel_plb = {vel[0],vel[1],vel[2]};
   initializeAtEquilibrium(*lattice, (*lattice).getBoundingBox(), rho, vel_plb);
 }
@@ -136,13 +135,13 @@ void HemoCell::initializeCellfield() {
 }
 
 void HemoCell::setOutputs(string name, vector<int> outputs) {
-  logfile << "(HemoCell) (CellField) Setting output variables for " << name << " cells" << endl;
+  hlog << "(HemoCell) (CellField) Setting output variables for " << name << " cells" << endl;
   vector<int> outputs_c = outputs;
   (*cellfields)[name]->setOutputVariables(outputs_c);
 }
 
 void HemoCell::setFluidOutputs(vector<int> outputs) {
-  logfile << "(HemoCell) (Fluid) Setting output variables for fluid field" << endl;
+  hlog << "(HemoCell) (Fluid) Setting output variables for fluid field" << endl;
   vector<int> outputs_c = outputs;
   cellfields->desiredFluidOutputVariables = outputs_c;
 }
@@ -162,7 +161,7 @@ void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
 }
 
 void HemoCell::setSystemPeriodicityLimit(unsigned int axis, int limit) {
-  logfile << "(HemoCell) (Periodicity) Setting periodicity limit of axis " << axis << " to " << limit << endl;
+  hlog << "(HemoCell) (Periodicity) Setting periodicity limit of axis " << axis << " to " << limit << endl;
   cellfields->periodicity_limit[axis] = limit;
   
   //recalculate offsets :
@@ -171,7 +170,7 @@ void HemoCell::setSystemPeriodicityLimit(unsigned int axis, int limit) {
 }
 
 void HemoCell::loadParticles() {
-  logfile << "(HemoCell) (CellField) Loading particle positions "  << endl;
+  hlog << "(HemoCell) (CellField) Loading particle positions "  << endl;
   loadParticlesIsCalled = true;
   readPositionsBloodCellField3D(*cellfields, param::dx, *cfg);
   cellfields->syncEnvelopes();
@@ -281,12 +280,12 @@ void HemoCell::iterate() {
 }
 
 T HemoCell::calculateFractionalLoadImbalance() {
-  logfile << "(HemoCell) (LoadBalancer) Calculating Fractional Load Imbalance at timestep " << iter << endl;
+  hlog << "(HemoCell) (LoadBalancer) Calculating Fractional Load Imbalance at timestep " << iter << endl;
   return loadBalancer->calculateFractionalLoadImbalance();
 }
 
 void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separation){
-  logfile << "(HemoCell) (Timescale Seperation) Setting seperation of " << name << " to " << separation << " timesteps"<<endl;
+  hlog << "(HemoCell) (Timescale Seperation) Setting seperation of " << name << " to " << separation << " timesteps"<<endl;
   //pcout << "(HemoCell) WARNING if the timescale separation is not dividable by tmeasure, checkpointing is non-deterministic!"<<endl; //not true anymore, with checkpointing remaining force is saved
   (*cellfields)[name]->timescale = separation;
   if (separation%cellfields->particleVelocityUpdateTimescale!=0) {
@@ -296,9 +295,9 @@ void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separati
 }
 
 void HemoCell::setParticleVelocityUpdateTimeScaleSeparation(unsigned int separation) {
-  logfile << "(HemoCell) (Timescale separation) Setting update separation of all particles to " << separation << " timesteps" << endl;
+  hlog << "(HemoCell) (Timescale separation) Setting update separation of all particles to " << separation << " timesteps" << endl;
   if(verbose >= 2) {
-    logfile << "(HemoCell) WARNING this introduces great errors" << endl;
+    hlog << "(HemoCell) WARNING this introduces great errors" << endl;
   }
   for (unsigned int i = 0; i < cellfields->size() ; i++) {
     if ((*cellfields)[i]->timescale%separation !=0) {
@@ -310,7 +309,7 @@ void HemoCell::setParticleVelocityUpdateTimeScaleSeparation(unsigned int separat
 }
 
 void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
-  logfile << "(HemoCell) (Repulsion Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
+  hlog << "(HemoCell) (Repulsion Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
   cellfields->repulsionTimescale = separation;
   if (separation%cellfields->particleVelocityUpdateTimescale!=0) {
      pcout << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
@@ -319,7 +318,7 @@ void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
 }
 
 void HemoCell::setMinimumDistanceFromSolid(string name, T distance) {
-  logfile << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << " micrometer for " << name << endl; 
+  hlog << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << " micrometer for " << name << endl; 
   if (loadParticlesIsCalled) {
     pcout << "(HemoCell) (Set Distance) WARNING: this function is called after the particles are loaded, so it probably has no effect" << endl;
   }
@@ -327,7 +326,7 @@ void HemoCell::setMinimumDistanceFromSolid(string name, T distance) {
 }
 
 void HemoCell::setRepulsion(T repulsionConstant, T repulsionCutoff) {
-  logfile << "(HemoCell) (Repulsion) Setting repulsion constant to " << repulsionConstant << ". repulsionCutoff to" << repulsionCutoff << " µm" << endl;
+  hlog << "(HemoCell) (Repulsion) Setting repulsion constant to " << repulsionConstant << ". repulsionCutoff to" << repulsionCutoff << " µm" << endl;
   if(verbose >= 2) {
     pcout << "(HemoCell) (Repulsion) Enabling repulsion" << endl;
   }
@@ -338,7 +337,7 @@ void HemoCell::setRepulsion(T repulsionConstant, T repulsionCutoff) {
 
 void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRepulsionCutoff, unsigned int timestep) {
   cellfields->populateBoundaryParticles();
-  logfile << "(HemoCell) (Repulsion) Setting boundary repulsion constant to " << boundaryRepulsionConstant << ". boundary repulsionCutoff to" << boundaryRepulsionCutoff << " µm" << endl;
+  hlog << "(HemoCell) (Repulsion) Setting boundary repulsion constant to " << boundaryRepulsionConstant << ". boundary repulsionCutoff to" << boundaryRepulsionCutoff << " µm" << endl;
   if(verbose >= 2) {
     pcout << "(HemoCell) (Repulsion) Enabling boundary repulsion" << endl;
   }
@@ -362,6 +361,6 @@ void HemoCell::doLoadBalance() {
 #endif
 
 void HemoCell::doRestructure(bool checkpoint_avail) {
-  logfile << "(HemoCell) (LoadBalancer) Restructuring Atomic Blocks on processors" << endl;
+  hlog << "(HemoCell) (LoadBalancer) Restructuring Atomic Blocks on processors" << endl;
   loadBalancer->restructureBlocks(checkpoint_avail);
 }

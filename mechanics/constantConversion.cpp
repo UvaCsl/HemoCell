@@ -66,16 +66,16 @@ void Parameters::lbm_shear_parameters(Config & cfg,T nx) {
 }
 
 void Parameters::printParameters() {
-  logfile << "(HemoCell) System parameters:" << std::endl;
-  logfile << "\t dx: \t" << dx << std::endl;
-  logfile << "\t dt: \t" << dt << std::endl;
-  logfile << "\t dm: \t" << dm << std::endl;
-  logfile << "\t dN: \t" << df << std::endl;
-  logfile << "\t tau: \t" << tau << std::endl;
-  logfile << "\t nu_lbm: \t" << nu_lbm << std::endl;
-  logfile << "\t u_lb_max: \t" << u_lbm_max << std::endl;
+  hlog << "(HemoCell) System parameters:" << std::endl;
+  hlog << "\t dx: \t" << dx << std::endl;
+  hlog << "\t dt: \t" << dt << std::endl;
+  hlog << "\t dm: \t" << dm << std::endl;
+  hlog << "\t dN: \t" << df << std::endl;
+  hlog << "\t tau: \t" << tau << std::endl;
+  hlog << "\t nu_lbm: \t" << nu_lbm << std::endl;
+  hlog << "\t u_lb_max: \t" << u_lbm_max << std::endl;
 #ifdef FORCE_LIMIT
-  logfile << "\t f_limit: \t" << f_limit << std::endl;
+  hlog << "\t f_limit: \t" << f_limit << std::endl;
 #endif
 }
 
