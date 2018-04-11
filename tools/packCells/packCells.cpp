@@ -57,7 +57,7 @@ const option long_opts[] = {
 double rbcA = 8.4, rbcB = 4.4, rbcC = 8.4; // Inreased to cover biconcave shape of RBCs
 double pltA = 2.4 , pltB = 1.05, pltC = 2.4;
 double wbcA = 8.4, wbcB = 8.4, wbcC = 8.4;
-double vrbcA= 11.0, vrbcB=3.0, vrbcC= 5.0; 
+double vrbcA= 3.5, vrbcB=6.0, vrbcC= 11.0; // Set according to the reconstructed stl dimensions
 
 
 int main(int argc, char *argv[]) 
