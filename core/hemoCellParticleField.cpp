@@ -441,9 +441,11 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
 
       //issue warning
       if (verbose) {
-        if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].sv.position,localDomain) && !warningIssued) {
+        if (!warningIssued) {
+          if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].sv.position,localDomain)) {
                   issueWarning(particles[particles_per_cell.at(cellid)[i]]);
-          warningIssued = true;
+            warningIssued = true;
+          }
         }
       }
       
@@ -483,9 +485,11 @@ int HemoCellParticleField::deleteIncompleteCells(const bool verbose) {
 
       //issue warning
       if (verbose) {
-        if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].sv.position,localDomain) && !warningIssued) {
+        if (!warningIssued) {
+          if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].sv.position,localDomain)) {
                   issueWarning(particles[particles_per_cell.at(cellid)[i]]);
-          warningIssued = true;
+            warningIssued = true;
+          }
         }
       }
       
