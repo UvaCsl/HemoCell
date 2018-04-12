@@ -137,22 +137,8 @@ int main(int argc, char* argv[])
 
   while (hemocell.iter < tmax ) {  
 
-    hemocell.checkExitSignals();  // Since we do not use the main iterate() loop, we have to check for this manually!
-
-    hemocell.cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
-
     cellStretch.applyForce(); //IMPORTANT, not done normally in hemocell.iterate()
-    
-    hemocell.cellfields->spreadParticleForce();
-    hemocell.lattice->timedCollideAndStream();
-    hemocell.cellfields->interpolateFluidVelocity();
-    hemocell.cellfields->syncEnvelopes();
-    hemocell.cellfields->advanceParticles();
-    hemocell.iter++;
-    // Reset Forces on the lattice, TODO do own efficient implementation
-    setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-          DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-          plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
+    hemocell.iterate();
     
     
     if (hemocell.iter % tmeas == 0) {
