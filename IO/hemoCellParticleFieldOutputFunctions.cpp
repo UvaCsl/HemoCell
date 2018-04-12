@@ -213,6 +213,13 @@ void HemoCellParticleField::outputForceVolume(Box3D domain,vector<vector<T>>& ou
       output.push_back(tf);
     }
   }
+  if(cellFields->hemocell.outputInSiUnits) {
+    for (vector<T> & tf : output) {
+      for (T & n : tf) {
+        n = n * param::df;
+      }
+    }
+  }
 }
 
 void HemoCellParticleField::outputForceVisc(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {

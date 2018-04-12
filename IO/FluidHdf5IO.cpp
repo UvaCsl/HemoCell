@@ -252,7 +252,7 @@ float * WriteFluidField::outputDensity() {
   
   if (cellfields.hemocell.outputInSiUnits) {
     for (unsigned int i = 0 ; i < (*nCells) ; i++) {
-      output[i] = output[i]*param::dm;
+      output[i] = output[i]*(param::df/(param::dx*param::dx));
     }
   }
   

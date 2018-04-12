@@ -13,9 +13,16 @@ if [ -d tmp ]; then
   cd tmp; 
 fi
 
+if command -v python; then
+python_c=python
+elif commond -v python3; then
+python_c=python3
+else
+pyton_c=python2
+fi
 
 # Fluid
-${scriptsDir}/FluidHDF5.py; 
+${python_c} ${scriptsDir}/FluidHDF5.py; 
 
 # Cells of different types
 if [ ! -d ./csv ]; then
@@ -31,7 +38,7 @@ do
       continue
     fi
     echo ${name}:
-    ${scriptsDir}/CellHDF5toXMF.py ${name}; 
+    ${python_c} ${scriptsDir}/CellHDF5toXMF.py ${name}; 
   done
   break;
 done
