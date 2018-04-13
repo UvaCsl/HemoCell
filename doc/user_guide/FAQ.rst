@@ -32,3 +32,10 @@ We have had reports that the clang (or llvm) compiler can cause problems with
 compiling the singularity image. Disabling it (removing it from the environment)
 or using another system might work. We are looking into this issue.
 
+Q: Compiling with singularity gives errors
+------------------------------------------
+
+Maybe you have an old ``hemocell/`` folder in the same directory and are trying to compile with a newer version. If this is the case you can rename ``hemocell/`` to ``hemocell_old`` and the newer singularity image should create a new folder 
+
+
+Do you have a problem that is not listed here? please mail: info@hemocell.eu or create an issue at the github repository, you might help someone else as well!

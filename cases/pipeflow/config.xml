@@ -1,7 +1,10 @@
 <?xml version="1.0" ?>
 <hemocell>
 
-<verbose>0</verbose>
+<verbose>
+	<cellsDeletedInfo>0</cellsDeletedInfo> <!-- Give information about the location of deleted cells, this option impacts performance -->
+</verbose>
+
 <parameters>
     <warmup> 10 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->

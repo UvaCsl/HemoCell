@@ -83,3 +83,64 @@ namespace hemo {
 
   
 }
+
+void loadDirectories(std::string configFileName, Config * cfg)  {
+    //TODO This should be done through hemocell config, not some palabos global
+  global::directories().setOutputDir("./tmp/");
+  global::directories().setInputDir("./");
+  global::IOpolicy().activateParallelIO(true);
+  global::IOpolicy().setStlFilesHaveLowerBound(false);
+
+  //setting outdir
+  try {
+    std::string outDir = (*cfg)["parameters"]["outputDirectory"].read<string>() + "/";
+    if (outDir[0] != '/') {
+          outDir = "./" + outDir;
+    }
+    global::directories().setOutputDir(outDir);
+  } catch (std::invalid_argument & exeption) {}
+  mkpath((global::directories().getOutputDir() + "/hdf5/").c_str(), 0777);
+
+  //Setting logfile and logdir  
+  global::directories().setLogOutDir("./log/");
+  try {
+    std::string outDir = (*cfg)["parameters"]["logDirectory"].read<string>() + "/";
+    if (outDir[0] != '/') {
+          outDir = "./" + outDir;
+    }
+    global::directories().setLogOutDir(outDir);
+  } catch (std::invalid_argument & exeption) {}
+  string logfilename = "logfile";
+  try {
+    logfilename = (*cfg)["parameters"]["logFile"].read<string>();
+  } catch (std::invalid_argument & exeption) {}
+  mkpath(global::directories().getLogOutDir().c_str(), 0777);
+
+  if (global::mpi().getRank() == 0) {
+    string filename =  global::directories().getLogOutDir() + logfilename;
+    if (!file_exists(filename)) { 
+      hlog.logfile.open(global::directories().getLogOutDir() + logfilename , std::fstream::out );
+      goto logfile_open_done; 
+    }
+    for (int i = 0; i < INT_MAX; i++) {
+      if (!file_exists(filename + "." + to_string(i))) {
+        hlog.logfile.open(filename + "." + to_string(i) , std::fstream::out);
+        goto logfile_open_done; 
+      }
+    }
+    logfile_open_done:
+    if (!hlog.logfile.good()) {
+      pcerr << "(HemoCell) (LogFile) Error opening logfile, exiting" << endl;
+      exit(1);
+    }
+  }
+}
+
+ConfigValues globalConfigValues;
+
+void loadGlobalConfigValues(hemo::Config * cfg) {
+  try {
+   globalConfigValues.cellsDeletedInfo = (*cfg)["verbose"]["cellsDeletedInfo"].read<int>();
+  } catch(std::invalid_argument & e) {}
+}
+

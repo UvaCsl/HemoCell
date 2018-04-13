@@ -16,9 +16,8 @@ int main(int argc, char *argv[]) {
   HemoCell hemocell(argv[1], argc, argv);
   Config * cfg = hemocell.cfg;
 
-  if (verbose) {
-    pcout << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl; 
-  }
+  hlogfile << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl; 
+
   MultiScalarField3D<int> *flagMatrix = 0; 
   VoxelizedDomain3D<T> * voxelizedDomain = 0; 
   getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),  

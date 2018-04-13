@@ -71,4 +71,14 @@ namespace hemo {
   };
 
 }
+
+void loadDirectories(std::string configFileName, hemo::Config * cfg);
+
+struct ConfigValues {
+    bool cellsDeletedInfo = false;
+};
+
+extern ConfigValues globalConfigValues;
+
+void loadGlobalConfigValues(hemo::Config * cfg);
 #endif

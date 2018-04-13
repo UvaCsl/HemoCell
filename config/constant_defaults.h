@@ -146,7 +146,4 @@ typedef long int plint;
 typedef long unsigned int pluint;
 #endif
 
-//easily accessible verbose argument;
-extern int verbose;
-
 #endif

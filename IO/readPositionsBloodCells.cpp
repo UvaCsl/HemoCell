@@ -366,7 +366,5 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & c
     applyProcessingFunctional(
             new ReadPositionsBloodCellField3D(cellFields, dx, cfg),
             cellFields.lattice->getBoundingBox(), fluidAndParticleFieldsArg);
-    if(verbose >= 2) {
-      cout << "Mpi Process: " << global::mpi().getRank()  << " Completed loading particles" << std::endl;
-    }
+    hlogfile << "Mpi Process: " << global::mpi().getRank()  << " Completed loading particles" << std::endl;
 }
