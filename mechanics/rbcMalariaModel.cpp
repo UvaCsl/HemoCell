@@ -8,6 +8,7 @@ RbcMalariaModel::RbcMalariaModel(Config & modelCfg_, HemoCellField & cellField_)
                   k_area( RbcMalariaModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
                   k_link( RbcMalariaModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
                   k_bend( RbcMalariaModel::calculate_kBend(modelCfg_,*cellField_.meshmetric) ),
+                  k_inner_link( RbcMalariaModel::calculate_kInnerLink(modelCfg_,*cellField_.meshmetric) ),
                   eta_m( RbcMalariaModel::calculate_etaM(modelCfg_) ),
                   eta_v( RbcMalariaModel::calculate_etaV(modelCfg_) )
     {};
@@ -193,7 +194,26 @@ void RbcMalariaModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & pa
 
       edge_n++;
     }
+    
+    // Per-inner-edge caluclations
+    int inner_edge_n=0;
+    for (const hemo::Array<plint,2> & edge : cellConstants.inner_edge_list) {
+      const hemo::Array<T,3> & v0 = cell[edge[0]]->sv.position;
+      const hemo::Array<T,3> & v1 = cell[edge[1]]->sv.position;
 
+      // Link force
+      const hemo::Array<T,3> edge_v = v1-v0;
+      const T edge_length = sqrt(edge_v[0]*edge_v[0]+edge_v[1]*edge_v[1]+edge_v[2]*edge_v[2]);
+      const hemo::Array<T,3> edge_uv = edge_v/edge_length;
+      const T edge_frac = (edge_length-cellConstants.inner_edge_length_eq_list[inner_edge_n])/cellConstants.inner_edge_length_eq_list[inner_edge_n];
+
+      const T edge_force_scalar = k_inner_link * 5.0 * edge_frac; // Keep the linear part only for stability  
+      
+      const hemo::Array<T,3> force = edge_uv*edge_force_scalar;
+      *cell[edge[0]]->force_inner_link += force;
+      *cell[edge[1]]->force_inner_link -= force;
+      inner_edge_n++;
+    }
   } 
 };
 
@@ -202,6 +222,7 @@ void RbcMalariaModel::statistics() {
     pcout << "\t k_link:   " << k_link << std::endl; 
     pcout << "\t k_area:   " << k_area << std::endl; 
     pcout << "\t k_bend: : " << k_bend << std::endl; 
+    pcout << "\t k_inner_link:   " << k_inner_link << std::endl; 
     pcout << "\t k_volume: " << k_volume << std::endl;
     pcout << "\t eta_m:    " << eta_m << std::endl;
     pcout << "\t eta_v:    " << eta_v << std::endl;
@@ -245,5 +266,14 @@ double RbcMalariaModel::calculate_kLink(Config & cfg, MeshMetrics<double> & mesh
   double plc = persistenceLengthFine/param::dx;
   kLink *= param::kBT_lbm/plc;
   return kLink;
+};
+
+double RbcMalariaModel::calculate_kInnerLink(Config & cfg, MeshMetrics<double> & meshmetric){
+  double kInnerLink = cfg["MaterialModel"]["kInnerLink"].read<double>();
+  double persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
+  //TODO: It should scale with the number of surface points!
+  double plc = persistenceLengthFine/param::dx;
+  kInnerLink *= param::kBT_lbm/plc;
+  return kInnerLink;
 };
 

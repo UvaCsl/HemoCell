@@ -17,6 +17,7 @@ class RbcMalariaModel : public CellMechanics {
 	const double k_area;
 	const double k_link;
 	const double k_bend;
+        const double k_inner_link;
 	const double eta_m;
 	const double eta_v;
 
@@ -31,6 +32,7 @@ class RbcMalariaModel : public CellMechanics {
 	static double calculate_kVolume(Config &cfg, MeshMetrics<double> &);
 	static double calculate_kArea(Config &cfg, MeshMetrics<double> &);
 	static double calculate_kLink(Config &cfg, MeshMetrics<double> &);
+      	static double calculate_kInnerLink(Config &cfg, MeshMetrics<double> &);
 	static double calculate_etaM(Config &cfg);
 	static double calculate_etaV(Config &cfg);
 };
