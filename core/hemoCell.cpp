@@ -39,6 +39,7 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   cfg = new Config(configFileName);
   documentXML = new XMLreader(configFileName);
   loadDirectories(configFileName, cfg);
+  loadGlobalConfigValues(cfg);
   printHeader();
   
   // start clock for basic performance feedback
@@ -217,6 +218,9 @@ void HemoCell::iterate() {
   
   //We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
   if(iter % cellfields->particleVelocityUpdateTimescale == 0) {
+    if (globalConfigValues.cellsDeletedInfo) {
+      cellfields->deleteIncompleteCells(true);
+    }
     cellfields->deleteNonLocalParticles(3);
   }
 
