@@ -49,7 +49,7 @@ Logfile & operator << (Logfile & lf, Val const & rhs) {
 }
 inline Logfile & operator<< (Logfile & lf, std::ostream & (*op) (std::ostream&)) {
     if (lf.logfile.good()){
-        std::cout << op;
+        std::cout << op << std::flush;
         lf.logfile << op;
     }
     return lf;
