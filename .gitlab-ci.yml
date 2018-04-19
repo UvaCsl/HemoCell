@@ -10,7 +10,7 @@ cache:
 
 before_script:
   - apt-get update > /dev/null
-  - apt-get -y install make cmake g++-5 g++ libopenmpi-dev libhdf5-dev patch python-h5py > /dev/null
+  - apt-get -y install bc make cmake g++-5 g++ libopenmpi-dev libhdf5-dev patch python-h5py > /dev/null
   - cd ${CI_PROJECT_DIR}
   - ./setup.sh > /dev/null
 
