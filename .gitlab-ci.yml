@@ -18,8 +18,7 @@ build_cases:
   stage: build
   script:
     - cd ${CI_PROJECT_DIR}/cases
-    - make -j4 ../build/hemocell/libhemocell.a > /dev/null
-    - make -j4 pipeflow/pipeflow > /dev/null
+    - make -j4 all > /dev/null
 
 test_pipeflow:
   stage: test

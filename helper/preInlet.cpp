@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
   if (global::mpi().getSize() > 1) {
     pcerr << "Not compiled with HDF5 OpenMPI version, cowardly refusing to generate corrupted hdf5 files" << endl; 
-    exit(0);
+    exit(1);
   }
   return 0;
 }
@@ -67,12 +67,6 @@ PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTi
       break;
   }
 
-  /*counter.open(global::directories().getOutputDir() + "/preinlet.counter");
-  if (counter.fail()) {
-    pcout << "Error opening preinlet.counter, make sure it exists";
-    exit(0);
-  }*/
-  
   OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
   boundary->setVelocityConditionOnBlockBoundaries(*hemocell.lattice,fluidDomain);
   setBoundaryVelocity(*hemocell.lattice, fluidDomain, plb::Array<T,3>(0.,0.,0.));
@@ -82,37 +76,37 @@ PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTi
     H5Pset_fapl_mpio(plist_file_id, global::mpi().getGlobalCommunicator(), info);  
       
     file_id = H5Fopen(sourceFileName.c_str(), H5F_ACC_RDONLY, plist_file_id);
-    if(file_id < 0) { cout << "Error opening Preinlet hdf5 file." << endl; exit(0); }
+    if(file_id < 0) { cout << "Error opening Preinlet hdf5 file." << endl; exit(1); }
   H5Pclose(plist_file_id);
   
   Direction stored_flow;
   if(H5LTget_attribute_int(file_id,"/","flowDirection",(int *)&stored_flow) < 0) { 
-    cout << "Error reading flowDirection attribute" << endl; exit(0); 
+    cout << "Error reading flowDirection attribute" << endl; exit(1); 
   }
   if (stored_flow != flowDir) {
     cout << "Flow direction does not match, exiting ..." << endl;
-    exit(0);
+    exit(1);
   }
   int stored_size[3];
   if(H5LTget_attribute_int(file_id,"/","boxSize",stored_size) < 0) { 
-    cout << "Error reading boxSize attribute" << endl; exit(0); 
+    cout << "Error reading boxSize attribute" << endl; exit(1); 
   }
   if (domain.getNx() != stored_size[0] ||
       domain.getNy() != stored_size[1] ||
       domain.getNz() != stored_size[2]) {
     cout << "Box dimensions do not match, exiting ..." << endl;
-    exit(0);
+    exit(1);
   }
   if(H5LTget_attribute_int(file_id,"/","Number Of Cells",&nCellsSelf) < 0) { 
-    cout << "Error reading number of cells attribute" << endl; exit(0); 
+    cout << "Error reading number of cells attribute" << endl; exit(1); 
   }
   
   int rp;
   if(H5LTget_attribute_int(file_id,"/","reduced precision",&rp) < 0) { 
-    cout << "Error reading reduced precision attribute" << endl; exit(0); 
+    cout << "Error reading reduced precision attribute" << endl; exit(1); 
   }
   if ((rp == 0 && reducedPrecision) || (rp == 1 && !reducedPrecision)) {
-    cout << "Dataset is reduced precision, none requested or the other way around" << endl; exit(0);
+    cout << "Dataset is reduced precision, none requested or the other way around" << endl; exit(1);
   }
   
   nCellsOffset = hemocell.cellfields->number_of_cells;
@@ -137,7 +131,7 @@ PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTi
   particle_type_h5 = H5Tcreate(H5T_COMPOUND,particle_type_size);
   if (particle_type_h5  < 0) {
     cerr << "Error creating particle type hdf5, exiting.." << endl;
-    exit(0);
+    exit(1);
   };
   H5Tinsert (particle_type_h5, "location_X", 0, H5T_IEEE_F32LE); 
   H5Tinsert (particle_type_h5, "location_Y", H5Tget_size(H5T_IEEE_F32LE), H5T_IEEE_F32LE);
@@ -227,7 +221,7 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
   }
   if(H5Sselect_hyperslab(parent.dataspace_velocity_id, H5S_SELECT_SET, offset, NULL, count, NULL ) < 0 ) {
     cerr << "Error selecting hyperslab, exiting.." << endl; 
-    exit(0);
+    exit(1);
   }
   hid_t memspace_id = H5Screate_simple (5, count, NULL); 
   plb::Array<T,3> vel;
@@ -346,7 +340,7 @@ void PreInlet::update() {
     dataset_velocity_id = H5Dopen(file_id,dataset_name.c_str(),H5P_DEFAULT);
     if (dataset_velocity_id < 0) {
       pcout << "Error opening dataset " << dataset_name << " from preinlet file. Exiting ..." << endl;
-      exit(0);
+      exit(1);
     }
   }
     

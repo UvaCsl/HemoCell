@@ -40,7 +40,7 @@ namespace hemo {
   void Config::load(std::string paramXmlFileName) {
     if (!file_exists(paramXmlFileName)) {
       pcout << paramXmlFileName + " is not an existing config file, exiting ..." << endl;
-      exit(0);
+      exit(1);
     }
     orig = new tinyxml2::XMLDocument();
     orig->LoadFile(paramXmlFileName.c_str());

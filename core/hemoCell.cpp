@@ -96,11 +96,11 @@ void HemoCell::setFluidOutputs(vector<int> outputs) {
 void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
   if (lattice == 0) {
     pcerr << "(HemoCell) (Periodicity) please create a lattice before trying to set the periodicity" << endl;
-    exit(0);    
+    exit(1);    
   }
   if (cellfields->immersedParticles == 0) {
     pcerr << "(HemoCell) (Periodicity) please create a particlefield (hemocell.initializeCellfields()) before trying to set the periodicity" << endl;
-    exit(0);   
+    exit(1);   
   }
   lattice->periodicity().toggle(axis,bePeriodic);
   cellfields->immersedParticles->periodicity().toggle(axis, bePeriodic);
@@ -243,7 +243,7 @@ void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separati
   (*cellfields)[name]->timescale = separation;
   if (separation%cellfields->particleVelocityUpdateTimescale!=0) {
      pcout << "(HemoCell) Error, Velocity timescale separation cannot divide this material timescale separation, exiting ..." <<endl;
-     exit(0);
+     exit(1);
   }
 }
 
@@ -254,7 +254,7 @@ void HemoCell::setParticleVelocityUpdateTimeScaleSeparation(unsigned int separat
   for (unsigned int i = 0; i < cellfields->size() ; i++) {
     if ((*cellfields)[i]->timescale%separation !=0) {
       pcout << "(HemoCell) Error, Velocity timescale separation cannot divide all material timescale separations, exiting ..." <<endl;
-      exit(0);
+      exit(1);
     }
   }
   cellfields->particleVelocityUpdateTimescale = separation;
@@ -265,7 +265,7 @@ void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
   cellfields->repulsionTimescale = separation;
   if (separation%cellfields->particleVelocityUpdateTimescale!=0) {
      pcout << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
-     exit(0);
+     exit(1);
   }
 }
 
@@ -291,7 +291,7 @@ void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRe
   hlogfile << "(HemoCell) (Repulsion) Enabling boundary repulsion" << endl;
   if (timestep%cellfields->particleVelocityUpdateTimescale!=0) {
      pcout << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
-     exit(0);
+     exit(1);
   }
   cellfields->boundaryRepulsionConstant = boundaryRepulsionConstant;
   cellfields->boundaryRepulsionCutoff = boundaryRepulsionCutoff*(1e-6/param::dx);

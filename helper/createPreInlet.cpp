@@ -30,14 +30,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
   if (global::mpi().getSize() > 1) {
     pcerr << "Not compiled with HDF5 OpenMPI version, cowardly refusing to generate corrupted hdf5 files" << endl; 
-    exit(0);
+    exit(1);
   }
   return 0;
 }
 herr_t H5Pset_dxpl_mpio( hid_t dxpl_id, H5FD_mpio_xfer_t xfer_mode ) {
   if (global::mpi().getSize() > 1) {
     pcerr << "Not compiled with HDF5 OpenMPI version, cowardly refusing to generate corrupted hdf5 files" << endl; 
-    exit(0);
+    exit(1);
   }
   return 0;
 }
@@ -83,13 +83,13 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
       file_id = H5Fopen(outputFileName.c_str(),H5F_ACC_RDWR,plist_file_id);
       if (file_id < 0) {
         pcout << "Error opening existing preinlet file, exiting" << endl;
-        exit(0);
+        exit(1);
       }
     } else {
       file_id = H5Fcreate(outputFileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, plist_file_id);      
       if (file_id < 0) {
         pcout << "Error creating preinlet file, exiting" << endl;
-        exit(0);
+        exit(1);
       }
     }
   H5Pclose(plist_file_id);   
@@ -132,7 +132,7 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
   particle_type_h5 = H5Tcreate(H5T_COMPOUND,particle_type_size);
   if (particle_type_h5  < 0) {
     cerr << "Error creating particle type hdf5, exiting.." << endl;
-    exit(0);
+    exit(1);
   };
   H5Tinsert (particle_type_h5, "location_X", 0, H5T_IEEE_F32LE); 
   H5Tinsert (particle_type_h5, "location_Y", H5Tget_size(H5T_IEEE_F32LE), H5T_IEEE_F32LE);
@@ -173,7 +173,7 @@ void createPreInlet::createPreInletFunctional::processGenericBlocks(Box3D domain
   }
   if(H5Sselect_hyperslab(parent.dataspace_velocity_id, H5S_SELECT_SET, offset, NULL, count, NULL ) < 0 ) {
     cerr << "Error selecting hyperslab, exiting.." << endl; 
-    exit(0);
+    exit(1);
   }
   hid_t memspace_id = H5Screate_simple (5, count, NULL); 
   
@@ -231,7 +231,7 @@ void createPreInlet::createPreInletFunctional::processGenericBlocks(Box3D domain
  
   if ( err < 0) {
     cerr << "Error writing to hyperslab, exiting.." << endl; 
-    exit(0);
+    exit(1);
   };
   H5Sclose(memspace_id);
 
@@ -284,15 +284,15 @@ void createPreInlet::saveCurrent() {
             hid_t dataset_particles_id = H5Dcreate2(file_id, dataset_name.c_str() ,particle_type_h5,dataspace_particles_id,H5P_DEFAULT,plist_dataset_id,H5P_DEFAULT);    
               if (dataset_particles_id < 0) {
                 cerr << "Error creating particle dataset, exiting.." <<endl;
-                exit(0);
+                exit(1);
               }
               if (H5Sselect_hyperslab(dataspace_particles_id,H5S_SELECT_SET,offset,NULL,count,NULL) < 0 ) {
                 cerr << "Error selecting particle hyperslab, exiting.." <<endl;
-                exit(0);
+                exit(1);
               }
               if (H5Dwrite(dataset_particles_id,particle_type_mem,memspace_id,dataspace_particles_id,plist_dataset_mpi_id,particles_hdf5) < 0) {
                 cerr << "Error writing particles, exiting..." <<endl;
-                exit(0);
+                exit(1);
               }
             H5Dclose(dataset_particles_id);
             H5Sclose(memspace_id);
