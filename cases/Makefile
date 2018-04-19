@@ -28,7 +28,7 @@ $(CMAKES) : CMakeLists_template.txt
 	cd ../build/hemocell && cmake . && make -j $(JOBS)
 
 $(EXECS) : ../build/hemocell/libhemocell.a cmakefiles
-	cd $(@D) && mkdir -p build && cd build && cmake ../ && make
+	cd $(@D) && mkdir -p build && cd build && cmake ../ && make -j1
 
 clean:
 	rm -rf $(CMAKES) $(EXECS) */build

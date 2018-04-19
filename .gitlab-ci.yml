@@ -1,0 +1,28 @@
+image: ubuntu:16.04
+
+stages:
+  - build
+  - test
+
+cache:
+  paths:
+    - cases/*/*
+
+before_script:
+  - apt-get update > /dev/null
+  - apt-get -y install make cmake g++-5 g++ libopenmpi-dev libhdf5-dev patch python-h5py > /dev/null
+  - cd ${CI_PROJECT_DIR}
+  - ./setup.sh > /dev/null
+
+build_cases:
+  stage: build
+  script:
+    - cd ${CI_PROJECT_DIR}/cases
+    - make -j4 ../build/hemocell/libhemocell.a > /dev/null
+    - make -j4 pipeflow/pipeflow > /dev/null
+
+test_pipeflow:
+  stage: test
+  script:
+    - cd ${CI_PROJECT_DIR}/cases/pipeflow
+    - mpirun --allow-run-as-root -n 4 ./pipeflow ../../scripts/ci/config-pipeflow.xml
