@@ -41,14 +41,14 @@ public:
 };
 template<typename Val>
 Logfile & operator << (Logfile & lf, Val const & rhs) {
-    if (lf.logfile.good()) {
+    if (lf.logfile.is_open()) {
         std::cout << rhs;
         lf.logfile << rhs;
     }
     return lf;
 }
 inline Logfile & operator<< (Logfile & lf, std::ostream & (*op) (std::ostream&)) {
-    if (lf.logfile.good()){
+    if (lf.logfile.is_open()){
         std::cout << op << std::flush;
         lf.logfile << op;
     }
@@ -60,13 +60,13 @@ class Logfile_only
 {};
 template<typename Val>
 Logfile_only & operator << (Logfile_only & lf, Val const & rhs) {
-    if (hlog.logfile.good()) {
+    if (hlog.logfile.is_open()) {
         hlog.logfile << rhs;
     }
     return lf;
 }
 inline Logfile_only & operator<< (Logfile_only & lf, std::ostream & (*op) (std::ostream&)) {
-    if (hlog.logfile.good()){
+    if (hlog.logfile.is_open()){
         hlog.logfile << op;
     }
     return lf;
