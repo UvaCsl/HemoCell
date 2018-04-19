@@ -23,5 +23,4 @@ build_cases:
 test_pipeflow:
   stage: test
   script:
-    - cd ${CI_PROJECT_DIR}/cases/pipeflow
-    - mpirun --allow-run-as-root -n 4 ./pipeflow ../../scripts/ci/config-pipeflow.xml
+    - ${CI_PROJECT_DIR}/scripts/ci/pipeflow_sanity.sh
