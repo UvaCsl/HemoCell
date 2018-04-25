@@ -13,7 +13,10 @@ modify it under the terms of the GNU Affero General Public License as
 published by the Free Software Foundation, either version 3 of the
 License, or (at your option) any later version.
 
-The library is distributed in the hope that it will be useful,
+The library is distre from all 3 mirrors simultaneously.
+Reply
+Collapse
+ibuted in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Affero General Public License for more details.
@@ -70,10 +73,30 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
             boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, blockSize);
     
     // Print out some info
-      hlog << "(main) Voxelisation is done. Resulting domain parameters are: " << endl;
-      hlog << getMultiBlockInfo(voxelizedDomain->getVoxelMatrix()) << std::endl;
+    hlog << "(main) Voxelisation is done. Resulting domain parameters are: " << endl;
+    hlog << getMultiBlockInfo(voxelizedDomain->getVoxelMatrix()) << std::endl;
 
-
+    // Print out if parameters where optimal.
+    if (blockSize > 0) {
+      if (blockSize < 26 || blockSize > 30) {
+        hlog << "(Voxelizer) (Warning) BlockSize is non optimal (" << blockSize << "), consider setting it to [26,30]" << endl;
+      }
+      plint numBlocks = voxelizedDomain->getVoxelMatrix().getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
+      if (numBlocks < global::mpi().getSize()) {
+        hlog << "(Voxelizer) (Warning) There are fewer blocks ("<< numBlocks <<") than processors ("<<global::mpi().getSize() <<"), you are wasting CPUs!" << endl;
+      } else if (numBlocks > global::mpi().getSize()) {
+        hlog << "(Voxelizer) (Warning) There are more blocks (" << numBlocks <<") than processors ("<<global::mpi().getSize() <<"), you might want to consider running with " << numBlocks << " CPUs" << endl;
+      }
+    } else {
+      VoxelizedDomain3D<T> * temp = new VoxelizedDomain3D<T>(
+            boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, 28);
+      plint numBlocks = temp->getVoxelMatrix().getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
+      if (numBlocks != global::mpi().getSize()) {
+        hlog << "(Voxelizer) (Warning) Running with " << global::mpi().getSize() << " CPU's, consider running with " << numBlocks << " CPU's for optimal efficiency" << endl;
+      }
+      delete temp;
+    }
+    
     flagMatrix = new MultiScalarField3D<int>((MultiBlock3D &) voxelizedDomain->getVoxelMatrix());
 
     setToConstant(*flagMatrix, voxelizedDomain->getVoxelMatrix(),
