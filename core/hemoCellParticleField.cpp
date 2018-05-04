@@ -564,21 +564,22 @@ void HemoCellParticleField::unifyForceVectors() {
 void HemoCellParticleField::applyConstitutiveModel(bool forced) {
   map<int,vector<HemoCellParticle*>> * ppc_new = new map<int,vector<HemoCellParticle*>>();
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  const map<int,bool> & lpc = get_lpc();
+  map<int,bool> lpc;
   //Fill it here, probably needs optimization, ah well ...
   for (const auto & pair : particles_per_cell) {
-    if (lpc.find(pair.first) == lpc.end() || !lpc.at(pair.first)) { continue; } //Not local, continue
     const int & cid = pair.first;
     const vector<int> & cell = pair.second; 
     (*ppc_new)[cid].resize(cell.size());
     for (unsigned int i = 0 ; i < cell.size() ; i++) {
       if (cell[i] == -1) {
         (*ppc_new).erase(cid); //not complete, remove entry
-        break;
+        goto no_add_lpc;
       } else {
         (*ppc_new)[cid][i] = &particles[cell[i]];
       }
     }
+    lpc[cid]=true;
+    no_add_lpc:;
   }
   
   for (pluint ctype = 0; ctype < (*cellFields).size(); ctype++) {
