@@ -175,7 +175,7 @@ void HemoCell::writeOutput() {
 
   //Repoint surfaceparticle forces for speed
   cellfields->unify_force_vectors();
-
+  cellfields->syncEnvelopes();
   // Continue with performance measurement
   global::timer("atOutput").restart();
 }

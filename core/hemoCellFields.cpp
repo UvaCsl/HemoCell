@@ -30,7 +30,10 @@ HemoCellFields::HemoCellFields( MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, u
 {   
   envelopeSize=particleEnvelopeWidth;
   hlog << "(Hemocell) (HemoCellFields) (Init) particle envelope: " << particleEnvelopeWidth << " [lu]" << std::endl;
-  
+  if (hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth() < 2) {
+    hlog << "(Hemocell) (ERROR) fluid envelope is less than 2, this will cause incorrect forces over the block boundaries" <<endl;
+    exit(1);
+  }
   createParticleField();
 }
 

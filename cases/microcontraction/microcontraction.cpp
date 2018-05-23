@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
 
   pcout << "(main) setting dimensions ..." << std::endl;
 
-  plint extendedEnvelopeWidth = 1;  // Depends on the requirements of the ibmKernel. 4 or even 2 might be enough (also depends on dx)
+  plint extendedEnvelopeWidth = 2;  // Depends on the requirements of the ibmKernel. 4 or even 2 might be enough (also depends on dx)
 
   plint lengthChannel = 2*(*cfg)["domain"]["refDirN"].read<int>();
 //  plint heightChannel = 2*100;
@@ -160,7 +160,6 @@ int main(int argc, char *argv[]) {
 // -------------------------------------------------------------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------------------------
-//  plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
   
   pcout << "(PipeFlow) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(

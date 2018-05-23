@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
 
 
 // ---------------------------------------------------------------------------------------------
-  plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
+  plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
   
   pcout << "(stentflow) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(

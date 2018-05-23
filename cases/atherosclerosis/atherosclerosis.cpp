@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
 //  double u_max_lbm = u_max * (*cfg)["domain"]["dx"].read<double>() / (*cfg)["domain"]["dt"].read<double>();
 //  pcout << "u_max_lbm = " << u_max_lbm << endl;
 // ---------------------------------------------------------------------------------------------
-  plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
+  plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
   
   pcout << "(PipeFlow) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(

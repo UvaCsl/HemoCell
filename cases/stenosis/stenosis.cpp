@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
 
   pcout << "(main) setting dimensions ..." << std::endl;
 
-  plint extendedEnvelopeWidth = 1;  // Depends on the requirements of the ibmKernel. 4 or even 2 might be enough (also depends on dx)
+  plint extendedEnvelopeWidth = 2;  // Depends on the requirements of the ibmKernel. 4 or even 2 might be enough (also depends on dx)
 
   plint lengthChannel = (*cfg)["domain"]["refDirN"].read<int>()*2;
   plint heightChannel = 2*174;

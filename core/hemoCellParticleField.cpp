@@ -463,7 +463,6 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
 
 int HemoCellParticleField::deleteIncompleteCells(const bool verbose) {
   int deleted = 0;
-
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   //Warning, TODO, high complexity, should be rewritten 
   //For now abuse tagging and the remove function
@@ -586,8 +585,13 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
     if ((*cellFields).hemocell.iter % (*cellFields)[ctype]->timescale == 0 || forced) {
       vector<HemoCellParticle*> found;
       findParticles(getBoundingBox(),found,ctype);
-      for (HemoCellParticle* particle : found) {
-        particle->sv.force = {0.,0.,0.};        
+      if (found.size() > 0) {
+        //only reset forces when the forces actually point at it.
+        if (found[0]->force_area == &found[0]->sv.force) {
+          for (HemoCellParticle* particle : found) {
+            particle->sv.force = {0.,0.,0.};     
+          }
+        }
       }
       (*cellFields)[ctype]->mechanics->ParticleMechanics(*ppc_new,lpc,ctype);
     }
@@ -668,29 +672,24 @@ void HemoCellParticleField::applyRepulsionForce(bool forced) {
 
 
 void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
-  vector<HemoCellParticle*> localParticles;
-  findParticles(domain,localParticles);
-  //TODO, remove casting
-  HemoCellParticle * sparticle;
   //Prealloc is nice
   hemo::Array<T,3> velocity;
   plb::Array<T,3> velocity_comp;
 
-  for (pluint i = 0; i < localParticles.size(); i++ ) {
-    sparticle = localParticles[i];
-    if (sparticle->sv.fromPreInlet) { continue; }
+  for (HemoCellParticle &particle:particles) {
+    if (particle.sv.fromPreInlet) { continue; }
     //Clever trick to allow for different kernels for different particle types.
-    (*cellFields)[sparticle->sv.celltype]->kernelMethod(*atomicLattice,sparticle);
+    (*cellFields)[particle.sv.celltype]->kernelMethod(*atomicLattice,&particle);
 
     //We have the kernels, now calculate the velocity of the particles.
     //Palabos developers, sorry for not using a functional...
     velocity = {0.0,0.0,0.0};
-    for (pluint j = 0; j < sparticle->kernelLocations.size(); j++) {
+    for (pluint j = 0; j < particle.kernelLocations.size(); j++) {
       //Yay for direct access
-      sparticle->kernelLocations[j]->computeVelocity(velocity_comp);
-      velocity += (velocity_comp * sparticle->kernelWeights[j]);
+      particle.kernelLocations[j]->computeVelocity(velocity_comp);
+      velocity += (velocity_comp * particle.kernelWeights[j]);
     }
-    sparticle->sv.v = velocity;
+    particle.sv.v = velocity;
   }
 
 }

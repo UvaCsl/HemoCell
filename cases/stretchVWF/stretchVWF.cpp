@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 
 	pcout << "(CellStretch) Initializing lattice: " << nx <<"x" << ny <<"x" << nz << " [lu]" << std::endl;
 
-	plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
+	plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
 
 	hemocell.lattice = new MultiBlockLattice3D<double,DESCRIPTOR>(
 			defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),

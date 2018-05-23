@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
   pcout << "velocity_max_lbm = " << velocity_max_lbm << endl;
 
 // ---------------------------------------------------------------------------------------------
-  plint extendedEnvelopeWidth = 1;  // Because we might use ibmKernel with with 2.
+  plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
 
   pcout << "(Flowaroundsphere) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(

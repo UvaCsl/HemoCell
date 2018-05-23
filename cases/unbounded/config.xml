@@ -17,7 +17,7 @@
 </ibm>
 
 <domain>
-    <fluidEnvelope> 1 </fluidEnvelope>
+    <fluidEnvelope> 2 </fluidEnvelope>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.1e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
     <dx> 1e-6 </dx> <!--Physical length of 1 Lattice Unit -->

@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
 
   pcout << "(Capillary) setting dimensions ..." << std::endl;
 
-  plint extendedEnvelopeWidth = 1;  // Depends on the requirements of the ibmKernel. 4 or even 2 might be enough (also depends on dx)
+  plint extendedEnvelopeWidth = 2;  // Depends on the requirements of the ibmKernel. 4 or even 2 might be enough (also depends on dx)
 
   plint heightChannel = (*cfg)["domain"]["refDirN"].read<int>();
   double capillaryD = (*cfg)["domain"]["capillaryD"].read<double>() / param::dx ;
