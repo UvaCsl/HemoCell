@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
                        voxelizedDomain, flagMatrix,  
                        (*cfg)["domain"]["blockSize"].read<int>()); 
 
-  param::lbm_pipe_parameters((*cfg),(*cfg)["domain"]["refDirN"].read<int>());
+  param::lbm_pipe_parameters((*cfg),flagMatrix);
   param::printParameters();
   
   hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
@@ -44,8 +44,7 @@ int main(int argc, char *argv[]) {
   hemocell.latticeEquilibrium(1.,plb::Array<T, 3>(0.,0.,0.));
 
   //Driving Force
-  T rPipe = (*cfg)["domain"]["refDirN"].read<int>()/2.0;
-  T poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
+  T poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / param::pipe_radius / param::pipe_radius;
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                     DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                     plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));

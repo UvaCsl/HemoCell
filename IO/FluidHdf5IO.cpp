@@ -311,7 +311,7 @@ float * WriteFluidField::outputShearStress() {
 
   if (cellfields.hemocell.outputInSiUnits) {
     for (unsigned int i = 0 ; i < (*nCells)*6 ; i++) {
-      output[i] = output[i]*param::dm*((param::dx*param::dx)/(param::dt*param::dt));
+      output[i] = output[i]*(param::df/(param::dx*param::dx));
     }
   }
 

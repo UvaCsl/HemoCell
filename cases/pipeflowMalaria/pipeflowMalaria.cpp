@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
                        voxelizedDomain, flagMatrix,  
                        (*cfg)["domain"]["blockSize"].read<int>()); 
 
-  param::lbm_pipe_parameters((*cfg),(*cfg)["domain"]["refDirN"].read<int>());
+  param::lbm_pipe_parameters((*cfg),flagMatrix);
   param::printParameters();
   
   hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(

@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //This class converses SI things to LBM things for classes like the HO model.
 #include "config.h"
 #include "constant_defaults.h"
+#include "multiBlock/multiDataField3D.h"
 
 namespace hemo {
   class Parameters {
@@ -40,9 +41,12 @@ namespace hemo {
     static T f_limit;
   #endif
     static T ef_lbm; //used in cellStretching
+    static T pipe_radius; //used for bodyforce calculation
 
 
-    static void lbm_pipe_parameters(Config & cfg, unsigned int ny);
+
+    static void lbm_pipe_parameters(Config & cfg, plb::MultiScalarField3D<int> * sf);
+    static void lbm_pipe_parameters(Config & cfg, int nY);
     static void lbm_shear_parameters(Config & cfg, T nx);
     static void lbm_base_parameters(Config & cfg);
     static void printParameters();

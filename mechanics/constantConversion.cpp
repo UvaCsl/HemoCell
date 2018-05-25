@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "constantConversion.h"
 #include "meshMetrics.h"
 #include "palabos3D.h"
+#include "hemoCellFunctional.h"
 
 void Parameters::lbm_base_parameters(Config & cfg) {
     dt = cfg["domain"]["dt"].read<T>();
@@ -51,10 +52,26 @@ void Parameters::lbm_base_parameters(Config & cfg) {
     kBT_lbm = kBT_p/(df*dx);
 };
 
-void Parameters::lbm_pipe_parameters(Config & cfg, unsigned int ny) {
+void Parameters::lbm_pipe_parameters(Config & cfg, MultiScalarField3D<int> * sf) {
     Parameters::lbm_base_parameters(cfg);
     re = cfg["domain"]["Re"].read<T>();
-    u_lbm_max = re * nu_lbm / ny;
+    
+    Box3D domain = sf->getBoundingBox();
+    domain.x1 = domain.x0;
+    T fluidArea = computeSum<int>(*sf,domain);
+    
+    pipe_radius = sqrt(fluidArea/PI);
+    hlog << "(Parameters) Your pipe has a calculated radius of " << pipe_radius << " LU, assuming a perfect circle" << endl;
+    u_lbm_max = re * nu_lbm / (pipe_radius*2);
+};
+
+void Parameters::lbm_pipe_parameters(Config & cfg, int nY) {
+    Parameters::lbm_base_parameters(cfg);
+    re = cfg["domain"]["Re"].read<T>();
+    
+    pipe_radius = nY;
+    hlog << "(Parameters) Your pipe has a given radius of " << pipe_radius << " LU, given so might be wrong" << endl;
+    u_lbm_max = re * nu_lbm / (pipe_radius*2);
 };
 
 void Parameters::lbm_shear_parameters(Config & cfg,T nx) {
@@ -96,4 +113,6 @@ T Parameters::kBT_p = 0.0;
 T Parameters::ef_lbm = 0.0;
 #ifdef FORCE_LIMIT
 T Parameters::f_limit = 0.0;
+T Parameters::pipe_radius = 0.0;
+
 #endif

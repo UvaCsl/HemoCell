@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
                        (*cfg)["domain"]["blockSize"].read<int>()); 
   pcout << "bllllbbbbb" << endl;     
   pcout << "(PipeFlow) (Parameters) calculating flow parameters" << endl;
-  param::lbm_pipe_parameters((*cfg),(*cfg)["domain"]["refDirN"].read<int>());
+  param::lbm_pipe_parameters((*cfg),flagMatrix);
   param::printParameters();
   
   pcout << "(PipeFlow) (Fluid) Initializing Palabos Fluid Field" << endl;
