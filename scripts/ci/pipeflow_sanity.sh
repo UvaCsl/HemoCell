@@ -8,8 +8,8 @@ if [ -n "`cat logfile | grep "# of cells" | cut -d: -f2 | cut -d" " -f2 | grep -
   echo "Error in number of cells, 32 Expected"
   exit 1
 fi
-if [ -n "`cat logfile |grep "viscosity" | cut -d: -f 4 |cut -d" " -f2 | xargs -n 1 echo 1.04 \< | bc | grep -v 1`" ]; then
-  echo "Error, viscosity goes below 1.04"
+if [ -n "`cat logfile |grep "viscosity" | cut -d: -f 4 |cut -d" " -f2 | xargs -n 1 echo 1.03 \< | bc | grep -v 1`" ]; then
+  echo "Error, viscosity goes below 1.03"
   exit 1
 fi
 if [ -n "`cat logfile |grep "viscosity" | cut -d: -f 4 |cut -d" " -f2 | xargs -n 1 echo 3.0 \> | bc | grep -v 1`" ]; then
