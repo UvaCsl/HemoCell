@@ -25,3 +25,8 @@ test_pipeflow:
   stage: test
   script:
     - ${CI_PROJECT_DIR}/scripts/ci/pipeflow_sanity.sh
+
+test_stretchCell:
+  stage: test
+  script:
+    - ${CI_PROJECT_DIR}/scripts/ci/stretchCell_sanity.sh

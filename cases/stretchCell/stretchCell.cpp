@@ -17,25 +17,25 @@ int main(int argc, char* argv[])
 	Config * cfg = hemocell.cfg;
 	
 // ---------------------------- Calc. LBM parameters -------------------------------------------------
-	pcout << "(CellStretch) (Parameters) calculating shear flow parameters" << endl;
+	hlog << "(CellStretch) (Parameters) calculating shear flow parameters" << endl;
 
   param::lbm_base_parameters(*cfg);
 
-  param::ef_lbm = (*cfg)["parameters"]["stretchForce"].read<double>()*1e-12 / param::df;
+  param::ef_lbm = (*cfg)["parameters"]["stretchForce"].read<T>()*1e-12 / param::df;
 
   param::printParameters();
   
 	// ------------------------ Init lattice --------------------------------
 
-  plint nx = 50; //plint nx = 70; // in case of WBC use larger dimensions
-  plint ny = 25; //plint ny = 35;
-  plint nz = 25; //plint nz = 35;
+	plint nz = 13*(1e-6/(*cfg)["domain"]["dx"].read<T>());
+  plint nx = 2*nz;
+  plint ny = nz;
 
-	pcout << "(CellStretch) Initializing lattice: " << nx <<"x" << ny <<"x" << nz << " [lu]" << std::endl;
+	hlog << "(CellStretch) Initializing lattice: " << nx <<"x" << ny <<"x" << nz << " [lu]" << std::endl;
 
 	plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
 
-	hemocell.lattice = new MultiBlockLattice3D<double,DESCRIPTOR>(
+	hemocell.lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(
 			defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
 			defaultMultiBlockPolicy3D().getBlockCommunicator(),
 			defaultMultiBlockPolicy3D().getCombinedStatistics(),
@@ -46,11 +46,11 @@ int main(int argc, char* argv[])
 	hemocell.lattice->toggleInternalStatistics(false);
   hemocell.lattice->periodicity().toggleAll(false);
 
-  OnLatticeBoundaryCondition3D<double,DESCRIPTOR>* boundaryCondition
-          = createLocalBoundaryCondition3D<double,DESCRIPTOR>();
+  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
+          = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
 
   boundaryCondition->setVelocityConditionOnBlockBoundaries(*hemocell.lattice);
-  setBoundaryVelocity(*hemocell.lattice, hemocell.lattice->getBoundingBox(), plb::Array<double,3>(0.,0.,0.) );
+  setBoundaryVelocity(*hemocell.lattice, hemocell.lattice->getBoundingBox(), plb::Array<T,3>(0.,0.,0.) );
   // Box3D x_n = Box3D(0,0,0,ny,0,nz); 
   // boundaryCondition->addPressureBoundary0N(x_n, *hemocell.lattice);
   // Box3D x_p = Box3D(nx,nx,0,ny,0,nz); 
@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
   // setBoundaryDensity(*hemocell.lattice,z_p,1.);
 
 
-  hemocell.latticeEquilibrium(1., hemo::Array<double, 3>({0.,0.,0.}));
+  hemocell.latticeEquilibrium(1., hemo::Array<T, 3>({0.,0.,0.}));
 
 	hemocell.lattice->initialize();
 
@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
     hemocell.loadParticles();
     hemocell.writeOutput();
   } else {
-    pcout << "(CellStretch) CHECKPOINT found!" << endl;
+    hlog << "(CellStretch) CHECKPOINT found!" << endl;
     hemocell.loadCheckPoint();
   }
 
@@ -106,26 +106,26 @@ int main(int argc, char* argv[])
   HemoCellStretch cellStretch(*(*hemocell.cellfields)["RBC_HO"],n_forced_lsps, param::ef_lbm);
   // HemoCellStretch cellStretch(*(*hemocell.cellfields)["WBC_HO"],n_forced_lsps, param::ef_lbm);
   
-  pcout << "(CellStretch) External stretching force [pN(flb)]: " <<(*cfg)["parameters"]["stretchForce"].read<double>() << " (" << param::ef_lbm  << ")" << endl;
+  hlog << "(CellStretch) External stretching force [pN(flb)]: " <<(*cfg)["parameters"]["stretchForce"].read<T>() << " (" << param::ef_lbm  << ")" << endl;
     
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
 
   // Get undeformed values
-  double volume_lbm = (*hemocell.cellfields)["RBC_HO"]->meshmetric->getVolume();
-  // double volume_lbm = (*hemocell.cellfields)["WBC_HO"]->meshmetric->getVolume();
-  double surface_lbm = (*hemocell.cellfields)["RBC_HO"]->meshmetric->getSurface();
-  // double surface_lbm = (*hemocell.cellfields)["WBC_HO"]->meshmetric->getSurface();
-  double volume_eq = volume_lbm/pow(1e-6/param::dx,3);
-  double surface_eq = surface_lbm/pow(1e-6/param::dx,2);
+  T volume_lbm = (*hemocell.cellfields)["RBC_HO"]->meshmetric->getVolume();
+  // T volume_lbm = (*hemocell.cellfields)["WBC_HO"]->meshmetric->getVolume();
+  T surface_lbm = (*hemocell.cellfields)["RBC_HO"]->meshmetric->getSurface();
+  // T surface_lbm = (*hemocell.cellfields)["WBC_HO"]->meshmetric->getSurface();
+  T volume_eq = volume_lbm/pow(1e-6/param::dx,3);
+  T surface_eq = surface_lbm/pow(1e-6/param::dx,2);
 
-  hemo::Array<double,6> bb =  (*hemocell.cellfields)["RBC_HO"]->getOriginalBoundingBox();
-  // hemo::Array<double,6> bb =  (*hemocell.cellfields)["WBC_HO"]->getOriginalBoundingBox();
-  pcout << "Original Bounding box:" << endl;
-  pcout << "\tx: " << bb[0] << " : " << bb[1] << endl;
-  pcout << "\ty: " << bb[2] << " : " << bb[3] << endl;
-  pcout << "\tz: " << bb[4] << " : " << bb[5] << endl;
+  hemo::Array<T,6> bb =  (*hemocell.cellfields)["RBC_HO"]->getOriginalBoundingBox();
+  // hemo::Array<T,6> bb =  (*hemocell.cellfields)["WBC_HO"]->getOriginalBoundingBox();
+  hlog << "Original Bounding box:" << endl;
+  hlog << "\tx: " << bb[0] << " : " << bb[1] << endl;
+  hlog << "\ty: " << bb[2] << " : " << bb[3] << endl;
+  hlog << "\tz: " << bb[4] << " : " << bb[5] << endl;
   
   // Creating output log file
   plb_ofstream fOut;
@@ -151,16 +151,16 @@ int main(int argc, char* argv[])
       CellInformationFunctionals::calculateCellStretch(&hemocell);
       CellInformationFunctionals::calculateCellBoundingBox(&hemocell);
 
-      double volume = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
-      double surface = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
-      hemo::Array<double,3> position = CellInformationFunctionals::info_per_cell[0].position/(1e-6/param::dx);
-      hemo::Array<double,6> bbox = CellInformationFunctionals::info_per_cell[0].bbox/(1e-6/param::dx);
-      double largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch)/(1e-6/param::dx);
+      T volume = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
+      T surface = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
+      hemo::Array<T,3> position = CellInformationFunctionals::info_per_cell[0].position/(1e-6/param::dx);
+      hemo::Array<T,6> bbox = CellInformationFunctionals::info_per_cell[0].bbox/(1e-6/param::dx);
+      T largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch)/(1e-6/param::dx);
 
-      pcout << "\t Cell center at: {" <<position[0]<<","<<position[1]<<","<<position[2] << "} µm" <<endl;  
-      pcout << "\t Diameters: {" << bbox[1]-bbox[0] <<", " << bbox[3]-bbox[2] <<", " << bbox[5]-bbox[4] <<"}  µm" << endl;
-      pcout << "\t Surface: " << surface << " µm^2" << " (" << surface / surface_eq * 100.0 << "%)" << "  Volume: " << volume << " µm^3" << " (" << volume / volume_eq * 100.0 << "%)"<<endl;
-      pcout << "\t Largest diameter: " << largest_diam << " µm." << endl;
+      hlog << "\t Cell center at: {" <<position[0]<<","<<position[1]<<","<<position[2] << "} µm" <<endl;  
+      hlog << "\t Diameters: {" << bbox[1]-bbox[0] <<", " << bbox[3]-bbox[2] <<", " << bbox[5]-bbox[4] <<"}  µm" << endl;
+      hlog << "\t Surface: " << surface << " µm^2" << " (" << surface / surface_eq * 100.0 << "%)" << "  Volume: " << volume << " µm^3" << " (" << volume / volume_eq * 100.0 << "%)"<<endl;
+      hlog << "\t Largest diameter: " << largest_diam << " µm." << endl;
       
       fOut << hemocell.iter << " " << bbox[1]-bbox[0] << " " << bbox[3]-bbox[2] << " " << bbox[5]-bbox[4] << " " << volume / volume_eq * 100.0 << " " << surface / surface_eq * 100.0 << endl;
 
@@ -175,7 +175,7 @@ int main(int argc, char* argv[])
   }
 
   fOut.close();
-  pcout << "(CellStretch) Simulation finished :)" << std::endl;
+  hlog << "(CellStretch) Simulation finished :)" << std::endl;
 
   return 0;
 }
