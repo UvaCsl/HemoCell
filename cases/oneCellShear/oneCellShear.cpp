@@ -20,10 +20,9 @@ int main(int argc, char* argv[])
 
 // ----------------- Read in config file & calc. LBM parameters ---------------------------
 	pcout << "(OneCellShear) (Parameters) calculating shear flow parameters" << endl;
-	//double nxyz = 20.0*(1e-6/(*cfg)["domain"]["dx"].read<double>());
-  plint nx = 40;
-  plint ny = 40;
-  plint nz = 20;
+	plint nz = 10.0*(1e-6/(*cfg)["domain"]["dx"].read<T>());
+  plint nx = 2*nz;
+  plint ny = 2*nz;
   param::lbm_shear_parameters((*cfg),ny);
   param::printParameters();
 
@@ -33,7 +32,7 @@ int main(int argc, char* argv[])
 
 	plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
 
-	hemocell.lattice = new MultiBlockLattice3D<double,DESCRIPTOR>(
+	hemocell.lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(
 			defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
 			defaultMultiBlockPolicy3D().getBlockCommunicator(),
 			defaultMultiBlockPolicy3D().getCombinedStatistics(),
@@ -43,14 +42,15 @@ int main(int argc, char* argv[])
 	pcout << "(OneCellShear) Re corresponds to u_max = " << (param::re * param::nu_p)/(hemocell.lattice->getBoundingBox().getNy()*param::dx) << " [m/s]" << endl;
 	// -------------------------- Define boundary conditions ---------------------
 
-	OnLatticeBoundaryCondition3D<double,DESCRIPTOR>* boundaryCondition
-			= createLocalBoundaryCondition3D<double,DESCRIPTOR>();
+	OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
+			= createLocalBoundaryCondition3D<T,DESCRIPTOR>();
 
 	hemocell.lattice->toggleInternalStatistics(false);
 
 	iniLatticeSquareCouette(*hemocell.lattice, nx, ny, nz, *boundaryCondition, param::shearrate_lbm);
 
 	hemocell.lattice->initialize();
+  hemocell.outputInSiUnits = true;
 
 	// ----------------------- Init cell models --------------------------
 	
@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
     } 
   }
 
-  pcout << "(OneCellShea) Shear rate: " << (*cfg)["domain"]["shearrate"].read<double>() << " s^-1." << endl;
+  pcout << "(OneCellShea) Shear rate: " << (*cfg)["domain"]["shearrate"].read<T>() << " s^-1." << endl;
 
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
@@ -90,10 +90,10 @@ int main(int argc, char* argv[])
   // Get undeformed cell values
   CellInformationFunctionals::calculateCellVolume(&hemocell);
   CellInformationFunctionals::calculateCellArea(&hemocell);
-  double volume_eq = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
-  double surface_eq = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
+  T volume_eq = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
+  T surface_eq = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
 
-  double D0 = 2.0 * (*cfg)["ibm"]["radius"].read<double>() * 1e6;
+  T D0 = 2.0 * (*cfg)["ibm"]["radius"].read<T>() * 1e6;
 
   // Creating output log file
   plb_ofstream fOut;
@@ -117,13 +117,13 @@ int main(int argc, char* argv[])
       CellInformationFunctionals::calculateCellStretch(&hemocell);
       CellInformationFunctionals::calculateCellBoundingBox(&hemocell);
 
-      double volume = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
-      double surface = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
-      hemo::Array<double,3> position = CellInformationFunctionals::info_per_cell[0].position/(1e-6/param::dx);
-      hemo::Array<double,6> bbox = CellInformationFunctionals::info_per_cell[0].bbox/(1e-6/param::dx);
-      double largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch)/(1e-6/param::dx);
-      double rel_D2 = (largest_diam/D0)*(largest_diam/D0);
-      double def_idx = (rel_D2 - 1.0) / (rel_D2 + 1.0) * 100.0;
+      T volume = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
+      T surface = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
+      hemo::Array<T,3> position = CellInformationFunctionals::info_per_cell[0].position/(1e-6/param::dx);
+      hemo::Array<T,6> bbox = CellInformationFunctionals::info_per_cell[0].bbox/(1e-6/param::dx);
+      T largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch)/(1e-6/param::dx);
+      T rel_D2 = (largest_diam/D0)*(largest_diam/D0);
+      T def_idx = (rel_D2 - 1.0) / (rel_D2 + 1.0) * 100.0;
 
       pcout << "\t Cell center at: {" <<position[0]<<","<<position[1]<<","<<position[2] << "} µm" << endl;  
       pcout << "\t Diameters: {" << bbox[1]-bbox[0] <<", " << bbox[3]-bbox[2] <<", " << bbox[5]-bbox[4] <<"}  µm" << endl;
