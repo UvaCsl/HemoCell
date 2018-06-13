@@ -29,6 +29,8 @@ class CellMechanics;
 #include "hemoCellParticle.h"
 #include "hemoCellFields.h"
 #include "commonCellConstants.h"
+#include "meshMetrics.h"
+#include "constantConversion.h"
 
 class CellMechanics {
   public:
@@ -38,5 +40,37 @@ class CellMechanics {
 
   virtual void ParticleMechanics(map<int,vector<HemoCellParticle *>> &,const map<int,bool> &, pluint ctype) = 0 ;
   virtual void statistics() = 0;
+  
+  
+  T calculate_kLink(Config & cfg, MeshMetrics<T> & meshmetric){
+    T kLink = cfg["MaterialModel"]["kLink"].read<T>();
+    T persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
+    T plc = persistenceLengthFine/param::dx; //* sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kaniadakis magic
+    kLink *= param::kBT_lbm/plc;
+    return kLink;
+  };
+  
+  T calculate_kBend(Config & cfg, MeshMetrics<T> & meshmetric ){
+    T eqLength = meshmetric.getMeanLength();
+    return cfg["MaterialModel"]["kBend"].read<T>() * param::kBT_lbm / eqLength;
+  };
+
+  T calculate_kVolume(Config & cfg, MeshMetrics<T> & meshmetric){
+    T kVolume =  cfg["MaterialModel"]["kVolume"].read<T>();
+    T eqLength = meshmetric.getMeanLength();
+    kVolume *= param::kBT_lbm/(eqLength);
+    return kVolume;
+  };
+
+  T calculate_kArea(Config & cfg, MeshMetrics<T> & meshmetric){
+    T kArea =  cfg["MaterialModel"]["kArea"].read<T>();
+    T eqLength = meshmetric.getMeanLength();
+    kArea *= param::kBT_lbm/(eqLength);
+    return kArea;
+  };
+
+  T calculate_etaM(Config & cfg ){
+    return cfg["MaterialModel"]["eta_m"].read<T>() * param::dx / param::dt / param::df;
+  };
 };
 #endif

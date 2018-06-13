@@ -41,7 +41,6 @@ class RbcHighOrderModel : public CellMechanics {
   const T k_link;
   const T k_bend;
   const T eta_m;
-  const T eta_v;
 
   public:
   RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) ;
@@ -49,14 +48,6 @@ class RbcHighOrderModel : public CellMechanics {
   void ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> &lpc, size_t ctype) ;
 
   void statistics();
-
-  static T calculate_kBend(Config & cfg, MeshMetrics<T> &);
-  static T calculate_kVolume(Config & cfg, MeshMetrics<T> &);
-  static T calculate_kArea(Config & cfg, MeshMetrics<T> &);
-  static T calculate_kLink(Config & cfg, MeshMetrics<T> &);
-  static T calculate_etaM(Config & cfg );
-  static T calculate_etaV(Config & cfg );
-
 };
 
 #endif

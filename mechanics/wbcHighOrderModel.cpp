@@ -32,7 +32,6 @@ WbcHighOrderModel::WbcHighOrderModel(Config & modelCfg_, HemoCellField & cellFie
                   k_link( WbcHighOrderModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
                   k_bend( WbcHighOrderModel::calculate_kBend(modelCfg_,*cellField_.meshmetric) ),
                   eta_m( WbcHighOrderModel::calculate_etaM(modelCfg_) ),
-                  eta_v( WbcHighOrderModel::calculate_etaV(modelCfg_) ),
                   k_inner_rigid( WbcHighOrderModel::calculate_kInnerRigid(modelCfg_) ),
                   k_cytoskeleton( WbcHighOrderModel::calculate_kCytoskeleton(modelCfg_) ),
                   core_radius(WbcHighOrderModel::calculate_coreRadius(modelCfg_)),
@@ -122,14 +121,11 @@ void WbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 //Per-vertex bending force loop
     for (long unsigned int i = 0 ; i < cell.size() ; i++) {
       hemo::Array<T,3> vertexes_sum = {0.,0.,0.};
-      hemo::Array<T,3> vertices_vel_sum = {0.,0.,0.};
 
       for(unsigned int j = 0; j < cellConstants.vertex_n_vertexes[i]; j++) {
         vertexes_sum += cell[cellConstants.vertex_vertexes[i][j]]->sv.position;
-        vertices_vel_sum += cell[cellConstants.vertex_vertexes[i][j]]->sv.v;
       }
       const hemo::Array<T,3> vertexes_middle = vertexes_sum/cellConstants.vertex_n_vertexes[i];
-      const hemo::Array<T,3> vertices_vavg = vertices_vel_sum/cellConstants.vertex_n_vertexes[i];
 
       const hemo::Array<T,3> dev_vect = vertexes_middle - cell[i]->sv.position;
       
@@ -160,29 +156,8 @@ void WbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       //TODO scale bending force
       const hemo::Array<T,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.055-dDev*dDev)) * patch_normal; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
       
-      // Calculating viscous term
-      const hemo::Array<T,3> rel_vel_v = vertices_vavg - cell[i]->sv.v;
-      const hemo::Array<T,3> rel_vel_proj = dot(patch_normal, rel_vel_v) * patch_normal;
-      hemo::Array<T,3> Fvisc_vol = eta_v * rel_vel_proj * 0.866 * cellConstants.edge_mean_eq; // last term is triangle area from equilateral approx. x ratio of #triangle/#vertices -> surface area belonging to a vertex
-
       //Apply bending force
-      *cell[i]->force_bending += bending_force;
-
-      // Limit volume viscosity
-      const T Fvisc_vol_mag = norm(Fvisc_vol);
-      if (Fvisc_vol_mag > FORCE_LIMIT / 4.0) {
-        Fvisc_vol *= (FORCE_LIMIT / 4.0) / Fvisc_vol_mag;
-      }
-
-      // Apply volume viscosity
-      *cell[i]->force_visc += Fvisc_vol;
-      const hemo::Array<T,3> negative_bending_force = -bending_force/cellConstants.vertex_n_vertexes[i];
-      const hemo::Array<T,3> negative_bending_viscous_force = -Fvisc_vol/cellConstants.vertex_n_vertexes[i];
-          
-      for (unsigned int j = 0 ; j < cellConstants.vertex_n_vertexes[i]; j++ ) {
-       *cell[cellConstants.vertex_vertexes[i][j]]->force_bending += negative_bending_force;
-       *cell[cellConstants.vertex_vertexes[i][j]]->force_visc += negative_bending_viscous_force;
-      }              
+      *cell[i]->force_bending += bending_force;        
     }
 
     // Per-edge calculations
@@ -230,16 +205,16 @@ void WbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const hemo::Array<T,3> edge_vec = p1-p0;
       const T edge_length = norm(edge_vec);
 
-      if (edge_length < 2*radius && edge_length >= 2*core_radius){
-        const hemo::Array<T,3> edge_uv = edge_vec/edge_length;
-        const hemo::Array<T,3> force = edge_uv*(2*radius-edge_length)*k_cytoskeleton;
+      const hemo::Array<T,3> edge_uv = edge_vec/edge_length;
+
+      if (edge_length < 2*radius){
+        const hemo::Array<T,3> force = edge_uv*(1.0-(edge_length/(2*radius)))*k_cytoskeleton;
         *cell[edge[0]]->force_inner_link -= force;
         *cell[edge[1]]->force_inner_link += force;
       }
 
       if (edge_length < 2*core_radius){
-        const hemo::Array<T,3> edge_uv = edge_vec/edge_length;
-        const hemo::Array<T,3> force = edge_uv*(2*core_radius-edge_length)*k_inner_rigid;
+        const hemo::Array<T,3> force = edge_uv*(1-(edge_length/(2*core_radius)))*k_inner_rigid;
         *cell[edge[0]]->force_inner_link -= force;
         *cell[edge[1]]->force_inner_link += force;
       }
@@ -256,7 +231,6 @@ void WbcHighOrderModel::statistics() {
     hlog << "\t k_cytoskeleton: " << k_cytoskeleton<< std::endl;
     hlog << "\t k_inner_rigid: " << k_inner_rigid << std::endl;
     hlog << "\t eta_m:    " << eta_m << std::endl;
-    hlog << "\t eta_v:    " << eta_v << std::endl;
     hlog << "\t wbc_radius:    " << radius << std::endl;
     hlog << "\t core_radius:    " << core_radius << std::endl;
 };
@@ -264,52 +238,15 @@ void WbcHighOrderModel::statistics() {
 
 // Provide methods to calculate and scale to coefficients from here
 
-T WbcHighOrderModel::calculate_etaV(Config & cfg ){
-  return cfg["MaterialModel"]["eta_v"].read<T>() * param::dx * param::dt / param::dm; //== dx^2/dN/dt
-};
-
-T WbcHighOrderModel::calculate_etaM(Config & cfg ){
-  return cfg["MaterialModel"]["eta_m"].read<T>() * param::dx / param::dt / param::df;
-};
-
-T WbcHighOrderModel::calculate_kBend(Config & cfg, MeshMetrics<T> & meshmetric ){
-  T eqLength = meshmetric.getMeanLength();
-  return cfg["MaterialModel"]["kBend"].read<T>() * param::kBT_lbm / eqLength;
-};
-
-T WbcHighOrderModel::calculate_kVolume(Config & cfg, MeshMetrics<T> & meshmetric){
-  T kVolume =  cfg["MaterialModel"]["kVolume"].read<T>();
-  T eqLength = meshmetric.getMeanLength();
-  kVolume *= param::kBT_lbm/(eqLength*eqLength*eqLength);
-  //kVolume /= meshmetric.getNumVertices();
-  return kVolume;
-};
-
-T WbcHighOrderModel::calculate_kArea(Config & cfg, MeshMetrics<T> & meshmetric){
-  T kArea =  cfg["MaterialModel"]["kArea"].read<T>();
-  T eqLength = meshmetric.getMeanLength();
-  kArea *= param::kBT_lbm/(eqLength*eqLength);
-  return kArea;
-};
-
-T WbcHighOrderModel::calculate_kLink(Config & cfg, MeshMetrics<T> & meshmetric){
-  T kLink = cfg["MaterialModel"]["kLink"].read<T>();
-  T persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
-  //TODO: It should scale with the number of surface points!
-  T plc = persistenceLengthFine/param::dx;
-  kLink *= param::kBT_lbm/plc;
-  return kLink;
-};
-
 T WbcHighOrderModel::calculate_kInnerRigid(Config & cfg){
   T kInnerRigid = cfg["MaterialModel"]["kInnerRigid"].read<T>();
   //TODO: convert to proper dimension
-  return kInnerRigid;
+  return kInnerRigid/param::df;
 };
 
 T WbcHighOrderModel::calculate_kCytoskeleton(Config & cfg){
   T kCytoskeleton = cfg["MaterialModel"]["kCytoskeleton"].read<T>();
-  return kCytoskeleton;
+  return kCytoskeleton/param::df;
 };
 
 T WbcHighOrderModel::calculate_coreRadius(Config & cfg){

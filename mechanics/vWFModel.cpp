@@ -66,15 +66,10 @@ void vWFModel::statistics() {
     hlog << "\t bend_eq:  " << bend_eq << endl;
     hlog << "\t link_eq:  " << link_eq << endl;
     hlog << "\t eta_m:    " << eta_m << endl;
-    hlog << "\t eta_v:    " << eta_v << endl;
 };
 
 
 // Provide methods to calculate and scale to coefficients from here
-
-T vWFModel::calculate_etaV(Config & cfg ){
-  return cfg["MaterialModel"]["eta_v"].read<T>() * param::dx * param::dt / param::dm; //== dx^2/dN/dt
-};
 
 T vWFModel::calculate_etaM(Config & cfg ){
   return cfg["MaterialModel"]["eta_m"].read<T>() * param::dx / param::dt / param::df;

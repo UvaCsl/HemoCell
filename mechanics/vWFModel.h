@@ -40,7 +40,6 @@ class vWFModel : public CellMechanics {
   const T link_eq;
   const T bend_eq;
   const T eta_m;
-  const T eta_v;
 
   public:
   vWFModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_),
@@ -49,8 +48,7 @@ class vWFModel : public CellMechanics {
                     k_bend( vWFModel::calculate_kBend(modelCfg_) ),
                     link_eq(vWFModel::calculate_link_eq(modelCfg_) ),
                     bend_eq(vWFModel::calculate_bend_eq(modelCfg_) ),
-                    eta_m( vWFModel::calculate_etaM(modelCfg_) ),
-                    eta_v( vWFModel::calculate_etaV(modelCfg_) )
+                    eta_m( vWFModel::calculate_etaM(modelCfg_) )
   {
     cellField.deleteIncomplete = false;
     cellField.numVertex = modelCfg_["MaxVertices"].read<unsigned int>();
@@ -65,7 +63,6 @@ class vWFModel : public CellMechanics {
   static T calculate_bend_eq(Config & cfg);
   static T calculate_link_eq(Config & cfg);
   static T calculate_etaM(Config & cfg );
-  static T calculate_etaV(Config & cfg );
 
 };
 

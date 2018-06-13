@@ -12,6 +12,7 @@ doc/user_guide/_build/*
 external/parmetis-*/
 tools/packCells/*.pos
 tools/packCells/packCells
+*.log
 
 # Ignore IDE, buildsystem and OS specific cache directories and object files
 .idea/

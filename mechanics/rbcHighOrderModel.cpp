@@ -31,8 +31,7 @@ RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellFie
                   k_area( RbcHighOrderModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
                   k_link( RbcHighOrderModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
                   k_bend( RbcHighOrderModel::calculate_kBend(modelCfg_,*cellField_.meshmetric) ),
-                  eta_m( RbcHighOrderModel::calculate_etaM(modelCfg_) ),
-                  eta_v( RbcHighOrderModel::calculate_etaV(modelCfg_) )
+                  eta_m( RbcHighOrderModel::calculate_etaM(modelCfg_) )
     {};
 
 void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> & lpc, size_t ctype) {
@@ -118,15 +117,11 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 //Per-vertex bending force loop
     for (long unsigned int i = 0 ; i < cell.size() ; i++) {
       hemo::Array<T,3> vertexes_sum = {0.,0.,0.};
-      hemo::Array<T,3> vertices_vel_sum = {0.,0.,0.};
 
       for(unsigned int j = 0; j < cellConstants.vertex_n_vertexes[i]; j++) {
         vertexes_sum += cell[cellConstants.vertex_vertexes[i][j]]->sv.position;
-        vertices_vel_sum += cell[cellConstants.vertex_vertexes[i][j]]->sv.v;
       }
       const hemo::Array<T,3> vertexes_middle = vertexes_sum/cellConstants.vertex_n_vertexes[i];
-      const hemo::Array<T,3> vertices_vavg = vertices_vel_sum/cellConstants.vertex_n_vertexes[i];
-
       const hemo::Array<T,3> dev_vect = vertexes_middle - cell[i]->sv.position;
       
       
@@ -156,29 +151,8 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       //TODO scale bending force
       const hemo::Array<T,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.055-dDev*dDev)) * patch_normal; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
       
-      // Calculating viscous term
-      const hemo::Array<T,3> rel_vel_v = vertices_vavg - cell[i]->sv.v;
-      const hemo::Array<T,3> rel_vel_proj = dot(patch_normal, rel_vel_v) * patch_normal;
-      hemo::Array<T,3> Fvisc_vol = eta_v * rel_vel_proj * 0.866 * cellConstants.edge_mean_eq; // last term is triangle area from equilateral approx. x ratio of #triangle/#vertices -> surface area belonging to a vertex
-
       //Apply bending force
       *cell[i]->force_bending += bending_force;
-
-      // Limit volume viscosity
-      const T Fvisc_vol_mag = norm(Fvisc_vol);
-      if (Fvisc_vol_mag > FORCE_LIMIT / 4.0) {
-        Fvisc_vol *= (FORCE_LIMIT / 4.0) / Fvisc_vol_mag;
-      }
-
-      // Apply volume viscosity
-      *cell[i]->force_visc += Fvisc_vol;
-      const hemo::Array<T,3> negative_bending_force = -bending_force/cellConstants.vertex_n_vertexes[i];
-      const hemo::Array<T,3> negative_bending_viscous_force = -Fvisc_vol/cellConstants.vertex_n_vertexes[i];
-          
-      for (unsigned int j = 0 ; j < cellConstants.vertex_n_vertexes[i]; j++ ) {
-       *cell[cellConstants.vertex_vertexes[i][j]]->force_bending += negative_bending_force;
-       *cell[cellConstants.vertex_vertexes[i][j]]->force_visc += negative_bending_viscous_force;
-      }              
     }
 
     // Per-edge calculations
@@ -199,21 +173,23 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       *cell[edge[0]]->force_link += force;
       *cell[edge[1]]->force_link -= force;
 
-      // Membrane viscosity of bilipid layer
-      // F = eta * (dv/l) * l. 
-      const hemo::Array<T,3> rel_vel = cell[edge[1]]->sv.v - cell[edge[0]]->sv.v;
-      const hemo::Array<T,3> rel_vel_projection = dot(rel_vel, edge_uv) * edge_uv;
-      hemo::Array<T,3> Fvisc_memb = eta_m * rel_vel_projection;
+      if (eta_m != 0.0) {
+        // Membrane viscosity of bilipid layer
+        // F = eta * (dv/l) * l. 
+        const hemo::Array<T,3> rel_vel = cell[edge[1]]->sv.v - cell[edge[0]]->sv.v;
+        const hemo::Array<T,3> rel_vel_projection = dot(rel_vel, edge_uv) * edge_uv;
+        hemo::Array<T,3> Fvisc_memb = eta_m * rel_vel_projection;
 
-      // Limit membrane viscosity
-      const T Fvisc_memb_mag = norm(Fvisc_memb);
-      if (Fvisc_memb_mag > FORCE_LIMIT / 4.0) {
-        Fvisc_memb *= (FORCE_LIMIT / 4.0) / Fvisc_memb_mag;
+        // Limit membrane viscosity
+        const T Fvisc_memb_mag = norm(Fvisc_memb);
+        if (Fvisc_memb_mag > FORCE_LIMIT / 4.0) {
+          Fvisc_memb *= (FORCE_LIMIT / 4.0) / Fvisc_memb_mag;
+        }
+
+        *cell[edge[0]]->force_visc += Fvisc_memb;
+        *cell[edge[1]]->force_visc -= Fvisc_memb; 
       }
-
-      *cell[edge[0]]->force_visc += Fvisc_memb;
-      *cell[edge[1]]->force_visc -= Fvisc_memb; 
-
+      
       edge_n++;
     }
 
@@ -227,47 +203,12 @@ void RbcHighOrderModel::statistics() {
     hlog << "\t k_bend: : " << k_bend << std::endl; 
     hlog << "\t k_volume: " << k_volume << std::endl;
     hlog << "\t eta_m:    " << eta_m << std::endl;
-    hlog << "\t eta_v:    " << eta_v << std::endl;
     hlog << "\t mean_edge:" << cellConstants.edge_mean_eq << std::endl;
     hlog << "\t N faces:  " << cellConstants.triangle_list.size() << std::endl;
 };
 
 
-// Provide methods to calculate and scale to coefficients from here
 
-T RbcHighOrderModel::calculate_etaV(Config & cfg ){
-  return cfg["MaterialModel"]["eta_v"].read<T>() * param::dx * param::dt / param::dm; //== dx^2/dN/dt
-};
 
-T RbcHighOrderModel::calculate_etaM(Config & cfg ){
-  return cfg["MaterialModel"]["eta_m"].read<T>() * param::dx / param::dt / param::df;
-};
 
-T RbcHighOrderModel::calculate_kBend(Config & cfg, MeshMetrics<T> & meshmetric ){
-  T eqLength = meshmetric.getMeanLength();
-  return cfg["MaterialModel"]["kBend"].read<T>() * param::kBT_lbm / eqLength;
-};
 
-T RbcHighOrderModel::calculate_kVolume(Config & cfg, MeshMetrics<T> & meshmetric){
-  T kVolume =  cfg["MaterialModel"]["kVolume"].read<T>();
-  T eqLength = meshmetric.getMeanLength();
-  kVolume *= param::kBT_lbm/(eqLength*eqLength*eqLength);
-  //kVolume /= meshmetric.getNumVertices();
-  return kVolume;
-};
-
-T RbcHighOrderModel::calculate_kArea(Config & cfg, MeshMetrics<T> & meshmetric){
-  T kArea =  cfg["MaterialModel"]["kArea"].read<T>();
-  T eqLength = meshmetric.getMeanLength();
-  kArea *= param::kBT_lbm/(eqLength*eqLength);
-  return kArea;
-};
-
-T RbcHighOrderModel::calculate_kLink(Config & cfg, MeshMetrics<T> & meshmetric){
-  T kLink = cfg["MaterialModel"]["kLink"].read<T>();
-  T persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
-  //TODO: It should scale with the number of surface points!
-  T plc = persistenceLengthFine/param::dx;
-  kLink *= param::kBT_lbm/plc;
-  return kLink;
-};

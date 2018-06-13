@@ -13,13 +13,12 @@ class RbcMalariaModel : public CellMechanics {
 	public:
 	//variables
 	HemoCellField & cellField;
-	const double k_volume;
-	const double k_area;
-	const double k_link;
-	const double k_bend;
-        const double k_inner_link;
-	const double eta_m;
-	const double eta_v;
+	const T k_volume;
+	const T k_area;
+	const T k_link;
+	const T k_bend;
+        const T k_inner_link;
+	const T eta_m;
 
 	public:
 	RbcMalariaModel(Config & modelCfg_, HemoCellField & cellField_);
@@ -28,13 +27,7 @@ class RbcMalariaModel : public CellMechanics {
 	
 	void statistics();
 	
-	static double calculate_kBend(Config & cfg, MeshMetrics<double> &);
-	static double calculate_kVolume(Config &cfg, MeshMetrics<double> &);
-	static double calculate_kArea(Config &cfg, MeshMetrics<double> &);
-	static double calculate_kLink(Config &cfg, MeshMetrics<double> &);
-      	static double calculate_kInnerLink(Config &cfg, MeshMetrics<double> &);
-	static double calculate_etaM(Config &cfg);
-	static double calculate_etaV(Config &cfg);
+      	static T calculate_kInnerLink(Config &cfg, MeshMetrics<T> &);
 };
 
 #endif

@@ -41,7 +41,6 @@ class WbcHighOrderModel : public CellMechanics {
   const T k_link;
   const T k_bend;
   const T eta_m;
-  const T eta_v;
   const T k_inner_rigid;
   const T k_cytoskeleton;
   const T core_radius;
@@ -54,12 +53,6 @@ class WbcHighOrderModel : public CellMechanics {
 
   void statistics();
 
-  static T calculate_kBend(Config & cfg, MeshMetrics<T> &);
-  static T calculate_kVolume(Config & cfg, MeshMetrics<T> &);
-  static T calculate_kArea(Config & cfg, MeshMetrics<T> &);
-  static T calculate_kLink(Config & cfg, MeshMetrics<T> &);
-  static T calculate_etaM(Config & cfg );
-  static T calculate_etaV(Config & cfg );
   static T calculate_coreRadius(Config & cfg );
   static T calculate_radius(Config & cfg );
   static T calculate_kInnerRigid(Config & cfg );

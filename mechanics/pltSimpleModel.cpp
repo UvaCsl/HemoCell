@@ -28,8 +28,8 @@ PltSimpleModel::PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_) :
                   k_volume( PltSimpleModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
                   k_area( PltSimpleModel::calculate_kArea(modelCfg_,*cellField_.meshmetric) ), 
                   k_link( PltSimpleModel::calculate_kLink(modelCfg_,*cellField_.meshmetric) ), 
-                  k_bend( PltSimpleModel::calculate_kBend(modelCfg_) ),
-                  eta( PltSimpleModel::calculate_eta(modelCfg_) )
+                  k_bend( PltSimpleModel::calculate_kBend(modelCfg_,*cellField_.meshmetric) ),
+                  eta_m( PltSimpleModel::calculate_etaM(modelCfg_))
   { };
 
 void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> & lpc, pluint ctype) {
@@ -132,7 +132,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       // F = eta * (dv/l) * l. 
       const hemo::Array<T,3> rel_vel = cell[edge[1]]->sv.v - cell[edge[0]]->sv.v;
       const hemo::Array<T,3> rel_vel_projection = dot(rel_vel, edge_uv) * edge_uv;
-      hemo::Array<T,3> Fvisc_memb = eta * rel_vel_projection;
+      hemo::Array<T,3> Fvisc_memb = eta_m * rel_vel_projection;
 
       // Limit membrane viscosity
       const T Fvisc_memb_mag = norm(Fvisc_memb);
@@ -172,18 +172,6 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_bending -= bending_force;
       *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_bending -= bending_force;
 
-      /*
-      // Viscosity based on relative vertex velocity
-      const hemo::Array<T,3> outer_end_rel_vel = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->v 
-                                              - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->v;
-      const hemo::Array<T,3> section = cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->position 
-                                    - cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->position;
-      const hemo::Array<T,3> section_dir = section / norm(section);
-      const T norm_vel = dot(outer_end_rel_vel, section_dir); // relative velocity magn. between the points
-      const T visc_mag = eta * norm_vel * 0.5;
-      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][0]]->force_visc +=  visc_mag * section_dir;
-      *cell[cellConstants.edge_bending_triangles_outer_points[edge_n][1]]->force_visc -=  visc_mag * section_dir;   
-      */
       edge_n++;
     }
 
@@ -215,37 +203,5 @@ void PltSimpleModel::statistics() {
     hlog << "\t k_link:   " << k_link << std::endl; 
     hlog << "\t k_bend: : " << k_bend << std::endl; 
     hlog << "\t k_volume: " << k_volume << std::endl; 
-    hlog << "\t eta:      " << eta << std::endl;
-};
-
-
-T PltSimpleModel::calculate_eta(Config & cfg ){
-  return cfg["MaterialModel"]["eta"].read<T>() * param::dx / param::dt / param::df;//* param::dx * param::dt / param::dm;
-};
-
-T PltSimpleModel::calculate_kBend(Config & cfg ){
-  return cfg["MaterialModel"]["kBend"].read<T>() * param::kBT_lbm;
-};
-
-T PltSimpleModel::calculate_kVolume(Config & cfg, MeshMetrics<T> & meshmetric){
-  T kVolume =  cfg["MaterialModel"]["kVolume"].read<T>();
-  T eqLength = meshmetric.getMeanLength();
-  kVolume *= param::kBT_lbm/(eqLength*eqLength*eqLength);
-  return kVolume;
-};
-
-T PltSimpleModel::calculate_kArea(Config & cfg, MeshMetrics<T> & meshmetric){
-  T kArea =  cfg["MaterialModel"]["kArea"].read<T>();
-  T eqLength = meshmetric.getMeanLength();
-  kArea *= param::kBT_lbm/(eqLength*eqLength);
-  return kArea;
-};
-
-T PltSimpleModel::calculate_kLink(Config & cfg, MeshMetrics<T> & meshmetric){
-  T kLink = cfg["MaterialModel"]["kLink"].read<T>();
-  T persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
-  //TODO: It should scale with the number of surface points!
-  T plc = persistenceLengthFine/param::dx; //* sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kaniadakis magic
-  kLink *= param::kBT_lbm/plc;
-  return kLink;
+    hlog << "\t eta_m:      " << eta_m << std::endl;
 };

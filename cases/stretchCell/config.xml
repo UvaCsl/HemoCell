@@ -16,16 +16,16 @@
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.1e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <dx> 0.5e-6 </dx> <!--Physical length of 1 Lattice Unit -->
-    <dt> 0.5e-7 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
+    <dt> 1e-7 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
     <timeStepSize> 1 </timeStepSize> <!-- Update particle material model after how many fluid time steps. [Integer] -->
     <particleEnvelope>20</particleEnvelope>
     <kBT>4.100531391e-21</kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
 </domain>
 
 <sim>
-    <tmax> 20000 </tmax> <!-- total number of iterations -->
+    <tmax> 40000 </tmax> <!-- total number of iterations -->
     <tmeas> 500 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint>50000</tcheckpoint>
+    <tcheckpoint>10000</tcheckpoint>
 </sim>
 
 </hemocell>

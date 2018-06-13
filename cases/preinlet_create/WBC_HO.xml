@@ -4,14 +4,13 @@
     <comment>Parameters for the HO WBC constitutive model.</comment>
     <name>WBC</name>
     <eta_m> 1.0e-9 </eta_m> <!-- Membrane viscosity. [1e-9 Ns/m]-->
-    <eta_v> 1.0e-9 </eta_v> <!-- Volume viscosity of cytoplasm, acting between outer vertices around angle edges [0.002 Pa s] -->
     <kBend> 200.0 </kBend> <!-- Bending force modulus for membrane + cytoskeleton ( in k_BT units, 4.142e-21 N m) [200] -->
     <kVolume> 20.0 </kVolume> <!-- Volume conservation coefficient (dimensionless) [20] --> 
     <kArea> 20.0 </kArea> <!--Local area conservation coefficient (dimensionless) 4xrbc [20] --> 
     <!-- NOTE: kBend should != kArea. The larger the difference, the more stable the model -> they are competing forces under some circumstances. -->
     <kLink> 60.0 </kLink> <!-- Link force coefficient (dimensionless) 4xrbc [60.0] -->
-    <kInnerRigid> 0.001 </kInnerRigid> <!-- Link force coefficient of the inner links -->
-    <kCytoskeleton> 1.0e-6 </kCytoskeleton> <!-- Coefficient of the cytoskeleton force links -->
+    <kInnerRigid> 6.40625e-12 </kInnerRigid> <!-- Link force coefficient of the inner links -->
+    <kCytoskeleton> 6.40625e-15 </kCytoskeleton> <!-- Coefficient of the cytoskeleton force links -->
     <coreRadius> 2.5e-6 </coreRadius> <!-- WBC rigid core radius in um -->
     <radius> 4.0e-6 </radius> <!-- Radius of the WBC in [ 5.0 um] -->
     <InnerEdges>

@@ -40,8 +40,7 @@ class PltSimpleModel : public CellMechanics {
   const T k_area;
   const T k_link;
   const T k_bend;
-  const T eta;
-
+  const T eta_m;
 
   //Constructor
   public:
@@ -50,12 +49,6 @@ class PltSimpleModel : public CellMechanics {
   void ParticleMechanics(map<int,vector<HemoCellParticle *>> &particles_per_cell, const map<int,bool> &lpc, pluint ctype);
 
   void statistics();
-
-  static T calculate_kBend(Config & cfg);
-  static T calculate_kVolume(Config & cfg, MeshMetrics<T> &);
-  static T calculate_kArea(Config & cfg, MeshMetrics<T> &);
-  static T calculate_kLink(Config & cfg, MeshMetrics<T> &);
-  static T calculate_eta(Config & cfg );
 
 };
 
