@@ -153,6 +153,11 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       
       //Apply bending force
       *cell[i]->force_bending += bending_force;
+      
+      const hemo::Array<T,3> negative_bending_force = -bending_force/cellConstants.vertex_n_vertexes[i];          
+      for (unsigned int j = 0 ; j < cellConstants.vertex_n_vertexes[i]; j++ ) {
+       *cell[cellConstants.vertex_vertexes[i][j]]->force_bending += negative_bending_force;
+      }                
     }
 
     // Per-edge calculations
