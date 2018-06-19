@@ -46,27 +46,26 @@ class CellMechanics {
     T kLink = cfg["MaterialModel"]["kLink"].read<T>();
     T persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
     T plc = persistenceLengthFine/param::dx; //* sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kaniadakis magic
-    kLink *= param::kBT_lbm/plc;
-    return kLink;
+    return  kLink * param::kBT_lbm/plc;
   };
   
   T calculate_kBend(Config & cfg, MeshMetrics<T> & meshmetric ){
-    T eqLength = meshmetric.getMeanLength();
+    T eqLength = 5e-7/param::dx;
     return cfg["MaterialModel"]["kBend"].read<T>() * param::kBT_lbm / eqLength;
   };
 
   T calculate_kVolume(Config & cfg, MeshMetrics<T> & meshmetric){
     T kVolume =  cfg["MaterialModel"]["kVolume"].read<T>();
-    T eqLength = meshmetric.getMeanLength();
-    kVolume *= param::kBT_lbm/(eqLength);
-    return kVolume;
+    T eqLength = 5e-7/param::dx;
+    T NfacesScaling = 1280.0/cellConstants.triangle_list.size();
+    return kVolume * NfacesScaling * param::kBT_lbm / eqLength;
   };
 
   T calculate_kArea(Config & cfg, MeshMetrics<T> & meshmetric){
     T kArea =  cfg["MaterialModel"]["kArea"].read<T>();
-    T eqLength = meshmetric.getMeanLength();
-    kArea *= param::kBT_lbm/(eqLength);
-    return kArea;
+    T eqLength = 5e-7/param::dx;
+    T NfacesScaling = 1280.0/cellConstants.triangle_list.size();
+    return kArea * NfacesScaling * param::kBT_lbm/(eqLength);
   };
 
   T calculate_etaM(Config & cfg ){
