@@ -100,7 +100,7 @@ FluidStatistics FluidInfo::calculateVelocityStatistics(HemoCell* hemocell) {
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->lattice);
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyTimedProcessingFunctional(new GatherFluidVelocity(gatherValues),hemocell->cellfields->lattice->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new GatherFluidVelocity(gatherValues),hemocell->cellfields->lattice->getBoundingBox(),wrapper);
   HemoCellGatheringFunctional<FluidStatistics>::gather(gatherValues);
   
   FluidStatistics result = gatherValues.begin()->second;
@@ -128,7 +128,7 @@ FluidStatistics FluidInfo::calculateForceStatistics(HemoCell* hemocell) {
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->lattice);
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyTimedProcessingFunctional(new GatherFluidForce(gatherValues),hemocell->cellfields->lattice->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new GatherFluidForce(gatherValues),hemocell->cellfields->lattice->getBoundingBox(),wrapper);
   HemoCellGatheringFunctional<FluidStatistics>::gather(gatherValues);
   
   FluidStatistics result = gatherValues.begin()->second;

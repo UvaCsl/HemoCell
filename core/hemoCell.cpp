@@ -200,7 +200,7 @@ void HemoCell::iterate() {
   cellfields->spreadParticleForce();
   
   // #### 2 #### LBM
-  lattice->timedCollideAndStream();
+  lattice->collideAndStream();
 
   if(iter %cellfields->particleVelocityUpdateTimescale == 0) {
     // #### 3 #### IBM interpolation

@@ -248,7 +248,7 @@ void HemoCellFields::HemoInterpolateFluidVelocity::processGenericBlocks(Box3D do
 void HemoCellFields::interpolateFluidVelocity() {
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
-  applyTimedProcessingFunctional(new HemoInterpolateFluidVelocity(),immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new HemoInterpolateFluidVelocity(),immersedParticles->getBoundingBox(),wrapper);
 }
 
 void HemoCellFields::HemoSyncEnvelopes::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -257,7 +257,7 @@ void HemoCellFields::HemoSyncEnvelopes::processGenericBlocks(Box3D domain, std::
 void HemoCellFields::syncEnvelopes() {
     vector<MultiBlock3D*> wrapper;
     wrapper.push_back(immersedParticles);
-    applyTimedProcessingFunctional(new HemoSyncEnvelopes(),immersedParticles->getBoundingBox(),wrapper);
+    applyProcessingFunctional(new HemoSyncEnvelopes(),immersedParticles->getBoundingBox(),wrapper);
 }
 
 void HemoCellFields::HemoAdvanceParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -266,7 +266,7 @@ void HemoCellFields::HemoAdvanceParticles::processGenericBlocks(Box3D domain, st
 void HemoCellFields::advanceParticles() {
     vector<MultiBlock3D*> wrapper;
     wrapper.push_back(immersedParticles);
-    applyTimedProcessingFunctional(new HemoAdvanceParticles(),immersedParticles->getBoundingBox(),wrapper);
+    applyProcessingFunctional(new HemoAdvanceParticles(),immersedParticles->getBoundingBox(),wrapper);
 }
 
 void HemoCellFields::HemoSpreadParticleForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -275,7 +275,7 @@ void HemoCellFields::HemoSpreadParticleForce::processGenericBlocks(Box3D domain,
 void HemoCellFields::spreadParticleForce() {
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
-  applyTimedProcessingFunctional(new HemoSpreadParticleForce(),immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new HemoSpreadParticleForce(),immersedParticles->getBoundingBox(),wrapper);
 }
 
 void HemoCellFields::HemoApplyConstitutiveModel::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -286,7 +286,7 @@ void HemoCellFields::applyConstitutiveModel(bool forced) {
   wrapper.push_back(immersedParticles);
   HemoApplyConstitutiveModel * fnct = new HemoApplyConstitutiveModel();
   fnct->forced = forced;
-  applyTimedProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
 }
 
 void HemoCellFields::HemoUnifyForceVectors::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -305,7 +305,7 @@ void HemoCellFields::applyRepulsionForce() {
     vector<MultiBlock3D*>wrapper;
     wrapper.push_back(immersedParticles);
     HemoRepulsionForce * fnct = new HemoRepulsionForce();
-    applyTimedProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
+    applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
 }
 
 void HemoCellFields::HemoBoundaryRepulsionForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -315,7 +315,7 @@ void HemoCellFields::applyBoundaryRepulsionForce() {
     vector<MultiBlock3D*>wrapper;
     wrapper.push_back(immersedParticles);
     HemoBoundaryRepulsionForce * fnct = new HemoBoundaryRepulsionForce();
-    applyTimedProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
+    applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
 }
 
 void HemoCellFields::HemoPopulateBoundaryParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -325,7 +325,7 @@ void HemoCellFields::populateBoundaryParticles() {
     vector<MultiBlock3D*>wrapper;
     wrapper.push_back(immersedParticles);
     HemoPopulateBoundaryParticles * fnct = new HemoPopulateBoundaryParticles();
-    applyTimedProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
+    applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
 }
 
 void HemoCellFields::HemoSeperateForceVectors::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -345,7 +345,7 @@ void HemoCellFields::deleteIncompleteCells(bool verbose) {
   wrapper.push_back(immersedParticles);
   HemoDeleteIncompleteCells * fnct = new HemoDeleteIncompleteCells();
   fnct->verbose = verbose;
-  applyTimedProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
 
 }
 void HemoCellFields::HemoGetParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {

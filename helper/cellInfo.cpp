@@ -170,7 +170,7 @@ void CellInformationFunctionals::calculateCellVolume(HemoCell * hemocell_) {
   hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyTimedProcessingFunctional(new CellVolume(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new CellVolume(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
 void CellInformationFunctionals::calculateCellArea(HemoCell * hemocell_) {
   hemocell = hemocell_;
@@ -178,7 +178,7 @@ void CellInformationFunctionals::calculateCellArea(HemoCell * hemocell_) {
   hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyTimedProcessingFunctional(new CellArea(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new CellArea(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
 void CellInformationFunctionals::calculateCellPosition(HemoCell * hemocell_) {
   hemocell = hemocell_;
@@ -186,7 +186,7 @@ void CellInformationFunctionals::calculateCellPosition(HemoCell * hemocell_) {
   hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyTimedProcessingFunctional(new CellPosition(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new CellPosition(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
 void CellInformationFunctionals::calculateCellStretch(HemoCell * hemocell_) {
   hemocell = hemocell_;
@@ -194,7 +194,7 @@ void CellInformationFunctionals::calculateCellStretch(HemoCell * hemocell_) {
   hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyTimedProcessingFunctional(new CellStretch(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new CellStretch(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
 void CellInformationFunctionals::calculateCellBoundingBox(HemoCell * hemocell_) {
   hemocell = hemocell_;
@@ -202,7 +202,7 @@ void CellInformationFunctionals::calculateCellBoundingBox(HemoCell * hemocell_) 
   hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyTimedProcessingFunctional(new CellBoundingBox(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new CellBoundingBox(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
 void CellInformationFunctionals::calculateCellAtomicBlock(HemoCell* hemocell_) {
   hemocell = hemocell_;
@@ -210,7 +210,7 @@ void CellInformationFunctionals::calculateCellAtomicBlock(HemoCell* hemocell_) {
   hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyTimedProcessingFunctional(new CellAtomicBlock(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new CellAtomicBlock(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
 void CellInformationFunctionals::calculateCellType(HemoCell* hemocell_) {
   hemocell = hemocell_;
@@ -218,7 +218,7 @@ void CellInformationFunctionals::calculateCellType(HemoCell* hemocell_) {
   hemocell->cellfields->deleteIncompleteCells(false);
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyTimedProcessingFunctional(new CellType(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new CellType(),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
 }
 pluint CellInformationFunctionals::getTotalNumberOfCells(HemoCell* hemocell) {
   info_per_cell.clear(); //TODO thread safe n such

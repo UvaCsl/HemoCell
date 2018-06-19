@@ -1,22 +1,12 @@
 diff --git a/src/atomicBlock/atomicBlock3D.h b/src/atomicBlock/atomicBlock3D.h
-index 1fb0ad1..6ac865d 100644
+index 1fb0ad1..2604122 100644
 --- a/src/atomicBlock/atomicBlock3D.h
 +++ b/src/atomicBlock/atomicBlock3D.h
-@@ -31,6 +31,7 @@
- #include "core/block3D.h"
- #include "core/blockStatistics.h"
- #include "core/geometry3D.h"
-+#include "core/plbTimer.h"
- #include "atomicBlock/dataProcessorWrapper3D.h"
- #include "atomicBlock/reductiveDataProcessorWrapper3D.h"
- #include <algorithm>
-@@ -174,6 +175,9 @@ private:
+@@ -174,6 +174,7 @@ private:
      StatSubscriber3D statisticsSubscriber;
      DataProcessorVector explicitInternalProcessors;
      DataProcessorVector automaticInternalProcessors;
 +public:
-+    //Only used in combination with the applyTimedProcessingFunctional class to calculate load imbalance
-+    global::PlbTimer timer;
      mutable BlockDataTransfer3D* dataTransfer;
  };
  
@@ -349,7 +339,7 @@ index 8005825..feda2f7 100644
                      }
                  }
 diff --git a/src/core/cell.h b/src/core/cell.h
-index 8ca5cc2..5e66fd4 100644
+index 8ca5cc2..17b5724 100644
 --- a/src/core/cell.h
 +++ b/src/core/cell.h
 @@ -49,7 +49,7 @@ public:
@@ -361,24 +351,7 @@ index 8ca5cc2..5e66fd4 100644
      T data[ExternalField::numScalars];
  };
  
-@@ -154,12 +154,14 @@ public:
-     /// Get a a reference to dynamics
-     Dynamics<T,Descriptor>& getDynamics();
-     /// Request whether this cell does statistics measurements
-+    //memory optimization, return false
-     bool takesStatistics() const {
--        return takesStat;
-+        return false;
-     }
-     /// Specify whether this cell does statistics measurements
-+    //memory optimization, do nothing
-     void specifyStatisticsStatus(bool status) {
--        takesStat = status;
-+        //takesStat = status;
-     }
- private:
-     /// You can't use this method. Use BlockLattice::attributeDynamics instead.
-@@ -371,9 +373,11 @@ private:
+@@ -371,9 +371,11 @@ private:
      void iniExternal();
  private:
      Array<T,Descriptor<T>::numPop> f;         ///< distribution functions
@@ -387,32 +360,10 @@ index 8ca5cc2..5e66fd4 100644
 -    bool                           takesStat; ///< is statistics taken?
 +private:
      Dynamics<T,Descriptor>*        dynamics;  ///< local LB dynamics
-+    //bool                           takesStat; ///< is statistics taken?
++    bool                           takesStat; ///< is statistics taken?
  };
  
  template<typename T, template<typename U> class Descriptor>
-diff --git a/src/core/cell.hh b/src/core/cell.hh
-index b9628c4..b319c2a 100644
---- a/src/core/cell.hh
-+++ b/src/core/cell.hh
-@@ -44,7 +44,7 @@ namespace plb {
-  */
- template<typename T, template<typename U> class Descriptor>
- Cell<T,Descriptor>::Cell()
--    : takesStat(true), dynamics(0)
-+    : dynamics(0)
- {
-     iniPop();
-     iniExternal();
-@@ -57,7 +57,7 @@ Cell<T,Descriptor>::Cell()
-  */
- template<typename T, template<typename U> class Descriptor>
- Cell<T,Descriptor>::Cell(Dynamics<T,Descriptor>* dynamics_)
--    : takesStat(true), dynamics(dynamics_)
-+    : dynamics(dynamics_)
- {
-     iniPop();
-     iniExternal();
 diff --git a/src/core/implicitGrid3D.h b/src/core/implicitGrid3D.h
 new file mode 100644
 index 0000000..2c19702
@@ -654,97 +605,6 @@ index 8cdd896..6116a8c 100644
          {
              computePeriodicOverlaps(sparseBlock, blockId);
          }
-diff --git a/src/multiBlock/multiBlockLattice3D.h b/src/multiBlock/multiBlockLattice3D.h
-index 2677277..ae09d76 100644
---- a/src/multiBlock/multiBlockLattice3D.h
-+++ b/src/multiBlock/multiBlockLattice3D.h
-@@ -108,6 +108,7 @@ public:
-     virtual void externalStream();
-     virtual void collideAndStream(Box3D domain);
-     virtual void collideAndStream();
-+    virtual void timedCollideAndStream();
-     void externalCollideAndStream();
-     virtual void incrementTime();
-     virtual void resetTime(pluint value);
-@@ -130,6 +131,7 @@ public:
-     static std::string descriptorType();
- private:
-     void collideAndStreamImplementation();
-+    void timedCollideAndStreamImplementation();
-     void streamImplementation();
-     void allocateAndInitialize();
-     void eliminateStatisticsInEnvelope();
-diff --git a/src/multiBlock/multiBlockLattice3D.hh b/src/multiBlock/multiBlockLattice3D.hh
-index 3d681c3..64d25f9 100644
---- a/src/multiBlock/multiBlockLattice3D.hh
-+++ b/src/multiBlock/multiBlockLattice3D.hh
-@@ -345,6 +345,19 @@ void MultiBlockLattice3D<T,Descriptor>::collideAndStream() {
- }
- 
- template<typename T, template<typename U> class Descriptor>
-+void MultiBlockLattice3D<T,Descriptor>::timedCollideAndStream() {
-+    global::profiler().start("cycle");
-+    timedCollideAndStreamImplementation();
-+    this->executeInternalProcessors();
-+    this->evaluateStatistics();
-+    this->incrementTime();
-+    global::profiler().stop("cycle");
-+    if (global::profiler().cyclingIsAutomatic()) {
-+        global::profiler().cycle();
-+    }
-+}
-+
-+template<typename T, template<typename U> class Descriptor>
- void MultiBlockLattice3D<T,Descriptor>::externalCollideAndStream() {
-     global::profiler().start("cycle");
-     collideAndStreamImplementation();
-@@ -391,6 +404,46 @@ void MultiBlockLattice3D<T,Descriptor>::collideAndStreamImplementation() {
- }
- 
- template<typename T, template<typename U> class Descriptor>
-+void MultiBlockLattice3D<T,Descriptor>::timedCollideAndStreamImplementation() {
-+    ThreadAttribution const& threadAttribution=this->getMultiBlockManagement().getThreadAttribution();
-+    if (threadAttribution.hasCoProcessors()) {
-+        for ( typename BlockMap::iterator it = blockLattices.begin();
-+              it != blockLattices.end(); ++it )
-+        {
-+            plint blockId = it->first;
-+            int handle = threadAttribution.getCoProcessorHandle(blockId);
-+            if (handle>=0) {
-+                 global::defaultCoProcessor3D<T>().collideAndStream(handle);
-+            }
-+            else {
-+                SmartBulk3D bulk(this->getMultiBlockManagement(), blockId);
-+                // CollideAndStream must be applied to full domain,
-+                //   including currently active envelopes.
-+                Box3D domain = extendPeriodic(bulk.computeNonPeriodicEnvelope(),
-+                                              this->getMultiBlockManagement().getEnvelopeWidth());
-+                it->second->timer.start();
-+                it->second -> collideAndStream( bulk.toLocal(domain) );
-+                it->second->timer.stop();
-+            }
-+        }
-+    }
-+    else  {
-+        for ( typename BlockMap::iterator it = blockLattices.begin();
-+              it != blockLattices.end(); ++it)
-+        {
-+            SmartBulk3D bulk(this->getMultiBlockManagement(), it->first);
-+            // CollideAndStream must be applied to full domain,
-+            //   including currently active envelopes.
-+            Box3D domain = extendPeriodic(bulk.computeNonPeriodicEnvelope(),
-+                                          this->getMultiBlockManagement().getEnvelopeWidth());
-+            it->second->timer.start();
-+            it->second -> collideAndStream( bulk.toLocal(domain) );
-+            it->second->timer.stop();
-+        }
-+    }
-+}
-+
-+template<typename T, template<typename U> class Descriptor>
- void MultiBlockLattice3D<T,Descriptor>::incrementTime() {
-     for ( typename BlockMap::iterator it = blockLattices.begin();
-           it != blockLattices.end(); ++it)
 diff --git a/src/multiBlock/sparseBlockStructure3D.cpp b/src/multiBlock/sparseBlockStructure3D.cpp
 index a8ae15e..fe3e896 100644
 --- a/src/multiBlock/sparseBlockStructure3D.cpp

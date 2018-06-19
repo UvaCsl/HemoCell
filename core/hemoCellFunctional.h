@@ -27,11 +27,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemocell_internal.h"
 #include "mpi.h"
 
-void applyTimedProcessingFunctional(BoxProcessingFunctional3D* functional,
-                               Box3D domain, std::vector<MultiBlock3D*> multiBlocks);
-void executeTimedDataProcessor( DataProcessorGenerator3D const& generator,
-                           std::vector<MultiBlock3D*> multiBlocks );
-
 class HemoCellFunctional : public plb::BoxProcessingFunctional3D {
 public:
     HemoCellFunctional(){}
