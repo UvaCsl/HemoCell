@@ -359,8 +359,8 @@ index 8ca5cc2..17b5724 100644
      External                       external;  ///< external scalars
 -    bool                           takesStat; ///< is statistics taken?
 +private:
-     Dynamics<T,Descriptor>*        dynamics;  ///< local LB dynamics
 +    bool                           takesStat; ///< is statistics taken?
+     Dynamics<T,Descriptor>*        dynamics;  ///< local LB dynamics
  };
  
  template<typename T, template<typename U> class Descriptor>

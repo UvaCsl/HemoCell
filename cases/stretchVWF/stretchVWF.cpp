@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
     cellStretch.applyForce(); //IMPORTANT, not done normally in hemocell.iterate()
     
     hemocell.cellfields->spreadParticleForce();
-    hemocell.lattice->timedCollideAndStream();
+    hemocell.lattice->collideAndStream();
     hemocell.cellfields->interpolateFluidVelocity();
     hemocell.cellfields->syncEnvelopes();
     hemocell.cellfields->advanceParticles();
