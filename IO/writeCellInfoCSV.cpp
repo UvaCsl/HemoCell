@@ -36,7 +36,7 @@ void writeCellInfo_CSV(HemoCell * hemocell) {
   vector<std::string> fileNames = vector<std::string>(hemocell->cellfields->size());
   vector<ofstream> csvFiles = vector<ofstream>(fileNames.size());
   for (unsigned int i = 0 ; i < fileNames.size(); i++ ) {
-    fileNames[i] = global::directories().getOutputDir() + "/csv/" + zeroPadNumber(hemocell->iter) + '/'  + createFileName("CellInfo_" + (*hemocell->cellfields)[i]->name + ".",global::mpi().getRank(),3) + ".csv";
+    fileNames[i] = global::directories().getOutputDir() + "/csv/" + to_string(hemocell->iter) + '/'  + "CellInfo_" + (*hemocell->cellfields)[i]->name + "." + to_string(global::mpi().getRank()) + ".csv";
     csvFiles[i].open(fileNames[i], ofstream::trunc);
     csvFiles[i] << "X,Y,Z,area,volume,atomic_block,cellId" << endl;
   }
