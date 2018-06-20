@@ -32,11 +32,11 @@ void outputHDF5(hsize_t* dim, hsize_t* chunk, hid_t& file_id, string& name, floa
     chunk[3] = dim[3];
     //unsigned int nvalues = dim[0]*dim[1]*dim[2]*dim[3];
 
-    int sid = H5Screate_simple(4,dim,NULL);
-      int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+    hid_t sid = H5Screate_simple(4,dim,NULL);
+      hid_t plist_id = H5Pcreate (H5P_DATASET_CREATE);
         H5Pset_chunk(plist_id, 4, chunk); 
         H5Pset_deflate(plist_id, 7);
-        int did = H5Dcreate2(file_id,name.c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+        hid_t did = H5Dcreate2(file_id,name.c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
         H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output);
       H5Dclose(did);
     H5Sclose(sid);

@@ -90,11 +90,11 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
                 fmt_cnt++;
             }
         }
-        int sid = H5Screate_simple(2,dimVertices,NULL);
-        int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+        hid_t sid = H5Screate_simple(2,dimVertices,NULL);
+        hid_t plist_id = H5Pcreate (H5P_DATASET_CREATE);
         H5Pset_chunk(plist_id, 2, chunk); 
         H5Pset_deflate(plist_id, 7);
-        int did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+        hid_t did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
         H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output_formatted);
         H5Dclose(did);
         H5Sclose(sid);
@@ -131,11 +131,11 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
             }
         }
         
-        int sid = H5Screate_simple(2,dimVertices,NULL);
-        int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+        hid_t sid = H5Screate_simple(2,dimVertices,NULL);
+        hid_t plist_id = H5Pcreate (H5P_DATASET_CREATE);
         H5Pset_chunk(plist_id, 2, chunk); 
         H5Pset_deflate(plist_id, 7);
-        int did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+        hid_t did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
         H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output_formatted);
         H5Dclose(did);
         H5Sclose(sid);
@@ -167,11 +167,11 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
             }
         }
         
-        int sid = H5Screate_simple(2,dimVertices,NULL);
-        int plist_id = H5Pcreate (H5P_DATASET_CREATE);
+        hid_t sid = H5Screate_simple(2,dimVertices,NULL);
+        hid_t plist_id = H5Pcreate (H5P_DATASET_CREATE);
         H5Pset_chunk(plist_id, 2, chunk); 
         H5Pset_deflate(plist_id, 7);
-        int did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+        hid_t did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
         H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output_formatted);
         H5Dclose(did);
         H5Sclose(sid);

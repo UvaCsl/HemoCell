@@ -34,7 +34,7 @@ public:
     : logfile(*(new std::fstream()))
     {}
     Logfile(std::fstream& logfile_) 
-    : logfile(logfile)
+    : logfile(logfile_)
     {}
     std::fstream & logfile;
    
