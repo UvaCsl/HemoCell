@@ -92,8 +92,7 @@ add_custom_target(hemocell_pre COMMAND cd ${HEMOCELL_DIR} && ${CMAKE_COMMAND} .)
 include(ExternalProject) 
 ExternalProject_Add("hemocell" PREFIX ${HEMOCELL_DIR} SOURCE_DIR ${HEMOCELL_DIR}
     BINARY_DIR ${HEMOCELL_DIR} INSTALL_COMMAND "" BUILD_COMMAND "")
-ExternalProject_Add_Step("hemocell" update_custom COMMAND cd ${HEMOCELL_DIR} 
-    && ${CMAKE_COMMAND} . && $(MAKE)  ALWAYS 1)
+ExternalProject_Add_Step("hemocell" update_custom COMMAND ${HEMOCELL_BASE_DIR}/scripts/safe_libhemocell_compilation.sh ALWAYS 1)
 
 ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES})
 add_dependencies("hemocell" hemocell_pre)
