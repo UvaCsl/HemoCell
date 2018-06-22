@@ -32,7 +32,8 @@ void set_interrupt(int signum) {
   interrupted = 1;
 }
 
-HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
+HemoCell::HemoCell(char * configFileName, int argc, char * argv[])
+{
   plbInit(&(argc),&(argv));
 
   pcout << "(HemoCell) (Config) reading " << configFileName << endl;
@@ -41,6 +42,9 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[]) {
   loadDirectories(configFileName, cfg);
   loadGlobalConfigValues(cfg);
   printHeader();
+  
+  //Start statistics
+  statistics.start();
   
   // start clock for basic performance feedback
   lastOutputAt = 0;
@@ -135,29 +139,41 @@ void HemoCell::saveCheckPoint() {
 }
 
 void HemoCell::writeOutput() {
+  statistics["output"].start();
   // Very naive performance approximation
-  T dtSinceLastOutput = global::timer("atOutput").stop();
-  T timePerIter = dtSinceLastOutput / (iter - lastOutputAt);
-  lastOutputAt = iter;
 
-	pcout << "(HemoCell) (Output) writing output at timestep " << iter << " (" << param::dt * iter<< " s). Approx. performance: " << timePerIter << " s / iteration." << endl;
+  pcout << "(HemoCell) (Output) writing output at timestep " << iter << " (" << param::dt * iter<< " s). Approx. performance: " << to_string(stof(statistics.elapsed_string())/(iter-lastOutputAt)) << " s / iteration." << endl;
+  lastOutputAt = iter;
   if(repulsionEnabled) {
+    statistics["output"]["repulsionForce"].start();
     cellfields->applyRepulsionForce();
+    statistics["output"]["repulsionForce"].stop();
   }
   if(boundaryRepulsionEnabled) {
+    statistics["output"]["boundaryRepulsionForce"].start();
     cellfields->applyBoundaryRepulsionForce();
+    statistics["output"]["boundaryRepulsionForce"].stop();
   }
+  statistics["output"]["syncEnvelopes"].start();
   cellfields->syncEnvelopes();
+  statistics["output"]["syncEnvelopes"].stop();
+  statistics["output"]["deleteCells"].start();
   if (globalConfigValues.cellsDeletedInfo) {
     cellfields->deleteIncompleteCells(true);
   } else {
     cellfields->deleteIncompleteCells(false);   
   }
+  statistics["output"]["deleteCells"].stop();
+
   //Repoint surfaceparticle forces for output
+  statistics["output"]["separateForceVectors"].start();
   cellfields->separate_force_vectors();
+  statistics["output"]["separateForceVectors"].stop();
 
   //Recalculate the forces
+  statistics["output"]["recalculateConstitutiveModel"].start();
   cellfields->applyConstitutiveModel(true);
+  statistics["output"]["recalculateConstitutiveModel"].stop();
 
   // Creating a new directory per save
   if (global::mpi().isMainProcessor()) {
@@ -169,15 +185,26 @@ void HemoCell::writeOutput() {
   global::mpi().barrier();
 
   //Write Output
+  statistics["output"]["writeOutput"].start();
+  statistics["output"]["writeOutput"]["writeCellField"].start();
   writeCellField3D_HDF5(*cellfields,param::dx,param::dt,iter);
+  statistics["output"]["writeOutput"]["writeCellField"].stop();
+  statistics["output"]["writeOutput"]["writeFluidField"].start();
   writeFluidField_HDF5(*cellfields,param::dx,param::dt,iter);
+  statistics["output"]["writeOutput"]["writeFluidField"].stop();
+  statistics["output"]["writeOutput"]["writeCellCSVInfo"].start();
   writeCellInfo_CSV(this);
+  statistics["output"]["writeOutput"]["writeCellCSVInfo"].stop();
 
   //Repoint surfaceparticle forces for speed
+  statistics["output"]["unifyForceVectors"].start();
   cellfields->unify_force_vectors();
+  statistics["output"]["unifyForceVectors"].stop();
+  statistics["output"]["syncEnvelopes"].start();
   cellfields->syncEnvelopes();
+  statistics["output"]["syncEnvelopes"].stop();
   // Continue with performance measurement
-  global::timer("atOutput").restart();
+  statistics["output"].stop();
 }
 
 void HemoCell::checkExitSignals() {
@@ -189,47 +216,69 @@ void HemoCell::checkExitSignals() {
 
 void HemoCell::iterate() {
   checkExitSignals();
-
+  statistics["iterate"].start();
   // ### 1 ### Particle Force to Fluid
   if(repulsionEnabled && iter % cellfields->repulsionTimescale == 0) {
+    statistics["iterate"]["repulsionForce"].start();
     cellfields->applyRepulsionForce();
+    statistics["iterate"]["repulsionForce"].stop();
   }
   if(boundaryRepulsionEnabled && iter % cellfields->boundaryRepulsionTimescale == 0) {
+    statistics["iterate"]["boundaryRepulsionForce"].start();
     cellfields->applyBoundaryRepulsionForce();
+    statistics["iterate"]["boundaryRepulsionForce"].stop();
   }
+  statistics["iterate"]["spreadParticleForce"].start();
   cellfields->spreadParticleForce();
-  
+  statistics["iterate"]["spreadParticleForce"].stop();
+
   // #### 2 #### LBM
+  statistics["iterate"]["collideAndStream"].start();
   lattice->collideAndStream();
+  statistics["iterate"]["collideAndStream"].stop();
 
   if(iter %cellfields->particleVelocityUpdateTimescale == 0) {
     // #### 3 #### IBM interpolation
+    statistics["iterate"]["interpolateFluidVelocity"].start();
     cellfields->interpolateFluidVelocity();
+    statistics["iterate"]["interpolateFluidVelocity"].stop();
 
     // ### 4 ### sync the particles
+    statistics["iterate"]["syncEnvelopes"].start();
     cellfields->syncEnvelopes();
+    statistics["iterate"]["syncEnvelopes"].stop();
   }
   
   // ### 5 ###
+  statistics["iterate"]["advanceParticles"].start();
   cellfields->advanceParticles();
+  statistics["iterate"]["advanceParticles"].stop();
 
   // ### 6 ###
+  statistics["iterate"]["applyConstitutiveModel"].start();
   cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
-  
+  statistics["iterate"]["applyConstitutiveModel"].stop();
+    
   //We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
   if(iter % cellfields->particleVelocityUpdateTimescale == 0) {
     if (globalConfigValues.cellsDeletedInfo) {
+      statistics["iterate"]["deleteIncompleteCells"].start();
       cellfields->deleteIncompleteCells(true);
+      statistics["iterate"]["deleteIncompleteCells"].stop();
     }
+    statistics["iterate"]["deleteNonLocalParticles"].start();
     cellfields->deleteNonLocalParticles(3);
+    statistics["iterate"]["deleteNonLocalParticles"].stop();
   }
 
+  statistics["iterate"]["setExternalVector"].start();
   // Reset Forces on the lattice, TODO do own efficient implementation
   setExternalVector(*lattice, (*lattice).getBoundingBox(),
           DESCRIPTOR<T>::ExternalField::forceBeginsAt,
           plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
-
+  statistics["iterate"]["setExternalVector"].stop();
   iter++;
+  statistics["iterate"].stop();
 }
 
 T HemoCell::calculateFractionalLoadImbalance() {

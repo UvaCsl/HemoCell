@@ -116,24 +116,28 @@ void loadDirectories(std::string configFileName, Config * cfg)  {
   } catch (std::invalid_argument & exeption) {}
   mkpath(global::directories().getLogOutDir().c_str(), 0777);
 
-  if (global::mpi().getRank() == 0) {
-    string filename =  global::directories().getLogOutDir() + logfilename;
-    if (!file_exists(filename)) { 
-      hlog.logfile.open(global::directories().getLogOutDir() + logfilename , std::fstream::out );
+  string base_filename =  global::directories().getLogOutDir() + logfilename;
+  string filename = base_filename;
+  if (!file_exists(base_filename)) { 
+    goto logfile_open_done; 
+  }
+  for (int i = 0; i < INT_MAX; i++) {
+    filename = base_filename + "." + to_string(i);
+    if (!file_exists(filename)) {
       goto logfile_open_done; 
     }
-    for (int i = 0; i < INT_MAX; i++) {
-      if (!file_exists(filename + "." + to_string(i))) {
-        hlog.logfile.open(filename + "." + to_string(i) , std::fstream::out);
-        goto logfile_open_done; 
-      }
-    }
-    logfile_open_done:
-    if (!hlog.logfile.good()) {
+  }
+
+  logfile_open_done:
+
+  hlog.filename = filename;
+  if (global::mpi().getRank() == 0) {
+    hlog.logfile.open(filename , std::fstream::out);
+    if (!hlog.logfile.is_open()) {
       pcerr << "(HemoCell) (LogFile) Error opening logfile, exiting" << endl;
       exit(1);
     }
-  }
+  }  
 }
 
 ConfigValues globalConfigValues;

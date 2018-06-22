@@ -24,3 +24,8 @@ Version 0.5
 will generate an error when using multiple processors
 - variables checkpointDirectory and outputdirectory can now be specified in the
 config.xml
+
+Version 1.4
+===========
+
+- Added hemocell.statistics as an advanced (fully recursive) profiling tool

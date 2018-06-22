@@ -37,7 +37,7 @@ public:
     : logfile(logfile_)
     {}
     std::fstream & logfile;
-   
+    std::string filename = "";
 };
 template<typename Val>
 Logfile & operator << (Logfile & lf, Val const & rhs) {
