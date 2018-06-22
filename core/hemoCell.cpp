@@ -195,6 +195,7 @@ void HemoCell::writeOutput() {
   statistics["output"]["writeOutput"]["writeCellCSVInfo"].start();
   writeCellInfo_CSV(this);
   statistics["output"]["writeOutput"]["writeCellCSVInfo"].stop();
+  statistics["output"]["writeOutput"].stop();
 
   //Repoint surfaceparticle forces for speed
   statistics["output"]["unifyForceVectors"].start();

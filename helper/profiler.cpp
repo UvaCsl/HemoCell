@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemocell_internal.h"
 
 Profiler::Profiler(std::string name_) :
-name(name_), parent(*this)
+name(name_), parent(*this), current(this)
 {}
 
 Profiler::Profiler(std::string name_, Profiler & parent_) :
@@ -47,6 +47,16 @@ void Profiler::start() {
     started = true;
   }
   
+  //Check siblings for started
+  for (std::pair<const std::string,Profiler> & timer_pair : parent.timers) {
+    Profiler & timer = timer_pair.second;
+    if (&timer == this) {continue;}
+    if (timer.started) {
+      hemo::hlog << "(Profiler) (Warning) Starting timer " << name << " but sibling " << timer.name << " has also been started, starting it for now but you should fix this in the code " << std::endl;
+    }
+  }
+  
+  //Set current
   current = this;
   Profiler * root = this;
   do  {
