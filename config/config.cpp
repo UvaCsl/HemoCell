@@ -131,6 +131,7 @@ void loadDirectories(std::string configFileName, Config * cfg)  {
   logfile_open_done:
 
   hlog.filename = filename;
+  global::mpi().barrier();
   if (global::mpi().getRank() == 0) {
     hlog.logfile.open(filename , std::fstream::out);
     if (!hlog.logfile.is_open()) {

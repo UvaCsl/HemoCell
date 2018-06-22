@@ -164,7 +164,10 @@ void Profiler::outputStatistics() {
 
 
 Profiler & Profiler::operator[] (std::string name) {
-  timers.try_emplace(name,name, *this);
+  //try_emplace from c++17 would be sooo nice here, but gcc 5.4 does not yet have it
+  if (timers.find(name) == timers.end()) {
+    timers.insert(std::pair<std::string,Profiler>(name,Profiler(name, *this)));
+  }
   return timers.at(name);
 };
 
