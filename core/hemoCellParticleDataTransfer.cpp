@@ -161,8 +161,15 @@ void HemoCellParticleDataTransfer::attribute (
           dynamic_cast<HemoCellParticleField const&>(from);
       vector<const HemoCellParticle *> particles;
       fromParticleField.findParticles(fromDomain, particles);
+      //Calling addParticle on self can invalidate particles pointer array on realloc from vector
+      //Do for every local communication to accomodate overcoupling particle field in the future.
+      vector<HemoCellParticle::serializeValues_t> sv_values;
+      sv_values.reserve(particles.size());
       for (const HemoCellParticle * particle : particles) {
-        particleField->addParticle(toDomain,particle->sv);
+        sv_values.emplace_back(particle->sv);
+      }     
+      for (const HemoCellParticle::serializeValues_t & sv : sv_values) {
+        particleField->addParticle(toDomain, sv);
       }
     }
   constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
@@ -187,13 +194,19 @@ void HemoCellParticleDataTransfer::attribute (
     int offset = getOffset(absoluteOffset);
     hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
 
-    HemoCellParticle::serializeValues_t sv;
+    //Calling addParticle on self can invalidate particles pointer array on realloc from vector
+    //Do for every local communication to accomodate overcoupling particle field in the future.
+    vector<HemoCellParticle::serializeValues_t> sv_values;
+    sv_values.reserve(particles.size());
     for (const HemoCellParticle * particle : particles) {
-      sv = particle->sv;
-      sv.position += realAbsoluteOffset;
-      sv.cellId += offset;
-      particleField->addParticle(toDomain, sv);
+      sv_values.emplace_back(particle->sv);
+      sv_values.back().position += realAbsoluteOffset;
+      sv_values.back().cellId += offset;
     }     
+    for (const HemoCellParticle::serializeValues_t & sv : sv_values) {
+      particleField->addParticle(toDomain, sv);
+    }
+
   }
   constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
 }

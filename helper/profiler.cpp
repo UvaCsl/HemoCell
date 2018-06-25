@@ -127,7 +127,7 @@ std::string Profiler::elapsed_string() {
   if (!started) {
     return std::to_string(((double)std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count())/1000.0);
   } else {
-    return std::to_string(((double)std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count())/1000.0);
+    return std::to_string(((double)std::chrono::duration_cast<std::chrono::milliseconds>(total_time+(std::chrono::high_resolution_clock::now() - start_time)).count())/1000.0);
   }
 }
 
