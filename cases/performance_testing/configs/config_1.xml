@@ -28,8 +28,8 @@
 </domain>
 
 <sim>
-    <tmax> 2000 </tmax> <!-- total number of iterations -->
-    <tmeas>1000 </tmeas> <!-- interval after which data is written --> 
+    <tmax> 500 </tmax> <!-- total number of iterations -->
+    <tmeas>250 </tmeas> <!-- interval after which data is written --> 
 </sim>
 
 </hemocell>

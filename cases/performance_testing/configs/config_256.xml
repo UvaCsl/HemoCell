@@ -3,8 +3,8 @@
 
 <parameters>
     <warmup> 0 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
-    <outputDirectory>tmp_2</outputDirectory>
-     <logDirectory>log_2</logDirectory>
+    <outputDirectory>tmp_256</outputDirectory>
+     <logDirectory>log_256</logDirectory>
 </parameters>
 
 
@@ -28,8 +28,8 @@
 </domain>
 
 <sim>
-    <tmax> 500 </tmax> <!-- total number of iterations -->
-    <tmeas>250 </tmeas> <!-- interval after which data is written --> 
+    <tmax> 1000 </tmax> <!-- total number of iterations -->
+    <tmeas>500 </tmeas> <!-- interval after which data is written --> 
 </sim>
 
 </hemocell>
