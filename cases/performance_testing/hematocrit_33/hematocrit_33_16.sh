@@ -16,4 +16,4 @@
 
 #@ queue
 
-mpiexec -n 1 ../performance_testing ../configs/config_16.xml
+mpiexec -n 16 ../performance_testing ../configs/config_16.xml

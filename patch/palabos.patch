@@ -339,7 +339,7 @@ index 8005825..feda2f7 100644
                      }
                  }
 diff --git a/src/core/cell.h b/src/core/cell.h
-index 8ca5cc2..17b5724 100644
+index 8ca5cc2..484c2c8 100644
 --- a/src/core/cell.h
 +++ b/src/core/cell.h
 @@ -49,7 +49,7 @@ public:
@@ -351,19 +351,16 @@ index 8ca5cc2..17b5724 100644
      T data[ExternalField::numScalars];
  };
  
-@@ -371,9 +371,11 @@ private:
+@@ -371,7 +371,9 @@ private:
      void iniExternal();
  private:
      Array<T,Descriptor<T>::numPop> f;         ///< distribution functions
 +public:
      External                       external;  ///< external scalars
--    bool                           takesStat; ///< is statistics taken?
 +private:
-+    bool                           takesStat; ///< is statistics taken?
+     bool                           takesStat; ///< is statistics taken?
      Dynamics<T,Descriptor>*        dynamics;  ///< local LB dynamics
  };
- 
- template<typename T, template<typename U> class Descriptor>
 diff --git a/src/core/implicitGrid3D.h b/src/core/implicitGrid3D.h
 new file mode 100644
 index 0000000..2c19702
@@ -396,6 +393,19 @@ index 0000000..2c19702
 +}
 +#endif
 \ No newline at end of file
+diff --git a/src/gridRefinement/couplingInterfaceGenerator3D.h b/src/gridRefinement/couplingInterfaceGenerator3D.h
+index af5a9c5..790aa71 100644
+--- a/src/gridRefinement/couplingInterfaceGenerator3D.h
++++ b/src/gridRefinement/couplingInterfaceGenerator3D.h
+@@ -142,7 +142,7 @@ public:
+     ~GridLevelContainer3D();
+     
+     MultiContainerBlock3D& getDataProcessors() {
+-        return dataProcessors;
++        return *dataProcessors;
+     }
+     MultiBlockLattice3D<T,Descriptor> &getLattice() const {
+         return *lattice;
 diff --git a/src/latticeBoltzmann/latticeTemplates.h b/src/latticeBoltzmann/latticeTemplates.h
 index 2ab085b..83d726c 100644
 --- a/src/latticeBoltzmann/latticeTemplates.h
@@ -690,10 +700,11 @@ diff --git a/src/offLattice/triangularSurfaceMesh.hh b/src/offLattice/triangular
 index 622aa7d..624e388 100644
 --- a/src/offLattice/triangularSurfaceMesh.hh
 +++ b/src/offLattice/triangularSurfaceMesh.hh
-@@ -291,6 +291,82 @@ void TriangularSurfaceMesh<T>::rotate(T phi, T theta, T psi)
+@@ -290,6 +290,82 @@ void TriangularSurfaceMesh<T>::rotate(T phi, T theta, T psi)
+     }
  }
  
- template<typename T>
++template<typename T>
 +void TriangularSurfaceMesh<T>::rotateXYZ(T alpha, T beta, T gamma)
 +{
 +    static const T pi = std::acos((T) -1.0);
@@ -769,10 +780,9 @@ index 622aa7d..624e388 100644
 +    }
 +}
 +
-+template<typename T>
+ template<typename T>
  void TriangularSurfaceMesh<T>::smooth(plint maxiter, T relax, bool isMeasureWeighted)
  {
-     PLB_ASSERT(maxiter >= 0);
 diff --git a/src/particles/particleField3D.h b/src/particles/particleField3D.h
 index 373596f..0709fa9 100644
 --- a/src/particles/particleField3D.h
@@ -789,10 +799,12 @@ diff --git a/src/particles/particleField3D.hh b/src/particles/particleField3D.hh
 index ed03698..2c723bd 100644
 --- a/src/particles/particleField3D.hh
 +++ b/src/particles/particleField3D.hh
-@@ -40,6 +40,20 @@ ParticleField3D<T,Descriptor>::ParticleField3D(plint nx, plint ny, plint nz, Blo
+@@ -38,6 +38,20 @@ ParticleField3D<T,Descriptor>::ParticleField3D(plint nx, plint ny, plint nz, Blo
+     : AtomicBlock3D(nx,ny,nz, dataTransfer)
+ { }
  
- template<typename T, template<typename U> class Descriptor>
- bool ParticleField3D<T,Descriptor>::isContained (
++template<typename T, template<typename U> class Descriptor>
++bool ParticleField3D<T,Descriptor>::isContained (
 +        T iX, T iY, T iZ, Box3D box ) const
 +{
 +    Dot3D const& location = this->getLocation();
@@ -805,11 +817,9 @@ index ed03698..2c723bd 100644
 +           (z > (T)box.z0-(T)0.5) && (z <= (T)box.z1+(T)0.5);
 +}
 +
-+template<typename T, template<typename U> class Descriptor>
-+bool ParticleField3D<T,Descriptor>::isContained (
+ template<typename T, template<typename U> class Descriptor>
+ bool ParticleField3D<T,Descriptor>::isContained (
          Array<T,3> const& particlePos, Box3D box ) const
- {
-     Dot3D const& location = this->getLocation();
 @@ -711,8 +725,10 @@ void LightParticleField3D<T,Descriptor>::swap(LightParticleField3D<T,Descriptor>
  template<typename T, template<typename U> class Descriptor>
  void LightParticleField3D<T,Descriptor>::addParticle(Box3D domain, Particle3D<T,Descriptor>* particle) {
