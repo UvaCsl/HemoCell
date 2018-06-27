@@ -25,7 +25,8 @@ int main(int argc, char *argv[]) {
                        (*cfg)["domain"]["refDirN"].read<int>(),  
                        (*cfg)["domain"]["refDir"].read<int>(),  
                        voxelizedDomain, flagMatrix,  
-                       (*cfg)["domain"]["blockSize"].read<int>()); 
+                       (*cfg)["domain"]["blockSize"].read<int>(),
+                       (*cfg)["domain"]["particleEnvelope"].read<int>()); 
 
   param::lbm_pipe_parameters((*cfg),flagMatrix);
   param::printParameters();

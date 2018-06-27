@@ -53,7 +53,7 @@ BlockDomain::DomainT CopyFromNeighbor::appliesTo() const {
 // ---------------------- Read in STL geometry ---------------------------------
 
 void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint refDirLength, plint refDir,
-                          VoxelizedDomain3D<T> *&voxelizedDomain, MultiScalarField3D<int> *&flagMatrix, plint blockSize) {
+                          VoxelizedDomain3D<T> *&voxelizedDomain, MultiScalarField3D<int> *&flagMatrix, plint blockSize, int particleEnvelope) {
     plint extraLayer = 0;   // Make the bounding box larger; for visualization purposes
                             //   only. For the simulation, it is OK to have extraLayer=0.
     plint borderWidth = 1;  // Because the Guo boundary condition acts in a one-cell layer.
@@ -75,11 +75,16 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
     // Print out some info
     hlog << "(main) Voxelisation is done. Resulting domain parameters are: " << endl;
     hlog << getMultiBlockInfo(voxelizedDomain->getVoxelMatrix()) << std::endl;
-
+	
+    // Use particle envelope size if available
+    if(!particleEnvelope) {
+      hlog << "(Voxelizer) (Warning) particleEnvelopeSize not given, setting to 25" << endl;
+      particleEnvelope = 25;
+    }
     // Print out if parameters where optimal.
     if (blockSize > 0) {
-      if (blockSize < 26 || blockSize > 30) {
-        hlog << "(Voxelizer) (Warning) BlockSize is non optimal (" << blockSize << "), consider setting it to [26,30]" << endl;
+      if (blockSize < particleEnvelope+1 || blockSize > particleEnvelope*1.25) {
+        hlog << "(Voxelizer) (Warning) BlockSize is non optimal (" << blockSize << "), consider setting it to [" << to_string(particleEnvelope+1) << "," << to_string(particleEnvelope*1.25) << "]" << endl;
       }
       plint numBlocks = voxelizedDomain->getVoxelMatrix().getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
       if (numBlocks < global::mpi().getSize()) {
@@ -89,7 +94,7 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
       }
     } else {
       VoxelizedDomain3D<T> * temp = new VoxelizedDomain3D<T>(
-            boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, 28);
+            boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, particleEnvelope+3);
       plint numBlocks = temp->getVoxelMatrix().getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
       if (numBlocks != global::mpi().getSize()) {
         hlog << "(Voxelizer) (Warning) Running with " << global::mpi().getSize() << " CPU's, consider running with " << numBlocks << " CPU's for optimal efficiency" << endl;
