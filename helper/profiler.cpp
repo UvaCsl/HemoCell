@@ -133,7 +133,11 @@ std::string Profiler::elapsed_string() {
 
 template<typename T>
 void Profiler::printStatistics_inner(int level, T & out) {
-  out << std::string(level,' ') << name << ": " << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time + (std::chrono::high_resolution_clock::now() - start_time)).count()/1000.0) << std::endl;
+  if (!started) {
+    out << std::string(level,' ') << name << ": " << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count()/1000.0) << std::endl;
+  } else {
+    out << std::string(level,' ') << name << ": " << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time + (std::chrono::high_resolution_clock::now() - start_time)).count()/1000.0) << std::endl;
+  }
   //Print all child timers
   for (std::pair<const std::string,Profiler> & timer_pair : timers) {
     Profiler & timer = timer_pair.second;
