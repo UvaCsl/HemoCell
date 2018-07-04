@@ -3,8 +3,8 @@
 
 <parameters>
     <warmup> 0 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
-    <outputDirectory>tmp_128</outputDirectory>
-     <logDirectory>log_128</logDirectory>
+    <outputDirectory>tmp_8192</outputDirectory>
+     <logDirectory>log_8192</logDirectory>
 </parameters>
 
 
@@ -28,7 +28,7 @@
 </domain>
 
 <sim>
-    <tmax> 1000 </tmax> <!-- total number of iterations -->
+    <tmax> 2000 </tmax> <!-- total number of iterations -->
     <tmeas>500 </tmeas> <!-- interval after which data is written --> 
 </sim>
 

@@ -58,7 +58,6 @@ int main(int argc, char *argv[]) {
 
   hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("RBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  hemocell.setMinimumDistanceFromSolid("RBC_HO", 1); //Micrometer! not LU
 
  hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
@@ -92,7 +91,6 @@ int main(int argc, char *argv[]) {
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
 
   hlog << "(unbounded) Starting simulation..." << endl;
-  hlog << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC_HO") << endl;
   int ncells = CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC_HO");
   hlog << " | RBC Volume ratio [x100%]: " << ncells * 77.0 * 100 / (nx * ny * nz) << endl;
   hlog << "(main)   nCells (global) = " << ncells << endl ;

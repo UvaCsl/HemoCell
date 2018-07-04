@@ -24,7 +24,7 @@
     <blockSize> -1 </blockSize>
     <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
     <Re> 0.5 </Re>   <!--Reynolds number-->
-    <particleEnvelope> 12 </particleEnvelope>
+    <particleEnvelope> 25 </particleEnvelope>
 </domain>
 
 <sim>
