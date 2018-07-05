@@ -34,12 +34,6 @@ HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<
             desiredOutputVariables.erase(it);
             outputTriangles = true;
          }
-         it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_LINES);
-         if (it != desiredOutputVariables.end()) {
-            desiredOutputVariables.erase(it);
-            outputLines = true;
-         }
-
 
         for (plint iTriangle = 0; iTriangle < meshElement.getNumTriangles(); iTriangle++) {
           triangle_list.push_back({meshElement.getVertexId(iTriangle,0),
@@ -68,13 +62,6 @@ void HemoCellField::setOutputVariables(const vector<int> & outputs) { desiredOut
             outputTriangles = true;
          } else {
            outputTriangles = false;
-         }
-         it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_LINES);
-         if (it != desiredOutputVariables.end()) {
-            desiredOutputVariables.erase(it);
-            outputLines = true;
-         } else {
-           outputLines = false;
          }
   }
 

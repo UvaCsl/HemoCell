@@ -53,7 +53,6 @@ class HemoCellField{
   unsigned int timescale = 1;
   unsigned int minimumDistanceFromSolid = 0;
   bool outputTriangles = false;
-  bool outputLines = false;
   bool deleteIncomplete = true;
   vector<hemo::Array<plint,3>> triangle_list;
   void(*kernelMethod)(BlockLattice3D<T,DESCRIPTOR> &,HemoCellParticle*);

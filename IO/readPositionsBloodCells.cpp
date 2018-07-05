@@ -23,7 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "readPositionsBloodCells.h"
 #include "tools/packCells/geometry.h"
-#include "vWFModel.h"
 #include <sstream>
 
 inline void meshRotation (TriangularSurfaceMesh<T> * mesh, hemo::Array<T,3> rotationAngles) {
@@ -87,44 +86,6 @@ no_add:;
     }
 }
 
-void readvonWillibrands(Box3D realDomain, pluint celltype, HemoCellFields & cellFields,int & cellid, HemoCellParticleField & particleField)
-{
-  hlog << "(HemoCell) (ReadPositions) reading von willibrands" << endl;
-  unsigned int ncells;
-  fstream fIn;
-  string line;
-
-        fIn.open(cellFields[celltype]->name + ".pos", fstream::in);
-
-        if(!fIn.is_open())
-        {
-            cout << "*** WARNING! particle positions input file " << cellFields[celltype]->name << ".pos does not exist!" << endl;
-        }
-
-        fIn >> ncells;
-        hlog << "(readPositionsBloodCels) Particle count in file (" << cellFields[celltype]->name << "): " << ncells << "." << endl;
-        getline(fIn,line);
-        
-        for (unsigned i = 0 ; i < ncells ; i++) {
-          getline(fIn,line);
-          unsigned int nVertices = (count(line.begin(),line.end(),' ') + 1) / 3;
-          char * gcc4compatibility = (char *)line.c_str();
-          for (unsigned int j = 0 ; j < nVertices;j++) {
-            int c_is_sane;
-            hemo::Array<T,3> vertex;
-            int ret = sscanf(gcc4compatibility, "%lf %lf %lf %n", &vertex[0], &vertex[1], &vertex[2], &c_is_sane);
-            if ( ret != 3) {
-             pcout << "sscanf consumed too few (von Willibrand) somethings wrong" << endl; 
-            }
-            gcc4compatibility += c_is_sane;
-            vertex *= (1e-6/param::dx);
-            HemoCellParticle to_add_particle = HemoCellParticle(vertex,cellid,j,celltype);
-            particleField.addParticle(particleField.getBoundingBox(), &to_add_particle);
-          }
-          cellid++;
-        }
-}
-
 int getTotalNumberOfCells(HemoCellFields & cellFields){
   int nCells, totalCells = 0;
   for (pluint j = 0; j < cellFields.size(); j++) {
@@ -161,11 +122,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
     int cellid = 0;
     // TODO: proper try-catch
     for(pluint j = 0; j < Np.size(); j++) {
-      if (dynamic_cast<vWFModel*>(cellFields[j]->mechanics)) {
-        //von willibrands are special
-        readvonWillibrands(realDomain,j,cellFields,cellid, particleField);
-        continue;
-      }
+
         // Reading data from file
         fstream fIn;
         fIn.open(cellFields[j]->name + ".pos", fstream::in);
@@ -265,10 +222,6 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     plb::Array<T,2> xRange, yRange, zRange;
 
     for (pluint iCF = 0; iCF < cellFields.size(); ++iCF) {
-        if (dynamic_cast<vWFModel*>(cellFields[iCF]->mechanics)) {
-          particleFields[iCF] = ( dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[iCF+1]) );
-          continue; 
-        }
 
         TriangularSurfaceMesh<T> * mesh = copyTriangularSurfaceMesh(cellFields[iCF]->getMesh(), emptyEoTSM[iCF]);
         mesh->computeBoundingBox (xRange, yRange, zRange);
@@ -295,8 +248,6 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     
     for (pluint iCF = 0; iCF < positions.size(); ++iCF)
     {
-      if (dynamic_cast<vWFModel*>(cellFields[iCF]->mechanics)) { continue; }
-  
         for (pluint c = 0; c < positions[iCF].size(); ++c)
         {
             ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;

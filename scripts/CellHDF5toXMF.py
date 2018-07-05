@@ -46,6 +46,29 @@ class XMLIndentation(object):
         return self.current()
 
 
+def InnerLinksGrid(xmlInt=XMLIndentation()):
+    """
+        String to be used for Topology and geometry tags of the XMF file related to the Cell field.
+    Output:
+    ---------
+        Returns string with substitutable field.
+        Fields are:
+            subDomainNx, subDomainNy, subDomainNz
+            relativePositionX, relativePositionY, relativePositionZ
+            dx (not used)
+    """
+    h5TopologyAndGeometry = ""
+    h5TopologyAndGeometry += xmlInt.inc() + '<Topology TopologyType="Polygon" NumberOfElements="%(numberOfInnerLinks)d">\n'
+    h5TopologyAndGeometry += xmlInt.inc() + '<DataItem Dimensions="%(numberOfInnerLinks)d 2" Format="HDF">\n'
+    h5TopologyAndGeometry += xmlInt.cur() + '%(pathToHDF5)s:/InnerLinks\n'
+    h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
+    h5TopologyAndGeometry += xmlInt.dec() + '</Topology>\n'
+    h5TopologyAndGeometry += xmlInt.inc() + '<Geometry GeometryType="XYZ">\n'
+    h5TopologyAndGeometry += xmlInt.inc() +  '<DataItem Dimensions="%(numberOfParticles)d 3" Format="HDF">\n'
+    h5TopologyAndGeometry += xmlInt.cur() + '%(pathToHDF5)s:/Position\n'
+    h5TopologyAndGeometry += xmlInt.dec() + '</DataItem>\n'
+    h5TopologyAndGeometry += xmlInt.dec() + '</Geometry>\n'
+    return h5TopologyAndGeometry
 
 def createH5TopologyAndGeometryCell(xmlInt=XMLIndentation()):
     """
@@ -241,9 +264,15 @@ class HDF5toXDMF_Cell(object):
         stringToWrite = createH5TopologyAndGeometryCell(self.xmlInt)%(h5dict)
         for datasetDict in iteratePossibleDataSetsDict(h5dict):
             if not datasetDict['attributeName'] == "Triangles":
+              if not datasetDict['attributeName'] == "InnerLinks":
                 stringToWrite += createH5AttibuteCell(self.xmlInt)%(datasetDict)
         self.xdmfFile.write(stringToWrite)
         self.closeGrid()
+        for datasetDict in iteratePossibleDataSetsDict(h5dict):
+            if  datasetDict['attributeName'] == "InnerLinks":
+              self.openGrid(gridName + pId + "_innerLink")
+              self.xdmfFile.write(InnerLinksGrid(self.xmlInt)%(h5dict))
+              self.closeGrid()
         return -1
 
     def openCollection(self, gridName="Domain"):

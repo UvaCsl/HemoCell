@@ -36,11 +36,10 @@ void HemoCellParticleField::AddOutputMap() {
   outputFunctionMap[OUTPUT_VERTEX_ID] = &HemoCellParticleField::outputVertexId;
   outputFunctionMap[OUTPUT_CELL_ID] = &HemoCellParticleField::outputCellId;
   outputFunctionMap[OUTPUT_FORCE_REPULSION] = &HemoCellParticleField::outputForceRepulsion;
-
-
 }
 
 void HemoCellParticleField::passthroughpass(int type, Box3D domain, vector<vector<T>>& output, pluint ctype, std::string & name) {
+  if (outputFunctionMap.find(type) == outputFunctionMap.end()) { return; }
   void (HemoCellParticleField::*badideapointer)(Box3D,vector<vector<T>>&, pluint, std::string&) = outputFunctionMap[type];
   (this->*badideapointer)(domain,output,ctype,name);
 }
@@ -309,7 +308,7 @@ void HemoCellParticleField::outputForces(Box3D domain,vector<vector<T>>& output,
   }
 }
 
-void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>>& output, vector<vector<T>> & positions, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>>& output, pluint ctype, std::string & name) {
   name = "Triangles";
   output.clear();
   int counter = 0;
@@ -330,8 +329,8 @@ void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>>&
    
 }
 
-void HemoCellParticleField::outputLines(Box3D domain, vector<vector<plint>>& output, vector<vector<T>> & positions, plint ctype, std::string & name) {
-  name = "Lines";
+void HemoCellParticleField::outputInnerLinks(Box3D domain,vector<vector<plint>>& output, pluint ctype, std::string & name) {
+  name = "InnerLinks";
   output.clear();
   unsigned int counter = 0;
   const map<int,bool> & lpc = get_lpc();
@@ -339,18 +338,14 @@ void HemoCellParticleField::outputLines(Box3D domain, vector<vector<plint>>& out
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
     if (cellFields->celltype_per_cell[cellid] != ctype) { continue; }
-    const vector<int> & cell = particles_per_cell.at(cellid);
-    unsigned int nElems = 0;
-    for (unsigned int i = 0; i < cell.size() - 1 ; i++) {
-      if (cell[i] == -1) { continue; }
-      nElems++;
-      if (cell[i+1] == -1 ) { i++; continue;}
-      vector<plint> line = {i+counter,(i+1)+counter};
-      output.push_back(line);
+    for (pluint i = 0; i < (*cellFields)[ctype]->mechanics->cellConstants.inner_edge_list.size(); i++) {
+      vector<plint> link = {(*cellFields)[ctype]->mechanics->cellConstants.inner_edge_list[i][0] + counter,
+                            (*cellFields)[ctype]->mechanics->cellConstants.inner_edge_list[i][1] + counter,
+                           };
+      output.push_back(link);
     }
-    counter += nElems;
+    counter += (*cellFields)[ctype]->numVertex;
   }
-   
 }
 
 void HemoCellParticleField::outputVertexId(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {

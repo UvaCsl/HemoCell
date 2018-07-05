@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <hdf5.h>
 #include <hdf5_hl.h>
+#include <vector>
 
 /* ******** WriteCellField3DInMultipleHDF5Files *********************************** */
 WriteCellField3DInMultipleHDF5Files::WriteCellField3DInMultipleHDF5Files (
@@ -72,8 +73,9 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
          
     for (pluint i = 0; i < cellField3D.desiredOutputVariables.size(); i++) {
         vector<vector<T>> * output = new vector<vector<T>>();
-        std::string vectorname;
+        std::string vectorname = "";
         particleField.passthroughpass(cellField3D.desiredOutputVariables[i],domain,*output,cellField3D.ctype,vectorname);
+        if (vectorname == "") { continue; }
         dimVertices[0] = (*output).size();
         dimVertices[1] = dimVertices[0] == 0 ? 0 :(*output)[0].size();
         chunk[0] = 1000 < (*output).size() ? 1000 : (*output).size();
@@ -113,7 +115,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
     if (cellField3D.outputTriangles) { //Treat triangles seperately because of T/int issues
         vector<vector<plint>> * output = new vector<vector<plint>>();
         std::string vectorname;
-        particleField.outputTriangles(domain,*output,positions, cellField3D.ctype,vectorname);
+        particleField.outputTriangles(domain,*output, cellField3D.ctype,vectorname);
         
         dimVertices[0] = output->size();
         dimVertices[1] = dimVertices[0] == 0 ? 0 :(*output)[0].size();
@@ -145,41 +147,43 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         delete output;
         delete[] output_formatted;
      }
-
-     if (cellField3D.outputLines) { //Treat triangles seperately because of T/int issues
+   
+     if (std::find(cellField3D.desiredOutputVariables.begin(), cellField3D.desiredOutputVariables.end(),OUTPUT_INNER_LINKS) != cellField3D.desiredOutputVariables.end()) { //Treat lines seperately because of T/int issues
+       
         vector<vector<plint>> * output = new vector<vector<plint>>();
         std::string vectorname;
-        particleField.outputLines(domain,*output,positions, cellField3D.ctype,vectorname);
-        
-        dimVertices[0] = output->size();
-        dimVertices[1] = dimVertices[0] == 0 ? 0 :(*output)[0].size();
-        chunk[0] = 1000 < output->size() ? 1000 : output->size();
-        chunk[1] = dimVertices[1];
-        chunk[0] = chunk[0] > 1 ? chunk[0] : 1;
-        chunk[1] = chunk[1] > 1 ? chunk[1] : 1;
-           
-        int* output_formatted = new int[dimVertices[0] * dimVertices[1]];
-        int fmt_cnt = 0;
-        for (pluint x=0; x< dimVertices[0];x++) {
-            for (pluint y=0; y < dimVertices[1] ; y++) {
-                output_formatted[fmt_cnt] = (*output)[x][y];
-                fmt_cnt++;
-            }
+        particleField.outputInnerLinks(domain,*output, cellField3D.ctype,vectorname);
+        if (output->size() != 0) {
+          dimVertices[0] = output->size();
+          dimVertices[1] = dimVertices[0] == 0 ? 0 :(*output)[0].size();
+          chunk[0] = 1000 < output->size() ? 1000 : output->size();
+          chunk[1] = dimVertices[1];
+          chunk[0] = chunk[0] > 1 ? chunk[0] : 1;
+          chunk[1] = chunk[1] > 1 ? chunk[1] : 1;
+
+          int* output_formatted = new int[dimVertices[0] * dimVertices[1]];
+          int fmt_cnt = 0;
+          for (pluint x=0; x< dimVertices[0];x++) {
+              for (pluint y=0; y < dimVertices[1] ; y++) {
+                  output_formatted[fmt_cnt] = (*output)[x][y];
+                  fmt_cnt++;
+              }
+          }
+
+          hid_t sid = H5Screate_simple(2,dimVertices,NULL);
+          hid_t plist_id = H5Pcreate (H5P_DATASET_CREATE);
+          H5Pset_chunk(plist_id, 2, chunk); 
+          H5Pset_deflate(plist_id, 7);
+          hid_t did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
+          H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output_formatted);
+          H5Dclose(did);
+          H5Sclose(sid);
+
+          long int nT = output->size();
+          H5LTset_attribute_long (file_id, "/", "numberOfInnerLinks", &nT, 1);
+          delete[] output_formatted;
         }
-        
-        hid_t sid = H5Screate_simple(2,dimVertices,NULL);
-        hid_t plist_id = H5Pcreate (H5P_DATASET_CREATE);
-        H5Pset_chunk(plist_id, 2, chunk); 
-        H5Pset_deflate(plist_id, 7);
-        hid_t did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
-        H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output_formatted);
-        H5Dclose(did);
-        H5Sclose(sid);
-        
-        long int nT = output->size();
-        H5LTset_attribute_long (file_id, "/", "numberOfLines", &nT, 1);
         delete output;
-        delete[] output_formatted;
      }
      
      H5Fclose(file_id);

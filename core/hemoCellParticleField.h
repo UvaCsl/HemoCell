@@ -95,11 +95,14 @@ public:
     void outputForceLink   (Box3D,vector<vector<T>>&, pluint, std::string&);
     void outputForceVisc    (Box3D,vector<vector<T>>&, pluint, std::string&);
     void outputForceRepulsion  (Box3D,vector<vector<T>>&, pluint, std::string&);
-    void outputTriangles   (Box3D,vector<vector<plint>>&, vector<vector<T>>&, pluint, std::string&);
-    void outputLines   (Box3D,vector<vector<plint>>&, vector<vector<T>>&, plint, std::string&);
+    
+    void outputTriangles   (Box3D,vector<vector<plint>>&, pluint, std::string&);
+    void outputInnerLinks   (Box3D,vector<vector<plint>>&, pluint, std::string&);
+    
     void outputVertexId    (Box3D,vector<vector<T>>&, pluint, std::string&);
     void outputCellId    (Box3D,vector<vector<T>>&, pluint, std::string&);
     void outputForceInnerLink   (Box3D,vector<vector<T>>&, pluint, std::string&);
+
 
     void AddOutputMap();
     map<int,void (HemoCellParticleField::*)(Box3D,vector<vector<T>>&,pluint,std::string&)> outputFunctionMap;
