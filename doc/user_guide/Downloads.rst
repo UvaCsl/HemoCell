@@ -29,6 +29,13 @@ Source Code archive           :download:`hemocell-1.2.tgz`
 ============================ =========================================
 HemoCell V1.3                 Download Location            
 ============================ =========================================
-Singularity image             :download:`hemocell-singularity-1.3.img` 
+Singularity image             Send a mail to info@hemocell.eu
 Source Code archive           :download:`hemocell-1.3.tgz` 
+============================ =========================================
+
+============================ =========================================
+HemoCell V1.4                 Download Location            
+============================ =========================================
+Singularity image             :download:`hemocell-singularity-1.4.img` 
+Source Code archive           :download:`hemocell-1.4.tgz` 
 ============================ =========================================
