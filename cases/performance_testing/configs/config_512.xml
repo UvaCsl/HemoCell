@@ -3,8 +3,8 @@
 
 <parameters>
     <warmup> 0 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
-    <outputDirectory>tmp_525</outputDirectory>
-     <logDirectory>log_525</logDirectory>
+    <outputDirectory>tmp_512</outputDirectory>
+     <logDirectory>log_512</logDirectory>
 </parameters>
 
 
