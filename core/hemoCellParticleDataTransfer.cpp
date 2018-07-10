@@ -25,6 +25,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellParticleField.h"
 #include "hemocell.h"
 
+///Used to circumvent buffer initialization of characters
+struct NoInitChar
+{
+    char value;
+    NoInitChar() {
+        // do nothing
+        static_assert(sizeof *this == sizeof value, "invalid size");
+        static_assert(__alignof *this == __alignof value, "invalid alignment");
+    }
+};
+
+
 /* *************** class HemoParticleDataTransfer3D ************************ */
 
 inline plint HemoCellParticleDataTransfer::getOffset(Dot3D & absoluteOffset) {
@@ -62,6 +74,8 @@ void HemoCellParticleDataTransfer::send (
 {
   constParticleField->cellFields->hemocell.statistics.getCurrent()["MpiSend"].start();
     buffer.clear();
+    std::vector<NoInitChar> * bufferNoInit = reinterpret_cast<std::vector<NoInitChar>*>(&buffer);
+    
     // Particles, by definition, are dynamic data, and they need to
     //   be reconstructed in any case. Therefore, the send procedure
     //   is run whenever kind is one of the dynamic types.
@@ -71,10 +85,10 @@ void HemoCellParticleDataTransfer::send (
     {
         std::vector<HemoCellParticle*> foundParticles;
         particleField->findParticles(domain, foundParticles);
-        buffer.reserve(sizeof(HemoCellParticle::serializeValues_t)*foundParticles.size());
+        bufferNoInit->resize(sizeof(HemoCellParticle::serializeValues_t)*foundParticles.size());
         pluint offset=0;
         for (HemoCellParticle * iParticle : foundParticles) {
-          memcpy(&buffer[offset],&iParticle->sv,sizeof(HemoCellParticle::serializeValues_t));
+          memcpy(&(*bufferNoInit)[offset],&iParticle->sv,sizeof(HemoCellParticle::serializeValues_t));
           offset += sizeof(HemoCellParticle::serializeValues_t);
         }
     }
