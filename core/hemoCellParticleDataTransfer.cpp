@@ -71,9 +71,11 @@ void HemoCellParticleDataTransfer::send (
     {
         std::vector<HemoCellParticle*> foundParticles;
         particleField->findParticles(domain, foundParticles);
-        for (pluint iParticle=0; iParticle<foundParticles.size(); ++iParticle) {
-        // The serialize function automatically reallocates memory for buffer.
-        serialize(*foundParticles[iParticle], buffer);
+        buffer.reserve(sizeof(HemoCellParticle::serializeValues_t)*foundParticles.size());
+        pluint offset=0;
+        for (HemoCellParticle * iParticle : foundParticles) {
+          memcpy(&buffer[offset],&iParticle->sv,sizeof(HemoCellParticle::serializeValues_t));
+          offset += sizeof(HemoCellParticle::serializeValues_t);
         }
     }
   constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
@@ -96,13 +98,12 @@ void HemoCellParticleDataTransfer::receive (
     {
         pluint posInBuffer = 0;
         
-        HemoCellParticle newParticle = HemoCellParticle();
+        HemoCellParticle::serializeValues_t newParticle;;
         while (posInBuffer < buffer.size()) {
             // 1. Generate dynamics object, and unserialize dynamic data.
-            HierarchicUnserializer unserializer(buffer, posInBuffer);
-            newParticle.unserialize(unserializer);
-            posInBuffer = unserializer.getCurrentPos();
-            particleField->addParticle(domain, newParticle.sv);
+            memcpy(&newParticle,&buffer[posInBuffer],sizeof(HemoCellParticle::serializeValues_t));
+            posInBuffer += sizeof(HemoCellParticle::serializeValues_t);
+            particleField->addParticle(domain, newParticle);
         }
     }
     constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
@@ -121,15 +122,15 @@ void HemoCellParticleDataTransfer::receive (
     int offset = getOffset(absoluteOffset);
     hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
     pluint posInBuffer = 0;
-    HemoCellParticle newParticle = HemoCellParticle();
+    
+    HemoCellParticle::serializeValues_t newParticle;;
     while (posInBuffer < buffer.size()) {
-      // 1. Generate dynamics object, and unserialize dynamic data.
-      HierarchicUnserializer unserializer(buffer, posInBuffer);
-      newParticle.unserialize(unserializer);
-      posInBuffer = unserializer.getCurrentPos();
-      newParticle.sv.position += realAbsoluteOffset;
-      newParticle.sv.cellId += offset;
-      particleField->addParticle(domain, newParticle.sv);
+        // 1. Generate dynamics object, and unserialize dynamic data.
+        memcpy(&newParticle,&buffer[posInBuffer],sizeof(HemoCellParticle::serializeValues_t));
+        posInBuffer += sizeof(HemoCellParticle::serializeValues_t);
+        newParticle.position += realAbsoluteOffset;
+        newParticle.cellId += offset;
+        particleField->addParticle(domain, newParticle);
     }
   }
   constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
