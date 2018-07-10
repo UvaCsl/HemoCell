@@ -203,8 +203,8 @@ public:
   XMLreader * documentXML; //Needed for legacy checkpoint reading TODO fix
   private:
   /// Store the last time (iteration) output occured
-  int lastOutputAt = 0;
-  
+  unsigned int lastOutputAt = 0;
+  std::chrono::high_resolution_clock::duration lastOutput = std::chrono::high_resolution_clock::duration::zero();
  
 };
 

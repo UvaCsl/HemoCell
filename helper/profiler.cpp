@@ -191,3 +191,7 @@ Profiler & Profiler::getCurrent() {
   }
   return *current;
 }
+
+std::string Profiler::toString(std::chrono::high_resolution_clock::duration time) {
+  return std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(time).count()/1000.0);
+}

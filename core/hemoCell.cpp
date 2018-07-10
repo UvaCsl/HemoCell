@@ -140,10 +140,12 @@ void HemoCell::saveCheckPoint() {
 
 void HemoCell::writeOutput() {
   statistics["output"].start();
+  std::string tpi = ((iter != lastOutputAt) ? Profiler::toString((statistics.elapsed()-lastOutput)/(iter-lastOutputAt)):"0.00");
+  
+  lastOutput = statistics.elapsed();
+  lastOutputAt  = iter;
   // Very naive performance approximation
-
-  pcout << "(HemoCell) (Output) writing output at timestep " << iter << " (" << param::dt * iter<< " s). Approx. performance: " << to_string(stof(statistics.elapsed_string())/(iter-lastOutputAt)) << " s / iteration." << endl;
-  lastOutputAt = iter;
+  pcout << "(HemoCell) (Output) writing output at timestep " << iter << " (" << param::dt * iter<< " s). Approx. performance: " << tpi << " s / iteration." << endl;
   if(repulsionEnabled) {
     statistics["output"]["repulsionForce"].start();
     cellfields->applyRepulsionForce();

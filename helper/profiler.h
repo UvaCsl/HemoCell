@@ -46,6 +46,7 @@ public:
   Profiler & operator[] (std::string);
   Profiler & getCurrent();
 
+  std::string static toString(std::chrono::high_resolution_clock::duration);
 
 private:
   void stop_nowarn();

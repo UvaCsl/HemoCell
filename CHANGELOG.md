@@ -30,3 +30,4 @@ Version 1.4
 
 - Added hemocell.statistics as an advanced (fully recursive) profiling tool
 - Added OUTPUT_INNER_LINKS to output possibility
+- Consistent Changelog (At least I'll try)
