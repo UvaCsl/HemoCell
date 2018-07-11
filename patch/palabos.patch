@@ -802,21 +802,29 @@ index 622aa7d..624e388 100644
  void TriangularSurfaceMesh<T>::smooth(plint maxiter, T relax, bool isMeasureWeighted)
  {
 diff --git a/src/parallelism/parallelBlockCommunicator3D.cpp b/src/parallelism/parallelBlockCommunicator3D.cpp
-index c891d72..85c1a99 100644
+index c891d72..9e3a1cd 100644
 --- a/src/parallelism/parallelBlockCommunicator3D.cpp
 +++ b/src/parallelism/parallelBlockCommunicator3D.cpp
-@@ -281,16 +281,56 @@ void ParallelBlockCommunicator3D::communicate (
+@@ -280,17 +280,62 @@ void ParallelBlockCommunicator3D::communicate (
+                 info.toDomain, deltaX, deltaY, deltaZ, fromBlock,
                  whichData, info.absoluteOffset );
      }
- 
+-
 -    // 4. Finalize the receives.
 -    for (unsigned iRecv=0; iRecv<communication.recvPackage.size(); ++iRecv) {
 -        CommunicationInfo3D const& info = communication.recvPackage[iRecv];
+-        AtomicBlock3D& toBlock = destinationMultiBlock.getComponent(info.toBlockId);
+-        toBlock.getDataTransfer().receive (
++    //if(0){
 +    if (whichData == modif::hemocell) {
 +      // 4. Become receptive (dynamic)
++
++      std::map<CommunicatorEntry*,std::vector<CommunicationInfo3D*>> infos;
++
 +      std::vector<dynamicReceive_t> receives;
-+      for (CommunicationInfo3D const& info : communication.recvPackage) {
-+        communication.recvComm.startReceiving(info.fromProcessId,receives,info);
++      for (CommunicationInfo3D const& info : communication.recvPackage) {     
++        communication.recvComm.startReceiving(info.fromProcessId,receives,info,infos);
++        
 +      }
 +      // 5. Receive those messages
 +      std::vector<MPI_Request> reqs;
@@ -831,11 +839,8 @@ index c891d72..85c1a99 100644
 +        if (index == MPI_UNDEFINED) {
 +          break;
 +        }
-+
-+        CommunicationInfo3D const& info = *receives[index].info;
-+        CommunicatorEntry & entry = receives[index].entry;
-         AtomicBlock3D& toBlock = destinationMultiBlock.getComponent(info.toBlockId);
--        toBlock.getDataTransfer().receive (
++       
++        CommunicatorEntry & entry = *receives[index].entry;
 +        
 +        //5.1 Split in smaller sizes or something
 +        int pos=0;
@@ -846,13 +851,17 @@ index c891d72..85c1a99 100644
 +                         entry.messages[iMessage].begin() );
 +          }
 +          pos+=length;
++          
++          CommunicationInfo3D const& info = *infos[&entry][iMessage];
++          AtomicBlock3D& toBlock = destinationMultiBlock.getComponent(info.toBlockId);
 +          toBlock.getDataTransfer().receive (
                  info.toDomain,
 -                communication.recvComm.receiveMessage(info.fromProcessId, staticMessage),
+-                whichData, info.absoluteOffset );
 +                entry.messages[iMessage],
-                 whichData, info.absoluteOffset );
++                modif::hemocell, info.absoluteOffset );
 +        }
-+      }
++        }
 +    } else { 
 +      // 4. Finalize the receives.
 +      for (unsigned iRecv=0; iRecv<communication.recvPackage.size(); ++iRecv) {
@@ -869,35 +878,35 @@ index c891d72..85c1a99 100644
      communication.sendComm.finalize(staticMessage);
      global::profiler().stop("mpiCommunication");
 diff --git a/src/parallelism/sendRecvPool.cpp b/src/parallelism/sendRecvPool.cpp
-index ff5eb57..14b9b96 100644
+index ff5eb57..8337033 100644
 --- a/src/parallelism/sendRecvPool.cpp
 +++ b/src/parallelism/sendRecvPool.cpp
 @@ -154,6 +154,38 @@ void RecvPoolCommunicator::startBeingReceptive(bool staticMessage)
      }
  }
  
-+void RecvPoolCommunicator::startReceiving(int fromProc, std::vector<dynamicReceive_t> & ret,CommunicationInfo3D const & info) {
++void RecvPoolCommunicator::startReceiving(int fromProc, std::vector<dynamicReceive_t> & ret,CommunicationInfo3D const & info,std::map<CommunicatorEntry*,std::vector<CommunicationInfo3D*>>& infos) {
 +  std::map<int,CommunicatorEntry>::iterator entryPtr = subscriptions.find(fromProc);
 +  CommunicatorEntry& entry = entryPtr->second;
++  infos[&entry].emplace_back(const_cast<CommunicationInfo3D*>(&info));
 +  if (entry.currentMessage==0) {
 +    ret.emplace_back(const_cast<CommunicationInfo3D*>(&info));
-+    CommunicatorEntry& hentry = ret.back().entry;
-+    hentry = entry;
++    ret.back().entry = &entry;
 +    
-+    pluint numMessages = hentry.messages.size();
++    pluint numMessages = entry.messages.size();
 +    std::vector<int> messageSizes(numMessages);
 +    global::mpi().receive(&messageSizes[0], numMessages, fromProc);
 +    
-+    for (pluint iMessage=0; iMessage<hentry.messages.size(); ++iMessage) {
++    for (pluint iMessage=0; iMessage<entry.messages.size(); ++iMessage) {
 +      int length = messageSizes[iMessage];
-+      hentry.messages[iMessage].resize(length);
++      entry.messages[iMessage].resize(length);
 +    }
 +    
 +    int totalSize = std::accumulate(messageSizes.begin(), messageSizes.end(), 0);
-+    hentry.totalSize =totalSize;
-+    hentry.data.resize(totalSize);
-+    if (!hentry.data.empty()) {
-+      global::mpi().iRecv(&hentry.data[0], totalSize, fromProc,&ret.back().req);
++    entry.totalSize =totalSize;
++    entry.data.resize(totalSize);
++    if (!entry.data.empty()) {
++      global::mpi().iRecv(&entry.data[0], totalSize, fromProc,&ret.back().req);
 +    } else {
 +      ret.pop_back();
 +    }
@@ -912,7 +921,7 @@ index ff5eb57..14b9b96 100644
          int fromProc, bool staticMessage )
  {
 diff --git a/src/parallelism/sendRecvPool.h b/src/parallelism/sendRecvPool.h
-index 68c06dd..7c1015f 100644
+index 68c06dd..13b5662 100644
 --- a/src/parallelism/sendRecvPool.h
 +++ b/src/parallelism/sendRecvPool.h
 @@ -32,6 +32,7 @@
@@ -932,7 +941,7 @@ index 68c06dd..7c1015f 100644
 +
 +struct dynamicReceive_t {
 +  MPI_Request req;
-+  CommunicatorEntry entry;
++  CommunicatorEntry * entry;
 +  CommunicationInfo3D * info;
 +  dynamicReceive_t(CommunicationInfo3D * info_) : info(info_) {}
  };
@@ -943,7 +952,7 @@ index 68c06dd..7c1015f 100644
      /// Initiate non-blocking communication.
      void startBeingReceptive(bool staticMessage);
 +    /// Initiate non-blocking for dynamic data since this is perfectly easy (Hack it into palabos)
-+    void startReceiving(int fromProc,std::vector<dynamicReceive_t> &, CommunicationInfo3D const&);
++    void startReceiving(int fromProc,std::vector<dynamicReceive_t> &, CommunicationInfo3D const&,std::map<CommunicatorEntry*,std::vector<CommunicationInfo3D*>>&);
      std::vector<char> const& receiveMessage(int fromProc, bool staticMessage);
  private:
      void finalizeStatic(int fromProc);
