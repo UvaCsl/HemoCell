@@ -79,9 +79,7 @@ void HemoCellParticleDataTransfer::send (
     // Particles, by definition, are dynamic data, and they need to
     //   be reconstructed in any case. Therefore, the send procedure
     //   is run whenever kind is one of the dynamic types.
-    if ( (kind==modif::dynamicVariables) ||
-         (kind==modif::allVariables) ||
-         (kind==modif::dataStructure) )
+    if ( (kind==modif::hemocell))
     {
         std::vector<HemoCellParticle*> foundParticles;
         particleField->findParticles(domain, foundParticles);
@@ -106,9 +104,7 @@ void HemoCellParticleDataTransfer::receive (
     //   is run whenever kind is one of the dynamic types.
    constParticleField->cellFields->hemocell.statistics.getCurrent()["MpiReceive"].start();
 
-    if ( (kind==modif::dynamicVariables) ||
-         (kind==modif::allVariables) ||
-         (kind==modif::dataStructure) )
+    if ( (kind==modif::hemocell) )
     {
         pluint posInBuffer = 0;
         
@@ -129,9 +125,7 @@ void HemoCellParticleDataTransfer::receive (
   
   constParticleField->cellFields->hemocell.statistics.getCurrent()["MpiReceive"].start();
 
-  if ( (kind==modif::dynamicVariables) ||
-       (kind==modif::allVariables) ||
-       (kind==modif::dataStructure) )
+  if ( (kind==modif::hemocell) )
   {
     int offset = getOffset(absoluteOffset);
     hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
@@ -167,9 +161,7 @@ void HemoCellParticleDataTransfer::attribute (
 {
   constParticleField->cellFields->hemocell.statistics.getCurrent()["LocalCommunication"].start();
 
-    if ( (kind==modif::dynamicVariables) ||
-         (kind==modif::allVariables) ||
-         (kind==modif::dataStructure) )
+    if ( kind==modif::hemocell )
     {
       Box3D fromDomain(toDomain.shift(deltaX,deltaY,deltaZ));
       HemoCellParticleField const& fromParticleField =
@@ -196,9 +188,7 @@ void HemoCellParticleDataTransfer::attribute (
 {
   constParticleField->cellFields->hemocell.statistics.getCurrent()["LocalCommunication"].start();
   
-  if ( (kind==modif::dynamicVariables) ||
-       (kind==modif::allVariables) ||
-       (kind==modif::dataStructure) )
+  if ( kind==modif::hemocell )
   { 
   
     Box3D fromDomain(toDomain.shift(deltaX,deltaY,deltaZ));

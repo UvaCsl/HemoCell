@@ -264,7 +264,6 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         //SYNC THEM ENVELOPES
         //cellFields.syncEnvelopes();
         // DELETE CELLS THAT ARE NOT WHOLE
-        plint nVertices=meshes[iCF]->getNumVertices();
         particleFields[iCF]->deleteIncompleteCells(iCF,false);
         std::vector<HemoCellParticle*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);

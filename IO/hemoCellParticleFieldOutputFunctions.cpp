@@ -334,10 +334,9 @@ void HemoCellParticleField::outputInnerLinks(Box3D domain,vector<vector<plint>>&
   output.clear();
   unsigned int counter = 0;
   const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   for ( const auto &lpc_it : lpc ) {
     int cellid = lpc_it.first;
-    if (cellFields->celltype_per_cell[cellid] != ctype) { continue; }
+    if (cellFields->celltype_per_cell[cellid] != (plint)ctype) { continue; }
     for (pluint i = 0; i < (*cellFields)[ctype]->mechanics->cellConstants.inner_edge_list.size(); i++) {
       vector<plint> link = {(*cellFields)[ctype]->mechanics->cellConstants.inner_edge_list[i][0] + counter,
                             (*cellFields)[ctype]->mechanics->cellConstants.inner_edge_list[i][1] + counter,
