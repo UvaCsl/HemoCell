@@ -802,19 +802,10 @@ index 622aa7d..624e388 100644
  void TriangularSurfaceMesh<T>::smooth(plint maxiter, T relax, bool isMeasureWeighted)
  {
 diff --git a/src/parallelism/parallelBlockCommunicator3D.cpp b/src/parallelism/parallelBlockCommunicator3D.cpp
-index c891d72..d223ccf 100644
+index c891d72..85c1a99 100644
 --- a/src/parallelism/parallelBlockCommunicator3D.cpp
 +++ b/src/parallelism/parallelBlockCommunicator3D.cpp
-@@ -35,6 +35,8 @@
- #include <algorithm>
- #ifdef PLB_MPI_PARALLEL
- #include <mpi.h>
-+#include <openmpi/mpi.h>
-+#include <c++/8/bits/stl_vector.h>
- #endif
- 
- namespace plb {
-@@ -281,16 +283,56 @@ void ParallelBlockCommunicator3D::communicate (
+@@ -281,16 +281,56 @@ void ParallelBlockCommunicator3D::communicate (
                  whichData, info.absoluteOffset );
      }
  
