@@ -878,19 +878,10 @@ index c891d72..d223ccf 100644
      communication.sendComm.finalize(staticMessage);
      global::profiler().stop("mpiCommunication");
 diff --git a/src/parallelism/sendRecvPool.cpp b/src/parallelism/sendRecvPool.cpp
-index ff5eb57..36beca5 100644
+index ff5eb57..14b9b96 100644
 --- a/src/parallelism/sendRecvPool.cpp
 +++ b/src/parallelism/sendRecvPool.cpp
-@@ -31,6 +31,8 @@
- #include "core/plbProfiler.h"
- #include "core/plbDebug.h"
- #include <numeric>
-+#include <openmpi/mpi.h>
-+#include <c++/8/bits/stl_vector.h>
- 
- namespace plb {
- 
-@@ -154,6 +156,38 @@ void RecvPoolCommunicator::startBeingReceptive(bool staticMessage)
+@@ -154,6 +154,38 @@ void RecvPoolCommunicator::startBeingReceptive(bool staticMessage)
      }
  }
  
