@@ -182,7 +182,7 @@ void HemoCellParticleField::addParticle(Box3D domain, const HemoCellParticle::se
 
       //If our particle is local, do not replace it, envelopes are less important
       if (isContainedABS(local_sparticle->sv.position, localDomain)) {
-
+        return;
       } else {
         //We have the particle already, replace it
         local_sparticle->sv = sv;
@@ -201,8 +201,7 @@ void HemoCellParticleField::addParticle(Box3D domain, const HemoCellParticle::se
       
       //invalidate ppt
       ppt_up_to_date=false;
-
-      //_particles_per_type[particle->celltype].push_back(particles.size()-1); //last entry
+      
       if(!particle->sv.fromPreInlet) {
         if(this->isContainedABS(pos, localDomain)) {
           _lpc[particle->sv.cellId] = true;
@@ -233,10 +232,7 @@ void HemoCellParticleField::addParticle(Box3D domain, const HemoCellParticle::se
 
 void inline HemoCellParticleField::insert_ppc(HemoCellParticle* sparticle, unsigned int index) {
   if (_particles_per_cell.find(sparticle->sv.cellId) == _particles_per_cell.end()) {
-    _particles_per_cell[sparticle->sv.cellId].resize((*cellFields)[sparticle->sv.celltype]->numVertex);
-    for (unsigned int i = 0; i < _particles_per_cell[sparticle->sv.cellId].size(); i++) {
-      _particles_per_cell[sparticle->sv.cellId][i] = -1;
-    }
+    _particles_per_cell[sparticle->sv.cellId].resize((*cellFields)[sparticle->sv.celltype]->numVertex,-1);
   }
   _particles_per_cell.at(sparticle->sv.cellId)[sparticle->sv.vertexId] = index;
 
