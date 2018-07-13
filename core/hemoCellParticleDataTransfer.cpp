@@ -93,35 +93,37 @@ void HemoCellParticleDataTransfer::send (
   constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
 }
 
-void HemoCellParticleDataTransfer::receive (
-        Box3D domain, std::vector<char> const& buffer, modif::ModifT kind )
+void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer, unsigned int size, modif::ModifT kind)
 {
-    PLB_PRECONDITION(contained(domain, particleField->getBoundingBox()));
-    // Clear the existing data before introducing the new data.
-    //particleField->removeParticles(domain);
-    // Particles, by definition, are dynamic data, and they need to
-    //   be reconstructed in any case. Therefore, the receive procedure
-    //   is run whenever kind is one of the dynamic types.
-   constParticleField->cellFields->hemocell.statistics.getCurrent()["MpiReceive"].start();
+  PLB_PRECONDITION(contained(domain, particleField->getBoundingBox()));
+  // Clear the existing data before introducing the new data.
+  //particleField->removeParticles(domain);
+  // Particles, by definition, are dynamic data, and they need to
+  //   be reconstructed in any case. Therefore, the receive procedure
+  //   is run whenever kind is one of the dynamic types.
+ constParticleField->cellFields->hemocell.statistics.getCurrent()["MpiReceive"].start();
 
-    if ( (kind==modif::hemocell) )
-    {
-        pluint posInBuffer = 0;
-        
-        HemoCellParticle::serializeValues_t newParticle;;
-        while (posInBuffer < buffer.size()) {
-            // 1. Generate dynamics object, and unserialize dynamic data.
-            memcpy(&newParticle,&buffer[posInBuffer],sizeof(HemoCellParticle::serializeValues_t));
-            posInBuffer += sizeof(HemoCellParticle::serializeValues_t);
-            particleField->addParticle(domain, newParticle);
-        }
-    }
-    constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
+  if ( (kind==modif::hemocell) )
+  {
+      unsigned int posInBuffer = 0;
+
+      HemoCellParticle::serializeValues_t * newParticle;;
+      while (posInBuffer < size) {
+        // 1. Generate dynamics object, and unserialize dynamic data.
+        newParticle = (HemoCellParticle::serializeValues_t*)&buffer[posInBuffer];
+        posInBuffer += sizeof(HemoCellParticle::serializeValues_t);       
+        particleField->addParticle(domain, *newParticle);
+      }
+  }
+  constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
 }
 
-void HemoCellParticleDataTransfer::receive (
-        Box3D domain, std::vector<char> const& buffer, modif::ModifT kind, Dot3D absoluteOffset )
+void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer, unsigned int size, modif::ModifT kind, Dot3D absoluteOffset )
 {
+  if (absoluteOffset.x == 0 && absoluteOffset.y == 0 && absoluteOffset.z == 0) {
+    receive(domain,buffer,size,kind);
+    return;
+  }
   
   constParticleField->cellFields->hemocell.statistics.getCurrent()["MpiReceive"].start();
 
@@ -129,20 +131,34 @@ void HemoCellParticleDataTransfer::receive (
   {
     int offset = getOffset(absoluteOffset);
     hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
-    pluint posInBuffer = 0;
+    unsigned int posInBuffer = 0;
     
-    HemoCellParticle::serializeValues_t newParticle;;
-    while (posInBuffer < buffer.size()) {
+    HemoCellParticle::serializeValues_t * newParticle;;
+    while (posInBuffer < size) {
         // 1. Generate dynamics object, and unserialize dynamic data.
-        memcpy(&newParticle,&buffer[posInBuffer],sizeof(HemoCellParticle::serializeValues_t));
-        posInBuffer += sizeof(HemoCellParticle::serializeValues_t);
-        newParticle.position += realAbsoluteOffset;
-        newParticle.cellId += offset;
-        particleField->addParticle(domain, newParticle);
+      newParticle = (HemoCellParticle::serializeValues_t*)&buffer[posInBuffer];
+      posInBuffer += sizeof(HemoCellParticle::serializeValues_t);
+      //Edit in buffer, but it is not used again anyway
+      newParticle->position += realAbsoluteOffset;
+      newParticle->cellId += offset;
+      particleField->addParticle(domain, *newParticle);
     }
   }
   constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
+}
 
+void HemoCellParticleDataTransfer::receive (
+        Box3D domain, std::vector<char> const& buffer, modif::ModifT kind )
+{
+  //cast to char* because we ARE going to edit
+  receive(domain,(char*)&buffer[0],buffer.size(),kind);
+}
+
+void HemoCellParticleDataTransfer::receive (
+        Box3D domain, std::vector<char> const& buffer, modif::ModifT kind, Dot3D absoluteOffset )
+{
+  //cast to char* because we ARE going to edit
+  receive(domain,(char*)&buffer[0],buffer.size(),kind,absoluteOffset);
 }
 
 void HemoCellParticleDataTransfer::setBlock(AtomicBlock3D& block) {
@@ -186,6 +202,11 @@ void HemoCellParticleDataTransfer::attribute (
         Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
         AtomicBlock3D const& from, modif::ModifT kind, Dot3D absoluteOffset )
 {
+  if (absoluteOffset.x == 0 && absoluteOffset.y == 0 && absoluteOffset.z == 0) {
+    attribute(toDomain,deltaX,deltaY,deltaZ,from,kind);
+    return;
+  }
+  
   constParticleField->cellFields->hemocell.statistics.getCurrent()["LocalCommunication"].start();
   
   if ( kind==modif::hemocell )

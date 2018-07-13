@@ -24,7 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HEMOCELL_PARTICLE_DATA_TRANSFER_H
 #define HEMOCELL_PARTICLE_DATA_TRANSFER_H
 
-#include "hemocell_internal.h"
+#include "atomicBlock/atomicBlock3D.h"
+
+using namespace plb;
+
 class HemoCellParticleField;
 
 class HemoCellParticleDataTransfer : public BlockDataTransfer3D {
@@ -32,6 +35,9 @@ public:
     HemoCellParticleDataTransfer();
     virtual plint staticCellSize() const;
     virtual void send(Box3D domain, std::vector<char>& buffer, modif::ModifT kind) const;
+    //Much faster since we can circumvent memcpy (twice!)
+    void receive(Box3D const & domain, char *, unsigned int size, modif::ModifT);
+    void receive(Box3D const & domain, char *, unsigned int size, modif::ModifT, Dot3D absoluteOffset);
     virtual void receive(Box3D domain, std::vector<char> const& buffer, modif::ModifT kind);
     virtual void receive(Box3D domain, std::vector<char> const& buffer, modif::ModifT kind, Dot3D absoluteOffset);
     virtual void receive( Box3D domain, std::vector<char> const& buffer,

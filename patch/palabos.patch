@@ -802,10 +802,19 @@ index 622aa7d..624e388 100644
  void TriangularSurfaceMesh<T>::smooth(plint maxiter, T relax, bool isMeasureWeighted)
  {
 diff --git a/src/parallelism/parallelBlockCommunicator3D.cpp b/src/parallelism/parallelBlockCommunicator3D.cpp
-index c891d72..e5dd4e1 100644
+index c891d72..b66b310 100644
 --- a/src/parallelism/parallelBlockCommunicator3D.cpp
 +++ b/src/parallelism/parallelBlockCommunicator3D.cpp
-@@ -36,6 +36,7 @@
+@@ -25,6 +25,8 @@
+ /** \file
+  * Helper classes for parallel 3D multiblock lattice -- generic implementation.
+  */
++//For efficient c-style communication:
++#include "../../../core/hemoCellParticleDataTransfer.h"
+ 
+ #include "parallelism/parallelBlockCommunicator3D.h"
+ #include "multiBlock/multiBlock3D.h"
+@@ -36,6 +38,7 @@
  #ifdef PLB_MPI_PARALLEL
  #include <mpi.h>
  #endif
@@ -813,7 +822,7 @@ index c891d72..e5dd4e1 100644
  
  namespace plb {
  
-@@ -280,17 +281,82 @@ void ParallelBlockCommunicator3D::communicate (
+@@ -280,17 +283,81 @@ void ParallelBlockCommunicator3D::communicate (
                  info.toDomain, deltaX, deltaY, deltaZ, fromBlock,
                  whichData, info.absoluteOffset );
      }
@@ -871,7 +880,6 @@ index c891d72..e5dd4e1 100644
 +              //std::copy( entry.data.begin()+pos, entry.data.begin()+pos+length,
 +              //           entry.messages[iMessage].begin() );
 +            }
-+            pos+=length;
  
 -    // 4. Finalize the receives.
 -    for (unsigned iRecv=0; iRecv<communication.recvPackage.size(); ++iRecv) {
@@ -883,10 +891,10 @@ index c891d72..e5dd4e1 100644
 -                whichData, info.absoluteOffset );
 +            CommunicationInfo3D const& info = *infos[&entry][iMessage];
 +            AtomicBlock3D& toBlock = destinationMultiBlock.getComponent(info.toBlockId);
-+            toBlock.getDataTransfer().receive (
-+                  info.toDomain,
-+                  entry.messages[iMessage],
++            dynamic_cast<HemoCellParticleDataTransfer&>(toBlock.getDataTransfer()).receive (info.toDomain, 
++                    &entry.data[pos], sizeof(char)*length,
 +                  modif::hemocell, info.absoluteOffset );
++            pos+=length;
 +          }
 +        }
 +      }
