@@ -86,7 +86,7 @@ void HemoCellParticleDataTransfer::send (
         bufferNoInit->resize(sizeof(HemoCellParticle::serializeValues_t)*foundParticles.size());
         pluint offset=0;
         for (HemoCellParticle * iParticle : foundParticles) {
-          memcpy(&(*bufferNoInit)[offset],&iParticle->sv,sizeof(HemoCellParticle::serializeValues_t));
+          *((HemoCellParticle::serializeValues_t*)&(*bufferNoInit)[offset]) = iParticle->sv;
           offset += sizeof(HemoCellParticle::serializeValues_t);
         }
     }
