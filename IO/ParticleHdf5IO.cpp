@@ -65,12 +65,12 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
      hsize_t dimVertices[2];
      hsize_t chunk[2];  
  
-     vector<vector<T>> positions;
+     //vector<vector<T>> positions;
      
     /************************************************************/
     /**            Write output to HDF5 file                   **/
    /************************************************************/
-         
+    
     for (pluint i = 0; i < cellField3D.desiredOutputVariables.size(); i++) {
         vector<vector<T>> * output = new vector<vector<T>>();
         std::string vectorname = "";
@@ -101,13 +101,12 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         H5Dclose(did);
         H5Sclose(sid);
             
-        if (i == 0) {
+        if (cellField3D.desiredOutputVariables[i] == OUTPUT_POSITION) {
+            //positions = (*output);
             long int nP = (*output).size();
             H5LTset_attribute_long (file_id, "/", "numberOfParticles", &nP, 1);
         }
-        if (cellField3D.desiredOutputVariables[i] == OUTPUT_POSITION) {
-            positions = (*output);
-        }
+
         delete output;
         delete[] output_formatted;
     }

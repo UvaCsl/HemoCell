@@ -155,6 +155,8 @@ def updateDictForXDMFStringsCell(h5File, h5dict):
         return d
 
     h5dict['DataSets'] =  list(map(dictFromObject,  list(h5File.items())))
+    if not "numberOfParticles" in h5dict:
+      h5dict["numberOfParticles"] = h5File['Position'].shape[0]
     return h5dict
 
 
