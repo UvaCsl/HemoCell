@@ -15,9 +15,9 @@
     <minNumTriangles> 1 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact. [642]-->
     <radius> 5.4e-6 </radius> <!-- Radius of the RBC in [ 3.96 um] -->
     <InnerEdges>
-	  <Edge>821 1415 </Edge>
-	  <Edge>691 1467 </Edge>
-	  <Edge>884 811 </Edge>
+	  <Edge>821 1415</Edge>
+	  <Edge>691 1467</Edge>
+	  <Edge>884 811</Edge>
 	  <Edge>1171 860</Edge>
 	  <Edge>959 1022</Edge>
 	  <Edge>649 1325</Edge>
@@ -355,7 +355,6 @@
 	  <Edge>551 764</Edge>
 	  <Edge>209 766</Edge>
 	  <Edge>79 1068</Edge>
-	  <Edge>65 1069</Edge>
 	  <Edge>110 1404</Edge>
 	  <Edge>409 1405</Edge>
 	  <Edge>654 1385</Edge>
@@ -418,7 +417,6 @@
 	  <Edge>155 1134</Edge>
 	  <Edge>910 68</Edge>
 	  <Edge>1035 812</Edge>
-	  <Edge>882 740</Edge>
 	  <Edge>25 152</Edge>
 	  <Edge>24 151</Edge>
 	  <Edge>1132 831</Edge>
