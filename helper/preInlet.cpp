@@ -27,18 +27,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "boundaryCondition/boundaryCondition3D.hh"
 #include "dataProcessors/dataInitializerWrapper3D.hh"
+#include "parallelism/mpiManager.h"
+
+namespace hemo {
 
 #ifndef H5_HAVE_PARALLEL
 herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
-  if (global::mpi().getSize() > 1) {
-    pcerr << "Not compiled with HDF5 OpenMPI version, cowardly refusing to generate corrupted hdf5 files" << endl; 
+  if (plb::global::mpi().getSize() > 1) {
+    hlog << "Not compiled with HDF5 OpenMPI version, cowardly refusing to generate corrupted hdf5 files" << std::endl; 
     exit(1);
   }
   return 0;
 }
 #endif
-
-namespace hemo {
 
 PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTimestep_, Direction flowDir_, HemoCell& hemocell_, bool reducedPrecision_) 
   : hemocell(hemocell_) {
