@@ -25,9 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <hdf5.h>
 #include <hdf5_hl.h>
 
-#include "boundaryCondition/boundaryCondition3D.hh"
-#include "dataProcessors/dataInitializerWrapper3D.hh"
-#include "parallelism/mpiManager.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
 
 namespace hemo {
 
