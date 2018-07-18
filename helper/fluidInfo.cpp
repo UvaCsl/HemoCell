@@ -25,6 +25,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellParticleField.h"
 #include "hemocell.h"
 
+#include "dataProcessors/dataInitializerWrapper3D.hh"
+#include "dataProcessors/dataInitializerFunctional3D.hh"
+
+namespace hemo {
+
 void GatherFluidVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     BlockLattice3D<T,DESCRIPTOR>* ff = dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[0]);
     HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[1]);
@@ -145,7 +150,7 @@ FluidStatistics FluidInfo::calculateForceStatistics(HemoCell* hemocell) {
   
   result.avg /= result.ncells;
 
-  setExternalVector(*hemocell->lattice, (*hemocell->lattice).getBoundingBox(),
+  plb::setExternalVector(*hemocell->lattice, (*hemocell->lattice).getBoundingBox(),
           DESCRIPTOR<T>::ExternalField::forceBeginsAt,
           plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
   
@@ -154,3 +159,5 @@ FluidStatistics FluidInfo::calculateForceStatistics(HemoCell* hemocell) {
 
 GatherFluidVelocity * GatherFluidVelocity::clone() const { return new GatherFluidVelocity(*this); }
 GatherFluidForce * GatherFluidForce::clone() const { return new GatherFluidForce(*this); }
+
+}

@@ -24,13 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HEMOCELL_WBCHIGHORDERMODEL_H
 #define HEMOCELL_WBCHIGHORDERMODEL_H
 
-#include "hemocell_internal.h"
 #include "constantConversion.h"
 #include "config.h"
 #include "cellMechanics.h"
 #include "commonCellConstants.h"
 #include "hemoCellFields.h"
-
+namespace hemo {
 class WbcHighOrderModel : public CellMechanics {
 
   public:
@@ -58,5 +57,5 @@ class WbcHighOrderModel : public CellMechanics {
   static T calculate_kInnerRigid(Config & cfg );
   static T calculate_kCytoskeleton(Config & cfg );
 };
-
+}
 #endif

@@ -24,9 +24,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //This class converses SI things to LBM things for classes like the HO model.
 #include "constantConversion.h"
 #include "meshMetrics.h"
-#include "palabos3D.h"
 #include "hemoCellFunctional.h"
+#include "logfile.h"
 
+#include "multiBlock/reductiveMultiDataProcessorWrapper3D.hh"
+#include "dataProcessors/dataAnalysisFunctional3D.hh"
+#include "dataProcessors/dataAnalysisWrapper3D.hh"
+
+namespace hemo {
 void Parameters::lbm_base_parameters(Config & cfg) {
     dt = cfg["domain"]["dt"].read<T>();
     dx = cfg["domain"]["dx"].read<T>();
@@ -38,7 +43,7 @@ void Parameters::lbm_base_parameters(Config & cfg) {
       tau = 1.0;
       nu_lbm = 1.0/3.0 * (tau - 0.5);
       dt = nu_lbm /nu_p * (dx*dx);
-      pcout << "(HemoCell) dt is set to *auto*. Tau will be set to 1!" << std::endl;
+      hlog << "(HemoCell) dt is set to *auto*. Tau will be set to 1!" << std::endl;
     } else { //dt is set, this means we must set tau
       nu_lbm = nu_p * dt/ (dx*dx);
       tau = 3.0 * nu_lbm + 0.5;
@@ -52,16 +57,16 @@ void Parameters::lbm_base_parameters(Config & cfg) {
     kBT_lbm = kBT_p/(df*dx);
 };
 
-void Parameters::lbm_pipe_parameters(Config & cfg, MultiScalarField3D<int> * sf) {
+void Parameters::lbm_pipe_parameters(Config & cfg, plb::MultiScalarField3D<int> * sf) {
     Parameters::lbm_base_parameters(cfg);
     re = cfg["domain"]["Re"].read<T>();
     
-    Box3D domain = sf->getBoundingBox();
+    plb::Box3D domain = sf->getBoundingBox();
     domain.x1 = domain.x0;
-    T fluidArea = computeSum<int>(*sf,domain);
+    T fluidArea = plb::computeSum<int>(*sf,domain);
     
     pipe_radius = sqrt(fluidArea/PI);
-    hlog << "(Parameters) Your pipe has a calculated radius of " << pipe_radius << " LU, assuming a perfect circle" << endl;
+    hlog << "(Parameters) Your pipe has a calculated radius of " << pipe_radius << " LU, assuming a perfect circle" << std::endl;
     u_lbm_max = re * nu_lbm / (pipe_radius*2);
 };
 
@@ -70,7 +75,7 @@ void Parameters::lbm_pipe_parameters(Config & cfg, int nY) {
     re = cfg["domain"]["Re"].read<T>();
     
     pipe_radius = nY;
-    hlog << "(Parameters) Your pipe has a given radius of " << pipe_radius << " LU, given so might be wrong" << endl;
+    hlog << "(Parameters) Your pipe has a given radius of " << pipe_radius << " LU, given so might be wrong" << std::endl;
     u_lbm_max = re * nu_lbm / (pipe_radius*2);
 };
 
@@ -114,5 +119,5 @@ T Parameters::ef_lbm = 0.0;
 #ifdef FORCE_LIMIT
 T Parameters::f_limit = 0.0;
 T Parameters::pipe_radius = 0.0;
-
+}
 #endif

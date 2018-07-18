@@ -27,6 +27,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <limits.h>
 
+#include "readPositionsBloodCells.h"
+#include "hemoCellFunctional.h"
+#include "hemoCellParticle.h"
+#include "hemoCellField.h"
+#include "ParticleHdf5IO.h"
+#include "FluidHdf5IO.h"
+#include "writeCellInfoCSV.h"
+#include "genericFunctions.h"
+
+#include "core/plbInit.hh"
+#include "latticeBoltzmann/externalFieldAccess.h"
+#include "dataProcessors/dataInitializerFunctional3D.hh"
+#include "dataProcessors/dataInitializerWrapper3D.hh"
+
+using namespace hemo;
+
 volatile sig_atomic_t interrupted = 0;
 void set_interrupt(int signum) {
   interrupted = 1;
@@ -34,7 +50,7 @@ void set_interrupt(int signum) {
 
 HemoCell::HemoCell(char * configFileName, int argc, char * argv[])
 {
-  plbInit(&(argc),&(argv));
+  plb::plbInit(&(argc),&(argv));
 
   pcout << "(HemoCell) (Config) reading " << configFileName << endl;
   cfg = new Config(configFileName);
@@ -45,10 +61,6 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[])
   
   //Start statistics
   statistics.start();
-  
-  // start clock for basic performance feedback
-  lastOutputAt = 0;
-  global::timer("atOutput").start();
   
 #ifdef FORCE_LIMIT
     hlogfile << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT << " pN. Results can be inaccurate due to force capping." << endl;
@@ -75,7 +87,7 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[])
 void HemoCell::latticeEquilibrium(T rho, hemo::Array<T, 3> vel) {
   hlog << "(HemoCell) (Fluid) Setting Fluid Equilibrium" << endl;
   plb::Array<T,3> vel_plb = {vel[0],vel[1],vel[2]};
-  initializeAtEquilibrium(*lattice, (*lattice).getBoundingBox(), rho, vel_plb);
+  plb::initializeAtEquilibrium(*lattice, (*lattice).getBoundingBox(), rho, vel_plb);
 }
 
 void HemoCell::initializeCellfield() {

@@ -24,8 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef FLUIDINFO_H
 #define FLUIDINFO_H
 
-#include "hemocell_internal.h"
+#include "hemocell.h"
 #include "hemoCellFunctional.h"
+#include <vector>
+
+namespace hemo {
 
 struct FluidStatistics {
   double min;
@@ -37,13 +40,13 @@ struct FluidStatistics {
 class GatherFluidVelocity : public HemoCellGatheringFunctional<FluidStatistics> {
   public:  
     using HemoCellGatheringFunctional<FluidStatistics>::HemoCellGatheringFunctional; //Inherit Constructor
-    void processGenericBlocks(Box3D, vector<AtomicBlock3D*>);
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     GatherFluidVelocity * clone() const;
 };
 class GatherFluidForce : public HemoCellGatheringFunctional<FluidStatistics> {
   public:  
     using HemoCellGatheringFunctional<FluidStatistics>::HemoCellGatheringFunctional; //Inherit Constructor
-    void processGenericBlocks(Box3D, vector<AtomicBlock3D*>);
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     GatherFluidForce * clone() const;
 };
 class FluidInfo {
@@ -52,5 +55,6 @@ public:
   static FluidStatistics calculateForceStatistics(HemoCell * hemocell_);
 };
 
+}
 #endif /* FLUIDINFO_H */
 

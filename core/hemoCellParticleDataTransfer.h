@@ -24,11 +24,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HEMOCELL_PARTICLE_DATA_TRANSFER_H
 #define HEMOCELL_PARTICLE_DATA_TRANSFER_H
 
+namespace hemo {
+  class HemoCellParticleDataTransfer;
+}
+
 #include "atomicBlock/atomicBlock3D.h"
+#include "hemoCellParticleField.h"
 
+namespace hemo {
 using namespace plb;
-
-class HemoCellParticleField;
 
 class HemoCellParticleDataTransfer : public BlockDataTransfer3D {
 public:
@@ -59,5 +63,5 @@ private:
     HemoCellParticleField* particleField;
     HemoCellParticleField const * constParticleField;
 };
-
+}
 #endif

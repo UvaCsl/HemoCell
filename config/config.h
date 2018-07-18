@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "external/tinyxml2/tinyxml2.h"
 #include <string>
 #include <iostream>
+#include <sstream>
 
 namespace hemo {
 
@@ -38,7 +39,7 @@ namespace hemo {
     
     template<typename T>
     T read() {
-      std:: stringstream value(orig->GetText());
+      std::stringstream value(orig->GetText());
       T ret = T();
       if (!(value>>ret)) {
         std::cout << "Cannot convert value from XML element" << std::endl;
@@ -70,8 +71,6 @@ namespace hemo {
     void load(std::string paramXmlFilename);
   };
 
-}
-
 void loadDirectories(std::string configFileName, hemo::Config * cfg);
 
 struct ConfigValues {
@@ -81,4 +80,6 @@ struct ConfigValues {
 extern ConfigValues globalConfigValues;
 
 void loadGlobalConfigValues(hemo::Config * cfg);
+
+}
 #endif

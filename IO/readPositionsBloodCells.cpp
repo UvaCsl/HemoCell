@@ -24,7 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "readPositionsBloodCells.h"
 #include "tools/packCells/geometry.h"
 #include <sstream>
+#include "logfile.h"
 
+namespace hemo {
+  
 inline void meshRotation (TriangularSurfaceMesh<T> * mesh, hemo::Array<T,3> rotationAngles) {
     plb::Array<T,2> xRange, yRange, zRange;
     mesh->computeBoundingBox (xRange, yRange, zRange);
@@ -317,4 +320,6 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & c
             new ReadPositionsBloodCellField3D(cellFields, dx, cfg),
             cellFields.lattice->getBoundingBox(), fluidAndParticleFieldsArg);
     hlogfile << "Mpi Process: " << global::mpi().getRank()  << " Completed loading particles" << std::endl;
+}
+
 }

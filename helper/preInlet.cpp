@@ -25,6 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <hdf5.h>
 #include <hdf5_hl.h>
 
+#include "boundaryCondition/boundaryCondition3D.hh"
+#include "dataProcessors/dataInitializerWrapper3D.hh"
+
 #ifndef H5_HAVE_PARALLEL
 herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
   if (global::mpi().getSize() > 1) {
@@ -34,6 +37,8 @@ herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
   return 0;
 }
 #endif
+
+namespace hemo {
 
 PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTimestep_, Direction flowDir_, HemoCell& hemocell_, bool reducedPrecision_) 
   : hemocell(hemocell_) {
@@ -67,7 +72,7 @@ PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTi
       break;
   }
 
-  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
+  plb::OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
   boundary->setVelocityConditionOnBlockBoundaries(*hemocell.lattice,fluidDomain);
   setBoundaryVelocity(*hemocell.lattice, fluidDomain, plb::Array<T,3>(0.,0.,0.));
   
@@ -380,3 +385,5 @@ PreInlet::~PreInlet() {
 PreInlet::PreInletFunctional * PreInlet::PreInletFunctional::clone() const { return new PreInletFunctional(*this); }
 PreInlet::DeletePreInletParticles * PreInlet::DeletePreInletParticles::clone() const { return new DeletePreInletParticles(*this); }
 PreInlet::ImmersePreInletParticles * PreInlet::ImmersePreInletParticles::clone() const { return new ImmersePreInletParticles(*this); }
+
+}

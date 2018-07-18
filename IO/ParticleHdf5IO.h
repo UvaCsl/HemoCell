@@ -24,11 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef PARTICLE_HDF5IO_H
 #define PARTICLE_HDF5IO_H
 
-#include "hemocell_internal.h"
 #include "hemoCellParticle.h"
 #include "hemoCellFields.h"
 #include "hemoCellField.h"
-
+namespace hemo {
 void writeCellField3D_HDF5(HemoCellFields& cellFields, T dx, T dt, plint iter, std::string preString="");
 
 
@@ -53,5 +52,6 @@ private:
     double dt;
     int ctype;
 };
+}
 #endif  // FICSION_PARTICLE_HDF5IO_H
 

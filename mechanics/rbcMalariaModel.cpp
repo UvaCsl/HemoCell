@@ -1,7 +1,9 @@
 #include "rbcMalariaModel.h"
+#include "logfile.h"
 //TODO Make all inner hemo::Array variables constant as well
 
-
+namespace hemo {
+  
 RbcMalariaModel::RbcMalariaModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_),
                   cellField(cellField_),
                   k_volume( RbcMalariaModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
@@ -219,3 +221,4 @@ T RbcMalariaModel::calculate_kInnerLink(Config & cfg, MeshMetrics<T> & meshmetri
   return kInnerLink;
 };
 
+}

@@ -24,8 +24,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HEMOCELLFUNCTIONAL_H
 #define HEMOCELLFUNCTIONAL_H
 
-#include "hemocell_internal.h"
+#include "constant_defaults.h"
 #include "mpi.h"
+
+#include "atomicBlock/dataProcessingFunctional3D.hh"
+#include "core/globalDefs.h"
+#include "multiBlock/multiDataProcessorWrapper3D.hh"
+
+namespace hemo {
 
 class HemoCellFunctional : public plb::BoxProcessingFunctional3D {
 public:
@@ -35,10 +41,10 @@ public:
             isWritten[i] = false;       
         }
     }
-    BlockDomain::DomainT appliesTo() const { return BlockDomain::bulk; }
-    void getTypeOfModification(std::vector<modif::ModifT>& modified) const {
+    plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
+    void getTypeOfModification(std::vector<plb::modif::ModifT>& modified) const {
         for (pluint i = 0; i < modified.size(); i++) {
-            modified[i] = modif::nothing;       
+            modified[i] = plb::modif::nothing;       
         }
         
     }
@@ -62,24 +68,24 @@ class HemoCellGatheringFunctional : public plb::BoxProcessingFunctional3D {
 public:
     //Numblocks should be larger than the maximum number of blocks per process
     //The total can be retrieved from Multiblock.getManagment.getsparseblock.getnumblocks
-    HemoCellGatheringFunctional(map<int,GatherType> & gatherValues_) : 
+    HemoCellGatheringFunctional(std::map<int,GatherType> & gatherValues_) : 
       gatherValues(gatherValues_) {}
     void getModificationPattern(std::vector<bool>& isWritten) const {
         for (pluint i = 0; i < isWritten.size(); i++) {
             isWritten[i] = false;       
         }
     }
-    BlockDomain::DomainT appliesTo() const { return BlockDomain::bulk; }
-    void getTypeOfModification(std::vector<modif::ModifT>& modified) const {
+    plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
+    void getTypeOfModification(std::vector<plb::modif::ModifT>& modified) const {
         for (pluint i = 0; i < modified.size(); i++) {
-            modified[i] = modif::nothing;       
+            modified[i] = plb::modif::nothing;       
         }
         
     }
-    static void gather(map<int,GatherType> & gatherValues) {
+    static void gather(std::map<int,GatherType> & gatherValues) {
         int be = 0;
         int sendsize = sizeof(int) + sizeof(IDandGatherType)*gatherValues.size();
-        vector<unsigned char> sendbuffer(sendsize);
+        std::vector<unsigned char> sendbuffer(sendsize);
 
         byteint local_number;
         local_number.i = gatherValues.size();
@@ -97,22 +103,22 @@ public:
             }
         }
         
-        vector<int> sendcounts(global::mpi().getSize());
+        std::vector<int> sendcounts(plb::global::mpi().getSize());
         MPI_Allgather(&sendsize,sizeof(int),MPI_BYTE,&sendcounts[0],sizeof(int),MPI_BYTE,MPI_COMM_WORLD);
               
         int receivesize = 0;
-        vector<int> displacements(1,0);
+        std::vector<int> displacements(1,0);
         for (int & size : sendcounts) {
           receivesize += size;
           displacements.push_back(displacements.back() + size);
         }
         displacements.pop_back();
-        vector<unsigned char> receivebuffer(receivesize);        
+        std::vector<unsigned char> receivebuffer(receivesize);        
         
         MPI_Allgatherv(&sendbuffer[0],sendsize,MPI_BYTE,&receivebuffer[0],&sendcounts[0],&displacements[0],MPI_BYTE,MPI_COMM_WORLD);
         be = 0;
         
-        for (int j = 0 ; j < global::mpi().getSize() ; j++) {
+        for (int j = 0 ; j < plb::global::mpi().getSize() ; j++) {
             be = displacements[j];
             for (unsigned int i = 0; i < sizeof(int) ; i++) {
                 local_number.b[i] = receivebuffer[be];
@@ -131,8 +137,9 @@ public:
     }
         
     //This map should be set in the processingGenericBlocks function and is local to the mpi processor;
-    map<int,GatherType> & gatherValues; 
+    std::map<int,GatherType> & gatherValues; 
 };
 
+}
 #endif /* HEMOCELLFUNCTIONAL_H */
 

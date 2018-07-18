@@ -24,9 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef PARTICLEINFO_H
 #define PARTICLEINFO_H
 
-#include "hemocell_internal.h"
+#include "hemocell.h"
 #include "hemoCellFunctional.h"
 
+namespace hemo {
+  
 struct ParticleStatistics {
   T min;
   T max;
@@ -37,13 +39,13 @@ struct ParticleStatistics {
 class GatherParticleVelocity : public HemoCellGatheringFunctional<ParticleStatistics> {
   public:  
     using HemoCellGatheringFunctional<ParticleStatistics>::HemoCellGatheringFunctional; //Inherit Constructor
-    void processGenericBlocks(Box3D, vector<AtomicBlock3D*>);
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     GatherParticleVelocity * clone() const;
 };
 class GatherParticleForce : public HemoCellGatheringFunctional<ParticleStatistics> {
   public:  
     using HemoCellGatheringFunctional<ParticleStatistics>::HemoCellGatheringFunctional; //Inherit Constructor
-    void processGenericBlocks(Box3D, vector<AtomicBlock3D*>);
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     GatherParticleForce * clone() const;
 };
 
@@ -52,5 +54,7 @@ public:
   static ParticleStatistics calculateVelocityStatistics(HemoCell * hemocell_);
   static ParticleStatistics calculateForceStatistics(HemoCell * hemocell_);
 };
+
+}
 #endif /* PARTICLEINFO_H */
 

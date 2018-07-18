@@ -21,7 +21,17 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#include "logfile.h"
+#include "constant_defaults.h"
 #include "genericFunctions.h"
+#include <string>
+#include <sstream>
+#include <iomanip>
+
+#include "io/parallelIO.h"
+
+namespace hemo {
 
 void weakScaling(int Nx, int Ny, int Nz, int numberOfProcesses, vector<int> & newNxNyNz) {
     int fmod = int(log2(numberOfProcesses))%3;
@@ -38,7 +48,7 @@ int renameFileToDotOld(std::string fName) {
     if (file_exists(fName)) {
         int renameStatus = rename(fName.c_str(), (fName + ".old").c_str());
         if (renameStatus != 0) {
-            pcout << fName << " error." << std::endl;
+            plb::pcout << fName << " error." << std::endl;
         }
     }
     return renameStatus;
@@ -125,4 +135,6 @@ void printHeader()
 	hlog << "(_) (_) (____) (_/\\/\\_) (_____)  \\___) (____) (____) (____) " << endl;
 	hlog << "                         v." << VERSION_MAJOR << "." << VERSION_MINOR << endl;
 	hlog << endl;
+}
+
 }

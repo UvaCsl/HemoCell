@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <hdf5_hl.h>
 #include <vector>
 
+namespace hemo {
 /* ******** WriteCellField3DInMultipleHDF5Files *********************************** */
 WriteCellField3DInMultipleHDF5Files::WriteCellField3DInMultipleHDF5Files (
         HemoCellField & cellField3D_,
@@ -216,4 +217,6 @@ void writeCellField3D_HDF5(HemoCellFields& cellFields, T dx, T dt, plint iter, s
         wrapper.push_back(cellFields[i]->getParticleArg());
         applyProcessingFunctional (bprf,cellFields[i]->getParticleField3D()->getBoundingBox(), wrapper );
     }
+}
+
 }

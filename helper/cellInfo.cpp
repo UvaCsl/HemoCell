@@ -24,7 +24,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cellInfo.h"
 #include "hemocell.h"
 
-void CellInformationFunctionals::clear_list() {
+namespace hemo {
+
+  void CellInformationFunctionals::clear_list() {
   info_per_cell.clear();
 }
 void CellInformationFunctionals::calculate_vol_pos_area(HemoCell* hemocell) {
@@ -275,3 +277,5 @@ CellInformationFunctionals::CellType * CellInformationFunctionals::CellType::clo
 
 map<int,CellInformation> CellInformationFunctionals::info_per_cell = map<int,CellInformation>();
 HemoCell * CellInformationFunctionals::hemocell = 0;
+
+}

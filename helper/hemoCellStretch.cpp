@@ -22,6 +22,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "hemoCellStretch.h"
+namespace hemo {
+  
+
 HemoCellStretch::FindForcedLsps * HemoCellStretch::FindForcedLsps::clone() const { return new HemoCellStretch::FindForcedLsps(*this);}
 
 void HemoCellStretch::FindForcedLsps::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -103,4 +106,6 @@ void HemoCellStretch::applyForce() {
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(cellfield.getParticleField3D());
   applyProcessingFunctional(new ForceForcedLsps(),cellfield.getParticleField3D()->getBoundingBox(),wrapper);
+}
+
 }

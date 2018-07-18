@@ -24,15 +24,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef READ_POSISIONS_OF_BLOOD_CELLS_H
 #define READ_POSISIONS_OF_BLOOD_CELLS_H
 
-#include "hemocell_internal.h"
 #include "hemoCellFields.h"
 #include "config.h"
 #include "constantConversion.h"
+
+#include "core/geometry3D.h"
+#include "offLattice/triangularSurfaceMesh.hh"
+
+namespace hemo {
 void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & cfg);
 int getTotalNumberOfCells(HemoCellFields & cellFields);
 
-void getReadPositionsBloodCellsVector(Box3D realDomain,
-                                           std::vector<TriangularSurfaceMesh<T>* > & meshes,
+void getReadPositionsBloodCellsVector(plb::Box3D realDomain,
+                                           std::vector<plb::TriangularSurfaceMesh<T>* > & meshes,
                                            std::vector<plint> & Np,
                                            std::vector<std::vector<hemo::Array<T,3> > > & positions,
                                            std::vector<std::vector<plint> > & cellIds,
@@ -40,20 +44,20 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
                                            Config & cfg, HemoCellFields & cellFields,
                                            HemoCellParticleField & particleField);
 
-class ReadPositionsBloodCellField3D : public BoxProcessingFunctional3D
+class ReadPositionsBloodCellField3D : public plb::BoxProcessingFunctional3D
 {
 public:
     ReadPositionsBloodCellField3D (HemoCellFields & cellFields_, T dx_, Config & cfg_)
             : cellFields(cellFields_), cfg(cfg_) {dx = dx_;}
     /// Arguments: [0] Particle-field.
-    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
+    virtual void processGenericBlocks(plb::Box3D domain, std::vector<plb::AtomicBlock3D*> fields);
     virtual ReadPositionsBloodCellField3D* clone() const;
-    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
+    virtual void getTypeOfModification(std::vector<plb::modif::ModifT>& modified) const;
     void getModificationPattern(std::vector<bool>& isWritten) const;
-    virtual BlockDomain::DomainT appliesTo() const;
+    virtual plb::BlockDomain::DomainT appliesTo() const;
     T dx;
     HemoCellFields & cellFields;
     Config & cfg;
 };
-
+}
 #endif

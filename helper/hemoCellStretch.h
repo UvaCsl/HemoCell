@@ -24,10 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HEMOCELLSTRETCH_H
 #define HEMOCELLSTRETCH_H
 
-#include "hemocell_internal.h"
 #include "hemoCellFields.h"
 #include "hemoCellFunctional.h"
 
+namespace hemo {
+  
 class HemoCellStretch {
   public:
 
@@ -52,5 +53,5 @@ class HemoCellStretch {
   static unsigned int n_forced_lsps;
   static T external_force;
 };
-
+}
 #endif

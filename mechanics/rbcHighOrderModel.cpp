@@ -22,9 +22,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "rbcHighOrderModel.h"
+#include "logfile.h"
 //TODO Make all inner hemo::Array variables constant as well
 
-
+namespace hemo {
 RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_),
                   cellField(cellField_),
                   k_volume( RbcHighOrderModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
@@ -212,8 +213,4 @@ void RbcHighOrderModel::statistics() {
     hlog << "\t N faces:  " << cellConstants.triangle_list.size() << std::endl;
 };
 
-
-
-
-
-
+}

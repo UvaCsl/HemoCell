@@ -23,15 +23,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #ifndef HEMO_CELLMECHANICS
 #define HEMO_CELLMECHANICS
-
-class CellMechanics;
-#include "hemocell_internal.h"
+namespace hemo {
+  class CellMechanics;
+}
 #include "hemoCellParticle.h"
 #include "hemoCellFields.h"
 #include "commonCellConstants.h"
 #include "meshMetrics.h"
 #include "constantConversion.h"
 
+namespace hemo {
 class CellMechanics {
   public:
   const CommonCellConstants cellConstants;
@@ -40,28 +41,29 @@ class CellMechanics {
 
   virtual void ParticleMechanics(map<int,vector<HemoCellParticle *>> &,const map<int,bool> &, pluint ctype) = 0 ;
   virtual void statistics() = 0;
+  void solidifyMechanics(const map<int,vector<int>>&,vector<HemoCellParticle>&,plb::BlockLattice3D<T,DESCRIPTOR> *) {};
   
   
-  T calculate_kLink(Config & cfg, MeshMetrics<T> & meshmetric){
+  T calculate_kLink(Config & cfg, plb::MeshMetrics<T> & meshmetric){
     T kLink = cfg["MaterialModel"]["kLink"].read<T>();
     T persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
     T plc = persistenceLengthFine/param::dx; //* sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kaniadakis magic
     return  kLink * param::kBT_lbm/plc;
   };
   
-  T calculate_kBend(Config & cfg, MeshMetrics<T> & meshmetric ){
+  T calculate_kBend(Config & cfg, plb::MeshMetrics<T> & meshmetric ){
     T eqLength = 5e-7/param::dx;
     return cfg["MaterialModel"]["kBend"].read<T>() * param::kBT_lbm / eqLength;
   };
 
-  T calculate_kVolume(Config & cfg, MeshMetrics<T> & meshmetric){
+  T calculate_kVolume(Config & cfg, plb::MeshMetrics<T> & meshmetric){
     T kVolume =  cfg["MaterialModel"]["kVolume"].read<T>();
     T eqLength = 5e-7/param::dx;
     T NfacesScaling = 1280.0/cellConstants.triangle_list.size();
     return kVolume * NfacesScaling * param::kBT_lbm / eqLength;
   };
 
-  T calculate_kArea(Config & cfg, MeshMetrics<T> & meshmetric){
+  T calculate_kArea(Config & cfg, plb::MeshMetrics<T> & meshmetric){
     T kArea =  cfg["MaterialModel"]["kArea"].read<T>();
     T eqLength = 5e-7/param::dx;
     T NfacesScaling = 1280.0/cellConstants.triangle_list.size();
@@ -72,4 +74,5 @@ class CellMechanics {
     return cfg["MaterialModel"]["eta_m"].read<T>() * param::dx / param::dt / param::df;
   };
 };
+}
 #endif

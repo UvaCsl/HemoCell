@@ -24,8 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "profiler.h"
-#include "hemocell_internal.h"
 
+#include "parallelism/mpiManager.h"
+
+namespace hemo {
+  
 Profiler::Profiler(std::string name_) :
 name(name_), parent(*this), current(this)
 {}
@@ -151,27 +154,27 @@ void Profiler::printStatistics() {
 }
 
 void Profiler::outputStatistics() {
-  fstream sout;
+  std::fstream sout;
   bool opened = false;
   int turn = 0;
   
-  while (turn < global::mpi().getSize()) {
-    if (turn == global::mpi().getRank()) {
+  while (turn < plb::global::mpi().getSize()) {
+    if (turn == plb::global::mpi().getRank()) {
       sout.open(hlog.filename + ".statistics",std::fstream::app);
       if (!sout.is_open()) {
         std::cout << "(Profiler) (Error) Opening " + hlog.filename << ".statistics, outputting everything to logfile instead" << std::endl;
-        hemo::hlog << "Process " << global::mpi().getRank() << ":" << std::endl;
+        hemo::hlog << "Process " << plb::global::mpi().getRank() << ":" << std::endl;
         printStatistics_inner(1,hlog.logfile);
       } else {
         opened = true;
-        sout << "Process " << global::mpi().getRank() << ":" << std::endl;
+        sout << "Process " << plb::global::mpi().getRank() << ":" << std::endl;
         printStatistics_inner(1,sout);
       }
       if (opened) {
         sout.close();
       }
     }
-    global::mpi().barrier();
+    plb::global::mpi().barrier();
     turn++;
   }  
 }
@@ -194,4 +197,6 @@ Profiler & Profiler::getCurrent() {
 
 std::string Profiler::toString(std::chrono::high_resolution_clock::duration time) {
   return std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(time).count()/1000.0);
+}
+
 }

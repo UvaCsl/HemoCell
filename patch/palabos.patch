@@ -715,10 +715,18 @@ index 1455aa9..303d559 100644
      ///   The triangular surface mesh is smoothed by using a spatial
      ///   averaging algorithm. Interior vertices are treated differently
 diff --git a/src/offLattice/triangularSurfaceMesh.hh b/src/offLattice/triangularSurfaceMesh.hh
-index 622aa7d..624e388 100644
+index 622aa7d..ce82486 100644
 --- a/src/offLattice/triangularSurfaceMesh.hh
 +++ b/src/offLattice/triangularSurfaceMesh.hh
-@@ -290,6 +290,82 @@ void TriangularSurfaceMesh<T>::rotate(T phi, T theta, T psi)
+@@ -33,6 +33,7 @@
+ #include <cstdio>
+ #include <cstdlib>
+ #include <cstring>
++#include <iomanip>
+ #include "offLattice/triangularSurfaceMesh.h"
+ #include "offLattice/triangleSet.h"
+ #include "latticeBoltzmann/geometricOperationTemplates.h"
+@@ -290,6 +291,82 @@ void TriangularSurfaceMesh<T>::rotate(T phi, T theta, T psi)
      }
  }
  
@@ -802,7 +810,7 @@ index 622aa7d..624e388 100644
  void TriangularSurfaceMesh<T>::smooth(plint maxiter, T relax, bool isMeasureWeighted)
  {
 diff --git a/src/parallelism/parallelBlockCommunicator3D.cpp b/src/parallelism/parallelBlockCommunicator3D.cpp
-index c891d72..a9eaf99 100644
+index c891d72..9bec053 100644
 --- a/src/parallelism/parallelBlockCommunicator3D.cpp
 +++ b/src/parallelism/parallelBlockCommunicator3D.cpp
 @@ -25,6 +25,8 @@
@@ -887,7 +895,7 @@ index c891d72..a9eaf99 100644
 +            
 +            CommunicationInfo3D const& info = *infos[&entry][iMessage];
 +            AtomicBlock3D& toBlock = destinationMultiBlock.getComponent(info.toBlockId);
-+            dynamic_cast<HemoCellParticleDataTransfer&>(toBlock.getDataTransfer()).receive (info.toDomain, 
++            dynamic_cast<hemo::HemoCellParticleDataTransfer&>(toBlock.getDataTransfer()).receive (info.toDomain, 
 +                    &entry.data[pos], sizeof(char)*length,
 +                  modif::hemocell, info.absoluteOffset );
 +            pos+=length;

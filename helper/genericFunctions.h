@@ -24,7 +24,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef FCN_GENERIC_FUNCTIONS_H
 #define FCN_GENERIC_FUNCTIONS_H
 
-#include "hemocell_internal.h"
 #include <sys/stat.h>
 #include <vector>
 #include <string>
@@ -34,6 +33,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
+
+namespace hemo {
+  
 typedef struct stat Stat;
 
 
@@ -86,4 +88,5 @@ std::string zeroPadNumber(int num);
 void checkParameterSanity(double,double);
 void printHeader();
 
+}
 #endif // FCN_GENERIC_FUNCTIONS_HH

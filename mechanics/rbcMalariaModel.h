@@ -1,13 +1,12 @@
 #ifndef HEMOCELL_RBCMALARIAMODEL_H
 #define HEMOCELL_RBCMALARIAMODEL_H
 
-#include "hemocell_internal.h"
 #include "constantConversion.h"
 #include "config.h"
 #include "cellMechanics.h"
 #include "commonCellConstants.h"
 #include "hemoCellFields.h"
-
+namespace hemo {
 class RbcMalariaModel : public CellMechanics {
 
 	public:
@@ -30,4 +29,5 @@ class RbcMalariaModel : public CellMechanics {
       	static T calculate_kInnerLink(Config &cfg, MeshMetrics<T> &);
 };
 
+}
 #endif

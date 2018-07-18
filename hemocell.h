@@ -3,25 +3,13 @@
 
 //Load Constants
 #include "constant_defaults.h"
-#include "hemocell_internal.h"
 #include "config.h"
 
 /* CORE libs */
-#include "hemoCellFunctional.h"
-#include "hemoCellParticle.h"
 #include "hemoCellFields.h"
-#include "hemoCellField.h"
 
 /* IO */
-#include "ParticleHdf5IO.h"
-#include "FluidHdf5IO.h"
-#include "writeCellInfoCSV.h"
-#include "readPositionsBloodCells.h"
-
-/* HELPERS */
-#include "genericFunctions.h"
 #include "meshMetrics.h"
-#include "voxelizeDomain.h"
 #include "meshGeneratingFunctions.h"
 #include "loadBalancer.h"
 #include "profiler.h"
@@ -30,8 +18,16 @@
 #include "cellMechanics.h"
 #include "constantConversion.h"
 
-/* EXTERNALS */
-//#include "diagonalize.hpp"  // TODO: Do we need this file?
+/* Always used palabos functions in case files*/
+#ifndef COMPILING_HEMOCELL_LIBRARY
+#include "voxelizeDomain.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
+using namespace hemo;
+using namespace plb;
+#endif
+
+namespace hemo { 
 
 /*!
  * The HemoCell class contains all the information, data and methods to set up a
@@ -91,7 +87,8 @@ class HemoCell {
     }
     
     if(constructType == STRING_FROM_VERTEXES) {
-      meshElement = constructStringMeshFromConfig(*materialCfg);     
+      hlog << "(HemoCell) (AddCellType) Error STRING_FROM_VERTEXES not supported anymore" << std::endl;
+			exit(1);
     } else {
       TriangleBoundary3D<T> * boundaryElement = NULL;
       try {
@@ -207,5 +204,5 @@ public:
   std::chrono::high_resolution_clock::duration lastOutput = std::chrono::high_resolution_clock::duration::zero();
  
 };
-
+}
 #endif // HEMOCELL_H

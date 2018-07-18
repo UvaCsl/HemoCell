@@ -24,8 +24,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef CELLINFORMATION_H
 #define CELLINFORMATION_H
 
-#include "hemocell_internal.h"
+#include "hemocell.h"
 #include "hemoCellFunctional.h"
+#include "array.h"
 
 /* THIS CLASS IS NOT THREAD SAFE!*/
 /* Calculate and store Cell-Specific Information
@@ -38,7 +39,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *  CellInformationFunctionals::clear_list()
  *
  */
-
+namespace hemo {
+  
 struct CellInformation {
   hemo::Array<T,3> position;
   T volume;
@@ -55,31 +57,31 @@ class CellInformationFunctionals {
   
 
   class CellVolume: public HemoCellFunctional {
-  void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+  void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     CellVolume * clone() const;
   };
   class CellArea: public HemoCellFunctional {
-  void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+  void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     CellArea * clone() const;
   };
   class CellPosition: public HemoCellFunctional {
-  void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+  void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     CellPosition * clone() const;
   };
   class CellStretch: public HemoCellFunctional {
-  void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+  void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     CellStretch * clone() const;
   };
   class CellBoundingBox: public HemoCellFunctional {
-  void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+  void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     CellBoundingBox * clone() const;
   };
   class CellAtomicBlock: public HemoCellFunctional {
-  void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+  void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     CellAtomicBlock * clone() const;
   };
   class CellType: public HemoCellFunctional {
-  void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
+  void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     CellType * clone() const;
   };
   
@@ -97,5 +99,5 @@ public:
   static pluint getTotalNumberOfCells(HemoCell *);
   static pluint getNumberOfCellsFromType(HemoCell *, string type);
 };
-
+}
 #endif

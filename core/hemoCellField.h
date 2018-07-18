@@ -24,26 +24,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HEMOCELLFIELD_H
 #define HEMOCELLFIELD_H
 
+namespace hemo {
 class HemoCellField;
-#include "hemocell_internal.h"
+}
+#include "constant_defaults.h"
 #include "cellMechanics.h"
 #include "meshMetrics.h"
 #include "hemoCellFields.h"
 #include "readPositionsBloodCells.h"
 
+#include "multiBlock/multiBlockLattice3D.hh"
+#include "particles/multiParticleField3D.hh"
+
+namespace hemo {
 /*contains information about one particular cellfield, structlike*/
 class HemoCellField{
   static vector<int> default_output;
   public:
 
-  HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<T>& meshElement_, string & name_, unsigned int ctype_);
+  HemoCellField(HemoCellFields& cellFields_, plb::TriangularSurfaceMesh<T>& meshElement_, string & name_, unsigned int ctype_);
   T getVolumeFraction();
   //ShellModel3D<T> * model;
-  TriangularSurfaceMesh<T> & getMesh();
+  plb::TriangularSurfaceMesh<T> & getMesh();
   std::string name;
   HemoCellFields & cellFields;
   vector<int> desiredOutputVariables;
-  TriangularSurfaceMesh<T> & meshElement;
+  plb::TriangularSurfaceMesh<T> & meshElement;
   pluint ctype;
   
   int numVertex = 0;
@@ -55,21 +61,22 @@ class HemoCellField{
   bool outputTriangles = false;
   bool deleteIncomplete = true;
   vector<hemo::Array<plint,3>> triangle_list;
-  void(*kernelMethod)(BlockLattice3D<T,DESCRIPTOR> &,HemoCellParticle*);
-  MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D();
-  MultiBlockLattice3D<T,DESCRIPTOR> * getFluidField3D();
+  void(*kernelMethod)(plb::BlockLattice3D<T,DESCRIPTOR> &,HemoCellParticle*);
+  plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D();
+  plb::MultiBlockLattice3D<T,DESCRIPTOR> * getFluidField3D();
   int getNumberOfCells_Global();
   std::string getIdentifier();
-  MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg();
+  plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg();
   void setOutputVariables(const vector<int> &);
   CellMechanics * mechanics;
   void statistics();
   /* position is in micrometers, so we still have to convert it*/
   void addSingleCell(hemo::Array<T,3> position, plint cellId);
   hemo::Array<T,6> getOriginalBoundingBox();
-  MeshMetrics<T> * meshmetric;
+  plb::MeshMetrics<T> * meshmetric;
+  bool doSolidifyMechanics = false;
 };
-
+}
 
 #endif /* HEMOCELLFIELD_H */
 

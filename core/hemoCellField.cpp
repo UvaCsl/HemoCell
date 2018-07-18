@@ -24,6 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellField.h"
 #include "immersedBoundaryMethod.h"
 #include "config.h"
+#include "logfile.h"
+#include "hemoCellParticleField.h"
+
+using namespace hemo;
 
 //HemoCellField
 HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<T>& meshElement_, string & name_, unsigned int ctype_)
@@ -97,11 +101,10 @@ void HemoCellField::statistics() {
 
 }
 
-MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * HemoCellField::getParticleArg() { return cellFields.immersedParticles; }
-  int HemoCellField::getNumberOfCells_Global() {return 0;}
-  std::string HemoCellField::getIdentifier() {return name;}
+plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * HemoCellField::getParticleArg() { return cellFields.immersedParticles; }
+int HemoCellField::getNumberOfCells_Global() {return 0;}
+std::string HemoCellField::getIdentifier() {return name;}
 vector<int> HemoCellField::default_output ({OUTPUT_POSITION});
- MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * HemoCellField::getParticleField3D() {return cellFields.immersedParticles;}
-  MultiBlockLattice3D<T,DESCRIPTOR> * HemoCellField::getFluidField3D() {return cellFields.lattice;}
-  TriangularSurfaceMesh<T> & HemoCellField::getMesh() { return meshElement;}
-  //T HemoCellField::getVolumeFraction() { return hematocrit;}   // no need to keep track of the hematocrit
+plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * HemoCellField::getParticleField3D() {return cellFields.immersedParticles;}
+plb::MultiBlockLattice3D<T,DESCRIPTOR> * HemoCellField::getFluidField3D() {return cellFields.lattice;}
+plb::TriangularSurfaceMesh<T> & HemoCellField::getMesh() { return meshElement;}

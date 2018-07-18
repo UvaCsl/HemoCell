@@ -24,9 +24,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef FLUID_HDF5_IO_H
 #define FLUID_HDF5_IO_H
 
-#include "hemocell_internal.h"
 #include "hemoCellFields.h"
 
+namespace hemo {
 void writeFluidField_HDF5(HemoCellFields& cellFields, T dx, T dt, plint iter, string preString="");
 
 #ifndef hsize_t
@@ -65,5 +65,5 @@ private:
     float * outputCellDensity(string name);
     float * outputShearStress();    
 };
-
+}
 #endif

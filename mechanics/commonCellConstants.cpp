@@ -23,7 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "commonCellConstants.h"
 #include "hemoCellField.h"
-
+namespace hemo {
+ using namespace std; 
 CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<hemo::Array<plint,3>> triangle_list_,
                       vector<hemo::Array<plint,2>> edge_list_,
@@ -406,3 +407,5 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
             inner_edge_length_eq_list_);
     return CCC;
 };
+
+}

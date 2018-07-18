@@ -24,6 +24,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HEMO_ARRAY_H
 #define HEMO_ARRAY_H
 
+#include <cstddef>
+#include <array>
+
+#include "constant_defaults.h"
+
+#include "core/array.h"
+#include "core/geometry3D.h"
+
 namespace hemo {
 
   

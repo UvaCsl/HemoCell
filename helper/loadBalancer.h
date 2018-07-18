@@ -23,11 +23,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #ifndef LOADBALANCER_H
 #define LOADBALANCER_H
-class LoadBalancer;
-
-#include "hemocell_internal.h"
+namespace hemo {
+  class LoadBalancer;
+}
 #include "hemocell.h"
-
+namespace hemo {
 class LoadBalancer {  
   public:
 #ifdef HEMO_PARMETIS
@@ -88,5 +88,5 @@ class LoadBalancer {
   SparseBlockStructure3D * original_block_structure = 0;
   ThreadAttribution * original_thread_attribution = 0;
 };
-
+}
 #endif

@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellParticleField.h"
 #include "hemocell.h"
 
+namespace hemo {
 ///Used to circumvent buffer initialization of characters
 struct NoInitChar
 {
@@ -235,4 +236,5 @@ void HemoCellParticleDataTransfer::attribute (
 
   }
   constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
+}
 }

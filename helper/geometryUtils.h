@@ -24,7 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HEMOCELL_GEOMETRY_UTILS_H
 #define HEMOCELL_GEOMETRY_UTILS_H
 
-#include "hemocell_internal.h"
+#include "array.h"
+#include "constant_defaults.h"
 
 /*
 - returns atan2((Va x Vb) . Vn, Va . Vb)

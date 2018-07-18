@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "hemoCellParticleField.h"
 #include "hemocell.h"
+namespace hemo {
 
 void HemoCellParticleField::AddOutputMap() {
   outputFunctionMap[OUTPUT_POSITION] = &HemoCellParticleField::outputPositions;
@@ -383,4 +384,6 @@ void HemoCellParticleField::outputCellId(Box3D domain,vector<vector<T>>& output,
       output.push_back(tf);
     }
   }
+}
+
 }

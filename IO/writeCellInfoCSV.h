@@ -8,10 +8,10 @@
 #ifndef WRITECELLINFOCSV_H
 #define WRITECELLINFOCSV_H
 
-#include "hemocell_internal.h"
+#include "hemocell.h"
 
-
-void writeCellInfo_CSV(HemoCell *);
-
+namespace hemo {
+  void writeCellInfo_CSV(HemoCell *);
+}
 #endif /* WRITECELLINFOCSV_H */
 

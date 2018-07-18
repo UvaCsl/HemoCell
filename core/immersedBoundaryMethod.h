@@ -24,10 +24,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef IMMERSEDBOUNDARYMETHOD_H
 #define IMMERSEDBOUNDARYMETHOD_H
 
-#include "hemocell_internal.h"
 #include <vector>
 
-namespace plb {
+namespace hemo {
 
 /// Decide if a Lagrangian point is contained in 3D box, boundaries exclusive
 inline bool contained_sane(hemo::Array<plint,3> const& x, Box3D const& box) {

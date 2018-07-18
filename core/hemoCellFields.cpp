@@ -24,7 +24,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellFields.h"
 #include "hemocell.h"
 
+#include "multiBlock/defaultMultiBlockPolicy3D.h"
+#include "particles/particleNonLocalTransfer3D.hh"
+#include "latticeBoltzmann/nearestNeighborLattices3D.hh"
+#include "io/multiBlockReader3D.h"
+#include "io/multiBlockWriter3D.h"
 
+namespace hemo {
+  
 HemoCellFields::HemoCellFields( MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth, HemoCell & hemocell_) :
   lattice(&lattice_), hemocell(hemocell_)
 {   
@@ -50,7 +57,7 @@ void HemoCellFields::createParticleField(SparseBlockStructure3D* sbStructure, Th
       *sbStructure,
       tAttribution,
       envelopeSize,
-      refinement ), defaultMultiBlockPolicy3D().getCombinedStatistics() );
+      refinement ), plb::defaultMultiBlockPolicy3D().getCombinedStatistics() );
   InitAfterLoadCheckpoint();
 
   immersedParticles->periodicity().toggle(0,lattice->periodicity().get(0));
@@ -172,13 +179,13 @@ void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter, Config *
     bool isCheckpointed = (firstField=="Checkpoint");
     if (isCheckpointed) {
       (*documentXML)["Checkpoint"]["General"]["Iteration"].read(iter);
-      parallelIO::load(outDir + "lattice", *lattice, true);
-      parallelIO::load(outDir + "particleField", *immersedParticles, true);
+      plb::parallelIO::load(outDir + "lattice", *lattice, true);
+      plb::parallelIO::load(outDir + "particleField", *immersedParticles, true);
       
     } else {
       pcout << "(HemoCell) (CellFields) loading checkpoint from non-checkpoint Config" << endl;
-      parallelIO::load(outDir + "lattice", *lattice, true);
-      parallelIO::load(outDir + "particleField", *immersedParticles, true);      
+      plb::parallelIO::load(outDir + "lattice", *lattice, true);
+      plb::parallelIO::load(outDir + "particleField", *immersedParticles, true);      
       
     }
     
@@ -225,8 +232,8 @@ void HemoCellFields::save(XMLreader * documentXML, unsigned int iter, Config * c
     /* Save XML & Data */
     xmlw["Checkpoint"]["General"]["Iteration"].set(iter);
     xmlw.print(outDir + "checkpoint.xml");
-    parallelIO::save(*lattice, outDir + "lattice", true);
-    parallelIO::save(*immersedParticles, outDir + "particleField", true);
+    plb::parallelIO::save(*lattice, outDir + "lattice", true);
+    plb::parallelIO::save(*immersedParticles, outDir + "particleField", true);
     // Upon success, save xml and rename files!
 
 }
@@ -382,6 +389,16 @@ void HemoCellFields::deleteNonLocalParticles(int envelope) {
   applyProcessingFunctional(new HemoDeleteNonLocalParticles(envelope),immersedParticles->getBoundingBox(),wrapper);
 }
 
+void HemoCellFields::HemoSolidifyCells::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+  HEMOCELL_PARTICLE_FIELD * pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
+  pf->solidifyCells();
+}
+void HemoCellFields::solidifyCells() {
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  applyProcessingFunctional(new HemoSolidifyCells(),immersedParticles->getBoundingBox(),wrapper);
+}
+
 HemoCellFields::HemoSeperateForceVectors * HemoCellFields::HemoSeperateForceVectors::clone() const { return new HemoCellFields::HemoSeperateForceVectors(*this);}
 HemoCellFields::HemoUnifyForceVectors *    HemoCellFields::HemoUnifyForceVectors::clone() const    { return new HemoCellFields::HemoUnifyForceVectors(*this);}
 HemoCellFields::HemoSpreadParticleForce *  HemoCellFields::HemoSpreadParticleForce::clone() const { return new HemoCellFields::HemoSpreadParticleForce(*this);}
@@ -396,6 +413,7 @@ HemoCellFields::HemoGetParticles *        HemoCellFields::HemoGetParticles::clon
 HemoCellFields::HemoSetParticles *        HemoCellFields::HemoSetParticles::clone() const { return new HemoCellFields::HemoSetParticles(*this);}
 HemoCellFields::HemoPopulateBoundaryParticles *        HemoCellFields::HemoPopulateBoundaryParticles::clone() const { return new HemoCellFields::HemoPopulateBoundaryParticles(*this);}
 HemoCellFields::HemoDeleteNonLocalParticles *        HemoCellFields::HemoDeleteNonLocalParticles::clone() const { return new HemoCellFields::HemoDeleteNonLocalParticles(*this);}
+HemoCellFields::HemoSolidifyCells *        HemoCellFields::HemoSolidifyCells::clone() const { return new HemoCellFields::HemoSolidifyCells(*this);}
 
 
 void HemoCellFields::HemoSyncEnvelopes::getTypeOfModification(std::vector<modif::ModifT>& modified) const {
@@ -408,6 +426,6 @@ MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & HemoCellFields::getParticleField
 HemoCellFields::~HemoCellFields() {
     delete immersedParticles;
 }
-
+}
 
 

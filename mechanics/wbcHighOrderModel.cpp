@@ -22,9 +22,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "wbcHighOrderModel.h"
+#include "logfile.h"
 //TODO Make all inner hemo::Array variables constant as well
 
-
+namespace hemo {
 WbcHighOrderModel::WbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_),
                   cellField(cellField_),
                   k_volume( WbcHighOrderModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
@@ -263,3 +264,4 @@ T WbcHighOrderModel::calculate_radius(Config & cfg){
   T radius = cfg["MaterialModel"]["radius"].read<T>();
   return radius/param::dx;
 };
+}

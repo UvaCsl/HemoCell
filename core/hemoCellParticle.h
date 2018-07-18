@@ -25,11 +25,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SURFACE_PARTICLE_3D_H
 
 class HemoCellParticle;
-#include "hemocell_internal.h"
+#include "helper/array.h"
+#include "core/cell.hh"
 
 #ifndef PARTICLE_ID
 #define PARTICLE_ID 0
 #endif
+
+namespace hemo {
 
 class HemoCellParticle {
 public:
@@ -57,8 +60,8 @@ public:
   hemo::Array<T,3> force_total;
   plint tag;
   //Is vector, optimize with hemo::Array possible
-  vector<Cell<T,DESCRIPTOR>*> kernelLocations;
-  vector<T>         kernelWeights;
+  std::vector<plb::Cell<T,DESCRIPTOR>*> kernelLocations;
+  std::vector<T>         kernelWeights;
 
   hemo::Array<T,3> *force_volume = &sv.force;
   hemo::Array<T,3> *force_bending = &sv.force;
@@ -171,34 +174,13 @@ public:
         #endif
         //v = {0.0,0.0,0.0};
     }
-    void serialize(HierarchicSerializer& serializer) const 
-    {
-        serializer.addValue<serializeValues_t>(sv);
-    }
-    void unserialize(HierarchicUnserializer& unserializer) 
-    {
-        unserializer.readValue<serializeValues_t>(sv);
-        //These pointers are only changed for nice outputs
-        force_volume = &sv.force; 
-        force_area = &sv.force; 
-        force_link = &sv.force;
-        force_bending = &sv.force;
-        force_visc = &sv.force;
-        force_inner_link = &sv.force;
-        
-    }
-
+    
     inline int getId() const {return PARTICLE_ID;}
     inline plint getTag() { return tag; } //TODO remove for direct access
     inline void setTag(plint tag_) { tag = tag_; }
 
 };
 
-//TODO better way to override this function
-inline void serialize(HemoCellParticle& particle, vector<char>& data) {
-  HierarchicSerializer serializer(data,PARTICLE_ID);
-  particle.serialize(serializer);
 }
-
 #endif  // SURFACE_PARTICLE_3D_H
 

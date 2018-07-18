@@ -26,6 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <hdf5_hl.h>
 #include <H5LTpublic.h>
 
+namespace hemo {
+
 #ifndef H5_HAVE_PARALLEL
 herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
   if (global::mpi().getSize() > 1) {
@@ -344,4 +346,6 @@ void createPreInlet::saveCurrent() {
 
 createPreInlet::createPreInletFunctional * createPreInlet::createPreInletFunctional::clone() const {
   return new createPreInletFunctional(*this);
+}
+
 }

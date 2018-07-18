@@ -24,7 +24,17 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#include "constant_defaults.h"
 #include "voxelizeDomain.h"
+#include "logfile.h"
+
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+namespace hemo {
+  using namespace std;
+  using namespace plb;
 // ----------------------- Copy from neighbour ------------------------------------
 void CopyFromNeighbor::process(
         Box3D domain, ScalarField3D<int> &field1) {
@@ -121,5 +131,7 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
 
     domain = Box3D(nx - 2, nx - 1, 0, ny - 1, 0, nz - 1);
     applyProcessingFunctional(new CopyFromNeighbor(hemo::Array<plint, 3>({-1, 0, 0})), domain, *flagMatrix);
+
+}
 
 }

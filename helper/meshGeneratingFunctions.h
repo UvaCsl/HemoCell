@@ -24,8 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef MESH_GENERATING_FUNCTIONS_H
 #define MESH_GENERATING_FUNCTIONS_H
 
-#include "hemocell_internal.h"
+#include "constant_defaults.h"
 #include "config.h"
+
+#include "offLattice/triangleSetGenerator.hh"
+#include "offLattice/triangularSurfaceMesh.hh"
+#include "offLattice/triangleBoundary3D.hh"
 
 namespace plb {
 
@@ -90,7 +94,7 @@ TriangleBoundary3D<T> constructMeshElement(plint shape, T radius, plint cellNumT
 
 } // namespace plb
 
-TriangularSurfaceMesh<T> * constructStringMeshFromConfig(Config & materialCfg);
+plb::TriangularSurfaceMesh<T> * constructStringMeshFromConfig(hemo::Config & materialCfg);
 
 #include "meshGeneratingFunctions.hh"
 

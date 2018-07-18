@@ -28,6 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define DSET_SLICE 1000
 
+namespace hemo {
+
 enum Direction : int {
   Xpos, Xneg, Ypos, Yneg, Zpos, Zneg
 };
@@ -109,5 +111,6 @@ public:
   ~PreInlet();
 };
 
+}
 #endif /* PREINLET_H */
 

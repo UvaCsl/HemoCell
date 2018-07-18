@@ -22,7 +22,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "pltSimpleModel.h"
+#include "logfile.h"
 
+namespace hemo {
 PltSimpleModel::PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_), 
                   cellField(cellField_),
                   k_volume( PltSimpleModel::calculate_kVolume(modelCfg_,*cellField_.meshmetric) ),
@@ -205,3 +207,4 @@ void PltSimpleModel::statistics() {
     hlog << "\t k_volume: " << k_volume << std::endl; 
     hlog << "\t eta_m:      " << eta_m << std::endl;
 };
+}

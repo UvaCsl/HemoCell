@@ -24,22 +24,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellParticleField.h"
 #include "hemocell.h"
 
+namespace hemo {
 /* *************** class HemoParticleField3D ********************** */
 
 HemoCellParticleField::HemoCellParticleField(plint nx, plint ny, plint nz)
-    : AtomicBlock3D(nx,ny,nz, &this->dataTransfer)
+    : AtomicBlock3D(nx,ny,nz,0), particleDataTransfer(*(new HemoCellParticleDataTransfer()))
 { 
     boundingBox = Box3D(0,this->getNx()-1, 0, this->getNy()-1, 0, this->getNz()-1);
-    dataTransfer.setBlock(*this);
+    dataTransfer = &particleDataTransfer;
+    particleDataTransfer.setBlock(*this);
     AddOutputMap(); 
 }
 
 HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
-    : AtomicBlock3D(rhs)
+    : AtomicBlock3D(rhs), particleDataTransfer(*(new HemoCellParticleDataTransfer()))
 {
     boundingBox = Box3D(0,this->getNx()-1, 0, this->getNy()-1, 0, this->getNz()-1);
     HemoCellParticle tmp;
-    dataTransfer.setBlock(*this);
+    dataTransfer = &particleDataTransfer;
+    particleDataTransfer.setBlock(*this);
     for (const HemoCellParticle & particle : rhs.particles) {
       tmp = particle;
       addParticle(this->getBoundingBox(),&tmp);
@@ -53,7 +56,7 @@ HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
 
 HemoCellParticleField::~HemoCellParticleField()
 {
-  AtomicBlock3D::dataTransfer = new HemoCellParticleDataTransfer();
+  //AtomicBlock3D::dataTransfer = new HemoCellParticleDataTransfer();
   if (particle_grid) {
     delete[] particle_grid;
     particle_grid = 0;
@@ -774,11 +777,19 @@ void HemoCellParticleField::applyBoundaryRepulsionForce() {
   }
 }
 
+void HemoCellParticleField::solidifyCells() {
+  for (HemoCellField * type : cellFields->cellFields) {
+    if(type->doSolidifyMechanics) {
+      type->mechanics->solidifyMechanics(get_particles_per_cell(),particles, this->atomicLattice);
+    }
+  }
+}
+
 HemoCellParticleDataTransfer& HemoCellParticleField::getDataTransfer() {
-    return dataTransfer;
+    return particleDataTransfer;
 }
 HemoCellParticleDataTransfer const& HemoCellParticleField::getDataTransfer() const {
-    return dataTransfer;
+    return particleDataTransfer;
 }
 
 std::string HemoCellParticleField::getBlockName() {
@@ -786,3 +797,4 @@ std::string HemoCellParticleField::getBlockName() {
 }
 
 HemoCellFields* HemoCellParticleField::cellFields=0;
+}

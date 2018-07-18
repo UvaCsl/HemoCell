@@ -26,6 +26,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ============== Compile time options - Set these
 
 /*
+ * Which version are we at
+ */
+#define VERSION_MAJOR 1
+#define VERSION_MINOR 4
+
+/*
 Choose kernel. 
 Phi1 [1], Phi2 [2] - Default, Phi3 [3], Phi4 [4],  Phi4c [5]
 */
@@ -61,7 +67,8 @@ Euler [1], Adams-Bashforth [2]
 Select BGK dynamics with Guo's forcing method.
 */
 #ifndef DESCRIPTOR
-#define DESCRIPTOR descriptors::ForcedD3Q19Descriptor
+#include "latticeBoltzmann/nearestNeighborLattices3D.h"
+#define DESCRIPTOR plb::descriptors::ForcedD3Q19Descriptor
 #endif
 
 /*
@@ -93,8 +100,7 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
  * HemoParticleField3D  [HemoCell]
  */
 #ifndef HEMOCELL_PARTICLE_FIELD
-#define HEMOCELL_PARTICLE_FIELD HemoCellParticleField
-class HemoCellParticleField;
+#define HEMOCELL_PARTICLE_FIELD class HemoCellParticleField
 #endif
 
 /*

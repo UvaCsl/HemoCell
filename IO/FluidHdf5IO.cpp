@@ -24,9 +24,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "FluidHdf5IO.h"
 #include "hemocell.h"
 
+#include "dataProcessors/dataInitializerWrapper3D.hh"
+#include "dataProcessors/dataInitializerFunctional3D.hh"
+
 #include <hdf5.h>
 #include <hdf5_hl.h>
-
+namespace hemo {
+  
 void outputHDF5(hsize_t* dim, hsize_t* chunk, hid_t& file_id, string& name, float* output) {
     //We can calulate nvalues through the dims
     chunk[3] = dim[3];
@@ -54,7 +58,7 @@ void writeFluidField_HDF5(HemoCellFields& cellfields, T dx, T dt, plint iter, st
   applyProcessingFunctional(wff,cellfields.lattice->getBoundingBox(),wrapper);
   if(std::find(cellfields.desiredFluidOutputVariables.begin(), cellfields.desiredFluidOutputVariables.end(), OUTPUT_FORCE) != cellfields.desiredFluidOutputVariables.end()) {
     // Reset Forces on the lattice, TODO do own efficient implementation
-    setExternalVector(*cellfields.hemocell.lattice, (*cellfields.hemocell.lattice).getBoundingBox(),
+    plb::setExternalVector(*cellfields.hemocell.lattice, (*cellfields.hemocell.lattice).getBoundingBox(),
           DESCRIPTOR<T>::ExternalField::forceBeginsAt,
           plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
   }
@@ -318,3 +322,4 @@ float * WriteFluidField::outputShearStress() {
   return output;
 }
 
+}

@@ -24,24 +24,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef VOXELIZEDOMAIN_H
 #define VOXELIZEDOMAIN_H
 
-#include "hemocell_internal.h"
+#include "atomicBlock/dataProcessingFunctional3D.hh"
+#include "offLattice/triangleBoundary3D.hh"
 
-class CopyFromNeighbor : public BoxProcessingFunctional3D_S<int> {
+
+#include "array.h"
+
+namespace hemo {
+class CopyFromNeighbor : public plb::BoxProcessingFunctional3D_S<int> {
 public:
-    CopyFromNeighbor(hemo::Array<plint, 3> offset_) : offset(offset_) { };
+    CopyFromNeighbor(hemo::Array<plb::plint, 3> offset_) : offset(offset_) { };
 
-    virtual void process(Box3D domain, ScalarField3D<int> &field1);
+    virtual void process(plb::Box3D domain, plb::ScalarField3D<int> &field1);
 
     virtual CopyFromNeighbor *clone() const;
 
-    virtual void getTypeOfModification(std::vector<modif::ModifT> &modified) const;
+    virtual void getTypeOfModification(std::vector<plb::modif::ModifT> &modified) const;
 
-    virtual BlockDomain::DomainT appliesTo() const;
+    virtual plb::BlockDomain::DomainT appliesTo() const;
 
 private:
-    hemo::Array<plint, 3> offset;
+    hemo::Array<plb::plint, 3> offset;
 };
 
-void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint refDirLength, plint refDir,
-                          VoxelizedDomain3D<T> *&voxelizedDomain, MultiScalarField3D<int> *&flagMatrix, plint blockSize, int particleEnvelope = 0);
+void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeWidth, plb::plint refDirLength, plb::plint refDir,
+                          plb::VoxelizedDomain3D<T> *&voxelizedDomain, plb::MultiScalarField3D<int> *&flagMatrix, plint blockSize, int particleEnvelope = 0);
+}
 #endif

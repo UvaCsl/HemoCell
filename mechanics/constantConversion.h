@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //This class converses SI things to LBM things for classes like the HO model.
 #include "config.h"
 #include "constant_defaults.h"
-#include "multiBlock/multiDataField3D.h"
+#include "multiBlock/multiDataField3D.hh"
 
 namespace hemo {
   class Parameters {

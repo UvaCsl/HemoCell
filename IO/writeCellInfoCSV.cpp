@@ -25,6 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cellInfo.h"
 #include "hemocell.h"
 
+namespace hemo {
+
 void writeCellInfo_CSV(HemoCell * hemocell) {
   
   CellInformationFunctionals::clear_list();
@@ -62,4 +64,6 @@ void writeCellInfo_CSV(HemoCell * hemocell) {
   }
     
   CellInformationFunctionals::clear_list();
+}
+
 }

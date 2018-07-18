@@ -25,6 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellParticleField.h"
 #include "hemocell.h"
 
+namespace hemo {
+  
 void GatherParticleVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
     vector<HemoCellParticle *> localParticles;
@@ -147,3 +149,5 @@ ParticleStatistics ParticleInfo::calculateForceStatistics(HemoCell* hemocell) {
 
 GatherParticleVelocity * GatherParticleVelocity::clone() const { return new GatherParticleVelocity(*this); }
 GatherParticleForce * GatherParticleForce::clone() const { return new GatherParticleForce(*this); }
+
+}
