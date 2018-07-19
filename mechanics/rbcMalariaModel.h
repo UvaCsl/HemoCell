@@ -1,11 +1,10 @@
 #ifndef HEMOCELL_RBCMALARIAMODEL_H
 #define HEMOCELL_RBCMALARIAMODEL_H
 
-#include "constantConversion.h"
 #include "config.h"
 #include "cellMechanics.h"
-#include "commonCellConstants.h"
-#include "hemoCellFields.h"
+#include "hemoCellField.h"
+
 namespace hemo {
 class RbcMalariaModel : public CellMechanics {
 

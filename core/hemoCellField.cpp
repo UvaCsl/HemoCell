@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config.h"
 #include "logfile.h"
 #include "hemoCellParticleField.h"
+#include "readPositionsBloodCells.h"
 
 using namespace hemo;
 

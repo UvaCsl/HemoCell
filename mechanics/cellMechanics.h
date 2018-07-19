@@ -27,7 +27,6 @@ namespace hemo {
   class CellMechanics;
 }
 #include "hemoCellParticle.h"
-#include "hemoCellFields.h"
 #include "commonCellConstants.h"
 #include "meshMetrics.h"
 #include "constantConversion.h"
@@ -39,9 +38,9 @@ class CellMechanics {
   
   CellMechanics(HemoCellField & cellfield, Config & modelCfg_) : cellConstants(CommonCellConstants::CommonCellConstantsConstructor(cellfield, modelCfg_)) {}
 
-  virtual void ParticleMechanics(map<int,vector<HemoCellParticle *>> &,const map<int,bool> &, pluint ctype) = 0 ;
+  virtual void ParticleMechanics(std::map<int,std::vector<HemoCellParticle *>> &,const std::map<int,bool> &, pluint ctype) = 0 ;
   virtual void statistics() = 0;
-  void solidifyMechanics(const map<int,vector<int>>&,vector<HemoCellParticle>&,plb::BlockLattice3D<T,DESCRIPTOR> *) {};
+  void solidifyMechanics(const std::map<int,std::vector<int>>&,std::vector<HemoCellParticle>&,plb::BlockLattice3D<T,DESCRIPTOR> *) {};
   
   
   T calculate_kLink(Config & cfg, plb::MeshMetrics<T> & meshmetric){

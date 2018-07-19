@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "hemoCellFields.h"
 #include "hemocell.h"
+#include "readPositionsBloodCells.h"
 
 #include "multiBlock/defaultMultiBlockPolicy3D.h"
 #include "particles/particleNonLocalTransfer3D.hh"

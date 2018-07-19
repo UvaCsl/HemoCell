@@ -21,6 +21,9 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+//Necessary since cellMechanics needs more than the forward declaration
+#include "cellMechanics.h"
+
 #ifndef Hemo_CommonCellConstants_H
 #define Hemo_CommonCellConstants_H
 
@@ -29,10 +32,9 @@ class CommonCellConstants;
 }
 #include "geometryUtils.h"
 #include "config.h"
+#include "hemoCellField.h"
 
 namespace hemo {
-//Forward declaration:
-class HemoCellField;
 
 class CommonCellConstants {
   private:

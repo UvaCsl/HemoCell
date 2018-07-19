@@ -24,11 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HEMOCELL_PLTSIMPLEMODEL_H
 #define HEMOCELL_PLTSIMPLEMODEL_H
 
-#include "constantConversion.h"
 #include "config.h"
 #include "cellMechanics.h"
-#include "commonCellConstants.h"
-#include "hemoCellFields.h"
+#include "hemoCellField.h"
+
 namespace hemo {
 class PltSimpleModel : public CellMechanics {
 

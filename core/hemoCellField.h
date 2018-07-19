@@ -31,7 +31,6 @@ class HemoCellField;
 #include "cellMechanics.h"
 #include "meshMetrics.h"
 #include "hemoCellFields.h"
-#include "readPositionsBloodCells.h"
 
 #include "multiBlock/multiBlockLattice3D.hh"
 #include "particles/multiParticleField3D.hh"

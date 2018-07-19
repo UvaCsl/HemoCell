@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellFunctional.h"
 #include "logfile.h"
 
+#include "multiBlock/multiDataField3D.hh"
 #include "multiBlock/reductiveMultiDataProcessorWrapper3D.hh"
 #include "dataProcessors/dataAnalysisFunctional3D.hh"
 #include "dataProcessors/dataAnalysisWrapper3D.hh"

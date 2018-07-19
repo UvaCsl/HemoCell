@@ -22,7 +22,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "commonCellConstants.h"
-#include "hemoCellField.h"
+
 namespace hemo {
  using namespace std; 
 CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
