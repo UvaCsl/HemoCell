@@ -24,6 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HEMOCELL_CONFIG_H
 #define HEMOCELL_CONFIG_H
 
+#include "profiler.h"
+
 #include "external/tinyxml2/tinyxml2.h"
 #include <string>
 #include <iostream>
@@ -74,10 +76,15 @@ namespace hemo {
 void loadDirectories(std::string configFileName, hemo::Config * cfg);
 
 struct ConfigValues {
-    bool cellsDeletedInfo = false;
+  bool hemoCellInitialized = false; // Keep track since two hemocells cannot run at the same time, because of static variables
+  bool cellsDeletedInfo = false;
+  bool enableCPACfield = false;
+  bool enableSolidifyMechanics = false;
+  int solidifyMechanicsTimestep = 0;
+  Profiler statistics = Profiler("HemoCell");
 };
 
-extern ConfigValues globalConfigValues;
+extern ConfigValues global;
 
 void loadGlobalConfigValues(hemo::Config * cfg);
 

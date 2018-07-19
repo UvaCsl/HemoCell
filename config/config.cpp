@@ -142,11 +142,17 @@ void loadDirectories(std::string configFileName, hemo::Config * cfg)  {
   }  
 }
 
-ConfigValues globalConfigValues;
+ConfigValues global;
 
 void loadGlobalConfigValues(hemo::Config * cfg) {
   try {
-   globalConfigValues.cellsDeletedInfo = (*cfg)["verbose"]["cellsDeletedInfo"].read<int>();
+   global.cellsDeletedInfo = (*cfg)["verbose"]["cellsDeletedInfo"].read<int>();
+  } catch(std::invalid_argument & e) {}
+  try {
+   global.enableCPACfield = (*cfg)["parameters"]["enableCPACfield"].read<int>();
+  } catch(std::invalid_argument & e) {}
+  try {
+   global.enableSolidifyMechanics = (*cfg)["parameters"]["enableSolidifyMechanics"].read<int>();
   } catch(std::invalid_argument & e) {}
 }
 

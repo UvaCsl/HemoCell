@@ -47,6 +47,8 @@ void outputHDF5(hsize_t* dim, hsize_t* chunk, hid_t& file_id, string& name, floa
 }
 
 void writeFluidField_HDF5(HemoCellFields& cellfields, T dx, T dt, plint iter, string preString) {
+  global.statistics.getCurrent()["writeFluidField"].start();
+
   if(std::find(cellfields.desiredFluidOutputVariables.begin(), cellfields.desiredFluidOutputVariables.end(), OUTPUT_FORCE) != cellfields.desiredFluidOutputVariables.end()) {
     hlogfile << "(FluidOutput) (OutputForce) The force on the fluid field is reset to zero, If there is a bodyforce, reset it after this output function (FluidField write force, OUTPUT_FORCE)" << endl; 
     cellfields.spreadParticleForce();
@@ -62,6 +64,8 @@ void writeFluidField_HDF5(HemoCellFields& cellfields, T dx, T dt, plint iter, st
           DESCRIPTOR<T>::ExternalField::forceBeginsAt,
           plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
   }
+  
+  global.statistics.getCurrent().stop();
 }
 
 BlockDomain::DomainT WriteFluidField::appliesTo () const {

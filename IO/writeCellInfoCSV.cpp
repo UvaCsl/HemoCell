@@ -28,7 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace hemo {
 
 void writeCellInfo_CSV(HemoCell * hemocell) {
-  
+  global.statistics.getCurrent()["writeCellCSVInfo"].start();
+
   CellInformationFunctionals::clear_list();
   CellInformationFunctionals::calculate_vol_pos_area(hemocell);
   CellInformationFunctionals::calculateCellAtomicBlock(hemocell);
@@ -64,6 +65,8 @@ void writeCellInfo_CSV(HemoCell * hemocell) {
   }
     
   CellInformationFunctionals::clear_list();
+  
+  global.statistics.getCurrent().stop();
 }
 
 }

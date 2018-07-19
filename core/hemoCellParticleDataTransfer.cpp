@@ -73,7 +73,7 @@ plint HemoCellParticleDataTransfer::staticCellSize() const {
 void HemoCellParticleDataTransfer::send (
         Box3D domain, std::vector<char>& buffer, modif::ModifT kind ) const
 {
-  constParticleField->cellFields->hemocell.statistics.getCurrent()["MpiSend"].start();
+  global.statistics.getCurrent()["MpiSend"].start();
     buffer.clear();
     std::vector<NoInitChar> * bufferNoInit = reinterpret_cast<std::vector<NoInitChar>*>(&buffer);
     
@@ -91,7 +91,7 @@ void HemoCellParticleDataTransfer::send (
           offset += sizeof(HemoCellParticle::serializeValues_t);
         }
     }
-  constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer, unsigned int size, modif::ModifT kind)
@@ -102,7 +102,7 @@ void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer,
   // Particles, by definition, are dynamic data, and they need to
   //   be reconstructed in any case. Therefore, the receive procedure
   //   is run whenever kind is one of the dynamic types.
- constParticleField->cellFields->hemocell.statistics.getCurrent()["MpiReceive"].start();
+ global.statistics.getCurrent()["MpiReceive"].start();
 
   if ( (kind==modif::hemocell) )
   {
@@ -116,7 +116,7 @@ void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer,
         particleField->addParticle(domain, *newParticle);
       }
   }
-  constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer, unsigned int size, modif::ModifT kind, Dot3D absoluteOffset )
@@ -126,7 +126,7 @@ void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer,
     return;
   }
   
-  constParticleField->cellFields->hemocell.statistics.getCurrent()["MpiReceive"].start();
+  global.statistics.getCurrent()["MpiReceive"].start();
 
   if ( (kind==modif::hemocell) )
   {
@@ -145,7 +145,7 @@ void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer,
       particleField->addParticle(domain, *newParticle);
     }
   }
-  constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellParticleDataTransfer::receive (
@@ -176,7 +176,7 @@ void HemoCellParticleDataTransfer::attribute (
         Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
         AtomicBlock3D const& from, modif::ModifT kind )
 {
-  constParticleField->cellFields->hemocell.statistics.getCurrent()["LocalCommunication"].start();
+  global.statistics.getCurrent()["LocalCommunication"].start();
 
     if ( kind==modif::hemocell )
     {
@@ -196,7 +196,7 @@ void HemoCellParticleDataTransfer::attribute (
         particleField->addParticle(toDomain, sv);
       }
     }
-  constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellParticleDataTransfer::attribute (
@@ -208,7 +208,7 @@ void HemoCellParticleDataTransfer::attribute (
     return;
   }
   
-  constParticleField->cellFields->hemocell.statistics.getCurrent()["LocalCommunication"].start();
+  global.statistics.getCurrent()["LocalCommunication"].start();
   
   if ( kind==modif::hemocell )
   { 
@@ -235,6 +235,6 @@ void HemoCellParticleDataTransfer::attribute (
     }
 
   }
-  constParticleField->cellFields->hemocell.statistics.getCurrent().stop();
+  global.statistics.getCurrent().stop();
 }
 }

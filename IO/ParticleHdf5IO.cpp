@@ -210,6 +210,8 @@ BlockDomain::DomainT WriteCellField3DInMultipleHDF5Files::appliesTo () const {
 
 void writeCellField3D_HDF5(HemoCellFields& cellFields, T dx, T dt, plint iter, std::string preString)
 {
+    global.statistics.getCurrent()["writeCellField"].start();
+
     for (pluint i = 0; i < cellFields.size(); i++) {
 	std::string identifier = preString + cellFields[i]->getIdentifier();
         WriteCellField3DInMultipleHDF5Files * bprf = new WriteCellField3DInMultipleHDF5Files(*cellFields[i], iter, identifier, dx, dt, i);
@@ -217,6 +219,8 @@ void writeCellField3D_HDF5(HemoCellFields& cellFields, T dx, T dt, plint iter, s
         wrapper.push_back(cellFields[i]->getParticleArg());
         applyProcessingFunctional (bprf,cellFields[i]->getParticleField3D()->getBoundingBox(), wrapper );
     }
+    
+    global.statistics.getCurrent().stop();
 }
 
 }

@@ -254,76 +254,108 @@ void HemoCellFields::HemoInterpolateFluidVelocity::processGenericBlocks(Box3D do
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->interpolateFluidVelocity(domain);
 }
 void HemoCellFields::interpolateFluidVelocity() {
+  global.statistics.getCurrent()["interpolateFluidVelocity"].start();
+
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
   applyProcessingFunctional(new HemoInterpolateFluidVelocity(),immersedParticles->getBoundingBox(),wrapper);
+
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellFields::HemoSyncEnvelopes::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->syncEnvelopes();
 }
 void HemoCellFields::syncEnvelopes() {
+    global.statistics.getCurrent()["syncEnvelopes"].start();
+
     vector<MultiBlock3D*> wrapper;
     wrapper.push_back(immersedParticles);
     applyProcessingFunctional(new HemoSyncEnvelopes(),immersedParticles->getBoundingBox(),wrapper);
+ 
+    global.statistics.getCurrent().stop();
 }
 
 void HemoCellFields::HemoAdvanceParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->advanceParticles();
 }
 void HemoCellFields::advanceParticles() {
-    vector<MultiBlock3D*> wrapper;
-    wrapper.push_back(immersedParticles);
-    applyProcessingFunctional(new HemoAdvanceParticles(),immersedParticles->getBoundingBox(),wrapper);
+  global.statistics.getCurrent()["advanceParticles"].start();
+    
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  applyProcessingFunctional(new HemoAdvanceParticles(),immersedParticles->getBoundingBox(),wrapper);
+
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellFields::HemoSpreadParticleForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->spreadParticleForce(domain);
 }
 void HemoCellFields::spreadParticleForce() {
+  global.statistics.getCurrent()["spreadParticleForce"].start();
+
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
   applyProcessingFunctional(new HemoSpreadParticleForce(),immersedParticles->getBoundingBox(),wrapper);
+  
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellFields::HemoApplyConstitutiveModel::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->applyConstitutiveModel(forced);
 }
 void HemoCellFields::applyConstitutiveModel(bool forced) {
+  global.statistics.getCurrent()["applyConstitutiveModel"].start();
+
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
   HemoApplyConstitutiveModel * fnct = new HemoApplyConstitutiveModel();
   fnct->forced = forced;
   applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
+
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellFields::HemoUnifyForceVectors::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->unifyForceVectors();
 }
 void HemoCellFields::unify_force_vectors() {
+  global.statistics.getCurrent()["unifyForceVectors"].start();
+
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
   applyProcessingFunctional(new HemoUnifyForceVectors(),immersedParticles->getBoundingBox(),wrapper);
+  
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellFields::HemoRepulsionForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->applyRepulsionForce();
 }
 void HemoCellFields::applyRepulsionForce() {
-    vector<MultiBlock3D*>wrapper;
-    wrapper.push_back(immersedParticles);
-    HemoRepulsionForce * fnct = new HemoRepulsionForce();
-    applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
+  global.statistics.getCurrent()["repulsionForce"].start();
+
+  vector<MultiBlock3D*>wrapper;
+  wrapper.push_back(immersedParticles);
+  HemoRepulsionForce * fnct = new HemoRepulsionForce();
+  applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
+
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellFields::HemoBoundaryRepulsionForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->applyBoundaryRepulsionForce();
 }
 void HemoCellFields::applyBoundaryRepulsionForce() {
-    vector<MultiBlock3D*>wrapper;
-    wrapper.push_back(immersedParticles);
-    HemoBoundaryRepulsionForce * fnct = new HemoBoundaryRepulsionForce();
-    applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
+  global.statistics.getCurrent()["boundaryRepulsionForce"].start();
+
+  vector<MultiBlock3D*>wrapper;
+  wrapper.push_back(immersedParticles);
+  HemoBoundaryRepulsionForce * fnct = new HemoBoundaryRepulsionForce();
+  applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
+
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellFields::HemoPopulateBoundaryParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -340,21 +372,27 @@ void HemoCellFields::HemoSeperateForceVectors::processGenericBlocks(Box3D domain
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->separateForceVectors();
 }
 void HemoCellFields::separate_force_vectors() {
+  global.statistics.getCurrent()["separateForceVectors"].start();
+
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
   applyProcessingFunctional(new HemoSeperateForceVectors(),immersedParticles->getBoundingBox(),wrapper);
 
+  global.statistics.getCurrent().stop();
 }
 void HemoCellFields::HemoDeleteIncompleteCells::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->deleteIncompleteCells(verbose);
 }
 void HemoCellFields::deleteIncompleteCells(bool verbose) {
+  global.statistics.getCurrent()["deleteIncompleteCells"].start();
+
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
   HemoDeleteIncompleteCells * fnct = new HemoDeleteIncompleteCells();
   fnct->verbose = verbose;
   applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
-
+  
+  global.statistics.getCurrent().stop();
 }
 void HemoCellFields::HemoGetParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD * pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
@@ -385,9 +423,13 @@ void HemoCellFields::HemoDeleteNonLocalParticles::processGenericBlocks(Box3D dom
   pf->removeParticles_inverse(pf->localDomain.enlarge(envelopeSize));
 }
 void HemoCellFields::deleteNonLocalParticles(int envelope) {
+  global.statistics.getCurrent()["deleteNonLocalParticles"].start();
+
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(immersedParticles);
   applyProcessingFunctional(new HemoDeleteNonLocalParticles(envelope),immersedParticles->getBoundingBox(),wrapper);
+  
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellFields::HemoSolidifyCells::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {

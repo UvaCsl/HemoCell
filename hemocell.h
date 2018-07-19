@@ -193,10 +193,6 @@ public:
   HemoCellFields * cellfields;
   unsigned int iter = 0;
   
- ///Used to profile a hemocell run
-  Profiler statistics = Profiler("HemoCell");
-  
-  
   XMLreader * documentXML; //Needed for legacy checkpoint reading TODO fix
   private:
   /// Store the last time (iteration) output occured
