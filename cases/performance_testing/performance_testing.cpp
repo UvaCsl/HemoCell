@@ -116,8 +116,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  hemocell.statistics.printStatistics();
-  hemocell.statistics.outputStatistics();
+  hemo::global.statistics.printStatistics();
+  hemo::global.statistics.outputStatistics();
 
   hlog << "(main) Simulation finished :) " << endl;
   return 0;
