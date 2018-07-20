@@ -42,6 +42,7 @@ namespace hemo {
   #endif
     static T ef_lbm; //used in cellStretching
     static T pipe_radius; //used for bodyforce calculation
+    static T tau_CEPAC; //From diffusion constant 
 
 
 

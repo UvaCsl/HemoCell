@@ -124,6 +124,8 @@ public:
     static HemoCellFields* cellFields;
     pluint atomicBlockId;
     plb::BlockLattice3D<T, DESCRIPTOR> * atomicLattice = 0;
+    plb::BlockLattice3D<T, CEPAC_DESCRIPTOR> * CEPAClattice = 0;
+
     vector<plint> neighbours;
     vector<plb::Dot3D> boundaryParticles;
     pluint envelopeSize;

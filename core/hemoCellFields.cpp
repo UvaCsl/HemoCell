@@ -24,12 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellFields.h"
 #include "hemocell.h"
 #include "readPositionsBloodCells.h"
+#include "constantConversion.h"
 
-#include "multiBlock/defaultMultiBlockPolicy3D.h"
-#include "particles/particleNonLocalTransfer3D.hh"
-#include "latticeBoltzmann/nearestNeighborLattices3D.hh"
-#include "io/multiBlockReader3D.h"
-#include "io/multiBlockWriter3D.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
 
 namespace hemo {
   
@@ -43,6 +42,9 @@ HemoCellFields::HemoCellFields( MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, u
     exit(1);
   }
   createParticleField();
+  if (global.enableCEPACfield) {
+    createCEPACfield();
+  }
 }
 
 void HemoCellFields::createParticleField(SparseBlockStructure3D* sbStructure, ThreadAttribution * tAttribution) {
@@ -68,6 +70,34 @@ void HemoCellFields::createParticleField(SparseBlockStructure3D* sbStructure, Th
   immersedParticles->toggleInternalStatistics(false);
   
   InitAfterLoadCheckpoint();
+}
+
+void HemoCellFields::createCEPACfield() {
+  SparseBlockStructure3D* sbStructure = lattice->getSparseBlockStructure().clone();
+  ThreadAttribution * tAttribution = lattice->getMultiBlockManagement().getThreadAttribution().clone();
+  plint refinement = lattice->getMultiBlockManagement().getRefinementLevel();
+  lattice->getBlockCommunicator();
+  CEPACfield = new MultiBlockLattice3D<T,CEPAC_DESCRIPTOR>(
+          MultiBlockManagement3D( *sbStructure,
+                                  tAttribution,
+                                  envelopeSize,
+                                  refinement ),
+          plb::defaultMultiBlockPolicy3D().getBlockCommunicator(),
+          plb::defaultMultiBlockPolicy3D().getCombinedStatistics(),
+          plb::defaultMultiBlockPolicy3D().getMultiCellAccess<T,CEPAC_DESCRIPTOR>(),
+          new plb::AdvectionDiffusionBGKdynamics<T,CEPAC_DESCRIPTOR>(param::tau_CEPAC)
+          );
+  
+  CEPACfield->periodicity().toggle(0,lattice->periodicity().get(0));
+  CEPACfield->periodicity().toggle(1,lattice->periodicity().get(1));
+  CEPACfield->periodicity().toggle(2,lattice->periodicity().get(2));
+
+  CEPACfield->toggleInternalStatistics(false);
+  
+  integrateProcessingFunctional ( // instead of integrateProcessingFunctional
+    new LatticeToPassiveAdvDiff3D<T,DESCRIPTOR,CEPAC_DESCRIPTOR>(1),
+    lattice->getBoundingBox(), *lattice, *CEPACfield, 1);
+
 }
 
 HemoCellField * HemoCellFields::addCellType(TriangularSurfaceMesh<T> & meshElement, std::string name_)

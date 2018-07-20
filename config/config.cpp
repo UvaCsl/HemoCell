@@ -149,7 +149,7 @@ void loadGlobalConfigValues(hemo::Config * cfg) {
    global.cellsDeletedInfo = (*cfg)["verbose"]["cellsDeletedInfo"].read<int>();
   } catch(std::invalid_argument & e) {}
   try {
-   global.enableCPACfield = (*cfg)["parameters"]["enableCPACfield"].read<int>();
+   global.enableCEPACfield = (*cfg)["parameters"]["enableCEPACfield"].read<int>();
   } catch(std::invalid_argument & e) {}
   try {
    global.enableSolidifyMechanics = (*cfg)["parameters"]["enableSolidifyMechanics"].read<int>();

@@ -33,6 +33,7 @@ class HemoCellFields;
 #include "config.h"
 #include <unistd.h>
 
+#include "latticeBoltzmann/advectionDiffusionLattices.hh"
 #include "multiBlock/multiBlockLattice3D.hh"
 #include "offLattice/triangularSurfaceMesh.hh"
 #include "libraryInterfaces/TINYXML_xmlIO.hh"
@@ -58,6 +59,8 @@ public:
    * Is called in the constructor as well
    */
   void createParticleField(plb::SparseBlockStructure3D* sbStructure_ = 0, plb::ThreadAttribution * tAttribution_ = 0);
+  
+  void createCEPACfield();
   
   ///Used to set variables inside the celltypes for correct access, called through createParticleField
   void InitAfterLoadCheckpoint();
@@ -153,6 +156,8 @@ public:
   pluint envelopeSize;
   /// palabos field storing the particles
   plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles = 0;
+  /// palabos field for storing the CPAC scalar field if used
+  plb::MultiBlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPACfield; 
 
   ///Repulsion variable set through hemocell.h
   T repulsionCutoff = 0.0;

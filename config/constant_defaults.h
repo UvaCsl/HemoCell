@@ -71,6 +71,11 @@ Select BGK dynamics with Guo's forcing method.
 #define DESCRIPTOR plb::descriptors::ForcedD3Q19Descriptor
 #endif
 
+#ifndef CEPAC_DESCRIPTOR
+#include "latticeBoltzmann/advectionDiffusionLattices.h"
+#define CEPAC_DESCRIPTOR plb::descriptors::AdvectionDiffusionD3Q19Descriptor
+#endif
+
 /*
 Force unconditional stability on the material model. Note: it will not make the model magically correct, only stable!
 FORCE_LIMIT sets the allowed maximal force coming from the constitutive model (in LBM units).

@@ -780,7 +780,7 @@ void HemoCellParticleField::applyBoundaryRepulsionForce() {
 void HemoCellParticleField::solidifyCells() {
   for (HemoCellField * type : cellFields->cellFields) {
     if(type->doSolidifyMechanics) {
-      type->mechanics->solidifyMechanics(get_particles_per_cell(),particles, this->atomicLattice);
+      type->mechanics->solidifyMechanics(get_particles_per_cell(),particles, this->atomicLattice, this->CEPAClattice);
     }
   }
 }
