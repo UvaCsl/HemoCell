@@ -115,6 +115,13 @@ void HemoCell::setFluidOutputs(vector<int> outputs) {
   cellfields->desiredFluidOutputVariables = outputs_c;
 }
 
+void HemoCell::setCEPACOutputs(vector<int> outputs) {
+  hlog << "(HemoCell) (Fluid) Setting CEPAC output variables for fluid field" << endl;
+  vector<int> outputs_c = outputs;
+  cellfields->desiredCEPACfieldOutputVariables = outputs_c;
+}
+
+
 void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
   if (lattice == 0) {
     pcerr << "(HemoCell) (Periodicity) please create a lattice before trying to set the periodicity" << endl;
@@ -196,6 +203,9 @@ void HemoCell::writeOutput() {
   global.statistics.getCurrent()["writeOutput"].start();
   writeCellField3D_HDF5(*cellfields,param::dx,param::dt,iter);
   writeFluidField_HDF5(*cellfields,param::dx,param::dt,iter);
+  if (global.enableCEPACfield) {
+    writeCEPACField_HDF5(*cellfields,param::dx,param::dt,iter);
+  }
   writeCellInfo_CSV(this);
   global.statistics.getCurrent().stop();
 
@@ -243,6 +253,9 @@ void HemoCell::iterate() {
     cellfields->syncEnvelopes();
   }
   
+  if(global.enableSolidifyMechanics && iter%cellfields->solidifyTimescale) {
+    cellfields->solidifyCells();
+  }
   // ### 5 ###
   cellfields->advanceParticles();
 

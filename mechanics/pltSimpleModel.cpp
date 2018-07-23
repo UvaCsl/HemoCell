@@ -200,6 +200,9 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
   } 
 }
 
+void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>&,std::vector<HemoCellParticle>&,plb::BlockLattice3D<T,DESCRIPTOR> *,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> *) {
+};
+
 void PltSimpleModel::statistics() {
     hlog << "(Cell-mechanics model) Reduced-model parameters for " << cellField.name << " cellfield" << std::endl;
     hlog << "\t k_link:   " << k_link << std::endl; 

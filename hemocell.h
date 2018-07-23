@@ -143,6 +143,9 @@ class HemoCell {
   //Set the output of the fluid field
   void setFluidOutputs(vector<int> outputs);
   
+  //Set the output of the CEPAC field
+  void setCEPACOutputs(vector<int> outputs);
+  
   //Explicitly set the periodicity of the domain along the different axes
   void setSystemPeriodicity(unsigned int axis, bool bePeriodic);
 

@@ -28,42 +28,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace hemo {
 void writeFluidField_HDF5(HemoCellFields& cellFields, T dx, T dt, plint iter, string preString="");
+void writeCEPACField_HDF5(HemoCellFields& cellfields, T dx, T dt, plint iter, string preString=""); 
 
 #ifndef hsize_t
 typedef long long unsigned int hsize_t;
 #endif
 
-class WriteFluidField : public BoxProcessingFunctional3D
-{
-public:
-    WriteFluidField (
-            HemoCellFields& cellfields,
-						MultiBlockLattice3D<T,DESCRIPTOR>& fluid,
-            plint iter_, string identifier_,
-            T dx_, T dt_);
-    ~WriteFluidField(){}; //Fuck C c++
-    virtual void processGenericBlocks(Box3D domain, vector<AtomicBlock3D*> fields);
-    virtual WriteFluidField* clone() const;
-    virtual void getTypeOfModification(vector<modif::ModifT>& modified) const;
-    virtual BlockDomain::DomainT appliesTo() const;
-private:
-    HemoCellFields& cellfields;
-    MultiBlockLattice3D<T,DESCRIPTOR>& fluid;
-    plint iter;
-    string identifier;
-    double dx;
-    double dt;
-    Box3D * odomain;
-    BlockLattice3D<T,DESCRIPTOR> * ablock;
-    HemoCellParticleField * particlefield;
-    int blockid;
-    hsize_t * nCells;
-
-    float * outputVelocity();
-    float * outputForce();
-    float * outputDensity();
-    float * outputCellDensity(string name);
-    float * outputShearStress();    
-};
 }
 #endif

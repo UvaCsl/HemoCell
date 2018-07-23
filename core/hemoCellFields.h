@@ -148,6 +148,8 @@ public:
   plb::MultiBlockLattice3D<T, DESCRIPTOR> * lattice;
   ///A vector specifying the output variables (from const_defaults.h)
   vector<int> desiredFluidOutputVariables;
+  
+  vector<int> desiredCEPACfieldOutputVariables;
   ///Reference to parent
   HemoCell & hemocell;
   ///Vector containing the cellTypes
@@ -157,7 +159,7 @@ public:
   /// palabos field storing the particles
   plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles = 0;
   /// palabos field for storing the CPAC scalar field if used
-  plb::MultiBlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPACfield; 
+  plb::MultiBlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPACfield = 0; 
 
   ///Repulsion variable set through hemocell.h
   T repulsionCutoff = 0.0;
@@ -175,6 +177,8 @@ public:
   
   ///Timescale seperation for the velocity interpolation from the fluid to the particle
   pluint particleVelocityUpdateTimescale = 1;
+  
+  pluint solidifyTimescale = 1;
   
   ///Limit of cycles in a direction (xyz)
   int periodicity_limit[3] = {100};

@@ -44,7 +44,8 @@ HemoCellFields::HemoCellFields( MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, u
   createParticleField();
   if (global.enableCEPACfield) {
     createCEPACfield();
-  }
+  } 
+  InitAfterLoadCheckpoint();
 }
 
 void HemoCellFields::createParticleField(SparseBlockStructure3D* sbStructure, ThreadAttribution * tAttribution) {
@@ -68,7 +69,7 @@ void HemoCellFields::createParticleField(SparseBlockStructure3D* sbStructure, Th
   immersedParticles->periodicity().toggle(2,lattice->periodicity().get(2));
 
   immersedParticles->toggleInternalStatistics(false);
-  
+
   InitAfterLoadCheckpoint();
 }
 
@@ -168,6 +169,9 @@ void HemoCellFields::InitAfterLoadCheckpoint()
     immersedParticles->getComponent(blocks[iBlock]).cellFields = this;
     immersedParticles->getComponent(blocks[iBlock]).atomicBlockId = blocks[iBlock];
     immersedParticles->getComponent(blocks[iBlock]).atomicLattice = &lattice->getComponent(blocks[iBlock]);
+    if (global.enableCEPACfield && CEPACfield) {
+      immersedParticles->getComponent(blocks[iBlock]).CEPAClattice = &CEPACfield->getComponent(blocks[iBlock]);
+    }
     immersedParticles->getComponent(blocks[iBlock]).envelopeSize = envelopeSize;
     
     BlockLattice3D<T,DESCRIPTOR> * fluid = immersedParticles->getComponent(blocks[iBlock]).atomicLattice;
