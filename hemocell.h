@@ -201,7 +201,11 @@ public:
   /// Store the last time (iteration) output occured
   unsigned int lastOutputAt = 0;
   std::chrono::high_resolution_clock::duration lastOutput = std::chrono::high_resolution_clock::duration::zero();
- 
+  
+  /// To be run right before the first iteration, all checking should move here
+  void sanityCheck();
+  /// Checked in iteration, do sanity check when not yet done
+  bool sanityCheckDone = false;
 };
 }
 #endif // HEMOCELL_H

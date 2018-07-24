@@ -225,6 +225,9 @@ void HemoCell::checkExitSignals() {
 
 void HemoCell::iterate() {
   checkExitSignals();
+  if (!sanityCheckDone) {
+    sanityCheck();
+  }
   global.statistics.getCurrent()["iterate"].start();
   // ### 1 ### Particle Force to Fluid
   if(repulsionEnabled && iter % cellfields->repulsionTimescale == 0) {
@@ -359,4 +362,20 @@ void HemoCell::doLoadBalance() {
 void HemoCell::doRestructure(bool checkpoint_avail) {
   hlog << "(HemoCell) (LoadBalancer) Restructuring Atomic Blocks on processors" << endl;
   loadBalancer->restructureBlocks(checkpoint_avail);
+}
+
+void HemoCell::sanityCheck() {
+  hlog << "(HemoCell) (SanityCheck) Performing Sanity check on simulation parameters and setup" << endl;
+  
+  if (param::dx != 5e-7) {
+    hlog << "(HemoCell) (SanityCheck) WARNING: Fluid dx is not 5e-7 but " << param::dx << " This is unvalidated!" << endl;
+  }
+
+  int env_min_width = (12e-6 /param::dx)+1;
+  int env_width = cellfields->immersedParticles->getMultiBlockManagement().getEnvelopeWidth();
+  if (env_width < env_min_width) {
+    hlog << "(HemoCell) (SanityCheck) WARNING: Envelope width is very small: " << env_width << " (" << env_width*param::dx << "µm) Instead of "  << env_min_width << "!" << endl;
+
+  }
+  sanityCheckDone = true;
 }
