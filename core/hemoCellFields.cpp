@@ -153,8 +153,6 @@ void HemoCellFields::copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwrit
     }
 }
 
-bool error_shown = false;
-
 /*
  * Initialize variables that need to be loaded after a checkpoint AS WELL
  */
@@ -190,9 +188,8 @@ void HemoCellFields::InitAfterLoadCheckpoint()
     immersedParticles->getSparseBlockStructure().findNeighbors(blocks[iBlock], envelopeSize,
                            immersedParticles->getComponent(blocks[iBlock]).neighbours);
   
-    if (immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > 30 && !error_shown) {
-      error_shown = true;
-      hlog << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << immersedParticles->getComponent(blocks[iBlock]).neighbours.size() << " Usually it should be < 30 ! Check the atomic block structure!\n";
+    if (immersedParticles->getComponent(blocks[iBlock]).neighbours.size() > max_neighbours) {
+      max_neighbours = immersedParticles->getComponent(blocks[iBlock]).neighbours.size();
     }
   }
 }
@@ -276,15 +273,7 @@ void HemoCellFields::save(XMLreader * documentXML, unsigned int iter, Config * c
 void readPositionsCellFields(std::string particlePosFile) {
 }
 
-void HemoCellFields::HemoInterpolateFluidVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-  
-  /*
-    Box3D temp = blocks[0]->getBoundingBox();
-    Dot3D tmp = blocks[0]->getLocation();
-    cerr << "Box: " << temp.x0 << " " << temp.x1 << " " << temp.y0  << " "<< temp.y1  << " "<< temp.z0 <<" "<< temp.z1 <<std::endl;
-    cerr << "Loc: " << tmp.x << " " << tmp.y << " " << tmp.z << std::endl;
-    */
-    
+void HemoCellFields::HemoInterpolateFluidVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {  
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->interpolateFluidVelocity(domain);
 }
 void HemoCellFields::interpolateFluidVelocity() {
@@ -504,5 +493,3 @@ HemoCellFields::~HemoCellFields() {
     delete immersedParticles;
 }
 }
-
-

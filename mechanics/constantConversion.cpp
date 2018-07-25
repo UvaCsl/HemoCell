@@ -76,7 +76,7 @@ void Parameters::lbm_pipe_parameters(Config & cfg, int nY) {
     re = cfg["domain"]["Re"].read<T>();
     
     pipe_radius = nY;
-    hlog << "(Parameters) Your pipe has a given radius of " << pipe_radius << " LU, given so might be wrong" << std::endl;
+    hlog << "(Parameters) Your pipe has a given radius of " << pipe_radius << " LU, given means it might be wrong" << std::endl;
     u_lbm_max = re * nu_lbm / (pipe_radius*2);
 };
 

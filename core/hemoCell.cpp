@@ -68,13 +68,6 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[])
   //Start statistics
   global.statistics.start();
   
-#ifdef FORCE_LIMIT
-    hlogfile << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT << " pN. Results can be inaccurate due to force capping." << endl;
-#endif
-  if (sizeof(T) == sizeof(float)) {
-    hlog << "(HemoCell) WARNING: Running with single precision, you might want to switch to double precision" << endl;
-  }
-  
   ///Set signal handlers to exit gracefully on many signals
   struct sigaction sa;
   memset(&sa, 0, sizeof(struct sigaction));
@@ -290,34 +283,19 @@ T HemoCell::calculateFractionalLoadImbalance() {
 
 void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separation){
   hlog << "(HemoCell) (Timescale Seperation) Setting seperation of " << name << " to " << separation << " timesteps"<<endl;
-  //pcout << "(HemoCell) WARNING if the timescale separation is not dividable by tmeasure, checkpointing is non-deterministic!"<<endl; //not true anymore, with checkpointing remaining force is saved
   (*cellfields)[name]->timescale = separation;
-  if (separation%cellfields->particleVelocityUpdateTimescale!=0) {
-     pcout << "(HemoCell) Error, Velocity timescale separation cannot divide this material timescale separation, exiting ..." <<endl;
-     exit(1);
-  }
 }
 
 void HemoCell::setParticleVelocityUpdateTimeScaleSeparation(unsigned int separation) {
   hlog << "(HemoCell) (Timescale separation) Setting update separation of all particles to " << separation << " timesteps" << endl;
   hlogfile << "(HemoCell) WARNING this introduces great errors" << endl;
-
-  for (unsigned int i = 0; i < cellfields->size() ; i++) {
-    if ((*cellfields)[i]->timescale%separation !=0) {
-      pcout << "(HemoCell) Error, Velocity timescale separation cannot divide all material timescale separations, exiting ..." <<endl;
-      exit(1);
-    }
-  }
   cellfields->particleVelocityUpdateTimescale = separation;
 }
 
 void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
   hlog << "(HemoCell) (Repulsion Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
   cellfields->repulsionTimescale = separation;
-  if (separation%cellfields->particleVelocityUpdateTimescale!=0) {
-     pcout << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
-     exit(1);
-  }
+
 }
 
 void HemoCell::setMinimumDistanceFromSolid(string name, T distance) {
@@ -340,10 +318,6 @@ void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRe
   cellfields->populateBoundaryParticles();
   hlog << "(HemoCell) (Repulsion) Setting boundary repulsion constant to " << boundaryRepulsionConstant << ". boundary repulsionCutoff to" << boundaryRepulsionCutoff << " Âµm" << endl;
   hlogfile << "(HemoCell) (Repulsion) Enabling boundary repulsion" << endl;
-  if (timestep%cellfields->particleVelocityUpdateTimescale!=0) {
-     pcout << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
-     exit(1);
-  }
   cellfields->boundaryRepulsionConstant = boundaryRepulsionConstant;
   cellfields->boundaryRepulsionCutoff = boundaryRepulsionCutoff*(1e-6/param::dx);
   cellfields->boundaryRepulsionTimescale = timestep;
@@ -366,7 +340,7 @@ void HemoCell::doRestructure(bool checkpoint_avail) {
 
 void HemoCell::sanityCheck() {
   hlog << "(HemoCell) (SanityCheck) Performing Sanity check on simulation parameters and setup" << endl;
-  
+  //Lattice sanity
   if (param::dx != 5e-7) {
     hlog << "(HemoCell) (SanityCheck) WARNING: Fluid dx is not 5e-7 but " << param::dx << " This is unvalidated!" << endl;
   }
@@ -377,5 +351,52 @@ void HemoCell::sanityCheck() {
     hlog << "(HemoCell) (SanityCheck) WARNING: Envelope width is very small: " << env_width << " (" << env_width*param::dx << "µm) Instead of "  << env_min_width << "!" << endl;
 
   }
+  
+  //Material sanity
+  if (boundaryRepulsionEnabled) {
+    if (cellfields->boundaryRepulsionTimescale%cellfields->particleVelocityUpdateTimescale!=0) {
+     hlog << "(HemoCell) Error, Particle velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
+     exit(1);
+    }
+  }
+  
+  if (repulsionEnabled) {
+    if (cellfields->repulsionTimescale%cellfields->particleVelocityUpdateTimescale!=0) {
+       hlog << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
+       exit(1);
+    }
+  }
+  
+  for (unsigned int i = 0; i < cellfields->size() ; i++) {
+    if ((*cellfields)[i]->timescale%cellfields->particleVelocityUpdateTimescale !=0) {
+      hlog << "(HemoCell) Error, Velocity timescale separation cannot divide all material timescale separations, exiting ..." <<endl;
+      exit(1);
+    }
+  }
+  
+  //Cellfields Sanity
+  //Check number of neighbours
+  if (cellfields->max_neighbours > 30) {
+    hlog << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << cellfields->max_neighbours << " Usually it should be < 30 ! Check the atomic block structure!" << endl;
+  }
+    
+  //Parameter Sanity
+#ifdef FORCE_LIMIT
+  hlog << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT << " pN. Results can be inaccurate due to force capping." << endl;
+#endif
+  if (sizeof(T) == sizeof(float)) {
+    hlog << "(HemoCell) WARNING: Running with single precision, you might want to switch to double precision" << endl;
+  }
+
+  // Check lattice viscosity [0.01, 0.45]
+  if(param::nu_lbm < 0.01 || param::nu_lbm > 0.45) {
+        hlog << "(WARNING!!!) lattice viscosity [" << param::nu_lbm << "] is not in the stable range for LBM [0.01, 0.45]!" << std::endl;
+  }
+
+  // Check for lattice velocity to ensure low Courant number (LBM is explicit afterall...)
+  if(param::u_lbm_max > 0.1) {
+    hlog << "(WARNING!!!) lattice velocity [" << param::u_lbm_max << "] is too high [>0.1]!" << std::endl;
+  }
+     
   sanityCheckDone = true;
 }

@@ -85,7 +85,6 @@ int mkpath(const char *path, mode_t mode);
 
 std::string zeroPadNumber(int num);
 
-void checkParameterSanity(double,double);
 void printHeader();
 
 }

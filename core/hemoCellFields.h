@@ -194,7 +194,9 @@ public:
    */
    int number_of_cells = 0;
   
-  /*
+   unsigned int max_neighbours = 0;
+   
+   /*
    * Functionals needed for access of the cellfields
    */
   class HemoSeperateForceVectors: public HemoCellFunctional {
