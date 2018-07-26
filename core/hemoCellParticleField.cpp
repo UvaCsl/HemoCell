@@ -582,13 +582,13 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
   
   for (pluint ctype = 0; ctype < (*cellFields).size(); ctype++) {
     if ((*cellFields).hemocell.iter % (*cellFields)[ctype]->timescale == 0 || forced) {
-      //vector<HemoCellParticle*> found;
-      //findParticles(getBoundingBox(),found,ctype);
-      if (particles.size() > 0) {
+      vector<HemoCellParticle*> found;
+      findParticles(getBoundingBox(),found,ctype);
+      if (found.size() > 0) {
         //only reset forces when the forces actually point at it.
-        if (particles[0].force_area == &particles[0].sv.force) {
-          for (HemoCellParticle & particle : particles) {
-            particle.sv.force = {0.,0.,0.};     
+        if (found[0]->force_area == &found[0]->sv.force) {
+          for (HemoCellParticle* particle : found) {
+            particle->sv.force = {0.,0.,0.};     
           }
         }
       }
@@ -780,7 +780,7 @@ void HemoCellParticleField::applyBoundaryRepulsionForce() {
 void HemoCellParticleField::solidifyCells() {
   for (HemoCellField * type : cellFields->cellFields) {
     if(type->doSolidifyMechanics) {
-      type->mechanics->solidifyMechanics(get_particles_per_cell(),particles, this->atomicLattice, this->CEPAClattice,type->ctype);
+      type->mechanics->solidifyMechanics(get_particles_per_cell(),particles, this->atomicLattice, this->CEPAClattice, type->ctype);
     }
   }
 }
