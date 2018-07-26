@@ -49,7 +49,7 @@ class HemoCellField{
   HemoCellFields & cellFields;
   vector<int> desiredOutputVariables;
   plb::TriangularSurfaceMesh<T> & meshElement;
-  pluint ctype;
+  unsigned char ctype;
   
   int numVertex = 0;
   T volume = 0;

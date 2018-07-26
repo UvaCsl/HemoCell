@@ -28,11 +28,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellParticleField.h"
 #include "readPositionsBloodCells.h"
 
+#include <climits>
+
 using namespace hemo;
 
 //HemoCellField
 HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<T>& meshElement_, string & name_, unsigned int ctype_)
       :name(name_), cellFields(cellFields_), desiredOutputVariables(default_output), meshElement(meshElement_), ctype(ctype_) {
+  
+  if (ctype_ > UCHAR_MAX) {
+    hlog << "(HemoCell) (AddCellType) more celltypes than UCHAR_MAX (255) added, please convert celltype to int or add less celltypes" << endl;
+    exit(1);
+  }
+  
          numVertex = meshElement.getNumVertices();
          std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
          if (it != desiredOutputVariables.end()) {
@@ -56,7 +64,7 @@ HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<
           volume = materialCfg["MaterialModel"]["Volume"].read<T>();
           volumeFractionOfLspPerNode = (volume/numVertex)/pow(param::dx*1e6,3);
         } catch (std::invalid_argument & exeption) {
-            pcout << "(HemoCell) (WARNING) (AddCellType) Volume of celltype " << name << " not present, volume set to zero" << endl;
+            hlog << "(HemoCell) (WARNING) (AddCellType) Volume of celltype " << name << " not present, volume set to zero" << endl;
         }
 }
 

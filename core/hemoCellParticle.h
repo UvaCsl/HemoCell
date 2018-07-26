@@ -48,11 +48,14 @@ public:
     hemo::Array<T,3> vPrevious;
 #endif
     plint cellId;
-    plint vertexId;
-    pluint celltype;
+    
+    int vertexId;
+    
+    unsigned char celltype;
 
     bool fromPreInlet;
 
+    bool solidify;
   };
   
   serializeValues_t sv;
@@ -104,6 +107,7 @@ public:
     sv.vertexId = vertexId_;
     sv.celltype=celltype_;
     sv.fromPreInlet = false;
+    sv.solidify = false;
     force_total = {0.,0.,0.};
     tag = -1;
   }

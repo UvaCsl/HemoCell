@@ -16,41 +16,36 @@ int main(int argc, char *argv[]) {
   HemoCell hemocell(argv[1], argc, argv);
   Config * cfg = hemocell.cfg;
 
-  hlogfile << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl; 
-
-  MultiScalarField3D<int> *flagMatrix = 0; 
-  VoxelizedDomain3D<T> * voxelizedDomain = 0; 
-  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),  
-                       (*cfg)["domain"]["fluidEnvelope"].read<int>(),  
-                       (*cfg)["domain"]["refDirN"].read<int>(),  
-                       (*cfg)["domain"]["refDir"].read<int>(),  
-                       voxelizedDomain, flagMatrix,  
-                       (*cfg)["domain"]["blockSize"].read<int>(),
-                       (*cfg)["domain"]["particleEnvelope"].read<int>()); 
-
-  param::lbm_pipe_parameters((*cfg),flagMatrix);
+  int nx, ny, nz;
+  nx = ny = nz = (*cfg)["domain"]["refDirN"].read<int>() ;
+  hlog << "(unbounded) (Parameters) calculating flow parameters" << endl;
+  param::lbm_pipe_parameters((*cfg),nx);
   param::printParameters();
   
+  //TODO calculate either here or from diffusion config in Parameters
+  param::tau_CEPAC = param::tau; 
+  
   hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
-            voxelizedDomain->getMultiBlockManagement(),
+            defaultMultiBlockPolicy3D().getMultiBlockManagement(nx,ny,nz, (*cfg)["domain"]["fluidEnvelope"].read<int>()),
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
             defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
             new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
 
-  defineDynamics(*hemocell.lattice, *flagMatrix, (*hemocell.lattice).getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
-
   hemocell.lattice->toggleInternalStatistics(false);
-  hemocell.lattice->periodicity().toggleAll(false);
+  hemocell.lattice->periodicity().toggle(0,true);
+  hemocell.lattice->periodicity().toggle(1,true);
   hemocell.latticeEquilibrium(1.,plb::Array<T, 3>(0.,0.,0.));
 
   //Driving Force
-  T poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / param::pipe_radius / param::pipe_radius;
-  setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-                    DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-                    plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+  double shear_rate = (*cfg)["parameters"]["shearRate"].read<double>(); //input shear rate s-1
+  hlog << "shear_rate = " << shear_rate << endl;
 
-  hemocell.lattice->initialize();   
+  double velocity_max = (shear_rate*(nx*param::dx));
+  hlog << "velocity_max = " << velocity_max << endl;
+
+  double velocity_max_lbm = velocity_max * (param::dx / param::dt);
+  pcout << "velocity_max_lbm = " << velocity_max_lbm << endl;
 
   //Adding all the cells
   hemocell.initializeCellfield();
@@ -70,11 +65,35 @@ int main(int argc, char *argv[]) {
 
   outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE};
   hemocell.setFluidOutputs(outputs);
-  outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY};
+  outputs = {OUTPUT_DENSITY};
   hemocell.setCEPACOutputs(outputs);
 
-  // Turn on periodicity in the X direction
-  hemocell.setSystemPeriodicity(0, true);
+  //Boundary Conditions
+  plb::initializeAtEquilibrium(*hemocell.cellfields->CEPACfield, (*hemocell.cellfields->CEPACfield).getBoundingBox(), 1.0, {0.0,0.0,0.0});
+
+  Box3D topChannel( 0, nx-1, 0, ny-1, nz-1, nz-1);
+  Box3D bottomChannel( 0, nx-1, 0, ny-1, 0, 0);
+  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
+  OnLatticeAdvectionDiffusionBoundaryCondition3D<T,CEPAC_DESCRIPTOR>* ADboundaryCondition = createLocalAdvectionDiffusionBoundaryCondition3D<T, CEPAC_DESCRIPTOR>();
+
+  boundaryCondition->setVelocityConditionOnBlockBoundaries (*hemocell.lattice, topChannel );
+  setBoundaryVelocity(*hemocell.lattice, topChannel, plb::Array<T,3>(velocity_max_lbm,0,0));
+
+  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
+
+  ADboundaryCondition->addTemperatureBoundary2P(bottomChannel, *hemocell.cellfields->CEPACfield); 
+  setBoundaryDensity(*hemocell.cellfields->CEPACfield,bottomChannel,1.0);
+
+  ADboundaryCondition->addTemperatureBoundary2P(topChannel, *hemocell.cellfields->CEPACfield); 
+  setBoundaryDensity(*hemocell.cellfields->CEPACfield,topChannel,1.0);
+
+  //3 by 3 source on bottom of channel
+  Box3D CEPACsource((nx/2)-1,(nx/2)+1,(ny/2)-2,(ny/2)+2, 1, 1);
+  ADboundaryCondition->addTemperatureBoundary2N(CEPACsource,*hemocell.cellfields->CEPACfield); 
+  setBoundaryDensity(*hemocell.cellfields->CEPACfield,CEPACsource,2.0);
+  
+  hemocell.lattice->initialize();   
+  hemocell.cellfields->CEPACfield->initialize();   
 
   //loading the cellfield
   if (not cfg->checkpointed) {
@@ -82,13 +101,6 @@ int main(int argc, char *argv[]) {
     hemocell.writeOutput();
   } else {
     hemocell.loadCheckPoint();
-  }
-
-  if (hemocell.iter == 0) {
-    hlog << "(PipeFlow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) { 
-      hemocell.lattice->collideAndStream(); 
-    }
   }
 
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
@@ -99,11 +111,6 @@ int main(int argc, char *argv[]) {
 
   while (hemocell.iter < tmax ) {
     hemocell.iterate();
-    
-    //Set driving force as required after each iteration
-    setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
-                DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-                plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
     
     if (hemocell.iter % tmeas == 0) {
         hlog << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;

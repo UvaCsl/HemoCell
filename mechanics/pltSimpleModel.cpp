@@ -200,7 +200,37 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
   } 
 }
 
-void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>&,std::vector<HemoCellParticle>&,plb::BlockLattice3D<T,DESCRIPTOR> *,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> *) {
+void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc,std::vector<HemoCellParticle>& particles,plb::BlockLattice3D<T,DESCRIPTOR> * fluid,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPAC, pluint ctype) {
+  hemo::Array<T,3> * pos;
+  Dot3D const& location = fluid->getLocation();
+  
+  //For all cells
+  for (auto & pair : ppc) {
+    const std::vector<int> & cell = pair.second;
+    //For all particles of cell
+    for (const int & particle : cell ) {
+      //Skip non-complete and non-platelets
+      if (particle == -1) { break; }
+      if (particles[particle].sv.celltype != ctype) { break; }
+    }
+    
+    // Complete and Correct Type, do solidify mechanics:
+    for (const int & particle : cell) {
+  
+      for (unsigned int i = 0 ; i <  particles.size() ; i++) {
+        pos = &particles[i].sv.position;
+        int x = pos->operator[](0)-location.x+0.5;
+        int y = pos->operator[](1)-location.y+0.5;
+        int z = pos->operator[](2)-location.z+0.5;
+      }
+    }
+  }
+  
+  //Check CEPAC density
+  
+  //If high, solidify all nodes
+  
+  //Convert Platelet to non-active (change mechanical model to PLT_NO_ACTIVE)
 };
 
 void PltSimpleModel::statistics() {
