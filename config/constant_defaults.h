@@ -55,6 +55,13 @@ Choose to use precalculated curvature angles for equilibrium cell shapes.
 #define PRECALCULATED_ANGLES
 #endif
 
+// Use for solidifying, performance impact so only enable when using
+//#define SOLIDIFY_MECHANICS
+
+// Use for Preinlet mechanics, performance impact so only enable when using
+//#define PREINLET_MECHANICS
+
+
 /*
 Choose material integration method.
 Euler [1], Adams-Bashforth [2]

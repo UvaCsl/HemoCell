@@ -28,6 +28,8 @@ class HemoCellParticle;
 #include "helper/array.h"
 #include "core/cell.hh"
 
+#include <cstdint> 
+
 #ifndef PARTICLE_ID
 #define PARTICLE_ID 0
 #endif
@@ -49,13 +51,15 @@ public:
 #endif
     plint cellId;
     
-    int vertexId;
+    uint16_t vertexId;
     
     unsigned char celltype;
 
     bool fromPreInlet;
 
+#ifdef SOLIDIFY_MECHANICS
     bool solidify;
+#endif
   };
   
   serializeValues_t sv;
@@ -106,10 +110,19 @@ public:
     sv.cellId = cellId_;
     sv.vertexId = vertexId_;
     sv.celltype=celltype_;
+#ifdef PREINLET_MECHNICS
     sv.fromPreInlet = false;
+#endif
+#ifdef SOLIDIFY_MECHANICS
     sv.solidify = false;
+#endif
     force_total = {0.,0.,0.};
     tag = -1;
+    
+    if (vertexId_ > UINT16_MAX) {
+      std::cerr << "(HemoCellParticle) Trying to add more vertexes to a single cell than UINT16_MAX, consider converting vertexid to a long int" << std::endl;
+      exit(1);
+    }
   }
   
   HemoCellParticle (const serializeValues_t & sv_) {

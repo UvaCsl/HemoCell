@@ -87,9 +87,15 @@ const map<int,vector<int>> & HemoCellParticleField::get_particles_per_cell() {
     return _particles_per_cell;
   }
 const map<int,vector<int>> & HemoCellParticleField::get_preinlet_particles_per_cell() { 
+#ifdef PREINLET_MECHANICS
     update_preinlet_ppc();
     return _preinlet_particles_per_cell;
-  }
+#else
+    hlog << "(HemoCell) (Particle Field) (Preinlet) Error preinlet mechanics requested, but compile time PREINLET_MECHANICS not defined, please recompile" <<endl;
+    exit(1);
+#endif
+}
+
 const map<int,bool> & HemoCellParticleField::get_lpc() { 
     if (!lpc_up_to_date) { update_lpc(); }
     return _lpc;
@@ -97,7 +103,11 @@ const map<int,bool> & HemoCellParticleField::get_lpc() {
 void HemoCellParticleField::update_lpc() {
   _lpc.clear();
   for (const HemoCellParticle & particle : particles) {
+#ifdef PREINLET_MECHANICS
      if (isContainedABS(particle.sv.position, localDomain) && ! particle.sv.fromPreInlet) {
+#else
+     if (isContainedABS(particle.sv.position, localDomain)) {
+#endif
        _lpc[particle.sv.cellId] = true;
      }
   }
@@ -116,12 +126,15 @@ void HemoCellParticleField::update_ppc() {
   _particles_per_cell.clear();
   
   for (unsigned int i = 0 ; i <  particles.size() ; i++) { 
-    if (!particles[i].sv.fromPreInlet) {
+#ifdef PREINLET_MECHANICS
+    if (particles[i].sv.fromPreInlet) { continue; }
+#endif
      insert_ppc(&particles[i],i);
-    }
   }
   ppc_up_to_date = true;
 }
+
+#ifdef PREINLET_MECHANICS
 void HemoCellParticleField::update_preinlet_ppc() {
   _preinlet_particles_per_cell.clear();
   
@@ -132,6 +145,8 @@ void HemoCellParticleField::update_preinlet_ppc() {
   }
   preinlet_ppc_up_to_date = true;
 }
+#endif
+
 void HemoCellParticleField::update_pg() {
   //Check if map exists, otherwise create
   if (!particle_grid) {
@@ -204,15 +219,18 @@ void HemoCellParticleField::addParticle(Box3D domain, const HemoCellParticle::se
       
       //invalidate ppt
       ppt_up_to_date=false;
-      
+#ifdef PREINLET_MECHANICS
       if(!particle->sv.fromPreInlet) {
+#endif
         if(this->isContainedABS(pos, localDomain)) {
           _lpc[particle->sv.cellId] = true;
         }
         if (ppc_up_to_date) { //Otherwise its rebuild anyway
          insert_ppc(particle, particles.size()-1);
         }
+#ifdef PREINLET_MECHANICS
       }
+#endif
       
       if (pg_up_to_date) {
         Dot3D const& location = this->atomicLattice->getLocation();
@@ -676,7 +694,9 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
   plb::Array<T,3> velocity_comp;
 
   for (HemoCellParticle &particle:particles) {
+#ifdef PREINLET_MECHANICS
     if (particle.sv.fromPreInlet) { continue; }
+#endif
     //Clever trick to allow for different kernels for different particle types.
     (*cellFields)[particle.sv.celltype]->kernelMethod(*atomicLattice,&particle);
 
@@ -697,7 +717,9 @@ void HemoCellParticleField::spreadParticleForce(Box3D domain) {
   HemoCellParticle * sparticle;
   for( HemoCellParticle &particle:particles) {
     sparticle = &particle;
+#ifdef PREINLET_MECHANICS
     if (sparticle->sv.fromPreInlet) { continue; }
+#endif
 
     //Clever trick to allow for different kernels for different particle types.
     (*cellFields)[sparticle->sv.celltype]->kernelMethod(*atomicLattice,sparticle);

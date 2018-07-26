@@ -39,14 +39,15 @@ class PltSimpleModel : public CellMechanics {
   const T k_link;
   const T k_bend;
   const T eta_m;
-
+  
   //Constructor
   public:
   PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_);
 
   void ParticleMechanics(map<int,vector<HemoCellParticle *>> &particles_per_cell, const map<int,bool> &lpc, pluint ctype);
+#ifdef SOLIDIFY_MECHANICS
   void solidifyMechanics(const std::map<int,std::vector<int>>&,std::vector<HemoCellParticle>&,plb::BlockLattice3D<T,DESCRIPTOR> *,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> *, pluint ctype);
-
+#endif
   void statistics();
 
 };

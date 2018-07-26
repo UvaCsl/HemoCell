@@ -35,8 +35,9 @@ namespace hemo {
 class CellMechanics {
   public:
   const CommonCellConstants cellConstants;
+  Config & cfg;
   
-  CellMechanics(HemoCellField & cellfield, Config & modelCfg_) : cellConstants(CommonCellConstants::CommonCellConstantsConstructor(cellfield, modelCfg_)) {}
+  CellMechanics(HemoCellField & cellfield, Config & modelCfg_) : cellConstants(CommonCellConstants::CommonCellConstantsConstructor(cellfield, modelCfg_)), cfg(modelCfg_) {}
 
   virtual void ParticleMechanics(std::map<int,std::vector<HemoCellParticle *>> &,const std::map<int,bool> &, pluint ctype) = 0 ;
   virtual void statistics() = 0;

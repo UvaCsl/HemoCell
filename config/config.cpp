@@ -21,6 +21,7 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "constant_defaults.h"
 #include "config.h"
 #include "logfile.h"
 #include "genericFunctions.h"
@@ -153,6 +154,12 @@ void loadGlobalConfigValues(hemo::Config * cfg) {
   } catch(std::invalid_argument & e) {}
   try {
    global.enableSolidifyMechanics = (*cfg)["parameters"]["enableSolidifyMechanics"].read<int>();
+#ifndef SOLIDIFY_MECHANICS
+   if (global.enableSolidifyMechanics) {
+     hlog << "(Hemocell) (Config) Error EnableSolidifyMechanics is true but SOLIDIFY_MECHANICS (compile time) Is not defined" << std::endl;
+     exit(1);
+   }
+#endif
   } catch(std::invalid_argument & e) {}
 }
 

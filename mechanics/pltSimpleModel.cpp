@@ -200,9 +200,11 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
   } 
 }
 
+#ifdef SOLIDIFY_MECHANICS
 void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc,std::vector<HemoCellParticle>& particles,plb::BlockLattice3D<T,DESCRIPTOR> * fluid,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPAC, pluint ctype) {
   hemo::Array<T,3> * pos;
   Dot3D const& location = fluid->getLocation();
+  double threshold = cfg["MaterialModel"]["solidifyThreshold"].read<double>();
   
   //For all cells
   for (auto & pair : ppc) {
@@ -216,12 +218,16 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
     
     // Complete and Correct Type, do solidify mechanics:
     for (const int & particle : cell) {
-  
+      
       for (unsigned int i = 0 ; i <  particles.size() ; i++) {
         pos = &particles[i].sv.position;
         int x = pos->operator[](0)-location.x+0.5;
         int y = pos->operator[](1)-location.y+0.5;
         int z = pos->operator[](2)-location.z+0.5;
+        
+        if (CEPAC->get(x,y,z).computeDensity() > threshold) {
+          particles[i].sv.solidify = true;
+        }
       }
     }
   }
@@ -232,6 +238,7 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
   
   //Convert Platelet to non-active (change mechanical model to PLT_NO_ACTIVE)
 };
+#endif
 
 void PltSimpleModel::statistics() {
     hlog << "(Cell-mechanics model) Reduced-model parameters for " << cellField.name << " cellfield" << std::endl;
