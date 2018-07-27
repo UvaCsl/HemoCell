@@ -805,6 +805,7 @@ void HemoCellParticleField::solidifyCells() {
       type->mechanics->solidifyMechanics(get_particles_per_cell(),particles, this->atomicLattice, this->CEPAClattice, type->ctype);
     }
   }
+  removeParticles(1);
 }
 
 HemoCellParticleDataTransfer& HemoCellParticleField::getDataTransfer() {

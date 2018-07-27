@@ -3,7 +3,7 @@
 <MaterialModel>
     <comment>Parameters for the platelet constitutive model.</comment>
     <name>PLT</name>
-    <solidifyThreshold>1.5</solidifyThreshold>
+    <solidifyThreshold>1.42</solidifyThreshold>
     <aspectRatio>0.434782608696</aspectRatio> <!-- [0.4347826] -->
     <eta_m> 0.0 </eta_m> <!-- Additional viscosity (for cytoskeleton + membrane) acting between outer vertices around angle edges [0.002 Pa s] -->
     <kBend> 250 </kBend> <!-- Bending force modulus [250 in k_BT units, 4.142e-21 N m] -->

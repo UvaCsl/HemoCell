@@ -14,7 +14,8 @@
     <logDirectory>log</logDirectory>
     <logFile>logfile</logFile>
     <enableCEPACfield>1</enableCEPACfield>
-    <enableSolidifyMechanics>0</enableSolidifyMechanics>
+    <enableSolidifyMechanics>1</enableSolidifyMechanics>
+    <shearRate>600</shearRate>
 </parameters>
 
 
@@ -33,7 +34,7 @@
     <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
     <dt> 1e-7 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
-    <refDirN> 40 </refDirN>  <!-- Number of numerical cell in the reference direction -->
+    <refDirN> 15 </refDirN>  <!-- Number of numerical cell in the reference direction -->
     <blockSize> -1 </blockSize>
     <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
     <Re> 0.5 </Re>   <!--Reynolds number-->

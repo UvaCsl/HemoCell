@@ -37,6 +37,10 @@ do
     if [ $name == "Fluid" ]; then
       continue
     fi
+    if [ $name == "CEPAC" ]; then
+      ${python_c} ${scriptsDir}/FluidHDF5.py CEPAC; 
+      continue
+    fi
     echo ${name}:
     ${python_c} ${scriptsDir}/CellHDF5toXMF.py ${name}; 
   done

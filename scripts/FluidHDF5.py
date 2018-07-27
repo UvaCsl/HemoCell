@@ -141,6 +141,9 @@ if __name__ == '__main__':
     
     directories = sorted(os.listdir(dirname))
     identifier = 'Fluid'
+
+    if len(sys.argv) > 1:
+      identifier = sys.argv[-1]
     
     for iterDir in directories:
         fluidH5files = sorted( glob(dirname + '/' + iterDir + '/' + identifier + '*p*.h5') )

@@ -248,8 +248,8 @@ void HemoCell::iterate() {
     // ### 4 ### sync the particles
     cellfields->syncEnvelopes();
   }
-  
-  if(global.enableSolidifyMechanics && iter%cellfields->solidifyTimescale) {
+
+  if(global.enableSolidifyMechanics && !(iter%cellfields->solidifyTimescale)) {
     cellfields->solidifyCells();
   }
   // ### 5 ###

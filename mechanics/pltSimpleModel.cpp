@@ -24,6 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "pltSimpleModel.h"
 #include "logfile.h"
 
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+
 namespace hemo {
 PltSimpleModel::PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_), 
                   cellField(cellField_),
@@ -204,40 +208,71 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc,std::vector<HemoCellParticle>& particles,plb::BlockLattice3D<T,DESCRIPTOR> * fluid,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPAC, pluint ctype) {
   hemo::Array<T,3> * pos;
   Dot3D const& location = fluid->getLocation();
+  Dot3D const& location_CEPAC = CEPAC->getLocation();
   double threshold = cfg["MaterialModel"]["solidifyThreshold"].read<double>();
-  
+
   //For all cells
   for (auto & pair : ppc) {
+    bool broken = false;
     const std::vector<int> & cell = pair.second;
     //For all particles of cell
     for (const int & particle : cell ) {
       //Skip non-complete and non-platelets
-      if (particle == -1) { break; }
-      if (particles[particle].sv.celltype != ctype) { break; }
+      if (particle == -1) { broken = true; break; }
+      if (particles[particle].sv.celltype != ctype) { broken = true; break; }
     }
+    if (broken) { continue; }
     
+    bool solidify = false;
     // Complete and Correct Type, do solidify mechanics:
     for (const int & particle : cell) {
-      
-      for (unsigned int i = 0 ; i <  particles.size() ; i++) {
-        pos = &particles[i].sv.position;
+      //Firstly check if any particle should be solidified
+      if (particles[particle].sv.solidify) {
+        solidify = true;
+          break;
+      }
+    }
+
+    // If it was tagged last round, solidify it now
+    if (solidify) {
+      for (const int & particle : cell) {
+        pos = &particles[particle].sv.position;
         int x = pos->operator[](0)-location.x+0.5;
         int y = pos->operator[](1)-location.y+0.5;
         int z = pos->operator[](2)-location.z+0.5;
-        
-        if (CEPAC->get(x,y,z).computeDensity() > threshold) {
-          particles[i].sv.solidify = true;
+        if ((x >= 0) && (x < fluid->getNx()) &&
+            (y >= 0) && (y < fluid->getNy()) &&
+            (z >= 0) && (z < fluid->getNz()) ) {
+          if (!fluid->get(x,y,z).getDynamics().isBoundary()) {
+            defineDynamics(*fluid,x,y,z,new BounceBack<T,DESCRIPTOR>());
+          }
+        }
+        particles[particle].tag = 1; //tag for removal
+      }
+    } else {
+      //Otherwise, see if we have to tag for solidify
+      for (const int & particle : cell) {
+        pos = &particles[particle].sv.position;
+        int x = pos->operator[](0)-location_CEPAC.x+0.5;
+        int y = pos->operator[](1)-location_CEPAC.y+0.5;
+        int z = pos->operator[](2)-location_CEPAC.z+0.5;
+        if ((x >= 0) && (x < CEPAC->getNx()) &&
+            (y >= 0) && (y < CEPAC->getNy()) &&
+            (z >= 0) && (z < CEPAC->getNz()) ) {
+          if (CEPAC->get(x,y,z).computeDensity() > threshold) {
+            particles[particle].sv.solidify = true;
+          }
         }
       }
     }
   }
-  
+    
   //Check CEPAC density
   
   //If high, solidify all nodes
   
   //Convert Platelet to non-active (change mechanical model to PLT_NO_ACTIVE)
-};
+}
 #endif
 
 void PltSimpleModel::statistics() {

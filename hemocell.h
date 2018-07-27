@@ -128,6 +128,11 @@ class HemoCell {
   //Set the timescale separation of the particles of a particle type
   void setMaterialTimeScaleSeparation(string name, unsigned int separation);
   
+  //Enable solidify mechanics of a celltype
+  void enableSolidifyMechanics(string name) {
+    (*cellfields)[name]->doSolidifyMechanics = true;
+  }
+  
   //Set the separation of when velocity is interpolated to the particle
   void setParticleVelocityUpdateTimeScaleSeparation(unsigned int separation);
 
