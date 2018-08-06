@@ -81,7 +81,7 @@ void HemoCellFields::createCEPACfield() {
   CEPACfield = new MultiBlockLattice3D<T,CEPAC_DESCRIPTOR>(
           MultiBlockManagement3D( *sbStructure,
                                   tAttribution,
-                                  envelopeSize,
+                                  1,
                                   refinement ),
           plb::defaultMultiBlockPolicy3D().getBlockCommunicator(),
           plb::defaultMultiBlockPolicy3D().getCombinedStatistics(),
