@@ -147,12 +147,18 @@ void HemoCell::loadParticles() {
 }
 
 void HemoCell::loadCheckPoint() {
-  pcout << "(HemoCell) (Saving Functions) Loading Checkpoint"  << endl;
+  hlog << "(HemoCell) (Saving Functions) Loading Checkpoint"  << endl;
+  if (global.enableInteriorViscosity) {
+    hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing, you have been warned" << endl;
+  }
   cellfields->load(documentXML, iter, cfg);
 }
 
 void HemoCell::saveCheckPoint() {
-  pcout << "(HemoCell) (Saving Functions) Saving Checkpoint at timestep " << iter << endl;
+  hlog << "(HemoCell) (Saving Functions) Saving Checkpoint at timestep " << iter << endl;
+  if (global.enableInteriorViscosity) {
+    hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing, you have been warned" << endl;
+  }
   cellfields->save(documentXML, iter, cfg);
 }
 
@@ -256,8 +262,18 @@ void HemoCell::iterate() {
   cellfields->advanceParticles();
 
   // ### 6 ###
-  cellfields->applyConstitutiveModel();    // Calculate Force on Vertices
-    
+  cellfields->applyConstitutiveModel();    // Calculate Force on Vertices 
+
+#ifdef INTERIOR_VISCOSITY
+  if (global.enableInteriorViscosity && iter % cellfields->interiorViscosityEntireGridTimescale == 0) {
+    hlog << "Refreshing viscosity entire grid" << endl;
+    cellfields->findInternalParticleGridPoints();
+  }
+  if (global.enableInteriorViscosity && iter % cellfields->interiorViscosityTimescale == 0) {
+    cellfields->internalGridPointsMembrane();
+  }
+#endif  
+  
   //We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
   if(iter % cellfields->particleVelocityUpdateTimescale == 0) {
     if (global.cellsDeletedInfo) {
@@ -295,7 +311,19 @@ void HemoCell::setParticleVelocityUpdateTimeScaleSeparation(unsigned int separat
 void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
   hlog << "(HemoCell) (Repulsion Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
   cellfields->repulsionTimescale = separation;
+}
 
+void HemoCell::setSolidifyTimeScaleSeperation(unsigned int separation){
+  hlog << "(HemoCell) (Solidify Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
+  cellfields->solidifyTimescale = separation;
+}
+
+void HemoCell::setInteriorViscosityTimeScaleSeperation(unsigned int separation, unsigned int separation_entire_grid){
+  hlog << "(HemoCell) (Interior Viscosity Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
+  hlog << "(HemoCell) (Interior Viscosity Timescale Seperation) Setting entire grid refresh to " << separation_entire_grid << " timesteps"<<endl;
+
+  cellfields->interiorViscosityTimescale = separation;
+  cellfields->interiorViscosityEntireGridTimescale = separation_entire_grid;
 }
 
 void HemoCell::setMinimumDistanceFromSolid(string name, T distance) {
@@ -363,6 +391,14 @@ void HemoCell::sanityCheck() {
   if (repulsionEnabled) {
     if (cellfields->repulsionTimescale%cellfields->particleVelocityUpdateTimescale!=0) {
        hlog << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
+       exit(1);
+    }
+  }
+  
+  if (global.enableInteriorViscosity) {
+    if (cellfields->interiorViscosityEntireGridTimescale%cellfields->particleVelocityUpdateTimescale!=0 || 
+        cellfields->interiorViscosityTimescale%cellfields->particleVelocityUpdateTimescale!=0) {
+       hlog << "(HemoCell) Error, Velocity timescale separation cannot divide this interior viscosity timescale separation, exiting ..." <<endl;
        exit(1);
     }
   }

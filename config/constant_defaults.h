@@ -61,6 +61,8 @@ Choose to use precalculated curvature angles for equilibrium cell shapes.
 // Use for Preinlet mechanics, performance impact so only enable when using
 //#define PREINLET_MECHANICS
 
+// Use for Interior Viscosity mechanics, performance impact so only enable when using
+//#define INTERIOR_VISCOSITY
 
 /*
 Choose material integration method.

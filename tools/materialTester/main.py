@@ -2,6 +2,7 @@
 """
 @author: Gabor Zavodszky
 """
+
 from __future__ import (absolute_import, division, print_function, unicode_literals)
 import numpy as np
 # from getModuli.rbcHO import Cell
@@ -11,6 +12,7 @@ from getModuli.rbcMalaria import Cell
 # Set this to be the avg. edge length of the cell mesh
 # l_eq = 0.5e-6
 l_eq = 0.35e-6
+
 
 def dynamic_stretch(force):
   
@@ -24,6 +26,7 @@ def dynamic_stretch(force):
     
     # Constructing patch
     model = Cell(l_eq)
+
     
     # Starting simulation
     while True:
@@ -32,7 +35,9 @@ def dynamic_stretch(force):
         if iteration % 2000 == 0:
             timeStep.append(iteration*dt)
             stretch.append(model.mesh.getVerticalStretch() * 0.5)
+
             print ("Time: ", timeStep[-1], "s, stretch: ", stretch[-1])
+
         
         iteration += 1
         
@@ -51,15 +56,19 @@ def dynamic_stretch(force):
     dl = stretch_end - 2.0 * l_eq                                           
     young = force * 1e6 * 2.0*l_eq / (dfl * dl)
         
+
     print ("After ", iteration," iterations -> final stretch: ", stretch_end, " (", stretch_end / (2.0*l_eq) * 100.0 ,"%), force: ",  f_stretch)    
     print ("Approx. Young mod. [uN/m]: ", young)   
+
     return (timeStep, stretch, model.mesh.getPositions())
 
 
 def static_stretch(disloc):
     
     # Constructing patch
+
     model = Cell(l_eq)
+
     # model = WbcHo(l_eq)
     a0 = model.mesh.calcTotalArea()
     
@@ -97,12 +106,16 @@ def static_stretch(disloc):
     da = a - a0
     compr2d = force_mag * 1e6 * a0 / (dfl * da)
     
+
     print ("Approx. 2D compression mod. [uN/m]: ", compr2d) 
+
     
 #    stretch_end = model.mesh.getVerticalStretch()                             
 #    dl = stretch_end - 2.0 * l_eq                                           
 #    compr = force_mag * 1e6 * 2.0*l_eq / (2.0 * l_eq * dl)  
+
 #    print "Force response: ", force_mag, ", for stretch: ",  stretch_end
+
 #    print "Approx. lin. compression mod. [uN/m]: ", compr
                                    
                               
@@ -112,7 +125,9 @@ def static_stretch(disloc):
 def static_shear(disloc):
     
     # Constructing patch
+
     model = Cell(l_eq)
+
     
     # Move verticies a little
     
@@ -136,30 +151,38 @@ def static_shear(disloc):
     force_mag = np.sqrt(np.inner(force,force))
     shear = force_mag * 1e6 * dy / (2.0 * l_eq * disloc)
     
+
     print ("Force resonse: ", force_mag, ", for shear: ",  dy/disloc)
     print ("Approx. shear mod. [uN/m]: ", shear)
+
                               
     return (shear, force, model.mesh.getPositions())                      
 
 if __name__ == "__main__":
     
+
     print ("\n ### Test: Dynamic stretching ###")
+
     f_stretch = 3.0e-12  # [N]
     t, s, p = dynamic_stretch(f_stretch)
 
     
+
     print ("\n ### Test: Static stretching ###")
     K, f, p2 = static_stretch(l_eq*0.1)
     
     print ("\n ### Test: Static shearing ###")
+
     mu0, f3, p3 = static_shear(l_eq*0.1)
     
     young = 4.0 * K * mu0 / (K + mu0)
     poisson = (3.0 * K - 2.0 * mu0) / (2.0*(3.0*K + mu0))
     
+
     print ("\n ### Derived quantities ###")
     print ("Young modulus: ", young, " [uN/m]")
     print ("Poisson ratio: ", poisson)
+
     
     # PLotting
     # import matplotlib.pyplot as plt    

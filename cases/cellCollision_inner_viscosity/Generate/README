@@ -1,0 +1,3 @@
+To setup multiple simulations, edit the generateRandom.py and the initSimulation.sh for the right amount of simulations. This copies a base cellCollision case folder n times.
+
+If the base folder contains a csvConcatenate.py, the postProcess.sh can be used to read the csv files into convenient numpy arrays which can be used for analyzing the data

@@ -161,6 +161,15 @@ void loadGlobalConfigValues(hemo::Config * cfg) {
    }
 #endif
   } catch(std::invalid_argument & e) {}
+  try {
+   global.enableInteriorViscosity = (*cfg)["parameters"]["enableInteriorViscosity"].read<int>();
+#ifndef INTERIOR_VISCOSITY
+   if (global.enableInteriorViscosity) {
+     hlog << "(Hemocell) (Config) Error EnableInteriorViscosity is true but INTERIOR_VISCOSITY (compile time) Is not defined" << std::endl;
+     exit(1);
+   }
+#endif
+  } catch(std::invalid_argument & e) {}
 }
 
 }

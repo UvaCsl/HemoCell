@@ -273,7 +273,32 @@ void HemoCellFields::save(XMLreader * documentXML, unsigned int iter, Config * c
 void readPositionsCellFields(std::string particlePosFile) {
 }
 
-void HemoCellFields::HemoInterpolateFluidVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {  
+void HemoCellFields::HemoFindInternalParticleGridPoints::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->findInternalParticleGridPoints(domain);
+}
+
+void HemoCellFields::findInternalParticleGridPoints() {
+//  if (hemocell.iter % hemocell.cellfields->cellFields[0]->timescale == 0)  {
+    vector<MultiBlock3D*> wrapper;
+    wrapper.push_back(immersedParticles);
+    applyProcessingFunctional(new HemoFindInternalParticleGridPoints(),immersedParticles->getBoundingBox(),wrapper);
+//  }
+}
+
+
+void HemoCellFields::HemoInternalGridPointsMembrane::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->internalGridPointsMembrane(domain);
+}
+
+void HemoCellFields::internalGridPointsMembrane() {
+    vector<MultiBlock3D*> wrapper;
+    wrapper.push_back(immersedParticles);
+    applyProcessingFunctional(new HemoInternalGridPointsMembrane(),immersedParticles->getBoundingBox(),wrapper);
+
+}
+
+
+void HemoCellFields::HemoInterpolateFluidVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->interpolateFluidVelocity(domain);
 }
 void HemoCellFields::interpolateFluidVelocity() {
@@ -441,6 +466,8 @@ void HemoCellFields::addParticles(vector<HemoCellParticle> & particles) {
   wrapper.push_back(immersedParticles);
   applyProcessingFunctional(new HemoSetParticles(particles),immersedParticles->getBoundingBox(),wrapper);
 }
+
+
 void HemoCellFields::HemoDeleteNonLocalParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   HEMOCELL_PARTICLE_FIELD * pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
   pf->removeParticles_inverse(pf->localDomain.enlarge(envelopeSize));
@@ -465,6 +492,9 @@ void HemoCellFields::solidifyCells() {
   applyProcessingFunctional(new HemoSolidifyCells(),immersedParticles->getBoundingBox(),wrapper);
 }
 
+
+HemoCellFields::HemoInternalGridPointsMembrane *  HemoCellFields::HemoInternalGridPointsMembrane::clone() const { return new HemoCellFields::HemoInternalGridPointsMembrane(*this);}
+HemoCellFields::HemoFindInternalParticleGridPoints *  HemoCellFields::HemoFindInternalParticleGridPoints::clone() const { return new HemoCellFields::HemoFindInternalParticleGridPoints(*this);}
 HemoCellFields::HemoSeperateForceVectors * HemoCellFields::HemoSeperateForceVectors::clone() const { return new HemoCellFields::HemoSeperateForceVectors(*this);}
 HemoCellFields::HemoUnifyForceVectors *    HemoCellFields::HemoUnifyForceVectors::clone() const    { return new HemoCellFields::HemoUnifyForceVectors(*this);}
 HemoCellFields::HemoSpreadParticleForce *  HemoCellFields::HemoSpreadParticleForce::clone() const { return new HemoCellFields::HemoSpreadParticleForce(*this);}

@@ -66,7 +66,12 @@ public:
 
   hemo::Array<T,3> force_total;
   plint tag;
+  #ifdef INTERIOR_VISCOSITY
+  hemo::Array<T,3> normalDirection;
   //Is vector, optimize with hemo::Array possible
+  std::vector<hemo::Array<plint, 3>> kernelCoordinates;
+  #endif
+
   std::vector<plb::Cell<T,DESCRIPTOR>*> kernelLocations;
   std::vector<T>         kernelWeights;
 
@@ -86,6 +91,10 @@ public:
     tag = copy.tag;
     kernelLocations = copy.kernelLocations;
     kernelWeights = copy.kernelWeights;
+    #ifdef INTERIOR_VISCOSITY
+    normalDirection = copy.normalDirection;
+    kernelCoordinates = copy.kernelCoordinates;
+    #endif
     
     if (!(&copy.sv.force == copy.force_volume)) {
       force_volume = copy.force_volume;
@@ -117,6 +126,9 @@ public:
     sv.solidify = false;
 #endif
     force_total = {0.,0.,0.};
+#ifdef INTERIOR_VISCOSITY
+    normalDirection = {0.,0.,0.};
+#endif
     tag = -1;
     
     if (vertexId_ > UINT16_MAX) {
@@ -135,6 +147,10 @@ public:
     sv = copy.sv;
     kernelLocations = copy.kernelLocations;
     kernelWeights = copy.kernelWeights;
+    #ifdef INTERIOR_VISCOSITY
+    normalDirection = copy.normalDirection;
+    kernelCoordinates = copy.kernelCoordinates;
+    #endif
     
     if (&copy.sv.force == copy.force_volume) {
       force_volume = &sv.force;

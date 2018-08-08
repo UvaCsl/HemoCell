@@ -74,6 +74,8 @@ class HemoCellField{
   hemo::Array<T,6> getOriginalBoundingBox();
   plb::MeshMetrics<T> * meshmetric;
   bool doSolidifyMechanics = false;
+  bool doInteriorViscosity = false;
+  T interiorViscosityRatio = 1.0;
 };
 }
 

@@ -133,12 +133,22 @@ class HemoCell {
     (*cellfields)[name]->doSolidifyMechanics = true;
   }
   
+    //Enable InteriorViscosity mechanics of a celltype
+  void enableInnerViscosity(string name) {
+    (*cellfields)[name]->doInteriorViscosity = true;
+  }
+  
   //Set the separation of when velocity is interpolated to the particle
   void setParticleVelocityUpdateTimeScaleSeparation(unsigned int separation);
 
   //Set the timescale separation of the repulsion force for all particles
   void setRepulsionTimeScaleSeperation(unsigned int separation);
 
+  void setSolidifyTimeScaleSeperation(unsigned int separation);
+
+  //Set the timescale separation of the interior viscosity, in between update and raytracing (expensive) update
+  void setInteriorViscosityTimeScaleSeperation(unsigned int separation, unsigned int separation_entire_grid);
+  
   //Enable Boundary particles and set the boundary particle constants
   void enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRepulsionCutoff, unsigned int timestep = 1);
   

@@ -100,6 +100,12 @@ public:
   ///Advance the particles in an iteration
   virtual void advanceParticles();
   
+  // Find interior lattice points and set omega
+  virtual void findInternalParticleGridPoints();
+  
+  // Look for lattice nodes near the membrane and update those
+  virtual void internalGridPointsMembrane();
+  
   ///Interpolate the velocity of the fluid to the individual particles
   virtual void interpolateFluidVelocity();
   
@@ -180,6 +186,9 @@ public:
   
   pluint solidifyTimescale = 1;
   
+  pluint interiorViscosityTimescale = 1;
+  pluint interiorViscosityEntireGridTimescale = 1;
+  
   ///Limit of cycles in a direction (xyz)
   int periodicity_limit[3] = {100};
   //Internal calculation of offset created by flattening limits
@@ -210,7 +219,18 @@ public:
   class HemoSpreadParticleForce: public HemoCellFunctional {
    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
    HemoSpreadParticleForce * clone() const;
+  }; 
+  class HemoFindInternalParticleGridPoints: public HemoCellFunctional {
+   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+   HemoFindInternalParticleGridPoints * clone() const;
   };
+  
+  class HemoInternalGridPointsMembrane: public HemoCellFunctional {
+   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+   HemoInternalGridPointsMembrane * clone() const;
+  };
+  
+  
   class HemoInterpolateFluidVelocity: public HemoCellFunctional {
    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
    HemoInterpolateFluidVelocity * clone() const;

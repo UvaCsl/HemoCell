@@ -79,9 +79,14 @@ void loadDirectories(std::string configFileName, hemo::Config * cfg);
 struct ConfigValues {
   bool hemoCellInitialized = false; // Keep track since two hemocells cannot run at the same time, because of static variables
   bool cellsDeletedInfo = false;
+
   bool enableCEPACfield = false;
+
   bool enableSolidifyMechanics = false;
-  int solidifyMechanicsTimestep = 0;
+
+  bool enableInteriorViscosity = false;
+  int interiorViscosityTimestep = 0;
+
   Profiler statistics = Profiler("HemoCell");
 };
 

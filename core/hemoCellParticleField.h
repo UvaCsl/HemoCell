@@ -65,7 +65,10 @@ public:
     virtual void spreadParticleForce(plb::Box3D domain);
     void separateForceVectors();
     void unifyForceVectors();
-
+    
+    virtual void findInternalParticleGridPoints(plb::Box3D domain);
+    virtual void internalGridPointsMembrane(plb::Box3D domain);
+    
     int deleteIncompleteCells(pluint ctype, bool verbose=true);
     int deleteIncompleteCells(bool verbose=true);
     void syncEnvelopes();
@@ -169,6 +172,9 @@ public:
   const map<int,vector<int>> & get_particles_per_cell();
   const map<int,vector<int>> & get_preinlet_particles_per_cell();
   const map<int,bool> & get_lpc();
+  
+  vector<hemo::Array<plint, 3>> internalPoints; // Store found interior points
+  
     
     //vector<vector<vector<vector<HemoCellParticle*>>>> particle_grid; //maybe better to make custom data structure, But that would be slower
     void insert_ppc(HemoCellParticle* particle,unsigned int index);

@@ -3,6 +3,7 @@
 @author: Gabor Zavodszky
 """
 import numpy as np
+
 from getModuli.cellModel import CellModel
 from getModuli.mesh import Mesh
 

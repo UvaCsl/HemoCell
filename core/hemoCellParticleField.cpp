@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "hemoCellParticleField.h"
 #include "hemocell.h"
+#include "octree.h"
+#include "mollerTrumbore.h"
 
 namespace hemo {
 /* *************** class HemoParticleField3D ********************** */
@@ -606,7 +608,10 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
         //only reset forces when the forces actually point at it.
         if (found[0]->force_area == &found[0]->sv.force) {
           for (HemoCellParticle* particle : found) {
-            particle->sv.force = {0.,0.,0.};     
+            particle->sv.force = {0.,0.,0.};
+#ifdef INTERNAL_VISCOSITY
+            particle->normalDirection = {0., 0., 0.};
+#endif
           }
         }
       }
@@ -686,7 +691,184 @@ void HemoCellParticleField::applyRepulsionForce(bool forced) {
   }
 }
 
+#ifdef INTERIOR_VISCOSITY
+void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
+  // Point to the lattice for convenience
+  MultiBlockLattice3D<double, DESCRIPTOR> * localLattice =  cellFields->lattice;
+  double const omegaExt = 1.0/param::tau;
+   
+  // This could be done less complex I guess?
+  for (const auto & pair : get_lpc()) { // Go over each cell
+    const int & cid = pair.first;
+    const vector<int> & cell = get_particles_per_cell().at(cid);
 
+    HemoCellParticle particle = particles[cell[0]];
+    const pluint ctype = particles[cell[0]].sv.celltype;
+
+    // Plt and Wbc now have normal tau internal, so we don't have
+    // to raycast these particles
+    if (!(*cellFields)[ctype]->doInteriorViscosity) {
+      continue;
+    }
+    
+    // Find the interior relaxation parameter for particletype
+    // Only for RBC now
+    const double omegaInt = 1.0/(*cellFields)[ctype]->interiorViscosityRatio;
+    set<hemo::Array<plint, 3>> latAlreadyDone = {};
+
+    for (const int pid : cell ) {
+      particle = particles[pid];
+
+      for (unsigned int i = 0; i < particle.kernelCoordinates.size(); i++) {
+        hemo::Array<plint, 3> latPos = particle.kernelCoordinates[i];
+        if (latAlreadyDone.find(latPos) != latAlreadyDone.end()) {
+          continue;
+        }
+
+        hemo::Array<T, 3>  latToPart = {latPos[0] - particle.sv.position[0], 
+                                        latPos[1] - particle.sv.position[1],
+                                        latPos[2] - particle.sv.position[2]};
+        
+        double lenLp = sqrt(latToPart[0]*latToPart[0] + latToPart[1]*latToPart[1] + latToPart[2]*latToPart[2] );
+        
+        // I do not understand why this needs to be done...
+        if (lenLp > 0.51) { continue;} //?? Arbitrarely enough this works...
+        latToPart /= lenLp;
+
+        double normalLen = sqrt(particle.normalDirection[0]*particle.normalDirection[0] + 
+                                particle.normalDirection[1]*particle.normalDirection[1] +
+                                particle.normalDirection[2]*particle.normalDirection[2]);
+        
+        hemo::Array<T, 3> normalP = particle.normalDirection;
+        normalP /= normalLen;
+        
+        T dot1 = hemo::dot(latToPart, normalP);
+
+        if (dot1 < 0.) {  // Node is inside
+          localLattice->get(latPos[0], latPos[1], latPos[2]).getDynamics().setOmega(omegaInt);
+          latAlreadyDone.insert(latPos);
+          
+        } else {  // Node is outside
+          localLattice->get(latPos[0], latPos[1], latPos[2]).getDynamics().setOmega(omegaExt);
+          latAlreadyDone.insert(latPos);
+        }
+      }
+    }
+  }
+}
+
+// For performance reason, this is only executed once every n iterations to make
+// sure that there are no higher viscosity grid points left after substantial movement
+void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
+  // Point to the lattice for convenience
+  MultiBlockLattice3D<double, DESCRIPTOR> * localLattice =  cellFields->lattice;
+
+  // Set the omega values on the lattice to outer viscosity
+  double const omegaExt = 1.0/param::tau;
+  
+  // Reset all the lattice points to the orignal relaxation parameter
+  for (plint iX = localLattice->getBoundingBox().x0; iX < localLattice->getBoundingBox().x1; iX++) {
+    for (plint iY = localLattice->getBoundingBox().y0; iY < localLattice->getBoundingBox().y1; iY++) {
+      for (plint iZ = localLattice->getBoundingBox().z0; iZ < localLattice->getBoundingBox().z1; iZ++) {
+        localLattice->get(iX, iY, iZ).getDynamics().setOmega(omegaExt);
+      }
+    }
+  }
+
+  for (const auto & pair : get_lpc()) { // Go over each cell?
+    hemo::Array<T,6> bbox;
+
+    const int & cid = pair.first;
+    const vector<int> & cell = get_particles_per_cell().at(cid);
+    HemoCellParticle particle = particles[cell[0]];
+
+    const pluint ctype = particles[cell[0]].sv.celltype;
+
+    // Plt and Wbc now have normal tau internal, so we don't have
+    // to raycast these particles
+//    pcout << " Going to do stuff here with tau" << endl;
+    if (!(*cellFields)[ctype]->doInteriorViscosity) {
+      continue;
+    }
+
+    // Find the interior relaxation parameter for particletype
+    // Only for RBC now
+    const double omegaInt = 1.0/(*cellFields)[ctype]->interiorViscosityRatio;
+
+
+    bbox[0] = particle.sv.position[0];
+    bbox[1] = particle.sv.position[0];
+    bbox[2] = particle.sv.position[1];
+    bbox[3] = particle.sv.position[1];
+    bbox[4] = particle.sv.position[2];
+    bbox[5] = particle.sv.position[2];
+
+    for (const int pid : cell ) {
+
+      particle = particles[pid];
+
+      bbox[0] = bbox[0] > particle.sv.position[0] ? particle.sv.position[0] : bbox[0];
+      bbox[1] = bbox[1] < particle.sv.position[0] ? particle.sv.position[0] : bbox[1];
+      bbox[2] = bbox[2] > particle.sv.position[1] ? particle.sv.position[1] : bbox[2];
+      bbox[3] = bbox[3] < particle.sv.position[1] ? particle.sv.position[1] : bbox[3];
+      bbox[4] = bbox[4] > particle.sv.position[2] ? particle.sv.position[2] : bbox[4];
+      bbox[5] = bbox[5] < particle.sv.position[2] ? particle.sv.position[2] : bbox[5];
+    }
+
+    hemo::OctreeStructCell octCell(3, 1, 30, bbox,
+                                (*cellFields)[ctype]->mechanics->cellConstants.triangle_list,
+                                &particles, cell);
+
+    const double EPSILON = 0.0000001;  // Constant to compare
+    
+    // Any vector pointing outside is fine as ray
+    hemo::Array<double, 3> rayVector = {bbox[1]+20.0, 0, 0};
+
+    // Create a triple for-loop to go over all lattice points in the bounding box of a cell
+    for (int x = (int)bbox[0]+1; x < (int)bbox[1]+1; x++) { 
+      for (int y = (int)bbox[2]+1; y < (int)bbox[3]+1; y++) {
+        for (int z = (int)bbox[4]+1; z < (int)bbox[5]+1; z++) {
+          int crossedCounter = 0; // How many triangles are crossed
+          
+          hemo::Array<plint, 3> latticeSite = {x, y, z};
+          vector<hemo::Array<plint,3>> triangles_list = octCell.findCrossings(latticeSite, rayVector);
+
+          for (hemo::Array<plint, 3> triangle : triangles_list) {
+            // Muller-trumbore intersection algorithm 
+            const hemo::Array<double,3> & v0 = particles[cell[triangle[0]]].sv.position;
+            const hemo::Array<double,3> & v1 = particles[cell[triangle[1]]].sv.position;
+            const hemo::Array<double,3> & v2 = particles[cell[triangle[2]]].sv.position;
+            
+            // Exclude triangles we know cannot intersect with the ray
+            if ((v0[0] < x && v1[0] < x && v2[0] < x) ||
+               ((v0[1] < y-1.0 || v0[1] > y+1.0) && (v1[1] < y-1.0 || v1[1] > y+1.0) && (v2[1] < y-1.0 || v2[1] > y+1.0) ) ||
+               ((v0[2] < z-1.0 || v0[2] > z+1.0) && (v1[2] < z-1.0 || v1[2] > z+1.0) && (v2[2] < z-1.0 || v2[2] > z+1.0) ) ) {
+              continue;
+            } 
+            crossedCounter += hemo::MollerTrumbore(v0, v1, v2, rayVector, latticeSite, EPSILON);
+          }
+          
+          // Count even-odd crossings
+          bool inside = crossedCounter % 2 == 0 ? false : true;
+          
+          if (inside) {
+            localLattice->get(x, y, z).getDynamics().setOmega(omegaInt);
+          }
+        }
+      }
+    } 
+  }
+}
+#else
+void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
+  pcout << "(HemoCellParticleField) (Error) findInternalParticleGridPoints called, but INNER_VISCOSITY not defined, exiting..." << endl;
+  exit(1);
+}
+void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
+  pcout << "(HemoCellParticleField) (Error) internalGridPointsMembrane called, but INNER_VISCOSITY not defined, exiting..." << endl;
+  exit(1);
+}
+#endif
 
 void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
   //Prealloc is nice

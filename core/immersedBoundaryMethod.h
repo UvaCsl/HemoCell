@@ -65,6 +65,9 @@ inline void interpolationCoefficientsPhi2 (
     //Clean current
     particle->kernelWeights.clear();
     particle->kernelLocations.clear();
+    #ifdef INTERIOR_VISCOSITY
+    particle->kernelCoordinates.clear();
+    #endif
     
     // Fixed kernel size
     const plint x0=-1, x1=2; //const for nice loop unrolling
@@ -85,9 +88,11 @@ inline void interpolationCoefficientsPhi2 (
     
     //Prealloc is better than JItalloc
     hemo::Array<plint,3> posInBlock;
+
     T phi[3];
     T weight;
     T total_weight = 0;
+    
     
     for (int dx = x0; dx < x1; ++dx) {
         for (int dy = x0; dy < x1; ++dy) {
@@ -107,6 +112,7 @@ inline void interpolationCoefficientsPhi2 (
                 if (weight  == 0.0){
                   continue;
                 }
+
                 if (block.get(posInBlock[0],posInBlock[1],posInBlock[2]).getDynamics().isBoundary()) {
                   continue;
                 }              
@@ -115,6 +121,12 @@ inline void interpolationCoefficientsPhi2 (
 
                 particle->kernelWeights.push_back(weight);
                 particle->kernelLocations.push_back(&block.get(posInBlock[0],posInBlock[1],posInBlock[2]));
+		
+                #ifdef INTERIOR_VISCOSITY
+                // Think of a way to find the interiorVisc update
+                // Or create a clone of the method?
+                particle->kernelCoordinates.push_back({posInBlock[0] + relLoc[0], posInBlock[1] + relLoc[1], posInBlock[2] + relLoc[2]});
+                #endif
             }
         }
     }
