@@ -142,6 +142,14 @@ namespace hemo {
     }
     return ret;
   }
+  template<typename _Tp, typename _Tp2, std::size_t _Nm>
+  inline Array<_Tp2, _Nm> operator-(const Array<_Tp, _Nm> & one, const Array<_Tp2, _Nm> & two) {
+    Array<_Tp2, _Nm> ret;
+    for (std::size_t i = 0 ; i < _Nm ; i++ ) {
+      ret[i] = one[i]-two[i];
+    }
+    return ret;
+  }
   template<typename _Tp, std::size_t _Nm>
   inline Array<_Tp, _Nm> operator-(const Array<_Tp, _Nm> & one) {
     Array<_Tp, _Nm> ret;
@@ -236,6 +244,11 @@ namespace hemo {
     crossProduct(e1, e2, cross);
     
     return (_Tp) 0.5 * norm(cross);
+  }
+  
+  template<typename _Tp>
+  _Tp computeLength(const Array<_Tp,3> & v) {
+    return sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
   }
   
   template<typename _Tp>

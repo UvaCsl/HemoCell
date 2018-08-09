@@ -60,13 +60,13 @@ void interpolationCoefficientsPhi1 (
         std::vector<Dot3D>& cellPos, std::vector<T>& weights);
 
 inline void interpolationCoefficientsPhi2 (
-        BlockLattice3D<T,DESCRIPTOR> & block, HemoCellParticle * particle)
+        BlockLattice3D<T,DESCRIPTOR> & block, HemoCellParticle & particle)
 {
     //Clean current
-    particle->kernelWeights.clear();
-    particle->kernelLocations.clear();
+    particle.kernelWeights.clear();
+    particle.kernelLocations.clear();
     #ifdef INTERIOR_VISCOSITY
-    particle->kernelCoordinates.clear();
+    particle.kernelCoordinates.clear();
     #endif
     
     // Fixed kernel size
@@ -77,7 +77,7 @@ inline void interpolationCoefficientsPhi2 (
     const hemo::Array<plint,3> relLoc = {tmpDot.x, tmpDot.y, tmpDot.z};
 
     //Get position, relative
-    const hemo::Array<T,3> position_tmp = particle->sv.position;
+    const hemo::Array<T,3> position_tmp = particle.sv.position;
     const hemo::Array<T,3> position = {position_tmp[0] -relLoc[0], position_tmp[1]-relLoc[1],position_tmp[2]-relLoc[2]};
 
     //Get our reference node (0,0)
@@ -119,19 +119,18 @@ inline void interpolationCoefficientsPhi2 (
                 
                 total_weight+=weight;
 
-                particle->kernelWeights.push_back(weight);
-                particle->kernelLocations.push_back(&block.get(posInBlock[0],posInBlock[1],posInBlock[2]));
+                particle.kernelWeights.push_back(weight);
+                particle.kernelLocations.push_back(&block.get(posInBlock[0],posInBlock[1],posInBlock[2]));
 		
                 #ifdef INTERIOR_VISCOSITY
-                // Think of a way to find the interiorVisc update
                 // Or create a clone of the method?
-                particle->kernelCoordinates.push_back({posInBlock[0] + relLoc[0], posInBlock[1] + relLoc[1], posInBlock[2] + relLoc[2]});
+                particle.kernelCoordinates.push_back({posInBlock[0],posInBlock[1],posInBlock[2]});
                 #endif
             }
         }
     }
     const T weight_coeff = 1.0 / total_weight;
-    for(T & weight_ : particle->kernelWeights) { //Normalize weight to 1
+    for(T & weight_ : particle.kernelWeights) { //Normalize weight to 1
       weight_ *= weight_coeff;
     }
 }

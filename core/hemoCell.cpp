@@ -266,6 +266,7 @@ void HemoCell::iterate() {
 
 #ifdef INTERIOR_VISCOSITY
   if (global.enableInteriorViscosity && iter % cellfields->interiorViscosityEntireGridTimescale == 0) {
+    cellfields->deleteIncompleteCells(); // Must be done, next function expects whole cells
     cellfields->findInternalParticleGridPoints();
   }
   if (global.enableInteriorViscosity && iter % cellfields->interiorViscosityTimescale == 0) {

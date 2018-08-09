@@ -693,65 +693,27 @@ void HemoCellParticleField::applyRepulsionForce(bool forced) {
 
 #ifdef INTERIOR_VISCOSITY
 void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
-  // Point to the lattice for convenience
-  MultiBlockLattice3D<double, DESCRIPTOR> * localLattice =  cellFields->lattice;
   double const omegaExt = 1.0/param::tau;
-   
+
   // This could be done less complex I guess?
-  for (const auto & pair : get_lpc()) { // Go over each cell
-    const int & cid = pair.first;
-    const vector<int> & cell = get_particles_per_cell().at(cid);
-
-    HemoCellParticle particle = particles[cell[0]];
-    const pluint ctype = particles[cell[0]].sv.celltype;
-
-    // Plt and Wbc now have normal tau internal, so we don't have
-    // to raycast these particles
-    if (!(*cellFields)[ctype]->doInteriorViscosity) {
-      continue;
-    }
+  for (const HemoCellParticle & particle : particles) { // Go over each particle
+     if (!(*cellFields)[particle.sv.celltype]->doInteriorViscosity) { continue; }
     
     // Find the interior relaxation parameter for particletype
-    // Only for RBC now
-    const double omegaInt = 1.0/(*cellFields)[ctype]->interiorViscosityTau;
-    set<hemo::Array<plint, 3>> latAlreadyDone = {};
+    const double omegaInt = 1.0/(*cellFields)[particle.sv.celltype]->interiorViscosityTau;
 
-    for (const int pid : cell ) {
-      particle = particles[pid];
+    for (unsigned int i = 0; i < particle.kernelCoordinates.size(); i++) {
+      const hemo::Array<T, 3> latPos = particle.kernelCoordinates[i]-particle.sv.position;
+      const hemo::Array<T, 3> & normalP = particle.normalDirection;
 
-      for (unsigned int i = 0; i < particle.kernelCoordinates.size(); i++) {
-        hemo::Array<plint, 3> latPos = particle.kernelCoordinates[i];
-        if (latAlreadyDone.find(latPos) != latAlreadyDone.end()) {
-          continue;
-        }
+      if (computeLength(latPos) > (*cellFields)[particle.sv.celltype]->mechanics->cellConstants.edge_mean_eq/2) {continue;}
+      
+      T dot1 = hemo::dot(latPos, normalP);
 
-        hemo::Array<T, 3>  latToPart = {latPos[0] - particle.sv.position[0], 
-                                        latPos[1] - particle.sv.position[1],
-                                        latPos[2] - particle.sv.position[2]};
-        
-        double lenLp = sqrt(latToPart[0]*latToPart[0] + latToPart[1]*latToPart[1] + latToPart[2]*latToPart[2] );
-        
-        // I do not understand why this needs to be done...
-        if (lenLp > 0.51) { continue;} //?? Arbitrarely enough this works...
-        latToPart /= lenLp;
-
-        double normalLen = sqrt(particle.normalDirection[0]*particle.normalDirection[0] + 
-                                particle.normalDirection[1]*particle.normalDirection[1] +
-                                particle.normalDirection[2]*particle.normalDirection[2]);
-        
-        hemo::Array<T, 3> normalP = particle.normalDirection;
-        normalP /= normalLen;
-        
-        T dot1 = hemo::dot(latToPart, normalP);
-
-        if (dot1 < 0.) {  // Node is inside
-          localLattice->get(latPos[0], latPos[1], latPos[2]).getDynamics().setOmega(omegaInt);
-          latAlreadyDone.insert(latPos);
-          
-        } else {  // Node is outside
-          localLattice->get(latPos[0], latPos[1], latPos[2]).getDynamics().setOmega(omegaExt);
-          latAlreadyDone.insert(latPos);
-        }
+      if (dot1 < 0.) {  // Node is inside
+        particle.kernelLocations[i]->getDynamics().setOmega(omegaInt);
+      } else {  // Node is outside
+        particle.kernelLocations[i]->getDynamics().setOmega(omegaExt);
       }
     }
   }
@@ -760,17 +722,14 @@ void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
 // For performance reason, this is only executed once every n iterations to make
 // sure that there are no higher viscosity grid points left after substantial movement
 void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
-  // Point to the lattice for convenience
-  MultiBlockLattice3D<double, DESCRIPTOR> * localLattice =  cellFields->lattice;
-
   // Set the omega values on the lattice to outer viscosity
   double const omegaExt = 1.0/param::tau;
   
   // Reset all the lattice points to the orignal relaxation parameter
-  for (plint iX = localLattice->getBoundingBox().x0; iX < localLattice->getBoundingBox().x1; iX++) {
-    for (plint iY = localLattice->getBoundingBox().y0; iY < localLattice->getBoundingBox().y1; iY++) {
-      for (plint iZ = localLattice->getBoundingBox().z0; iZ < localLattice->getBoundingBox().z1; iZ++) {
-        localLattice->get(iX, iY, iZ).getDynamics().setOmega(omegaExt);
+  for (plint iX = atomicLattice->getBoundingBox().x0; iX <= atomicLattice->getBoundingBox().x1; iX++) {
+    for (plint iY = atomicLattice->getBoundingBox().y0; iY <= atomicLattice->getBoundingBox().y1; iY++) {
+      for (plint iZ = atomicLattice->getBoundingBox().z0; iZ <= atomicLattice->getBoundingBox().z1; iZ++) {
+        atomicLattice->get(iX, iY, iZ).getDynamics().setOmega(omegaExt);
       }
     }
   }
@@ -780,7 +739,7 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
 
     const int & cid = pair.first;
     const vector<int> & cell = get_particles_per_cell().at(cid);
-    HemoCellParticle particle = particles[cell[0]];
+    hemo::Array<T,3>  * position = &particles[cell[0]].sv.position;
 
     const pluint ctype = particles[cell[0]].sv.celltype;
 
@@ -796,23 +755,20 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
     const double omegaInt = 1.0/(*cellFields)[ctype]->interiorViscosityTau;
 
 
-    bbox[0] = particle.sv.position[0];
-    bbox[1] = particle.sv.position[0];
-    bbox[2] = particle.sv.position[1];
-    bbox[3] = particle.sv.position[1];
-    bbox[4] = particle.sv.position[2];
-    bbox[5] = particle.sv.position[2];
+    bbox[0] = bbox[1] = (*position)[0];
+    bbox[2] = bbox[3] = (*position)[1];
+    bbox[4] = bbox[5] = (*position)[2];
 
     for (const int pid : cell ) {
 
-      particle = particles[pid];
+      position = &particles[pid].sv.position;
 
-      bbox[0] = bbox[0] > particle.sv.position[0] ? particle.sv.position[0] : bbox[0];
-      bbox[1] = bbox[1] < particle.sv.position[0] ? particle.sv.position[0] : bbox[1];
-      bbox[2] = bbox[2] > particle.sv.position[1] ? particle.sv.position[1] : bbox[2];
-      bbox[3] = bbox[3] < particle.sv.position[1] ? particle.sv.position[1] : bbox[3];
-      bbox[4] = bbox[4] > particle.sv.position[2] ? particle.sv.position[2] : bbox[4];
-      bbox[5] = bbox[5] < particle.sv.position[2] ? particle.sv.position[2] : bbox[5];
+      bbox[0] = bbox[0] > (*position)[0] ? (*position)[0] : bbox[0];
+      bbox[1] = bbox[1] < (*position)[0] ? (*position)[0] : bbox[1];
+      bbox[2] = bbox[2] > (*position)[1] ? (*position)[1] : bbox[2];
+      bbox[3] = bbox[3] < (*position)[1] ? (*position)[1] : bbox[3];
+      bbox[4] = bbox[4] > (*position)[2] ? (*position)[2] : bbox[4];
+      bbox[5] = bbox[5] < (*position)[2] ? (*position)[2] : bbox[5];
     }
 
     hemo::OctreeStructCell octCell(3, 1, 30, bbox,
@@ -824,6 +780,14 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
     // Any vector pointing outside is fine as ray
     hemo::Array<double, 3> rayVector = {bbox[1]+20.0, 0, 0};
 
+    //Adjust bbox to fit local atomic block
+    bbox[0] = bbox[0] < atomicLattice->getLocation().x ? atomicLattice->getLocation().x : bbox[0];
+    bbox[1] = bbox[1] > atomicLattice->getLocation().x + atomicLattice->getNx()-1 ? atomicLattice->getLocation().x + atomicLattice->getNx()-1: bbox[1];
+    bbox[2] = bbox[2] < atomicLattice->getLocation().y ? atomicLattice->getLocation().y : bbox[2];
+    bbox[3] = bbox[3] > atomicLattice->getLocation().y + atomicLattice->getNy()-1 ? atomicLattice->getLocation().y + atomicLattice->getNy()-1: bbox[3];
+    bbox[4] = bbox[4] < atomicLattice->getLocation().z ? atomicLattice->getLocation().z : bbox[4];
+    bbox[5] = bbox[5] > atomicLattice->getLocation().z + atomicLattice->getNz()-1 ? atomicLattice->getLocation().z + atomicLattice->getNz()-1: bbox[5];
+    
     // Create a triple for-loop to go over all lattice points in the bounding box of a cell
     for (int x = (int)bbox[0]+1; x < (int)bbox[1]+1; x++) { 
       for (int y = (int)bbox[2]+1; y < (int)bbox[3]+1; y++) {
@@ -852,7 +816,11 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
           bool inside = crossedCounter % 2 == 0 ? false : true;
           
           if (inside) {
-            localLattice->get(x, y, z).getDynamics().setOmega(omegaInt);
+            int x_l = x-atomicLattice->getLocation().x;
+            int y_l = y-atomicLattice->getLocation().y;
+            int z_l = z-atomicLattice->getLocation().z;
+            
+            atomicLattice->get(x_l, y_l, z_l).getDynamics().setOmega(omegaInt);
           }
         }
       }
@@ -880,7 +848,7 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
     if (particle.sv.fromPreInlet) { continue; }
 #endif
     //Clever trick to allow for different kernels for different particle types.
-    (*cellFields)[particle.sv.celltype]->kernelMethod(*atomicLattice,&particle);
+    //(*cellFields)[particle.sv.celltype]->kernelMethod(*atomicLattice,particle);
 
     //We have the kernels, now calculate the velocity of the particles.
     //Palabos developers, sorry for not using a functional...
@@ -896,30 +864,28 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
 }
 
 void HemoCellParticleField::spreadParticleForce(Box3D domain) {
-  HemoCellParticle * sparticle;
   for( HemoCellParticle &particle:particles) {
-    sparticle = &particle;
 #ifdef PREINLET_MECHANICS
-    if (sparticle->sv.fromPreInlet) { continue; }
+    if (particle.sv.fromPreInlet) { continue; }
 #endif
 
     //Clever trick to allow for different kernels for different particle types.
-    (*cellFields)[sparticle->sv.celltype]->kernelMethod(*atomicLattice,sparticle);
+    (*cellFields)[particle.sv.celltype]->kernelMethod(*atomicLattice,particle);
 
     // Capping force to ensure stability -> NOTE: this introduces error!
 #ifdef FORCE_LIMIT
-    const T force_mag = norm(sparticle->sv.force);
+    const T force_mag = norm(particle.sv.force);
     if(force_mag > param::f_limit)
-      sparticle->sv.force *= param::f_limit/force_mag;
+      particle.sv.force *= param::f_limit/force_mag;
 #endif
 
     //Directly change the force on a node , Palabos developers hate this one
     //quick non-functional trick.
-    for (pluint j = 0; j < sparticle->kernelLocations.size(); j++) {
+    for (pluint j = 0; j < particle.kernelLocations.size(); j++) {
       //Yay for direct access
-      sparticle->kernelLocations[j]->external.data[0] += ((sparticle->sv.force_repulsion[0] + sparticle->sv.force[0]) * sparticle->kernelWeights[j]);
-      sparticle->kernelLocations[j]->external.data[1] += ((sparticle->sv.force_repulsion[1] + sparticle->sv.force[1]) * sparticle->kernelWeights[j]);
-      sparticle->kernelLocations[j]->external.data[2] += ((sparticle->sv.force_repulsion[2] + sparticle->sv.force[2]) * sparticle->kernelWeights[j]);
+      particle.kernelLocations[j]->external.data[0] += ((particle.sv.force_repulsion[0] + particle.sv.force[0]) * particle.kernelWeights[j]);
+      particle.kernelLocations[j]->external.data[1] += ((particle.sv.force_repulsion[1] + particle.sv.force[1]) * particle.kernelWeights[j]);
+      particle.kernelLocations[j]->external.data[2] += ((particle.sv.force_repulsion[2] + particle.sv.force[2]) * particle.kernelWeights[j]);
     }
 
   }

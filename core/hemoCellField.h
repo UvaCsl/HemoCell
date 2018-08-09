@@ -60,7 +60,7 @@ class HemoCellField{
   bool outputTriangles = false;
   bool deleteIncomplete = true;
   vector<hemo::Array<plint,3>> triangle_list;
-  void(*kernelMethod)(plb::BlockLattice3D<T,DESCRIPTOR> &,HemoCellParticle*);
+  void(*kernelMethod)(plb::BlockLattice3D<T,DESCRIPTOR> &,HemoCellParticle&);
   plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D();
   plb::MultiBlockLattice3D<T,DESCRIPTOR> * getFluidField3D();
   int getNumberOfCells_Global();
