@@ -147,6 +147,11 @@ public:
           name = "Density";
           dim[3] = 1;
           break;
+        case OUTPUT_OMEGA:
+          output = outputOmega();
+          name = "Omega";
+          dim[3] = 1;
+          break;
         case OUTPUT_CELL_DENSITY:
           for (unsigned int i = 0 ; i < cellfields.size() ; i++) {
             output = outputCellDensity(cellfields[i]->name);
@@ -248,6 +253,28 @@ private:
     return output;
   }
 
+  float * outputOmega() {
+    float * output = new float [(*nCells)];
+    unsigned int n = 0;
+    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
+      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
+        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
+
+          output[n] = ablock->get(iX,iY,iZ).getDynamics().getOmega();
+          n++;
+        }
+      }
+    }
+
+    if (cellfields.hemocell.outputInSiUnits) {
+      for (unsigned int i = 0 ; i < (*nCells) ; i++) {
+        output[i] = output[i]*(param::df/(param::dx*param::dx));
+      }
+    }
+
+    return output;
+  }
+  
   float * outputCellDensity(string name) {
     float * output = new float [(*nCells)];
     memset(output, 0, sizeof(float)*(*nCells));

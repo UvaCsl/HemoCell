@@ -146,6 +146,7 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
 #define OUTPUT_CELL_DENSITY 9
 #define OUTPUT_SHEAR_STRESS 10
 #define OUTPUT_INNER_LINKS 11
+#define OUTPUT_OMEGA 12
 
 
 //==================== Not really an option but a nice shortcut

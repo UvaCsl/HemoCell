@@ -713,7 +713,7 @@ void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
     
     // Find the interior relaxation parameter for particletype
     // Only for RBC now
-    const double omegaInt = 1.0/(*cellFields)[ctype]->interiorViscosityRatio;
+    const double omegaInt = 1.0/(*cellFields)[ctype]->interiorViscosityTau;
     set<hemo::Array<plint, 3>> latAlreadyDone = {};
 
     for (const int pid : cell ) {
@@ -793,7 +793,7 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
 
     // Find the interior relaxation parameter for particletype
     // Only for RBC now
-    const double omegaInt = 1.0/(*cellFields)[ctype]->interiorViscosityRatio;
+    const double omegaInt = 1.0/(*cellFields)[ctype]->interiorViscosityTau;
 
 
     bbox[0] = particle.sv.position[0];

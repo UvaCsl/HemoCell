@@ -75,7 +75,7 @@ class HemoCellField{
   plb::MeshMetrics<T> * meshmetric;
   bool doSolidifyMechanics = false;
   bool doInteriorViscosity = false;
-  T interiorViscosityRatio = 1.0;
+  T interiorViscosityTau = 1.0;
 };
 }
 

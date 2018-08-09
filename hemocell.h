@@ -130,11 +130,13 @@ class HemoCell {
   
   //Enable solidify mechanics of a celltype
   void enableSolidifyMechanics(string name) {
+    hlog << "(HemoCell) Enabling Solidify Mechanics for " << name << " mechanical model" << endl;
     (*cellfields)[name]->doSolidifyMechanics = true;
   }
   
     //Enable InteriorViscosity mechanics of a celltype
-  void enableInnerViscosity(string name) {
+  void enableInteriorViscosity(string name) {
+    hlog << "(HemoCell) Enabling Interior Viscosity Mechanics for " << name << " mechanical model" << endl;
     (*cellfields)[name]->doInteriorViscosity = true;
   }
   

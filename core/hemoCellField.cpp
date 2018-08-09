@@ -61,11 +61,16 @@ HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<
         try {
           string materialXML = name + ".xml";
           hemo::Config materialCfg(materialXML.c_str());
-          volume = materialCfg["MaterialModel"]["Volume"].read<T>();
-          volumeFractionOfLspPerNode = (volume/numVertex)/pow(param::dx*1e6,3);
-        } catch (std::invalid_argument & exeption) {
-            hlog << "(HemoCell) (WARNING) (AddCellType) Volume of celltype " << name << " not present, volume set to zero" << endl;
-        }
+          try{
+            volume = materialCfg["MaterialModel"]["Volume"].read<T>();
+            volumeFractionOfLspPerNode = (volume/numVertex)/pow(param::dx*1e6,3);
+          } catch (std::invalid_argument & exeption) {
+              hlog << "(HemoCell) (WARNING) (AddCellType) Volume of celltype " << name << " not present, volume set to zero" << endl;
+          }
+          try {
+            interiorViscosityTau = materialCfg["MaterialModel"]["viscosityRatio"].read<T>()*(param::tau-0.5)+0.5;
+          } catch (std::invalid_argument & e) {}
+        } catch (std::invalid_argument & e) {}
 }
 
 void HemoCellField::setOutputVariables(const vector<int> & outputs) { desiredOutputVariables = outputs;
