@@ -770,7 +770,9 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
       bbox[4] = bbox[4] > (*position)[2] ? (*position)[2] : bbox[4];
       bbox[5] = bbox[5] < (*position)[2] ? (*position)[2] : bbox[5];
     }
-
+    bbox[1] += 0.1;
+    bbox[3] += 0.1;
+    bbox[5] += 0.1;
     hemo::OctreeStructCell octCell(3, 1, 30, bbox,
                                 (*cellFields)[ctype]->mechanics->cellConstants.triangle_list,
                                 &particles, cell);
@@ -778,7 +780,7 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
     const double EPSILON = 0.0000001;  // Constant to compare
     
     // Any vector pointing outside is fine as ray
-    hemo::Array<double, 3> rayVector = {bbox[1]+20.0, 0, 0};
+    hemo::Array<double, 3> rayVector = {-100,-100,-100};
 
     //Adjust bbox to fit local atomic block
     bbox[0] = bbox[0] < atomicLattice->getLocation().x ? atomicLattice->getLocation().x : bbox[0];
@@ -789,13 +791,14 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
     bbox[5] = bbox[5] > atomicLattice->getLocation().z + atomicLattice->getNz()-1 ? atomicLattice->getLocation().z + atomicLattice->getNz()-1: bbox[5];
     
     // Create a triple for-loop to go over all lattice points in the bounding box of a cell
-    for (int x = (int)bbox[0]+1; x < (int)bbox[1]+1; x++) { 
-      for (int y = (int)bbox[2]+1; y < (int)bbox[3]+1; y++) {
-        for (int z = (int)bbox[4]+1; z < (int)bbox[5]+1; z++) {
+    for (int x = (int)bbox[0]; x <= (int)bbox[1]+0.5; x++) { 
+      for (int y = (int)bbox[2]; y <= (int)bbox[3]+0.5; y++) {
+        for (int z = (int)bbox[4]; z <= (int)bbox[5]+0.5; z++) {
           int crossedCounter = 0; // How many triangles are crossed
           
           hemo::Array<plint, 3> latticeSite = {x, y, z};
-          vector<hemo::Array<plint,3>> triangles_list = octCell.findCrossings(latticeSite, rayVector);
+          vector<hemo::Array<plint,3>> triangles_list;
+          octCell.findCrossings(latticeSite, rayVector,triangles_list);
 
           for (hemo::Array<plint, 3> triangle : triangles_list) {
             // Muller-trumbore intersection algorithm 

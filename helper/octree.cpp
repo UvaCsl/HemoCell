@@ -22,25 +22,27 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "octree.h"
+#include "logfile.h"
 
 namespace hemo {
 
 using namespace std;
 
-OctreeStructCell::OctreeStructCell(plint divis, plint l, plint lim, hemo::Array<double, 6> bbox,
+OctreeStructCell::OctreeStructCell(plint divis, plint l, unsigned int lim, hemo::Array<double, 6> bbox,
 			vector<hemo::Array<plint,3>> triangle_list_,
 			vector<HemoCellParticle>* part, const vector<int>  cell) {
   maxDivisions = divis;
   bBox = bbox;
   level = l;
-  triangle_list = triangle_list_;
   limit = lim;
 
   // Check if subdividing limit is reached?
-  if (triangle_list.size() < lim || level > maxDivisions) {
+  if (triangle_list_.size() < lim || level > maxDivisions) {
     finalNode = true;
+    triangle_list=triangle_list_;
+    return;
   }
-  constructTree(part, cell);
+  constructTree(part, cell,triangle_list_);
 }
 
 OctreeStructCell::~OctreeStructCell() {
@@ -66,13 +68,13 @@ int OctreeStructCell::returnTrianglesAmount() {
   return tempSize;
 }
 
-std::vector<hemo::Array<double, 6>> OctreeStructCell::octantOfBoundingBox() {
-  std::vector<hemo::Array<double, 6>> bBoxes;
+std::vector<hemo::Array<T, 6>> OctreeStructCell::octantOfBoundingBox() {
+  std::vector<hemo::Array<T, 6>> bBoxes;
 
   // Find the middle of each of the bounding edges
-  double xHalf = bBox[0] + (bBox[1] - bBox[0])/2;
-  double yHalf = bBox[2] + (bBox[3] - bBox[2])/2;
-  double zHalf = bBox[4] + (bBox[5] - bBox[4])/2;
+  T xHalf = bBox[0] + (bBox[1] - bBox[0])/2;
+  T yHalf = bBox[2] + (bBox[3] - bBox[2])/2;
+  T zHalf = bBox[4] + (bBox[5] - bBox[4])/2;
 
   // Not gonna do complicated stuff..
   bBoxes.push_back({bBox[0], xHalf, bBox[2], yHalf, bBox[4], zHalf});
@@ -87,40 +89,35 @@ std::vector<hemo::Array<double, 6>> OctreeStructCell::octantOfBoundingBox() {
   return bBoxes;
 }
 
-void OctreeStructCell::constructTree(vector<HemoCellParticle>* part, const vector<int> cell ) {
-  if (finalNode) {
-    return; // Will not go deeper
-  }
-  
+void OctreeStructCell::constructTree(vector<HemoCellParticle>* part, const vector<int> cell,vector<hemo::Array<plint,3>> triangle_list_) {
   // Find the octants of the current bounding box.
   vector<hemo::Array<double, 6>> bBoxes = octantOfBoundingBox();
 
   // Create vectors to store corresponding triangles
-  vector<hemo::Array<plint,3>> root_triangle_list;
   vector<vector<hemo::Array<plint,3>>> list_triangle_list;
 
   // Fill triangle lists
-  for (plint i = 0; i < bBoxes.size(); i++) {
+  for (unsigned int i = 0; i < bBoxes.size(); i++) {
     list_triangle_list.push_back({});
   }
   
-  for (hemo::Array<plint,3> triangle : triangle_list) {  
+  for (hemo::Array<plint,3> & triangle : triangle_list_) {  
     hemo::Array<double,3> & v0 = (*part)[cell[triangle[0]]].sv.position;
     hemo::Array<double,3> & v1 = (*part)[cell[triangle[1]]].sv.position;
     hemo::Array<double,3> & v2 = (*part)[cell[triangle[2]]].sv.position;
 
     vector<int> index; // If a triangle is part of multiple bBoxes, to root
 
-    for (plint i = 0; i < bBoxes.size() ; i++) { 
-      if ( ( (bBoxes[i][0] <= v0[0] && bBoxes[i][1] >= v0[0]) && 
-             (bBoxes[i][2] <= v0[1] && bBoxes[i][3] >= v0[1]) &&
-             (bBoxes[i][4] <= v0[2] && bBoxes[i][5] >= v0[2]) ) ||
-           ( (bBoxes[i][0] <= v1[0] && bBoxes[i][1] >= v1[0]) && 
-             (bBoxes[i][2] <= v1[1] && bBoxes[i][3] >= v1[1]) &&
-             (bBoxes[i][4] <= v1[2] && bBoxes[i][5] >= v1[2]) ) ||
-           ( (bBoxes[i][0] <= v2[0] && bBoxes[i][1] >= v2[0]) && 
-             (bBoxes[i][2] <= v2[1] && bBoxes[i][3] >= v2[1]) &&
-             (bBoxes[i][4] <= v2[2] && bBoxes[i][5] >= v2[2]) ) ) {
+    for (unsigned int i = 0; i < bBoxes.size() ; i++) { 
+      if ( ( (bBoxes[i][0] <= v0[0] && bBoxes[i][1] > v0[0]) && 
+             (bBoxes[i][2] <= v0[1] && bBoxes[i][3] > v0[1]) &&
+             (bBoxes[i][4] <= v0[2] && bBoxes[i][5] > v0[2]) ) ||
+           ( (bBoxes[i][0] <= v1[0] && bBoxes[i][1] > v1[0]) && 
+             (bBoxes[i][2] <= v1[1] && bBoxes[i][3] > v1[1]) &&
+             (bBoxes[i][4] <= v1[2] && bBoxes[i][5] > v1[2]) ) ||
+           ( (bBoxes[i][0] <= v2[0] && bBoxes[i][1] > v2[0]) && 
+             (bBoxes[i][2] <= v2[1] && bBoxes[i][3] > v2[1]) &&
+             (bBoxes[i][4] <= v2[2] && bBoxes[i][5] > v2[2]) ) ) {
         index.push_back(i);
       }
     }
@@ -128,41 +125,74 @@ void OctreeStructCell::constructTree(vector<HemoCellParticle>* part, const vecto
     if (index.size() == 1) {
       list_triangle_list[index[0]].push_back(triangle);
     } else if (index.size() == 0) {
+      hlog << "Octree error, triangle that does not fit in any bounding box" << endl;
+      exit(1);
     } else {
-      root_triangle_list.push_back(triangle);
+      triangle_list.push_back(triangle);
     }  
   }
-
-  triangle_list = root_triangle_list; // Set root node list
-  
-  for (plint i = 0; i < bBoxes.size() ; i++) {
+ 
+  for (unsigned int i = 0; i < bBoxes.size() ; i++) {
     nodes[i] = new OctreeStructCell(maxDivisions, level+1, limit, bBoxes[i],
                                     list_triangle_list[i], part, cell);                         
   }
 }
 
-vector<hemo::Array<plint,3>> OctreeStructCell::findCrossings(hemo::Array<plint, 3> latticeSite, hemo::Array<double, 3> rayVector) {
-  // We know that the vector will always go in the x-direction for intersect
-  // This is because i say so, allows lazy collision check
-  vector<hemo::Array<plint,3>> output; // For the final output
-
-  // The ray passes outside the bboxes
-  if ( bBox[2] <= latticeSite[1] && bBox[3] >= latticeSite[1] &&
-       bBox[4] <= latticeSite[2] && bBox[5] >= latticeSite[2] &&
-       latticeSite[0] <= bBox[1]) {
-    output = triangle_list;
+void OctreeStructCell::findCrossings(hemo::Array<plint, 3> latticeSite, hemo::Array<double, 3> rayVector,std::vector<hemo::Array<plint,3>>& output) {
+  // The ray passes inside the bboxes
+  if ( bBox[0] <= latticeSite[0] && bBox[1] > latticeSite[0] &&
+       bBox[2] <= latticeSite[1] && bBox[3] > latticeSite[1] &&
+       bBox[4] <= latticeSite[2] && bBox[5] > latticeSite[2]) {
+    output.insert(output.end(),triangle_list.begin(),triangle_list.end());
   } else {
-    return {};
+    // The ray might still intersect, check this!!!!!!!!!!!!!!!!!!!
+    // we take -100, -100, -100 as origin, therefore we know the "direction" of the ray (+x,+y,+z)
+    // Naievely, if one of origin is larger than endpoint, there cannot be intersection
+    if (bBox[0] > latticeSite[0] || bBox[2] > latticeSite[1] || bBox[4] > latticeSite[2]) {
+      return;
+    }
+    // Also it must pass through these three faces if it has intersection, use this information
+    T x_diff,y_diff,z_diff;
+    x_diff = latticeSite[0]-rayVector[0]; 
+    y_diff = latticeSite[1]-rayVector[1]; 
+    z_diff = latticeSite[2]-rayVector[2]; 
+    
+    bool intersect = false;
+    T scale = (bBox[0]-rayVector[0])/x_diff;
+    if (rayVector[1] + y_diff*scale < bBox[2] || rayVector[1] + y_diff*scale > bBox[3] ||
+        rayVector[2] + z_diff*scale < bBox[4] || rayVector[2] + z_diff*scale > bBox[5]) {
+    } else {
+      output.insert(output.end(),triangle_list.begin(),triangle_list.end());
+      intersect = true;
+      goto end_check;
+    }
+    scale = (bBox[2]-rayVector[1])/y_diff;
+    if (rayVector[0] + x_diff*scale < bBox[0] || rayVector[0] + x_diff*scale > bBox[1] ||
+        rayVector[2] + z_diff*scale < bBox[4] || rayVector[2] + z_diff*scale > bBox[5]) {
+    } else {
+      output.insert(output.end(),triangle_list.begin(),triangle_list.end());
+      intersect = true;
+      goto end_check;
+    }
+    scale = (bBox[4]-rayVector[2])/z_diff;
+    if (rayVector[1] + y_diff*scale < bBox[2] || rayVector[1] + y_diff*scale > bBox[3] ||
+        rayVector[0] + x_diff*scale < bBox[0] || rayVector[0] + x_diff*scale > bBox[1]) {
+    } else {
+      output.insert(output.end(),triangle_list.begin(),triangle_list.end());
+      intersect = true;
+      goto end_check;
+    }
+  end_check:;
+    if (!intersect) { return;}
   }
 
   if (finalNode) {
-    return output;
+    return;
   }
   
   for (int i = 0; i < 8; i++) {  
-    vector<hemo::Array<plint,3>> temp = nodes[i]->findCrossings(latticeSite, rayVector);
-    output.insert(std::end(output), std::begin(temp), std::end(temp));  
+    nodes[i]->findCrossings(latticeSite, rayVector,output);
   }
-  return output;
+  return;
 }
 }

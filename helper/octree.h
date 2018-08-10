@@ -33,7 +33,7 @@ namespace hemo {
       hemo::Array<double, 6> bBox;
       std::vector<hemo::Array<plint,3>> triangle_list; // Keep all the unsorted obs here
       OctreeStructCell * nodes[8];
-      std::vector<hemo::Array<double, 6>> octantOfBoundingBox();
+      std::vector<hemo::Array<T, 6>> octantOfBoundingBox();
       
       plint maxDivisions;
       plint level; // To keep track of how many octants we have already 
@@ -42,13 +42,13 @@ namespace hemo {
       plint limit;
       
     public:
-      OctreeStructCell(plint divis, plint l, plint lim, hemo::Array<double, 6> bbox,
+      OctreeStructCell(plint divis, plint l, unsigned int lim, hemo::Array<double, 6> bbox,
                        std::vector<hemo::Array<plint,3>> triangle_list_,
                        std::vector<HemoCellParticle>* part, const std::vector<int>  cell);
       ~OctreeStructCell();
-      void constructTree(std::vector<HemoCellParticle>* part,  std::vector<int>  cell );
+      void constructTree(std::vector<HemoCellParticle>* part,  std::vector<int>  cell, std::vector<hemo::Array<plint,3>> triangle_list_);
       int returnTrianglesAmount();
-      std::vector<hemo::Array<plint,3>> findCrossings(hemo::Array<plint, 3> latticeSite, hemo::Array<double, 3> rayVector);
+      void findCrossings(hemo::Array<plint, 3> latticeSite, hemo::Array<double, 3> rayVector,std::vector<hemo::Array<plint,3>> &);
   };
 }
 
