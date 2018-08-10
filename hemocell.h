@@ -136,8 +136,16 @@ class HemoCell {
   
     //Enable InteriorViscosity mechanics of a celltype
   void enableInteriorViscosity(string name) {
+#ifdef INTERIOR_VISCOSITY
+    if (!global.enableInteriorViscosity) {
+      hlog << "(HemoCell) Error, enableInteriorViscosity called, but global interior Viscosity not enabled (config->parmeters->enableInteriorViscosity)" << endl;
+    }
     hlog << "(HemoCell) Enabling Interior Viscosity Mechanics for " << name << " mechanical model" << endl;
     (*cellfields)[name]->doInteriorViscosity = true;
+#else
+    hlog << "(HemoCell) Error, interior viscosity of " << name << " requested but INTERIOR_VISCOSITY was not defined compile time, exiting" << endl;
+    exit(1);
+#endif
   }
   
   //Set the separation of when velocity is interpolated to the particle

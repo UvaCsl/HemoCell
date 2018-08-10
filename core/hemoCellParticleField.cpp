@@ -803,12 +803,6 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
             const hemo::Array<double,3> & v1 = particles[cell[triangle[1]]].sv.position;
             const hemo::Array<double,3> & v2 = particles[cell[triangle[2]]].sv.position;
             
-            // Exclude triangles we know cannot intersect with the ray
-            if ((v0[0] < x && v1[0] < x && v2[0] < x) ||
-               ((v0[1] < y-1.0 || v0[1] > y+1.0) && (v1[1] < y-1.0 || v1[1] > y+1.0) && (v2[1] < y-1.0 || v2[1] > y+1.0) ) ||
-               ((v0[2] < z-1.0 || v0[2] > z+1.0) && (v1[2] < z-1.0 || v1[2] > z+1.0) && (v2[2] < z-1.0 || v2[2] > z+1.0) ) ) {
-              continue;
-            } 
             crossedCounter += hemo::MollerTrumbore(v0, v1, v2, rayVector, latticeSite, EPSILON);
           }
           
