@@ -280,7 +280,7 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
 
             hemo::Array<plint, 3> latticeSite = {x, y, z};
             vector<hemo::Array<plint,3>> triangles_list;
-            octCell.findCrossings(latticeSite, rayVector,triangles_list);
+            octCell.findCrossings(latticeSite,triangles_list);
 
             for (hemo::Array<plint, 3> triangle : triangles_list) {
               // Muller-trumbore intersection algorithm 

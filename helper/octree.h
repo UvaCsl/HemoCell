@@ -48,7 +48,7 @@ namespace hemo {
       ~OctreeStructCell();
       void constructTree(std::vector<HemoCellParticle>* part,  std::vector<int>  cell, std::vector<hemo::Array<plint,3>> triangle_list_);
       int returnTrianglesAmount();
-      void findCrossings(hemo::Array<plint, 3> latticeSite, hemo::Array<double, 3> rayVector,std::vector<hemo::Array<plint,3>> &);
+      void findCrossings(hemo::Array<plint, 3> latticeSite, std::vector<hemo::Array<plint,3>> &);
   };
 }
 
