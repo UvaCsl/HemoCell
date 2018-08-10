@@ -779,7 +779,7 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
 
     const double EPSILON = 0.0000001;  // Constant to compare
     
-    // Any vector pointing outside is fine as ray
+    // Any all negative vector pointing outside is fine as ray
     hemo::Array<double, 3> rayVector = {-100,-100,-100};
 
     //Adjust bbox to fit local atomic block
