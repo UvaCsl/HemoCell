@@ -775,12 +775,30 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
                                 (*cellFields)[ctype]->mechanics->cellConstants.triangle_list,
                                 &particles, cell);
 
+
+  
+      //Adjust bbox to fit local atomic block
+
+    bbox[0] = bbox[0] < atomicLattice->getLocation().x ? atomicLattice->getLocation().x : bbox[0];
+
+    bbox[1] = bbox[1] > atomicLattice->getLocation().x + atomicLattice->getNx()-1 ? atomicLattice->getLocation().x + atomicLattice->getNx()-1: bbox[1];
+
+    bbox[2] = bbox[2] < atomicLattice->getLocation().y ? atomicLattice->getLocation().y : bbox[2];
+
+    bbox[3] = bbox[3] > atomicLattice->getLocation().y + atomicLattice->getNy()-1 ? atomicLattice->getLocation().y + atomicLattice->getNy()-1: bbox[3];
+
+    bbox[4] = bbox[4] < atomicLattice->getLocation().z ? atomicLattice->getLocation().z : bbox[4];
+
+    bbox[5] = bbox[5] > atomicLattice->getLocation().z + atomicLattice->getNz()-1 ? atomicLattice->getLocation().z + atomicLattice->getNz()-1: bbox[5];
+
+      
+
     const double EPSILON = 0.0000001;  // Constant to compare
     
      // Create a triple for-loop to go over all lattice points in the bounding box of a cell
-    for (int x = (int)bbox[0]-0.5; x <= (int)bbox[1]+0.5; x++) { 
-      for (int y = (int)bbox[2]-0.5; y <= (int)bbox[3]+0.5; y++) {
-        for (int z = (int)bbox[4]-0.5; z <= (int)bbox[5]+0.5; z++) {
+    for (int x = (int)bbox[0]; x <= (int)bbox[1]+0.5; x++) { 
+      for (int y = (int)bbox[2]; y <= (int)bbox[3]+0.5; y++) {
+        for (int z = (int)bbox[4]; z <= (int)bbox[5]+0.5; z++) {
           int crossedCounter = 0; // How many triangles are crossed
           
           hemo::Array<plint, 3> latticeSite = {x, y, z};
