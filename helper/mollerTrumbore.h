@@ -27,9 +27,49 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "array.h" // Need to make pointers to particle object
 
 namespace hemo {
-  int MollerTrumbore(const hemo::Array<double,3> v0, const hemo::Array<double,3> v1,
-	  const hemo::Array<double,3> v2, hemo::Array<double, 3> rayVector, 
-	  hemo::Array<plint, 3> latticeSite, const double EPSILON); 
+  inline int MollerTrumbore(const hemo::Array<T,3> & v0, const hemo::Array<T,3> & v1,
+	  const hemo::Array<T,3> & v2, hemo::Array<plint, 3> & latticeSite, const T & EPSILON) {
+    T det,invDet,u,v; // Some floats
+    hemo::Array<T, 3> edge1, edge2, pvec, svec, qvec;
+    hemo::Array<T, 3> rayVector = {(T)latticeSite[0]+40,(T)latticeSite[1],(T)latticeSite[2]};
+
+    // Define edges
+    edge1 = {v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]};  
+    edge2 = {v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]}; 
+
+    pvec = hemo::crossProduct(rayVector, edge2);
+    det = hemo::dot(edge1, pvec);
+
+    if (det > -EPSILON && det < EPSILON) {
+      return 0;
+    }
+
+    invDet = 1/det;
+
+    // Construct s
+    svec = {latticeSite[0] - v0[0], latticeSite[1] - v0[1], latticeSite[2] - v0[2]};
+    u = invDet*hemo::dot(svec, pvec);
+
+    if (u < 0.0 || u > 1.0) {
+      return 0;
+    }
+
+    qvec = hemo::crossProduct(svec, edge1);
+    v = invDet * hemo::dot(rayVector, qvec);
+
+    if (v < 0.0 || u + v > 1.0) {
+      return 0;
+    }
+
+    // Check where the intersection point is
+    float t = invDet*hemo::dot(edge2, qvec);
+
+    if (t > EPSILON) {
+      return 1;
+    }
+
+    return 0;
+  }
 }
 
 #endif

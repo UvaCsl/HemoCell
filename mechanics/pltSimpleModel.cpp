@@ -256,15 +256,12 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
       bbox[1] += 0.1;
       bbox[3] += 0.1;
       bbox[5] += 0.1;
-      hemo::OctreeStructCell octCell(1, 1, 30, bbox,
+      hemo::OctreeStructCell octCell(0, 1, 30, bbox,
                                   cellConstants.triangle_list,
                                   &particles, cell);
       const double EPSILON = 0.0000001;  // Constant to compare
     
-      // Any all negative vector pointing outside is fine as ray
-      hemo::Array<double, 3> rayVector = {-100,-100,-100};
-
-      //Adjust bbox to fit local atomic block
+       //Adjust bbox to fit local atomic block
       bbox[0] = bbox[0] < fluid->getLocation().x ? fluid->getLocation().x : bbox[0];
       bbox[1] = bbox[1] > fluid->getLocation().x + fluid->getNx()-1 ? fluid->getLocation().x + fluid->getNx()-1: bbox[1];
       bbox[2] = bbox[2] < fluid->getLocation().y ? fluid->getLocation().y : bbox[2];
@@ -288,7 +285,7 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
               const hemo::Array<double,3> & v1 = particles[cell[triangle[1]]].sv.position;
               const hemo::Array<double,3> & v2 = particles[cell[triangle[2]]].sv.position;
 
-              crossedCounter += hemo::MollerTrumbore(v0, v1, v2, rayVector, latticeSite, EPSILON);
+              crossedCounter += hemo::MollerTrumbore(v0, v1, v2, latticeSite, EPSILON);
             }
 
             // Count even-odd crossings

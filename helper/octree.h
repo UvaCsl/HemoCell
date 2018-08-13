@@ -30,14 +30,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace hemo {
   class OctreeStructCell {     
     private:
-      hemo::Array<double, 6> bBox;
-      std::vector<hemo::Array<plint,3>> triangle_list; // Keep all the unsorted obs here
+      hemo::Array<T, 6> bBox;
+      std::vector<hemo::Array<plint,3>> triangle_list = {}; // Keep all the unsorted obs here
       OctreeStructCell * nodes[8];
       std::vector<hemo::Array<T, 6>> octantOfBoundingBox();
       
       plint maxDivisions;
       plint level; // To keep track of how many octants we have already 
-      bool stopDividing; // To denote octants which are cool
       bool finalNode = false; // To track if needs more subdividing
       plint limit;
       

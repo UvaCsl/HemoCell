@@ -770,35 +770,22 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
       bbox[4] = bbox[4] > (*position)[2] ? (*position)[2] : bbox[4];
       bbox[5] = bbox[5] < (*position)[2] ? (*position)[2] : bbox[5];
     }
-    bbox[1] += 0.1;
-    bbox[3] += 0.1;
-    bbox[5] += 0.1;
-    hemo::OctreeStructCell octCell(3, 1, 30, bbox,
+
+    hemo::OctreeStructCell * octCell = new hemo::OctreeStructCell(0, 1, 30, bbox,
                                 (*cellFields)[ctype]->mechanics->cellConstants.triangle_list,
                                 &particles, cell);
 
     const double EPSILON = 0.0000001;  // Constant to compare
     
-    // Any all negative vector pointing outside is fine as ray
-    hemo::Array<double, 3> rayVector = {-100,-100,-100};
-
-    //Adjust bbox to fit local atomic block
-    bbox[0] = bbox[0] < atomicLattice->getLocation().x ? atomicLattice->getLocation().x : bbox[0];
-    bbox[1] = bbox[1] > atomicLattice->getLocation().x + atomicLattice->getNx()-1 ? atomicLattice->getLocation().x + atomicLattice->getNx()-1: bbox[1];
-    bbox[2] = bbox[2] < atomicLattice->getLocation().y ? atomicLattice->getLocation().y : bbox[2];
-    bbox[3] = bbox[3] > atomicLattice->getLocation().y + atomicLattice->getNy()-1 ? atomicLattice->getLocation().y + atomicLattice->getNy()-1: bbox[3];
-    bbox[4] = bbox[4] < atomicLattice->getLocation().z ? atomicLattice->getLocation().z : bbox[4];
-    bbox[5] = bbox[5] > atomicLattice->getLocation().z + atomicLattice->getNz()-1 ? atomicLattice->getLocation().z + atomicLattice->getNz()-1: bbox[5];
-    
-    // Create a triple for-loop to go over all lattice points in the bounding box of a cell
-    for (int x = (int)bbox[0]; x <= (int)bbox[1]+0.5; x++) { 
-      for (int y = (int)bbox[2]; y <= (int)bbox[3]+0.5; y++) {
-        for (int z = (int)bbox[4]; z <= (int)bbox[5]+0.5; z++) {
+     // Create a triple for-loop to go over all lattice points in the bounding box of a cell
+    for (int x = (int)bbox[0]-0.5; x <= (int)bbox[1]+0.5; x++) { 
+      for (int y = (int)bbox[2]-0.5; y <= (int)bbox[3]+0.5; y++) {
+        for (int z = (int)bbox[4]-0.5; z <= (int)bbox[5]+0.5; z++) {
           int crossedCounter = 0; // How many triangles are crossed
           
           hemo::Array<plint, 3> latticeSite = {x, y, z};
-          vector<hemo::Array<plint,3>> triangles_list;
-          octCell.findCrossings(latticeSite, triangles_list);
+          vector<hemo::Array<plint,3>> triangles_list = {};
+          octCell->findCrossings(latticeSite, triangles_list);
 
           for (hemo::Array<plint, 3> triangle : triangles_list) {
             // Muller-trumbore intersection algorithm 
@@ -806,9 +793,8 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
             const hemo::Array<double,3> & v1 = particles[cell[triangle[1]]].sv.position;
             const hemo::Array<double,3> & v2 = particles[cell[triangle[2]]].sv.position;
             
-            crossedCounter += hemo::MollerTrumbore(v0, v1, v2, rayVector, latticeSite, EPSILON);
+            crossedCounter += hemo::MollerTrumbore(v0, v1, v2, latticeSite, EPSILON);
           }
-          
           // Count even-odd crossings
           bool inside = crossedCounter % 2 == 0 ? false : true;
           
@@ -816,12 +802,16 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
             int x_l = x-atomicLattice->getLocation().x;
             int y_l = y-atomicLattice->getLocation().y;
             int z_l = z-atomicLattice->getLocation().z;
-            
+            if(x_l > atomicLattice->getNx()) { continue;}
+            if(y_l > atomicLattice->getNy()) { continue;}
+            if(z_l > atomicLattice->getNz()) { continue;}
+
             atomicLattice->get(x_l, y_l, z_l).getDynamics().setOmega(omegaInt);
           }
         }
       }
-    } 
+    }
+    delete octCell;
   }
 }
 #else
