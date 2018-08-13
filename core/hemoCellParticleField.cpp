@@ -609,7 +609,7 @@ void HemoCellParticleField::applyConstitutiveModel(bool forced) {
         if (found[0]->force_area == &found[0]->sv.force) {
           for (HemoCellParticle* particle : found) {
             particle->sv.force = {0.,0.,0.};
-#ifdef INTERNAL_VISCOSITY
+#ifdef INTERIOR_VISCOSITY
             particle->normalDirection = {0., 0., 0.};
 #endif
           }
@@ -703,10 +703,10 @@ void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
     const double omegaInt = 1.0/(*cellFields)[particle.sv.celltype]->interiorViscosityTau;
 
     for (unsigned int i = 0; i < particle.kernelCoordinates.size(); i++) {
-      const hemo::Array<T, 3> latPos = particle.kernelCoordinates[i]-particle.sv.position-atomicLattice->getLocation();
+      const hemo::Array<T, 3> latPos = particle.kernelCoordinates[i]-(particle.sv.position-atomicLattice->getLocation());
       const hemo::Array<T, 3> & normalP = particle.normalDirection;
 
-      if (computeLength(latPos) > (*cellFields)[particle.sv.celltype]->mechanics->cellConstants.edge_mean_eq/2) {continue;}
+      if (computeLength(latPos) > (*cellFields)[particle.sv.celltype]->mechanics->cellConstants.edge_mean_eq) {continue;}
       
       T dot1 = hemo::dot(latPos, normalP);
 

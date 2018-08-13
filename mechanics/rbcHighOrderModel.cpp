@@ -112,7 +112,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       *cell[triangle[1]]->force_volume += local_volume_force;
       *cell[triangle[2]]->force_volume += local_volume_force;
 
-#ifdef INNER_VISCOSITY
+#ifdef INTERIOR_VISCOSITY
       // Add the normal direction here, always pointing outward
       const hemo::Array<T, 3> local_normal_dir = (triangle_normals[triangle_n])*(triangle_areas[triangle_n]/cellConstants.area_mean_eq);
       cell[triangle[0]]->normalDirection += local_normal_dir;
