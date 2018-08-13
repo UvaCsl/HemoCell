@@ -52,6 +52,7 @@ class HemoCellStretch {
   HemoCellField & cellfield;
   static unsigned int n_forced_lsps;
   static T external_force;
+  static T scale;
 };
 }
 #endif

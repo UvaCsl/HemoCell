@@ -64,7 +64,7 @@ void HemoCellStretch::ForceForcedLsps::processGenericBlocks(Box3D domain, std::v
   const map<int,std::vector<int>> & ppc = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->get_particles_per_cell();
   vector<HemoCellParticle> * particles = &dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->particles;
 
-  hemo::Array<T,3> ex_force = {external_force,0.,0.};
+  hemo::Array<T,3> ex_force = {external_force*scale,0.,0.};
   for (unsigned int vi : lower_lsps) {
     if (ppc.find(0) == ppc.end()) { continue; }
     if (ppc.at(0)[vi] < 0) { continue; }
@@ -97,6 +97,7 @@ vector<plint> HemoCellStretch::lower_lsps = vector<plint>();
 vector<plint> HemoCellStretch::upper_lsps = vector<plint>();
 unsigned int HemoCellStretch::n_forced_lsps = 0;
 T HemoCellStretch::external_force = 0.0;
+T HemoCellStretch::scale = 1.0;
 
 void HemoCellStretch::applyForce() {
   if (cellfield.timescale != 1) {

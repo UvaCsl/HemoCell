@@ -2,8 +2,8 @@
 # Build settings. Set these.
 
 # Project setup
-SET(PROJECT_NAME cellCollision_inner_viscosity)
-SET(PROJECT_SRC "cellCollision_inner_viscosity.cpp")
+SET(PROJECT_NAME stretchCell_interior_viscosity)
+SET(PROJECT_SRC "stretchCell_interior_viscosity.cpp")
 
 # HemoCell location relative to CMakelists.txt
 SET(HEMOCELL_BASE_DIR "./../../")

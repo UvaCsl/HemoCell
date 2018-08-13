@@ -84,8 +84,8 @@ void Parameters::lbm_shear_parameters(Config & cfg,T nx) {
   Parameters::lbm_base_parameters(cfg);
   T shearrate_p = cfg["domain"]["shearrate"].read<T>();
   re = (nx* (shearrate_p * (nx*0.5))) / nu_p;
-  u_lbm_max = re * nu_lbm / nx;  
   shearrate_lbm = shearrate_p*dt;
+  u_lbm_max = shearrate_lbm;  
 }
 
 void Parameters::printParameters() {
