@@ -703,7 +703,7 @@ void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
     const double omegaInt = 1.0/(*cellFields)[particle.sv.celltype]->interiorViscosityTau;
 
     for (unsigned int i = 0; i < particle.kernelCoordinates.size(); i++) {
-      const hemo::Array<T, 3> latPos = particle.kernelCoordinates[i]-particle.sv.position;
+      const hemo::Array<T, 3> latPos = particle.kernelCoordinates[i]-particle.sv.position-atomicLattice->getLocation();
       const hemo::Array<T, 3> & normalP = particle.normalDirection;
 
       if (computeLength(latPos) > (*cellFields)[particle.sv.celltype]->mechanics->cellConstants.edge_mean_eq/2) {continue;}
