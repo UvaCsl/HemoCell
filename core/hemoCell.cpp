@@ -191,9 +191,9 @@ void HemoCell::writeOutput() {
 
   // Creating a new directory per save
   if (global::mpi().isMainProcessor()) {
-    string folder = global::directories().getOutputDir() + "/hdf5/" + to_string(iter) ;
+    string folder = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) ;
     mkpath(folder.c_str(), 0777);
-    folder = global::directories().getOutputDir() + "/csv/" + to_string(iter) ;
+    folder = global::directories().getOutputDir() + "/csv/" + zeroPadNumber(iter) ;
     mkpath(folder.c_str(), 0777);
   }
   global::mpi().barrier();

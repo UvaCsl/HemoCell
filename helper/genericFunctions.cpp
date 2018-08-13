@@ -109,10 +109,10 @@ int mkpath(const char *path, mode_t mode)
     return (status);
 }
 
-std::string zeroPadNumber(int num)
+std::string zeroPadNumber(int num, int w)
 {
     std::ostringstream ss;
-    ss << std::setw( 8 ) << std::setfill( '0' ) << num;
+    ss << std::setw( w ) << std::setfill( '0' ) << num;
     return ss.str();
 }
 

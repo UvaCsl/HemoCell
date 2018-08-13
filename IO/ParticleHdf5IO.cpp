@@ -52,7 +52,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
     /************************************************************/
     /**            Initialise HDF5 file                        **/
    /************************************************************/
-     std::string fileName = global::directories().getOutputDir() + "/hdf5/" + to_string(iter) + '/' + identifier + "."  + to_string(iter) + ".p." + to_string(particleField.atomicBlockId) + ".h5";
+     std::string fileName = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) + '/' + identifier + "."  + zeroPadNumber(iter) + ".p." + to_string(particleField.atomicBlockId) + ".h5";
      hid_t file_id;
      file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 

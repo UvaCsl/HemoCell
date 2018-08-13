@@ -83,7 +83,7 @@ int do_mkdir(const char *path, mode_t mode);
 // mkpath(argv[i], 0777);
 int mkpath(const char *path, mode_t mode);
 
-std::string zeroPadNumber(int num);
+std::string zeroPadNumber(int num,int w = 12);
 
 void printHeader();
 
