@@ -256,7 +256,7 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
       bbox[1] += 0.1;
       bbox[3] += 0.1;
       bbox[5] += 0.1;
-      hemo::OctreeStructCell octCell(0, 1, 30, bbox,
+      hemo::OctreeStructCell octCell(3, 1, 30, bbox,
                                   cellConstants.triangle_list,
                                   &particles, cell);
       const double EPSILON = 0.0000001;  // Constant to compare

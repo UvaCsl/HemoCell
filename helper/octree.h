@@ -33,7 +33,6 @@ namespace hemo {
       hemo::Array<T, 6> bBox;
       std::vector<hemo::Array<plint,3>> triangle_list = {}; // Keep all the unsorted obs here
       OctreeStructCell * nodes[8];
-      std::vector<hemo::Array<T, 6>> octantOfBoundingBox();
       
       plint maxDivisions;
       plint level; // To keep track of how many octants we have already 

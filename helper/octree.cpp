@@ -68,27 +68,6 @@ int OctreeStructCell::returnTrianglesAmount() {
   return tempSize;
 }
 
-std::vector<hemo::Array<T, 6>> OctreeStructCell::octantOfBoundingBox() {
-  std::vector<hemo::Array<T, 6>> bBoxes;
-
-  // Find the middle of each of the bounding edges
-  T xHalf = bBox[0] + (bBox[1] - bBox[0])/2;
-  T yHalf = bBox[2] + (bBox[3] - bBox[2])/2;
-  T zHalf = bBox[4] + (bBox[5] - bBox[4])/2;
-
-  // Not gonna do complicated stuff..
-  bBoxes.push_back({bBox[0], xHalf, bBox[2], yHalf, bBox[4], zHalf});
-  bBoxes.push_back({xHalf, bBox[1], bBox[2], yHalf, bBox[4], zHalf});
-  bBoxes.push_back({xHalf, bBox[1], yHalf, bBox[3], bBox[4], zHalf});
-  bBoxes.push_back({bBox[0], xHalf, yHalf, bBox[3], bBox[4], zHalf});
-  bBoxes.push_back({bBox[0], xHalf, bBox[2], yHalf, zHalf, bBox[5]});
-  bBoxes.push_back({xHalf, bBox[1], bBox[2], yHalf, zHalf, bBox[5]});
-  bBoxes.push_back({xHalf, bBox[1], yHalf, bBox[3], zHalf, bBox[5]});
-  bBoxes.push_back({bBox[0], xHalf, yHalf, bBox[3], zHalf, bBox[5]});   
-
-  return bBoxes;
-}
-
 void OctreeStructCell::constructTree(vector<HemoCellParticle>* part, const vector<int> cell,vector<hemo::Array<plint,3>> triangle_list_) {
   // Find the octants of the current bounding box.
   vector<hemo::Array<double, 6>> bBoxes;
@@ -149,7 +128,7 @@ void OctreeStructCell::constructTree(vector<HemoCellParticle>* part, const vecto
 void OctreeStructCell::findCrossings(hemo::Array<plint, 3> latticeSite, std::vector<hemo::Array<plint,3>>& output) {
 
   // The ray passes inside the bboxes, xdir is open, abuse that
-  if ( 
+  if ( bBox[0] <= latticeSite[1] &&
        bBox[2] <= latticeSite[1] && bBox[3] >= latticeSite[1] &&
        bBox[4] <= latticeSite[2] && bBox[5] >= latticeSite[2]) {
     output.insert(output.end(),triangle_list.begin(),triangle_list.end());

@@ -771,27 +771,17 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
       bbox[5] = bbox[5] < (*position)[2] ? (*position)[2] : bbox[5];
     }
 
-    hemo::OctreeStructCell * octCell = new hemo::OctreeStructCell(0, 1, 30, bbox,
+    hemo::OctreeStructCell * octCell = new hemo::OctreeStructCell(3, 1, 30, bbox,
                                 (*cellFields)[ctype]->mechanics->cellConstants.triangle_list,
                                 &particles, cell);
 
-
-  
-      //Adjust bbox to fit local atomic block
-
+    //Adjust bbox to fit local atomic block
     bbox[0] = bbox[0] < atomicLattice->getLocation().x ? atomicLattice->getLocation().x : bbox[0];
-
     bbox[1] = bbox[1] > atomicLattice->getLocation().x + atomicLattice->getNx()-1 ? atomicLattice->getLocation().x + atomicLattice->getNx()-1: bbox[1];
-
     bbox[2] = bbox[2] < atomicLattice->getLocation().y ? atomicLattice->getLocation().y : bbox[2];
-
     bbox[3] = bbox[3] > atomicLattice->getLocation().y + atomicLattice->getNy()-1 ? atomicLattice->getLocation().y + atomicLattice->getNy()-1: bbox[3];
-
     bbox[4] = bbox[4] < atomicLattice->getLocation().z ? atomicLattice->getLocation().z : bbox[4];
-
     bbox[5] = bbox[5] > atomicLattice->getLocation().z + atomicLattice->getNz()-1 ? atomicLattice->getLocation().z + atomicLattice->getNz()-1: bbox[5];
-
-      
 
     const double EPSILON = 0.0000001;  // Constant to compare
     
@@ -804,7 +794,6 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
           hemo::Array<plint, 3> latticeSite = {x, y, z};
           vector<hemo::Array<plint,3>> triangles_list = {};
           octCell->findCrossings(latticeSite, triangles_list);
-
           for (hemo::Array<plint, 3> triangle : triangles_list) {
             // Muller-trumbore intersection algorithm 
             const hemo::Array<double,3> & v0 = particles[cell[triangle[0]]].sv.position;
@@ -834,11 +823,11 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
 }
 #else
 void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
-  pcout << "(HemoCellParticleField) (Error) findInternalParticleGridPoints called, but INNER_VISCOSITY not defined, exiting..." << endl;
+  pcout << "(HemoCellParticleField) (Error) findInternalParticleGridPoints called, but INTERIOR_VISCOSITY not defined, exiting..." << endl;
   exit(1);
 }
 void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
-  pcout << "(HemoCellParticleField) (Error) internalGridPointsMembrane called, but INNER_VISCOSITY not defined, exiting..." << endl;
+  pcout << "(HemoCellParticleField) (Error) internalGridPointsMembrane called, but INTERIOR_VISCOSITY not defined, exiting..." << endl;
   exit(1);
 }
 #endif

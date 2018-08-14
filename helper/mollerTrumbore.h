@@ -28,14 +28,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace hemo {
   inline int MollerTrumbore(const hemo::Array<T,3> & v0, const hemo::Array<T,3> & v1,
-	  const hemo::Array<T,3> & v2, hemo::Array<plint, 3> & latticeSite, const T & EPSILON) {
+	  const hemo::Array<T,3> & v2, hemo::Array<plint, 3> & rayPoint, const T & EPSILON) {
     T det,invDet,u,v; // Some floats
     hemo::Array<T, 3> edge1, edge2, pvec, svec, qvec;
-    hemo::Array<T, 3> rayVector = {(T)latticeSite[0]+40,(T)latticeSite[1],(T)latticeSite[2]};
+    hemo::Array<T, 3> rayVector = {(T)40,(T)0,(T)0};
+    hemo::Array<plint,3> & rayOrigin = rayPoint;
 
     // Define edges
-    edge1 = {v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]};  
-    edge2 = {v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]}; 
+    edge1 = v1 - v0;  
+    edge2 = v2 - v0; 
 
     pvec = hemo::crossProduct(rayVector, edge2);
     det = hemo::dot(edge1, pvec);
@@ -47,7 +48,7 @@ namespace hemo {
     invDet = 1/det;
 
     // Construct s
-    svec = {latticeSite[0] - v0[0], latticeSite[1] - v0[1], latticeSite[2] - v0[2]};
+    svec = rayOrigin - v0;
     u = invDet*hemo::dot(svec, pvec);
 
     if (u < 0.0 || u > 1.0) {
