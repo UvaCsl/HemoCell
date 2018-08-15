@@ -28,7 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace hemo {
   inline int MollerTrumbore(const hemo::Array<T,3> & v0, const hemo::Array<T,3> & v1,
-	  const hemo::Array<T,3> & v2, hemo::Array<plint, 3> & rayPoint, const T & EPSILON) {
+	  const hemo::Array<T,3> & v2, hemo::Array<plint, 3> & rayPoint) {
+    const T EPSILON = 0.0000001;
     T det,invDet,u,v; // Some floats
     hemo::Array<T, 3> edge1, edge2, pvec, svec, qvec;
     hemo::Array<T, 3> rayVector = {(T)40,(T)0,(T)0};

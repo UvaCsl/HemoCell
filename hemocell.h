@@ -139,6 +139,7 @@ class HemoCell {
 #ifdef INTERIOR_VISCOSITY
     if (!global.enableInteriorViscosity) {
       hlog << "(HemoCell) Error, enableInteriorViscosity called, but global interior Viscosity not enabled (config->parmeters->enableInteriorViscosity)" << endl;
+      exit(1);
     }
     hlog << "(HemoCell) Enabling Interior Viscosity Mechanics for " << name << " mechanical model" << endl;
     (*cellfields)[name]->doInteriorViscosity = true;

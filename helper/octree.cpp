@@ -23,16 +23,55 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "octree.h"
 #include "logfile.h"
+#include "multiBlock/multiBlockLattice3D.h"
+#include "core/geometry3D.h"
+#include "mollerTrumbore.h"
+#include "atomicBlock/blockLattice3D.hh"
+
 
 namespace hemo {
 
 using namespace std;
 
+
 OctreeStructCell::OctreeStructCell(plint divis, plint l, unsigned int lim, hemo::Array<double, 6> bbox,
 			vector<hemo::Array<plint,3>> triangle_list_,
-			vector<HemoCellParticle>* part, const vector<int>  cell) {
-  maxDivisions = divis;
+			vector<HemoCellParticle> & part, const vector<int>  cell) {
   bBox = bbox;
+
+  sharedConstructor(divis,l,lim,triangle_list_,part,cell);
+}
+
+OctreeStructCell::OctreeStructCell(plint divis, plint l, unsigned int lim,
+			vector<hemo::Array<plint,3>> triangle_list_,
+			vector<HemoCellParticle> & particles, const vector<int>  cell) {
+  //The same, but construct bounding box first
+  hemo::Array<T,3> * position = &particles[0].sv.position;
+  
+  bBox[0] = bBox[1] = (*position)[0];
+  bBox[2] = bBox[3] = (*position)[1];
+  bBox[4] = bBox[5] = (*position)[2];
+
+  for (const int pid : cell ) {
+
+    position = &particles[pid].sv.position;
+
+    bBox[0] = bBox[0] > (*position)[0] ? (*position)[0] : bBox[0];
+    bBox[1] = bBox[1] < (*position)[0] ? (*position)[0] : bBox[1];
+    bBox[2] = bBox[2] > (*position)[1] ? (*position)[1] : bBox[2];
+    bBox[3] = bBox[3] < (*position)[1] ? (*position)[1] : bBox[3];
+    bBox[4] = bBox[4] > (*position)[2] ? (*position)[2] : bBox[4];
+    bBox[5] = bBox[5] < (*position)[2] ? (*position)[2] : bBox[5];
+  }
+  
+  sharedConstructor(divis,l,lim,triangle_list_,particles,cell);
+}
+
+void OctreeStructCell::sharedConstructor(plint divis, plint l, unsigned int lim,
+			vector<hemo::Array<plint,3>> triangle_list_,
+			vector<HemoCellParticle> & part, const vector<int>  cell) {
+  
+  maxDivisions = divis;
   level = l;
   limit = lim;
 
@@ -68,7 +107,7 @@ int OctreeStructCell::returnTrianglesAmount() {
   return tempSize;
 }
 
-void OctreeStructCell::constructTree(vector<HemoCellParticle>* part, const vector<int> cell,vector<hemo::Array<plint,3>> triangle_list_) {
+void OctreeStructCell::constructTree(vector<HemoCellParticle> & part, const vector<int> cell,vector<hemo::Array<plint,3>> triangle_list_) {
   // Find the octants of the current bounding box.
   vector<hemo::Array<double, 6>> bBoxes;
   T xHalf = bBox[0] + (bBox[1] - bBox[0])/2;
@@ -93,9 +132,9 @@ void OctreeStructCell::constructTree(vector<HemoCellParticle>* part, const vecto
   }
   
   for (hemo::Array<plint,3> & triangle : triangle_list_) {  
-    hemo::Array<double,3> & v0 = (*part)[cell[triangle[0]]].sv.position;
-    hemo::Array<double,3> & v1 = (*part)[cell[triangle[1]]].sv.position;
-    hemo::Array<double,3> & v2 = (*part)[cell[triangle[2]]].sv.position;
+    hemo::Array<double,3> & v0 = part[cell[triangle[0]]].sv.position;
+    hemo::Array<double,3> & v1 = part[cell[triangle[1]]].sv.position;
+    hemo::Array<double,3> & v2 = part[cell[triangle[2]]].sv.position;
 
 
     bool broken = false;
@@ -145,4 +184,89 @@ return;
   }
   return;
 }
+
+void OctreeStructCell::findInnerNodes(plb::BlockLattice3D<T,DESCRIPTOR> * fluid, vector<HemoCellParticle> & particles, const vector<int> & cell, vector<plb::Cell<T,DESCRIPTOR>*> & innerNodes) {
+  innerNodes.clear();
+  hemo::Array<T,6> bbox = bBox;
+  //Adjust bbox to fit local atomic block
+  bbox[0] = bbox[0] < fluid->getLocation().x ? fluid->getLocation().x : bbox[0];
+  bbox[1] = bbox[1] > fluid->getLocation().x + fluid->getNx()-1 ? fluid->getLocation().x + fluid->getNx()-1: bbox[1];
+  bbox[2] = bbox[2] < fluid->getLocation().y ? fluid->getLocation().y : bbox[2];
+  bbox[3] = bbox[3] > fluid->getLocation().y + fluid->getNy()-1 ? fluid->getLocation().y + fluid->getNy()-1: bbox[3];
+  bbox[4] = bbox[4] < fluid->getLocation().z ? fluid->getLocation().z : bbox[4];
+  bbox[5] = bbox[5] > fluid->getLocation().z + fluid->getNz()-1 ? fluid->getLocation().z + fluid->getNz()-1: bbox[5];
+
+  // Create a triple for-loop to go over all lattice points in the bounding box of a cell
+  for (int x = (int)bbox[0]; x <= (int)bbox[1]+0.5; x++) { 
+    for (int y = (int)bbox[2]; y <= (int)bbox[3]+0.5; y++) {
+      for (int z = (int)bbox[4]; z <= (int)bbox[5]+0.5; z++) {
+        int crossedCounter = 0; // How many triangles are crossed
+
+        hemo::Array<plint, 3> latticeSite = {x, y, z};
+        vector<hemo::Array<plint,3>> triangles_list;
+        findCrossings(latticeSite,triangles_list);
+
+        for (hemo::Array<plint, 3> triangle : triangles_list) {
+          // Muller-trumbore intersection algorithm 
+          const hemo::Array<double,3> & v0 = particles[cell[triangle[0]]].sv.position;
+          const hemo::Array<double,3> & v1 = particles[cell[triangle[1]]].sv.position;
+          const hemo::Array<double,3> & v2 = particles[cell[triangle[2]]].sv.position;
+
+          crossedCounter += hemo::MollerTrumbore(v0, v1, v2, latticeSite);
+        }
+
+        // Count even-odd crossings
+        if (crossedCounter%2) {
+          int x_l = x-fluid->getLocation().x;
+          int y_l = y-fluid->getLocation().y;
+          int z_l = z-fluid->getLocation().z;
+          innerNodes.push_back(&fluid->get(x_l,y_l,z_l));
+        }
+      }
+    }
+  }
+}
+
+void OctreeStructCell::findInnerNodes(plb::BlockLattice3D<T,DESCRIPTOR> * fluid, vector<HemoCellParticle> & particles, const vector<int> & cell, vector<Array<plint,3>> & innerNodes) {
+  innerNodes.clear();
+  hemo::Array<T,6> bbox = bBox;
+  //Adjust bbox to fit local atomic block
+  bbox[0] = bbox[0] < fluid->getLocation().x ? fluid->getLocation().x : bbox[0];
+  bbox[1] = bbox[1] > fluid->getLocation().x + fluid->getNx()-1 ? fluid->getLocation().x + fluid->getNx()-1: bbox[1];
+  bbox[2] = bbox[2] < fluid->getLocation().y ? fluid->getLocation().y : bbox[2];
+  bbox[3] = bbox[3] > fluid->getLocation().y + fluid->getNy()-1 ? fluid->getLocation().y + fluid->getNy()-1: bbox[3];
+  bbox[4] = bbox[4] < fluid->getLocation().z ? fluid->getLocation().z : bbox[4];
+  bbox[5] = bbox[5] > fluid->getLocation().z + fluid->getNz()-1 ? fluid->getLocation().z + fluid->getNz()-1: bbox[5];
+
+  // Create a triple for-loop to go over all lattice points in the bounding box of a cell
+  for (int x = (int)bbox[0]; x <= (int)bbox[1]+0.5; x++) { 
+    for (int y = (int)bbox[2]; y <= (int)bbox[3]+0.5; y++) {
+      for (int z = (int)bbox[4]; z <= (int)bbox[5]+0.5; z++) {
+        int crossedCounter = 0; // How many triangles are crossed
+
+        hemo::Array<plint, 3> latticeSite = {x, y, z};
+        vector<hemo::Array<plint,3>> triangles_list;
+        findCrossings(latticeSite,triangles_list);
+
+        for (hemo::Array<plint, 3> triangle : triangles_list) {
+          // Muller-trumbore intersection algorithm 
+          const hemo::Array<double,3> & v0 = particles[cell[triangle[0]]].sv.position;
+          const hemo::Array<double,3> & v1 = particles[cell[triangle[1]]].sv.position;
+          const hemo::Array<double,3> & v2 = particles[cell[triangle[2]]].sv.position;
+
+          crossedCounter += hemo::MollerTrumbore(v0, v1, v2, latticeSite);
+        }
+
+        // Count even-odd crossings
+        if (crossedCounter%2) {
+          int x_l = x-fluid->getLocation().x;
+          int y_l = y-fluid->getLocation().y;
+          int z_l = z-fluid->getLocation().z;
+          innerNodes.push_back({x_l,y_l,z_l});
+        }
+      }
+    }
+  }
+}
+
 }

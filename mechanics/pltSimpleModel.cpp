@@ -236,72 +236,15 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
 
     // If it was tagged last round, solidify it now
     if (solidify) {
-      hemo::Array<T,6> bbox;
-      hemo::Array<T,3>  * position = &particles[cell[0]].sv.position;
-      bbox[0] = bbox[1] = (*position)[0];
-      bbox[2] = bbox[3] = (*position)[1];
-      bbox[4] = bbox[5] = (*position)[2];
+      hemo::OctreeStructCell octCell(3, 1, 30, cellConstants.triangle_list, particles, cell);
 
-      for (const int pid : cell ) {
-
-        position = &particles[pid].sv.position;
-
-        bbox[0] = bbox[0] > (*position)[0] ? (*position)[0] : bbox[0];
-        bbox[1] = bbox[1] < (*position)[0] ? (*position)[0] : bbox[1];
-        bbox[2] = bbox[2] > (*position)[1] ? (*position)[1] : bbox[2];
-        bbox[3] = bbox[3] < (*position)[1] ? (*position)[1] : bbox[3];
-        bbox[4] = bbox[4] > (*position)[2] ? (*position)[2] : bbox[4];
-        bbox[5] = bbox[5] < (*position)[2] ? (*position)[2] : bbox[5];
-      }
-      bbox[1] += 0.1;
-      bbox[3] += 0.1;
-      bbox[5] += 0.1;
-      hemo::OctreeStructCell octCell(3, 1, 30, bbox,
-                                  cellConstants.triangle_list,
-                                  &particles, cell);
-      const double EPSILON = 0.0000001;  // Constant to compare
-    
-       //Adjust bbox to fit local atomic block
-      bbox[0] = bbox[0] < fluid->getLocation().x ? fluid->getLocation().x : bbox[0];
-      bbox[1] = bbox[1] > fluid->getLocation().x + fluid->getNx()-1 ? fluid->getLocation().x + fluid->getNx()-1: bbox[1];
-      bbox[2] = bbox[2] < fluid->getLocation().y ? fluid->getLocation().y : bbox[2];
-      bbox[3] = bbox[3] > fluid->getLocation().y + fluid->getNy()-1 ? fluid->getLocation().y + fluid->getNy()-1: bbox[3];
-      bbox[4] = bbox[4] < fluid->getLocation().z ? fluid->getLocation().z : bbox[4];
-      bbox[5] = bbox[5] > fluid->getLocation().z + fluid->getNz()-1 ? fluid->getLocation().z + fluid->getNz()-1: bbox[5];
-
-      // Create a triple for-loop to go over all lattice points in the bounding box of a cell
-      for (int x = (int)bbox[0]; x <= (int)bbox[1]+0.5; x++) { 
-        for (int y = (int)bbox[2]; y <= (int)bbox[3]+0.5; y++) {
-          for (int z = (int)bbox[4]; z <= (int)bbox[5]+0.5; z++) {
-            int crossedCounter = 0; // How many triangles are crossed
-
-            hemo::Array<plint, 3> latticeSite = {x, y, z};
-            vector<hemo::Array<plint,3>> triangles_list;
-            octCell.findCrossings(latticeSite,triangles_list);
-
-            for (hemo::Array<plint, 3> triangle : triangles_list) {
-              // Muller-trumbore intersection algorithm 
-              const hemo::Array<double,3> & v0 = particles[cell[triangle[0]]].sv.position;
-              const hemo::Array<double,3> & v1 = particles[cell[triangle[1]]].sv.position;
-              const hemo::Array<double,3> & v2 = particles[cell[triangle[2]]].sv.position;
-
-              crossedCounter += hemo::MollerTrumbore(v0, v1, v2, latticeSite, EPSILON);
-            }
-
-            // Count even-odd crossings
-            bool inside = crossedCounter % 2 == 0 ? false : true;
-
-            if (inside) {
-              int x_l = x-fluid->getLocation().x;
-              int y_l = y-fluid->getLocation().y;
-              int z_l = z-fluid->getLocation().z;
-              if (!fluid->get(x_l,y_l,z_l).getDynamics().isBoundary()) {
-                defineDynamics(*fluid,x_l,y_l,z_l,new BounceBack<T,DESCRIPTOR>());
-              }
-            }
-          }
+      vector<Array<plint,3>> innerNodes;
+      octCell.findInnerNodes(fluid,particles,cell,innerNodes);
+      for (Array<plint,3> & node : innerNodes) {
+        if (!fluid->get(node[0],node[1],node[2]).getDynamics().isBoundary()) {
+          defineDynamics(*fluid,node[0],node[1],node[2],new BounceBack<T,DESCRIPTOR>());
         }
-      } 
+      }
       for (const int & particle : cell) {
         particles[particle].tag = 1; //tag for removal
       }
@@ -322,12 +265,6 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
       }
     }
   }
-    
-  //Check CEPAC density
-  
-  //If high, solidify all nodes
-  
-  //Convert Platelet to non-active (change mechanical model to PLT_NO_ACTIVE)
 }
 #endif
 

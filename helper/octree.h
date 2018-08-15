@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "hemoCellParticle.h" // Need to make pointers to particle object
 #include <vector> 
+#include "atomicBlock/blockLattice3D.h"
 
 namespace hemo {
   class OctreeStructCell {     
@@ -42,11 +43,22 @@ namespace hemo {
     public:
       OctreeStructCell(plint divis, plint l, unsigned int lim, hemo::Array<double, 6> bbox,
                        std::vector<hemo::Array<plint,3>> triangle_list_,
-                       std::vector<HemoCellParticle>* part, const std::vector<int>  cell);
+                       std::vector<HemoCellParticle>& part, const std::vector<int>  cell);
+      OctreeStructCell(plint divis, plint l, unsigned int lim,
+                       std::vector<hemo::Array<plint,3>> triangle_list_,
+                       std::vector<HemoCellParticle>& part, const std::vector<int>  cell);
+  private:
+      void sharedConstructor(plint divis, plint l, unsigned int lim,
+			std::vector<hemo::Array<plint,3>> triangle_list_,
+			std::vector<HemoCellParticle> & part, const std::vector<int>  cell);
+  public:
       ~OctreeStructCell();
-      void constructTree(std::vector<HemoCellParticle>* part,  std::vector<int>  cell, std::vector<hemo::Array<plint,3>> triangle_list_);
+      void constructTree(std::vector<HemoCellParticle>& part,  std::vector<int>  cell, std::vector<hemo::Array<plint,3>> triangle_list_);
       int returnTrianglesAmount();
       void findCrossings(hemo::Array<plint, 3> latticeSite, std::vector<hemo::Array<plint,3>> &);
+      void findInnerNodes(plb::BlockLattice3D<T,DESCRIPTOR> * fluid, std::vector<HemoCellParticle> & particles, const std::vector<int> & cell, std::vector<plb::Cell<T,DESCRIPTOR>*> & innerNodes);
+      void findInnerNodes(plb::BlockLattice3D<T,DESCRIPTOR> * fluid, std::vector<HemoCellParticle> & particles, const std::vector<int> & cell, std::vector<Array<plint,3>> & innerNodes);
+
   };
 }
 

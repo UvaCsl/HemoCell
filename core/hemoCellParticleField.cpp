@@ -735,17 +735,12 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
   }
 
   for (const auto & pair : get_lpc()) { // Go over each cell?
-    hemo::Array<T,6> bbox;
-
     const int & cid = pair.first;
     const vector<int> & cell = get_particles_per_cell().at(cid);
-    hemo::Array<T,3>  * position = &particles[cell[0]].sv.position;
-
     const pluint ctype = particles[cell[0]].sv.celltype;
 
     // Plt and Wbc now have normal tau internal, so we don't have
     // to raycast these particles
-//    pcout << " Going to do stuff here with tau" << endl;
     if (!(*cellFields)[ctype]->doInteriorViscosity) {
       continue;
     }
@@ -754,71 +749,15 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
     // Only for RBC now
     const double omegaInt = 1.0/(*cellFields)[ctype]->interiorViscosityTau;
 
+    hemo::OctreeStructCell octCell(3, 1, 30,
+                                  (*cellFields)[ctype]->mechanics->cellConstants.triangle_list,
+                                  particles, cell);
 
-    bbox[0] = bbox[1] = (*position)[0];
-    bbox[2] = bbox[3] = (*position)[1];
-    bbox[4] = bbox[5] = (*position)[2];
-
-    for (const int pid : cell ) {
-
-      position = &particles[pid].sv.position;
-
-      bbox[0] = bbox[0] > (*position)[0] ? (*position)[0] : bbox[0];
-      bbox[1] = bbox[1] < (*position)[0] ? (*position)[0] : bbox[1];
-      bbox[2] = bbox[2] > (*position)[1] ? (*position)[1] : bbox[2];
-      bbox[3] = bbox[3] < (*position)[1] ? (*position)[1] : bbox[3];
-      bbox[4] = bbox[4] > (*position)[2] ? (*position)[2] : bbox[4];
-      bbox[5] = bbox[5] < (*position)[2] ? (*position)[2] : bbox[5];
+    vector<Cell<T,DESCRIPTOR>*> innerNodes;
+    octCell.findInnerNodes(atomicLattice,particles,cell,innerNodes);
+    for (Cell<T,DESCRIPTOR>* node : innerNodes) {
+      node->getDynamics().setOmega(omegaInt);
     }
-
-    hemo::OctreeStructCell * octCell = new hemo::OctreeStructCell(3, 1, 30, bbox,
-                                (*cellFields)[ctype]->mechanics->cellConstants.triangle_list,
-                                &particles, cell);
-
-    //Adjust bbox to fit local atomic block
-    bbox[0] = bbox[0] < atomicLattice->getLocation().x ? atomicLattice->getLocation().x : bbox[0];
-    bbox[1] = bbox[1] > atomicLattice->getLocation().x + atomicLattice->getNx()-1 ? atomicLattice->getLocation().x + atomicLattice->getNx()-1: bbox[1];
-    bbox[2] = bbox[2] < atomicLattice->getLocation().y ? atomicLattice->getLocation().y : bbox[2];
-    bbox[3] = bbox[3] > atomicLattice->getLocation().y + atomicLattice->getNy()-1 ? atomicLattice->getLocation().y + atomicLattice->getNy()-1: bbox[3];
-    bbox[4] = bbox[4] < atomicLattice->getLocation().z ? atomicLattice->getLocation().z : bbox[4];
-    bbox[5] = bbox[5] > atomicLattice->getLocation().z + atomicLattice->getNz()-1 ? atomicLattice->getLocation().z + atomicLattice->getNz()-1: bbox[5];
-
-    const double EPSILON = 0.0000001;  // Constant to compare
-    
-     // Create a triple for-loop to go over all lattice points in the bounding box of a cell
-    for (int x = (int)bbox[0]; x <= (int)bbox[1]+0.5; x++) { 
-      for (int y = (int)bbox[2]; y <= (int)bbox[3]+0.5; y++) {
-        for (int z = (int)bbox[4]; z <= (int)bbox[5]+0.5; z++) {
-          int crossedCounter = 0; // How many triangles are crossed
-          
-          hemo::Array<plint, 3> latticeSite = {x, y, z};
-          vector<hemo::Array<plint,3>> triangles_list = {};
-          octCell->findCrossings(latticeSite, triangles_list);
-          for (hemo::Array<plint, 3> triangle : triangles_list) {
-            // Muller-trumbore intersection algorithm 
-            const hemo::Array<double,3> & v0 = particles[cell[triangle[0]]].sv.position;
-            const hemo::Array<double,3> & v1 = particles[cell[triangle[1]]].sv.position;
-            const hemo::Array<double,3> & v2 = particles[cell[triangle[2]]].sv.position;
-            
-            crossedCounter += hemo::MollerTrumbore(v0, v1, v2, latticeSite, EPSILON);
-          }
-          // Count even-odd crossings
-          bool inside = crossedCounter % 2 == 0 ? false : true;
-          
-          if (inside) {
-            int x_l = x-atomicLattice->getLocation().x;
-            int y_l = y-atomicLattice->getLocation().y;
-            int z_l = z-atomicLattice->getLocation().z;
-            if(x_l > atomicLattice->getNx()) { continue;}
-            if(y_l > atomicLattice->getNy()) { continue;}
-            if(z_l > atomicLattice->getNz()) { continue;}
-
-            atomicLattice->get(x_l, y_l, z_l).getDynamics().setOmega(omegaInt);
-          }
-        }
-      }
-    }
-    delete octCell;
   }
 }
 #else
