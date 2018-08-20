@@ -96,7 +96,7 @@ createPreInlet::createPreInlet(Box3D domain_, string outputFileName_,int particl
     }
   H5Pclose(plist_file_id);   
 
-  //Attributes:
+  //Attributes: // If you get errors, it is because file_id etc are not hid_t but plint. this should be the issue
   H5LTset_attribute_int (file_id, "/", "flowDirection", (int *)&flowDir, 1);
   H5LTset_attribute_int(file_id, "/", "Number Of Cells", &hemocell.cellfields->number_of_cells,1);
   int rP;

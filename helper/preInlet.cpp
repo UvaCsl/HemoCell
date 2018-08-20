@@ -84,6 +84,8 @@ PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTi
     if(file_id < 0) { cout << "Error opening Preinlet hdf5 file." << endl; exit(1); }
   H5Pclose(plist_file_id);
   
+  
+  //If strange errors here, its the file_id datatype, should be hid_t, but is plint
   Direction stored_flow;
   if(H5LTget_attribute_int(file_id,"/","flowDirection",(int *)&stored_flow) < 0) { 
     cout << "Error reading flowDirection attribute" << endl; exit(1); 
@@ -162,6 +164,8 @@ void PreInlet::ImmersePreInletParticles::processGenericBlocks(Box3D domain, std:
       }
     }
     if (complete) {
+      particlefield->invalidate_preinlet_ppc();
+      particlefield->invalidate_ppc();
       for (int entry:pair.second) {
         particlefield->particles[entry].sv.fromPreInlet = false;
       }

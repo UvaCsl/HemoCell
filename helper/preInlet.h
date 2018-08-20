@@ -57,8 +57,8 @@ class createPreInlet {
   string outputFileName;
   int particlePositionTimeStep;
   Direction flowDir;
-  int file_id, dataspace_velocity_id,dataset_velocity_id = -1,plist_dataset_collective_id;
-  int particle_type_mem, particle_type_h5;
+  plint file_id, dataspace_velocity_id,dataset_velocity_id = -1,plist_dataset_collective_id;
+  plint particle_type_mem, particle_type_h5;
   bool reducedPrecision;
   int reducedPrecisionDirection;
   int desired_iterations;
@@ -95,9 +95,9 @@ class PreInlet {
   string sourceFileName;
   int particlePositionTimeStep;
   Direction flowDir;
-  int file_id,dataspace_velocity_id,dataset_velocity_id = -1,dataset_particles_id,dataspace_particles_id;
+  plint file_id,dataspace_velocity_id,dataset_velocity_id = -1,dataset_particles_id,dataspace_particles_id;
   int current_velocity_field = -1;
-  int particle_type_mem, particle_type_h5, particles_size;
+  plint particle_type_mem, particle_type_h5, particles_size;
   particle_hdf5_t * particles;
   int nCellsOffset, nCellsSelf;
   //ifstream counter;

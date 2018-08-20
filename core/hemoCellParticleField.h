@@ -148,6 +148,13 @@ private:
   bool ppc_up_to_date = false;
   bool preinlet_ppc_up_to_date = false;
   bool pg_up_to_date = false;
+public:
+  void invalidate_lpc() { lpc_up_to_date = false;};
+  void invalidate_ppt() { ppt_up_to_date = false;};
+  void invalidate_ppc() { ppc_up_to_date = false;};
+  void invalidate_preinlet_ppc() { preinlet_ppc_up_to_date = false;};
+  void invalidate_pg() { pg_up_to_date = false;};
+private:
   vector<vector<unsigned int>> _particles_per_type;
   map<int,vector<int>> _particles_per_cell;
   map<int,vector<int>> _preinlet_particles_per_cell;
