@@ -17,13 +17,17 @@ int main(int argc, char *argv[]) {
   Config * cfg = hemocell.cfg;
 
   int nx, ny, nz;
-  nx = ny = nz = (*cfg)["domain"]["refDirN"].read<int>() ;
+  nx = ny = nz =(*cfg)["domain"]["refDirN"].read<int>() ;
+//  ny = nz = (*cfg)["domain"]["refDirN"].read<int>() ; 
   hlog << "(unbounded) (Parameters) calculating flow parameters" << endl;
   param::lbm_pipe_parameters((*cfg),nx);
   param::printParameters();
   
   //TODO calculate either here or from diffusion config in Parameters
-  param::tau_CEPAC = param::tau; 
+//  double Dp = 0; //0.25e-4;
+//  double D  = Dp * param::dt / (param::dx * param::dx);
+//  param::tau_CEPAC = ( 3. * D ) + 0.5; //param::tau; 
+//  param::tau_CEPAC = param::tau;
   
   hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
             defaultMultiBlockPolicy3D().getMultiBlockManagement(nx,ny,nz, (*cfg)["domain"]["fluidEnvelope"].read<int>()),
@@ -41,10 +45,13 @@ int main(int argc, char *argv[]) {
   double shear_rate = (*cfg)["parameters"]["shearRate"].read<double>(); //input shear rate s-1
   hlog << "shear_rate = " << shear_rate << endl;
 
-  double velocity_max = (shear_rate*(nx*param::dx));
+  double velocity_max = (shear_rate*(nz*param::dx));
   hlog << "velocity_max = " << velocity_max << endl;
 
-  double velocity_max_lbm = velocity_max * (param::dx / param::dt);
+//  double velocity_max_lbm = velocity_max * (param::dx / param::dt);
+  double velocity_max_lbm = velocity_max * (param::dt / param::dx);
+
+
   pcout << "velocity_max_lbm = " << velocity_max_lbm << endl;
 
   //Adding all the cells
@@ -70,7 +77,7 @@ int main(int argc, char *argv[]) {
   hemocell.setCEPACOutputs(outputs);
 
   //Boundary Conditions
-  plb::initializeAtEquilibrium(*hemocell.cellfields->CEPACfield, (*hemocell.cellfields->CEPACfield).getBoundingBox(), 1.0, {0.0,0.0,0.0});
+  plb::initializeAtEquilibrium(*hemocell.cellfields->CEPACfield, (*hemocell.cellfields->CEPACfield).getBoundingBox(), 0.0, {0.0,0.0,0.0});
 
   Box3D topChannel( 0, nx-1, 0, ny-1, nz-1, nz-1);
   Box3D bottomChannel( 0, nx-1, 0, ny-1, 0, 0);
@@ -82,16 +89,16 @@ int main(int argc, char *argv[]) {
 
   defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
 
-  ADboundaryCondition->addTemperatureBoundary2P(bottomChannel, *hemocell.cellfields->CEPACfield); 
-  setBoundaryDensity(*hemocell.cellfields->CEPACfield,bottomChannel,1.0);
+//  ADboundaryCondition->addTemperatureBoundary2P(bottomChannel, *hemocell.cellfields->CEPACfield); 
+//  setBoundaryDensity(*hemocell.cellfields->CEPACfield,bottomChannel,0.0);
 
-  ADboundaryCondition->addTemperatureBoundary2P(topChannel, *hemocell.cellfields->CEPACfield); 
-  setBoundaryDensity(*hemocell.cellfields->CEPACfield,topChannel,1.0);
+//  ADboundaryCondition->addTemperatureBoundary2P(topChannel, *hemocell.cellfields->CEPACfield); 
+//  setBoundaryDensity(*hemocell.cellfields->CEPACfield,topChannel,0.0);
 
   //3 by 3 source on bottom of channel
-  Box3D CEPACsource((nx/2)-1,(nx/2)+1,(ny/2)-2,(ny/2)+2, 1, 1);
+  Box3D CEPACsource(1, 4, (ny/2-2), (ny/2)-2, 4, 8); //((nx/2)-1,(nx/2)+1,(ny/2)-2,(ny/2)+2, 2, 2);
   ADboundaryCondition->addTemperatureBoundary2N(CEPACsource,*hemocell.cellfields->CEPACfield); 
-  setBoundaryDensity(*hemocell.cellfields->CEPACfield,CEPACsource,2.0);
+  setBoundaryDensity(*hemocell.cellfields->CEPACfield,CEPACsource,0.05);
   
   hemocell.lattice->initialize();   
   hemocell.cellfields->CEPACfield->initialize();   

@@ -245,6 +245,16 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
           defineDynamics(*fluid,node[0],node[1],node[2],new BounceBack<T,DESCRIPTOR>());
         }
       }
+
+      vector<Array<plint,3>> innerNodesCEPAC;
+      octCell.findInnerNodes(CEPAC,particles,cell,innerNodesCEPAC);
+      for (Array<plint,3> & node : innerNodesCEPAC) {
+        if (!CEPAC->get(node[0],node[1],node[2]).getDynamics().isBoundary()) {
+          defineDynamics(*CEPAC,node[0],node[1],node[2],new BounceBack<T,CEPAC_DESCRIPTOR>());
+        }
+      }
+
+
       for (const int & particle : cell) {
         particles[particle].tag = 1; //tag for removal
       }
