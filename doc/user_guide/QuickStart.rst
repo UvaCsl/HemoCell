@@ -94,6 +94,9 @@ After this palabos must be patched. This can be done by running
 
 The patching should succeed even though there can be an offset in some files.
 
+We have also added a ``./setup.sh`` which automatically downloads and patches
+the palabos library for convenience.
+
 Parmetis can be downloaded from the `parmetis <http://glaros.dtc.umn.edu/gkhome/metis/parmetis/download>`_ 
 site. Due to the license of parmetis we cannot distribute it with HemoCell. 
 The parmetis download should be copied to the  ``./hemocell/external/`` directory. 
