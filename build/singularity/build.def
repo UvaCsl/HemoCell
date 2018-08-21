@@ -3,18 +3,13 @@ From:ubuntu:16.04
 
 %setup
   echo "Getting HemoCell from Repository... "
-  git clone --branch stable_latest --depth 1 https://gitlab.computationalscience.nl/zega/hemocell.git $SINGULARITY_ROOTFS/hemocell ||:
+  git clone --branch stable_latest --depth 1 https://github.com/UvaCsl/HemoCell.git $SINGULARITY_ROOTFS/hemocell ||:
   echo "Done."
 
 %post
   echo "Installing required ubuntu packages... "
   apt-get update
-  apt-get -y install make cmake g++-5 g++ libopenmpi-dev libhdf5-dev patch python-h5py
-  rm -rf /hemocell/palabos || :
-  (cd /hemocell;tar -xzf palabos_dev.tgz)
-  (cd /hemocell;mv palabos-* palabos)
-  (cd /hemocell/patch;./patchPLB.sh)
-
+  apt-get -y install make cmake g++-5 g++ libopenmpi-dev libhdf5-dev patch python-h5py wget
   #Create our scripts, compatible with 2.2 and lower
   cat <<EOF > /usr/local/bin/compile
 #!/bin/bash
@@ -51,6 +46,10 @@ EOF
 
   cat <<EOF > /usr/local/bin/make_library
 cp -r /hemocell .
+if [ ! -e hemocell/palabos_dev.tgz ]; then
+  (cd hemocell;./setup.sh)
+fi
+
 (cd hemocell/build/hemocell;cmake .)
 (cd hemocell/build/hemocell;make -j8)
 EOF
