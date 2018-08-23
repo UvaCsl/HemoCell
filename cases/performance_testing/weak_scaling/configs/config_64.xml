@@ -1,0 +1,35 @@
+<?xml version="1.0" ?>
+<hemocell>
+
+<parameters>
+    <warmup> 0 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <outputDirectory>tmp_64</outputDirectory>
+     <logDirectory>log_64</logDirectory>
+</parameters>
+
+
+<ibm>
+    <stepMaterialEvery> 20 </stepMaterialEvery> <!-- Update particle material model after this many fluid time steps. -->
+    <stepParticleEvery> 5 </stepParticleEvery> <!-- Update particles position after this many fluid time steps. -->
+</ibm>
+
+<domain>
+    <fluidEnvelope> 2 </fluidEnvelope>
+    <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
+    <nuP> 1.1e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
+    <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dt> -1 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
+    <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
+    <refDirN> 128 </refDirN>  <!-- Number of numerical cell in the reference direction -->
+    <blockSize> -1 </blockSize>
+    <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
+    <Re> 0.5 </Re>   <!--Reynolds number-->
+    <particleEnvelope> 25 </particleEnvelope>
+</domain>
+
+<sim>
+    <tmax> 10000 </tmax> <!-- total number of iterations -->
+    <tmeas>1000 </tmeas> <!-- interval after which data is written --> 
+</sim>
+
+</hemocell>
