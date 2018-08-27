@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
   HemoCell hemocell(argv[1], argc, argv);
   Config * cfg = hemocell.cfg;
 
-  pcout << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl; 
+  hlog << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl; 
   MultiScalarField3D<int> *flagMatrix = 0; 
   VoxelizedDomain3D<double> * voxelizedDomain = 0; 
   getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),  
@@ -27,20 +27,17 @@ int main(int argc, char *argv[]) {
                        voxelizedDomain, flagMatrix,  
                        (*cfg)["domain"]["blockSize"].read<int>()); 
      
-  pcout << "(PipeFlow) (Parameters) calculating flow parameters" << endl;
-  param::lbm_pipe_parameters((*cfg),flagMatrix);
+  hlog << "(Stl preinlet) (Parameters) setting lbm parameters" << endl;
+  param::lbm_base_parameters((*cfg));
   param::printParameters();
   
-  pcout << "(PipeFlow) (Fluid) Initializing Palabos Fluid Field" << endl;
-  hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
-            voxelizedDomain->getMultiBlockManagement(),
-            defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<double, DESCRIPTOR>(),
-            new GuoExternalForceBGKdynamics<double, DESCRIPTOR>(1.0/param::tau));
+  hlog << "(PreInlets) Finding preInlets from flagmatrix" << endl;
+  hemocell.specifyPreInlets(*flagMatrix, Direction::Xpos);
+  
+  hlog << "(PipeFlow) (Fluid) Initializing Palabos Fluid Field" << endl;
+  hemocell.initializeLattice(voxelizedDomain->getMultiBlockManagement());
 
-
-  pcout << "(PipeFlow) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl; 
+  hlog << "(PipeFlow) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl; 
   defineDynamics(*hemocell.lattice, *flagMatrix, (*hemocell.lattice).getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
 
   hemocell.lattice->toggleInternalStatistics(false);

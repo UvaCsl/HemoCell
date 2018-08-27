@@ -18,6 +18,9 @@
 #include "cellMechanics.h"
 #include "constantConversion.h"
 
+/* Helpers */
+#include "preInlet.h"
+
 /* Always used palabos functions in case files*/
 #ifndef COMPILING_HEMOCELL_LIBRARY
 #include "voxelizeDomain.h"
@@ -26,6 +29,8 @@
 using namespace hemo;
 using namespace plb;
 #endif
+
+
 
 namespace hemo { 
 
@@ -213,6 +218,20 @@ public:
   
   ///Restructure the grid, has an optional argument to specify whether a checkpoint from this iteration is available, default is YES!
   void doRestructure(bool checkpoint_avail = true);
+  
+  //Find and specify variables for the preInlets according to the flagmatrix and desired (default) parameters
+  void specifyPreInlets(MultiScalarField3D<T>& flagMatrix, Direction dir);
+  
+  
+  ///Initialize the fluid field with the given management, should be done after specifing the pre inlets and before initializing the cellfields
+  void initializeLattice(MultiBlockManagement3D const & management);
+ 
+  vector<preInlet> preInlets;
+  
+  bool partOfpreInlet = false;
+  preInlet * myPreInlet = 0;
+  
+  map<plint,plint> BlockToMpi;
   
   LoadBalancer * loadBalancer;
   ///The fluid lattice

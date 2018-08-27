@@ -24,16 +24,35 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef PREINLET_H
 #define PREINLET_H
 
+class preInlet;
+
+enum Direction : int {
+  Xpos, Xneg, Ypos, Yneg, Zpos, Zneg
+};
+  
 #include "hemocell.h"
 
 #define DSET_SLICE 1000
 
 namespace hemo {
 
-enum Direction : int {
-  Xpos, Xneg, Ypos, Yneg, Zpos, Zneg
-};
 
+inline plint cellsInBoundingBox(Box3D const & box) {
+  return abs((box.x1 - box.x0)*(box.y1-box.y0)*(box.z1-box.z0));
+}
+
+class preInlet {
+public:
+  preInlet(Box3D& location_,vector<vector<bool>> & fluidslice_, Direction & dir_);
+  static vector<preInlet> getPreInlets(MultiScalarField3D<T> & flagMatrix, Direction & dir_);
+  inline plint getNumberOfNodes() { return cellsInBoundingBox(location);}
+  plb::Box3D location;
+  vector<vector<bool>> fluidslice;
+  Direction dir;
+  int nProcs = 0;
+  map<plint,plint> BlockToMpi;
+};
+  
 struct particle_hdf5_t {
   float location[3];
   float velocity[3];

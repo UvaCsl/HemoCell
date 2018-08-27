@@ -40,6 +40,11 @@ herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
 }
 #endif
 
+preInlet::getPreInlets(MultiScalarField3D<T>& flagMatrix, Direction& dir_) {
+  
+}
+
+
 PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTimestep_, Direction flowDir_, HemoCell& hemocell_, bool reducedPrecision_) 
   : hemocell(hemocell_) {
   this->domain = domain_;
