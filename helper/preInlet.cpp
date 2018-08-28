@@ -41,7 +41,58 @@ herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
 #endif
 
 preInlet::getPreInlets(MultiScalarField3D<T>& flagMatrix, Direction& dir_) {
+  int offset = flagMatrix.getMultiBlockManagement().getEnvelopeWidth();
+  Box3D fluidDomain = flagMatrix.getMultiBlockManagement().getBoundingBox();
+  switch(dir_) {
+    case Xpos:
+      fluidDomain.x1 = fluidDomain.x0+offset;
+      fluidDomain.x0 = fluidDomain.x1;
+      break;
+    case Xneg:
+      fluidDomain.x0 = fluidDomain.x1-offset;
+      fluidDomain.x1 = fluidDomain.x0;
+      break;
+    case Ypos:
+      fluidDomain.y1 = fluidDomain.y0+offset;
+      fluidDomain.y0 = fluidDomain.y1;
+      break;
+    case Yneg:
+      fluidDomain.y0 = fluidDomain.y1-offset;
+      fluidDomain.y1 = fluidDomain.y0;
+      break;
+    case Zpos:
+      fluidDomain.z1 = fluidDomain.z0+offset;
+      fluidDomain.z0 = fluidDomain.z1;
+      break;
+    case Zneg:
+      fluidDomain.z0 = fluidDomain.z1-offset;
+      fluidDomain.z1 = fluidDomain.z0;
+      break;
+  }
   
+  int offset_x = fluidDomain.x0;
+  int offset_y = fluidDomain.y0;
+  int offset_z = fluidDomain.z0;
+  int x_size = (fluidDomain.x1 - fluidDomain.x0) + 1;
+  int y_size = (fluidDomain.y1 - fluidDomain.y0) + 1;
+  int z_size = (fluidDomain.z1 - fluidDomain.z0) + 1;
+
+  
+  vector<vector<vector<bool>> traversed;
+  for (unsigned int x = 0; x < x_size; x++) {
+    traversed.push_back(vector<vector<bool>>());
+    for (unsigned int y = 0; y < y_size ; y++) {
+      traversed[x].push_back(vector<bool>>(z_size));
+    }
+  }
+  
+  for (int x = fluidDomain.x0; x <= fluidDomain.x1 ; x++) {
+    for (int y = fluidDomain.y0; y <= fluidDomain.y1 ; y++) {
+      for (int z = fluidDomain.z0; z <= fluidDomain.z1 ; z++) {
+        if (flagMatrix.get())
+      }
+    }
+  }
 }
 
 
