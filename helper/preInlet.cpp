@@ -40,59 +40,40 @@ herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
 }
 #endif
 
-preInlet::getPreInlets(MultiScalarField3D<T>& flagMatrix, Direction& dir_) {
+preInlet::preInlet(MultiScalarField3D<T>& flagMatrix) {
   int offset = flagMatrix.getMultiBlockManagement().getEnvelopeWidth();
   Box3D fluidDomain = flagMatrix.getMultiBlockManagement().getBoundingBox();
-  switch(dir_) {
-    case Xpos:
-      fluidDomain.x1 = fluidDomain.x0+offset;
-      fluidDomain.x0 = fluidDomain.x1;
-      break;
-    case Xneg:
-      fluidDomain.x0 = fluidDomain.x1-offset;
-      fluidDomain.x1 = fluidDomain.x0;
-      break;
-    case Ypos:
-      fluidDomain.y1 = fluidDomain.y0+offset;
-      fluidDomain.y0 = fluidDomain.y1;
-      break;
-    case Yneg:
-      fluidDomain.y0 = fluidDomain.y1-offset;
-      fluidDomain.y1 = fluidDomain.y0;
-      break;
-    case Zpos:
-      fluidDomain.z1 = fluidDomain.z0+offset;
-      fluidDomain.z0 = fluidDomain.z1;
-      break;
-    case Zneg:
-      fluidDomain.z0 = fluidDomain.z1-offset;
-      fluidDomain.z1 = fluidDomain.z0;
-      break;
-  }
+ 
+  fluidDomain.x1 = fluidDomain.x0+offset;
+  fluidDomain.x0 = fluidDomain.x1;
+  Box3D preInletDomain;
+  bool foundPreInlet;
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(&flagMatrix);
   
-  int offset_x = fluidDomain.x0;
-  int offset_y = fluidDomain.y0;
-  int offset_z = fluidDomain.z0;
-  int x_size = (fluidDomain.x1 - fluidDomain.x0) + 1;
-  int y_size = (fluidDomain.y1 - fluidDomain.y0) + 1;
-  int z_size = (fluidDomain.z1 - fluidDomain.z0) + 1;
-
+  applyProcessingFunctional(new CreatePreInletBoundingBox(preInletDomain,foundPreInlet),fluidDomain,wrapper);
   
-  vector<vector<vector<bool>> traversed;
-  for (unsigned int x = 0; x < x_size; x++) {
-    traversed.push_back(vector<vector<bool>>());
-    for (unsigned int y = 0; y < y_size ; y++) {
-      traversed[x].push_back(vector<bool>>(z_size));
-    }
+  map<int,Box3D> values;
+  if (foundPreInlet) {
+    values[global::mpi().getRank()] = preInletDomain;
   }
+  HemoCellGatheringFunctional<Box3D>::gather(values);
   
-  for (int x = fluidDomain.x0; x <= fluidDomain.x1 ; x++) {
-    for (int y = fluidDomain.y0; y <= fluidDomain.y1 ; y++) {
-      for (int z = fluidDomain.z0; z <= fluidDomain.z1 ; z++) {
-        if (flagMatrix.get())
-      }
-    }
+  if (values.size() == 0) {
+    hlog << "(PreInlet) no preinlet found, does the stl go up to the X-Negative wall?" << endl;
   }
+  preInletDomain = values.begin()->second;
+  for (auto & pair : values ) {
+    Box3D & value  = pair.second;
+    if (value.x0 < preInletDomain.x0) { preInletDomain.x0 = value.x0; }
+    if (value.x1 > preInletDomain.x1) { preInletDomain.x1 = value.x1; }
+    if (value.y0 < preInletDomain.y0) { preInletDomain.y0 = value.y0; }
+    if (value.y1 > preInletDomain.y1) { preInletDomain.y1 = value.y1; }
+    if (value.z0 < preInletDomain.z0) { preInletDomain.z0 = value.z0; }
+    if (value.z1 > preInletDomain.z1) { preInletDomain.z1 = value.z1; }
+  }  
+  
+  location = preInletDomain;
 }
 
 

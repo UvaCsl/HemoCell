@@ -43,12 +43,20 @@ inline plint cellsInBoundingBox(Box3D const & box) {
 
 class preInlet {
 public:
-  preInlet(Box3D& location_,vector<vector<bool>> & fluidslice_, Direction & dir_);
-  static vector<preInlet> getPreInlets(MultiScalarField3D<T> & flagMatrix, Direction & dir_);
+  class CreatePreInletBoundingBox: public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+    CreatePreInletBoundingBox * clone() const;
+    Box3D & boundingBox;
+    bool & foundPreInlet = false;
+    public:
+      CreatePreInletBoundingBox(Box3D & b_, bool & fp_ ) :
+                                boundingBox(b_), foundPreInlet(fp_) {}
+  };
+  
+  preInlet(MultiScalarField3D<T> & flagMatrix);
   inline plint getNumberOfNodes() { return cellsInBoundingBox(location);}
   plb::Box3D location;
   vector<vector<bool>> fluidslice;
-  Direction dir;
   int nProcs = 0;
   map<plint,plint> BlockToMpi;
 };
