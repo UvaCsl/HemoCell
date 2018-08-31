@@ -119,7 +119,7 @@ public:
     sv.cellId = cellId_;
     sv.vertexId = vertexId_;
     sv.celltype=celltype_;
-#ifdef PREINLET_MECHNICS
+#ifdef PREINLET_MECHANICS
     sv.fromPreInlet = false;
 #endif
 #ifdef SOLIDIFY_MECHANICS
