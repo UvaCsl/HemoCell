@@ -163,12 +163,12 @@ void OctreeStructCell::constructTree(vector<HemoCellParticle> & part, const vect
 void OctreeStructCell::findCrossings(hemo::Array<plint, 3> latticeSite, std::vector<hemo::Array<plint,3>>& output) {
 
   // The ray passes inside the bboxes, xdir is open, abuse that
-  if ( bBox[0] <= latticeSite[1] &&
-       bBox[2] <= latticeSite[1] && bBox[3] >= latticeSite[1] &&
-       bBox[4] <= latticeSite[2] && bBox[5] >= latticeSite[2]) {
+  if ( (int)bBox[0] <= latticeSite[0] &&
+       (int)bBox[2] <= latticeSite[1] && (int)bBox[3]+1 >= latticeSite[1] &&
+       (int)bBox[4] <= latticeSite[2] && (int)bBox[5]+1 >= latticeSite[2]) {
     output.insert(output.end(),triangle_list.begin(),triangle_list.end());
   } else {
-return;
+    return;
   }
 
   if (finalNode) {
