@@ -24,43 +24,55 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef PREINLET_H
 #define PREINLET_H
 
-class preInlet;
+class PreInlet;
+
+#include "config/constant_defaults.h"
+#include "core/hemoCellFunctional.h"
+
+#include "core/geometry3D.h"
+#include "atomicBlock/atomicBlock3D.h"
 
 enum Direction : int {
   Xpos, Xneg, Ypos, Yneg, Zpos, Zneg
 };
   
-#include "hemocell.h"
 
 #define DSET_SLICE 1000
 
 namespace hemo {
 
 
-inline plint cellsInBoundingBox(Box3D const & box) {
+inline plint cellsInBoundingBox(plb::Box3D const & box) {
   return abs((box.x1 - box.x0)*(box.y1-box.y0)*(box.z1-box.z0));
 }
 
-class preInlet {
+class PreInlet {
 public:
   class CreatePreInletBoundingBox: public HemoCellFunctional {
     void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     CreatePreInletBoundingBox * clone() const;
-    Box3D & boundingBox;
-    bool & foundPreInlet = false;
+    plb::Box3D & boundingBox;
+    bool & foundPreInlet;
     public:
-      CreatePreInletBoundingBox(Box3D & b_, bool & fp_ ) :
+      CreatePreInletBoundingBox(plb::Box3D & b_, bool & fp_ ) :
                                 boundingBox(b_), foundPreInlet(fp_) {}
   };
   
-  preInlet(MultiScalarField3D<T> & flagMatrix);
+  PreInlet() {};
+  PreInlet(plb::MultiScalarField3D<int> & flagMatrix);
   inline plint getNumberOfNodes() { return cellsInBoundingBox(location);}
   plb::Box3D location;
-  vector<vector<bool>> fluidslice;
+  std::vector<std::vector<bool>> fluidslice;
   int nProcs = 0;
-  map<plint,plint> BlockToMpi;
+  bool initialized = false;
+  std::map<plint,plint> BlockToMpi;
 };
-  
+
+}
+
+  #include "hemocell.h"
+
+namespace hemo {
 struct particle_hdf5_t {
   float location[3];
   float velocity[3];
@@ -99,13 +111,13 @@ public:
 
 
 
-class PreInlet {
+class PreInlet_old {
   class PreInletFunctional: public HemoCellFunctional {
-    PreInlet & parent;
+    PreInlet_old & parent;
     void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
     PreInletFunctional * clone() const;
   public:
-    PreInletFunctional(PreInlet & parent_) : parent(parent_) {}
+    PreInletFunctional(PreInlet_old & parent_) : parent(parent_) {}
   };
   class DeletePreInletParticles: public HemoCellFunctional {
     void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
@@ -133,9 +145,9 @@ class PreInlet {
 
 
 public:  
-  PreInlet(Box3D domain, string sourceFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell, bool reducedPrecision_ = false);
+  PreInlet_old(Box3D domain, string sourceFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell, bool reducedPrecision_ = false);
   void update();
-  ~PreInlet();
+  ~PreInlet_old();
 };
 
 }

@@ -220,16 +220,15 @@ public:
   void doRestructure(bool checkpoint_avail = true);
   
   //Find and specify variables for the preInlets according to the flagmatrix and desired (default) parameters
-  void specifyPreInlets(MultiScalarField3D<T>& flagMatrix, Direction dir);
+  void specifyPreInlet(MultiScalarField3D<int>& flagMatrix);
   
   
   ///Initialize the fluid field with the given management, should be done after specifing the pre inlets and before initializing the cellfields
   void initializeLattice(MultiBlockManagement3D const & management);
  
-  vector<preInlet> preInlets;
+  PreInlet preInlet;
   
   bool partOfpreInlet = false;
-  preInlet * myPreInlet = 0;
   
   map<plint,plint> BlockToMpi;
   

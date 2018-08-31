@@ -350,8 +350,15 @@ void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRe
   boundaryRepulsionEnabled = true;
 }
 
-void HemoCell::specifyPreInlets(MultiScalarField3D<T>& flagMatrix, Direction dir) {
-  preInlets = preInlet::getPreInlets(flagMatrix, dir);
+void HemoCell::specifyPreInlet(MultiScalarField3D<int>& flagMatrix) {
+  preInlet = PreInlet(flagMatrix);
+  cout << preInlet.location.x0 << " "
+          << preInlet.location.x1 << " " 
+                    << preInlet.location.y0 << " " 
+          << preInlet.location.y1 << " " 
+          << preInlet.location.z0 << " " 
+          << preInlet.location.z1  << endl;
+  
 }
 
 void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
@@ -359,19 +366,25 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
     delete lattice;
   }
 
-  plint totalNodes = 0 , assignedNodes = 0;
-  for (preInlet & preinlet : preInlets) {
-    totalNodes += preinlet.getNumberOfNodes();
+  if (!preInlet.initialized) {
+    hlog << "(HemoCell) No preinlet specified, running with all cores on domain with given management" << endl;
+    lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(management,
+            defaultMultiBlockPolicy3D().getBlockCommunicator(),
+            defaultMultiBlockPolicy3D().getCombinedStatistics(),
+            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+    return;
   }
+  
+  plint totalNodes = 0 , assignedNodes = 0;
+  totalNodes += preInlet.getNumberOfNodes();
   totalNodes += cellsInBoundingBox(management.getBoundingBox());
   
-  for (preInlet & preinlet : preInlets) {
-    preinlet.nProcs = global::mpi().getSize()*(preinlet.getNumberOfNodes()/(T)totalNodes);
-    assignedNodes += preinlet.nProcs;
-    if (preinlet.nProcs == 0) {
-      hlog << "(HemoCell) (PreInlet) assigned zero processors to a PreInlet, this will not work, please run with more processors" << endl;
-      exit(1);
-    }
+  preInlet.nProcs = global::mpi().getSize()*(preInlet.getNumberOfNodes()/(T)totalNodes);
+  assignedNodes += preInlet.nProcs;
+  if (preInlet.nProcs == 0) {
+    hlog << "(HemoCell) (PreInlet) assigned zero processors to a PreInlet, this will not work, please run with more processors" << endl;
+    exit(1);
   }
   
   int nProcs = global::mpi().getSize()*(cellsInBoundingBox(management.getBoundingBox())/(T)totalNodes);
@@ -382,7 +395,7 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   unsigned int currentPreInlet = 0;
   unsigned int currentNode = 0;
   for (int i = 0 ; i < global::mpi().getSize() ; i++) {
-    if (currentPreInlet >= preInlets.size()) {
+    if (currentPreInlet >= 1) {
       if (i == global::mpi().getRank()) {
         partOfpreInlet = false;
       }
@@ -391,11 +404,10 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
     } else {
       if (i == global::mpi().getRank()) {
         partOfpreInlet = true;
-        myPreInlet = &preInlets[currentPreInlet];
       }
-      preInlets[currentPreInlet].BlockToMpi[currentNode] = i;
+      preInlet.BlockToMpi[currentNode] = i;
       currentNode ++;
-      if (preInlets[currentPreInlet].getNumberOfNodes() <= currentNode) {
+      if (preInlet.getNumberOfNodes() <= currentNode) {
         currentNode = 0;
         currentPreInlet++;
       }
@@ -405,8 +417,8 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   MultiBlockManagement3D * final_management;
   
   if (partOfpreInlet) {
-    SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(myPreInlet->location,myPreInlet->nProcs);
-    ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(myPreInlet->BlockToMpi);
+    SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet.location,preInlet.nProcs);
+    ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet.BlockToMpi);
     final_management = new MultiBlockManagement3D(sb_preinlet,eta_preinlet,management.getEnvelopeWidth(),management.getRefinementLevel());
   } else {
     SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(),nProcs);

@@ -21,12 +21,32 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "preInlet.h"
-#include <hdf5.h>
-#include <hdf5_hl.h>
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include "preInlet.h"
+
+namespace hemo {
+  struct Box3D_simple {
+    plint x0,x1,y0,y1,z0,z1;
+    inline Box3D_simple & operator=(const Box3D & box) {
+      x0 = box.x0;
+      x1 = box.x1;
+      y0 = box.y0;
+      y1 = box.y1;
+      z0 = box.z0;
+      z1 = box.z1;
+      return *this;
+    }
+    inline Box3D getBox3D() const {
+      return Box3D(x0,x1,y0,y1,z0,z1);
+    }
+  };
+}
+
+#include <hdf5.h>
+#include <hdf5_hl.h>
+
 
 namespace hemo {
 
@@ -40,31 +60,63 @@ herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
 }
 #endif
 
-preInlet::preInlet(MultiScalarField3D<T>& flagMatrix) {
+void PreInlet::CreatePreInletBoundingBox::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+  ScalarField3D<int> * sf = dynamic_cast<ScalarField3D<int>*>(blocks[0]);
+  
+  for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
+    for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
+      for (int z  = domain.z0 ; z <= domain.z1 ; z++) {
+        if (sf->get(x,y,z)) {
+          int xx = x - sf->getLocation().x;
+          int yy = y - sf->getLocation().y;
+          int zz = z - sf->getLocation().z;
+
+          if(!foundPreInlet) {
+            boundingBox.x0 = boundingBox.x1 = xx;
+            boundingBox.y0 = boundingBox.y1 = yy;
+            boundingBox.z0 = boundingBox.z1 = zz;
+            foundPreInlet = true;
+          } else {
+            if (xx < boundingBox.x0) { boundingBox.x0 = xx; }
+            if (xx > boundingBox.x1) { boundingBox.x1 = xx; }
+            if (yy < boundingBox.y0) { boundingBox.y0 = yy; }
+            if (yy > boundingBox.y1) { boundingBox.y1 = yy; }
+            if (zz < boundingBox.z0) { boundingBox.z0 = zz; }
+            if (zz > boundingBox.z1) { boundingBox.z1 = zz; }
+          }
+        }
+      }
+    }
+  }
+}
+
+PreInlet::PreInlet(MultiScalarField3D<int>& flagMatrix) {
+  initialized = true;
   int offset = flagMatrix.getMultiBlockManagement().getEnvelopeWidth();
   Box3D fluidDomain = flagMatrix.getMultiBlockManagement().getBoundingBox();
  
   fluidDomain.x1 = fluidDomain.x0+offset;
   fluidDomain.x0 = fluidDomain.x1;
   Box3D preInletDomain;
-  bool foundPreInlet;
+  bool foundPreInlet = false;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(&flagMatrix);
   
   applyProcessingFunctional(new CreatePreInletBoundingBox(preInletDomain,foundPreInlet),fluidDomain,wrapper);
   
-  map<int,Box3D> values;
+  map<int,Box3D_simple> values;
   if (foundPreInlet) {
     values[global::mpi().getRank()] = preInletDomain;
   }
-  HemoCellGatheringFunctional<Box3D>::gather(values);
+  HemoCellGatheringFunctional<Box3D_simple>::gather(values);
   
   if (values.size() == 0) {
     hlog << "(PreInlet) no preinlet found, does the stl go up to the X-Negative wall?" << endl;
+    exit(1);
   }
-  preInletDomain = values.begin()->second;
+  preInletDomain =  values.begin()->second.getBox3D();
   for (auto & pair : values ) {
-    Box3D & value  = pair.second;
+    Box3D value  = pair.second.getBox3D();
     if (value.x0 < preInletDomain.x0) { preInletDomain.x0 = value.x0; }
     if (value.x1 > preInletDomain.x1) { preInletDomain.x1 = value.x1; }
     if (value.y0 < preInletDomain.y0) { preInletDomain.y0 = value.y0; }
@@ -77,7 +129,7 @@ preInlet::preInlet(MultiScalarField3D<T>& flagMatrix) {
 }
 
 
-PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTimestep_, Direction flowDir_, HemoCell& hemocell_, bool reducedPrecision_) 
+PreInlet_old::PreInlet_old(Box3D domain_, string sourceFileName_, int particlePositionTimestep_, Direction flowDir_, HemoCell& hemocell_, bool reducedPrecision_) 
   : hemocell(hemocell_) {
   this->domain = domain_;
   this->sourceFileName = global::directories().getOutputDir() + "/" + sourceFileName_  + ".hdf5";
@@ -188,7 +240,7 @@ PreInlet::PreInlet(Box3D domain_, string sourceFileName_, int particlePositionTi
   H5Tinsert (particle_type_h5, "particle_type", H5Tget_size(H5T_IEEE_F32LE)*6+H5Tget_size(H5T_STD_I32LE)*2, H5T_STD_U32LE);
 }
 
-void PreInlet::ImmersePreInletParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+void PreInlet_old::ImmersePreInletParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   HemoCellParticleField * particlefield = dynamic_cast<HemoCellParticleField*>(blocks[0]);
   const map<int,vector<int>> & ppc = particlefield->get_preinlet_particles_per_cell();
   
@@ -210,7 +262,7 @@ void PreInlet::ImmersePreInletParticles::processGenericBlocks(Box3D domain, std:
   }
 }
 
-void PreInlet::DeletePreInletParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+void PreInlet_old::DeletePreInletParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   HemoCellParticleField * particlefield = dynamic_cast<HemoCellParticleField*>(blocks[0]);
   
   for (HemoCellParticle & particle : particlefield->particles) {
@@ -221,7 +273,7 @@ void PreInlet::DeletePreInletParticles::processGenericBlocks(Box3D domain, std::
   particlefield->removeParticles(1);
 }
 
-void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+void PreInlet_old::PreInletFunctional::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   BlockLattice3D<T,DESCRIPTOR> * fluidfield = dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[0]);
   HemoCellParticleField * particlefield = dynamic_cast<HemoCellParticleField*>(blocks[1]);
   
@@ -345,7 +397,7 @@ void PreInlet::PreInletFunctional::processGenericBlocks(Box3D domain, std::vecto
   
   H5Sclose(memspace_id);
 }
-void PreInlet::update() {  
+void PreInlet_old::update() {  
  
   //When we are also reading particles
   if (hemocell.iter%particlePositionTimeStep==0) {
@@ -418,13 +470,14 @@ void PreInlet::update() {
   }
 }
 
-PreInlet::~PreInlet() {
+PreInlet_old::~PreInlet_old() {
   H5Dclose(dataset_velocity_id);
   H5Fclose(file_id);
 }
 
-PreInlet::PreInletFunctional * PreInlet::PreInletFunctional::clone() const { return new PreInletFunctional(*this); }
-PreInlet::DeletePreInletParticles * PreInlet::DeletePreInletParticles::clone() const { return new DeletePreInletParticles(*this); }
-PreInlet::ImmersePreInletParticles * PreInlet::ImmersePreInletParticles::clone() const { return new ImmersePreInletParticles(*this); }
+PreInlet_old::PreInletFunctional * PreInlet_old::PreInletFunctional::clone() const { return new PreInletFunctional(*this); }
+PreInlet_old::DeletePreInletParticles * PreInlet_old::DeletePreInletParticles::clone() const { return new DeletePreInletParticles(*this); }
+PreInlet_old::ImmersePreInletParticles * PreInlet_old::ImmersePreInletParticles::clone() const { return new ImmersePreInletParticles(*this); }
+PreInlet::CreatePreInletBoundingBox *        PreInlet::CreatePreInletBoundingBox::clone() const { return new PreInlet::CreatePreInletBoundingBox(*this);}
 
 }
