@@ -31,8 +31,8 @@ int main(int argc, char *argv[]) {
   param::lbm_base_parameters((*cfg));
   param::printParameters();
   
-  hlog << "(PreInlets) Finding preInlets from flagmatrix" << endl;
-  hemocell.specifyPreInlets(*flagMatrix, Direction::Xpos);
+  hlog << "(PreInlets) Finding preInlet from flagmatrix" << endl;
+  hemocell.specifyPreInlet(*flagMatrix);
   
   hlog << "(PipeFlow) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.initializeLattice(voxelizedDomain->getMultiBlockManagement());
@@ -106,9 +106,9 @@ int main(int argc, char *argv[]) {
   unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
   //Setting Preinlet creation
- Box3D preinletBox(0,hemocell.lattice->getBoundingBox().x1,0,hemocell.lattice->getBoundingBox().y1,hemocell.lattice->getBoundingBox().z1-3,hemocell.lattice->getBoundingBox().z1-3);
+ Box3D preinletBox(0,hemocell.lattice->getBoundingBox().x1,0,hemocell.lattice->getBoundingBox().y1,hemocell.lattice->getBoundingBox().z0+3,hemocell.lattice->getBoundingBox().z0+3);
  boundary->setVelocityConditionOnBlockBoundaries(*hemocell.lattice,preinletBox,preinletBox);
- setBoundaryVelocity(*hemocell.lattice,preinletBox,{0.0,0,-0.01});
+ setBoundaryVelocity(*hemocell.lattice,preinletBox,{0.0,0,0.01});
          
  // PreInlet preinlet(preinletBox,"../../preinlet_create/tmp/preinlet",(*cfg)["ibm"]["stepMaterialEvery"].read<int>(),Direction::Xpos,hemocell, true);
   

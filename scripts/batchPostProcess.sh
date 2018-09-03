@@ -37,6 +37,10 @@ do
     if [ $name == "Fluid" ]; then
       continue
     fi
+    if [ $name == "Fluid_PRE" ]; then
+      ${python_c} ${scriptsDir}/FluidHDF5.py Fluid_PRE; 
+      continue
+    fi
     if [ $name == "CEPAC" ]; then
       ${python_c} ${scriptsDir}/FluidHDF5.py CEPAC; 
       continue

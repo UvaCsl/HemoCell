@@ -352,13 +352,14 @@ void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRe
 
 void HemoCell::specifyPreInlet(MultiScalarField3D<int>& flagMatrix) {
   preInlet = PreInlet(flagMatrix);
-  cout << preInlet.location.x0 << " "
+  int preInletLength = (*cfg)["preInlet"]["parameters"]["lengthN"].read<int>();
+  preInlet.location.z0 -= preInletLength;
+    cout << preInlet.location.x0 << " "
           << preInlet.location.x1 << " " 
-                    << preInlet.location.y0 << " " 
+          << preInlet.location.y0 << " " 
           << preInlet.location.y1 << " " 
           << preInlet.location.z0 << " " 
           << preInlet.location.z1  << endl;
-  
 }
 
 void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
@@ -407,7 +408,7 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
       }
       preInlet.BlockToMpi[currentNode] = i;
       currentNode ++;
-      if (preInlet.getNumberOfNodes() <= currentNode) {
+      if (preInlet.nProcs <= currentNode) {
         currentNode = 0;
         currentPreInlet++;
       }

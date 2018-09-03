@@ -22,6 +22,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "ParticleHdf5IO.h"
+#include "hemocell.h"
 
 #include <hdf5.h>
 #include <hdf5_hl.h>
@@ -49,6 +50,10 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
       if (cellField3D.desiredOutputVariables.size() == 0) {
           return; //No output desired, no problem
       }
+      
+    if (cellField3D.cellFields.hemocell.partOfpreInlet) {
+      identifier += "_PRE";
+    }
     /************************************************************/
     /**            Initialise HDF5 file                        **/
    /************************************************************/

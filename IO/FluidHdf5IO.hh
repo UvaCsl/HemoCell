@@ -80,7 +80,10 @@ public:
     if (outputVariables.size() == 0 ) {
       return; //No output needed? ok
     }
-
+    
+    if (cellfields.hemocell.partOfpreInlet) {
+      identifier += "_PRE";
+    }
     std::string fileName = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) + '/' + identifier + "."  + zeroPadNumber(iter) + ".p." + to_string(blockid) + ".h5";
     hid_t file_id;
     file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
