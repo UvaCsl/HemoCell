@@ -12,9 +12,6 @@
 module rm mpi fortran c
 module load mpi/openmpi/2.0.1
 
-# This is necessary for runs over 128 nodes -> otherwise the communication queue overflows
-#export OMPI_MCA_btl_openib_receive_queues="X,128,256,192,128:X,2048,256,128,32:X,12288,256,128,32:X,65536,256,128,32"
-
 #Place the actual command here
 #Dont forget to place this file in the directory you want to run from
 srun ./pipeflow tmp/checkpoint.xml #dont forget to adjust -n !!

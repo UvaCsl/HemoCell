@@ -376,25 +376,25 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
             new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
     return;
   }
+  if (global::mpi().getSize() <= 1) {
+    hlog << "(HemoCell) (PreInlet) Trying to run with preInlet with less than 2 processors, specify at least 2, exiting ..." << endl;
+    exit(1);
+  }
   
-  plint totalNodes = 0 , assignedNodes = 0;
+  plint totalNodes = 0;
   totalNodes += preInlet.getNumberOfNodes();
   totalNodes += cellsInBoundingBox(management.getBoundingBox());
   
   preInlet.nProcs = global::mpi().getSize()*(preInlet.getNumberOfNodes()/(T)totalNodes);
-  assignedNodes += preInlet.nProcs;
   if (preInlet.nProcs == 0) {
-    hlog << "(HemoCell) (PreInlet) assigned zero processors to a PreInlet, this will not work, please run with more processors" << endl;
-    exit(1);
+    preInlet.nProcs = 1;
   }
   
-  int nProcs = global::mpi().getSize()*(cellsInBoundingBox(management.getBoundingBox())/(T)totalNodes);
-  assignedNodes += nProcs;
-  nProcs += (global::mpi().getSize() - assignedNodes);
+  int nProcs = global::mpi().getSize()-preInlet.nProcs;
   
   //Assign processors to PreInlet or Domain
   unsigned int currentPreInlet = 0;
-  unsigned int currentNode = 0;
+  int currentNode = 0;
   for (int i = 0 ; i < global::mpi().getSize() ; i++) {
     if (currentPreInlet >= 1) {
       if (i == global::mpi().getRank()) {

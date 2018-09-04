@@ -60,6 +60,29 @@ herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
 }
 #endif
 
+void PreInlet::CreateVelocityBoundary::processGenericBlocks(plb::Box3D domain, std::vector<plb::AtomicBlock3D*> blocks) {
+  ScalarField3D<int> * sf = dynamic_cast<ScalarField3D<int>*>(blocks[1]);
+  BlockLattice3D<T,DESCRIPTOR> * ff = dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[0]);
+  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* bc =
+        createZouHeBoundaryCondition3D<T,DESCRIPTOR>();
+
+          cout << "Testtt" << endl;
+
+  for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
+    for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
+      for (int z  = domain.z0 ; z <= domain.z1 ; z++) {
+        if (sf->get(x,y,z)) {
+          cout << "Test" << endl;
+          Box3D point(x,x,y,y,z,z);
+          bc->setVelocityConditionOnBlockBoundaries (* ff, point );
+          setBoundaryVelocity(*ff, point, vel );
+        }
+      }
+    }
+  }
+
+}
+
 void PreInlet::CreatePreInletBoundingBox::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   ScalarField3D<int> * sf = dynamic_cast<ScalarField3D<int>*>(blocks[0]);
   
@@ -95,8 +118,8 @@ PreInlet::PreInlet(MultiScalarField3D<int>& flagMatrix) {
   int offset = flagMatrix.getMultiBlockManagement().getEnvelopeWidth();
   Box3D fluidDomain = flagMatrix.getMultiBlockManagement().getBoundingBox();
  
-  fluidDomain.x1 = fluidDomain.x0+offset;
-  fluidDomain.x0 = fluidDomain.x1;
+  fluidDomain.z1 = fluidDomain.z0+offset+1;
+  fluidDomain.z0 = fluidDomain.z1;
   Box3D preInletDomain;
   bool foundPreInlet = false;
   vector<MultiBlock3D*> wrapper;
@@ -479,5 +502,6 @@ PreInlet_old::PreInletFunctional * PreInlet_old::PreInletFunctional::clone() con
 PreInlet_old::DeletePreInletParticles * PreInlet_old::DeletePreInletParticles::clone() const { return new DeletePreInletParticles(*this); }
 PreInlet_old::ImmersePreInletParticles * PreInlet_old::ImmersePreInletParticles::clone() const { return new ImmersePreInletParticles(*this); }
 PreInlet::CreatePreInletBoundingBox *        PreInlet::CreatePreInletBoundingBox::clone() const { return new PreInlet::CreatePreInletBoundingBox(*this);}
+PreInlet::CreateVelocityBoundary *        PreInlet::CreateVelocityBoundary::clone() const { return new PreInlet::CreateVelocityBoundary(*this);}
 
 }

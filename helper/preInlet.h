@@ -58,6 +58,16 @@ public:
                                 boundingBox(b_), foundPreInlet(fp_) {}
   };
   
+  class CreateVelocityBoundary: public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+    CreateVelocityBoundary * clone() const;
+    plb::Array<T,3> & vel;
+    public:
+      CreateVelocityBoundary(plb::Array<T,3> & vel_ ) :
+                                vel(vel_) { std::cout << "AAAA" <<std::endl;}
+  };
+  
+  
   PreInlet() {};
   PreInlet(plb::MultiScalarField3D<int> & flagMatrix);
   inline plint getNumberOfNodes() { return cellsInBoundingBox(location);}

@@ -36,7 +36,21 @@ int main(int argc, char *argv[]) {
   
   hlog << "(PipeFlow) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.initializeLattice(voxelizedDomain->getMultiBlockManagement());
+ 
+  Box3D outlet(hemocell.lattice->getNx()-1,hemocell.lattice->getNx()-1,0,hemocell.lattice->getNy(),0,hemocell.lattice->getNz());
+  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
+  boundary->setPressureConditionOnBlockBoundaries(*hemocell.lattice,outlet);
+  setBoundaryDensity(*hemocell.lattice,outlet, 1.0);
 
+  //Setting Preinlet creation
+  Box3D preinletBox(0,hemocell.lattice->getBoundingBox().x1,0,hemocell.lattice->getBoundingBox().y1,hemocell.lattice->getBoundingBox().z0+3,hemocell.lattice->getBoundingBox().z0+4);
+  if (hemocell.partOfpreInlet) {
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(hemocell.lattice);
+  wrapper.push_back(flagMatrix);
+  plb::Array<double,3> speed = {0,0,0.01};
+  applyProcessingFunctional(new hemo::PreInlet::CreateVelocityBoundary(speed),hemocell.lattice->getBoundingBox(),wrapper);
+  }
   hlog << "(PipeFlow) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl; 
   defineDynamics(*hemocell.lattice, *flagMatrix, (*hemocell.lattice).getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
 
@@ -50,6 +64,8 @@ int main(int argc, char *argv[]) {
   double poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
 
 
+  
+ 
   hemocell.lattice->initialize();   
 
   //Adding all the cells
@@ -75,12 +91,6 @@ int main(int argc, char *argv[]) {
   hemocell.setFluidOutputs(outputs);
 
   
-  Box3D outlet(hemocell.lattice->getNx()-1,hemocell.lattice->getNx()-1,0,hemocell.lattice->getNy(),0,hemocell.lattice->getNz());
-  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
-  boundary->setPressureConditionOnBlockBoundaries(*hemocell.lattice,outlet);
-  setBoundaryDensity(*hemocell.lattice,outlet, 1.0);
-
-
   
   //loading the cellfield
   if (not cfg->checkpointed) {
@@ -105,13 +115,7 @@ int main(int argc, char *argv[]) {
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
   unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
-  //Setting Preinlet creation
- Box3D preinletBox(0,hemocell.lattice->getBoundingBox().x1,0,hemocell.lattice->getBoundingBox().y1,hemocell.lattice->getBoundingBox().z0+3,hemocell.lattice->getBoundingBox().z0+3);
- boundary->setVelocityConditionOnBlockBoundaries(*hemocell.lattice,preinletBox,preinletBox);
- setBoundaryVelocity(*hemocell.lattice,preinletBox,{0.0,0,0.01});
-         
- // PreInlet preinlet(preinletBox,"../../preinlet_create/tmp/preinlet",(*cfg)["ibm"]["stepMaterialEvery"].read<int>(),Direction::Xpos,hemocell, true);
-  
+
   
   pcout << "(PipeFlow) Starting simulation..." << endl;
 
