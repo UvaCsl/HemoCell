@@ -73,22 +73,23 @@ void applyPreInletVelocityBoundary(HemoCell & hemocell) {
     Box3D bulk = hemocell.lattice->getMultiBlockManagement().getBulk(bId);
     if (!intersect(domain,bulk,result)) { continue; }
   
+    const Dot3D & loc = hemocell.lattice->getComponent(bId).getLocation();
+    result = result.shift(-loc.x,-loc.y,-loc.z);
+    
     for (int x  = result.x0 ; x <= result.x1 ; x++) {
      for (int y  = result.y0 ; y <= result.y1 ; y++) {
       for (int z  = result.z0 ; z <= result.z1 ; z++) {
-        tag = ((z_o * z -domain.z0) + y-domain.y0) * y_o + x;
-
+        tag = ((z_o * ((z + loc.z) - domain.z0)) + ( y + loc.y ) - domain.y0) * y_o + x + loc.x - domain.x0;
         if (!hemocell.lattice->get(x,y,z).getDynamics().isBoundary()) {
           if (hemocell.partOfpreInlet) {
-            MPI_Request req;
-            hemocell.lattice->get(x,y,z).computeVelocity(vel);
-            int dest = hemocell.lattice_management->getThreadAttribution().getMpiProcess(hemocell.lattice_management->getSparseBlockStructure().locate(x,y,z));
+            hemocell.lattice->getComponent(bId).get(x,y,z).computeVelocity(vel);
+            int dest = hemocell.lattice_management->getThreadAttribution().getMpiProcess(hemocell.lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
             MPI_Send(&vel[0],3*sizeof(T),MPI_CHAR,dest,tag,MPI_COMM_WORLD);
           } else {
             Box3D point(x,x,y,y,z,z);
-            int source = hemocell.preinlet_management->getThreadAttribution().getMpiProcess(hemocell.preinlet_management->getSparseBlockStructure().locate(x,y,z));
+            int source = hemocell.preinlet_management->getThreadAttribution().getMpiProcess(hemocell.preinlet_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
             MPI_Recv(&vel[0],3*sizeof(T),MPI_CHAR,source,tag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-            setBoundaryVelocity(*hemocell.lattice,point,vel);
+            setBoundaryVelocity(hemocell.lattice->getComponent(bId),point,vel);
           }
         }
       }
