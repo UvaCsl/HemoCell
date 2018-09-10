@@ -63,6 +63,7 @@ herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
 #endif
 
 void applyPreInletVelocityBoundary(HemoCell & hemocell) {
+  vector<MPI_Request> reqs;
   Box3D & domain = hemocell.preInlet.fluidInlet;
   Box3D result;
   int z_o = domain.getNz();
@@ -84,7 +85,8 @@ void applyPreInletVelocityBoundary(HemoCell & hemocell) {
           if (hemocell.partOfpreInlet) {
             hemocell.lattice->getComponent(bId).get(x,y,z).computeVelocity(vel);
             int dest = hemocell.lattice_management->getThreadAttribution().getMpiProcess(hemocell.lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
-            MPI_Send(&vel[0],3*sizeof(T),MPI_CHAR,dest,tag,MPI_COMM_WORLD);
+            reqs.emplace_back();
+            MPI_Isend(&vel[0],3*sizeof(T),MPI_CHAR,dest,tag,MPI_COMM_WORLD,&reqs.back());
           } else {
             Box3D point(x,x,y,y,z,z);
             int source = hemocell.preinlet_management->getThreadAttribution().getMpiProcess(hemocell.preinlet_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
@@ -96,6 +98,7 @@ void applyPreInletVelocityBoundary(HemoCell & hemocell) {
      }
     }
   }
+  MPI_Waitall(reqs.size(),&reqs[0],MPI_STATUS_IGNORE);
 }
 void createPreInletVelocityBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagMatrix,plb::Array<double,3> speed, HemoCell & hemocell) {
   OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* bc =

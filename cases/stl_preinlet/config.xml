@@ -23,7 +23,7 @@
 </ibm>
 
 <domain>
-    <geometry> tube_inverted.stl </geometry>
+    <geometry> tube.stl </geometry>
     <fluidEnvelope> 2 </fluidEnvelope>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.1e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
