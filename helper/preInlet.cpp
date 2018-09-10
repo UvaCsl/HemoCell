@@ -63,6 +63,7 @@ herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
 #endif
 
 void applyPreInletVelocityBoundary(HemoCell & hemocell) {
+  MPI_Barrier(MPI_COMM_WORLD);
   vector<MPI_Request> reqs;
   Box3D & domain = hemocell.preInlet.fluidInlet;
   Box3D result;
