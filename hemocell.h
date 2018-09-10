@@ -235,7 +235,10 @@ public:
   LoadBalancer * loadBalancer;
   ///The fluid lattice
   MultiBlockLattice3D<T, DESCRIPTOR> * lattice = 0;
-	Config * cfg;
+  
+  MultiBlockManagement3D * preinlet_management, * lattice_management;
+  
+  Config * cfg;
   ///The cellfields contains the particle field and all celltypes
   HemoCellFields * cellfields;
   unsigned int iter = 0;

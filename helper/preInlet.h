@@ -25,7 +25,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define PREINLET_H
 
 class PreInlet;
-
 #include "config/constant_defaults.h"
 #include "core/hemoCellFunctional.h"
 
@@ -46,6 +45,7 @@ inline plint cellsInBoundingBox(plb::Box3D const & box) {
   return abs((box.x1 - box.x0)*(box.y1-box.y0)*(box.z1-box.z0));
 }
 
+
 class PreInlet {
 public:
   class CreatePreInletBoundingBox: public HemoCellFunctional {
@@ -53,29 +53,23 @@ public:
     CreatePreInletBoundingBox * clone() const;
     plb::Box3D & boundingBox;
     bool & foundPreInlet;
+    std::vector<std::vector<bool>> & fluidslice;
     public:
-      CreatePreInletBoundingBox(plb::Box3D & b_, bool & fp_ ) :
-                                boundingBox(b_), foundPreInlet(fp_) {}
+      CreatePreInletBoundingBox(plb::Box3D & b_, bool & fp_, std::vector<std::vector<bool>> & fluidslice_) :
+                                boundingBox(b_), foundPreInlet(fp_), fluidslice(fluidslice_) {}
   };
-  
-  class CreateVelocityBoundary: public HemoCellFunctional {
-    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-    CreateVelocityBoundary * clone() const;
-    plb::Array<T,3> & vel;
-    public:
-      CreateVelocityBoundary(plb::Array<T,3> & vel_ ) :
-                                vel(vel_) { std::cout << "AAAA" <<std::endl;}
-  };
-  
   
   PreInlet() {};
   PreInlet(plb::MultiScalarField3D<int> & flagMatrix);
   inline plint getNumberOfNodes() { return cellsInBoundingBox(location);}
+  void createBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> *,plb::MultiScalarField3D<int> * flagMatrix);
   plb::Box3D location;
+  plb::Box3D fluidInlet;
   std::vector<std::vector<bool>> fluidslice;
   int nProcs = 0;
   bool initialized = false;
   std::map<plint,plint> BlockToMpi;
+  bool partOfpreInlet = false;
 };
 
 }
@@ -120,6 +114,8 @@ public:
 };
 
 
+void createPreInletVelocityBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagmatrix,plb::Array<double,3> speed, HemoCell & hemocell);
+void applyPreInletVelocityBoundary(HemoCell & hemocell);
 
 class PreInlet_old {
   class PreInletFunctional: public HemoCellFunctional {

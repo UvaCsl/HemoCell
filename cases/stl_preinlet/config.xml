@@ -3,7 +3,7 @@
 
 <preInlet>
   <parameters>
-    <lengthN> 300 </lengthN> <!-- Lenght in Lattice Units -->
+    <lengthN> 30 </lengthN> <!-- Lenght in Lattice Units -->
     <Re> 0.5 </Re>
     <Cells>
       <Cell materialModel="RBC" xml="preinlet_RBC.xml" />
@@ -23,14 +23,14 @@
 </ibm>
 
 <domain>
-    <geometry> tube.stl </geometry>
+    <geometry> tube_inverted.stl </geometry>
     <fluidEnvelope> 2 </fluidEnvelope>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.1e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
     <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
     <dt> 1e-7 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
-    <refDirN> 40 </refDirN>  <!-- Number of numerical cell in the reference direction -->
+    <refDirN> 45 </refDirN>  <!-- Number of numerical cell in the reference direction -->
     <blockSize> -1 </blockSize>
     <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
     <particleEnvelope> 25 </particleEnvelope>

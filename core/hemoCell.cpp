@@ -354,12 +354,6 @@ void HemoCell::specifyPreInlet(MultiScalarField3D<int>& flagMatrix) {
   preInlet = PreInlet(flagMatrix);
   int preInletLength = (*cfg)["preInlet"]["parameters"]["lengthN"].read<int>();
   preInlet.location.z0 -= preInletLength;
-    cout << preInlet.location.x0 << " "
-          << preInlet.location.x1 << " " 
-          << preInlet.location.y0 << " " 
-          << preInlet.location.y1 << " " 
-          << preInlet.location.z0 << " " 
-          << preInlet.location.z1  << endl;
 }
 
 void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
@@ -415,23 +409,29 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
     }
   }
   
-  MultiBlockManagement3D * final_management;
+  SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet.location,preInlet.nProcs);
+  ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet.BlockToMpi);
+  preinlet_management = new MultiBlockManagement3D(sb_preinlet,eta_preinlet,management.getEnvelopeWidth(),management.getRefinementLevel());
+
+  SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(),nProcs);
+  ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
+  lattice_management = new MultiBlockManagement3D(sb,eta,management.getEnvelopeWidth(),management.getRefinementLevel());
   
-  if (partOfpreInlet) {
-    SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet.location,preInlet.nProcs);
-    ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet.BlockToMpi);
-    final_management = new MultiBlockManagement3D(sb_preinlet,eta_preinlet,management.getEnvelopeWidth(),management.getRefinementLevel());
-  } else {
-    SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(),nProcs);
-    ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
-    final_management = new MultiBlockManagement3D(sb,eta,management.getEnvelopeWidth(),management.getRefinementLevel());
-  }
-    
-  lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(*final_management,
+  if (!partOfpreInlet) {
+    lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(*lattice_management,
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
             defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
             new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+  } else {
+    
+    lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(*preinlet_management,
+            defaultMultiBlockPolicy3D().getBlockCommunicator(),
+            defaultMultiBlockPolicy3D().getCombinedStatistics(),
+            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+    preInlet.partOfpreInlet = true;
+  }
 }
 
 #ifdef HEMO_PARMETIS

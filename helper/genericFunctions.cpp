@@ -129,3 +129,33 @@ void printHeader()
 }
 
 }
+
+
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+namespace hemo {
+void boundaryFromFlagMatrix(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagMatrix, bool partOfpreInlet) {
+  plb::Box3D domain2 = flagMatrix->getBoundingBox();//0,flagMatrix->getBoundingBox().x1,0,flagMatrix->getBoundingBox().y1,0,flagMatrix->getBoundingBox().z1);
+  for (int x  = domain2.x0-1 ; x <= domain2.x1 ; x++) {
+   for (int y  = domain2.y0-1 ; y <= domain2.y1 ; y++) {
+    for (int z  = domain2.z0-1 ; z <= domain2.z1 ; z++) {
+      if ((x == domain2.x0-1 || y == domain2.y0-1 || z == domain2.z0-1) && !partOfpreInlet ) {
+        defineDynamics(*fluid,x,y,z,new plb::BounceBack<T,DESCRIPTOR>(1.));
+      }
+    }
+   }
+  }
+  
+  for (int x  = domain2.x0 ; x <= domain2.x1 ; x++) {
+   for (int y  = domain2.y0 ; y <= domain2.y1 ; y++) {
+    for (int z  = domain2.z0 ; z <= domain2.z1 ; z++) {
+      if (flagMatrix->get(x,y,z) == 0 && !partOfpreInlet) {
+        defineDynamics(*fluid,x,y,z,new plb::BounceBack<T,DESCRIPTOR>(1.));
+      }
+    }
+   }
+  }
+}
+
+}

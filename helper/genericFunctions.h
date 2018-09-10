@@ -88,4 +88,14 @@ std::string zeroPadNumber(int num,int w = 12);
 void printHeader();
 
 }
+#include "multiBlock/multiBlockLattice3D.h"
+#include "multiBlock/multiDataField3D.h"
+#include "constant_defaults.h"
+namespace hemo {
+void boundaryFromFlagMatrix(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagMatrix, bool); 
+inline std::ostream& operator<<(std::ostream& stream, const plb::Box3D& box) {
+    return stream << "Box3D: " << box.x0 << " "<<box.x1<<" "<<box.y0<<" "<<box.y1<< " "<<box.z0<<" "<<box.z1<<endl;
+}
+
+}
 #endif // FCN_GENERIC_FUNCTIONS_HH

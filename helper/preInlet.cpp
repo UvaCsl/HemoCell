@@ -26,6 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.hh"
 #include "preInlet.h"
 
+#include "boundaryCondition/boundaryInstantiator3D.h"
+
 namespace hemo {
   struct Box3D_simple {
     plint x0,x1,y0,y1,z0,z1;
@@ -60,27 +62,58 @@ herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
 }
 #endif
 
-void PreInlet::CreateVelocityBoundary::processGenericBlocks(plb::Box3D domain, std::vector<plb::AtomicBlock3D*> blocks) {
-  ScalarField3D<int> * sf = dynamic_cast<ScalarField3D<int>*>(blocks[1]);
-  BlockLattice3D<T,DESCRIPTOR> * ff = dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[0]);
-  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* bc =
-        createZouHeBoundaryCondition3D<T,DESCRIPTOR>();
+void applyPreInletVelocityBoundary(HemoCell & hemocell) {
+  Box3D & domain = hemocell.preInlet.fluidInlet;
+  Box3D result;
+  int z_o = domain.getNz();
+  int y_o = domain.getNy();
+  int tag;
+  plb::Array<T,3> vel;
+  for (int bId : hemocell.lattice->getLocalInfo().getBlocks()) {
+    Box3D bulk = hemocell.lattice->getMultiBlockManagement().getBulk(bId);
+    if (!intersect(domain,bulk,result)) { continue; }
+  
+    for (int x  = result.x0 ; x <= result.x1 ; x++) {
+     for (int y  = result.y0 ; y <= result.y1 ; y++) {
+      for (int z  = result.z0 ; z <= result.z1 ; z++) {
+        tag = ((z_o * z -domain.z0) + y-domain.y0) * y_o + x;
 
-          cout << "Testtt" << endl;
-
-  for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
-    for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
-      for (int z  = domain.z0 ; z <= domain.z1 ; z++) {
-        if (sf->get(x,y,z)) {
-          cout << "Test" << endl;
-          Box3D point(x,x,y,y,z,z);
-          bc->setVelocityConditionOnBlockBoundaries (* ff, point );
-          setBoundaryVelocity(*ff, point, vel );
+        if (!hemocell.lattice->get(x,y,z).getDynamics().isBoundary()) {
+          if (hemocell.partOfpreInlet) {
+            MPI_Request req;
+            hemocell.lattice->get(x,y,z).computeVelocity(vel);
+            int dest = hemocell.lattice_management->getThreadAttribution().getMpiProcess(hemocell.lattice_management->getSparseBlockStructure().locate(x,y,z));
+            MPI_Send(&vel[0],3*sizeof(T),MPI_CHAR,dest,tag,MPI_COMM_WORLD);
+          } else {
+            Box3D point(x,x,y,y,z,z);
+            int source = hemocell.preinlet_management->getThreadAttribution().getMpiProcess(hemocell.preinlet_management->getSparseBlockStructure().locate(x,y,z));
+            MPI_Recv(&vel[0],3*sizeof(T),MPI_CHAR,source,tag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            setBoundaryVelocity(*hemocell.lattice,point,vel);
+          }
         }
       }
+     }
     }
   }
-
+}
+void createPreInletVelocityBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagMatrix,plb::Array<double,3> speed, HemoCell & hemocell) {
+  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* bc =
+        createZouHeBoundaryCondition3D<T,DESCRIPTOR>();
+  Box3D domain;
+  intersect(flagMatrix->getBoundingBox(),hemocell.preInlet.location,domain);
+  domain.z0 = domain.z1; 
+  hemocell.preInlet.fluidInlet = domain;
+  for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
+   for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
+    for (int z  = domain.z0 ; z <= domain.z1 ; z++) {
+      if (flagMatrix->get(x,y,z) == 1 && !hemocell.partOfpreInlet) {
+        Box3D point(x,x,y,y,z,z);
+        bc->addVelocityBoundary2N(point,*hemocell.lattice);
+        setBoundaryVelocity(*hemocell.lattice, point, speed );
+      }
+    }
+   }
+  }
 }
 
 void PreInlet::CreatePreInletBoundingBox::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -90,10 +123,11 @@ void PreInlet::CreatePreInletBoundingBox::processGenericBlocks(Box3D domain, std
     for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
       for (int z  = domain.z0 ; z <= domain.z1 ; z++) {
         if (sf->get(x,y,z)) {
-          int xx = x - sf->getLocation().x;
-          int yy = y - sf->getLocation().y;
-          int zz = z - sf->getLocation().z;
+          int xx = x + sf->getLocation().x;
+          int yy = y + sf->getLocation().y;
+          int zz = z + sf->getLocation().z;
 
+          fluidslice[xx][yy] = true;
           if(!foundPreInlet) {
             boundingBox.x0 = boundingBox.x1 = xx;
             boundingBox.y0 = boundingBox.y1 = yy;
@@ -115,17 +149,20 @@ void PreInlet::CreatePreInletBoundingBox::processGenericBlocks(Box3D domain, std
 
 PreInlet::PreInlet(MultiScalarField3D<int>& flagMatrix) {
   initialized = true;
-  int offset = flagMatrix.getMultiBlockManagement().getEnvelopeWidth();
   Box3D fluidDomain = flagMatrix.getMultiBlockManagement().getBoundingBox();
  
-  fluidDomain.z1 = fluidDomain.z0+offset+1;
+  fluidDomain.z1 = fluidDomain.z0+1;
   fluidDomain.z0 = fluidDomain.z1;
+  fluidslice.resize((fluidDomain.x1-fluidDomain.x0)+1);
+  for (auto & slice : fluidslice) {
+    slice.resize((fluidDomain.y1-fluidDomain.y0)+1,false);
+  }
   Box3D preInletDomain;
   bool foundPreInlet = false;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(&flagMatrix);
   
-  applyProcessingFunctional(new CreatePreInletBoundingBox(preInletDomain,foundPreInlet),fluidDomain,wrapper);
+  applyProcessingFunctional(new CreatePreInletBoundingBox(preInletDomain,foundPreInlet,fluidslice),fluidDomain,wrapper);
   
   map<int,Box3D_simple> values;
   if (foundPreInlet) {
@@ -134,7 +171,7 @@ PreInlet::PreInlet(MultiScalarField3D<int>& flagMatrix) {
   HemoCellGatheringFunctional<Box3D_simple>::gather(values);
   
   if (values.size() == 0) {
-    hlog << "(PreInlet) no preinlet found, does the stl go up to the X-Negative wall?" << endl;
+    hlog << "(PreInlet) no preinlet found, does the stl go up to the Z-Negative wall?" << endl;
     exit(1);
   }
   preInletDomain =  values.begin()->second.getBox3D();
@@ -148,9 +185,47 @@ PreInlet::PreInlet(MultiScalarField3D<int>& flagMatrix) {
     if (value.z1 > preInletDomain.z1) { preInletDomain.z1 = value.z1; }
   }  
   
-  location = preInletDomain;
+  location = preInletDomain.enlarge(1,0);
+  location = location.enlarge(1,1);
+
 }
 
+
+void PreInlet::createBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagMatrix) {
+  plb::Box3D domain = location; 
+  plb::Box3D flagBox = flagMatrix->getBoundingBox();
+  domain.x0 = domain.x0 < flagBox.x0 ? flagBox.x0 : domain.x0;
+  domain.x1 = domain.x1 > flagBox.x1 ? flagBox.x1 : domain.x1;
+  domain.y0 = domain.y0 < flagBox.y0 ? flagBox.y0 : domain.y0;
+  domain.y1 = domain.y1 > flagBox.y1 ? flagBox.y1 : domain.y1;
+
+  for (int x  = location.x0-1 ; x <= location.x1 ; x++) {
+    for (int y  = location.y0-1 ; y <= location.y1 ; y++) {
+      for (int z  = location.z0-1 ; z <= location.z1 ; z++) {
+        if (partOfpreInlet) {
+          if (x == location.x1 || y == location.y1 || x == location.x0-1 || y == location.y0-1) {
+            defineDynamics(*fluid,x,y,z, new BounceBack<T,DESCRIPTOR>(1.));
+          }
+        }
+      }
+    }
+  }
+
+  for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
+    for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
+      for (int z  = domain.z0 ; z <= domain.z1 ; z++) {
+        if(flagMatrix->get(x,y,flagMatrix->getBoundingBox().z0+1) == 0) {
+          if(partOfpreInlet) {
+            defineDynamics(*fluid,x,y,z, new BounceBack<T,DESCRIPTOR>(1.));
+          }
+        }
+      }
+    }
+  }
+  if (partOfpreInlet) {
+    fluid->periodicity().toggle(2,true);  
+  }
+}
 
 PreInlet_old::PreInlet_old(Box3D domain_, string sourceFileName_, int particlePositionTimestep_, Direction flowDir_, HemoCell& hemocell_, bool reducedPrecision_) 
   : hemocell(hemocell_) {
@@ -502,6 +577,4 @@ PreInlet_old::PreInletFunctional * PreInlet_old::PreInletFunctional::clone() con
 PreInlet_old::DeletePreInletParticles * PreInlet_old::DeletePreInletParticles::clone() const { return new DeletePreInletParticles(*this); }
 PreInlet_old::ImmersePreInletParticles * PreInlet_old::ImmersePreInletParticles::clone() const { return new ImmersePreInletParticles(*this); }
 PreInlet::CreatePreInletBoundingBox *        PreInlet::CreatePreInletBoundingBox::clone() const { return new PreInlet::CreatePreInletBoundingBox(*this);}
-PreInlet::CreateVelocityBoundary *        PreInlet::CreateVelocityBoundary::clone() const { return new PreInlet::CreateVelocityBoundary(*this);}
-
 }
