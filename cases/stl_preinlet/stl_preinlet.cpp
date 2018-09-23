@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
   hemocell.initializeLattice(voxelizedDomain->getMultiBlockManagement());
  
   if (!hemocell.partOfpreInlet) {
-  Box3D outlet(hemocell.lattice->getNx()-1,hemocell.lattice->getNx()-1,0,hemocell.lattice->getNy(),0,hemocell.lattice->getNz());
+  Box3D outlet(0,hemocell.lattice->getNx(),0,hemocell.lattice->getNy(),hemocell.lattice->getNz()-1,hemocell.lattice->getNz()-1);
   OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
   boundary->setPressureConditionOnBlockBoundaries(*hemocell.lattice,outlet);
   setBoundaryDensity(*hemocell.lattice,outlet, 1.0);
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-                plb::Array<T, DESCRIPTOR<T>::d>(0.,0.,0.01));
+                plb::Array<T, DESCRIPTOR<T>::d>(0.,0.,0.0001));
     }
     
     applyPreInletVelocityBoundary(hemocell);

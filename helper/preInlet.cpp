@@ -62,6 +62,21 @@ herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
 }
 #endif
 
+void mapPreInletParticleBoundary(HemoCell& hemocell) {
+  MPI_Barrier(MPI_COMM_WORLD);
+  Box3D domain = hemocell.preInlet.fluidInlet;
+  int offset = hemocell.preInlet.location.z1 - hemocell.preInlet.location.z0;
+  if (hemocell.partOfpreInlet) {
+    domain.z0 = hemocell.preInlet.location.z0;
+  }
+  domain.z1 = domain.z0 + hemocell.preInlet.inflow_length;
+  
+  for (int bId : hemocell.lattice->getLocalInfo().getBlocks()) {
+    Box3D bulk = hemocell.lattice->getMultiBlockManagement().getBulk(bId);
+    if (!intersect(domain,bulk,result)) { continue; }
+  }
+}
+
 void applyPreInletVelocityBoundary(HemoCell & hemocell) {
   MPI_Barrier(MPI_COMM_WORLD);
   vector<MPI_Request> reqs;
@@ -132,7 +147,6 @@ void PreInlet::CreatePreInletBoundingBox::processGenericBlocks(Box3D domain, std
           int yy = y + sf->getLocation().y;
           int zz = z + sf->getLocation().z;
 
-          fluidslice[xx][yy] = true;
           if(!foundPreInlet) {
             boundingBox.x0 = boundingBox.x1 = xx;
             boundingBox.y0 = boundingBox.y1 = yy;
@@ -158,16 +172,13 @@ PreInlet::PreInlet(MultiScalarField3D<int>& flagMatrix) {
  
   fluidDomain.z1 = fluidDomain.z0+1;
   fluidDomain.z0 = fluidDomain.z1;
-  fluidslice.resize((fluidDomain.x1-fluidDomain.x0)+1);
-  for (auto & slice : fluidslice) {
-    slice.resize((fluidDomain.y1-fluidDomain.y0)+1,false);
-  }
+
   Box3D preInletDomain;
   bool foundPreInlet = false;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(&flagMatrix);
   
-  applyProcessingFunctional(new CreatePreInletBoundingBox(preInletDomain,foundPreInlet,fluidslice),fluidDomain,wrapper);
+  applyProcessingFunctional(new CreatePreInletBoundingBox(preInletDomain,foundPreInlet),fluidDomain,wrapper);
   
   map<int,Box3D_simple> values;
   if (foundPreInlet) {

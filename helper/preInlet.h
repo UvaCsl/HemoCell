@@ -53,10 +53,9 @@ public:
     CreatePreInletBoundingBox * clone() const;
     plb::Box3D & boundingBox;
     bool & foundPreInlet;
-    std::vector<std::vector<bool>> & fluidslice;
     public:
-      CreatePreInletBoundingBox(plb::Box3D & b_, bool & fp_, std::vector<std::vector<bool>> & fluidslice_) :
-                                boundingBox(b_), foundPreInlet(fp_), fluidslice(fluidslice_) {}
+      CreatePreInletBoundingBox(plb::Box3D & b_, bool & fp_) :
+                                boundingBox(b_), foundPreInlet(fp_) {}
   };
   
   PreInlet() {};
@@ -65,11 +64,14 @@ public:
   void createBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> *,plb::MultiScalarField3D<int> * flagMatrix);
   plb::Box3D location;
   plb::Box3D fluidInlet;
-  std::vector<std::vector<bool>> fluidslice;
   int nProcs = 0;
   bool initialized = false;
   std::map<plint,plint> BlockToMpi;
   bool partOfpreInlet = false;
+  int inflow_length = 20;
+  bool communications_mapped = false;
+  std::vector<int> particle_receivers;
+  std::vector<int> particle_senders;
 };
 
 }
@@ -113,7 +115,7 @@ public:
   ~createPreInlet();
 };
 
-
+void mapPreInletParticleBoundary(HemoCell & hemocell);
 void createPreInletVelocityBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagmatrix,plb::Array<double,3> speed, HemoCell & hemocell);
 void applyPreInletVelocityBoundary(HemoCell & hemocell);
 
