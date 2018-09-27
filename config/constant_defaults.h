@@ -56,7 +56,7 @@ Choose to use precalculated curvature angles for equilibrium cell shapes.
 #endif
 
 // Use for solidifying, performance impact so only enable when using
-//#define SOLIDIFY_MECHANICS
+#define SOLIDIFY_MECHANICS
 
 // Use for Preinlet mechanics, performance impact so only enable when using
 //#define PREINLET_MECHANICS
@@ -147,7 +147,8 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
 #define OUTPUT_SHEAR_STRESS 10
 #define OUTPUT_INNER_LINKS 11
 #define OUTPUT_OMEGA 12
-
+#define OUTPUT_SHEAR_RATE 13
+#define OUTPUT_STRAIN_RATE 14
 
 //==================== Not really an option but a nice shortcut
 #define param Parameters
