@@ -11,10 +11,21 @@ index 1fb0ad1..2604122 100644
  };
  
 diff --git a/src/atomicBlock/blockLattice3D.h b/src/atomicBlock/blockLattice3D.h
-index d672045..359af56 100644
+index d672045..6a0a0b8 100644
 --- a/src/atomicBlock/blockLattice3D.h
 +++ b/src/atomicBlock/blockLattice3D.h
-@@ -43,7 +43,7 @@ namespace plb {
+@@ -28,6 +28,10 @@
+ #ifndef BLOCK_LATTICE_3D_H
+ #define BLOCK_LATTICE_3D_H
+ 
++namespace plb {
++    template<typename T, template<typename U> class Descriptor> class BlockLattice3D;
++}
++
+ #include "core/globalDefs.h"
+ #include "core/plbDebug.h"
+ #include "core/cell.h"
+@@ -43,7 +47,7 @@ namespace plb {
  
  template<typename T, template<typename U> class Descriptor> struct Dynamics;
  template<typename T, template<typename U> class Descriptor> class BlockLattice3D;
@@ -23,7 +34,7 @@ index d672045..359af56 100644
  
  template<typename T, template<typename U> class Descriptor>
  class BlockLatticeDataTransfer3D : public BlockDataTransfer3D {
-@@ -131,14 +131,14 @@ public:
+@@ -131,14 +135,14 @@ public:
          PLB_PRECONDITION(iX<this->getNx());
          PLB_PRECONDITION(iY<this->getNy());
          PLB_PRECONDITION(iZ<this->getNz());
@@ -40,7 +51,7 @@ index d672045..359af56 100644
      }
      /// Specify wheter statistics measurements are done on a rect. domain
      virtual void specifyStatisticsStatus (
-@@ -191,10 +191,10 @@ private:
+@@ -191,10 +195,10 @@ private:
      plint allocatedMemory() const;
  private:
      void periodicDomain(Box3D domain);
@@ -53,7 +64,7 @@ index d672045..359af56 100644
  public:
      static CachePolicy3D& cachePolicy();
      template<typename T_, template<typename U_> class Descriptor_>
-@@ -207,6 +207,16 @@ public:
+@@ -207,6 +211,16 @@ public:
      friend class WaveAbsorptionExternalRhoJcollideAndStream3D;
      template<typename T_, template<typename U_> class Descriptor_>
      friend class OnLinkExternalRhoJcollideAndStream3D;
@@ -338,11 +349,56 @@ index 8005825..feda2f7 100644
                          }
                      }
                  }
+diff --git a/src/basicDynamics/isoThermalDynamics.h b/src/basicDynamics/isoThermalDynamics.h
+index 4cdc153..8c1f965 100644
+--- a/src/basicDynamics/isoThermalDynamics.h
++++ b/src/basicDynamics/isoThermalDynamics.h
+@@ -31,6 +31,7 @@
+ 
+ #include "core/globalDefs.h"
+ #include "core/dynamics.h"
++#include "atomicBlock/blockLattice3D.h"
+ 
+ namespace plb {
+ 
+@@ -62,6 +63,12 @@ public:
+     /// Returns 0, as a default value for isothermal flow.
+     virtual void computeHeatFlux( Cell<T,Descriptor> const& cell,
+                                   Array<T,Descriptor<T>::d>& q ) const;
++    
++    // Compute the shear rate 
++  //  virtual void computeShearRate (
++    //    Cell<T,Descriptor> const& cell, 
++      //  BlockLattice3D<T, Descriptor>& lattice, 
++        //Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const;
+ 
+ /* *************** Switch between population and moment representation ****** */
+ 
+diff --git a/src/basicDynamics/isoThermalDynamics.hh b/src/basicDynamics/isoThermalDynamics.hh
+index 7751f78..2d141fa 100644
+--- a/src/basicDynamics/isoThermalDynamics.hh
++++ b/src/basicDynamics/isoThermalDynamics.hh
+@@ -41,6 +41,7 @@
+ #include "core/latticeStatistics.h"
+ #include <algorithm>
+ #include <limits>
++#include "atomicBlock/blockLattice3D.h"
+ 
+ namespace plb {
+ 
 diff --git a/src/core/cell.h b/src/core/cell.h
-index 8ca5cc2..484c2c8 100644
+index 8ca5cc2..95c9b66 100644
 --- a/src/core/cell.h
 +++ b/src/core/cell.h
-@@ -49,7 +49,7 @@ public:
+@@ -34,6 +34,7 @@
+ #include "core/dynamics.h"
+ #include "core/array.h"
+ #include "core/hierarchicSerializer.h"
++#include "atomicBlock/blockLattice3D.h"
+ 
+ namespace plb {
+ 
+@@ -49,7 +50,7 @@ public:
          PLB_PRECONDITION( index < ExternalField::numScalars );
          return data+index;
      }
@@ -351,7 +407,27 @@ index 8ca5cc2..484c2c8 100644
      T data[ExternalField::numScalars];
  };
  
-@@ -371,7 +371,9 @@ private:
+@@ -259,6 +260,19 @@ public:
+         dynamics->computeHeatFlux(*this, q);
+     }
+ 
++    /// Compute the shear rate tensor
++    /** \param shearrate shearrate 
++        \param lattice the lattice over which to calculate shearrate 
++     */
++    void computeShearRate (
++        BlockLattice3D<T, Descriptor>& lattice,
++        Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, 
++        plint x, plint y, plint z) const
++        {
++            PLB_PRECONDITION( dynamics );
++            dynamics->computeShearRate(*this, lattice, shearrate, x, y, z);
++        }
++    
+     /// Compute user-defined moment on the cell.
+     /** \param momentId Identifier for the moment.
+      *  \param moment return value: computed moment.
+@@ -371,7 +385,9 @@ private:
      void iniExternal();
  private:
      Array<T,Descriptor<T>::numPop> f;         ///< distribution functions
@@ -361,6 +437,107 @@ index 8ca5cc2..484c2c8 100644
      bool                           takesStat; ///< is statistics taken?
      Dynamics<T,Descriptor>*        dynamics;  ///< local LB dynamics
  };
+diff --git a/src/core/dynamics.h b/src/core/dynamics.h
+index 4225a81..c28510f 100644
+--- a/src/core/dynamics.h
++++ b/src/core/dynamics.h
+@@ -29,11 +29,16 @@
+ #ifndef DYNAMICS_H
+ #define DYNAMICS_H
+ 
++namespace plb {
++template<typename T, template<typename U> class Descriptor> struct Dynamics;
++}
++
+ #include "core/globalDefs.h"
+ #include "core/util.h"
+ #include "core/blockStatistics.h"
+ #include "core/array.h"
+ #include "latticeBoltzmann/geometricOperationTemplates.h"
++#include "atomicBlock/blockLattice3D.h"
+ 
+ namespace plb {
+ 
+@@ -146,7 +151,12 @@ struct Dynamics {
+         Cell<T,Descriptor> const& cell, Array<T,SymmetricTensor<T,Descriptor>::n>& stress ) const =0;
+     /// Compute the heat flux in lattice units
+     virtual void computeHeatFlux( Cell<T,Descriptor> const& cell,
+-                                  Array<T,Descriptor<T>::d>& q ) const =0;
++                                  Array<T,Descriptor<T>::d>& q ) const =0; 
++    // Compute the shear rate 
++    virtual void computeShearRate (
++        Cell<T,Descriptor> const& cell, 
++        BlockLattice3D<T, Descriptor>& lattice, 
++        Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const {}; 
+     /// Compute additional user-defined moments
+     virtual void computeMoment( Cell<T,Descriptor> const& cell,
+                                 plint momentId, T* moment ) const =0;
+@@ -321,6 +331,10 @@ public:
+     /// Compute the heat flux in lattice units
+     virtual void computeHeatFlux( Cell<T,Descriptor> const& cell,
+                                   Array<T,Descriptor<T>::d>& q ) const;
++    /// Compute the shear rate tensor
++    virtual void computeShearRate( Cell<T,Descriptor> const& cell, 
++        BlockLattice3D<T, Descriptor>& lattice, 
++        Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const;
+     /// Compute additional user-defined moments
+     virtual void computeMoment( Cell<T,Descriptor> const& cell,
+                                 plint momentId, T* moment ) const;
+diff --git a/src/core/dynamics.hh b/src/core/dynamics.hh
+index 940bcd6..7699445 100644
+--- a/src/core/dynamics.hh
++++ b/src/core/dynamics.hh
+@@ -40,6 +40,7 @@
+ #include "multiGrid/multiGridUtil.h"
+ #include <algorithm>
+ #include <limits>
++#include "atomicBlock/blockLattice3D.h"
+ 
+ namespace plb {
+ 
+@@ -349,6 +350,42 @@ void BasicBulkDynamics<T,Descriptor>::computeHeatFlux (
+     q.resetToZero();
+ }
+ 
++
++template<typename T, template<typename U> class Descriptor>
++void BasicBulkDynamics<T,Descriptor>::computeShearRate( 
++    Cell<T,Descriptor> const& cell, 
++    BlockLattice3D<T, Descriptor>& lattice, 
++    Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const
++{
++    Array<T,Descriptor<T>::d> velp1;
++    Array<T,Descriptor<T>::d> veln1;
++    Array<T,Descriptor<T>::d> velp2;
++    Array<T,Descriptor<T>::d> veln2;
++    Array<T,Descriptor<T>::d> velp3;
++    Array<T,Descriptor<T>::d> veln3;
++    
++    // velocity gradients in x-direction
++    lattice.get(x+1,y,z).computeVelocity(velp1); //vel at cell+1
++    lattice.get(x-1,y,z).computeVelocity(veln1); //vel at cell-1
++    shearrate[0] = abs(velp1[0]-veln1[0])/2; // dv_x /2*dx
++         
++     // velocity gradients in y-direction
++    lattice.get(x,y+1,z).computeVelocity(velp2); //vel at cell+1
++    lattice.get(x,y-1,z).computeVelocity(veln2); //vel at cell-1
++    shearrate[1] = abs(velp2[0]-veln2[0])/2; // dv_x / 2*dy
++    shearrate[2] = abs(velp2[1]-veln1[1])/2; // dv_y / 2*dy
++    
++    // velocity gradients in z-direction
++    lattice.get(x,y,z+1).computeVelocity(velp3); //vel at cell+1
++    lattice.get(x,y,z-1).computeVelocity(veln3); //vel at cell-1
++    shearrate[2] = abs(velp3[0]-veln3[0])/2; // dv_x / 2*dz
++    shearrate[4] = abs(velp3[1]-veln3[1])/2; // dv_y / 2*dz
++    shearrate[5] = abs(velp3[2]-veln3[2])/2; // dv_z / 2*dz
++
++    
++ }
++
++
+ template<typename T, template<typename U> class Descriptor>
+ void BasicBulkDynamics<T,Descriptor>::computeMoment(
+         Cell<T,Descriptor> const& cell, plint momentId, T* moment ) const
 diff --git a/src/core/globalDefs.h b/src/core/globalDefs.h
 index 2caeb76..f11eb2c 100644
 --- a/src/core/globalDefs.h
@@ -411,6 +588,19 @@ index 0000000..2c19702
 +}
 +#endif
 \ No newline at end of file
+diff --git a/src/dataProcessors/dataAnalysisFunctional3D.hh b/src/dataProcessors/dataAnalysisFunctional3D.hh
+index 330a6a3..ff18828 100644
+--- a/src/dataProcessors/dataAnalysisFunctional3D.hh
++++ b/src/dataProcessors/dataAnalysisFunctional3D.hh
+@@ -1917,7 +1917,7 @@ void BoxStrainRateFromStressFunctional3D<T,Descriptor>::process (
+             for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+                 Cell<T,Descriptor> const& cell = lattice.get(iX,iY,iZ);
+                 Array<T,SymmetricTensor<T,Descriptor>::n>& element
+-                    = S.get(iX+offset.x,iY+offset.y,iZ+offset.z);
++                    = S.get(iX,iY,iZ);
+                 cell.computePiNeq(element);
+                 T omega     = cell.getDynamics().getOmega();
+                 T rhoBar    = cell.getDynamics().computeRhoBar(cell);
 diff --git a/src/gridRefinement/couplingInterfaceGenerator3D.h b/src/gridRefinement/couplingInterfaceGenerator3D.h
 index af5a9c5..790aa71 100644
 --- a/src/gridRefinement/couplingInterfaceGenerator3D.h
