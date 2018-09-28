@@ -25,3 +25,6 @@ this includes the ``HemoCell`` class which you want one of per simulation.
 .. doxygenclass:: HemoCell
   :project: hemocell
 
+
+Editing a HemoCell case to change parameters and initial conditions
+===================================================================

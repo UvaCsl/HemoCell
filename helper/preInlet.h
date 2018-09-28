@@ -67,6 +67,8 @@ public:
   int nProcs = 0;
   bool initialized = false;
   std::map<plint,plint> BlockToMpi;
+  std::map<plint,plint> particleSendMpi; // the value equals the number of atomic blocks that are sent.
+  std::map<plint,bool> particleReceiveMpi;
   bool partOfpreInlet = false;
   int inflow_length = 20;
   bool communications_mapped = false;
@@ -118,6 +120,7 @@ public:
 void mapPreInletParticleBoundary(HemoCell & hemocell);
 void createPreInletVelocityBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagmatrix,plb::Array<double,3> speed, HemoCell & hemocell);
 void applyPreInletVelocityBoundary(HemoCell & hemocell);
+void applyPreInletParticleBoundary(HemoCell & hemocell);
 
 class PreInlet_old {
   class PreInletFunctional: public HemoCellFunctional {

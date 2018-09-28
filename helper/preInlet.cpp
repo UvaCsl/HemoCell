@@ -73,8 +73,17 @@ void mapPreInletParticleBoundary(HemoCell& hemocell) {
   
   for (int bId : hemocell.lattice->getLocalInfo().getBlocks()) {
     Box3D bulk = hemocell.lattice->getMultiBlockManagement().getBulk(bId);
+    Box3D result;
     if (!intersect(domain,bulk,result)) { continue; }
+    if (hemocell.partOfpreInlet) {
+      hemocell.preInlet.particleSendMpi[global::mpi().getRank()] += 1;
+    } else {
+      hemocell.preInlet.particleReceiveMpi[global::mpi().getRank()] = true;
+    }
   }
+  
+  HemoCellGatheringFunctional<plint>.gather(hemocell.preInlet.particleSendMpi);
+  HemoCellGatheringFunctional<bool>.gather(hemocell.preInlet.particleReceiveMpi);
 }
 
 void applyPreInletVelocityBoundary(HemoCell & hemocell) {
