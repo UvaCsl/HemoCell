@@ -97,7 +97,7 @@ public:
             byteGatherType bg;
             bg.g.ID = entry.first;
             bg.g.g = entry.second;
-            for (unsigned int i = 0; i < sizeof(byteGatherType) ; i++) {
+            for (unsigned int i = 0; i < sizeof(IDandGatherType) ; i++) {
                 sendbuffer[be] = bg.b[i];
                 be++;
             }

@@ -47,7 +47,7 @@ HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
     particleDataTransfer.setBlock(*this);
     for (const HemoCellParticle & particle : rhs.particles) {
       tmp = particle;
-      addParticle(this->getBoundingBox(),&tmp);
+      addParticle(&tmp);
     }
     ppc_up_to_date = false;
     lpc_up_to_date = false;
@@ -182,10 +182,10 @@ void HemoCellParticleField::update_pg() {
   pg_up_to_date = true;
 }
 
-void HemoCellParticleField::addParticle(Box3D domain, HemoCellParticle* particle) {
-  addParticle(domain,particle->sv);
+void HemoCellParticleField::addParticle(HemoCellParticle* particle) {
+  addParticle(particle->sv);
 }  
-void HemoCellParticleField::addParticle(Box3D domain, const HemoCellParticle::serializeValues_t & sv) {
+void HemoCellParticleField::addParticle(const HemoCellParticle::serializeValues_t & sv) {
   HemoCellParticle * local_sparticle, * particle;
   const hemo::Array<T,3> & pos = sv.position;
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();

@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "preInlet.h"
 
 #include "boundaryCondition/boundaryInstantiator3D.h"
+#include "hemoCellFields.h"
 
 namespace hemo {
   struct Box3D_simple {
@@ -65,7 +66,6 @@ herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
 void mapPreInletParticleBoundary(HemoCell& hemocell) {
   MPI_Barrier(MPI_COMM_WORLD);
   Box3D domain = hemocell.preInlet.fluidInlet;
-  int offset = hemocell.preInlet.location.z1 - hemocell.preInlet.location.z0;
   if (hemocell.partOfpreInlet) {
     domain.z0 = hemocell.preInlet.location.z0;
   }
@@ -80,12 +80,58 @@ void mapPreInletParticleBoundary(HemoCell& hemocell) {
     } else {
       hemocell.preInlet.particleReceiveMpi[global::mpi().getRank()] = true;
     }
+    hemocell.preInlet.communicationBlocks.push_back(bId);
   }
   
-  HemoCellGatheringFunctional<plint>.gather(hemocell.preInlet.particleSendMpi);
-  HemoCellGatheringFunctional<bool>.gather(hemocell.preInlet.particleReceiveMpi);
+  HemoCellGatheringFunctional<plint>::gather(hemocell.preInlet.particleSendMpi);
+  HemoCellGatheringFunctional<bool>::gather(hemocell.preInlet.particleReceiveMpi);
+  for ( auto & pair : hemocell.preInlet.particleSendMpi) {
+    hemocell.preInlet.sendingBlocks += pair.second;
+  }
 }
 
+void applyPreInletParticleBoundary(HemoCell & hemocell) {
+  PreInlet & preInlet = hemocell.preInlet;
+  vector<MPI_Request> requests;
+  vector<vector<char>> buffers;
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (preInlet.partOfpreInlet) {
+    if(preInlet.particleSendMpi.find(global::mpi().getRank()) != preInlet.particleSendMpi.end()) {
+      for (plint bid : preInlet.communicationBlocks) {
+        buffers.push_back(vector<char>());
+        Box3D domain = hemocell.preInlet.fluidInlet;
+        domain.z0 = hemocell.preInlet.location.z0;
+        domain.z1 = domain.z0 + hemocell.preInlet.inflow_length;
+        
+        hemocell.cellfields->immersedParticles->getComponent(bid).particleDataTransfer.send(domain,buffers.back(),modif::hemocell);
+        for (auto & pair : preInlet.particleReceiveMpi) {
+          const int & pid = pair.first;
+          requests.push_back(MPI_Request());
+          MPI_Isend(&buffers.back()[0],buffers.back().size(),MPI_CHAR,pid,0,MPI_COMM_WORLD,&requests.back());
+          cout << "Send to : " << pid << endl;
+        }
+      }
+    }
+    MPI_Waitall(requests.size(),&requests[0],MPI_STATUSES_IGNORE);
+  } else {
+    if(preInlet.particleReceiveMpi.find(global::mpi().getRank()) != preInlet.particleReceiveMpi.end()) {
+      for (int counter = 0 ; counter < preInlet.sendingBlocks ; counter++) {
+        MPI_Status status;
+        int count;
+        cout << "Trying to receive" << endl;
+        MPI_Probe(MPI_ANY_SOURCE,0,MPI_COMM_WORLD,&status);
+        MPI_Get_count(&status,MPI_CHAR,&count);
+        buffers.push_back(vector<char>(count));
+        MPI_Recv(&buffers.back()[0],count,MPI_CHAR,status.MPI_SOURCE,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        Dot3D offset(0,0,preInlet.inflow_length);
+        cout << "Received from : " << status.MPI_SOURCE << endl;
+        for (int bId : hemocell.lattice->getLocalInfo().getBlocks()) {
+        //  hemocell.cellfields->immersedParticles->getComponent(bId).particleDataTransfer.receive(&buffers.back()[0],buffers.back().size(),modif::hemocell,offset);
+        }
+      }
+    }
+  }
+}
 void applyPreInletVelocityBoundary(HemoCell & hemocell) {
   MPI_Barrier(MPI_COMM_WORLD);
   vector<MPI_Request> reqs;
@@ -426,7 +472,7 @@ void PreInlet_old::PreInletFunctional::processGenericBlocks(Box3D domain, std::v
       vel[1] = particle->velocity[1];
       vel[2] = particle->velocity[2];
       particle_h.sv.v = vel;
-      particlefield->addParticle(domain,&particle_h);
+      particlefield->addParticle(&particle_h);
     }
   }
   

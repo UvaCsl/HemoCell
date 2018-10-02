@@ -67,8 +67,10 @@ public:
   int nProcs = 0;
   bool initialized = false;
   std::map<plint,plint> BlockToMpi;
-  std::map<plint,plint> particleSendMpi; // the value equals the number of atomic blocks that are sent.
-  std::map<plint,bool> particleReceiveMpi;
+  std::map<int,plint> particleSendMpi; // the value equals the number of atomic blocks that are sent.
+  std::map<int,bool> particleReceiveMpi;
+  std::vector<plint> communicationBlocks;
+  int sendingBlocks = 0;
   bool partOfpreInlet = false;
   int inflow_length = 20;
   bool communications_mapped = false;

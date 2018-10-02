@@ -458,7 +458,7 @@ void HemoCellFields::HemoSetParticles::processGenericBlocks(Box3D domain, std::v
   Box3D localDomain;
   intersect(domain,pf->localDomain,localDomain);
   for (HemoCellParticle & particle : particles ) {
-    pf->addParticle(localDomain,&particle);
+    pf->addParticle(&particle);
   }
 }
 void HemoCellFields::addParticles(vector<HemoCellParticle> & particles) {

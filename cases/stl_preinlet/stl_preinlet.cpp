@@ -46,6 +46,7 @@ int main(int argc, char *argv[]) {
   //Setting Preinlet creation
   plb::Array<double,3> speed = {0,0,0};
   createPreInletVelocityBoundary(hemocell.lattice, flagMatrix, speed, hemocell);
+  mapPreInletParticleBoundary(hemocell);
 
   hlog << "(PipeFlow) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl; 
   boundaryFromFlagMatrix(hemocell.lattice,flagMatrix,hemocell.partOfpreInlet);
@@ -132,6 +133,7 @@ int main(int argc, char *argv[]) {
     }
     
     applyPreInletVelocityBoundary(hemocell);
+    //applyPreInletParticleBoundary(hemocell);
 
     // Only enable if PARMETIS build is available
     /*

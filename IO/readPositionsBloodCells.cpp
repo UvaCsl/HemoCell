@@ -86,7 +86,7 @@ inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, 
       }
       
       to_add_particle = HemoCellParticle(vertex,cellId,iVertex,celltype);
-      particleField.addParticle(particleField.getBoundingBox(), &to_add_particle);
+      particleField.addParticle(&to_add_particle);
 no_add:;
     }
 }

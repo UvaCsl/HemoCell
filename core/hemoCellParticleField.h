@@ -45,8 +45,8 @@ public:
     HemoCellParticleField* clone() const;
     void swap(HemoCellParticleField& rhs);
     virtual void applyConstitutiveModel(bool forced = false);
-    virtual void addParticle(plb::Box3D domain, HemoCellParticle* particle);
-    void addParticle(plb::Box3D domain, const HemoCellParticle::serializeValues_t & sv);
+    virtual void addParticle(HemoCellParticle* particle);
+    void addParticle(const HemoCellParticle::serializeValues_t & sv);
 
     virtual void removeParticles(plb::Box3D domain);
     virtual void removeParticles_inverse(plb::Box3D domain);
