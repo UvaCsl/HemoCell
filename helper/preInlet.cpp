@@ -100,13 +100,12 @@ void applyPreInletParticleBoundary(HemoCell & hemocell) {
       for (plint bid : preInlet.communicationBlocks) {
         buffers.push_back(vector<char>());
         Box3D domain = hemocell.preInlet.fluidInlet;
-        domain.z0 = hemocell.preInlet.location.z0;
+        //domain.z0 = hemocell.preInlet.location.z0;
         domain.z1 = domain.z0 + hemocell.preInlet.inflow_length;
-        cout << "Domain: " << domain;
-        cout << "Box: " << hemocell.cellfields->immersedParticles->getComponent(bid).boundingBox;
-        cout << "Location" << hemocell.cellfields->immersedParticles->getComponent(bid).getLocation();
+        Dot3D shift = hemocell.cellfields->immersedParticles->getComponent(bid).getLocation();;
+        domain = domain.shift(-shift.x,-shift.y,-shift.z);
         hemocell.cellfields->immersedParticles->getComponent(bid).particleDataTransfer.send(domain,buffers.back(),modif::hemocell);
-        cout << buffers.back().size() << endl;
+       // cout << buffers.back().size() << endl;
         for (auto & pair : preInlet.particleReceiveMpi) {
           const int & pid = pair.first;
           requests.push_back(MPI_Request());
@@ -124,10 +123,14 @@ void applyPreInletParticleBoundary(HemoCell & hemocell) {
         MPI_Get_count(&status,MPI_CHAR,&count);
         buffers.push_back(vector<char>(count));
         MPI_Recv(&buffers.back()[0],count,MPI_CHAR,status.MPI_SOURCE,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-        Dot3D offset(0,0,preInlet.inflow_length);
+        Dot3D offset(0,0,0);
         for (int bId : hemocell.cellfields->immersedParticles->getLocalInfo().getBlocks()) {
-        cout << "Box recv: " << hemocell.cellfields->immersedParticles->getComponent(bId).boundingBox;
-        cout << "Location recv" << hemocell.cellfields->immersedParticles->getComponent(bId).getLocation();
+       // cout << "Box recv: " << hemocell.cellfields->immersedParticles->getComponent(bId).boundingBox;
+       // cout << "Location recv" << hemocell.cellfields->immersedParticles->getComponent(bId).getLocation();
+          HemoCellParticle::serializeValues_t * newParticle;;
+        // 1. Generate dynamics object, and unserialize dynamic data.
+      newParticle = (HemoCellParticle::serializeValues_t*)&buffers.back()[0];
+      cout << newParticle->position[0] << " " <<newParticle->position[1] << " " << newParticle->position[2] << endl;
           hemocell.cellfields->immersedParticles->getComponent(bId).particleDataTransfer.receive(&buffers.back()[0],buffers.back().size(),modif::hemocell,offset);
         }
       }
