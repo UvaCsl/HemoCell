@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
+#include <openmpi/mpi.h>
 
 #include "readPositionsBloodCells.h"
 #include "hemoCellFunctional.h"
@@ -286,6 +287,15 @@ void HemoCell::iterate() {
           DESCRIPTOR<T>::ExternalField::forceBeginsAt,
           plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
   global.statistics.getCurrent().stop();
+  
+  //Small sanity check to see if our MPI is still sane (do we have any unprocessed messages?)
+  MPI_Status status;
+  int flag;
+  MPI_Iprobe(MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&flag,&status);
+  if (flag) {
+    cout << "Error there are messages while they are not expected" << endl;
+  }
+  
   iter++;
   global.statistics.getCurrent().stop();
 }

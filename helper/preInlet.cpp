@@ -102,13 +102,15 @@ void applyPreInletParticleBoundary(HemoCell & hemocell) {
         Box3D domain = hemocell.preInlet.fluidInlet;
         domain.z0 = hemocell.preInlet.location.z0;
         domain.z1 = domain.z0 + hemocell.preInlet.inflow_length;
-        
+        cout << "Domain: " << domain;
+        cout << "Box: " << hemocell.cellfields->immersedParticles->getComponent(bid).boundingBox;
+        cout << "Location" << hemocell.cellfields->immersedParticles->getComponent(bid).getLocation();
         hemocell.cellfields->immersedParticles->getComponent(bid).particleDataTransfer.send(domain,buffers.back(),modif::hemocell);
+        cout << buffers.back().size() << endl;
         for (auto & pair : preInlet.particleReceiveMpi) {
           const int & pid = pair.first;
           requests.push_back(MPI_Request());
           MPI_Isend(&buffers.back()[0],buffers.back().size(),MPI_CHAR,pid,0,MPI_COMM_WORLD,&requests.back());
-          cout << "Send to : " << pid << endl;
         }
       }
     }
@@ -118,19 +120,20 @@ void applyPreInletParticleBoundary(HemoCell & hemocell) {
       for (int counter = 0 ; counter < preInlet.sendingBlocks ; counter++) {
         MPI_Status status;
         int count;
-        cout << "Trying to receive" << endl;
         MPI_Probe(MPI_ANY_SOURCE,0,MPI_COMM_WORLD,&status);
         MPI_Get_count(&status,MPI_CHAR,&count);
         buffers.push_back(vector<char>(count));
         MPI_Recv(&buffers.back()[0],count,MPI_CHAR,status.MPI_SOURCE,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
         Dot3D offset(0,0,preInlet.inflow_length);
-        cout << "Received from : " << status.MPI_SOURCE << endl;
-        for (int bId : hemocell.lattice->getLocalInfo().getBlocks()) {
-        //  hemocell.cellfields->immersedParticles->getComponent(bId).particleDataTransfer.receive(&buffers.back()[0],buffers.back().size(),modif::hemocell,offset);
+        for (int bId : hemocell.cellfields->immersedParticles->getLocalInfo().getBlocks()) {
+        cout << "Box recv: " << hemocell.cellfields->immersedParticles->getComponent(bId).boundingBox;
+        cout << "Location recv" << hemocell.cellfields->immersedParticles->getComponent(bId).getLocation();
+          hemocell.cellfields->immersedParticles->getComponent(bId).particleDataTransfer.receive(&buffers.back()[0],buffers.back().size(),modif::hemocell,offset);
         }
       }
     }
   }
+  MPI_Barrier(MPI_COMM_WORLD);
 }
 void applyPreInletVelocityBoundary(HemoCell & hemocell) {
   MPI_Barrier(MPI_COMM_WORLD);

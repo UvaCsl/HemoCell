@@ -96,6 +96,8 @@ void boundaryFromFlagMatrix(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb:
 inline std::ostream& operator<<(std::ostream& stream, const plb::Box3D& box) {
     return stream << "Box3D: " << box.x0 << " "<<box.x1<<" "<<box.y0<<" "<<box.y1<< " "<<box.z0<<" "<<box.z1<<endl;
 }
-
+inline std::ostream& operator<<(std::ostream& stream, const plb::Dot3D& dot) {
+    return stream << "Dot3D: " << dot.x << " "<<dot.y<<" "<<dot.z<<endl;
+}
 }
 #endif // FCN_GENERIC_FUNCTIONS_HH

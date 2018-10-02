@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
     }
     
     applyPreInletVelocityBoundary(hemocell);
-    //applyPreInletParticleBoundary(hemocell);
+    applyPreInletParticleBoundary(hemocell);
 
     // Only enable if PARMETIS build is available
     /*
