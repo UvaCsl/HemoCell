@@ -73,6 +73,7 @@ public:
   int sendingBlocks = 0;
   bool partOfpreInlet = false;
   int inflow_length = 20;
+  int preinlet_length = 0;
   bool communications_mapped = false;
   std::vector<int> particle_receivers;
   std::vector<int> particle_senders;

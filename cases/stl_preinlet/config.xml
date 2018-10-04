@@ -3,7 +3,7 @@
 
 <preInlet>
   <parameters>
-    <lengthN> 30 </lengthN> <!-- Lenght in Lattice Units -->
+    <lengthN> 60 </lengthN> <!-- Lenght in Lattice Units -->
     <Re> 0.5 </Re>
     <Cells>
       <Cell materialModel="RBC" xml="preinlet_RBC.xml" />

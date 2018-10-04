@@ -332,6 +332,7 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & c
             cellFields.lattice->getBoundingBox(), fluidAndParticleFieldsArg);
     hlogfile << "Mpi Process: " << global::mpi().getRank()  << " Completed loading particles" << std::endl;
     }
+    cellFields.number_of_cells = getTotalNumberOfCells(cellFields);
 }
 
 }

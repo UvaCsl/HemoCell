@@ -39,6 +39,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include "preInlet.h"
 
 using namespace hemo;
 
@@ -362,8 +363,8 @@ void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRe
 
 void HemoCell::specifyPreInlet(MultiScalarField3D<int>& flagMatrix) {
   preInlet = PreInlet(flagMatrix);
-  int preInletLength = (*cfg)["preInlet"]["parameters"]["lengthN"].read<int>();
-  preInlet.location.z0 -= preInletLength;
+  preInlet.preinlet_length = (*cfg)["preInlet"]["parameters"]["lengthN"].read<int>();
+  preInlet.location.z0 -= preInlet.preinlet_length;
 }
 
 void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {

@@ -140,8 +140,8 @@ void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer,
 void HemoCellParticleDataTransfer::receive (char * buffer, unsigned int size, modif::ModifT kind, Dot3D absoluteOffset )
 {
   if (absoluteOffset.x == 0 && absoluteOffset.y == 0 && absoluteOffset.z == 0) {
-    receive(buffer,size,kind);
-    return;
+   // receive(buffer,size,kind);
+   // return;
   }
   
   global.statistics.getCurrent()["MpiReceive"].start();
@@ -160,6 +160,7 @@ void HemoCellParticleDataTransfer::receive (char * buffer, unsigned int size, mo
       //Edit in buffer, but it is not used again anyway
       newParticle->position += realAbsoluteOffset;
       newParticle->cellId += offset;
+      //std::cout << newParticle->position[0] << " " << newParticle->position[1] << " "<< newParticle->position[2] << endl;
       particleField->addParticle(*newParticle);
     }
   }
