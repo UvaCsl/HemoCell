@@ -361,7 +361,6 @@ void HemoCellParticleField::removeParticles_inverse(Box3D domain) {
 
 void HemoCellParticleField::syncEnvelopes() {
   removeParticles_inverse(localDomain);
-  commBuffer_valid = false;
 }
 
 void HemoCellParticleField::findParticles (

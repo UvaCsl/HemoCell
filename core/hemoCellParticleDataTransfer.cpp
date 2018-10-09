@@ -82,20 +82,13 @@ void HemoCellParticleDataTransfer::send (
     //   is run whenever kind is one of the dynamic types.
     if ( (kind==modif::hemocell))
     {
-        if (!particleField->commBuffer_valid) {
-          std::vector<HemoCellParticle*> foundParticles;
-          particleField->findParticles(particleField->localDomain, foundParticles);
-          bufferNoInit->resize(sizeof(HemoCellParticle::serializeValues_t)*foundParticles.size());
-          pluint offset=0;
-          for (HemoCellParticle * iParticle : foundParticles) {
-            *((HemoCellParticle::serializeValues_t*)&(*bufferNoInit)[offset]) = iParticle->sv;
-            offset += sizeof(HemoCellParticle::serializeValues_t);
-          }
-          
-          particleField->commBuffer = buffer;
-          particleField->commBuffer_valid = true;
-        } else {
-          buffer = particleField->commBuffer;
+        std::vector<HemoCellParticle*> foundParticles;
+        particleField->findParticles(domain, foundParticles);
+        bufferNoInit->resize(sizeof(HemoCellParticle::serializeValues_t)*foundParticles.size());
+        pluint offset=0;
+        for (HemoCellParticle * iParticle : foundParticles) {
+          *((HemoCellParticle::serializeValues_t*)&(*bufferNoInit)[offset]) = iParticle->sv;
+          offset += sizeof(HemoCellParticle::serializeValues_t);
         }
     }
   global.statistics.getCurrent().stop();

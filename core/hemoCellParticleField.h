@@ -121,8 +121,6 @@ public:
     void passthroughpass(int,plb::Box3D,vector<vector<T>>&,pluint,std::string&);
 
 public:
-    std::vector<char> commBuffer;
-    bool commBuffer_valid = false;
     virtual HemoCellParticleDataTransfer& getDataTransfer();
     virtual HemoCellParticleDataTransfer const& getDataTransfer() const;
     static std::string getBlockName();
