@@ -38,6 +38,7 @@ class HemoCellFields;
 #include "offLattice/triangularSurfaceMesh.hh"
 #include "libraryInterfaces/TINYXML_xmlIO.hh"
 #include "particles/multiParticleField3D.hh"
+#include "parallelism/parallelBlockCommunicator3D.h"
 
 namespace hemo {
 class HemoCell;
@@ -204,6 +205,11 @@ public:
    int number_of_cells = 0;
   
    unsigned int max_neighbours = 0;
+   
+   plb::CommunicationStructure3D * large_communicator = 0;
+   plb::ParallelBlockCommunicator3D envelope_communicator;
+   
+   void calculateCommunicationStructure();
    
    /*
    * Functionals needed for access of the cellfields

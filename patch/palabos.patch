@@ -539,16 +539,17 @@ index 940bcd6..7699445 100644
  void BasicBulkDynamics<T,Descriptor>::computeMoment(
          Cell<T,Descriptor> const& cell, plint momentId, T* moment ) const
 diff --git a/src/core/globalDefs.h b/src/core/globalDefs.h
-index 2caeb76..f11eb2c 100644
+index 2caeb76..06f02e6 100644
 --- a/src/core/globalDefs.h
 +++ b/src/core/globalDefs.h
-@@ -187,10 +187,11 @@ namespace modif {
+@@ -187,10 +187,12 @@ namespace modif {
          dynamicVariables =2,  //< Only content of dynamics objects, but no static content.
          allVariables     =3,  //< Both the static and dynamic cell content.
          dataStructure    =4,  //< Recreate dynamics and copy both static and dynamic content.
 -        undefined        =5   
 +        undefined        =5,
-+        hemocell         =6
++        hemocell         =6,
++        hemocell_no_comm =7, //< Update envelopes but dont automatically send
      };
  
 -    enum { numConstants=5 };
@@ -823,6 +824,72 @@ index 8cdd896..6116a8c 100644
          {
              computePeriodicOverlaps(sparseBlock, blockId);
          }
+diff --git a/src/multiBlock/localMultiBlockInfo3D.h b/src/multiBlock/localMultiBlockInfo3D.h
+index 2db1e50..7f89c0b 100644
+--- a/src/multiBlock/localMultiBlockInfo3D.h
++++ b/src/multiBlock/localMultiBlockInfo3D.h
+@@ -129,6 +129,7 @@ private:
+     /// Determine all blocks which are associated to the current MPI thread.
+     void computeMyBlocks(SparseBlockStructure3D const& sparseBlock,
+                          ThreadAttribution const& attribution);
++public:    
+     /// Compute normal overlaps for all local blocks.
+     void computeAllNormalOverlaps(SparseBlockStructure3D const& sparseBlock);
+     /// Compute normal overlaps for one local block.
+@@ -137,8 +138,9 @@ private:
+     void computeAllPeriodicOverlaps(SparseBlockStructure3D const& sparseBlock);
+     /// Compute periodic overlaps for one local block.
+     void computePeriodicOverlaps(SparseBlockStructure3D const& sparseBlock, plint blockId);
+-private:
++public:
+     plint                          envelopeWidth;
++private:
+     std::vector<plint>             myBlocks;
+     std::vector<Overlap3D>         normalOverlaps;
+     std::vector<PeriodicOverlap3D> periodicOverlaps;
+diff --git a/src/multiBlock/multiBlock3D.cpp b/src/multiBlock/multiBlock3D.cpp
+index 57c178e..bd6f306 100644
+--- a/src/multiBlock/multiBlock3D.cpp
++++ b/src/multiBlock/multiBlock3D.cpp
+@@ -352,6 +352,10 @@ MultiBlockManagement3D const& MultiBlock3D::getMultiBlockManagement() const {
+     return multiBlockManagement;
+ }
+ 
++MultiBlockManagement3D & MultiBlock3D::getMultiBlockManagement() {
++    return multiBlockManagement;
++}
++
+ void MultiBlock3D::setCoProcessors(std::map<plint,int> const& coProcessors) {
+     multiBlockManagement.setCoProcessors(coProcessors);
+ }
+diff --git a/src/multiBlock/multiBlock3D.h b/src/multiBlock/multiBlock3D.h
+index 90fd434..15a7239 100644
+--- a/src/multiBlock/multiBlock3D.h
++++ b/src/multiBlock/multiBlock3D.h
+@@ -152,6 +152,7 @@ public:
+     std::vector<ProcessorStorage3D> const& getStoredProcessors() const;
+ public:
+     MultiBlockManagement3D const& getMultiBlockManagement() const;
++    MultiBlockManagement3D & getMultiBlockManagement();
+     void setCoProcessors(std::map<plint,int> const& coProcessors);
+     LocalMultiBlockInfo3D const& getLocalInfo() const;
+     SparseBlockStructure3D const& getSparseBlockStructure() const;
+diff --git a/src/multiBlock/multiBlockManagement3D.cpp b/src/multiBlock/multiBlockManagement3D.cpp
+index 866622e..febf58b 100644
+--- a/src/multiBlock/multiBlockManagement3D.cpp
++++ b/src/multiBlock/multiBlockManagement3D.cpp
+@@ -194,8 +194,9 @@ void MultiBlockManagement3D::setRefinementLevel(plint newLevel) {
+ }
+ 
+ void MultiBlockManagement3D::changeEnvelopeWidth(plint newEnvelopeWidth) {
+-    envelopeWidth = newEnvelopeWidth;
+-    localInfo = LocalMultiBlockInfo3D(sparseBlock, getThreadAttribution(), envelopeWidth);
++    localInfo.envelopeWidth = envelopeWidth;
++    localInfo.computeAllNormalOverlaps(sparseBlock);
++    localInfo.computeAllPeriodicOverlaps(sparseBlock);   
+ }
+ 
+ bool MultiBlockManagement3D::equivalentTo(MultiBlockManagement3D const& rhs) const {
 diff --git a/src/multiBlock/sparseBlockStructure3D.cpp b/src/multiBlock/sparseBlockStructure3D.cpp
 index a8ae15e..fe3e896 100644
 --- a/src/multiBlock/sparseBlockStructure3D.cpp
@@ -1000,7 +1067,7 @@ index 622aa7d..ce82486 100644
  void TriangularSurfaceMesh<T>::smooth(plint maxiter, T relax, bool isMeasureWeighted)
  {
 diff --git a/src/parallelism/parallelBlockCommunicator3D.cpp b/src/parallelism/parallelBlockCommunicator3D.cpp
-index c891d72..9bec053 100644
+index c891d72..0e3436a 100644
 --- a/src/parallelism/parallelBlockCommunicator3D.cpp
 +++ b/src/parallelism/parallelBlockCommunicator3D.cpp
 @@ -25,6 +25,8 @@
@@ -1020,7 +1087,46 @@ index c891d72..9bec053 100644
  
  namespace plb {
  
-@@ -280,17 +283,76 @@ void ParallelBlockCommunicator3D::communicate (
+@@ -232,6 +235,30 @@ void ParallelBlockCommunicator3D::duplicateOverlaps( MultiBlock3D& multiBlock,
+     communicate(*communication, multiBlock, multiBlock, whichData);
+ }
+ 
++void ParallelBlockCommunicator3D::duplicateOverlaps( MultiBlockManagement3D& multiBlockManagement,
++                                                     PeriodicitySwitch3D const& periodicity  ) const
++{
++
++    // Implement a caching mechanism for the communication structure.
++    if (overlapsModified) {
++        overlapsModified = false;
++        LocalMultiBlockInfo3D const& localInfo = multiBlockManagement.getLocalInfo();
++        std::vector<Overlap3D> overlaps(multiBlockManagement.getLocalInfo().getNormalOverlaps());
++        for (pluint iOverlap=0; iOverlap<localInfo.getPeriodicOverlaps().size(); ++iOverlap) {
++            PeriodicOverlap3D const& pOverlap = localInfo.getPeriodicOverlaps()[iOverlap];
++            if (periodicity.get(pOverlap.normalX,pOverlap.normalY,pOverlap.normalZ)) {
++                overlaps.push_back(pOverlap.overlap);
++            }
++        }
++        delete communication;
++        communication = new CommunicationStructure3D (
++                                overlaps,
++                                multiBlockManagement, multiBlockManagement,
++                              0 );
++    }
++
++}
++
+ void ParallelBlockCommunicator3D::communicate (
+         std::vector<Overlap3D> const& overlaps,
+         MultiBlock3D const& originMultiBlock,
+@@ -253,6 +280,7 @@ void ParallelBlockCommunicator3D::communicate (
+         MultiBlock3D const& originMultiBlock,
+         MultiBlock3D& destinationMultiBlock, modif::ModifT whichData ) const
+ {
++  if (whichData == modif::hemocell_no_comm) { return; }
+     global::profiler().start("mpiCommunication");
+     bool staticMessage = whichData == modif::staticVariables;
+     // 1. Non-blocking receives.
+@@ -280,17 +308,75 @@ void ParallelBlockCommunicator3D::communicate (
                  info.toDomain, deltaX, deltaY, deltaZ, fromBlock,
                  whichData, info.absoluteOffset );
      }
@@ -1036,7 +1142,6 @@ index c891d72..9bec053 100644
 +    
 +    if (whichData == modif::hemocell) {
 +      // 4. Become receptive (dynamic)
-+
 +      std::map<CommunicatorEntry*,std::vector<CommunicationInfo3D*>> infos;
 +      
 +      std::vector<dynamicReceive_t> receives;
@@ -1107,6 +1212,35 @@ index c891d72..9bec053 100644
      // 5. Finalize the sends.
      communication.sendComm.finalize(staticMessage);
      global::profiler().stop("mpiCommunication");
+diff --git a/src/parallelism/parallelBlockCommunicator3D.h b/src/parallelism/parallelBlockCommunicator3D.h
+index 879c653..3754622 100644
+--- a/src/parallelism/parallelBlockCommunicator3D.h
++++ b/src/parallelism/parallelBlockCommunicator3D.h
+@@ -77,20 +77,22 @@ public:
+     void swap(ParallelBlockCommunicator3D& rhs);
+     virtual ParallelBlockCommunicator3D* clone() const;
+     virtual void duplicateOverlaps(MultiBlock3D& multiBlock, modif::ModifT whichData) const;
++    virtual void duplicateOverlaps(MultiBlockManagement3D&,PeriodicitySwitch3D const& ) const;
++
+     virtual void communicate( std::vector<Overlap3D> const& overlaps,
+                               MultiBlock3D const& originMultiBlock,
+                               MultiBlock3D& destinationMultiBlock,
+                               modif::ModifT whichData ) const;
+     virtual void signalPeriodicity() const;
+-private:
+     void communicate( CommunicationStructure3D& communication,
+                       MultiBlock3D const& originMultiBlock,
+                       MultiBlock3D& destinationMultiBlock, modif::ModifT whichData ) const;
+     void subscribeOverlap (
+         Overlap3D const& overlap, MultiBlockManagement3D const& multiBlockManagement,
+         SendRecvPool& sendPool, SendRecvPool& recvPool, plint sizeOfCell ) const;
+-private:
++public:
+     mutable bool overlapsModified;
++public:
+     mutable CommunicationStructure3D* communication;
+ };
+ 
 diff --git a/src/parallelism/sendRecvPool.cpp b/src/parallelism/sendRecvPool.cpp
 index ff5eb57..57d9e8f 100644
 --- a/src/parallelism/sendRecvPool.cpp
@@ -1149,7 +1283,7 @@ index ff5eb57..57d9e8f 100644
          int fromProc, bool staticMessage )
  {
 diff --git a/src/parallelism/sendRecvPool.h b/src/parallelism/sendRecvPool.h
-index 68c06dd..c27f65c 100644
+index 68c06dd..f79a3c7 100644
 --- a/src/parallelism/sendRecvPool.h
 +++ b/src/parallelism/sendRecvPool.h
 @@ -32,6 +32,7 @@
@@ -1178,7 +1312,16 @@ index 68c06dd..c27f65c 100644
  };
  
  /// The "in-action" device for all messages sent from a processor.
-@@ -147,6 +159,8 @@ public:
+@@ -136,7 +148,7 @@ public:
+     void finalize(bool staticMessage);
+ private:
+     void startCommunication(int toProc, bool staticMessage);
+-private:
++public:
+     std::map<int, CommunicatorEntry > subscriptions;
+ };
+ 
+@@ -147,11 +159,13 @@ public:
      RecvPoolCommunicator(SendRecvPool const& pool);
      /// Initiate non-blocking communication.
      void startBeingReceptive(bool staticMessage);
@@ -1187,6 +1330,12 @@ index 68c06dd..c27f65c 100644
      std::vector<char> const& receiveMessage(int fromProc, bool staticMessage);
  private:
      void finalizeStatic(int fromProc);
+     void receiveDynamic(int fromProc);
+-private:
++public:
+     std::map<int, CommunicatorEntry > subscriptions;
+ };
+ 
 diff --git a/src/particles/particleField3D.h b/src/particles/particleField3D.h
 index 373596f..0709fa9 100644
 --- a/src/particles/particleField3D.h

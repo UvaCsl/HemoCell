@@ -226,6 +226,7 @@ void HemoCell::iterate() {
   checkExitSignals();
   if (!sanityCheckDone) {
     sanityCheck();
+    cellfields->calculateCommunicationStructure();
   }
   global.statistics.getCurrent()["iterate"].start();
   // ### 1 ### Particle Force to Fluid
