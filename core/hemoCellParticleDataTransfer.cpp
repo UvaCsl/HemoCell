@@ -40,7 +40,7 @@ struct NoInitChar
 
 /* *************** class HemoParticleDataTransfer3D ************************ */
 
-inline plint HemoCellParticleDataTransfer::getOffset(Dot3D & absoluteOffset) {
+plint HemoCellParticleDataTransfer::getOffset(Dot3D const & absoluteOffset) {
       int offset = 0;
       //Offset only happens for wrapping around. Decide the new (or old) CellID to use
       if (absoluteOffset.x > 0) {

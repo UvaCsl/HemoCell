@@ -825,7 +825,7 @@ index 8cdd896..6116a8c 100644
              computePeriodicOverlaps(sparseBlock, blockId);
          }
 diff --git a/src/multiBlock/localMultiBlockInfo3D.h b/src/multiBlock/localMultiBlockInfo3D.h
-index 2db1e50..7f89c0b 100644
+index 2db1e50..60134da 100644
 --- a/src/multiBlock/localMultiBlockInfo3D.h
 +++ b/src/multiBlock/localMultiBlockInfo3D.h
 @@ -129,6 +129,7 @@ private:
@@ -836,7 +836,7 @@ index 2db1e50..7f89c0b 100644
      /// Compute normal overlaps for all local blocks.
      void computeAllNormalOverlaps(SparseBlockStructure3D const& sparseBlock);
      /// Compute normal overlaps for one local block.
-@@ -137,8 +138,9 @@ private:
+@@ -137,9 +138,11 @@ private:
      void computeAllPeriodicOverlaps(SparseBlockStructure3D const& sparseBlock);
      /// Compute periodic overlaps for one local block.
      void computePeriodicOverlaps(SparseBlockStructure3D const& sparseBlock, plint blockId);
@@ -845,8 +845,10 @@ index 2db1e50..7f89c0b 100644
      plint                          envelopeWidth;
 +private:
      std::vector<plint>             myBlocks;
++public:
      std::vector<Overlap3D>         normalOverlaps;
      std::vector<PeriodicOverlap3D> periodicOverlaps;
+     std::vector<PeriodicOverlap3D> periodicOverlapWithRemoteData;
 diff --git a/src/multiBlock/multiBlock3D.cpp b/src/multiBlock/multiBlock3D.cpp
 index 57c178e..bd6f306 100644
 --- a/src/multiBlock/multiBlock3D.cpp
@@ -875,18 +877,26 @@ index 90fd434..15a7239 100644
      LocalMultiBlockInfo3D const& getLocalInfo() const;
      SparseBlockStructure3D const& getSparseBlockStructure() const;
 diff --git a/src/multiBlock/multiBlockManagement3D.cpp b/src/multiBlock/multiBlockManagement3D.cpp
-index 866622e..febf58b 100644
+index 866622e..8f8c4cb 100644
 --- a/src/multiBlock/multiBlockManagement3D.cpp
 +++ b/src/multiBlock/multiBlockManagement3D.cpp
-@@ -194,8 +194,9 @@ void MultiBlockManagement3D::setRefinementLevel(plint newLevel) {
+@@ -194,8 +194,17 @@ void MultiBlockManagement3D::setRefinementLevel(plint newLevel) {
  }
  
  void MultiBlockManagement3D::changeEnvelopeWidth(plint newEnvelopeWidth) {
 -    envelopeWidth = newEnvelopeWidth;
 -    localInfo = LocalMultiBlockInfo3D(sparseBlock, getThreadAttribution(), envelopeWidth);
-+    localInfo.envelopeWidth = envelopeWidth;
++    localInfo.envelopeWidth = newEnvelopeWidth;
++
++    localInfo.normalOverlaps.clear();
++    localInfo.periodicOverlapWithRemoteData.clear();
++    localInfo.periodicOverlaps.clear();
++
 +    localInfo.computeAllNormalOverlaps(sparseBlock);
-+    localInfo.computeAllPeriodicOverlaps(sparseBlock);   
++    localInfo.computeAllPeriodicOverlaps(sparseBlock);
++    
++    std::sort(localInfo.normalOverlaps.begin(), localInfo.normalOverlaps.end());
++    std::sort(localInfo.periodicOverlaps.begin(), localInfo.periodicOverlaps.end());
  }
  
  bool MultiBlockManagement3D::equivalentTo(MultiBlockManagement3D const& rhs) const {

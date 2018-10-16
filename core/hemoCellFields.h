@@ -203,7 +203,9 @@ public:
    * Is set through hemocell::loadParticles() is added (TODO: also when removed)
    */
    int number_of_cells = 0;
-  
+   inline int base_cell_id(int wrapped) {
+     return ((wrapped%number_of_cells)+number_of_cells)%number_of_cells;
+   }
    unsigned int max_neighbours = 0;
    
    plb::CommunicationStructure3D * large_communicator = 0;
