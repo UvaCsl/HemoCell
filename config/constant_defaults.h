@@ -169,4 +169,7 @@ typedef long int plint;
 typedef long unsigned int pluint;
 #endif
 
+//Maximum buffer length before writeback is forced in custom particle communication
+#define HEMO_MAX_TRANSFER_CHAR 1000000
+
 #endif

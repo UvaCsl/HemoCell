@@ -398,17 +398,17 @@ void HemoCellFields::syncEnvelopes() {
         HemoCellParticleField & pf = immersedParticles->getComponent(info->fromBlockId);
         int offset_p = pf.getDataTransfer().getOffset(info->absoluteOffset);
         const map<int,vector<int>> & ppc = pf.get_particles_per_cell();
+        const map<int,bool> & lpc = pf.get_lpc();
 
         for (int id : requested_ids) {
-          id -= offset_p;
-          if(ppc.find(id) != ppc.end()) {
-            for (const int id : ppc.at(id)) {
-              if (id == -1) { continue; }
-              sendBuffer.resize(sendBuffer.size()+sizeof(HemoCellParticle::serializeValues_t));
-              *((HemoCellParticle::serializeValues_t*)&sendBuffer[offset]) = pf.particles[id].sv;
-              offset += sizeof(HemoCellParticle::serializeValues_t);
-            }
-          }
+          id = id - offset_p;
+          if (lpc.find(id) == lpc.end()) { continue; }
+          for (int pid : ppc.at(id)) {
+            if (pid == -1) { continue; }
+            sendBuffer.resize(sendBuffer.size()+sizeof(HemoCellParticle::serializeValues_t));
+            *((HemoCellParticle::serializeValues_t*)&sendBuffer[offset]) = pf.particles[pid].sv;
+            offset += sizeof(HemoCellParticle::serializeValues_t);
+          }         
         }
       }
       reqs.emplace_back();
