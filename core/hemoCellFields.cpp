@@ -437,9 +437,13 @@ void HemoCellFields::syncEnvelopes() {
       MPI_Get_count(&status,MPI_CHAR,&count);
       vector<NoInitChar> & recv_buffer = recvBuffers[i];
       recv_buffer.resize(count);
-      MPI_Irecv(&recv_buffer[0],count,MPI_CHAR,status.MPI_SOURCE,1,MPI_COMM_WORLD,&recv_reqs[i]);
+      MPI_Recv(&recv_buffer[0],count,MPI_CHAR,status.MPI_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+      for (CommunicationInfo3D const * info : recv_infos[status.MPI_SOURCE]) {
+        HEMOCELL_PARTICLE_FIELD& toBlock = immersedParticles->getComponent(info->toBlockId);
+        toBlock.getDataTransfer().receive (info->toDomain, *reinterpret_cast<std::vector<char>*>(&recvBuffers[i]), modif::hemocell, info->absoluteOffset );
+      }
     }
-    
+    /*
     for (unsigned int i = 0 ; i < recv_procs.size() ; i ++) {
       int index;
       MPI_Status status;
@@ -451,7 +455,7 @@ void HemoCellFields::syncEnvelopes() {
         toBlock.getDataTransfer().receive (info->toDomain, *reinterpret_cast<std::vector<char>*>(&recvBuffers[index]), modif::hemocell, info->absoluteOffset );
       }
     }
-
+*/
     MPI_Waitall(reqs.size(),&reqs[0],MPI_STATUSES_IGNORE);
   }
   global.statistics.getCurrent().stop();

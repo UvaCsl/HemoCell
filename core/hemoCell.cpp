@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
+#include <openmpi/mpi.h>
 
 #include "readPositionsBloodCells.h"
 #include "hemoCellFunctional.h"
@@ -291,6 +292,11 @@ void HemoCell::iterate() {
   global.statistics.getCurrent().stop();
   iter++;
   global.statistics.getCurrent().stop();
+  int flag;
+  if (MPI_Iprobe(MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&flag,MPI_STATUS_IGNORE)){
+    cout << "Error unreceived messages, exiting" << endl;
+    exit(1);
+  }
 }
 
 T HemoCell::calculateFractionalLoadImbalance() {
