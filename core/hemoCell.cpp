@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
-#include <openmpi/mpi.h>
+#include <mpi.h>
 
 #include "readPositionsBloodCells.h"
 #include "hemoCellFunctional.h"
