@@ -65,6 +65,7 @@ class HemoCellGatheringFunctional : public plb::BoxProcessingFunctional3D {
         unsigned char b[sizeof(IDandGatherType)];
         IDandGatherType g;
     };
+    static_assert(sizeof(byteGatherType) == sizeof(IDandGatherType),"GaterhingFunctional union sizes do not match up");
 public:
     //Numblocks should be larger than the maximum number of blocks per process
     //The total can be retrieved from Multiblock.getManagment.getsparseblock.getnumblocks

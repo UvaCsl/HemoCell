@@ -367,9 +367,9 @@ void HemoCellFields::syncEnvelopes() {
     set<int> locals;
     for (plint lbid : immersedParticles->getLocalInfo().getBlocks() ) {
       HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
-      const map<int,bool> & lpc = pf.get_lpc();
-      for(auto & pair: lpc) {
-        locals.insert(base_cell_id(pair.first));
+      const map<int,vector<int>> & ppc = pf.get_particles_per_cell();
+      for(auto & pair: ppc) {
+        locals.insert(pair.first);
       }
     }
     vector<int> locals_v;
@@ -381,11 +381,11 @@ void HemoCellFields::syncEnvelopes() {
     vector<MPI_Request> reqs(recv_procs.size());
 
     for (unsigned int i = 0 ; i < recv_procs_v.size() ; i ++) {
-      MPI_Isend(&locals_v[0],locals_v.size(),MPI_INT,recv_procs_v[i],0,MPI_COMM_WORLD,&reqs[i]);
+      MPI_Isend(&locals_v[0],locals_v.size(),MPI_INT,recv_procs_v[i],24,MPI_COMM_WORLD,&reqs[i]);
     }
     for (unsigned int i = 0 ; i < send_procs.size() ; i ++) {
       MPI_Status status;
-      MPI_Probe(MPI_ANY_SOURCE,0,MPI_COMM_WORLD,&status);
+      MPI_Probe(MPI_ANY_SOURCE,24,MPI_COMM_WORLD,&status);
       int count;
       MPI_Get_count(&status,MPI_INT,&count);
       vector<int> requested_ids(count);
@@ -393,16 +393,15 @@ void HemoCellFields::syncEnvelopes() {
       vector<NoInitChar> & sendBuffer = sendBuffers.back();
       sendBuffer.reserve(immersedParticles->getComponent(immersedParticles->getLocalInfo().getBlocks()[0]).particles.size()*sizeof(HemoCellParticle::serializeValues_t));
       int offset = 0 ;
-      MPI_Recv(&requested_ids[0],count,MPI_INT,status.MPI_SOURCE,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+      MPI_Recv(&requested_ids[0],count,MPI_INT,status.MPI_SOURCE,24,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
       for (CommunicationInfo3D const * info : send_infos[status.MPI_SOURCE] ) {
         HemoCellParticleField & pf = immersedParticles->getComponent(info->fromBlockId);
         int offset_p = pf.getDataTransfer().getOffset(info->absoluteOffset);
         const map<int,vector<int>> & ppc = pf.get_particles_per_cell();
-        const map<int,bool> & lpc = pf.get_lpc();
-
+        
         for (int id : requested_ids) {
           id = id - offset_p;
-          if (lpc.find(id) == lpc.end()) { continue; }
+          if (ppc.find(id) == ppc.end()) { continue; }
           for (int pid : ppc.at(id)) {
             if (pid == -1) { continue; }
             sendBuffer.resize(sendBuffer.size()+sizeof(HemoCellParticle::serializeValues_t));
@@ -412,7 +411,7 @@ void HemoCellFields::syncEnvelopes() {
         }
       }
       reqs.emplace_back();
-      MPI_Isend(&sendBuffer[0],sendBuffer.size(),MPI_CHAR,status.MPI_SOURCE,1,MPI_COMM_WORLD,&reqs.back());
+      MPI_Isend(&sendBuffer[0],sendBuffer.size(),MPI_CHAR,status.MPI_SOURCE,42,MPI_COMM_WORLD,&reqs.back());
     }
 
         // 3. Local copies which require no communication.
@@ -432,18 +431,14 @@ void HemoCellFields::syncEnvelopes() {
     recvBuffers.resize(recv_procs.size());
     for (unsigned int i = 0 ; i < recv_procs.size() ; i ++) {
       MPI_Status status;
-      MPI_Probe(MPI_ANY_SOURCE,1,MPI_COMM_WORLD,&status);
+      MPI_Probe(MPI_ANY_SOURCE,42,MPI_COMM_WORLD,&status);
       int count;
       MPI_Get_count(&status,MPI_CHAR,&count);
       vector<NoInitChar> & recv_buffer = recvBuffers[i];
       recv_buffer.resize(count);
-      MPI_Recv(&recv_buffer[0],count,MPI_CHAR,status.MPI_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-      for (CommunicationInfo3D const * info : recv_infos[status.MPI_SOURCE]) {
-        HEMOCELL_PARTICLE_FIELD& toBlock = immersedParticles->getComponent(info->toBlockId);
-        toBlock.getDataTransfer().receive (info->toDomain, *reinterpret_cast<std::vector<char>*>(&recvBuffers[i]), modif::hemocell, info->absoluteOffset );
-      }
+      MPI_Irecv(recv_buffer.data(),count,MPI_CHAR,status.MPI_SOURCE,42,MPI_COMM_WORLD,&recv_reqs[i]);
     }
-    /*
+
     for (unsigned int i = 0 ; i < recv_procs.size() ; i ++) {
       int index;
       MPI_Status status;
@@ -455,7 +450,7 @@ void HemoCellFields::syncEnvelopes() {
         toBlock.getDataTransfer().receive (info->toDomain, *reinterpret_cast<std::vector<char>*>(&recvBuffers[index]), modif::hemocell, info->absoluteOffset );
       }
     }
-*/
+
     MPI_Waitall(reqs.size(),&reqs[0],MPI_STATUSES_IGNORE);
   }
   global.statistics.getCurrent().stop();
