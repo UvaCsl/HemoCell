@@ -330,7 +330,7 @@ void HemoCellFields::calculateCommunicationStructure() {
   ParallelBlockCommunicator3D * communicator = dynamic_cast<ParallelBlockCommunicator3D const *>(&immersedParticles->getBlockCommunicator())->clone();
   communicator->duplicateOverlaps(management_temp,immersedParticles->periodicity());
   large_communicator = communicator->communication;
-  immersedParticles->getMultiBlockManagement().changeEnvelopeWidth(1);
+  immersedParticles->getMultiBlockManagement().changeEnvelopeWidth(3);
   immersedParticles->signalPeriodicity();
   immersedParticles->getBlockCommunicator().duplicateOverlaps(*immersedParticles,modif::hemocell_no_comm);
 }
