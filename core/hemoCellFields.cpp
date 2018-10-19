@@ -367,16 +367,20 @@ void HemoCellFields::syncEnvelopes() {
     set<int> locals;
     for (plint lbid : immersedParticles->getLocalInfo().getBlocks() ) {
       HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
-      const map<int,vector<int>> & ppc = pf.get_particles_per_cell();
-      for(auto & pair: ppc) {
-        locals.insert(pair.first);
+      for(HemoCellParticle & particle: pf.particles) {
+        locals.insert(particle.sv.cellId);
       }
     }
     vector<int> locals_v;
     locals_v.insert(locals_v.end(),locals.begin(),locals.end());
+   
+    for (plint lbid : immersedParticles->getLocalInfo().getBlocks() ) {
+      HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
+      pf.removeParticles_inverse(pf.localDomain);
+    }
+       
     vector<int> recv_procs_v;
     recv_procs_v.insert(recv_procs_v.end(),recv_procs.begin(),recv_procs.end());
-
     vector<vector<NoInitChar>> sendBuffers, recvBuffers;
     vector<MPI_Request> reqs(recv_procs.size());
 
