@@ -93,6 +93,10 @@ void HemoCell::latticeEquilibrium(T rho, hemo::Array<T, 3> vel) {
 void HemoCell::initializeCellfield() {
   cellfields = new HemoCellFields(*lattice,(*cfg)["domain"]["particleEnvelope"].read<int>(),*this);
 
+  //Set envelope of fluid to 1 again, while maintaining outer one for correct force distribution
+  lattice->getMultiBlockManagement().changeEnvelopeWidth(1);
+  lattice->signalPeriodicity();
+  
   //Correct place for init
   loadBalancer = new LoadBalancer(*this);
 }
