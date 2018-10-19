@@ -94,7 +94,7 @@ public:
 	           (y > box.y0-0.5) && (y <= box.y1+0.5) &&
 	           (z > box.z0-0.5) && (z <= box.z1+0.5);
 
-	}
+    }
     plb::Box3D & getBoundingBox() {
       return boundingBox;
     }

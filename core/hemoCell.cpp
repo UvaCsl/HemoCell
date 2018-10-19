@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
-#include <openmpi/mpi.h>
+#include <mpi.h>
 
 #include "readPositionsBloodCells.h"
 #include "hemoCellFunctional.h"
@@ -226,6 +226,7 @@ void HemoCell::iterate() {
   checkExitSignals();
   if (!sanityCheckDone) {
     sanityCheck();
+    cellfields->calculateCommunicationStructure();
   }
   global.statistics.getCurrent()["iterate"].start();
   // ### 1 ### Particle Force to Fluid
@@ -290,9 +291,8 @@ void HemoCell::iterate() {
   global.statistics.getCurrent().stop();
   
   //Small sanity check to see if our MPI is still sane (do we have any unprocessed messages?)
-  MPI_Status status;
   int flag;
-  MPI_Iprobe(MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&flag,&status);
+  MPI_Iprobe(MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&flag,MPI_STATUS_IGNORE);
   if (flag) {
     cout << "Error there are messages while they are not expected" << endl;
   }

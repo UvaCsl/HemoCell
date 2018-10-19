@@ -17,7 +17,7 @@ void PrintHelp() {
           "  --vrbc <n>                              Number of Stage V gametocytes\n"
           "  --cell <name> <n> <e1, e2, diameter>    Custom Celltype described by ellipsoid\n"
           "  --allowRotate                        -r Allow for rotation of ellipsoids\n"
-          "  --scale <ratio>                         Scales the simulated annealing and can affect performance, default=0.3\n"
+          "  --scale <ratio>                         Scales the neighbourhood grid (only change this if you know what you are doing!)\n"
           "  --maxiter <n>                           Maximum number of iterations\n"
           "  --help                                  Print this"
           "\n"
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 {
   
   int val;  
-  double scale = 0.3;
+  double scale = -1.0;
   double plt_ratio = 0.07;
   double sX,sY,sZ;
   int maxIter = INT_MAX-100; //-100 is compatibility with packing code
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
   }
   if (hematocrit_set) {
     double domainVol = sX*sY*sZ;
-    double rbcVolNominal = 90.0; // This is set to match the model used in ficsion! 
+    double rbcVolNominal = 97.0; // This is set to match the model used in HemoCell! 
     //TODO subtract wbc number? why?
     int nRBC = (int)round(hematocrit * domainVol / rbcVolNominal);
     cellTypes.push_back({"RBC",rbcA,rbcB,rbcC,nRBC});
@@ -167,6 +167,18 @@ int main(int argc, char *argv[])
   }
   
   string povFileName = "cells.pov";
+
+  if(scale < 0.0) { // Calculate optimal scaling automatically
+    // Get the smallest radius
+    double minR = 100000000000.0; //WARNING: will not work for cells with R > 100 km ;)
+    for(auto cell : cellTypes) {
+      double min_loc = min(min(cell.dx, cell.dy), cell.dz);
+      if (min_loc < minR)
+        minR = min_loc;
+    }
+
+    scale = 1.1/minR; // -> scaled R > 1.0
+  }
 
   cout.setf (ios::fixed, ios::floatfield);
   cout << "Loaded parameters, we found:" << endl;

@@ -148,7 +148,8 @@ Note: 	[1] is advised for cases where structural rigidity is needed.
 #define OUTPUT_INNER_LINKS 11
 #define OUTPUT_OMEGA 12
 #define OUTPUT_BOUNDARY 13
-
+#define OUTPUT_SHEAR_RATE 14
+#define OUTPUT_STRAIN_RATE 15
 
 //==================== Not really an option but a nice shortcut
 #define param Parameters
@@ -168,5 +169,8 @@ typedef long int plint;
 #ifndef pluint
 typedef long unsigned int pluint;
 #endif
+
+//Maximum buffer length before writeback is forced in custom particle communication
+#define HEMO_MAX_TRANSFER_CHAR 1000000
 
 #endif

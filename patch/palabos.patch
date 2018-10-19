@@ -11,10 +11,21 @@ index 1fb0ad1..2604122 100644
  };
  
 diff --git a/src/atomicBlock/blockLattice3D.h b/src/atomicBlock/blockLattice3D.h
-index d672045..359af56 100644
+index d672045..6a0a0b8 100644
 --- a/src/atomicBlock/blockLattice3D.h
 +++ b/src/atomicBlock/blockLattice3D.h
-@@ -43,7 +43,7 @@ namespace plb {
+@@ -28,6 +28,10 @@
+ #ifndef BLOCK_LATTICE_3D_H
+ #define BLOCK_LATTICE_3D_H
+ 
++namespace plb {
++    template<typename T, template<typename U> class Descriptor> class BlockLattice3D;
++}
++
+ #include "core/globalDefs.h"
+ #include "core/plbDebug.h"
+ #include "core/cell.h"
+@@ -43,7 +47,7 @@ namespace plb {
  
  template<typename T, template<typename U> class Descriptor> struct Dynamics;
  template<typename T, template<typename U> class Descriptor> class BlockLattice3D;
@@ -23,7 +34,7 @@ index d672045..359af56 100644
  
  template<typename T, template<typename U> class Descriptor>
  class BlockLatticeDataTransfer3D : public BlockDataTransfer3D {
-@@ -131,14 +131,14 @@ public:
+@@ -131,14 +135,14 @@ public:
          PLB_PRECONDITION(iX<this->getNx());
          PLB_PRECONDITION(iY<this->getNy());
          PLB_PRECONDITION(iZ<this->getNz());
@@ -40,7 +51,7 @@ index d672045..359af56 100644
      }
      /// Specify wheter statistics measurements are done on a rect. domain
      virtual void specifyStatisticsStatus (
-@@ -191,10 +191,10 @@ private:
+@@ -191,10 +195,10 @@ private:
      plint allocatedMemory() const;
  private:
      void periodicDomain(Box3D domain);
@@ -53,7 +64,7 @@ index d672045..359af56 100644
  public:
      static CachePolicy3D& cachePolicy();
      template<typename T_, template<typename U_> class Descriptor_>
-@@ -207,6 +207,16 @@ public:
+@@ -207,6 +211,16 @@ public:
      friend class WaveAbsorptionExternalRhoJcollideAndStream3D;
      template<typename T_, template<typename U_> class Descriptor_>
      friend class OnLinkExternalRhoJcollideAndStream3D;
@@ -338,11 +349,56 @@ index 8005825..feda2f7 100644
                          }
                      }
                  }
+diff --git a/src/basicDynamics/isoThermalDynamics.h b/src/basicDynamics/isoThermalDynamics.h
+index 4cdc153..8c1f965 100644
+--- a/src/basicDynamics/isoThermalDynamics.h
++++ b/src/basicDynamics/isoThermalDynamics.h
+@@ -31,6 +31,7 @@
+ 
+ #include "core/globalDefs.h"
+ #include "core/dynamics.h"
++#include "atomicBlock/blockLattice3D.h"
+ 
+ namespace plb {
+ 
+@@ -62,6 +63,12 @@ public:
+     /// Returns 0, as a default value for isothermal flow.
+     virtual void computeHeatFlux( Cell<T,Descriptor> const& cell,
+                                   Array<T,Descriptor<T>::d>& q ) const;
++    
++    // Compute the shear rate 
++  //  virtual void computeShearRate (
++    //    Cell<T,Descriptor> const& cell, 
++      //  BlockLattice3D<T, Descriptor>& lattice, 
++        //Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const;
+ 
+ /* *************** Switch between population and moment representation ****** */
+ 
+diff --git a/src/basicDynamics/isoThermalDynamics.hh b/src/basicDynamics/isoThermalDynamics.hh
+index 7751f78..2d141fa 100644
+--- a/src/basicDynamics/isoThermalDynamics.hh
++++ b/src/basicDynamics/isoThermalDynamics.hh
+@@ -41,6 +41,7 @@
+ #include "core/latticeStatistics.h"
+ #include <algorithm>
+ #include <limits>
++#include "atomicBlock/blockLattice3D.h"
+ 
+ namespace plb {
+ 
 diff --git a/src/core/cell.h b/src/core/cell.h
-index 8ca5cc2..484c2c8 100644
+index 8ca5cc2..95c9b66 100644
 --- a/src/core/cell.h
 +++ b/src/core/cell.h
-@@ -49,7 +49,7 @@ public:
+@@ -34,6 +34,7 @@
+ #include "core/dynamics.h"
+ #include "core/array.h"
+ #include "core/hierarchicSerializer.h"
++#include "atomicBlock/blockLattice3D.h"
+ 
+ namespace plb {
+ 
+@@ -49,7 +50,7 @@ public:
          PLB_PRECONDITION( index < ExternalField::numScalars );
          return data+index;
      }
@@ -351,7 +407,27 @@ index 8ca5cc2..484c2c8 100644
      T data[ExternalField::numScalars];
  };
  
-@@ -371,7 +371,9 @@ private:
+@@ -259,6 +260,19 @@ public:
+         dynamics->computeHeatFlux(*this, q);
+     }
+ 
++    /// Compute the shear rate tensor
++    /** \param shearrate shearrate 
++        \param lattice the lattice over which to calculate shearrate 
++     */
++    void computeShearRate (
++        BlockLattice3D<T, Descriptor>& lattice,
++        Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, 
++        plint x, plint y, plint z) const
++        {
++            PLB_PRECONDITION( dynamics );
++            dynamics->computeShearRate(*this, lattice, shearrate, x, y, z);
++        }
++    
+     /// Compute user-defined moment on the cell.
+     /** \param momentId Identifier for the moment.
+      *  \param moment return value: computed moment.
+@@ -371,7 +385,9 @@ private:
      void iniExternal();
  private:
      Array<T,Descriptor<T>::numPop> f;         ///< distribution functions
@@ -361,17 +437,119 @@ index 8ca5cc2..484c2c8 100644
      bool                           takesStat; ///< is statistics taken?
      Dynamics<T,Descriptor>*        dynamics;  ///< local LB dynamics
  };
+diff --git a/src/core/dynamics.h b/src/core/dynamics.h
+index 4225a81..c28510f 100644
+--- a/src/core/dynamics.h
++++ b/src/core/dynamics.h
+@@ -29,11 +29,16 @@
+ #ifndef DYNAMICS_H
+ #define DYNAMICS_H
+ 
++namespace plb {
++template<typename T, template<typename U> class Descriptor> struct Dynamics;
++}
++
+ #include "core/globalDefs.h"
+ #include "core/util.h"
+ #include "core/blockStatistics.h"
+ #include "core/array.h"
+ #include "latticeBoltzmann/geometricOperationTemplates.h"
++#include "atomicBlock/blockLattice3D.h"
+ 
+ namespace plb {
+ 
+@@ -146,7 +151,12 @@ struct Dynamics {
+         Cell<T,Descriptor> const& cell, Array<T,SymmetricTensor<T,Descriptor>::n>& stress ) const =0;
+     /// Compute the heat flux in lattice units
+     virtual void computeHeatFlux( Cell<T,Descriptor> const& cell,
+-                                  Array<T,Descriptor<T>::d>& q ) const =0;
++                                  Array<T,Descriptor<T>::d>& q ) const =0; 
++    // Compute the shear rate 
++    virtual void computeShearRate (
++        Cell<T,Descriptor> const& cell, 
++        BlockLattice3D<T, Descriptor>& lattice, 
++        Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const {}; 
+     /// Compute additional user-defined moments
+     virtual void computeMoment( Cell<T,Descriptor> const& cell,
+                                 plint momentId, T* moment ) const =0;
+@@ -321,6 +331,10 @@ public:
+     /// Compute the heat flux in lattice units
+     virtual void computeHeatFlux( Cell<T,Descriptor> const& cell,
+                                   Array<T,Descriptor<T>::d>& q ) const;
++    /// Compute the shear rate tensor
++    virtual void computeShearRate( Cell<T,Descriptor> const& cell, 
++        BlockLattice3D<T, Descriptor>& lattice, 
++        Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const;
+     /// Compute additional user-defined moments
+     virtual void computeMoment( Cell<T,Descriptor> const& cell,
+                                 plint momentId, T* moment ) const;
+diff --git a/src/core/dynamics.hh b/src/core/dynamics.hh
+index 940bcd6..7699445 100644
+--- a/src/core/dynamics.hh
++++ b/src/core/dynamics.hh
+@@ -40,6 +40,7 @@
+ #include "multiGrid/multiGridUtil.h"
+ #include <algorithm>
+ #include <limits>
++#include "atomicBlock/blockLattice3D.h"
+ 
+ namespace plb {
+ 
+@@ -349,6 +350,42 @@ void BasicBulkDynamics<T,Descriptor>::computeHeatFlux (
+     q.resetToZero();
+ }
+ 
++
++template<typename T, template<typename U> class Descriptor>
++void BasicBulkDynamics<T,Descriptor>::computeShearRate( 
++    Cell<T,Descriptor> const& cell, 
++    BlockLattice3D<T, Descriptor>& lattice, 
++    Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const
++{
++    Array<T,Descriptor<T>::d> velp1;
++    Array<T,Descriptor<T>::d> veln1;
++    Array<T,Descriptor<T>::d> velp2;
++    Array<T,Descriptor<T>::d> veln2;
++    Array<T,Descriptor<T>::d> velp3;
++    Array<T,Descriptor<T>::d> veln3;
++    
++    // velocity gradients in x-direction
++    lattice.get(x+1,y,z).computeVelocity(velp1); //vel at cell+1
++    lattice.get(x-1,y,z).computeVelocity(veln1); //vel at cell-1
++    shearrate[0] = abs(velp1[0]-veln1[0])/2; // dv_x /2*dx
++         
++     // velocity gradients in y-direction
++    lattice.get(x,y+1,z).computeVelocity(velp2); //vel at cell+1
++    lattice.get(x,y-1,z).computeVelocity(veln2); //vel at cell-1
++    shearrate[1] = abs(velp2[0]-veln2[0])/2; // dv_x / 2*dy
++    shearrate[2] = abs(velp2[1]-veln1[1])/2; // dv_y / 2*dy
++    
++    // velocity gradients in z-direction
++    lattice.get(x,y,z+1).computeVelocity(velp3); //vel at cell+1
++    lattice.get(x,y,z-1).computeVelocity(veln3); //vel at cell-1
++    shearrate[2] = abs(velp3[0]-veln3[0])/2; // dv_x / 2*dz
++    shearrate[4] = abs(velp3[1]-veln3[1])/2; // dv_y / 2*dz
++    shearrate[5] = abs(velp3[2]-veln3[2])/2; // dv_z / 2*dz
++
++    
++ }
++
++
+ template<typename T, template<typename U> class Descriptor>
+ void BasicBulkDynamics<T,Descriptor>::computeMoment(
+         Cell<T,Descriptor> const& cell, plint momentId, T* moment ) const
 diff --git a/src/core/globalDefs.h b/src/core/globalDefs.h
-index 2caeb76..f11eb2c 100644
+index 2caeb76..06f02e6 100644
 --- a/src/core/globalDefs.h
 +++ b/src/core/globalDefs.h
-@@ -187,10 +187,11 @@ namespace modif {
+@@ -187,10 +187,12 @@ namespace modif {
          dynamicVariables =2,  //< Only content of dynamics objects, but no static content.
          allVariables     =3,  //< Both the static and dynamic cell content.
          dataStructure    =4,  //< Recreate dynamics and copy both static and dynamic content.
 -        undefined        =5   
 +        undefined        =5,
-+        hemocell         =6
++        hemocell         =6,
++        hemocell_no_comm =7, //< Update envelopes but dont automatically send
      };
  
 -    enum { numConstants=5 };
@@ -411,6 +589,19 @@ index 0000000..2c19702
 +}
 +#endif
 \ No newline at end of file
+diff --git a/src/dataProcessors/dataAnalysisFunctional3D.hh b/src/dataProcessors/dataAnalysisFunctional3D.hh
+index 330a6a3..ff18828 100644
+--- a/src/dataProcessors/dataAnalysisFunctional3D.hh
++++ b/src/dataProcessors/dataAnalysisFunctional3D.hh
+@@ -1917,7 +1917,7 @@ void BoxStrainRateFromStressFunctional3D<T,Descriptor>::process (
+             for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
+                 Cell<T,Descriptor> const& cell = lattice.get(iX,iY,iZ);
+                 Array<T,SymmetricTensor<T,Descriptor>::n>& element
+-                    = S.get(iX+offset.x,iY+offset.y,iZ+offset.z);
++                    = S.get(iX,iY,iZ);
+                 cell.computePiNeq(element);
+                 T omega     = cell.getDynamics().getOmega();
+                 T rhoBar    = cell.getDynamics().computeRhoBar(cell);
 diff --git a/src/gridRefinement/couplingInterfaceGenerator3D.h b/src/gridRefinement/couplingInterfaceGenerator3D.h
 index af5a9c5..790aa71 100644
 --- a/src/gridRefinement/couplingInterfaceGenerator3D.h
@@ -633,6 +824,82 @@ index 8cdd896..6116a8c 100644
          {
              computePeriodicOverlaps(sparseBlock, blockId);
          }
+diff --git a/src/multiBlock/localMultiBlockInfo3D.h b/src/multiBlock/localMultiBlockInfo3D.h
+index 2db1e50..60134da 100644
+--- a/src/multiBlock/localMultiBlockInfo3D.h
++++ b/src/multiBlock/localMultiBlockInfo3D.h
+@@ -129,6 +129,7 @@ private:
+     /// Determine all blocks which are associated to the current MPI thread.
+     void computeMyBlocks(SparseBlockStructure3D const& sparseBlock,
+                          ThreadAttribution const& attribution);
++public:    
+     /// Compute normal overlaps for all local blocks.
+     void computeAllNormalOverlaps(SparseBlockStructure3D const& sparseBlock);
+     /// Compute normal overlaps for one local block.
+@@ -137,9 +138,11 @@ private:
+     void computeAllPeriodicOverlaps(SparseBlockStructure3D const& sparseBlock);
+     /// Compute periodic overlaps for one local block.
+     void computePeriodicOverlaps(SparseBlockStructure3D const& sparseBlock, plint blockId);
+-private:
++public:
+     plint                          envelopeWidth;
++private:
+     std::vector<plint>             myBlocks;
++public:
+     std::vector<Overlap3D>         normalOverlaps;
+     std::vector<PeriodicOverlap3D> periodicOverlaps;
+     std::vector<PeriodicOverlap3D> periodicOverlapWithRemoteData;
+diff --git a/src/multiBlock/multiBlock3D.cpp b/src/multiBlock/multiBlock3D.cpp
+index 57c178e..bd6f306 100644
+--- a/src/multiBlock/multiBlock3D.cpp
++++ b/src/multiBlock/multiBlock3D.cpp
+@@ -352,6 +352,10 @@ MultiBlockManagement3D const& MultiBlock3D::getMultiBlockManagement() const {
+     return multiBlockManagement;
+ }
+ 
++MultiBlockManagement3D & MultiBlock3D::getMultiBlockManagement() {
++    return multiBlockManagement;
++}
++
+ void MultiBlock3D::setCoProcessors(std::map<plint,int> const& coProcessors) {
+     multiBlockManagement.setCoProcessors(coProcessors);
+ }
+diff --git a/src/multiBlock/multiBlock3D.h b/src/multiBlock/multiBlock3D.h
+index 90fd434..15a7239 100644
+--- a/src/multiBlock/multiBlock3D.h
++++ b/src/multiBlock/multiBlock3D.h
+@@ -152,6 +152,7 @@ public:
+     std::vector<ProcessorStorage3D> const& getStoredProcessors() const;
+ public:
+     MultiBlockManagement3D const& getMultiBlockManagement() const;
++    MultiBlockManagement3D & getMultiBlockManagement();
+     void setCoProcessors(std::map<plint,int> const& coProcessors);
+     LocalMultiBlockInfo3D const& getLocalInfo() const;
+     SparseBlockStructure3D const& getSparseBlockStructure() const;
+diff --git a/src/multiBlock/multiBlockManagement3D.cpp b/src/multiBlock/multiBlockManagement3D.cpp
+index 866622e..8f8c4cb 100644
+--- a/src/multiBlock/multiBlockManagement3D.cpp
++++ b/src/multiBlock/multiBlockManagement3D.cpp
+@@ -194,8 +194,17 @@ void MultiBlockManagement3D::setRefinementLevel(plint newLevel) {
+ }
+ 
+ void MultiBlockManagement3D::changeEnvelopeWidth(plint newEnvelopeWidth) {
+-    envelopeWidth = newEnvelopeWidth;
+-    localInfo = LocalMultiBlockInfo3D(sparseBlock, getThreadAttribution(), envelopeWidth);
++    localInfo.envelopeWidth = newEnvelopeWidth;
++
++    localInfo.normalOverlaps.clear();
++    localInfo.periodicOverlapWithRemoteData.clear();
++    localInfo.periodicOverlaps.clear();
++
++    localInfo.computeAllNormalOverlaps(sparseBlock);
++    localInfo.computeAllPeriodicOverlaps(sparseBlock);
++    
++    std::sort(localInfo.normalOverlaps.begin(), localInfo.normalOverlaps.end());
++    std::sort(localInfo.periodicOverlaps.begin(), localInfo.periodicOverlaps.end());
+ }
+ 
+ bool MultiBlockManagement3D::equivalentTo(MultiBlockManagement3D const& rhs) const {
 diff --git a/src/multiBlock/sparseBlockStructure3D.cpp b/src/multiBlock/sparseBlockStructure3D.cpp
 index a8ae15e..fe3e896 100644
 --- a/src/multiBlock/sparseBlockStructure3D.cpp
@@ -810,7 +1077,7 @@ index 622aa7d..ce82486 100644
  void TriangularSurfaceMesh<T>::smooth(plint maxiter, T relax, bool isMeasureWeighted)
  {
 diff --git a/src/parallelism/parallelBlockCommunicator3D.cpp b/src/parallelism/parallelBlockCommunicator3D.cpp
-index c891d72..9bec053 100644
+index c891d72..0e3436a 100644
 --- a/src/parallelism/parallelBlockCommunicator3D.cpp
 +++ b/src/parallelism/parallelBlockCommunicator3D.cpp
 @@ -25,6 +25,8 @@
@@ -830,7 +1097,46 @@ index c891d72..9bec053 100644
  
  namespace plb {
  
-@@ -280,17 +283,76 @@ void ParallelBlockCommunicator3D::communicate (
+@@ -232,6 +235,30 @@ void ParallelBlockCommunicator3D::duplicateOverlaps( MultiBlock3D& multiBlock,
+     communicate(*communication, multiBlock, multiBlock, whichData);
+ }
+ 
++void ParallelBlockCommunicator3D::duplicateOverlaps( MultiBlockManagement3D& multiBlockManagement,
++                                                     PeriodicitySwitch3D const& periodicity  ) const
++{
++
++    // Implement a caching mechanism for the communication structure.
++    if (overlapsModified) {
++        overlapsModified = false;
++        LocalMultiBlockInfo3D const& localInfo = multiBlockManagement.getLocalInfo();
++        std::vector<Overlap3D> overlaps(multiBlockManagement.getLocalInfo().getNormalOverlaps());
++        for (pluint iOverlap=0; iOverlap<localInfo.getPeriodicOverlaps().size(); ++iOverlap) {
++            PeriodicOverlap3D const& pOverlap = localInfo.getPeriodicOverlaps()[iOverlap];
++            if (periodicity.get(pOverlap.normalX,pOverlap.normalY,pOverlap.normalZ)) {
++                overlaps.push_back(pOverlap.overlap);
++            }
++        }
++        delete communication;
++        communication = new CommunicationStructure3D (
++                                overlaps,
++                                multiBlockManagement, multiBlockManagement,
++                              0 );
++    }
++
++}
++
+ void ParallelBlockCommunicator3D::communicate (
+         std::vector<Overlap3D> const& overlaps,
+         MultiBlock3D const& originMultiBlock,
+@@ -253,6 +280,7 @@ void ParallelBlockCommunicator3D::communicate (
+         MultiBlock3D const& originMultiBlock,
+         MultiBlock3D& destinationMultiBlock, modif::ModifT whichData ) const
+ {
++  if (whichData == modif::hemocell_no_comm) { return; }
+     global::profiler().start("mpiCommunication");
+     bool staticMessage = whichData == modif::staticVariables;
+     // 1. Non-blocking receives.
+@@ -280,17 +308,75 @@ void ParallelBlockCommunicator3D::communicate (
                  info.toDomain, deltaX, deltaY, deltaZ, fromBlock,
                  whichData, info.absoluteOffset );
      }
@@ -846,7 +1152,6 @@ index c891d72..9bec053 100644
 +    
 +    if (whichData == modif::hemocell) {
 +      // 4. Become receptive (dynamic)
-+
 +      std::map<CommunicatorEntry*,std::vector<CommunicationInfo3D*>> infos;
 +      
 +      std::vector<dynamicReceive_t> receives;
@@ -917,6 +1222,35 @@ index c891d72..9bec053 100644
      // 5. Finalize the sends.
      communication.sendComm.finalize(staticMessage);
      global::profiler().stop("mpiCommunication");
+diff --git a/src/parallelism/parallelBlockCommunicator3D.h b/src/parallelism/parallelBlockCommunicator3D.h
+index 879c653..3754622 100644
+--- a/src/parallelism/parallelBlockCommunicator3D.h
++++ b/src/parallelism/parallelBlockCommunicator3D.h
+@@ -77,20 +77,22 @@ public:
+     void swap(ParallelBlockCommunicator3D& rhs);
+     virtual ParallelBlockCommunicator3D* clone() const;
+     virtual void duplicateOverlaps(MultiBlock3D& multiBlock, modif::ModifT whichData) const;
++    virtual void duplicateOverlaps(MultiBlockManagement3D&,PeriodicitySwitch3D const& ) const;
++
+     virtual void communicate( std::vector<Overlap3D> const& overlaps,
+                               MultiBlock3D const& originMultiBlock,
+                               MultiBlock3D& destinationMultiBlock,
+                               modif::ModifT whichData ) const;
+     virtual void signalPeriodicity() const;
+-private:
+     void communicate( CommunicationStructure3D& communication,
+                       MultiBlock3D const& originMultiBlock,
+                       MultiBlock3D& destinationMultiBlock, modif::ModifT whichData ) const;
+     void subscribeOverlap (
+         Overlap3D const& overlap, MultiBlockManagement3D const& multiBlockManagement,
+         SendRecvPool& sendPool, SendRecvPool& recvPool, plint sizeOfCell ) const;
+-private:
++public:
+     mutable bool overlapsModified;
++public:
+     mutable CommunicationStructure3D* communication;
+ };
+ 
 diff --git a/src/parallelism/sendRecvPool.cpp b/src/parallelism/sendRecvPool.cpp
 index ff5eb57..57d9e8f 100644
 --- a/src/parallelism/sendRecvPool.cpp
@@ -959,7 +1293,7 @@ index ff5eb57..57d9e8f 100644
          int fromProc, bool staticMessage )
  {
 diff --git a/src/parallelism/sendRecvPool.h b/src/parallelism/sendRecvPool.h
-index 68c06dd..c27f65c 100644
+index 68c06dd..f79a3c7 100644
 --- a/src/parallelism/sendRecvPool.h
 +++ b/src/parallelism/sendRecvPool.h
 @@ -32,6 +32,7 @@
@@ -988,7 +1322,16 @@ index 68c06dd..c27f65c 100644
  };
  
  /// The "in-action" device for all messages sent from a processor.
-@@ -147,6 +159,8 @@ public:
+@@ -136,7 +148,7 @@ public:
+     void finalize(bool staticMessage);
+ private:
+     void startCommunication(int toProc, bool staticMessage);
+-private:
++public:
+     std::map<int, CommunicatorEntry > subscriptions;
+ };
+ 
+@@ -147,11 +159,13 @@ public:
      RecvPoolCommunicator(SendRecvPool const& pool);
      /// Initiate non-blocking communication.
      void startBeingReceptive(bool staticMessage);
@@ -997,6 +1340,12 @@ index 68c06dd..c27f65c 100644
      std::vector<char> const& receiveMessage(int fromProc, bool staticMessage);
  private:
      void finalizeStatic(int fromProc);
+     void receiveDynamic(int fromProc);
+-private:
++public:
+     std::map<int, CommunicatorEntry > subscriptions;
+ };
+ 
 diff --git a/src/particles/particleField3D.h b/src/particles/particleField3D.h
 index 373596f..0709fa9 100644
 --- a/src/particles/particleField3D.h

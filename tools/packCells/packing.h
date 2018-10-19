@@ -230,6 +230,8 @@ void Packing::initBlood(float sizeX, float sizeY, float sizeZ, int maxSteps, dou
 
   // Get nominal volume ratio
   nomPackDens = cellVol / domainVol;
+  
+  cout << endl << "Nominal requested volume fraction: " << nomPackDens << endl;
 
   if (nomPackDens > 0.7){
       cout << "*** WARNING ***" << endl;
@@ -305,7 +307,7 @@ void Packing::init() {
 	vector3 r;
 	Rc_max = 0;
 	for (int is = 0; is < NumSpecies; is++) {
-		r = species[is]->getRot();
+		r = species[is]->getSize();
 		corr += species[is]->getNum();// * r[0]*r[1]*r[2];
 		if (r[0] > Rc_max) Rc_max = r[0];
 	}
@@ -315,7 +317,7 @@ void Packing::init() {
 	Douter = Douter0;
 	Relax = 0.5 * Douter / Ntau;
 	Douter2 = Douter * Douter;
-	double alpha = species[0]->getRot()[0];
+	double alpha = species[0]->getSize()[0];
 	if(Epsilon_rot > .1) Epsilon_rot = 50. / (alpha*alpha*alpha);
 
 	particles = new Ellipsoid*[NumParts];
@@ -417,7 +419,7 @@ void Packing::calc_forces() {
 	#pragma omp parallel  for private(ipart) schedule(static)
 	for (ipart = 0; ipart < NumParts; ipart++) {
 		Species* k = particles[ipart]->getSpecies();
-		Rcut = 0.55 * Douter * ((k->getRot())[0] + Rc_max);
+		Rcut = 0.55 * Douter * ((k->getSize())[0] + Rc_max);
 		Rcut2 = Rcut * Rcut;
 
 		if ((int) (2.0 * Rcut) < Ncell_min - 1) force_part(ipart);
@@ -599,7 +601,7 @@ void Packing::savePov(const char *fileName, int wbcNumber)
         Ellipsoid *pi = particles[i];
         vector3 pos = pi->get_pos() * (1./Sizing);
         Species* k = pi->getSpecies();
-        vector3 rad = 0.5 * Dinner * k->getRot()* (1./Sizing);
+        vector3 rad = 0.5 * Dinner * k->getSize()* (1./Sizing);
         bool sph = k->getIsSphere();
 
         if(i < k->getNum())

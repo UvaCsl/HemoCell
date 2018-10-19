@@ -25,7 +25,7 @@ public:
 		sph = ((fabs(rad[0] - rad[2]) < 1e-5) && (fabs(rad[0] - rad[1]) < 1e-5) ) ? 1 : 0;
 	}
 	int getNum() { return number; }
-	vector3 getRot() { return rad; }
+	vector3 getSize() { return rad; }
 	bool getIsSphere() { return sph; }
 	friend ostream& operator<< (ostream& o, const Species& s) {
 		o << s.number << endl;
@@ -46,7 +46,7 @@ public:
 	Ellipsoid(Species* k, vector3 box) : kind(k), q(vector3(0.0,0.0,0.0)) { pos.random().scale(box); }
 	Ellipsoid(Species* k, const vector3& ps, const Quaternion& qq) : kind(k), pos(ps), q(qq) {}
 	matrix33 countX() const {
-		vector3 r(kind->getRot());
+		vector3 r(kind->getSize());
 		matrix33 Q, O;
 		O(0,0) = 1 / (r[0]*r[0]);
 		O(1,1) = 1 / (r[1]*r[1]);
@@ -55,7 +55,7 @@ public:
 		return transp(Q) * O * Q;
 	}
 	matrix33 countX_12() const {
-		vector3 r(kind->getRot());
+		vector3 r(kind->getSize());
 		matrix33 Q, O;
 		O(0,0) = 1 / r[0];
 		O(1,1) = 1 / r[1];
@@ -64,7 +64,7 @@ public:
 		return transp(Q) * O * Q;
 	}
 	matrix33 countX_m1() const {
-		vector3 r(kind->getRot());
+		vector3 r(kind->getSize());
 		matrix33 Q, O;
 		O(0,0) = r[0]*r[0];
 		O(1,1) = r[1]*r[1];
@@ -295,7 +295,7 @@ public:
 		r_AB(rij), n(0, 0, 0),
 		r_AC(0, 0, 0), r_BC(0, 0, 0),
 		A_AB(XB_12 * XA_m1 * XB_12), a_AB(XB_12 * r_AB),
-		lambda(0), lam0((a.getSpecies()->getRot())[0] / ((a.getSpecies()->getRot())[0] + (b.getSpecies()->getRot())[0])) {
+		lambda(0), lam0((a.getSpecies()->getSize())[0] / ((a.getSpecies()->getSize())[0] + (b.getSpecies()->getSize())[0])) {
 
 		double detA = det(A_AB);
 		matrix33 Z = adj(A_AB);

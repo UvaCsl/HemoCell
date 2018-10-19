@@ -60,7 +60,7 @@ public:
                            AtomicBlock3D const& from, modif::ModifT kind);
     virtual void attribute(Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
                            AtomicBlock3D const& from, modif::ModifT kind, Dot3D absoluteOffset);
-    inline plint getOffset(Dot3D &);
+    plint getOffset(Dot3D const&);
 private:
     HemoCellParticleField* particleField;
     HemoCellParticleField const * constParticleField;

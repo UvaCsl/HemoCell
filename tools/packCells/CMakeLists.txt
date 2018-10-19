@@ -3,7 +3,7 @@ project(packEllipsoids)
 
 # On MacOSX use Hombrew's g++ instead of the systems bundled clang
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(CMAKE_CXX_COMPILER "g++-6")
+    set(CMAKE_CXX_COMPILER "g++-7")
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")

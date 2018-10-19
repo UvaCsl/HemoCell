@@ -25,6 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define FLUID_HDF5_IO_HH
 
 #include "FluidHdf5IO.hh"
+#include "palabos3D.h"
+#include "palabos3D.hh"
 
 #include <hdf5.h>
 #include <hdf5_hl.h>
@@ -174,8 +176,20 @@ public:
           name = "ShearStress";
           dim[3] = 6;
           break;
+        case OUTPUT_SHEAR_RATE:
+          output = outputShearRate();
+          name = "ShearRate";
+          dim[3] = 6;
+          break;
+        case OUTPUT_STRAIN_RATE:
+          output = outputStrainRate();
+          name = "StrainRate";
+          dim[3] = 6;
+          break;
+              
         default:
-          continue;
+            
+        continue;
       }
 
 
@@ -352,7 +366,7 @@ private:
         }
       }
     }
-
+        
     if (cellfields.hemocell.outputInSiUnits) {
       for (unsigned int i = 0 ; i < (*nCells)*6 ; i++) {
         output[i] = output[i]*(param::df/(param::dx*param::dx));
@@ -361,7 +375,86 @@ private:
 
     return output;
   }
+     
+  float * outputShearRate() {
+    float * output = new float [(*nCells)*6];
+    unsigned int n = 0;
+    plb::Array<T,6> shearrate;
+        
+    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
+      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
+        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
 
+          ablock->get(iX,iY,iZ).computeShearRate(*ablock,shearrate,iX,iY,iZ);
+          //Array<T,6> stress_vec = stress.get(iX,iY,iZ);
+          output[n] = shearrate[0];
+          output[n+1] = shearrate[1];
+          output[n+2] = shearrate[2];
+          output[n+3] = shearrate[3];
+          output[n+4] = shearrate[4];
+          output[n+5] = shearrate[5];
+          n += 6;
+        }
+      }
+    }   
+     
+    if (cellfields.hemocell.outputInSiUnits) {
+      for (unsigned int i = 0 ; i < (*nCells)*6 ; i++) {
+        output[i] = output[i]*(1/(param::dt));
+      }
+    }
+
+    return output;
+  }
+  
+  float * outputStrainRate() {
+    float * output = new float [(*nCells)*6];
+    unsigned int n = 0;
+    // calculate tensorfield strain rate
+    std::auto_ptr<TensorField3D<T,6> > strainrate (computeStrainRateFromStress(*ablock));
+    // calculate norm of tensorfield
+    std::auto_ptr<ScalarField3D<T> > shearrate (computeSymmetricTensorNorm(*strainrate));
+    
+    //strainrate.get()
+    
+    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
+      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
+        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
+            
+            
+            if ((iX < fluid.getBoundingBox().x0-2) || (iX > fluid.getBoundingBox().x1+2) ||
+	    (iY < fluid.getBoundingBox().y0-2) || (iY > fluid.getBoundingBox().y1+2) ||
+	    (iZ < fluid.getBoundingBox().z0-2) || (iZ > fluid.getBoundingBox().z1+2) )
+            {   output[n] = 0;
+                output[n+1] = 0;
+                output[n+2] = 0;
+                output[n+3] = 0;
+                output[n+4] = 0;
+                output[n+5] = 0;
+                n += 6;
+           }
+            else {
+    
+            output[n] = strainrate->get(iX,iY,iZ)[0];
+            output[n+1] = strainrate->get(iX,iY,iZ)[1];
+            output[n+2] = strainrate->get(iX,iY,iZ)[2];
+            output[n+3] = strainrate->get(iX,iY,iZ)[3];
+            output[n+4] = strainrate->get(iX,iY,iZ)[4];
+            output[n+5] = strainrate->get(iX,iY,iZ)[5];
+            n += 6;
+            }
+        }
+      }
+    }   
+     
+    if (cellfields.hemocell.outputInSiUnits) {
+      for (unsigned int i = 0 ; i < (*nCells) ; i++) {
+        output[i] = output[i]*(1/(param::dt));
+      }
+    }
+
+    return output;
+  }
    
  
     HemoCellFields& cellfields;

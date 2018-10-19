@@ -21,6 +21,8 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <mpi.h>
+
 #include "hemoCellFields.h"
 #include "hemocell.h"
 #include "readPositionsBloodCells.h"
@@ -31,7 +33,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 namespace hemo {
+
+  ///Used to circumvent buffer initialization of characters
+struct NoInitChar
+{
+    char value;
+    NoInitChar() {
+        // do nothing
+        static_assert(sizeof *this == sizeof value, "invalid size");
+        static_assert(__alignof *this == __alignof value, "invalid alignment");
+    }
+};
   
+ 
 HemoCellFields::HemoCellFields( MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth, HemoCell & hemocell_) :
   lattice(&lattice_), hemocell(hemocell_)
 {   
@@ -81,7 +95,7 @@ void HemoCellFields::createCEPACfield() {
   CEPACfield = new MultiBlockLattice3D<T,CEPAC_DESCRIPTOR>(
           MultiBlockManagement3D( *sbStructure,
                                   tAttribution,
-                                  1,
+                                  envelopeSize,
                                   refinement ),
           plb::defaultMultiBlockPolicy3D().getBlockCommunicator(),
           plb::defaultMultiBlockPolicy3D().getCombinedStatistics(),
@@ -311,17 +325,139 @@ void HemoCellFields::interpolateFluidVelocity() {
   global.statistics.getCurrent().stop();
 }
 
+void HemoCellFields::calculateCommunicationStructure() {
+  MultiBlockManagement3D management_temp(immersedParticles->getMultiBlockManagement());
+  ParallelBlockCommunicator3D * communicator = dynamic_cast<ParallelBlockCommunicator3D const *>(&immersedParticles->getBlockCommunicator())->clone();
+  communicator->duplicateOverlaps(management_temp,immersedParticles->periodicity());
+  large_communicator = communicator->communication;
+  immersedParticles->getMultiBlockManagement().changeEnvelopeWidth(3);
+  immersedParticles->signalPeriodicity();
+  immersedParticles->getBlockCommunicator().duplicateOverlaps(*immersedParticles,modif::hemocell_no_comm);
+}
+
 void HemoCellFields::HemoSyncEnvelopes::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->syncEnvelopes();
 }
 void HemoCellFields::syncEnvelopes() {
-    global.statistics.getCurrent()["syncEnvelopes"].start();
+  global.statistics.getCurrent()["syncEnvelopes"].start();
 
-    vector<MultiBlock3D*> wrapper;
-    wrapper.push_back(immersedParticles);
-    applyProcessingFunctional(new HemoSyncEnvelopes(),immersedParticles->getBoundingBox(),wrapper);
- 
-    global.statistics.getCurrent().stop();
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  for (plint lbid : immersedParticles->getLocalInfo().getBlocks() ) {
+    HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
+    pf.removeParticles_inverse(pf.localDomain);
+  }
+  //applyProcessingFunctional(new HemoSyncEnvelopes(),immersedParticles->getBoundingBox(),wrapper);
+  immersedParticles->getBlockCommunicator().duplicateOverlaps(*immersedParticles,modif::hemocell);
+  
+  if (large_communicator) {
+  
+    CommunicationStructure3D * comms = large_communicator;
+    std::set<int> recv_procs, send_procs;
+    std::map<int,vector<CommunicationInfo3D const *>> recv_infos, send_infos;
+    for (CommunicationInfo3D const& info : comms->sendPackage) {
+      send_procs.insert(info.toProcessId);
+      send_infos[info.toProcessId].push_back(&info);
+    }
+    for (CommunicationInfo3D const& info : comms->recvPackage) {
+      recv_procs.insert(info.fromProcessId);
+      recv_infos[info.fromProcessId].push_back(&info);
+    }
+
+    set<int> locals;
+    for (plint lbid : immersedParticles->getLocalInfo().getBlocks() ) {
+      HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
+      for(HemoCellParticle & particle: pf.particles) {
+        locals.insert(particle.sv.cellId);
+      }
+    }
+    vector<int> locals_v;
+    locals_v.insert(locals_v.end(),locals.begin(),locals.end());
+   
+    for (plint lbid : immersedParticles->getLocalInfo().getBlocks() ) {
+      HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
+      pf.removeParticles_inverse(pf.localDomain);
+    }
+       
+    vector<int> recv_procs_v;
+    recv_procs_v.insert(recv_procs_v.end(),recv_procs.begin(),recv_procs.end());
+    vector<vector<NoInitChar>> sendBuffers, recvBuffers;
+    vector<MPI_Request> reqs(recv_procs.size());
+
+    for (unsigned int i = 0 ; i < recv_procs_v.size() ; i ++) {
+      MPI_Isend(&locals_v[0],locals_v.size(),MPI_INT,recv_procs_v[i],24,MPI_COMM_WORLD,&reqs[i]);
+    }
+    for (unsigned int i = 0 ; i < send_procs.size() ; i ++) {
+      MPI_Status status;
+      MPI_Probe(MPI_ANY_SOURCE,24,MPI_COMM_WORLD,&status);
+      int count;
+      MPI_Get_count(&status,MPI_INT,&count);
+      vector<int> requested_ids(count);
+      sendBuffers.emplace_back(vector<NoInitChar>());
+      vector<NoInitChar> & sendBuffer = sendBuffers.back();
+      sendBuffer.reserve(immersedParticles->getComponent(immersedParticles->getLocalInfo().getBlocks()[0]).particles.size()*sizeof(HemoCellParticle::serializeValues_t));
+      int offset = 0 ;
+      MPI_Recv(&requested_ids[0],count,MPI_INT,status.MPI_SOURCE,24,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+      for (CommunicationInfo3D const * info : send_infos[status.MPI_SOURCE] ) {
+        HemoCellParticleField & pf = immersedParticles->getComponent(info->fromBlockId);
+        int offset_p = pf.getDataTransfer().getOffset(info->absoluteOffset);
+        const map<int,vector<int>> & ppc = pf.get_particles_per_cell();
+        
+        for (int id : requested_ids) {
+          id = id - offset_p;
+          if (ppc.find(id) == ppc.end()) { continue; }
+          for (int pid : ppc.at(id)) {
+            if (pid == -1) { continue; }
+            sendBuffer.resize(sendBuffer.size()+sizeof(HemoCellParticle::serializeValues_t));
+            *((HemoCellParticle::serializeValues_t*)&sendBuffer[offset]) = pf.particles[pid].sv;
+            offset += sizeof(HemoCellParticle::serializeValues_t);
+          }         
+        }
+      }
+      reqs.emplace_back();
+      MPI_Isend(&sendBuffer[0],sendBuffer.size(),MPI_CHAR,status.MPI_SOURCE,42,MPI_COMM_WORLD,&reqs.back());
+    }
+
+        // 3. Local copies which require no communication.
+    for (unsigned iSendRecv=0; iSendRecv<comms->sendRecvPackage.size(); ++iSendRecv) {
+        CommunicationInfo3D const& info = comms->sendRecvPackage[iSendRecv];
+        AtomicBlock3D const& fromBlock = immersedParticles->getComponent(info.fromBlockId);
+        AtomicBlock3D& toBlock = immersedParticles->getComponent(info.toBlockId);
+        plint deltaX = info.fromDomain.x0 - info.toDomain.x0;
+        plint deltaY = info.fromDomain.y0 - info.toDomain.y0;
+        plint deltaZ = info.fromDomain.z0 - info.toDomain.z0;
+        toBlock.getDataTransfer().attribute (
+                info.toDomain, deltaX, deltaY, deltaZ, fromBlock,
+                modif::hemocell, info.absoluteOffset );
+    }
+    
+    vector<MPI_Request> recv_reqs(recv_procs.size());
+    recvBuffers.resize(recv_procs.size());
+    for (unsigned int i = 0 ; i < recv_procs.size() ; i ++) {
+      MPI_Status status;
+      MPI_Probe(MPI_ANY_SOURCE,42,MPI_COMM_WORLD,&status);
+      int count;
+      MPI_Get_count(&status,MPI_CHAR,&count);
+      vector<NoInitChar> & recv_buffer = recvBuffers[i];
+      recv_buffer.resize(count);
+      MPI_Irecv(recv_buffer.data(),count,MPI_CHAR,status.MPI_SOURCE,42,MPI_COMM_WORLD,&recv_reqs[i]);
+    }
+
+    for (unsigned int i = 0 ; i < recv_procs.size() ; i ++) {
+      int index;
+      MPI_Status status;
+      MPI_Waitany(recv_reqs.size(),&recv_reqs[0],&index,&status);
+      
+      //Get Offsets and Destinations
+      for (CommunicationInfo3D const * info : recv_infos[status.MPI_SOURCE]) {
+        HEMOCELL_PARTICLE_FIELD& toBlock = immersedParticles->getComponent(info->toBlockId);
+        toBlock.getDataTransfer().receive (info->toDomain, *reinterpret_cast<std::vector<char>*>(&recvBuffers[index]), modif::hemocell, info->absoluteOffset );
+      }
+    }
+
+    MPI_Waitall(reqs.size(),&reqs[0],MPI_STATUSES_IGNORE);
+  }
+  global.statistics.getCurrent().stop();
 }
 
 void HemoCellFields::HemoAdvanceParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
