@@ -149,6 +149,11 @@ public:
           name = "Density";
           dim[3] = 1;
           break;
+        case OUTPUT_BOUNDARY:
+          output = outputBoundary();
+          name = "Boundary";
+          dim[3] = 1;
+        break;
         case OUTPUT_OMEGA:
           output = outputOmega();
           name = "Omega";
@@ -171,7 +176,7 @@ public:
         case OUTPUT_SHEAR_RATE:
           output = outputShearRate();
           name = "ShearRate";
-          dim[3] = 6;
+          dim[3] = 9;
           break;
         case OUTPUT_STRAIN_RATE:
           output = outputStrainRate();
@@ -266,6 +271,26 @@ private:
 
     return output;
   }
+  
+  float * outputBoundary() {
+    float * output = new float [(*nCells)];
+    unsigned int n = 0;
+    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
+      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
+        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
+
+          if (ablock->get(iX,iY,iZ).getDynamics().isBoundary()) {
+            output[n] = 1;
+          } else {
+            output[n] = 0;
+          }
+          n++;
+        }
+      }
+    }
+    return output;
+  }
+
 
   float * outputOmega() {
     float * output = new float [(*nCells)];
@@ -350,9 +375,9 @@ private:
   }
      
   float * outputShearRate() {
-    float * output = new float [(*nCells)*6];
+    float * output = new float [(*nCells)*9];
     unsigned int n = 0;
-    plb::Array<T,6> shearrate;
+    plb::Array<T,9> shearrate;
         
     for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
       for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
@@ -366,13 +391,16 @@ private:
           output[n+3] = shearrate[3];
           output[n+4] = shearrate[4];
           output[n+5] = shearrate[5];
-          n += 6;
+          output[n+6] = shearrate[6];
+          output[n+7] = shearrate[7];
+          output[n+8] = shearrate[8];
+          n += 9;
         }
       }
     }   
      
     if (cellfields.hemocell.outputInSiUnits) {
-      for (unsigned int i = 0 ; i < (*nCells)*6 ; i++) {
+      for (unsigned int i = 0 ; i < (*nCells)*9 ; i++) {
         output[i] = output[i]*(1/(param::dt));
       }
     }
