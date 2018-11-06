@@ -151,11 +151,11 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
             packAngles[j][i-less] *= -1.0;  // Right- to left-handed coordinate system
             cellIdss[j][i-less] = cellid;
 
-            if (cellFields.hemocell.preInlet.initialized) {
+            if (cellFields.hemocell.preInlet->initialized) {
               //Translate system to preInlet Location (set 0,0,0 point)
-              packPositions[j][i-less][0] += cellFields.hemocell.preInlet.location.x0/dx;
-              packPositions[j][i-less][1] += cellFields.hemocell.preInlet.location.y0/dx;
-              packPositions[j][i-less][2] += cellFields.hemocell.preInlet.location.z0/dx;
+              packPositions[j][i-less][0] += cellFields.hemocell.preInlet->location.x0/dx;
+              packPositions[j][i-less][1] += cellFields.hemocell.preInlet->location.y0/dx;
+              packPositions[j][i-less][2] += cellFields.hemocell.preInlet->location.z0/dx;
             }
             
             
@@ -326,7 +326,7 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & c
     }
     hlog << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
     
-    if (cellFields.hemocell.preInlet.initialized && !cellFields.hemocell.partOfpreInlet) { } else {
+    if (cellFields.hemocell.preInlet->initialized && !cellFields.hemocell.partOfpreInlet) { } else {
     applyProcessingFunctional(
             new ReadPositionsBloodCellField3D(cellFields, dx, cfg),
             cellFields.lattice->getBoundingBox(), fluidAndParticleFieldsArg);

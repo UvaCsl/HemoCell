@@ -366,9 +366,9 @@ void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRe
 }
 
 void HemoCell::specifyPreInlet(MultiScalarField3D<int>& flagMatrix) {
-  preInlet = PreInlet(flagMatrix);
-  preInlet.preinlet_length = (*cfg)["preInlet"]["parameters"]["lengthN"].read<int>();
-  preInlet.location.z0 -= preInlet.preinlet_length;
+  preInlet = new PreInlet(flagMatrix,this);
+  preInlet->preinlet_length = (*cfg)["preInlet"]["parameters"]["lengthN"].read<int>();
+  preInlet->location.z0 -= preInlet->preinlet_length;
 }
 
 void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
@@ -376,7 +376,7 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
     delete lattice;
   }
 
-  if (!preInlet.initialized) {
+  if (!preInlet->initialized) {
     hlog << "(HemoCell) No preinlet specified, running with all cores on domain with given management" << endl;
     lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(management,
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
@@ -391,15 +391,15 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   }
   
   plint totalNodes = 0;
-  totalNodes += preInlet.getNumberOfNodes();
+  totalNodes += preInlet->getNumberOfNodes();
   totalNodes += cellsInBoundingBox(management.getBoundingBox());
   
-  preInlet.nProcs = global::mpi().getSize()*(preInlet.getNumberOfNodes()/(T)totalNodes);
-  if (preInlet.nProcs == 0) {
-    preInlet.nProcs = 1;
+  preInlet->nProcs = global::mpi().getSize()*(preInlet->getNumberOfNodes()/(T)totalNodes);
+  if (preInlet->nProcs == 0) {
+    preInlet->nProcs = 1;
   }
   
-  int nProcs = global::mpi().getSize()-preInlet.nProcs;
+  int nProcs = global::mpi().getSize()-preInlet->nProcs;
   
   //Assign processors to PreInlet or Domain
   unsigned int currentPreInlet = 0;
@@ -415,17 +415,17 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
       if (i == global::mpi().getRank()) {
         partOfpreInlet = true;
       }
-      preInlet.BlockToMpi[currentNode] = i;
+      preInlet->BlockToMpi[currentNode] = i;
       currentNode ++;
-      if (preInlet.nProcs <= currentNode) {
+      if (preInlet->nProcs <= currentNode) {
         currentNode = 0;
         currentPreInlet++;
       }
     }
   }
   
-  SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet.location,preInlet.nProcs);
-  ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet.BlockToMpi);
+  SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet->location,preInlet->nProcs);
+  ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet->BlockToMpi);
   preinlet_management = new MultiBlockManagement3D(sb_preinlet,eta_preinlet,management.getEnvelopeWidth(),management.getRefinementLevel());
 
   SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(),nProcs);
@@ -445,7 +445,7 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
             defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
             new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
-    preInlet.partOfpreInlet = true;
+    preInlet->partOfpreInlet = true;
   }
 }
 

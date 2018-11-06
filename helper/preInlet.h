@@ -30,6 +30,13 @@ class PreInlet;
 
 #include "core/geometry3D.h"
 #include "atomicBlock/atomicBlock3D.h"
+#include "config.h"
+
+#ifndef HEMOCELL_H
+namespace hemo {
+  class HemoCell;
+}
+#endif
 
 enum Direction : int {
   Xpos, Xneg, Ypos, Yneg, Zpos, Zneg
@@ -48,6 +55,14 @@ inline plint cellsInBoundingBox(plb::Box3D const & box) {
 
 class PreInlet {
 public:
+    class CreateDrivingForceFunctional: public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+    CreateDrivingForceFunctional * clone() const;
+    plint & count;
+    public:
+      CreateDrivingForceFunctional(plint & count_) :
+                                count(count_) {count = 0;}
+  };
   class CreatePreInletBoundingBox: public HemoCellFunctional {
     void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     CreatePreInletBoundingBox * clone() const;
@@ -58,25 +73,28 @@ public:
                                 boundingBox(b_), foundPreInlet(fp_) {}
   };
   
-  PreInlet() {};
-  PreInlet(plb::MultiScalarField3D<int> & flagMatrix);
+  PreInlet(plb::MultiScalarField3D<int> & flagMatrix, hemo::HemoCell * hemocell_);
   inline plint getNumberOfNodes() { return cellsInBoundingBox(location);}
   void createBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> *,plb::MultiScalarField3D<int> * flagMatrix);
+  void setDrivingForce();
+  void calculateDrivingForce();
   plb::Box3D location;
   plb::Box3D fluidInlet;
   int nProcs = 0;
   bool initialized = false;
+  double drivingForce = 0.0;
   std::map<plint,plint> BlockToMpi;
   std::map<int,plint> particleSendMpi; // the value equals the number of atomic blocks that are sent.
   std::map<int,bool> particleReceiveMpi;
   std::vector<plint> communicationBlocks;
   int sendingBlocks = 0;
   bool partOfpreInlet = false;
-  int inflow_length = 20;
+  int inflow_length = 0;
   int preinlet_length = 0;
   bool communications_mapped = false;
   std::vector<int> particle_receivers;
   std::vector<int> particle_senders;
+  HemoCell * hemocell;
 };
 
 }
@@ -124,45 +142,6 @@ void mapPreInletParticleBoundary(HemoCell & hemocell);
 void createPreInletVelocityBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagmatrix,plb::Array<double,3> speed, HemoCell & hemocell);
 void applyPreInletVelocityBoundary(HemoCell & hemocell);
 void applyPreInletParticleBoundary(HemoCell & hemocell);
-
-class PreInlet_old {
-  class PreInletFunctional: public HemoCellFunctional {
-    PreInlet_old & parent;
-    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
-    PreInletFunctional * clone() const;
-  public:
-    PreInletFunctional(PreInlet_old & parent_) : parent(parent_) {}
-  };
-  class DeletePreInletParticles: public HemoCellFunctional {
-    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
-    DeletePreInletParticles * clone() const;
-  };
-  class ImmersePreInletParticles: public HemoCellFunctional {
-    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
-    ImmersePreInletParticles * clone() const;
-  };
-  
-  HemoCell & hemocell;
-  Box3D domain;
-  Box3D fluidDomain;
-  string sourceFileName;
-  int particlePositionTimeStep;
-  Direction flowDir;
-  plint file_id,dataspace_velocity_id,dataset_velocity_id = -1,dataset_particles_id,dataspace_particles_id;
-  int current_velocity_field = -1;
-  plint particle_type_mem, particle_type_h5, particles_size;
-  particle_hdf5_t * particles;
-  int nCellsOffset, nCellsSelf;
-  //ifstream counter;
-  bool reducedPrecision;
-  int reducedPrecisionDirection;
-
-
-public:  
-  PreInlet_old(Box3D domain, string sourceFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell, bool reducedPrecision_ = false);
-  void update();
-  ~PreInlet_old();
-};
 
 }
 #endif /* PREINLET_H */

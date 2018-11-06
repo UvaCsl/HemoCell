@@ -55,8 +55,6 @@ public:
     
     unsigned char celltype;
 
-    bool fromPreInlet;
-
 #ifdef SOLIDIFY_MECHANICS
     bool solidify;
 #endif
@@ -119,9 +117,6 @@ public:
     sv.cellId = cellId_;
     sv.vertexId = vertexId_;
     sv.celltype=celltype_;
-#ifdef PREINLET_MECHANICS
-    sv.fromPreInlet = false;
-#endif
 #ifdef SOLIDIFY_MECHANICS
     sv.solidify = false;
 #endif

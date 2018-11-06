@@ -38,11 +38,10 @@ int main(int argc, char *argv[]) {
   hemocell.initializeLattice(voxelizedDomain->getMultiBlockManagement());
  
   if (!hemocell.partOfpreInlet) {
-  Box3D outlet(0,hemocell.lattice->getNx(),0,hemocell.lattice->getNy(),hemocell.lattice->getNz()-1,hemocell.lattice->getNz()-1);
-  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
-  boundary->setPressureConditionOnBlockBoundaries(*hemocell.lattice,outlet);
-  setBoundaryDensity(*hemocell.lattice,outlet, 1.0);
+    hemocell.lattice->periodicity().toggleAll(false);
   }
+  
+
   //Setting Preinlet creation
   plb::Array<double,3> speed = {0,0,0};
   createPreInletVelocityBoundary(hemocell.lattice, flagMatrix, speed, hemocell);
@@ -51,22 +50,14 @@ int main(int argc, char *argv[]) {
   hlog << "(PipeFlow) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl; 
   boundaryFromFlagMatrix(hemocell.lattice,flagMatrix,hemocell.partOfpreInlet);
   
-  hemocell.preInlet.createBoundary(hemocell.lattice,flagMatrix);
+  hemocell.preInlet->createBoundary(hemocell.lattice,flagMatrix);
   
   hemocell.lattice->toggleInternalStatistics(false);
-  
-  if (!hemocell.partOfpreInlet) {
-    hemocell.lattice->periodicity().toggleAll(false);
-  }
+
   hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
   //Driving Force
-  pcout << "(PipeFlow) (Fluid) Setting up driving Force" << endl; 
-  double rPipe = (*cfg)["domain"]["refDirN"].read<int>()/2.0;
-  double poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
-
-
-  
+  hemocell.preInlet->calculateDrivingForce();
  
   hemocell.lattice->initialize();   
 
@@ -92,7 +83,14 @@ int main(int argc, char *argv[]) {
   outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE,OUTPUT_BOUNDARY};
   hemocell.setFluidOutputs(outputs);
 
-  
+  if (!hemocell.partOfpreInlet) {
+    Box3D bb = hemocell.lattice->getBoundingBox();
+  Box3D outlet(bb.x0,bb.x1,bb.y0,bb.y1,bb.z1-1,bb.z1);
+  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = new BoundaryConditionInstantiator3D 
+          < T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T,DESCRIPTOR> > ();
+  boundary->addPressureBoundary2P(outlet,*hemocell.lattice,boundary::density);
+  setBoundaryDensity(*hemocell.lattice,outlet, 1.0);
+  }
   
   //loading the cellfield
   if (not cfg->checkpointed) {
@@ -126,10 +124,8 @@ int main(int argc, char *argv[]) {
     hemocell.iterate();
     
     if (hemocell.partOfpreInlet) {
-    //Set driving force as required after each iteration
-    setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
-                DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-                plb::Array<T, DESCRIPTOR<T>::d>(0.,0.,0.0001));
+      //Set driving force as required after each iteration
+      hemocell.preInlet->setDrivingForce();
     }
     
     applyPreInletVelocityBoundary(hemocell);

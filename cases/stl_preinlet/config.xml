@@ -4,7 +4,7 @@
 <preInlet>
   <parameters>
     <lengthN> 60 </lengthN> <!-- Lenght in Lattice Units -->
-    <Re> 0.5 </Re>
+    <Re> 0.3 </Re>
     <Cells>
       <Cell materialModel="RBC" xml="preinlet_RBC.xml" />
     </Cells>
@@ -33,15 +33,15 @@
     <refDirN> 45 </refDirN>  <!-- Number of numerical cell in the reference direction -->
     <blockSize> -1 </blockSize>
     <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
-    <particleEnvelope> 25 </particleEnvelope>
+    <particleEnvelope> 35 </particleEnvelope>
     <kRep> 2e-22 </kRep> <!-- Repulsion Constant -->
     <RepCutoff> 0.7 </RepCutoff> <!-- RepulsionCutoff -->
 </domain>
 
 <sim>
-    <tmax> 2000 </tmax> <!-- total number of iterations -->
-    <tmeas> 100 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint> 200000 </tcheckpoint> 
+    <tmax> 40000 </tmax> <!-- total number of iterations -->
+    <tmeas> 500 </tmeas> <!-- interval after which data is written --> 
+    <tcheckpoint> 1000000 </tcheckpoint> 
     <tbalance> 1000 </tbalance> <!-- interval after which balance is performed --> 
 </sim>
 

@@ -226,7 +226,7 @@ public:
   ///Initialize the fluid field with the given management, should be done after specifing the pre inlets and before initializing the cellfields
   void initializeLattice(MultiBlockManagement3D const & management);
  
-  PreInlet preInlet;
+  PreInlet * preInlet = 0;
   
   bool partOfpreInlet = false;
   
