@@ -865,7 +865,30 @@ void HemoCellParticleField::solidifyCells() {
     }
   }
   removeParticles(1);
+  for (Dot3D & b_particle : boundaryParticles) {
+      cout << "Hello" << endl;
+    for (int x = b_particle.x-1; x <= b_particle.x+1; x++) {
+      if (x < 0 || x > this->atomicLattice->getNx()-1) {continue;}
+      for (int y = b_particle.y-1; y <= b_particle.y+1; y++) {
+        if (y < 0 || y > this->atomicLattice->getNy()-1) {continue;}
+        for (int z = b_particle.z-1; z <= b_particle.z+1; z++) {
+          if (z < 0 || z > this->atomicLattice->getNz()-1) {continue;}
+          const int & index = grid_index(x,y,z);
+          for (unsigned int i = 0 ; i < particle_grid_size[index] ; i++ ) {
+            HemoCellParticle & lParticle = particles[particle_grid[index][i]];
+            const hemo::Array<T,3> dv = lParticle.sv.position - (b_particle + this->atomicLattice->getLocation()); 
+            const T distance = sqrt(dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2]); 
+            const hemo::Array<T,9> shearrate;
+            if (distance < (*cellFields)[lParticle.sv.celltype]->mechanics->cfg["MaterialModel"]["distanceThreshold"].read<T>()) { 
+              lParticle.sv.solidify = true; 
+            } 
+          }
+        }
+      }
+    }
+  }
 }
+
 
 HemoCellParticleDataTransfer& HemoCellParticleField::getDataTransfer() {
     return particleDataTransfer;
