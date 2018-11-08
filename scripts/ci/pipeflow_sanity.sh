@@ -30,3 +30,18 @@ if [ -n "`diff -C 0 log/logfile log/logfile.0  | tail -n +2 | grep -v atomic-blo
   echo "Output of differing CPU's is not identical, indicating some boundary problem probably"
   exit 1
 fi
+
+echo "Checking checkpointing"
+cd tmp/
+if [ ! -s "lattice.dat" ] || [ ! -s "lattice.dat.old" ]; then
+  echo "Error in checkpointing lattice output"
+  exit 1
+fi
+if [ ! -s "particleField.dat" ] || [ ! -s "particleField.dat.old" ]; then
+  echo "Error in checkpointing particleField output"
+  exit 1
+fi
+if [ ! -s "checkpoint.xml" ] || [ ! -s "checkpoint.xml.old" ]; then
+  echo "Error in checkpointing xml output"
+  exit 1
+fi
