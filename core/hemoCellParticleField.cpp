@@ -858,6 +858,7 @@ void HemoCellParticleField::applyBoundaryRepulsionForce() {
 }
 
 void HemoCellParticleField::solidifyCells() {
+#ifdef SOLIDIFY_MECHANICS
   for (HemoCellField * type : cellFields->cellFields) {
     ppc_up_to_date = false;
     if(type->doSolidifyMechanics) {
@@ -887,6 +888,10 @@ void HemoCellParticleField::solidifyCells() {
       }
     }
   }
+#else
+  hlog << "(HemoCellParticleField) SolidifyCells called but SOLIDIFY_MECHANICS not enabled" << endl;
+  exit(1);
+#endif
 }
 
 
