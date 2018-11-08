@@ -179,7 +179,7 @@ public:
         case OUTPUT_SHEAR_RATE:
           output = outputShearRate();
           name = "ShearRate";
-          dim[3] = 6;
+          dim[3] = 9;
           break;
         case OUTPUT_STRAIN_RATE:
           output = outputStrainRate();
@@ -377,29 +377,31 @@ private:
   }
      
   float * outputShearRate() {
-    float * output = new float [(*nCells)*6];
+    float * output = new float [(*nCells)*9];
     unsigned int n = 0;
-    plb::Array<T,6> shearrate;
-        
+    plb::Array<T,9> shearrate;
+
     for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
       for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
         for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
 
           ablock->get(iX,iY,iZ).computeShearRate(*ablock,shearrate,iX,iY,iZ);
-          //Array<T,6> stress_vec = stress.get(iX,iY,iZ);
           output[n] = shearrate[0];
           output[n+1] = shearrate[1];
           output[n+2] = shearrate[2];
           output[n+3] = shearrate[3];
           output[n+4] = shearrate[4];
           output[n+5] = shearrate[5];
-          n += 6;
+          output[n+6] = shearrate[6];
+          output[n+7] = shearrate[7];
+          output[n+8] = shearrate[8];
+          n += 9;
         }
       }
     }   
      
     if (cellfields.hemocell.outputInSiUnits) {
-      for (unsigned int i = 0 ; i < (*nCells)*6 ; i++) {
+      for (unsigned int i = 0 ; i < (*nCells)*9 ; i++) {
         output[i] = output[i]*(1/(param::dt));
       }
     }

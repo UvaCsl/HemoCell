@@ -387,7 +387,7 @@ index 7751f78..2d141fa 100644
  namespace plb {
  
 diff --git a/src/core/cell.h b/src/core/cell.h
-index 8ca5cc2..95c9b66 100644
+index 8ca5cc2..6c327ce 100644
 --- a/src/core/cell.h
 +++ b/src/core/cell.h
 @@ -34,6 +34,7 @@
@@ -417,7 +417,7 @@ index 8ca5cc2..95c9b66 100644
 +     */
 +    void computeShearRate (
 +        BlockLattice3D<T, Descriptor>& lattice,
-+        Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, 
++        Array<T,9>& shearrate, 
 +        plint x, plint y, plint z) const
 +        {
 +            PLB_PRECONDITION( dynamics );
@@ -438,7 +438,7 @@ index 8ca5cc2..95c9b66 100644
      Dynamics<T,Descriptor>*        dynamics;  ///< local LB dynamics
  };
 diff --git a/src/core/dynamics.h b/src/core/dynamics.h
-index 4225a81..c28510f 100644
+index 4225a81..65cb0f1 100644
 --- a/src/core/dynamics.h
 +++ b/src/core/dynamics.h
 @@ -29,11 +29,16 @@
@@ -468,7 +468,7 @@ index 4225a81..c28510f 100644
 +    virtual void computeShearRate (
 +        Cell<T,Descriptor> const& cell, 
 +        BlockLattice3D<T, Descriptor>& lattice, 
-+        Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const {}; 
++        Array<T,9>& shearrate, plint x, plint y, plint z) const {}; 
      /// Compute additional user-defined moments
      virtual void computeMoment( Cell<T,Descriptor> const& cell,
                                  plint momentId, T* moment ) const =0;
@@ -479,12 +479,12 @@ index 4225a81..c28510f 100644
 +    /// Compute the shear rate tensor
 +    virtual void computeShearRate( Cell<T,Descriptor> const& cell, 
 +        BlockLattice3D<T, Descriptor>& lattice, 
-+        Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const;
++        Array<T,9>& shearrate, plint x, plint y, plint z) const;    
      /// Compute additional user-defined moments
      virtual void computeMoment( Cell<T,Descriptor> const& cell,
                                  plint momentId, T* moment ) const;
 diff --git a/src/core/dynamics.hh b/src/core/dynamics.hh
-index 940bcd6..7699445 100644
+index 940bcd6..56ec014 100644
 --- a/src/core/dynamics.hh
 +++ b/src/core/dynamics.hh
 @@ -40,6 +40,7 @@
@@ -495,7 +495,7 @@ index 940bcd6..7699445 100644
  
  namespace plb {
  
-@@ -349,6 +350,42 @@ void BasicBulkDynamics<T,Descriptor>::computeHeatFlux (
+@@ -349,6 +350,48 @@ void BasicBulkDynamics<T,Descriptor>::computeHeatFlux (
      q.resetToZero();
  }
  
@@ -504,33 +504,39 @@ index 940bcd6..7699445 100644
 +void BasicBulkDynamics<T,Descriptor>::computeShearRate( 
 +    Cell<T,Descriptor> const& cell, 
 +    BlockLattice3D<T, Descriptor>& lattice, 
-+    Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const
-+{
-+    Array<T,Descriptor<T>::d> velp1;
-+    Array<T,Descriptor<T>::d> veln1;
-+    Array<T,Descriptor<T>::d> velp2;
-+    Array<T,Descriptor<T>::d> veln2;
-+    Array<T,Descriptor<T>::d> velp3;
-+    Array<T,Descriptor<T>::d> veln3;
++    Array<T,9>& shearrate, plint x, plint y, plint z) const    
++    {
++    Array<T,3> velp1;
++    Array<T,3> veln1;
++    Array<T,3> velp2;
++    Array<T,3> veln2;
++    Array<T,3> velp3;
++    Array<T,3> veln3;
++    
 +    
 +    // velocity gradients in x-direction
 +    lattice.get(x+1,y,z).computeVelocity(velp1); //vel at cell+1
 +    lattice.get(x-1,y,z).computeVelocity(veln1); //vel at cell-1
-+    shearrate[0] = abs(velp1[0]-veln1[0])/2; // dv_x /2*dx
 +         
 +     // velocity gradients in y-direction
 +    lattice.get(x,y+1,z).computeVelocity(velp2); //vel at cell+1
 +    lattice.get(x,y-1,z).computeVelocity(veln2); //vel at cell-1
-+    shearrate[1] = abs(velp2[0]-veln2[0])/2; // dv_x / 2*dy
-+    shearrate[2] = abs(velp2[1]-veln1[1])/2; // dv_y / 2*dy
 +    
 +    // velocity gradients in z-direction
 +    lattice.get(x,y,z+1).computeVelocity(velp3); //vel at cell+1
 +    lattice.get(x,y,z-1).computeVelocity(veln3); //vel at cell-1
-+    shearrate[2] = abs(velp3[0]-veln3[0])/2; // dv_x / 2*dz
-+    shearrate[4] = abs(velp3[1]-veln3[1])/2; // dv_y / 2*dz
-+    shearrate[5] = abs(velp3[2]-veln3[2])/2; // dv_z / 2*dz
 +
++    shearrate[0] = (velp1[0]-veln1[0])/2; // dv_x /2*dx 
++    shearrate[3] = (velp1[1]-veln1[1])/2; // dv_y/ 2*dx
++    shearrate[6] = (velp1[2]-veln1[2])/2; // dv_z /2*dx
++    
++    shearrate[1] = (velp2[0]-veln2[0])/2; // dv_x / 2*dy
++    shearrate[4] = (velp2[1]-veln2[1])/2; // dv_y / 2*dy
++    shearrate[7] = (velp2[2]-veln2[2])/2; // dv_z / 2*dy
++    
++    shearrate[2] = (velp3[0]-veln3[0])/2; // dv_x / 2*dz
++    shearrate[5] = (velp3[1]-veln3[1])/2; // dv_y / 2*dz
++    shearrate[8] = (velp3[2]-veln3[2])/2; // dv_z / 2*dz    
 +    
 + }
 +

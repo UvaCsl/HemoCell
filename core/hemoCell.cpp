@@ -180,6 +180,13 @@ void HemoCell::writeOutput() {
   if(boundaryRepulsionEnabled) {
     cellfields->applyBoundaryRepulsionForce();
   }
+
+  //update larger lattice envelopes
+  lattice->getMultiBlockManagement().changeEnvelopeWidth(2);
+  lattice->signalPeriodicity();
+  lattice->getBlockCommunicator().duplicateOverlaps(*lattice,modif::staticVariables);
+  lattice->getMultiBlockManagement().changeEnvelopeWidth(1);
+  
   cellfields->syncEnvelopes();
   if (global.cellsDeletedInfo) {
     cellfields->deleteIncompleteCells(true);
