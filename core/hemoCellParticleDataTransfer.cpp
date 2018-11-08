@@ -80,7 +80,7 @@ void HemoCellParticleDataTransfer::send (
     // Particles, by definition, are dynamic data, and they need to
     //   be reconstructed in any case. Therefore, the send procedure
     //   is run whenever kind is one of the dynamic types.
-    if ( (kind==modif::hemocell))
+    if ( (kind==modif::hemocell || kind==modif::dataStructure))
     {
         std::vector<HemoCellParticle*> foundParticles;
         particleField->findParticles(domain, foundParticles);
@@ -97,7 +97,7 @@ void HemoCellParticleDataTransfer::send (
 void HemoCellParticleDataTransfer::receive(char * buffer, unsigned int size, modif::ModifT kind) {
   global.statistics.getCurrent()["MpiReceive"].start();
 
-  if ( (kind==modif::hemocell) )
+  if ( (kind==modif::hemocell || kind==modif::dataStructure))
   {
       unsigned int posInBuffer = 0;
 
@@ -122,7 +122,7 @@ void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer,
   //   is run whenever kind is one of the dynamic types.
  global.statistics.getCurrent()["MpiReceive"].start();
 
-  if ( (kind==modif::hemocell) )
+  if ((kind==modif::hemocell || kind==modif::dataStructure))
   {
       unsigned int posInBuffer = 0;
 
@@ -146,7 +146,7 @@ void HemoCellParticleDataTransfer::receive (char * buffer, unsigned int size, mo
   
   global.statistics.getCurrent()["MpiReceive"].start();
 
-  if ( (kind==modif::hemocell) )
+  if ((kind==modif::hemocell || kind==modif::dataStructure))
   {
     int offset = getOffset(absoluteOffset);
     hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
@@ -176,7 +176,7 @@ void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer,
   
   global.statistics.getCurrent()["MpiReceive"].start();
 
-  if ( (kind==modif::hemocell) )
+  if ((kind==modif::hemocell || kind==modif::dataStructure))
   {
     int offset = getOffset(absoluteOffset);
     hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
@@ -226,7 +226,7 @@ void HemoCellParticleDataTransfer::attribute (
 {
   global.statistics.getCurrent()["LocalCommunication"].start();
 
-    if ( kind==modif::hemocell )
+    if ((kind==modif::hemocell || kind==modif::dataStructure))
     {
       //Box3D fromDomain(toDomain.shift(deltaX,deltaY,deltaZ));
       HemoCellParticleField const& fromParticleField =
@@ -258,7 +258,7 @@ void HemoCellParticleDataTransfer::attribute (
   
   global.statistics.getCurrent()["LocalCommunication"].start();
   
-  if ( kind==modif::hemocell )
+  if ((kind==modif::hemocell || kind==modif::dataStructure))
   { 
   
     //Box3D fromDomain(toDomain.shift(deltaX,deltaY,deltaZ));
