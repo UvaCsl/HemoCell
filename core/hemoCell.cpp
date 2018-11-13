@@ -301,13 +301,6 @@ void HemoCell::iterate() {
           plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
   global.statistics.getCurrent().stop();
   
-  //Small sanity check to see if our MPI is still sane (do we have any unprocessed messages?)
-  int flag;
-  MPI_Iprobe(MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&flag,MPI_STATUS_IGNORE);
-  if (flag) {
-    cout << "Error there are messages while they are not expected" << endl;
-  }
-  
   iter++;
   global.statistics.getCurrent().stop();
 }
