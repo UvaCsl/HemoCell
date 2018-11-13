@@ -76,6 +76,7 @@ class HemoCellField{
   bool doSolidifyMechanics = false;
   bool doInteriorViscosity = false;
   T interiorViscosityTau = 1.0;
+  plb::Dynamics<T,DESCRIPTOR> * innerViscosityDynamics = 0;
 };
 }
 

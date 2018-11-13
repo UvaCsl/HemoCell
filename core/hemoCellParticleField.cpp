@@ -680,7 +680,6 @@ void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
   // This could be done less complex I guess?
   for (const HemoCellParticle & particle : particles) { // Go over each particle
      if (!(*cellFields)[particle.sv.celltype]->doInteriorViscosity) { continue; }
-    
     // Find the interior relaxation parameter for particletype
     const double omegaInt = 1.0/(*cellFields)[particle.sv.celltype]->interiorViscosityTau;
 
@@ -711,7 +710,11 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
   for (plint iX = atomicLattice->getBoundingBox().x0; iX <= atomicLattice->getBoundingBox().x1; iX++) {
     for (plint iY = atomicLattice->getBoundingBox().y0; iY <= atomicLattice->getBoundingBox().y1; iY++) {
       for (plint iZ = atomicLattice->getBoundingBox().z0; iZ <= atomicLattice->getBoundingBox().z1; iZ++) {
-        atomicLattice->get(iX, iY, iZ).getDynamics().setOmega(omegaExt);
+        for (HemoCellField * cellfield : cellFields->cellFields) {
+          if ( &atomicLattice->get(iX, iY, iZ).getDynamics() == cellfield->innerViscosityDynamics) {
+            atomicLattice->get(iX, iY, iZ).attributeDynamics(&atomicLattice->getBackgroundDynamics());
+          }
+        }
       }
     }
   }
@@ -726,11 +729,15 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
     if (!(*cellFields)[ctype]->doInteriorViscosity) {
       continue;
     }
-
+    
     // Find the interior relaxation parameter for particletype
-    // Only for RBC now
     const double omegaInt = 1.0/(*cellFields)[ctype]->interiorViscosityTau;
-
+    
+    if (!(*cellFields)[ctype]->innerViscosityDynamics) {
+      (*cellFields)[ctype]->innerViscosityDynamics = atomicLattice->getBackgroundDynamics().clone();
+      (*cellFields)[ctype]->innerViscosityDynamics->setOmega(omegaInt);
+    }
+ 
     hemo::OctreeStructCell octCell(3, 1, 30,
                                   (*cellFields)[ctype]->mechanics->cellConstants.triangle_list,
                                   particles, cell);
@@ -738,7 +745,7 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
     vector<Cell<T,DESCRIPTOR>*> innerNodes;
     octCell.findInnerNodes(atomicLattice,particles,cell,innerNodes);
     for (Cell<T,DESCRIPTOR>* node : innerNodes) {
-      node->getDynamics().setOmega(omegaInt);
+      node->attributeDynamics((*cellFields)[ctype]->innerViscosityDynamics);
     }
   }
 }

@@ -13,7 +13,7 @@
 </ibm>
 
 <domain>
-    <shearrate> 400.0 </shearrate>   <!--Shear rate for the fluid domain. [s^-1] [25]. -->
+    <shearrate> 1000.0 </shearrate>   <!--Shear rate for the fluid domain. [s^-1] [25]. -->
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.1e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->
     <dx> 0.5e-6 </dx> <!--Physical length of 1 Lattice Unit -->
@@ -24,9 +24,9 @@
 </domain>
 
 <sim>
-    <tmax> 21000 </tmax> <!-- total number of iterations -->
+    <tmax> 80000 </tmax> <!-- total number of iterations -->
     <tmeas> 500 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint>1000000</tcheckpoint>
+    <tcheckpoint>20000</tcheckpoint>
     <interiorViscosity>10</interiorViscosity>
     <interiorViscosityEntireGrid>1000</interiorViscosityEntireGrid>
 </sim>

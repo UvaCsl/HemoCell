@@ -40,13 +40,6 @@ int main(int argc, char* argv[])
 			defaultMultiBlockPolicy3D().getCombinedStatistics(),
 			defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
 			new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
-        
-        
-
-        // Override background-dynamics to guarantee and independent per-cell
-        //   copy of the dynamics object.
-        defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-                        new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau) );
 
 	pcout << "(CellCollision) Re corresponds to u_max = " << (param::re * param::nu_p)/(hemocell.lattice->getBoundingBox().getNy()*param::dx) << " [m/s]" << endl;
 	// -------------------------- Define boundary conditions ---------------------

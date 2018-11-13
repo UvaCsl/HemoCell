@@ -292,11 +292,9 @@ void HemoCellFields::HemoFindInternalParticleGridPoints::processGenericBlocks(Bo
 }
 
 void HemoCellFields::findInternalParticleGridPoints() {
-//  if (hemocell.iter % hemocell.cellfields->cellFields[0]->timescale == 0)  {
     vector<MultiBlock3D*> wrapper;
     wrapper.push_back(immersedParticles);
     applyProcessingFunctional(new HemoFindInternalParticleGridPoints(),immersedParticles->getBoundingBox(),wrapper);
-//  }
 }
 
 

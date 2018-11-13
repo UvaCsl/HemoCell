@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
 	
 	hemocell.initializeCellfield();
 	hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
-        hemocell.enableInteriorViscosity("RBC_HO");
+  hemocell.enableInteriorViscosity("RBC_HO");
 	// hemocell.addCellType<WbcHighOrderModel>("WBC_HO", WBC_SPHERE);
 	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC, OUTPUT_VERTEX_ID, OUTPUT_CELL_ID};
 	hemocell.setOutputs("RBC_HO", outputs);
