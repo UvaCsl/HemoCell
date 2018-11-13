@@ -387,7 +387,7 @@ index 7751f78..2d141fa 100644
  namespace plb {
  
 diff --git a/src/core/cell.h b/src/core/cell.h
-index 8ca5cc2..6c327ce 100644
+index 8ca5cc2..fe54420 100644
 --- a/src/core/cell.h
 +++ b/src/core/cell.h
 @@ -34,6 +34,7 @@
@@ -407,6 +407,15 @@ index 8ca5cc2..6c327ce 100644
      T data[ExternalField::numScalars];
  };
  
+@@ -161,7 +162,7 @@ public:
+     void specifyStatisticsStatus(bool status) {
+         takesStat = status;
+     }
+-private:
++public:
+     /// You can't use this method. Use BlockLattice::attributeDynamics instead.
+     /** This is one of the rare cases of a method accepting a pointer but
+      *  not managing memory itself. Memory of the dynamics is handled by
 @@ -259,6 +260,19 @@ public:
          dynamics->computeHeatFlux(*this, q);
      }
