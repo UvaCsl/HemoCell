@@ -365,18 +365,12 @@ void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRe
   boundaryRepulsionEnabled = true;
 }
 
-void HemoCell::specifyPreInlet(MultiScalarField3D<int>& flagMatrix) {
-  preInlet = new PreInlet(flagMatrix,this);
-  preInlet->preinlet_length = (*cfg)["preInlet"]["parameters"]["lengthN"].read<int>();
-  preInlet->location.z0 -= preInlet->preinlet_length;
-}
-
 void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   if (lattice) {
     delete lattice;
   }
 
-  if (!preInlet->initialized) {
+  if (!preInlet) {
     hlog << "(HemoCell) No preinlet specified, running with all cores on domain with given management" << endl;
     lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(management,
             defaultMultiBlockPolicy3D().getBlockCommunicator(),

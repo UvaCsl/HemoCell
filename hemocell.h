@@ -219,10 +219,6 @@ public:
   ///Restructure the grid, has an optional argument to specify whether a checkpoint from this iteration is available, default is YES!
   void doRestructure(bool checkpoint_avail = true);
   
-  //Find and specify variables for the preInlets according to the flagmatrix and desired (default) parameters
-  void specifyPreInlet(MultiScalarField3D<int>& flagMatrix);
-  
-  
   ///Initialize the fluid field with the given management, should be done after specifing the pre inlets and before initializing the cellfields
   void initializeLattice(MultiBlockManagement3D const & management);
  

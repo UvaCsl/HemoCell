@@ -53,60 +53,113 @@ namespace hemo {
 
 namespace hemo {
 
-#ifndef H5_HAVE_PARALLEL
-herr_t H5Pset_fapl_mpio( hid_t fapl_id, MPI_Comm comm, MPI_Info info ) {
-  if (plb::global::mpi().getSize() > 1) {
-    hlog << "Not compiled with HDF5 OpenMPI version, cowardly refusing to generate corrupted hdf5 files" << std::endl; 
-    exit(1);
-  }
-  return 0;
-}
-#endif
-
-void mapPreInletParticleBoundary(HemoCell& hemocell) {
+void PreInlet::initializePreInletParticleBoundary() {
   MPI_Barrier(MPI_COMM_WORLD);
-  Box3D domain = hemocell.preInlet->fluidInlet;
-  if (hemocell.partOfpreInlet) {
-    domain.z0 = hemocell.preInlet->location.z0;
+  Box3D domain = fluidInlet;
+  if (hemocell->partOfpreInlet) {
+    if (direction == Direction::Xneg) {
+      domain.x0 = location.x0;
+    }
+    if (direction == Direction::Yneg) {
+      domain.y0 = location.y0;
+    }
+    if (direction == Direction::Zneg) {
+      domain.z0 = location.z0;
+    }
+    if (direction == Direction::Xpos) {
+      domain.x1 = location.x1;
+    }
+    if (direction == Direction::Ypos) {
+      domain.y1 = location.y1;
+    }
+    if (direction == Direction::Zpos) {
+      domain.z1 = location.z1;
+    }
   }
-  domain.z0 += 1;
-  domain.z1 = domain.z0 + hemocell.preInlet->inflow_length;
+  if (direction == Direction::Xneg) {
+    domain.x0 += 1;
+    domain.x1 = domain.x0 + inflow_length;
+  }
+  if (direction == Direction::Yneg) {
+    domain.y0 += 1;
+    domain.y1 = domain.y0 + inflow_length;
+  }
+  if (direction == Direction::Zneg) {
+    domain.z0 += 1;
+    domain.z1 = domain.z0 + inflow_length;
+  }
+  if (direction == Direction::Xpos) {
+    domain.x1 -= 1;
+    domain.x0 = domain.x1 - inflow_length;
+  }
+  if (direction == Direction::Ypos) {
+    domain.y1 -= 1;
+    domain.y0 = domain.y1 - inflow_length;
+  }
+  if (direction == Direction::Zpos) {
+    domain.z1 -= 1;
+    domain.z0 = domain.z1 - inflow_length;
+  }
   
-  for (int bId : hemocell.lattice->getLocalInfo().getBlocks()) {
-    Box3D bulk = hemocell.lattice->getMultiBlockManagement().getBulk(bId);
+ 
+  
+  for (int bId : hemocell->lattice->getLocalInfo().getBlocks()) {
+    Box3D bulk = hemocell->lattice->getMultiBlockManagement().getBulk(bId);
     Box3D result;
     if (!intersect(domain,bulk,result)) { continue; }
-    if (hemocell.partOfpreInlet) {
-      hemocell.preInlet->particleSendMpi[global::mpi().getRank()] += 1;
+    if (hemocell->partOfpreInlet) {
+      particleSendMpi[global::mpi().getRank()] += 1;
     } else {
-      hemocell.preInlet->particleReceiveMpi[global::mpi().getRank()] = true;
+      particleReceiveMpi[global::mpi().getRank()] = true;
     }
-    hemocell.preInlet->communicationBlocks.push_back(bId);
+    communicationBlocks.push_back(bId);
   }
   
-  HemoCellGatheringFunctional<plint>::gather(hemocell.preInlet->particleSendMpi);
-  HemoCellGatheringFunctional<bool>::gather(hemocell.preInlet->particleReceiveMpi);
-  for ( auto & pair : hemocell.preInlet->particleSendMpi) {
-    hemocell.preInlet->sendingBlocks += pair.second;
+  HemoCellGatheringFunctional<plint>::gather(particleSendMpi);
+  HemoCellGatheringFunctional<bool>::gather(particleReceiveMpi);
+  for ( auto & pair : particleSendMpi) {
+    sendingBlocks += pair.second;
   }
 }
 
-void applyPreInletParticleBoundary(HemoCell & hemocell) {
-  PreInlet & preInlet = *hemocell.preInlet;
+void PreInlet::applyPreInletParticleBoundary() {
   vector<MPI_Request> requests;
   vector<vector<char>> buffers;
   MPI_Barrier(MPI_COMM_WORLD);
-  if (preInlet.partOfpreInlet) {
-    if(preInlet.particleSendMpi.find(global::mpi().getRank()) != preInlet.particleSendMpi.end()) {
-      for (plint bid : preInlet.communicationBlocks) {
+  if (partOfpreInlet) {
+    if(particleSendMpi.find(global::mpi().getRank()) != particleSendMpi.end()) {
+      for (plint bid : communicationBlocks) {
         buffers.push_back(vector<char>());
-        Box3D domain = hemocell.preInlet->fluidInlet;
-        domain.z0 = domain.z0 - hemocell.preInlet->preinlet_length;
-        domain.z1 = domain.z0 + hemocell.preInlet->inflow_length;
-        Dot3D shift = hemocell.cellfields->immersedParticles->getComponent(bid).getLocation();
-        domain = domain.shift(-shift.x,-shift.y,-shift.z+1);
-        hemocell.cellfields->immersedParticles->getComponent(bid).particleDataTransfer.send(domain,buffers.back(),modif::hemocell);
-        for (auto & pair : preInlet.particleReceiveMpi) {
+        Box3D domain = fluidInlet;
+        if (direction == Direction::Xneg) {
+          domain.x0 = domain.x0 - preinlet_length;
+          domain.x1 = domain.x0 + inflow_length;
+        }
+        if (direction == Direction::Yneg) {
+          domain.y0 = domain.y0 - preinlet_length;
+          domain.y1 = domain.y0 + inflow_length;       
+        }
+        if (direction == Direction::Zneg) {
+          domain.z0 = domain.z0 - preinlet_length;
+          domain.z1 = domain.z0 + inflow_length;
+        }
+        if (direction == Direction::Xpos) {
+          domain.x1 = domain.x1 + preinlet_length;
+          domain.x0 = domain.x1 - inflow_length;       
+        }
+        if (direction == Direction::Ypos) {
+          domain.y1 = domain.y1 + preinlet_length;
+          domain.y0 = domain.y1 - inflow_length;        
+        }
+        if (direction == Direction::Zpos) {
+          domain.z1 = domain.z1 + preinlet_length;
+          domain.z0 = domain.z1 - inflow_length;       
+        }
+
+        Dot3D shift = hemocell->cellfields->immersedParticles->getComponent(bid).getLocation();
+        domain = domain.shift(-shift.x,-shift.y,-shift.z);
+        hemocell->cellfields->immersedParticles->getComponent(bid).particleDataTransfer.send(domain,buffers.back(),modif::hemocell);
+        for (auto & pair : particleReceiveMpi) {
           const int & pid = pair.first;
           requests.push_back(MPI_Request());
           MPI_Isend(&buffers.back()[0],buffers.back().size(),MPI_CHAR,pid,0,MPI_COMM_WORLD,&requests.back());
@@ -115,58 +168,76 @@ void applyPreInletParticleBoundary(HemoCell & hemocell) {
     }
     MPI_Waitall(requests.size(),&requests[0],MPI_STATUSES_IGNORE);
   } else {
-    if(preInlet.particleReceiveMpi.find(global::mpi().getRank()) != preInlet.particleReceiveMpi.end()) {
-      for (int counter = 0 ; counter < preInlet.sendingBlocks ; counter++) {
+    if(particleReceiveMpi.find(global::mpi().getRank()) != particleReceiveMpi.end()) {
+      for (int counter = 0 ; counter < sendingBlocks ; counter++) {
         MPI_Status status;
         int count;
         MPI_Probe(MPI_ANY_SOURCE,0,MPI_COMM_WORLD,&status);
         MPI_Get_count(&status,MPI_CHAR,&count);
         buffers.push_back(vector<char>(count));
         MPI_Recv(&buffers.back()[0],count,MPI_CHAR,status.MPI_SOURCE,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-        Dot3D offset(0,0,preInlet.preinlet_length);
-        for (int bId : hemocell.cellfields->immersedParticles->getLocalInfo().getBlocks()) {
+        Dot3D offset(0,0,0);
+        if (direction == Direction::Xneg) {
+          offset.x = preinlet_length;
+        }
+        if (direction == Direction::Yneg) {
+          offset.y = preinlet_length;
+        }
+        if (direction == Direction::Zneg) {
+          offset.z = preinlet_length;
+        }
+        if (direction == Direction::Xpos) {
+          offset.x = -preinlet_length;
+        }
+        if (direction == Direction::Ypos) {
+          offset.y = -preinlet_length;
+        }
+        if (direction == Direction::Zpos) {
+          offset.z = -preinlet_length;
+        }
+        for (int bId : hemocell->cellfields->immersedParticles->getLocalInfo().getBlocks()) {
   
-          hemocell.cellfields->immersedParticles->getComponent(bId).particleDataTransfer.receive(&buffers.back()[0],buffers.back().size(),modif::hemocell,offset);
-        hemocell.cellfields->immersedParticles->getComponent(bId).invalidate_ppc();
-                hemocell.cellfields->immersedParticles->getComponent(bId).invalidate_lpc();
-                hemocell.cellfields->immersedParticles->getComponent(bId).invalidate_pg();
+          hemocell->cellfields->immersedParticles->getComponent(bId).particleDataTransfer.receive(&buffers.back()[0],buffers.back().size(),modif::hemocell,offset);
+          hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_ppc();
+          hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_lpc();
+          hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_pg();
         }
       }
     }
   }
   MPI_Barrier(MPI_COMM_WORLD);
 }
-void applyPreInletVelocityBoundary(HemoCell & hemocell) {
+void PreInlet::applyPreInletVelocityBoundary() {
   MPI_Barrier(MPI_COMM_WORLD);
   vector<MPI_Request> reqs;
-  Box3D & domain = hemocell.preInlet->fluidInlet;
+  Box3D & domain = fluidInlet;
   Box3D result;
   int z_o = domain.getNz();
   int y_o = domain.getNy();
   int tag;
   plb::Array<T,3> vel;
-  for (int bId : hemocell.lattice->getLocalInfo().getBlocks()) {
-    Box3D bulk = hemocell.lattice->getMultiBlockManagement().getBulk(bId);
+  for (int bId : hemocell->lattice->getLocalInfo().getBlocks()) {
+    Box3D bulk = hemocell->lattice->getMultiBlockManagement().getBulk(bId);
     if (!intersect(domain,bulk,result)) { continue; }
   
-    const Dot3D & loc = hemocell.lattice->getComponent(bId).getLocation();
+    const Dot3D & loc = hemocell->lattice->getComponent(bId).getLocation();
     result = result.shift(-loc.x,-loc.y,-loc.z);
     
     for (int x  = result.x0 ; x <= result.x1 ; x++) {
      for (int y  = result.y0 ; y <= result.y1 ; y++) {
       for (int z  = result.z0 ; z <= result.z1 ; z++) {
         tag = ((z_o * ((z + loc.z) - domain.z0)) + ( y + loc.y ) - domain.y0) * y_o + x + loc.x - domain.x0;
-        if (!hemocell.lattice->get(x,y,z).getDynamics().isBoundary()) {
-          if (hemocell.partOfpreInlet) {
-            hemocell.lattice->getComponent(bId).get(x,y,z).computeVelocity(vel);
-            int dest = hemocell.lattice_management->getThreadAttribution().getMpiProcess(hemocell.lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
+        if (!hemocell->lattice->get(x,y,z).getDynamics().isBoundary()) {
+          if (hemocell->partOfpreInlet) {
+            hemocell->lattice->getComponent(bId).get(x,y,z).computeVelocity(vel);
+            int dest = hemocell->lattice_management->getThreadAttribution().getMpiProcess(hemocell->lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
             reqs.emplace_back();
             MPI_Isend(&vel[0],3*sizeof(T),MPI_CHAR,dest,tag,MPI_COMM_WORLD,&reqs.back());
           } else {
             Box3D point(x,x,y,y,z,z);
-            int source = hemocell.preinlet_management->getThreadAttribution().getMpiProcess(hemocell.preinlet_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
+            int source = hemocell->preinlet_management->getThreadAttribution().getMpiProcess(hemocell->preinlet_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
             MPI_Recv(&vel[0],3*sizeof(T),MPI_CHAR,source,tag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-            setBoundaryVelocity(hemocell.lattice->getComponent(bId),point,vel);
+            setBoundaryVelocity(hemocell->lattice->getComponent(bId),point,vel);
           }
         }
       }
@@ -175,23 +246,142 @@ void applyPreInletVelocityBoundary(HemoCell & hemocell) {
   }
   MPI_Waitall(reqs.size(),&reqs[0],MPI_STATUS_IGNORE);
 }
-void createPreInletVelocityBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagMatrix,plb::Array<double,3> speed, HemoCell & hemocell) {
+void PreInlet::initializePreInletVelocityBoundary() {
   OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* bc =
         createZouHeBoundaryCondition3D<T,DESCRIPTOR>();
   Box3D domain;
-  intersect(flagMatrix->getBoundingBox(),hemocell.preInlet->location,domain);
-  domain.z0 = domain.z1; 
-  hemocell.preInlet->fluidInlet = domain;
+  intersect(flagMatrix->getBoundingBox(),location,domain);
+  if (direction == Direction::Xneg) {
+    domain.x0 = domain.x1;
+  }
+  if (direction == Direction::Yneg) {
+    domain.y0 = domain.y1;
+  }
+  if (direction == Direction::Zneg) {
+    domain.z0 = domain.z1; 
+  }
+  if (direction == Direction::Xpos) {
+    domain.x1 = domain.x0;
+  }
+  if (direction == Direction::Ypos) {
+    domain.y1 = domain.y0;
+  }
+  if (direction == Direction::Zpos) {
+    domain.z1 = domain.z0; 
+  }
+  fluidInlet = domain;
   for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
    for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
     for (int z  = domain.z0 ; z <= domain.z1 ; z++) {
-      if (flagMatrix->get(x,y,z) == 1 && !hemocell.partOfpreInlet) {
+      if (flagMatrix->get(x,y,z) == 1 && !hemocell->partOfpreInlet) {
         Box3D point(x,x,y,y,z,z);
-        bc->addVelocityBoundary2N(point,*hemocell.lattice);
-        setBoundaryVelocity(*hemocell.lattice, point, speed );
+        if (direction == Direction::Xneg) {
+          bc->addVelocityBoundary0N(point,*hemocell->lattice);
+        }
+        if (direction == Direction::Yneg) {
+          bc->addVelocityBoundary1N(point,*hemocell->lattice);
+        }
+        if (direction == Direction::Zneg) {
+          bc->addVelocityBoundary2N(point,*hemocell->lattice);
+        }
+        if (direction == Direction::Xpos) {
+          bc->addVelocityBoundary0P(point,*hemocell->lattice);
+        }
+        if (direction == Direction::Ypos) {
+          bc->addVelocityBoundary1P(point,*hemocell->lattice);
+        }
+        if (direction == Direction::Zpos) {
+          bc->addVelocityBoundary2P(point,*hemocell->lattice);
+        }
+        setBoundaryVelocity(*hemocell->lattice, point, {0.,0.,0.} );
       }
     }
    }
+  }
+}
+
+void PreInlet::preInletFromSlice(Direction direction_, Box3D boundary) {
+  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* bc =
+        createZouHeBoundaryCondition3D<T,DESCRIPTOR>();
+  direction = direction_;
+  initialized = true;
+
+  switch(direction) {
+    case Direction::Xneg:
+    case Direction::Xpos:
+      if (boundary.x0 != boundary.x1) {
+        hlog << "Not a flat slice, refusing to create preInlet" << endl;
+        exit(1);
+      }
+      break;
+    case Direction::Yneg:
+    case Direction::Ypos:
+      if (boundary.y0 != boundary.y1) {
+        hlog << "Not a flat slice, refusing to create preInlet" << endl;
+        exit(1);
+      }
+      break;
+    case Direction::Zneg:
+    case Direction::Zpos:
+      if (boundary.z0 != boundary.z1) {
+        hlog << "Not a flat slice, refusing to create preInlet" << endl;
+        exit(1);
+      }
+      break;
+    default:
+      hlog << "This should not happen" << endl;
+      exit(1);
+      break;
+  }
+  
+  inflow_length = (*hemocell->cfg)["domain"]["particleEnvelope"].read<int>();
+  Box3D preInletDomain;
+  bool foundPreInlet = false;
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(flagMatrix);
+  
+  applyProcessingFunctional(new CreatePreInletBoundingBox(preInletDomain,foundPreInlet),boundary,wrapper);
+  
+  map<int,Box3D_simple> values;
+  if (foundPreInlet) {
+    values[global::mpi().getRank()] = preInletDomain;
+  }
+  HemoCellGatheringFunctional<Box3D_simple>::gather(values);
+  
+  if (values.size() == 0) {
+    hlog << "(PreInlet) no preinlet found, is it in the correct location?" << endl;
+    exit(1);
+  }
+  preInletDomain =  values.begin()->second.getBox3D();
+  for (auto & pair : values ) {
+    Box3D value  = pair.second.getBox3D();
+    if (value.x0 < preInletDomain.x0) { preInletDomain.x0 = value.x0; }
+    if (value.x1 > preInletDomain.x1) { preInletDomain.x1 = value.x1; }
+    if (value.y0 < preInletDomain.y0) { preInletDomain.y0 = value.y0; }
+    if (value.y1 > preInletDomain.y1) { preInletDomain.y1 = value.y1; }
+    if (value.z0 < preInletDomain.z0) { preInletDomain.z0 = value.z0; }
+    if (value.z1 > preInletDomain.z1) { preInletDomain.z1 = value.z1; }
+  }  
+  
+  location = preInletDomain.enlarge(1);
+  
+  if (direction == Direction::Xneg) {
+    location.x0 -= preinlet_length;
+  } 
+  if (direction == Direction::Yneg) {
+    location.y0 -= preinlet_length;
+  } 
+  if (direction == Direction::Zneg) {
+    location.z0 -= preinlet_length;
+  }
+  if (direction == Direction::Xpos) {
+    location.x1 += preinlet_length;
+  } 
+  if (direction == Direction::Ypos) {
+    location.y1 += preinlet_length;
+  } 
+  if (direction == Direction::Zpos) {
+    location.z1 += preinlet_length;
   }
 }
 
@@ -225,18 +415,41 @@ void PreInlet::CreatePreInletBoundingBox::processGenericBlocks(Box3D domain, std
   }
 }
 
-PreInlet::PreInlet(MultiScalarField3D<int>& flagMatrix, HemoCell * hemocell_) {
+void PreInlet::autoPreinletFromBoundary(Direction dir_) {
+  direction = dir_;
   initialized = true;
-  Box3D fluidDomain = flagMatrix.getMultiBlockManagement().getBoundingBox();
+  Box3D fluidDomain = flagMatrix->getMultiBlockManagement().getBoundingBox();
  
-  fluidDomain.z1 = fluidDomain.z0+1;
-  fluidDomain.z0 = fluidDomain.z1;
-
-  inflow_length = (*hemocell_->cfg)["domain"]["particleEnvelope"].read<int>();
+  if (direction == Direction::Xneg) {
+    fluidDomain.x1 = fluidDomain.x0+1;
+    fluidDomain.x0 = fluidDomain.x1;
+  } 
+  if (direction == Direction::Yneg) {
+    fluidDomain.y1 = fluidDomain.y0+1;
+    fluidDomain.y0 = fluidDomain.y1;
+  } 
+  if (direction == Direction::Zneg) {
+    fluidDomain.z1 = fluidDomain.z0+1;
+    fluidDomain.z0 = fluidDomain.z1;
+  }
+  if (direction == Direction::Xpos) {
+    fluidDomain.x0 = fluidDomain.x1-1;
+    fluidDomain.x1 = fluidDomain.x0;
+  } 
+  if (direction == Direction::Ypos) {
+    fluidDomain.y0 = fluidDomain.y1-1;
+    fluidDomain.y1 = fluidDomain.y0;
+  } 
+  if (direction == Direction::Zpos) {
+    fluidDomain.z0 = fluidDomain.z1-1;
+    fluidDomain.z1 = fluidDomain.z0;
+  }
+  
+  inflow_length = (*hemocell->cfg)["domain"]["particleEnvelope"].read<int>();
   Box3D preInletDomain;
   bool foundPreInlet = false;
   vector<MultiBlock3D*> wrapper;
-  wrapper.push_back(&flagMatrix);
+  wrapper.push_back(flagMatrix);
   
   applyProcessingFunctional(new CreatePreInletBoundingBox(preInletDomain,foundPreInlet),fluidDomain,wrapper);
   
@@ -247,7 +460,7 @@ PreInlet::PreInlet(MultiScalarField3D<int>& flagMatrix, HemoCell * hemocell_) {
   HemoCellGatheringFunctional<Box3D_simple>::gather(values);
   
   if (values.size() == 0) {
-    hlog << "(PreInlet) no preinlet found, does the stl go up to the Z-Negative wall?" << endl;
+    hlog << "(PreInlet) no preinlet found, does fluid domain extend to the wall?" << endl;
     exit(1);
   }
   preInletDomain =  values.begin()->second.getBox3D();
@@ -261,10 +474,32 @@ PreInlet::PreInlet(MultiScalarField3D<int>& flagMatrix, HemoCell * hemocell_) {
     if (value.z1 > preInletDomain.z1) { preInletDomain.z1 = value.z1; }
   }  
   
-  location = preInletDomain.enlarge(1,0);
-  location = location.enlarge(1,1);
- 
+  location = preInletDomain.enlarge(1);
+  
+  if (direction == Direction::Xneg) {
+    location.x0 -= preinlet_length;
+  } 
+  if (direction == Direction::Yneg) {
+    location.y0 -= preinlet_length;
+  } 
+  if (direction == Direction::Zneg) {
+    location.z0 -= preinlet_length;
+  }
+  if (direction == Direction::Xpos) {
+    location.x1 += preinlet_length;
+  } 
+  if (direction == Direction::Ypos) {
+    location.y1 += preinlet_length;
+  } 
+  if (direction == Direction::Zpos) {
+    location.z1 += preinlet_length;
+  }
+}
+
+PreInlet::PreInlet(HemoCell * hemocell_, plb::MultiScalarField3D<int> * flagMatrix_) {
   hemocell = hemocell_;
+  flagMatrix = flagMatrix_;
+  preinlet_length = (*hemocell->cfg)["preInlet"]["parameters"]["lengthN"].read<int>();
 }
 
 void PreInlet::CreateDrivingForceFunctional::processGenericBlocks(plb::Box3D domain, std::vector<plb::AtomicBlock3D*> blocks) {
@@ -289,8 +524,24 @@ void PreInlet::calculateDrivingForce() {
   if (partOfpreInlet) {
     
     plb::Box3D domain = hemocell->lattice->getBoundingBox();
-    domain.x1 = domain.x0 = domain.x0 + 2;
-     
+    if (direction == Direction::Xneg) {
+      domain.x1 = domain.x0 = domain.x0 + 2;
+    } 
+    if (direction == Direction::Yneg) {
+      domain.y1 = domain.y0 = domain.y0 + 2;
+    } 
+    if (direction == Direction::Zneg) {
+      domain.z1 = domain.z0 = domain.z0 + 2;
+    }
+    if (direction == Direction::Xpos) {
+      domain.x0 = domain.x1 = domain.x1 - 2;
+    } 
+    if (direction == Direction::Ypos) {
+      domain.y0 = domain.y1 = domain.y1 - 2;
+    } 
+    if (direction == Direction::Zpos) {
+      domain.z0 = domain.z1 = domain.z1 - 2;
+    } 
     vector<MultiBlock3D*> wrapper;
     wrapper.push_back(hemocell->lattice);
     applyProcessingFunctional(new CreateDrivingForceFunctional(fluidArea),domain,wrapper);
@@ -314,45 +565,76 @@ void PreInlet::calculateDrivingForce() {
 
 void PreInlet::setDrivingForce() {
   if (partOfpreInlet) {
+    plb::Array<T,3> force(0.,0.,0.);
+    if (direction == Direction::Xneg) {
+      force[0] = drivingForce;
+    } 
+    if (direction == Direction::Yneg) {
+      force[1] = drivingForce;
+    } 
+    if (direction == Direction::Zneg) {
+      force[2] = drivingForce;
+    }
+    if (direction == Direction::Xpos) {
+      force[0] = -drivingForce;
+    } 
+    if (direction == Direction::Ypos) {
+      force[1] = -drivingForce;
+    } 
+    if (direction == Direction::Zpos) {
+      force[2] = -drivingForce;
+    }
     setExternalVector(*hemocell->lattice, (*hemocell->lattice).getBoundingBox(),
                     DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-                    plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, drivingForce));
+                    force);
   }
 }
 
-void PreInlet::createBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagMatrix) {
+void PreInlet::createBoundary() {
   plb::Box3D domain = location; 
-  plb::Box3D flagBox = flagMatrix->getBoundingBox();
-  domain.x0 = domain.x0 < flagBox.x0 ? flagBox.x0 : domain.x0;
-  domain.x1 = domain.x1 > flagBox.x1 ? flagBox.x1 : domain.x1;
-  domain.y0 = domain.y0 < flagBox.y0 ? flagBox.y0 : domain.y0;
-  domain.y1 = domain.y1 > flagBox.y1 ? flagBox.y1 : domain.y1;
 
-  for (int x  = location.x0-1 ; x <= location.x1 ; x++) {
-    for (int y  = location.y0-1 ; y <= location.y1 ; y++) {
-      for (int z  = location.z0-1 ; z <= location.z1 ; z++) {
-        if (partOfpreInlet) {
-          if (x == location.x1 || y == location.y1 || x == location.x0-1 || y == location.y0-1) {
-            defineDynamics(*fluid,x,y,z, new BounceBack<T,DESCRIPTOR>(1.));
+  for (int x  = domain.x0-1 ; x <= domain.x1 ; x++) {
+    for (int y  = domain.y0-1 ; y <= domain.y1 ; y++) {
+      for (int z  = domain.z0-1 ; z <= domain.z1 ; z++) {
+        bool fluid = false;
+        if (direction == Direction::Xneg || direction == Direction::Xpos) {
+          if (y == location.y0-1 || z == location.z0-1) {
+            defineDynamics(*hemocell->lattice,x,y,z, new BounceBack<T,DESCRIPTOR>(1.));
+            continue;
           }
+          fluid = flagMatrix->get(fluidInlet.x0,y,z);
+        }
+        if (direction == Direction::Yneg || direction == Direction::Ypos) {
+          if (x == location.x0-1 || z == location.z0-1) {
+            defineDynamics(*hemocell->lattice,x,y,z, new BounceBack<T,DESCRIPTOR>(1.));
+            continue;
+          }
+          fluid = flagMatrix->get(x,fluidInlet.y0,z);
+        }
+        if (direction == Direction::Zneg || direction == Direction::Zpos) {
+          if (x == location.x0-1 || y == location.y0-1) {
+            defineDynamics(*hemocell->lattice,x,y,z, new BounceBack<T,DESCRIPTOR>(1.));
+            continue;
+          }
+          fluid = flagMatrix->get(x,y,fluidInlet.z0);
+        }
+        if(partOfpreInlet && !fluid) {
+          defineDynamics(*hemocell->lattice,x,y,z, new BounceBack<T,DESCRIPTOR>(1.));
         }
       }
     }
   }
-
-  for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
-    for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
-      for (int z  = domain.z0 ; z <= domain.z1 ; z++) {
-        if(flagMatrix->get(x,y,flagMatrix->getBoundingBox().z0+1) == 0) {
-          if(partOfpreInlet) {
-            defineDynamics(*fluid,x,y,z, new BounceBack<T,DESCRIPTOR>(1.));
-          }
-        }
-      }
-    }
-  }
+     
   if (partOfpreInlet) {
-    fluid->periodicity().toggle(2,true);  
+    if (direction == Direction::Xneg || direction == Direction::Xpos) {
+      hemocell->lattice->periodicity().toggle(0,true);  
+    }
+    if (direction == Direction::Yneg || direction == Direction::Ypos) {
+      hemocell->lattice->periodicity().toggle(1,true);  
+    }
+    if (direction == Direction::Zneg || direction == Direction::Zpos) {
+      hemocell->lattice->periodicity().toggle(2,true);  
+    }
   }
 }
 

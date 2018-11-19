@@ -37,3 +37,6 @@ Version 1.5
 
 - Added compile time constants PREINLET_MECHANICS and SOLIDIFY_MECHANICS to
   constant_defaults
+- Added runtime preinlets, see stl_preinlet for examples, instead of
+  preinletFromSlice() you can call autoPreinletFromBoundary() if the boundary
+happens to be the inlet as well
