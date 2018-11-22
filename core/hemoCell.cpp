@@ -83,6 +83,33 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[])
   
 }
 
+HemoCell::~HemoCell() {
+  if (cellfields) {
+    delete cellfields;
+  }
+  if (cfg) {
+    delete cfg;
+  }
+  if (documentXML){
+    delete documentXML;
+  }
+  if (lattice) {
+    delete lattice;
+  }
+  if (lattice_management) {
+    delete lattice_management;
+  }
+  if (loadBalancer) {
+    delete loadBalancer;
+  }
+  if (preInlet) { 
+    delete preInlet;
+  }
+  if (preinlet_management) {
+    delete preinlet_management;
+  }
+}
+
 void HemoCell::latticeEquilibrium(T rho, hemo::Array<T, 3> vel) {
   hlog << "(HemoCell) (Fluid) Setting Fluid Equilibrium" << endl;
   plb::Array<T,3> vel_plb = {vel[0],vel[1],vel[2]};

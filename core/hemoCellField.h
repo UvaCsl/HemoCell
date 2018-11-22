@@ -41,14 +41,17 @@ class HemoCellField{
   static vector<int> default_output;
   public:
 
-  HemoCellField(HemoCellFields& cellFields_, plb::TriangularSurfaceMesh<T>& meshElement_, string & name_, unsigned int ctype_);
+  HemoCellField(HemoCellFields& cellFields_, string & name_, unsigned int ctype_, int contructType);
+  ~HemoCellField();
   T getVolumeFraction();
   //ShellModel3D<T> * model;
   plb::TriangularSurfaceMesh<T> & getMesh();
   std::string name;
   HemoCellFields & cellFields;
   vector<int> desiredOutputVariables;
-  plb::TriangularSurfaceMesh<T> & meshElement;
+  plb::TriangularSurfaceMesh<T> * meshElement = 0;
+  plb::TriangleBoundary3D<T> * boundaryElement = 0 ;
+  Config *materialCfg = 0;
   unsigned char ctype;
   
   int numVertex = 0;
@@ -67,12 +70,12 @@ class HemoCellField{
   std::string getIdentifier();
   plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg();
   void setOutputVariables(const vector<int> &);
-  CellMechanics * mechanics;
+  CellMechanics * mechanics = 0;
   void statistics();
   /* position is in micrometers, so we still have to convert it*/
   void addSingleCell(hemo::Array<T,3> position, plint cellId);
   hemo::Array<T,6> getOriginalBoundingBox();
-  plb::MeshMetrics<T> * meshmetric;
+  plb::MeshMetrics<T> * meshmetric = 0;
   bool doSolidifyMechanics = false;
   bool doInteriorViscosity = false;
   T interiorViscosityTau = 1.0;

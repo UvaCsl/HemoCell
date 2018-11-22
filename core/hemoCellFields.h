@@ -71,7 +71,7 @@ public:
   ~HemoCellFields();
   
   ///Add an celltype with a certain mesh, the name also specifies <name_>.xml and <name_>.pos
-  HemoCellField * addCellType(plb::TriangularSurfaceMesh<T> & meshElement, std::string name_);
+  HemoCellField * addCellType(std::string name_, int constructType);
   
   ///Easy access to contained celltypes
   HemoCellField * operator[](unsigned int index);
@@ -99,19 +99,19 @@ public:
 
   //Class functionals
   ///Advance the particles in an iteration
-  virtual void advanceParticles();
+  void advanceParticles();
   
   // Find interior lattice points and set omega
-  virtual void findInternalParticleGridPoints();
+  void findInternalParticleGridPoints();
   
   // Look for lattice nodes near the membrane and update those
-  virtual void internalGridPointsMembrane();
+  void internalGridPointsMembrane();
   
   ///Interpolate the velocity of the fluid to the individual particles
-  virtual void interpolateFluidVelocity();
+  void interpolateFluidVelocity();
   
   ///Spread the force of all particles over the fluid in this iteration
-  virtual void spreadParticleForce();
+  void spreadParticleForce();
   
   /// Separate the force vectors of particles so it becomes clear what the vector for each separate force is
   void separate_force_vectors();
@@ -129,7 +129,7 @@ public:
   void deleteIncompleteCells(bool verbose = true);
   
   /// Apply the material model of the cells to the particles, updating their force
-  virtual void applyConstitutiveModel(bool forced = false);
+  void applyConstitutiveModel(bool forced = false);
   
   /// Sync the particle envelopes between domains
   void syncEnvelopes();

@@ -27,52 +27,100 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "logfile.h"
 #include "hemoCellParticleField.h"
 #include "readPositionsBloodCells.h"
+#include "meshMetrics.h"
+#include "meshGeneratingFunctions.h"
 
 #include <climits>
 
 using namespace hemo;
 
 //HemoCellField
-HemoCellField::HemoCellField(HemoCellFields& cellFields_, TriangularSurfaceMesh<T>& meshElement_, string & name_, unsigned int ctype_)
-      :name(name_), cellFields(cellFields_), desiredOutputVariables(default_output), meshElement(meshElement_), ctype(ctype_) {
+HemoCellField::HemoCellField(HemoCellFields& cellFields_, string & name_, unsigned int ctype_, int constructType) 
+      :name(name_), cellFields(cellFields_), desiredOutputVariables(default_output), ctype(ctype_) {
   
   if (ctype_ > UCHAR_MAX) {
     hlog << "(HemoCell) (AddCellType) more celltypes than UCHAR_MAX (255) added, please convert celltype to int or add less celltypes" << endl;
     exit(1);
   }
+
+  string materialXML = name + ".xml";
+  materialCfg = new Config(materialXML.c_str());
+
+  T aspectRatio = 0.3;
+  if (constructType == ELLIPSOID_FROM_SPHERE) {
+    aspectRatio = (*materialCfg)["MaterialModel"]["aspectRatio"].read<T>();
+  }
+
+  if(constructType == STRING_FROM_VERTEXES) {
+    hlog << "(HemoCell) (AddCellType) Error STRING_FROM_VERTEXES not supported anymore" << std::endl;
+                      exit(1);
+  } else {
+    try {
+      boundaryElement = new TriangleBoundary3D<T>(constructMeshElement(constructType, 
+                         (*materialCfg)["MaterialModel"]["radius"].read<T>()/param::dx, 
+                         0, param::dx, 
+                         (*materialCfg)["MaterialModel"]["StlFile"].read<string>(), plb::Array<T,3>(0.,0.,0.), aspectRatio));
+    } catch (std::invalid_argument & exeption) {
+      boundaryElement = new TriangleBoundary3D<T>(constructMeshElement(constructType, 
+                         (*materialCfg)["MaterialModel"]["radius"].read<T>()/param::dx, 
+                         (*materialCfg)["MaterialModel"]["minNumTriangles"].read<T>(), param::dx, 
+                         string(""), plb::Array<T,3>(0.,0.,0.), aspectRatio));
+    }
+    meshElement = new TriangularSurfaceMesh<T>(boundaryElement->getMesh());
+  }
   
-         numVertex = meshElement.getNumVertices();
-         std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
-         if (it != desiredOutputVariables.end()) {
-            desiredOutputVariables.erase(it);
-            outputTriangles = true;
-         }
+  
+  numVertex = meshElement->getNumVertices();
+  std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
+  if (it != desiredOutputVariables.end()) {
+     desiredOutputVariables.erase(it);
+     outputTriangles = true;
+  }
 
-        for (plint iTriangle = 0; iTriangle < meshElement.getNumTriangles(); iTriangle++) {
-          triangle_list.push_back({meshElement.getVertexId(iTriangle,0),
-                                   meshElement.getVertexId(iTriangle,1),
-                                   meshElement.getVertexId(iTriangle,2) 
-                                   });
-        }
-        meshmetric = new MeshMetrics<T>(meshElement_);
+ for (plint iTriangle = 0; iTriangle < meshElement->getNumTriangles(); iTriangle++) {
+   triangle_list.push_back({meshElement->getVertexId(iTriangle,0),
+                            meshElement->getVertexId(iTriangle,1),
+                            meshElement->getVertexId(iTriangle,2) 
+                            });
+ }
+ meshmetric = new MeshMetrics<T>(*meshElement);
 
-        kernelMethod = interpolationCoefficientsPhi2;
-        
-        try {
-          string materialXML = name + ".xml";
-          hemo::Config materialCfg(materialXML.c_str());
-          try{
-            volume = materialCfg["MaterialModel"]["Volume"].read<T>();
-            volumeFractionOfLspPerNode = (volume/numVertex)/pow(param::dx*1e6,3);
-          } catch (std::invalid_argument & exeption) {
-              hlog << "(HemoCell) (WARNING) (AddCellType) Volume of celltype " << name << " not present, volume set to zero" << endl;
-          }
-          try {
-            interiorViscosityTau = materialCfg["MaterialModel"]["viscosityRatio"].read<T>()*(param::tau-0.5)+0.5;
-          } catch (std::invalid_argument & e) {}
-        } catch (std::invalid_argument & e) {}
+ kernelMethod = interpolationCoefficientsPhi2;
+
+ try {
+   string materialXML = name + ".xml";
+   hemo::Config materialCfg(materialXML.c_str());
+   try{
+     volume = materialCfg["MaterialModel"]["Volume"].read<T>();
+     volumeFractionOfLspPerNode = (volume/numVertex)/pow(param::dx*1e6,3);
+   } catch (std::invalid_argument & exeption) {
+       hlog << "(HemoCell) (WARNING) (AddCellType) Volume of celltype " << name << " not present, volume set to zero" << endl;
+   }
+   try {
+     interiorViscosityTau = materialCfg["MaterialModel"]["viscosityRatio"].read<T>()*(param::tau-0.5)+0.5;
+   } catch (std::invalid_argument & e) {}
+ } catch (std::invalid_argument & e) {}
 }
-
+HemoCellField::~HemoCellField() {
+  if (innerViscosityDynamics) {
+    delete innerViscosityDynamics;
+  }
+  if (mechanics) {
+    delete mechanics;
+  }
+  if (meshmetric) {
+    delete meshmetric;
+  }
+  if (meshElement) {
+    delete meshElement;
+  }
+  if (boundaryElement) {
+    delete boundaryElement;
+  }
+  if (materialCfg) {
+    delete materialCfg;
+  }
+}
 void HemoCellField::setOutputVariables(const vector<int> & outputs) { desiredOutputVariables = outputs;
          std::vector<int>::iterator it = std::find(desiredOutputVariables.begin(), desiredOutputVariables.end(),OUTPUT_TRIANGLES);
          if (it != desiredOutputVariables.end()) {
@@ -85,12 +133,12 @@ void HemoCellField::setOutputVariables(const vector<int> & outputs) { desiredOut
 
 hemo::Array<T,6> HemoCellField::getOriginalBoundingBox() {
   hemo::Array<T,6> bb;
-  bb[0] = bb[1] = meshElement.getVertex(0)[0];
-  bb[2] = bb[3] = meshElement.getVertex(0)[1];
-  bb[4] = bb[5] = meshElement.getVertex(0)[2];
+  bb[0] = bb[1] = meshElement->getVertex(0)[0];
+  bb[2] = bb[3] = meshElement->getVertex(0)[1];
+  bb[4] = bb[5] = meshElement->getVertex(0)[2];
   
-  for (long int i = 0 ; i < meshElement.getNumVertices() ; i++) {
-    const hemo::Array<T,3> vertex(meshElement.getVertex(i));
+  for (long int i = 0 ; i < meshElement->getNumVertices() ; i++) {
+    const hemo::Array<T,3> vertex(meshElement->getVertex(i));
     if (bb[0] > vertex[0]) { bb[0] = vertex[0]; }
     if (bb[1] < vertex[0]) { bb[1] = vertex[0]; }
     if (bb[2] > vertex[1]) { bb[2] = vertex[1]; }
@@ -121,4 +169,4 @@ std::string HemoCellField::getIdentifier() {return name;}
 vector<int> HemoCellField::default_output ({OUTPUT_POSITION});
 plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * HemoCellField::getParticleField3D() {return cellFields.immersedParticles;}
 plb::MultiBlockLattice3D<T,DESCRIPTOR> * HemoCellField::getFluidField3D() {return cellFields.lattice;}
-plb::TriangularSurfaceMesh<T> & HemoCellField::getMesh() { return meshElement;}
+plb::TriangularSurfaceMesh<T> & HemoCellField::getMesh() { return *meshElement;}

@@ -9,8 +9,6 @@
 #include "hemoCellFields.h"
 
 /* IO */
-#include "meshMetrics.h"
-#include "meshGeneratingFunctions.h"
 #include "loadBalancer.h"
 #include "profiler.h"
 
@@ -57,6 +55,11 @@ class HemoCell {
    */
   HemoCell(char * configFileName, int argc, char* argv[]);
 
+  /*
+   * Clean up hemocell
+   */
+  ~HemoCell();
+  
   /**
    *  Set all the fluid nodes to these values
    * 
@@ -82,35 +85,8 @@ class HemoCell {
   */
   template<class Mechanics>
   void addCellType(string name, int constructType) {
-    string materialXML = name + ".xml";
-    Config *materialCfg = new Config(materialXML.c_str());
-    TriangularSurfaceMesh<T> * meshElement;
-    
-    T aspectRatio = 0.3;
-    if (constructType == ELLIPSOID_FROM_SPHERE) {
-      aspectRatio = (*materialCfg)["MaterialModel"]["aspectRatio"].read<T>();
-    }
-    
-    if(constructType == STRING_FROM_VERTEXES) {
-      hlog << "(HemoCell) (AddCellType) Error STRING_FROM_VERTEXES not supported anymore" << std::endl;
-			exit(1);
-    } else {
-      TriangleBoundary3D<T> * boundaryElement = NULL;
-      try {
-        boundaryElement = new TriangleBoundary3D<T>(constructMeshElement(constructType, 
-                           (*materialCfg)["MaterialModel"]["radius"].read<T>()/param::dx, 
-                           0, param::dx, 
-                           (*materialCfg)["MaterialModel"]["StlFile"].read<string>(), plb::Array<T,3>(0.,0.,0.), aspectRatio));
-      } catch (std::invalid_argument & exeption) {
-        boundaryElement = new TriangleBoundary3D<T>(constructMeshElement(constructType, 
-                           (*materialCfg)["MaterialModel"]["radius"].read<T>()/param::dx, 
-                           (*materialCfg)["MaterialModel"]["minNumTriangles"].read<T>(), param::dx, 
-                           string(""), plb::Array<T,3>(0.,0.,0.), aspectRatio));
-      }
-      meshElement = new TriangularSurfaceMesh<T>(boundaryElement->getMesh());
-    }
-    HemoCellField * cellfield = cellfields->addCellType(*meshElement, name);
-    Mechanics * mechanics = new Mechanics((*materialCfg), *cellfield);
+    HemoCellField * cellfield = cellfields->addCellType(name,constructType);
+    Mechanics * mechanics = new Mechanics(*cellfield->materialCfg, *cellfield);
     cellfield->mechanics = mechanics;
     cellfield->statistics();
   }
@@ -228,18 +204,18 @@ public:
   
   map<plint,plint> BlockToMpi;
   
-  LoadBalancer * loadBalancer;
+  LoadBalancer * loadBalancer = 0;
   ///The fluid lattice
   MultiBlockLattice3D<T, DESCRIPTOR> * lattice = 0;
   
-  MultiBlockManagement3D * preinlet_management, * lattice_management;
+  MultiBlockManagement3D * preinlet_management = 0, * lattice_management = 0;
   
-  Config * cfg;
+  Config * cfg = 0;
   ///The cellfields contains the particle field and all celltypes
-  HemoCellFields * cellfields;
+  HemoCellFields * cellfields = 0;
   unsigned int iter = 0;
   
-  XMLreader * documentXML; //Needed for legacy checkpoint reading TODO fix
+  XMLreader * documentXML = 0; //Needed for legacy checkpoint reading TODO fix
   private:
   /// Store the last time (iteration) output occured
   unsigned int lastOutputAt = 0;

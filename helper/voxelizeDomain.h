@@ -49,5 +49,7 @@ private:
 
 void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeWidth, plb::plint refDirLength, plb::plint refDir,
                           plb::VoxelizedDomain3D<T> *&voxelizedDomain, plb::MultiScalarField3D<int> *&flagMatrix, plint blockSize, int particleEnvelope = 0);
+void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeWidth, plb::plint refDirLength, plb::plint refDir,
+                          std::auto_ptr<plb::VoxelizedDomain3D<T>> & voxelizedDomain, std::auto_ptr<plb::MultiScalarField3D<int>> &flagMatrix, plint blockSize, int particleEnvelope = 0);
 }
 #endif

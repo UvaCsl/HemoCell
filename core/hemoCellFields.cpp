@@ -62,6 +62,21 @@ HemoCellFields::HemoCellFields( MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, u
   InitAfterLoadCheckpoint();
 }
 
+HemoCellFields::~HemoCellFields() {
+  if (CEPACfield) {
+    delete CEPACfield;
+  }
+  if (immersedParticles) {
+    delete immersedParticles;
+  }
+  for (HemoCellField * field : cellFields) {
+    delete field;
+  }
+  if (large_communicator) {
+    delete large_communicator;
+  }  
+}
+
 void HemoCellFields::createParticleField(SparseBlockStructure3D* sbStructure, ThreadAttribution * tAttribution) {
   if (!sbStructure) {
     sbStructure = lattice->getSparseBlockStructure().clone();
@@ -115,9 +130,9 @@ void HemoCellFields::createCEPACfield() {
 
 }
 
-HemoCellField * HemoCellFields::addCellType(TriangularSurfaceMesh<T> & meshElement, std::string name_)
+HemoCellField * HemoCellFields::addCellType(std::string name_, int constructType)
 {
-  HemoCellField * cf = new HemoCellField(*this, meshElement, name_, cellFields.size());
+  HemoCellField * cf = new HemoCellField(*this, name_, cellFields.size(), constructType);
   cellFields.push_back(cf);
   return cf;
 }
@@ -653,7 +668,5 @@ void HemoCellFields::HemoSyncEnvelopes::getTypeOfModification(std::vector<modif:
 }
 
 MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & HemoCellFields::getParticleField3D() { return *immersedParticles; };
-HemoCellFields::~HemoCellFields() {
-    delete immersedParticles;
-}
+
 }

@@ -18,8 +18,8 @@ int main(int argc, char *argv[]) {
 
   hlogfile << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl; 
 
-  MultiScalarField3D<int> *flagMatrix = 0; 
-  VoxelizedDomain3D<T> * voxelizedDomain = 0; 
+  std::auto_ptr<MultiScalarField3D<int>> flagMatrix;
+  std::auto_ptr<VoxelizedDomain3D<T>> voxelizedDomain; 
   getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),  
                        (*cfg)["domain"]["fluidEnvelope"].read<int>(),  
                        (*cfg)["domain"]["refDirN"].read<int>(),  
@@ -28,17 +28,17 @@ int main(int argc, char *argv[]) {
                        (*cfg)["domain"]["blockSize"].read<int>(),
                        (*cfg)["domain"]["particleEnvelope"].read<int>()); 
 
-  param::lbm_pipe_parameters((*cfg),flagMatrix);
+  param::lbm_pipe_parameters((*cfg),flagMatrix.get());
   param::printParameters();
   
   hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
-            voxelizedDomain->getMultiBlockManagement(),
+            voxelizedDomain.get()->getMultiBlockManagement(),
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
             defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
             new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
 
-  defineDynamics(*hemocell.lattice, *flagMatrix, (*hemocell.lattice).getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
+  defineDynamics(*hemocell.lattice, *flagMatrix.get(), (*hemocell.lattice).getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
 
   hemocell.lattice->toggleInternalStatistics(false);
   hemocell.lattice->periodicity().toggleAll(false);

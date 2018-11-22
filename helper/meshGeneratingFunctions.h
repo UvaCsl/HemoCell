@@ -27,6 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "constant_defaults.h"
 #include "config.h"
 
+#include "offLattice/triangleSet.hh"
+#include "offLattice/triangleToDef.hh"
 #include "offLattice/triangleSetGenerator.hh"
 #include "offLattice/triangularSurfaceMesh.hh"
 #include "offLattice/triangleBoundary3D.hh"

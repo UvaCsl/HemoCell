@@ -62,6 +62,16 @@ BlockDomain::DomainT CopyFromNeighbor::appliesTo() const {
 
 // ---------------------- Read in STL geometry ---------------------------------
 
+void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeWidth, plb::plint refDirLength, plb::plint refDir,
+                          std::auto_ptr<plb::VoxelizedDomain3D<T>> & voxelizedDomain, std::auto_ptr<plb::MultiScalarField3D<int>> & flagMatrix, plint blockSize, int particleEnvelope) {
+  VoxelizedDomain3D<T> * voxelizedDomain_t;
+  plb::MultiScalarField3D<int> * flagMatrix_t;
+  getFlagMatrixFromSTL(meshFileName, extendedEnvelopeWidth, refDirLength, refDir,
+                          voxelizedDomain_t, flagMatrix_t, blockSize, particleEnvelope);
+  voxelizedDomain = std::auto_ptr<plb::VoxelizedDomain3D<T>>(voxelizedDomain_t);
+  flagMatrix = std::auto_ptr<plb::MultiScalarField3D<int>>(flagMatrix_t);
+}
+
 void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint refDirLength, plint refDir,
                           VoxelizedDomain3D<T> *&voxelizedDomain, MultiScalarField3D<int> *&flagMatrix, plint blockSize, int particleEnvelope) {
     plint extraLayer = 0;   // Make the bounding box larger; for visualization purposes
@@ -75,8 +85,9 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
 
     DEFscaledMesh<T> *defMesh =
             new DEFscaledMesh<T>(*triangleSet, refDirLength, refDir, margin, extraLayer);
-    TriangleBoundary3D<T> boundary(*defMesh);
+    TriangleBoundary3D<T> boundary(*defMesh,false);
     delete defMesh;
+    delete triangleSet;
     boundary.getMesh().inflate();
 
     voxelizedDomain = new VoxelizedDomain3D<T>(

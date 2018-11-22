@@ -273,15 +273,11 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
 			delete meshCopy;
         }
 
-        
-        //SYNC THEM ENVELOPES
-        //cellFields.syncEnvelopes();
-        // DELETE CELLS THAT ARE NOT WHOLE
         particleFields[iCF]->deleteIncompleteCells(iCF,false);
         std::vector<HemoCellParticle*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);
         
-//delete meshes[iCF];
+        delete meshes[iCF];
     }
     //cout << "Atomic Block ID: " << particleFields[0]->atomicBlockId;
     //cout    << " Total complete cells (with periodicity): " << particleFields[0]->get_lpc().size() << std::endl;

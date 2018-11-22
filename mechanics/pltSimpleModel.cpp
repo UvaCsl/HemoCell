@@ -155,13 +155,13 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       const plint b0 = cellConstants.edge_bending_triangles_list[edge_n][0];
       const plint b1 = cellConstants.edge_bending_triangles_list[edge_n][1];
 
-      const hemo::Array<T,3> b00 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,0)]->sv.position;
-      const hemo::Array<T,3> b01 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,1)]->sv.position;
-      const hemo::Array<T,3> b02 = particles_per_cell[cid][cellField.meshElement.getVertexId(b0,2)]->sv.position;
+      const hemo::Array<T,3> b00 = particles_per_cell[cid][cellField.triangle_list[b0][0]]->sv.position;
+      const hemo::Array<T,3> b01 = particles_per_cell[cid][cellField.triangle_list[b0][1]]->sv.position;
+      const hemo::Array<T,3> b02 = particles_per_cell[cid][cellField.triangle_list[b0][2]]->sv.position;
       
-      const hemo::Array<T,3> b10 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,0)]->sv.position;
-      const hemo::Array<T,3> b11 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,1)]->sv.position;
-      const hemo::Array<T,3> b12 = particles_per_cell[cid][cellField.meshElement.getVertexId(b1,2)]->sv.position;
+      const hemo::Array<T,3> b10 = particles_per_cell[cid][cellField.triangle_list[b1][0]]->sv.position;
+      const hemo::Array<T,3> b11 = particles_per_cell[cid][cellField.triangle_list[b1][1]]->sv.position;
+      const hemo::Array<T,3> b12 = particles_per_cell[cid][cellField.triangle_list[b1][2]]->sv.position;
 
       const hemo::Array<T,3> V1 = computeTriangleNormal(b00,b01,b02, false);
       const hemo::Array<T,3> V2 = computeTriangleNormal(b10,b11,b12, false);
