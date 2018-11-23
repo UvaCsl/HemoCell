@@ -78,8 +78,10 @@ HemoCellFields::~HemoCellFields() {
 }
 
 void HemoCellFields::createParticleField(SparseBlockStructure3D* sbStructure, ThreadAttribution * tAttribution) {
+  bool del_sbStruct = false;
   if (!sbStructure) {
     sbStructure = lattice->getSparseBlockStructure().clone();
+    del_sbStruct = true;
   }
   if (!tAttribution) {
     tAttribution = lattice->getMultiBlockManagement().getThreadAttribution().clone();
@@ -98,7 +100,11 @@ void HemoCellFields::createParticleField(SparseBlockStructure3D* sbStructure, Th
   immersedParticles->periodicity().toggle(2,lattice->periodicity().get(2));
 
   immersedParticles->toggleInternalStatistics(false);
-
+  
+  if (del_sbStruct) {
+    delete sbStructure;
+  }
+  
   InitAfterLoadCheckpoint();
 }
 
@@ -255,14 +261,13 @@ void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter, Config *
     deleteIncompleteCells();
 }
 
-void HemoCellFields::save(XMLreader * documentXML, unsigned int iter, Config * cfg)
+void HemoCellFields::save(XMLreader *xmlr, unsigned int iter, Config * cfg)
 {
-    XMLreader xmlr = *documentXML;
     XMLwriter xmlw;
-    std::string firstField = (*(xmlr.getChildren( xmlr.getFirstId() )[0])).getName(); 
+    std::string firstField = (*(xmlr->getChildren( xmlr->getFirstId() )[0])).getName(); 
     bool isCheckpointed = (firstField=="Checkpoint");
-    if (!isCheckpointed) { copyXMLreader2XMLwriter(xmlr["hemocell"], xmlw["Checkpoint"]); }
-    else { copyXMLreader2XMLwriter(xmlr["Checkpoint"]["hemocell"], xmlw["Checkpoint"]); }
+    if (!isCheckpointed) { copyXMLreader2XMLwriter((*xmlr)["hemocell"], xmlw["Checkpoint"]); }
+    else { copyXMLreader2XMLwriter((*xmlr)["Checkpoint"]["hemocell"], xmlw["Checkpoint"]); }
 
     std::string outDir = global::directories().getOutputDir();
     if (cfg) {
@@ -342,10 +347,11 @@ void HemoCellFields::calculateCommunicationStructure() {
   MultiBlockManagement3D management_temp(immersedParticles->getMultiBlockManagement());
   ParallelBlockCommunicator3D * communicator = dynamic_cast<ParallelBlockCommunicator3D const *>(&immersedParticles->getBlockCommunicator())->clone();
   communicator->duplicateOverlaps(management_temp,immersedParticles->periodicity());
-  large_communicator = communicator->communication;
+  large_communicator = new CommunicationStructure3D(*communicator->communication);
   immersedParticles->getMultiBlockManagement().changeEnvelopeWidth(3);
   immersedParticles->signalPeriodicity();
   immersedParticles->getBlockCommunicator().duplicateOverlaps(*immersedParticles,modif::hemocell_no_comm);
+  delete communicator;
 }
 
 void HemoCellFields::HemoSyncEnvelopes::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {

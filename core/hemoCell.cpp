@@ -92,6 +92,7 @@ HemoCell::~HemoCell() {
   }
   if (documentXML){
     delete documentXML;
+    documentXML = 0;
   }
   if (lattice) {
     delete lattice;

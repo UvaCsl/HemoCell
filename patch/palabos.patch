@@ -604,6 +604,19 @@ index 0000000..2c19702
 +}
 +#endif
 \ No newline at end of file
+diff --git a/src/core/plbInit.cpp b/src/core/plbInit.cpp
+index dbd0053..f46612b 100644
+--- a/src/core/plbInit.cpp
++++ b/src/core/plbInit.cpp
+@@ -37,7 +37,7 @@ namespace plb {
+ 
+ void plbInit(int *argc, char ***argv, bool verbous) {
+     global::mpi().init(argc, argv, verbous);
+-    global::mainArguments().setArgs(*argc, argv);
++    //global::mainArguments().setArgs(*argc, argv);
+     global::plbRandom<float>().seed(10);
+     global::plbRandom<double>().seed(10);
+     global::plbRandom<plint>().seed(10);
 diff --git a/src/dataProcessors/dataAnalysisFunctional3D.hh b/src/dataProcessors/dataAnalysisFunctional3D.hh
 index 330a6a3..ff18828 100644
 --- a/src/dataProcessors/dataAnalysisFunctional3D.hh
@@ -764,30 +777,17 @@ index 0e5feb5..dc8c17e 100644
  {
      T fTmp;
 diff --git a/src/libraryInterfaces/TINYXML_xmlIO.cpp b/src/libraryInterfaces/TINYXML_xmlIO.cpp
-index 6149f51..1ae2108 100644
+index 6149f51..5a4dd8b 100644
 --- a/src/libraryInterfaces/TINYXML_xmlIO.cpp
 +++ b/src/libraryInterfaces/TINYXML_xmlIO.cpp
-@@ -167,13 +167,13 @@ XMLreader::XMLreader() {
+@@ -172,6 +172,7 @@ XMLreader::~XMLreader() {
+         std::vector<XMLreader*>& children = it->second.children;
+         for (pluint iNode=0; iNode<children.size(); ++iNode) {
+             delete children[iNode];
++            children[iNode] = 0;
+         }
+     }
  }
- 
- XMLreader::~XMLreader() {
--    std::map<plint,Data>::iterator it = data_map.begin();
--    for (; it != data_map.end(); ++it) {
--        std::vector<XMLreader*>& children = it->second.children;
--        for (pluint iNode=0; iNode<children.size(); ++iNode) {
--            delete children[iNode];
--        }
--    }
-+    //std::map<plint,Data>::iterator it = data_map.begin();
-+    //for (; it != data_map.end(); ++it) {
-+    //    std::vector<XMLreader*>& children = it->second.children;
-+    //    for (pluint iNode=0; iNode<children.size(); ++iNode) {
-+    //        delete children[iNode];
-+    //    }
-+    //}
- }
- 
- void XMLreader::print(int indent) const {
 diff --git a/src/libraryInterfaces/TINYXML_xmlIO.h b/src/libraryInterfaces/TINYXML_xmlIO.h
 index ec64f81..2333dff 100644
 --- a/src/libraryInterfaces/TINYXML_xmlIO.h
@@ -1092,7 +1092,7 @@ index 622aa7d..ce82486 100644
  void TriangularSurfaceMesh<T>::smooth(plint maxiter, T relax, bool isMeasureWeighted)
  {
 diff --git a/src/parallelism/parallelBlockCommunicator3D.cpp b/src/parallelism/parallelBlockCommunicator3D.cpp
-index c891d72..16b5e2e 100644
+index c891d72..181f36d 100644
 --- a/src/parallelism/parallelBlockCommunicator3D.cpp
 +++ b/src/parallelism/parallelBlockCommunicator3D.cpp
 @@ -25,6 +25,8 @@
@@ -1112,7 +1112,20 @@ index c891d72..16b5e2e 100644
  
  namespace plb {
  
-@@ -232,6 +235,30 @@ void ParallelBlockCommunicator3D::duplicateOverlaps( MultiBlock3D& multiBlock,
+@@ -107,8 +110,11 @@ CommunicationStructure3D::CommunicationStructure3D (
+ 
+     sendComm = SendPoolCommunicator(sendPool);
+     recvComm = RecvPoolCommunicator(recvPool);
+-}
++  }
+ 
++  CommunicationStructure3D::CommunicationStructure3D(const CommunicationStructure3D& rhs) {
++   *this = rhs;
++  }
+ 
+ 
+ CommunicationPattern3D::CommunicationPattern3D (
+@@ -232,6 +238,30 @@ void ParallelBlockCommunicator3D::duplicateOverlaps( MultiBlock3D& multiBlock,
      communicate(*communication, multiBlock, multiBlock, whichData);
  }
  
@@ -1143,7 +1156,7 @@ index c891d72..16b5e2e 100644
  void ParallelBlockCommunicator3D::communicate (
          std::vector<Overlap3D> const& overlaps,
          MultiBlock3D const& originMultiBlock,
-@@ -253,6 +280,7 @@ void ParallelBlockCommunicator3D::communicate (
+@@ -253,6 +283,7 @@ void ParallelBlockCommunicator3D::communicate (
          MultiBlock3D const& originMultiBlock,
          MultiBlock3D& destinationMultiBlock, modif::ModifT whichData ) const
  {
@@ -1151,7 +1164,7 @@ index c891d72..16b5e2e 100644
      global::profiler().start("mpiCommunication");
      bool staticMessage = whichData == modif::staticVariables;
      // 1. Non-blocking receives.
-@@ -280,17 +308,76 @@ void ParallelBlockCommunicator3D::communicate (
+@@ -280,17 +311,76 @@ void ParallelBlockCommunicator3D::communicate (
                  info.toDomain, deltaX, deltaY, deltaZ, fromBlock,
                  whichData, info.absoluteOffset );
      }
@@ -1239,10 +1252,18 @@ index c891d72..16b5e2e 100644
      communication.sendComm.finalize(staticMessage);
      global::profiler().stop("mpiCommunication");
 diff --git a/src/parallelism/parallelBlockCommunicator3D.h b/src/parallelism/parallelBlockCommunicator3D.h
-index 879c653..3754622 100644
+index 879c653..0e0f2dc 100644
 --- a/src/parallelism/parallelBlockCommunicator3D.h
 +++ b/src/parallelism/parallelBlockCommunicator3D.h
-@@ -77,20 +77,22 @@ public:
+@@ -59,6 +59,7 @@ struct CommunicationStructure3D
+             MultiBlockManagement3D const& originManagement,
+             MultiBlockManagement3D const& destinationManagement,
+             plint sizeOfCell );
++    CommunicationStructure3D ( const CommunicationStructure3D & rhs);
+     CommunicationPackage3D sendPackage;
+     CommunicationPackage3D recvPackage;
+     CommunicationPackage3D sendRecvPackage;
+@@ -77,20 +78,22 @@ public:
      void swap(ParallelBlockCommunicator3D& rhs);
      virtual ParallelBlockCommunicator3D* clone() const;
      virtual void duplicateOverlaps(MultiBlock3D& multiBlock, modif::ModifT whichData) const;
