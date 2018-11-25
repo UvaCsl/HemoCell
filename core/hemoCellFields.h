@@ -196,8 +196,6 @@ public:
   int periodicity_limit_offset_y = 100;
   int periodicity_limit_offset_z = 10000;
   
-  ///Map that keeps track of the type of a cell per cellID
-  map<int,int> celltype_per_cell;
   /**
    * Total number of cells in the simulation, should be constant
    * Is set through hemocell::loadParticles() is added (TODO: also when removed)

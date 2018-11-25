@@ -61,7 +61,6 @@ class HemoCellField{
   unsigned int timescale = 1;
   unsigned int minimumDistanceFromSolid = 0;
   bool outputTriangles = false;
-  bool deleteIncomplete = true;
   vector<hemo::Array<plint,3>> triangle_list;
   void(*kernelMethod)(plb::BlockLattice3D<T,DESCRIPTOR> &,HemoCellParticle&);
   plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D();

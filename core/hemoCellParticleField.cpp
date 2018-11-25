@@ -162,8 +162,6 @@ void HemoCellParticleField::addParticle(const HemoCellParticle::serializeValues_
   const hemo::Array<T,3> & pos = sv.position;
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
 
-  cellFields->celltype_per_cell[sv.cellId] = sv.celltype; 
-  
   if( this->isContainedABS(pos, this->getBoundingBox()) )
   {
     //check if we have particle already, if so, we must overwrite but not
@@ -410,7 +408,6 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
   //For now abuse tagging and the remove function
   for ( const auto &lpc_it : particles_per_cell ) {
     int cellid = lpc_it.first;
-    if (!(*cellFields)[cellFields->celltype_per_cell[cellid]]->deleteIncomplete) { continue; }
     bool broken = false;
     for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
       if (particles_per_cell.at(cellid)[i] == -1) {
@@ -453,7 +450,6 @@ int HemoCellParticleField::deleteIncompleteCells(const bool verbose) {
   //For now abuse tagging and the remove function
   for ( const auto &lpc_it : particles_per_cell ) {
     int cellid = lpc_it.first;
-    if (!(*cellFields)[cellFields->celltype_per_cell[cellid]]->deleteIncomplete) { continue; }
     bool broken = false;
     for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
       if (particles_per_cell.at(cellid)[i] == -1) {
