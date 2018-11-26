@@ -419,7 +419,8 @@ void HemoCellFields::syncEnvelopes() {
           id = id - offset_p;
           if (ppc.find(id) == ppc.end()) { continue; }
           for (int pid : ppc.at(id)) {
-            if (pid == -1) { continue; }
+            if (pid <= -1) { continue; }
+            if (pid >= pf.particles.size()) { continue; }
             sendBuffer.resize(sendBuffer.size()+sizeof(HemoCellParticle::serializeValues_t));
             *((HemoCellParticle::serializeValues_t*)&sendBuffer[offset]) = pf.particles[pid].sv;
             offset += sizeof(HemoCellParticle::serializeValues_t);
@@ -427,7 +428,7 @@ void HemoCellFields::syncEnvelopes() {
         }
       }
       reqs.emplace_back();
-      MPI_Isend(&sendBuffer[0],sendBuffer.size(),MPI_CHAR,status.MPI_SOURCE,42,MPI_COMM_WORLD,&reqs.back());
+      MPI_Isend(sendBuffer.data(),sendBuffer.size(),MPI_CHAR,status.MPI_SOURCE,42,MPI_COMM_WORLD,&reqs.back());
     }
 
         // 3. Local copies which require no communication.
