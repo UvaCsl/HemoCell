@@ -139,6 +139,10 @@ unsigned int HemoCellFields::size()
 
 HemoCellField * HemoCellFields::operator[](unsigned int index)
 {
+  if (index >= cellFields.size()) {
+    hlog << "(HemoCellFields) Error, cellindex " << index << " requested, but there are only " << cellFields.size() << " celltypes." << endl;
+    exit(1);
+  }
   return cellFields[index];
 }
 
