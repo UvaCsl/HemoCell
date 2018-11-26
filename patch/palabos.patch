@@ -1092,7 +1092,7 @@ index 622aa7d..ce82486 100644
  void TriangularSurfaceMesh<T>::smooth(plint maxiter, T relax, bool isMeasureWeighted)
  {
 diff --git a/src/parallelism/parallelBlockCommunicator3D.cpp b/src/parallelism/parallelBlockCommunicator3D.cpp
-index c891d72..181f36d 100644
+index c891d72..0b019a7 100644
 --- a/src/parallelism/parallelBlockCommunicator3D.cpp
 +++ b/src/parallelism/parallelBlockCommunicator3D.cpp
 @@ -25,6 +25,8 @@
@@ -1164,7 +1164,7 @@ index c891d72..181f36d 100644
      global::profiler().start("mpiCommunication");
      bool staticMessage = whichData == modif::staticVariables;
      // 1. Non-blocking receives.
-@@ -280,17 +311,76 @@ void ParallelBlockCommunicator3D::communicate (
+@@ -280,17 +311,77 @@ void ParallelBlockCommunicator3D::communicate (
                  info.toDomain, deltaX, deltaY, deltaZ, fromBlock,
                  whichData, info.absoluteOffset );
      }
@@ -1201,6 +1201,7 @@ index c891d72..181f36d 100644
 +        if (index == MPI_UNDEFINED) {
 +          break;
 +        }
++        reqs[index] = MPI_REQUEST_NULL;
 +        
 +        if(!receives[index].pre_req_received) {
 +
