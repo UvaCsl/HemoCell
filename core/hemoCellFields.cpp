@@ -34,17 +34,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace hemo {
 
-  ///Used to circumvent buffer initialization of characters
-struct NoInitChar
-{
-    char value;
-    NoInitChar() {
-        // do nothing
-        static_assert(sizeof *this == sizeof value, "invalid size");
-        static_assert(__alignof *this == __alignof value, "invalid alignment");
-    }
-};
-  
  
 HemoCellFields::HemoCellFields( MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth, HemoCell & hemocell_) :
   lattice(&lattice_), hemocell(hemocell_)
@@ -466,11 +455,11 @@ void HemoCellFields::syncEnvelopes() {
       int index;
       MPI_Status status;
       MPI_Waitany(recv_reqs.size(),&recv_reqs[0],&index,&status);
-      
+      recv_reqs[index] = MPI_REQUEST_NULL;
       //Get Offsets and Destinations
       for (CommunicationInfo3D const * info : recv_infos[status.MPI_SOURCE]) {
         HEMOCELL_PARTICLE_FIELD& toBlock = immersedParticles->getComponent(info->toBlockId);
-        toBlock.getDataTransfer().receive (info->toDomain, *reinterpret_cast<std::vector<char>*>(&recvBuffers[index]), modif::hemocell, info->absoluteOffset );
+        toBlock.getDataTransfer().receive (info->toDomain, recvBuffers[index], info->absoluteOffset );
       }
     }
 

@@ -26,17 +26,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemocell.h"
 
 namespace hemo {
-///Used to circumvent buffer initialization of characters
-struct NoInitChar
-{
-    char value;
-    NoInitChar() {
-        // do nothing
-        static_assert(sizeof *this == sizeof value, "invalid size");
-        static_assert(__alignof *this == __alignof value, "invalid alignment");
-    }
-};
-
 
 /* *************** class HemoParticleDataTransfer3D ************************ */
 
@@ -94,6 +83,47 @@ void HemoCellParticleDataTransfer::send (
   global.statistics.getCurrent().stop();
 }
 
+void HemoCellParticleDataTransfer::receive(Box3D domain, std::vector<NoInitChar> const& buffer) {
+  global.statistics.getCurrent()["MpiReceive"].start();
+  unsigned int posInBuffer = 0;
+  unsigned int size = buffer.size();
+  HemoCellParticle::serializeValues_t * newParticle;
+  while (posInBuffer < size) {
+    // 1. Generate dynamics object, and unserialize dynamic data.
+    newParticle = (HemoCellParticle::serializeValues_t*)&buffer[posInBuffer];
+    posInBuffer += sizeof(HemoCellParticle::serializeValues_t);       
+    particleField->addParticle(*newParticle);
+  }
+  global.statistics.getCurrent().stop();
+}
+
+void HemoCellParticleDataTransfer::receive(Box3D domain, std::vector<NoInitChar> const& buffer, Dot3D absoluteOffset) { 
+  if (absoluteOffset.x == 0 && absoluteOffset.y == 0 && absoluteOffset.z == 0) {
+     receive(domain, buffer);
+     return;
+  }
+
+  global.statistics.getCurrent()["MpiReceive"].start();
+
+  int offset = getOffset(absoluteOffset);
+  hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
+  unsigned int posInBuffer = 0;
+  unsigned int size = buffer.size();
+  HemoCellParticle::serializeValues_t * newParticle;;
+  while (posInBuffer < size) {
+      // 1. Generate dynamics object, and unserialize dynamic data.
+    newParticle = (HemoCellParticle::serializeValues_t*)&buffer[posInBuffer];
+    posInBuffer += sizeof(HemoCellParticle::serializeValues_t);
+    //Edit in buffer, but it is not used again anyway
+    newParticle->position += realAbsoluteOffset;
+    newParticle->cellId += offset;
+    particleField->addParticle(*newParticle);
+  }
+
+  global.statistics.getCurrent().stop();
+}
+
+
 void HemoCellParticleDataTransfer::receive(char * buffer, unsigned int size, modif::ModifT kind) {
   global.statistics.getCurrent()["MpiReceive"].start();
 
@@ -101,7 +131,7 @@ void HemoCellParticleDataTransfer::receive(char * buffer, unsigned int size, mod
   {
       unsigned int posInBuffer = 0;
 
-      HemoCellParticle::serializeValues_t * newParticle;;
+      HemoCellParticle::serializeValues_t * newParticle;
       while (posInBuffer < size) {
         // 1. Generate dynamics object, and unserialize dynamic data.
         newParticle = (HemoCellParticle::serializeValues_t*)&buffer[posInBuffer];
@@ -140,8 +170,8 @@ void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer,
 void HemoCellParticleDataTransfer::receive (char * buffer, unsigned int size, modif::ModifT kind, Dot3D absoluteOffset )
 {
   if (absoluteOffset.x == 0 && absoluteOffset.y == 0 && absoluteOffset.z == 0) {
-   // receive(buffer,size,kind);
-   // return;
+    receive(buffer,size,kind);
+    return;
   }
   
   global.statistics.getCurrent()["MpiReceive"].start();
@@ -160,7 +190,6 @@ void HemoCellParticleDataTransfer::receive (char * buffer, unsigned int size, mo
       //Edit in buffer, but it is not used again anyway
       newParticle->position += realAbsoluteOffset;
       newParticle->cellId += offset;
-      //std::cout << newParticle->position[0] << " " << newParticle->position[1] << " "<< newParticle->position[2] << endl;
       particleField->addParticle(*newParticle);
     }
   }

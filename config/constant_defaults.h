@@ -174,4 +174,18 @@ typedef long unsigned int pluint;
 //Maximum buffer length before writeback is forced in custom particle communication
 #define HEMO_MAX_TRANSFER_CHAR 1000000
 
+
+namespace hemo {
+///Used to circumvent buffer initialization of characters
+struct NoInitChar
+{
+    char value;
+    NoInitChar() {
+        // do nothing
+        static_assert(sizeof *this == sizeof value, "invalid size");
+        static_assert(__alignof *this == __alignof value, "invalid alignment");
+    }
+};
+} 
+
 #endif
