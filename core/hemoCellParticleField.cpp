@@ -43,12 +43,10 @@ HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
     : AtomicBlock3D(rhs), particleDataTransfer(*(new HemoCellParticleDataTransfer()))
 {
     boundingBox = Box3D(0,this->getNx()-1, 0, this->getNy()-1, 0, this->getNz()-1);
-    HemoCellParticle tmp;
     dataTransfer = &particleDataTransfer;
     particleDataTransfer.setBlock(*this);
     for (const HemoCellParticle & particle : rhs.particles) {
-      tmp = particle;
-      addParticle(&tmp);
+      addParticle(particle.sv);
     }
     ppc_up_to_date = false;
     lpc_up_to_date = false;
