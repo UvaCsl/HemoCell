@@ -166,25 +166,29 @@ void HemoCellParticleField::addParticle(const HemoCellParticle::serializeValues_
   {
     //check if we have particle already, if so, we must overwrite but not
     //forget to delete the old entry
-    if ((!(particles_per_cell.find(sv.cellId) == 
-      particles_per_cell.end())) && particles_per_cell.at(sv.cellId)[sv.vertexId] != -1) {
-      local_sparticle =  &particles[particles_per_cell.at(sv.cellId)[sv.vertexId]];
+    if ((!(particles_per_cell.find(sv.cellId) == particles_per_cell.end()))) { 
+      if (particles_per_cell.at(sv.cellId)[sv.vertexId] != -1) {
+        local_sparticle =  &particles[particles_per_cell.at(sv.cellId)[sv.vertexId]];
 
-      //If our particle is local, do not replace it, envelopes are less important
-      if (isContainedABS(local_sparticle->sv.position, localDomain)) {
-        return;
+        //If our particle is local, do not replace it, envelopes are less important
+        if (isContainedABS(local_sparticle->sv.position, localDomain)) {
+          return;
+        } else {
+          //We have the particle already, replace it
+          local_sparticle->sv = sv;
+          particle = local_sparticle;
+          particle->setTag(-1);
+
+          //Invalidate lpc hemo::Array
+          lpc_up_to_date = false;
+          pg_up_to_date = false;
+
+        }
       } else {
-        //We have the particle already, replace it
-        local_sparticle->sv = sv;
-        particle = local_sparticle;
-        particle->setTag(-1);
-
-        //Invalidate lpc hemo::Array
-        lpc_up_to_date = false;
-        pg_up_to_date = false;
-
+        goto outer_else;
       }
     } else {
+outer_else:
       //new entry
       particles.emplace_back(sv);
       particle = &particles.back();
