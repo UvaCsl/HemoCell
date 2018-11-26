@@ -458,7 +458,10 @@ void HemoCellFields::syncEnvelopes() {
     for (unsigned int i = 0 ; i < recv_procs.size() ; i ++) {
       int index;
       MPI_Status status;
-      MPI_Waitany(recv_reqs.size(),&recv_reqs[0],&index,&status);
+      if (MPI_SUCCESS != MPI_Waitany(recv_reqs.size(),&recv_reqs[0],&index,&status)) {
+        hlog << "(HemoCellFields) (syncenvelopes) error returned in WaitAny " << status.MPI_ERROR << endl;
+        exit(1);
+      }
       recv_reqs[index] = MPI_REQUEST_NULL;
       //Get Offsets and Destinations
       for (CommunicationInfo3D const * info : recv_infos[status.MPI_SOURCE]) {
