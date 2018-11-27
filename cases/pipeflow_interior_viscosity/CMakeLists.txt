@@ -2,8 +2,8 @@
 # Build settings. Set these.
 
 # Project setup
-SET(PROJECT_NAME pipeflow)
-SET(PROJECT_SRC "pipeflow.cpp")
+SET(PROJECT_NAME pipeflow_interior_viscosity)
+SET(PROJECT_SRC "pipeflow_interior_viscosity.cpp")
 
 # HemoCell location relative to CMakelists.txt
 SET(HEMOCELL_BASE_DIR "./../../")

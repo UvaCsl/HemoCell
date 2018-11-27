@@ -5,7 +5,6 @@
     <warmup> 50 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <prctForced>0.05</prctForced>
     <stretchForce> 41.5 </stretchForce>   <!--Stretch Force using the X direction (in pN). [37.899, 87, 173]. -->
-    <enableInteriorViscosity>1</enableInteriorViscosity>
     <speedRate>5000</speedRate> <!-- in ms-->
 </parameters>
 

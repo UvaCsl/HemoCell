@@ -85,7 +85,6 @@ struct ConfigValues {
   bool enableSolidifyMechanics = false;
 
   bool enableInteriorViscosity = false;
-  int interiorViscosityTimestep = 0;
 
   Profiler statistics = Profiler("HemoCell");
 };

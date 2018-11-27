@@ -40,3 +40,5 @@ Version 1.5
 - Added runtime preinlets, see stl_preinlet for examples, instead of
   preinletFromSlice() you can call autoPreinletFromBoundary() if the boundary
 happens to be the inlet as well
+- Interior viscosity edge tracking works again, enable interior viscosity
+  through CELL.xml file, see cases/RBC_HO_template.xml for an example

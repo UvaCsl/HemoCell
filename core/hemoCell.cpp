@@ -181,7 +181,7 @@ void HemoCell::loadParticles() {
 void HemoCell::loadCheckPoint() {
   hlog << "(HemoCell) (Saving Functions) Loading Checkpoint"  << endl;
   if (global.enableInteriorViscosity) {
-    hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing, you have been warned" << endl;
+    hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing" << endl;
   }
   cellfields->load(documentXML, iter, cfg);
 }
@@ -189,7 +189,7 @@ void HemoCell::loadCheckPoint() {
 void HemoCell::saveCheckPoint() {
   hlog << "(HemoCell) (Saving Functions) Saving Checkpoint at timestep " << iter << endl;
   if (global.enableInteriorViscosity) {
-    hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing, you have been warned" << endl;
+    hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing" << endl;
   }
   cellfields->save(documentXML, iter, cfg);
 }
@@ -304,15 +304,13 @@ void HemoCell::iterate() {
   // ### 6 ###
   cellfields->applyConstitutiveModel();    // Calculate Force on Vertices 
 
-#ifdef INTERIOR_VISCOSITY
   if (global.enableInteriorViscosity && iter % cellfields->interiorViscosityEntireGridTimescale == 0) {
     cellfields->deleteIncompleteCells(); // Must be done, next function expects whole cells
     cellfields->findInternalParticleGridPoints();
   }
   if (global.enableInteriorViscosity && iter % cellfields->interiorViscosityTimescale == 0) {
-    //cellfields->internalGridPointsMembrane();
+    cellfields->internalGridPointsMembrane();
   }
-#endif  
   
   //We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
   if(iter % cellfields->particleVelocityUpdateTimescale == 0) {
@@ -531,6 +529,16 @@ void HemoCell::sanityCheck() {
   //Check number of neighbours
   if (cellfields->max_neighbours > 30) {
     hlog << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << cellfields->max_neighbours << " Usually it should be < 30 ! Check the atomic block structure!" << endl;
+  }
+  
+  if (global.enableInteriorViscosity) {
+    if (cellfields->interiorViscosityEntireGridTimescale == 1) {
+      hlog << "(HemoCell) WARNING: Interior viscosity (entire grid) timescale is 1, did you forget to call hemocell->setInteriorViscosityTimescaleSeparation()?" << endl;
+
+    }
+    if (cellfields->interiorViscosityTimescale == 1) {
+      hlog << "(HemoCell) WARNING: Interior viscosity timescale is 1, did you forget to call hemocell->setInteriorViscosityTimescaleSeparation()?" << endl;
+    }
   }
     
   //Parameter Sanity

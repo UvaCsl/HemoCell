@@ -99,6 +99,21 @@ HemoCellField::HemoCellField(HemoCellFields& cellFields_, string & name_, unsign
    try {
      interiorViscosityTau = materialCfg["MaterialModel"]["viscosityRatio"].read<T>()*(param::tau-0.5)+0.5;
    } catch (std::invalid_argument & e) {}
+   try {
+     doInteriorViscosity = materialCfg["MaterialModel"]["enableInteriorViscosity"].read<bool>();
+     if (doInteriorViscosity) {
+#ifdef INTERIOR_VISCOSITY
+       hlog << "(HemoCell) (AddCellType) ("<< name << ") Enabling interior viscosity" << endl;
+       double omegaInt = 1.0/interiorViscosityTau;
+      innerViscosityDynamics = cellFields.lattice->getBackgroundDynamics().clone();
+      innerViscosityDynamics->setOmega(omegaInt);
+#else
+      hlog << "(HemoCell) (AddCellType) (" << name << ") Cannot enable interior viscosity when INTERIOR_VISCOSITY is not defined at compile time" << endl;
+      exit(1);
+#endif
+     }
+     global.enableInteriorViscosity = true;
+   } catch (std::invalid_argument & e) {}
  } catch (std::invalid_argument & e) {}
 }
 HemoCellField::~HemoCellField() {

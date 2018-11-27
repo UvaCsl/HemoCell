@@ -56,14 +56,14 @@ Choose to use precalculated curvature angles for equilibrium cell shapes.
 #endif
 
 // Use for solidifying, performance impact so only enable when using
-//#ifndef SOLIDIFY_MECHANICS
+#ifndef SOLIDIFY_MECHANICS
 //#define SOLIDIFY_MECHANICS
-//#endif
+#endif
 
 // Use for Interior Viscosity mechanics, performance impact so only enable when using
-//#ifndef INTERIOR_VISCOSITY
+#ifndef INTERIOR_VISCOSITY
 //#define INTERIOR_VISCOSITY
-//#endif
+#endif
 
 /*
 Choose material integration method.

@@ -64,7 +64,6 @@ int main(int argc, char *argv[]) {
   hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("RBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
   hemocell.setMinimumDistanceFromSolid("RBC_HO", 1); //Micrometer! not LU
-  hemocell.enableInteriorViscosity("RBC_HO");
 
   hemocell.addCellType<WbcHighOrderModel>("WBC_HO", WBC_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("WBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());

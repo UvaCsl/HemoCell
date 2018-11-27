@@ -673,13 +673,9 @@ void HemoCellParticleField::applyRepulsionForce(bool forced) {
 
 #ifdef INTERIOR_VISCOSITY
 void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
-  double const omegaExt = 1.0/param::tau;
-
   // This could be done less complex I guess?
   for (const HemoCellParticle & particle : particles) { // Go over each particle
      if (!(*cellFields)[particle.sv.celltype]->doInteriorViscosity) { continue; }
-    // Find the interior relaxation parameter for particletype
-    const double omegaInt = 1.0/(*cellFields)[particle.sv.celltype]->interiorViscosityTau;
 
     for (unsigned int i = 0; i < particle.kernelCoordinates.size(); i++) {
       const hemo::Array<T, 3> latPos = particle.kernelCoordinates[i]-(particle.sv.position-atomicLattice->getLocation());
@@ -690,9 +686,9 @@ void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
       T dot1 = hemo::dot(latPos, normalP);
 
       if (dot1 < 0.) {  // Node is inside
-        particle.kernelLocations[i]->getDynamics().setOmega(omegaInt);
+        particle.kernelLocations[i]->attributeDynamics((*cellFields)[particle.sv.celltype]->innerViscosityDynamics);
       } else {  // Node is outside
-        particle.kernelLocations[i]->getDynamics().setOmega(omegaExt);
+        particle.kernelLocations[i]->attributeDynamics(&atomicLattice->getBackgroundDynamics());
       }
     }
   }
@@ -701,9 +697,6 @@ void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
 // For performance reason, this is only executed once every n iterations to make
 // sure that there are no higher viscosity grid points left after substantial movement
 void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
-  // Set the omega values on the lattice to outer viscosity
-  double const omegaExt = 1.0/param::tau;
-  
   // Reset all the lattice points to the orignal relaxation parameter
   for (plint iX = atomicLattice->getBoundingBox().x0; iX <= atomicLattice->getBoundingBox().x1; iX++) {
     for (plint iY = atomicLattice->getBoundingBox().y0; iY <= atomicLattice->getBoundingBox().y1; iY++) {
@@ -728,14 +721,6 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
       continue;
     }
     
-    // Find the interior relaxation parameter for particletype
-    const double omegaInt = 1.0/(*cellFields)[ctype]->interiorViscosityTau;
-    
-    if (!(*cellFields)[ctype]->innerViscosityDynamics) {
-      (*cellFields)[ctype]->innerViscosityDynamics = atomicLattice->getBackgroundDynamics().clone();
-      (*cellFields)[ctype]->innerViscosityDynamics->setOmega(omegaInt);
-    }
- 
     hemo::OctreeStructCell octCell(3, 1, 30,
                                   (*cellFields)[ctype]->mechanics->cellConstants.triangle_list,
                                   particles, cell);
