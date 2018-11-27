@@ -559,5 +559,9 @@ void HemoCell::sanityCheck() {
     hlog << "(WARNING!!!) lattice velocity [" << param::u_lbm_max << "] is too high [>0.1]!" << std::endl;
   }
      
+  
+  if ((*cfg)["sim"]["tmax"].read<long int>() > 100000000000 ) {
+    hlog << "(HemoCell) (SanityChecking) More than 100000000000 iterations requested, this means that the zero padding will not be consistent, therefore string sorting output will not work!" << endl;
+  };
   sanityCheckDone = true;
 }
