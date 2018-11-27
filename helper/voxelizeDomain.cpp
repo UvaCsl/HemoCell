@@ -104,7 +104,7 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
     }
     // Print out if parameters where optimal.
     if (blockSize > 0) {
-      if (blockSize < particleEnvelope+1 || blockSize > particleEnvelope*1.25) {
+      if (blockSize < particleEnvelope/2 || blockSize > particleEnvelope*1.25) {
         hlog << "(Voxelizer) (Warning) BlockSize is non optimal (" << blockSize << "), consider setting it to [" << to_string(particleEnvelope+1) << "," << to_string(particleEnvelope*1.25) << "]" << endl;
       }
       plint numBlocks = voxelizedDomain->getVoxelMatrix().getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
@@ -115,7 +115,7 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
       }
     } else {
       VoxelizedDomain3D<T> * temp = new VoxelizedDomain3D<T>(
-            boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, particleEnvelope+3);
+            boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, 16);
       plint numBlocks = temp->getVoxelMatrix().getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
       if (numBlocks != global::mpi().getSize()) {
         hlog << "(Voxelizer) (Warning) Running with " << global::mpi().getSize() << " CPU's, consider running with " << numBlocks << " CPU's for optimal efficiency" << endl;
