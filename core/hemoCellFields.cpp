@@ -359,8 +359,7 @@ void HemoCellFields::syncEnvelopes() {
     HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
     pf.removeParticles_inverse(pf.localDomain);
   }
-  //applyProcessingFunctional(new HemoSyncEnvelopes(),immersedParticles->getBoundingBox(),wrapper);
-  immersedParticles->getBlockCommunicator().duplicateOverlaps(*immersedParticles,modif::hemocell);
+  immersedParticles->getBlockCommunicator().duplicateOverlaps(*immersedParticles,modif::dataStructure);
   
   if (large_communicator) {
   
