@@ -10,8 +10,8 @@
 		# gpu_short   01:00:00     64       gpu       gpu nodes for test runs
 		# staging   5-00:00:00   1 core     server    for accessing the archive and external systems
 module rm mpi fortran c
-module load mpi/openmpi/2.0.1
+module load OpenMPI
+module load hdf5/serial/intel/1.10.0-patch1
 
-#Place the actual command here
-#Dont forget to place this file in the directory you want to run from
-srun ./pipeflow tmp/checkpoint.xml #dont forget to adjust -n !!
+#srun works better with the environment than mpirun
+srun ./pipeflow tmp/checkpoint.xml 

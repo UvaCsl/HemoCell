@@ -2,12 +2,12 @@
 set -e
 BASEDIR=$(dirname "$0")
 HEMOCELL_DIR=${BASEDIR}/../
-cd ${HEMOCELL_DIR}/build/hemocell/
+cd ${HEMOCELL_DIR}/build/hemocell_debug/
 
 #only allow ONE process
 exec 200>./lock
 flock -n 200 || exit 0
-reset -I xterm ||
+reset -I ||
 cmake ./
 
 #Cmake and make are insane, use insanity to counter it!

@@ -359,7 +359,7 @@ void HemoCellFields::syncEnvelopes() {
     HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
     pf.removeParticles_inverse(pf.localDomain);
   }
-  immersedParticles->getBlockCommunicator().duplicateOverlaps(*immersedParticles,modif::dataStructure);
+  immersedParticles->getBlockCommunicator().duplicateOverlaps(*immersedParticles,modif::hemocell);
   
   if (large_communicator) {
   
@@ -470,7 +470,7 @@ void HemoCellFields::syncEnvelopes() {
       }
     }
 
-    MPI_Waitall(reqs.size(),&reqs[0],MPI_STATUSES_IGNORE);
+    MPI_Waitall(reqs.size(),reqs.data(),MPI_STATUSES_IGNORE);
   }
   global.statistics.getCurrent().stop();
 }

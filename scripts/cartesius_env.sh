@@ -6,6 +6,6 @@ fi
 module rm mpi fortran c
 module load OpenMPI
 module load cmake/3.7.2
-module load hdf5/impi/intel/1.10.0-patch1
+module load hdf5/serial/intel/1.10.0-patch1
 module load python/3.5.2
 module list
