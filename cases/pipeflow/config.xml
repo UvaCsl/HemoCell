@@ -7,8 +7,6 @@
 
 <parameters>
     <warmup> 10 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
-    <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
-    <maxFlin> 0.0035 </maxFlin>
     <checkpointDirectory>tmp</checkpointDirectory>
     <outputDirectory>tmp</outputDirectory>
     <logDirectory>log</logDirectory>
@@ -17,8 +15,6 @@
 
 
 <ibm>
-    <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5] -->
-    <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
     <stepMaterialEvery> 20 </stepMaterialEvery> <!-- Update particle material model after this many fluid time steps. -->
     <stepParticleEvery> 5 </stepParticleEvery> <!-- Update particles position after this many fluid time steps. -->
 </ibm>
@@ -27,7 +23,7 @@
     <geometry> tube.stl </geometry>
     <fluidEnvelope> 2 </fluidEnvelope>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
-    <nuP> 1.1e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
+    <nuP> 1.1e-6 </nuP>   <!-- Kinematic viscosity of blood plasma, physical units [m^2/s]-->
     <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
     <dt> 1e-7 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
@@ -44,7 +40,6 @@
     <tmax> 1000000 </tmax> <!-- total number of iterations -->
     <tmeas>  1000 </tmeas> <!-- interval after which data is written --> 
     <tcheckpoint> 200000 </tcheckpoint> 
-    <tbalance> 1000 </tbalance> <!-- interval after which balance is performed --> 
 </sim>
 
 </hemocell>

@@ -21,7 +21,6 @@ int main(int argc, char* argv[])
 
 // ----------------- Read in config file & calc. LBM parameters ---------------------------
 	pcout << "(CellCollision) (Parameters) calculating shear flow parameters" << endl;
-	//double nxyz = 20.0*(1e-6/(*cfg)["domain"]["dx"].read<double>());
   plint nx = 50;
   plint ny = 50;
   plint nz = 30;
