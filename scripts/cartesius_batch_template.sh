@@ -10,7 +10,7 @@
 		# gpu_short   01:00:00     64       gpu       gpu nodes for test runs
 		# staging   5-00:00:00   1 core     server    for accessing the archive and external systems
 module rm mpi fortran c
-module load OpenMPI
+module load OpenMPI/3.0.0-GCC-6.4.0-2.28
 module load hdf5/serial/intel/1.10.0-patch1
 
 #srun works better with the environment than mpirun
