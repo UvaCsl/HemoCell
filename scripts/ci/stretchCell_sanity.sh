@@ -3,7 +3,7 @@ set -e
 
 cd ${CI_PROJECT_DIR}/cases/stretchCell
 mpirun --allow-run-as-root -n 4 ./stretchCell ../../scripts/ci/config-stretchCell.xml
-cd log
+cd tmp/log
 if [ -n "`cat logfile | grep "diameter" | cut -d: -f2 |cut -d" " -f2 | xargs -n 1 echo 9.6 \> | bc | grep -v 1`" ]; then
   echo "Error stretch is larger then expected (>9.6)"
   exit 1

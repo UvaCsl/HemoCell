@@ -225,27 +225,24 @@ void HemoCellFields::InitAfterLoadCheckpoint()
 void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter, Config * cfg)
 {
 
-    std::string outDir = global::directories().getOutputDir();
-    if (cfg) {
-      try {
-        outDir = (*cfg)["parameters"]["checkpointDirectory"].read<string>() + "/";
-        if (outDir[0] != '/') {
-          outDir = "./" + outDir;
-        }
-      } catch (std::invalid_argument & exeption) {
-      }
-    }
     std::string firstField = (*(documentXML->getChildren( documentXML->getFirstId() )[0])).getName();
     bool isCheckpointed = (firstField=="Checkpoint");
     if (isCheckpointed) {
       (*documentXML)["Checkpoint"]["General"]["Iteration"].read(iter);
-      plb::parallelIO::load(outDir + "lattice", *lattice, true);
-      plb::parallelIO::load(outDir + "particleField", *immersedParticles, true);
+      std::string outDir;
+      (*documentXML)["Checkpoint"]["General"]["OutDirectory"].read(outDir);
+      plb::global::directories().setOutputDir(outDir);
+      loadDirectories(cfg,false);
+
+      std::string & chkDir = hemo::global.checkpointDirectory;
+      plb::parallelIO::load(chkDir + "lattice", *lattice, true);
+      plb::parallelIO::load(chkDir + "particleField", *immersedParticles, true);
       
     } else {
       pcout << "(HemoCell) (CellFields) loading checkpoint from non-checkpoint Config" << endl;
-      plb::parallelIO::load(outDir + "lattice", *lattice, true);
-      plb::parallelIO::load(outDir + "particleField", *immersedParticles, true);      
+      std::string & chkDir = hemo::global.checkpointDirectory;
+      plb::parallelIO::load(chkDir + "lattice", *lattice, true);
+      plb::parallelIO::load(chkDir + "particleField", *immersedParticles, true);      
       
     }
     
@@ -262,16 +259,8 @@ void HemoCellFields::save(XMLreader *xmlr, unsigned int iter, Config * cfg)
     if (!isCheckpointed) { copyXMLreader2XMLwriter((*xmlr)["hemocell"], xmlw["Checkpoint"]); }
     else { copyXMLreader2XMLwriter((*xmlr)["Checkpoint"]["hemocell"], xmlw["Checkpoint"]); }
 
-    std::string outDir = global::directories().getOutputDir();
-    if (cfg) {
-      try {
-        outDir = (*cfg)["parameters"]["checkpointDirectory"].read<string>() + "/";
-        if (outDir[0] != '/') {
-          outDir = "./" + outDir;
-        }
-      } catch (std::invalid_argument & exeption) {
-      }
-    }
+    std::string & outDir = hemo::global.checkpointDirectory;
+
     mkpath(outDir.c_str(), 0777);
 
     
@@ -290,6 +279,7 @@ void HemoCellFields::save(XMLreader *xmlr, unsigned int iter, Config * cfg)
     
     /* Save XML & Data */
     xmlw["Checkpoint"]["General"]["Iteration"].set(iter);
+    xmlw["Checkpoint"]["General"]["OutDirectory"].set(plb::global::directories().getOutputDir());
     xmlw.print(outDir + "checkpoint.xml");
     plb::parallelIO::save(*lattice, outDir + "lattice", true);
     plb::parallelIO::save(*immersedParticles, outDir + "particleField", true);

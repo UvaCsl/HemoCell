@@ -9,7 +9,7 @@
     <warmup> 10 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
     <maxFlin> 0.0035 </maxFlin>
-    <checkpointDirectory>tmp</checkpointDirectory>
+    <checkpointDirectory>checkpoint</checkpointDirectory>
     <outputDirectory>tmp</outputDirectory>
     <logDirectory>log</logDirectory>
     <logFile>logfile</logFile>

@@ -7,10 +7,10 @@
 
 <parameters>
     <warmup> 10 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
-    <checkpointDirectory>tmp</checkpointDirectory>
-    <outputDirectory>tmp</outputDirectory>
-    <logDirectory>log</logDirectory>
-    <logFile>logfile</logFile>
+    <outputDirectory>output</outputDirectory> <!-- This is the base directory, appended with _x when it already exists -->
+    <checkpointDirectory>checkpoint</checkpointDirectory> <!-- relative to outputDirectory -->
+    <logDirectory>log</logDirectory> <!-- relative to outputDirectory -->
+    <logFile>logfile</logFile> <!-- relative to logDirectory, if it exists (possible with ../log as logDirectory), add .x for a new version -->
 </parameters>
 
 
@@ -39,7 +39,7 @@
 <sim>
     <tmax> 1000000 </tmax> <!-- total number of iterations -->
     <tmeas>  1000 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint> 200000 </tcheckpoint> 
+    <tcheckpoint> 10000 </tcheckpoint> 
 </sim>
 
 </hemocell>

@@ -74,7 +74,7 @@ namespace hemo {
     void load(std::string paramXmlFilename);
   };
 
-void loadDirectories(std::string configFileName, hemo::Config * cfg);
+void loadDirectories(hemo::Config * cfg, bool edit_out_dir = true);
 
 struct ConfigValues {
   bool hemoCellInitialized = false; // Keep track since two hemocells cannot run at the same time, because of static variables
@@ -85,6 +85,8 @@ struct ConfigValues {
   bool enableSolidifyMechanics = false;
 
   bool enableInteriorViscosity = false;
+  
+  std::string checkpointDirectory = "./checkpoint/";
 
   Profiler statistics = Profiler("HemoCell");
 };

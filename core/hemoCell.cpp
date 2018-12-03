@@ -61,7 +61,11 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[])
   pcout << "(HemoCell) (Config) reading " << configFileName << endl;
   cfg = new Config(configFileName);
   documentXML = new XMLreader(configFileName);
-  loadDirectories(configFileName, cfg);
+  if (cfg->checkpointed) {
+    pcout << "(HemoCell) (Config) Checkpointed config, deferring the loading of the directories (out,log,checkpoint) until loadCheckpoint is called" << endl;
+  } else {
+    loadDirectories(cfg);
+  }
   loadGlobalConfigValues(cfg);
   printHeader();
   

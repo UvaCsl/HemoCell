@@ -86,38 +86,61 @@ namespace hemo {
     }
   }
 
-void loadDirectories(std::string configFileName, hemo::Config * cfg)  {
+void loadDirectories(hemo::Config * cfg, bool edit_out_dir)  {
     //TODO This should be done through hemocell config, not some palabos global
-  plb::global::directories().setOutputDir("./tmp/");
   plb::global::directories().setInputDir("./");
   plb::global::IOpolicy().activateParallelIO(true);
   plb::global::IOpolicy().setStlFilesHaveLowerBound(false);
 
   //setting outdir
-  try {
-    std::string outDir = (*cfg)["parameters"]["outputDirectory"].read<string>() + "/";
-    if (outDir[0] != '/') {
-          outDir = "./" + outDir;
+  if (edit_out_dir) {
+    try {
+      std::string outDir = (*cfg)["parameters"]["outputDirectory"].read<string>();
+      while (outDir[outDir.size()-1] == '/') {
+        outDir.pop_back();
+      }
+      if (outDir[0] != '/') {
+            outDir = "./" + outDir;
+      }
+      plb::global::directories().setOutputDir(outDir);
+    } catch (std::invalid_argument & exeption) {
+      plb::global::directories().setOutputDir("./tmp");
     }
-    plb::global::directories().setOutputDir(outDir);
-  } catch (std::invalid_argument & exeption) {}
-  mkpath((plb::global::directories().getOutputDir() + "/hdf5/").c_str(), 0777);
-
-  //Setting logfile and logdir  
-  plb::global::directories().setLogOutDir("./log/");
+    string filename = plb::global::directories().getOutputDir();
+    if (!file_exists(filename)) {
+      goto outdir_done;
+    }
+    for (int i = 0; i < INT_MAX; i++) {
+      filename = plb::global::directories().getOutputDir() + "_" + to_string(i);
+      if (!file_exists(filename)) {
+        plb::global::directories().setOutputDir(filename);
+        goto outdir_done; 
+      }
+    }
+outdir_done:
+    plb::global::directories().setOutputDir(plb::global::directories().getOutputDir() + "/");
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+  if (!plb::global::mpi().getRank()) {
+    mkpath((plb::global::directories().getOutputDir() + "/hdf5/").c_str(), 0777);
+  }
+  //Setting logdir  
   try {
     std::string outDir = (*cfg)["parameters"]["logDirectory"].read<string>() + "/";
-    if (outDir[0] != '/') {
-          outDir = "./" + outDir;
-    }
+    outDir = plb::global::directories().getOutputDir() + "/" + outDir;
     plb::global::directories().setLogOutDir(outDir);
-  } catch (std::invalid_argument & exeption) {}
+  } catch (std::invalid_argument & exeption) {
+    plb::global::directories().setLogOutDir(plb::global::directories().getOutputDir() + "/log/");
+  }
+
+  //Setting logfile
   string logfilename = "logfile";
   try {
     logfilename = (*cfg)["parameters"]["logFile"].read<string>();
   } catch (std::invalid_argument & exeption) {}
-  mkpath(plb::global::directories().getLogOutDir().c_str(), 0777);
-
+  if (!plb::global::mpi().getRank()) {
+    mkpath(plb::global::directories().getLogOutDir().c_str(), 0777);
+  }
   string base_filename =  plb::global::directories().getLogOutDir() + logfilename;
   string filename = base_filename;
   if (!file_exists(base_filename)) { 
@@ -141,6 +164,13 @@ void loadDirectories(std::string configFileName, hemo::Config * cfg)  {
       exit(1);
     }
   }  
+  
+  //Setting CheckpointDirectory
+  try { 
+    hemo::global.checkpointDirectory = plb::global::directories().getOutputDir() + "/" + (*cfg)["parameters"]["checkpointDirectory"].read<string>() + "/";
+  } catch (std::invalid_argument & exception) {
+    hemo::global.checkpointDirectory = plb::global::directories().getOutputDir() + "/checkpoint/";
+  }
 }
 
 ConfigValues global;
