@@ -18,8 +18,8 @@ int main(int argc, char *argv[]) {
 
   hlogfile << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl; 
 
-  MultiScalarField3D<int> *flagMatrix = 0; 
-  VoxelizedDomain3D<T> * voxelizedDomain = 0; 
+  std::auto_ptr<MultiScalarField3D<int>> flagMatrix;
+  std::auto_ptr<VoxelizedDomain3D<T>> voxelizedDomain; 
   getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),  
                        (*cfg)["domain"]["fluidEnvelope"].read<int>(),  
                        (*cfg)["domain"]["refDirN"].read<int>(),  
@@ -28,23 +28,17 @@ int main(int argc, char *argv[]) {
                        (*cfg)["domain"]["blockSize"].read<int>(),
                        (*cfg)["domain"]["particleEnvelope"].read<int>()); 
 
-  param::lbm_pipe_parameters((*cfg),flagMatrix);
+  param::lbm_pipe_parameters((*cfg),flagMatrix.get());
   param::printParameters();
   
   hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
-            voxelizedDomain->getMultiBlockManagement(),
+            voxelizedDomain.get()->getMultiBlockManagement(),
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
             defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
             new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
 
-  // Override background-dynamics to guarantee and independent per-cell
-  //   copy of the dynamics object.
-  defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-                 new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau) );
-
-
-  defineDynamics(*hemocell.lattice, *flagMatrix, (*hemocell.lattice).getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
+  defineDynamics(*hemocell.lattice, *flagMatrix.get(), (*hemocell.lattice).getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
 
   hemocell.lattice->toggleInternalStatistics(false);
   hemocell.lattice->periodicity().toggleAll(false);
@@ -65,10 +59,6 @@ int main(int argc, char *argv[]) {
   hemocell.setMaterialTimeScaleSeparation("RBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
   hemocell.setMinimumDistanceFromSolid("RBC_HO", 1); //Micrometer! not LU
 
-  hemocell.addCellType<WbcHighOrderModel>("WBC_HO", WBC_SPHERE);
-  hemocell.setMaterialTimeScaleSeparation("WBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  hemocell.setMinimumDistanceFromSolid("WBC_HO", 1); //Micrometer! not LU
-
   hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
   
@@ -79,9 +69,6 @@ int main(int argc, char *argv[]) {
 
   vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
   hemocell.setOutputs("RBC_HO", outputs);
-
-
-  hemocell.setOutputs("WBC_HO", outputs);
   hemocell.setOutputs("PLT", outputs);
 
   outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE, OUTPUT_OMEGA};
@@ -116,7 +103,6 @@ int main(int argc, char *argv[]) {
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
-  unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
   hlog << "(PipeFlow) Starting simulation..." << endl;
 
@@ -128,15 +114,6 @@ int main(int argc, char *argv[]) {
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                 plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
     
-    // Only enable if PARMETIS build is available
-    /*
-     if (hemocell.iter % tbalance == 0) {
-       if(hemocell.calculateFractionalLoadImbalance() > (*cfg)["parameters"]["maxFlin"].read<T>()) {
-         hemocell.doLoadBalance();
-         hemocell.doRestructure();
-       }
-     }
-   */
     if (hemocell.iter % tmeas == 0) {
         hlog << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
         hlog << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
