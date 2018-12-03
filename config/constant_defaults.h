@@ -185,6 +185,7 @@ struct NoInitChar
         static_assert(sizeof *this == sizeof value, "invalid size");
         static_assert(__alignof *this == __alignof value, "invalid alignment");
     }
+    ~NoInitChar() {};
 };
 } 
 

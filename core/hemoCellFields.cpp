@@ -382,21 +382,20 @@ void HemoCellFields::syncEnvelopes() {
        
     vector<int> recv_procs_v;
     recv_procs_v.insert(recv_procs_v.end(),recv_procs.begin(),recv_procs.end());
-    vector<vector<NoInitChar>> sendBuffers, recvBuffers;
     vector<MPI_Request> reqs(recv_procs.size());
 
     for (unsigned int i = 0 ; i < recv_procs_v.size() ; i ++) {
       MPI_Isend(&locals_v[0],locals_v.size(),MPI_INT,recv_procs_v[i],24,MPI_COMM_WORLD,&reqs[i]);
     }
+    sendBuffers.resize(send_procs.size());
     for (unsigned int i = 0 ; i < send_procs.size() ; i ++) {
       MPI_Status status;
       MPI_Probe(MPI_ANY_SOURCE,24,MPI_COMM_WORLD,&status);
       int count;
       MPI_Get_count(&status,MPI_INT,&count);
       vector<int> requested_ids(count);
-      sendBuffers.emplace_back(vector<NoInitChar>());
-      vector<NoInitChar> & sendBuffer = sendBuffers.back();
-      sendBuffer.reserve(immersedParticles->getComponent(immersedParticles->getLocalInfo().getBlocks()[0]).particles.size()*sizeof(HemoCellParticle::serializeValues_t));
+      vector<NoInitChar> & sendBuffer = sendBuffers[i];
+      sendBuffer.clear();
       int offset = 0 ;
       MPI_Recv(&requested_ids[0],count,MPI_INT,status.MPI_SOURCE,24,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
       for (CommunicationInfo3D const * info : send_infos[status.MPI_SOURCE] ) {

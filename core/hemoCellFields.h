@@ -196,6 +196,10 @@ public:
   int periodicity_limit_offset_y = 100;
   int periodicity_limit_offset_z = 10000;
   
+private:
+  vector<vector<NoInitChar>> sendBuffers, recvBuffers;
+public:
+  
   /**
    * Total number of cells in the simulation, should be constant
    * Is set through hemocell::loadParticles() is added (TODO: also when removed)
