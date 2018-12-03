@@ -248,7 +248,7 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
       for (Array<plint,3> & node : innerNodes) {
             //pcout << node[0] << endl;
           if (!fluid->get(node[0],node[1],node[2]).getDynamics().isBoundary()) {
-          defineDynamics(*fluid,node[0],node[1],node[2],new BounceBack<T,DESCRIPTOR>());
+          defineDynamics(*fluid,node[0],node[1],node[2],new BounceBack<T,DESCRIPTOR>(1.));
           
         }
       }
@@ -257,7 +257,7 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
       octCell.findInnerNodes(CEPAC,particles,cell,innerNodesCEPAC);
       for (Array<plint,3> & node : innerNodesCEPAC) {
         if (!CEPAC->get(node[0],node[1],node[2]).getDynamics().isBoundary()) {
-          defineDynamics(*CEPAC,node[0],node[1],node[2],new BounceBack<T,CEPAC_DESCRIPTOR>());
+          defineDynamics(*CEPAC,node[0],node[1],node[2],new BounceBack<T,CEPAC_DESCRIPTOR>(1.));
         }
       }
 

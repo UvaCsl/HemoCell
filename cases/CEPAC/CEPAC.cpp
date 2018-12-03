@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
   hemocell.setOutputs("RBC_HO", outputs);
   hemocell.setOutputs("PLT", outputs);
 
-  outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE};
+  outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE,OUTPUT_SHEAR_RATE,OUTPUT_STRAIN_RATE,OUTPUT_SHEAR_STRESS};
   hemocell.setFluidOutputs(outputs);
   outputs = {OUTPUT_DENSITY};
   hemocell.setCEPACOutputs(outputs);
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
   boundaryCondition->setVelocityConditionOnBlockBoundaries (*hemocell.lattice, topChannel );
   setBoundaryVelocity(*hemocell.lattice, topChannel, plb::Array<T,3>(velocity_max_lbm,0,0));
 
-  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
+  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR>(1.));
 
 //  ADboundaryCondition->addTemperatureBoundary2P(bottomChannel, *hemocell.cellfields->CEPACfield); 
 //  setBoundaryDensity(*hemocell.cellfields->CEPACfield,bottomChannel,0.0);
