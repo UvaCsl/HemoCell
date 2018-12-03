@@ -1,0 +1,20 @@
+oneCellShear
+------------
+
+The oneCellShear case is used for validation of the material models used in
+HemoCell. A single cell is initialized in a domain with periodicity turned on in
+all directions. Then the domain is sheared such that the top moves in the
+positive x-direction and the bottom in the negative x-direction. The largest
+diameter is reported and validated against experimental data.
+
+
+The most important adjustable variables are in the ``config.xml`` file.
+
+- ``<domain><shearrate>`` the shear rate in reciprocal seconds, used to
+  calculate the top and bottom velocity boundary conditions.
+
+Furthermore it is possible to do tanktreading by adjusting ``''RBC_HO''``
+throughout the oneCellShear.cpp file to ``''RBC_HO_tt''``. This loads the
+different .pos file present within the directory (RBC_HO.xml and RBC_HO_tt.xml)
+are the same.
+

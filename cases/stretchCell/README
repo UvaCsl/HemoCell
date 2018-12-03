@@ -1,0 +1,25 @@
+StretchCell
+-----------
+
+The stretchCell cases used for validation of the material models used in
+HemoCell. A single cell is intitialized in a domain with periodicity in all
+directions. The only external force is on the outer points of the opposing sides
+of the cell. In this manner the cell is stretched. This is validated against
+expermental data.
+
+to compile follow the steps in the user guide or run ``compile.sh``
+
+The most important adjustable variables are in the ``config.xml`` file.
+
+- ``<parameters><prctForced>`` controls the percentage of points forced in total
+  (so half on each side). The number should be between 0-1.
+- ``<parameters><stretchForce>`` This controls the stretching force and is
+  defined in picoNewton.
+
+stretchCell must be run with only one processor, so either ``./stretchCell
+config.xml`` or ``mpirun -n 1 ./stretchCell config.xml``. This is because the
+helper that stretches the cell is not made to be used on multiple processors
+
+The results can be inspected as shown in the user guide, also there are two .gpl
+files which can be used to create graphs of the stretch. use the ``gnuplot``
+program for this

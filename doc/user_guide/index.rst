@@ -23,6 +23,7 @@ model.
    QuickStart
    Case
    Downloads
+   hemocell_cases
 
 .. toctree::
    :maxdepth: 1

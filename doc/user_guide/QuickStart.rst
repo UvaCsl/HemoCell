@@ -128,6 +128,8 @@ Furthermore a ``MakeFile`` is provided in the ``hemocell/cases`` directory. this
 makefile can be used to update build files for all cases (see :ref:`cases_make`
 for more info)
 
+.. _packcells:
+
 Generating initial positions for cells
 --------------------------------------
 

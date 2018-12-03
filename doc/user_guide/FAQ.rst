@@ -37,5 +37,14 @@ Q: Compiling with singularity gives errors
 
 Maybe you have an old ``hemocell/`` folder in the same directory and are trying to compile with a newer version. If this is the case you can rename ``hemocell/`` to ``hemocell_old`` and the newer singularity image should create a new folder 
 
+Q: HemoCell seems to be leaking memory over time
+------------------------------------------------
+
+We have experienced similar issues when compiling and running with OpenMPI
+version 2.0.x, older or newer versions generally seem to be ok. We have tried to
+track down the issue with heaptrack and only found memory leaks within the MCA
+part of OpenMPI.
+
+
 
 Do you have a problem that is not listed here? please mail: info@hemocell.eu or create an issue at the github repository, you might help someone else as well!
