@@ -32,7 +32,7 @@
 <domain>
     <geometry>tube.stl</geometry>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
-    <nuP> 1.7e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
+    <nuP> 1.7e-6 </nuP>   <!-- Kinematic viscosity of blood plasma, physical units [m^2/s]-->
     <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
     <dt> -5e-8 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
     <timeStepSize> -20 </timeStepSize> <!-- Update particle material model after how many fluid time steps. Set it to a negative value to enable adaptive time steps, where the abs() will sign the max step size. [Integer] -->

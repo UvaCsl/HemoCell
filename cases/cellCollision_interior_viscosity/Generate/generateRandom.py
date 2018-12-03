@@ -51,7 +51,7 @@ for i in range(cores*nodes):
         f.write('<domain>\n')
         f.write('\t<shearrate> {0:.1f} </shearrate>   <!--Shear rate for the fluid domain. [s^-1] [25]. -->\n'.format(shear))
         f.write('\t <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->\n')
-        f.write('\t <nuP> 1.1e-6 </nuP>   <!-- Dynamic viscosity of the surrounding fluid, physical units [m^2/s]-->\n')
+        f.write('\t <nuP> 1.1e-6 </nuP>   <!-- Kinematic viscosity of the surrounding fluid, physical units [m^2/s]-->\n')
         f.write('\t <dx> 0.5e-6 </dx> <!--Physical length of 1 Lattice Unit -->\n')
         f.write('\t <dt> 1e-7 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->\n')
         f.write('\t <timeStepSize> 1 </timeStepSize> <!-- Update particle material model after how many fluid time steps. [Integer] -->\n')

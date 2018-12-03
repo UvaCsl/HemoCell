@@ -20,7 +20,7 @@
     <geometry> tube.stl </geometry>
     <fluidEnvelope> 2 </fluidEnvelope>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
-    <nuP> 3.0e-6 </nuP>   <!--1.1e-6 Dynamic viscosity of blood plasma, physical units [m^2/s]-->
+    <nuP> 3.0e-6 </nuP>   <!--1.1e-6 Kinematic viscosity of blood plasma, physical units [m^2/s]-->
     <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
     <dt> 1e-8 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
     <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
