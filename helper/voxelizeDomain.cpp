@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include "genericFunctions.h"
 
 namespace hemo {
   using namespace std;
@@ -81,6 +82,11 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
     // Requirement: margin>=borderWidth.
     plint margin = 1;  // Extra margin of allocated cells around the obstacle.
 
+    if(!file_exists(meshFileName)) {
+      hlog << "(Voxelizer) Error: " << meshFileName << " is not an existing stl file." << endl;
+      exit(1);
+    }
+    
     TriangleSet<T> *triangleSet = new TriangleSet<T>(meshFileName, DBL);
 
     DEFscaledMesh<T> *defMesh =
