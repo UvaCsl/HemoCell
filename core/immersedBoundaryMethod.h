@@ -64,9 +64,11 @@ inline void interpolationCoefficientsPhi2 (
 {
     //Clean current
     particle.kernelWeights.clear();
+    particle.kernelWeights.reserve(8);
     particle.kernelLocations.clear();
     #ifdef INTERIOR_VISCOSITY
     particle.kernelCoordinates.clear();
+    particle.kernelCoordinates.reserve(8);
     #endif
     
     // Fixed kernel size
