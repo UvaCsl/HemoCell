@@ -4,10 +4,6 @@ Other topics
 Loading a cell from an stl file
 -------------------------------
 
-One of the questions we get often is how to load in your own celltype with its
-own form. In this section we try to answer that as precisely as possible such
-that you can define your own celltypes from an stl file eventually.
-
 Usually a cell is defined to be generated mathematically, this means that the
 vertex locations are gathered from describing equations. The place where the
 method for generating the cell is defined is in the ``hemocell.addCellType<>()``
