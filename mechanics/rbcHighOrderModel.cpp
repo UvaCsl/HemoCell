@@ -151,11 +151,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
               
       const T ndev = dot(patch_normal, dev_vect); // distance along patch normal
 
-#ifdef PRECALCULATED_ANGLES
       const T dDev = (ndev - cellConstants.surface_patch_center_dist_eq_list[i] ) / cellConstants.edge_mean_eq; // Non-dimensional
-#else 
-      const T dDev = ndev / cellConstants.edge_mean_eq; // Non-dimensional
-#endif
 
       //TODO scale bending force
       const hemo::Array<T,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.055-dDev*dDev)) * patch_normal; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
