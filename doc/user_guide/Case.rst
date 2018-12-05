@@ -182,9 +182,125 @@ You can download this file from :download:`here <downloads/newCase.cpp>`
 Creating a bare config.xml
 --------------------------
 
+For this case we have minimalized the values read from the config.xml file. This
+means that the following config file is enough to run our newCase.
+
+.. code-block:: xml
+
+  <?xml version="1.0" ?>
+  <hemocell>
+
+  <domain>
+      <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
+      <nuP> 1.1e-6 </nuP>   <!-- Kinematic viscosity of blood plasma, physical units [m^2/s]-->
+      <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
+      <dt> 1e-7 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
+      <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
+      <Re> 1.5 </Re>   <!--Reynolds number-->
+      <particleEnvelope> 25 </particleEnvelope>
+  </domain>
+
+  <sim>
+      <tmax> 50000 </tmax> <!-- total number of iterations -->
+      <tmeas>  500 </tmeas> <!-- interval after which data is written -->
+  </sim>
+
+  </hemocell>
+
+Now there is only one more xml file missing, namely the RBC_HO.xml file.
+Fortunately this file is included in the cases folder, you can copy it to the
+newCase as following:
+
+.. code-block:: console
+
+    vikko@the9:~/HemoCell/cases$ cp RBC_HO_template.xml newCase/RBC_HO.xml
+    vikko@the9:~/HemoCell/cases$ ls newCase/
+    CMakeLists.txt  config.xml  newCase.cpp  RBC_HO.xml
 
 Creating the initial positions for the Cells
 --------------------------------------------
 
+As a final touch we must create an RBC_HO.pos file which contains the positions
+of the RBC's that we want in our simulation. For this we use the tool that is
+described in :ref:`packcells`. Run packCells with the following command to
+create only RBC in a 25x25x25 domain:
 
+.. code-block:: console
 
+    vikko@the9:~/HemoCell/tools/packCells$ ./packCells
+    Insufficient arguments.
+
+    USAGE: packCells sX sY sZ [OPTIONAL ARGUMENTS ...]
+
+    OPTIONAL ARGUMENTS:
+      --hematocrit <0-1.0>                 -h The hematocrit of the solution
+      --plt_ratio <ratio>                     The ratio of PLT per RBC, default=0.07
+      --rbc <n>                               Number of Red Blood Cells
+      --plt <n>                               Number of Platelets
+      --wbc <n>                               Number of White Blood Cells
+      --vrbc <n>                              Number of Stage V gametocytes
+      --cell <name> <n> <e1, e2, diameter>    Custom Celltype described by ellipsoid
+      --allowRotate                        -r Allow for rotation of ellipsoids
+      --scale <ratio>                         Scales the neighbourhood grid (only change this if you know what you are doing!)
+      --maxiter <n>                           Maximum number of iterations
+      --help                                  Print this
+    OUTPUT:
+      <Cell>.pos for every celltype. First line is the number of cells.
+      The rest of the lines is the cells in "Location<X Y Z> Rotation<X Y Z>" format.
+      Cells.pov for visualization in, for example, povray
+
+    NOTE:
+      sX, sY and sZ are the domain size
+      sX, sY, sZ and output are in micrometers[µm]
+      --hematocrit and --RBC are mutually exclusive
+      --hematocrit and --PLT are mutually exclusive
+      --PLT-ratio is an No-Op without --hematocrit
+    vikko@the9:~/HemoCell/tools/packCells$ ./packCells  25 25 25 --plt_ratio 0 --hematocrit 0.3 -r
+    Loaded parameters, we found:
+      Domain Size (µm): ( 25.000000 , 25.000000 , 25.000000 )
+      Maximum Iterations : 2147483547
+      Scale              : 0.250000
+      Rotation           : 1
+      Hematocrit    : 0.300000
+      PLT/RBC Ratio : 0.000000
+    We have found the following Cells:
+      RBC
+        No   : 48
+        Sizes: (8.400000 , 4.400000 , 8.400000 )
+
+    Nominal requested volume fraction: 0.499380
+
+         Steps     Actual       Nominal        Inner         Outer             Force
+                  density       density       diameter      diameter       per particle
+
+        68764  0.1604380013  0.1604380013  1.2985355219  1.2985355219  0.000000000000000 PACKING DONE 
+    vikko@the9:~/HemoCell/tools/packCells$ cp RBC.pos ../../cases/newCase/RBC_HO.pos
+
+With the RBC_HO.pos file present in the newCase directory all the pieces should
+be there to run our first newly created case!
+
+Running our newly created case
+------------------------------
+
+Finally everything should be in place! confirm this by executing the following
+command and checking if you get similar output:
+
+.. code-block:: console
+
+    vikko@the9:~/HemoCell/cases$ ls newCase/
+    CMakeLists.txt  config.xml  newCase.cpp  RBC_HO.pos RBC_HO.xml
+
+Compile our case by executing the folling commands, replace X by the number of
+cores you want to run on:
+
+.. code-block:: console 
+
+    vikko@the9:~/HemoCell/cases/newCase$ mkdir build
+    vikko@the9:~/HemoCell/cases/newCase$ cd build
+    vikko@the9:~/HemoCell/cases/newCase/build$ cmake ../
+    vikko@the9:~/HemoCell/cases/newCase/build$ make -j4
+    vikko@the9:~/HemoCell/cases/newCase/build$ cd ../
+    vikko@the9:~/HemoCell/cases/newCase/$ mpirun -n X ./newCase config.xml
+
+Finally the output should be stored in ``tmp/``. see :ref:`read_output` on how
+to parse this output.

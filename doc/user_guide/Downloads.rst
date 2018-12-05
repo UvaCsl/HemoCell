@@ -43,6 +43,6 @@ Source Code archive           :download:`hemocell-1.4.tgz <downloads/hemocell-1.
 ============================ =========================================
 HemoCell V2.0                 Download Location            
 ============================ =========================================
-Singularity image             :download:`hemocell-singularity-2.0.img <downloads/hemocell-singularity-2.0.img>` 
-Source Code archive           :download:`hemocell-2.0.tgz <downloads/hemocell-2.0.tgz>` 
+Singularity image             :download:`hemocell-singularity-2.0.img<downloads/hemocell-singularity-2.0.img>` 
+Source Code archive           :download:`hemocell-2.0.tgz<downloads/hemocell-2.0.tgz>` 
 ============================ =========================================
