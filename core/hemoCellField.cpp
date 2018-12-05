@@ -107,12 +107,12 @@ HemoCellField::HemoCellField(HemoCellFields& cellFields_, string & name_, unsign
        double omegaInt = 1.0/interiorViscosityTau;
       innerViscosityDynamics = cellFields.lattice->getBackgroundDynamics().clone();
       innerViscosityDynamics->setOmega(omegaInt);
+      global.enableInteriorViscosity = true;
 #else
       hlog << "(HemoCell) (AddCellType) (" << name << ") Cannot enable interior viscosity when INTERIOR_VISCOSITY is not defined at compile time" << endl;
       exit(1);
 #endif
      }
-     global.enableInteriorViscosity = true;
    } catch (std::invalid_argument & e) {}
  } catch (std::invalid_argument & e) {}
 }
