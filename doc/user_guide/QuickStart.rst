@@ -1,9 +1,11 @@
 
 HemoCell Getting Started
-===================
+========================
 
 To get quickly started with HemoCell we recommend using our singularity [#SL]_
 which can be downloaded from here: :ref:`downloads`.
+
+.. _singularity:
 
 HemoCell with singularity
 ------------------------------------
@@ -48,6 +50,8 @@ singularity exec hemocell.img **post_process** [*<case>*,...]
   This creates the ``*.xmf`` and ``*.csv`` files in the ``./hemocell/cases/<case>/tmp`` 
   directory. These files can be used to analyze the data (e.g. with Paraview [#PF]_). This script removes previously generated csv and xmf files
 
+.. _from_source:
+
 Setting up HemoCell from source
 -------------------------------
 
@@ -75,6 +79,11 @@ Requirements for compiling and/or running HemoCell from source:
   +-------------+---------+
   | Palabos     | 2.0     |
   +-------------+---------+
+
+.. note::
+
+  These are minimal requirements, avoid OpenMPI 2.0.X as in our experience it
+  introduces huge memory leaks
 
 On ubuntu 16.04 most of these dependencies can be installed by running::
   
@@ -163,6 +172,15 @@ A typical command looks like this::
   cd hemocell/cases/pipeflow
   mpirun -n 4 ./pipeflow config.xml
 
+Case output folder
+------------------
+
+The output of a case is usually written to the ``<case>/tmp`` folder. The
+checkpoints are the ``.xml`` and ``.dat`` files. When a new checkpoint is
+created they are moved to ``.xml.old and ``.dat.old``. The hdf5 output is stored
+per timestep in ``tmp/hdf5`` and the csv output in ``tmp/csv``. See
+:any:`read_output` and :any:`bpp` for more info.
+
 
 .. _read_output:
 
@@ -183,6 +201,19 @@ When you have created the ``.xmf`` files you can load them into paraview, please
 select the *Legacy* xdmf file format when loading them in. the HemoCell ``.xmf``
 files are not yet Xdmf3 compatible.
 
+Resuming from a checkpoint
+--------------------------
+
+To resume from a checkpoint you should run the executable from the directory you
+ran it originally from (so the directory with the ``.xml`` and ``.pos`` files
+visible. The first argument should be ``tmp/checkpoint.xml`` instead of
+``config.xml``. HemoCell should then automatically resume from the last saved
+checkpoint.
+
+.. note::
+  
+  The number of processors on which you run the case doesn't need to be the
+  same!
 
 .. [#PF] `https://paraview.org <https://paraview.org>`_
 

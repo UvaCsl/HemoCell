@@ -1,77 +1,23 @@
-Creating your own HemoCell Case
-===============================
+// Include most of the interface offered by the hemocell library
+#include <hemocell.h>
+// This is the mechanical model for the cells that we want to use later on,
+// alternatives can be found in the mechanics folder
+#include <rbcHighOrderModel.h>
+// These are functions found in the helpers folder, they are not in the core of
+// hemoCell but can be handy nonetheless
+#include <cellInfo.h>
+#include <fluidInfo.h>
 
-This tutorial assumes that you have already compiled the hemocell library,
-either by following :ref:`singularity` or by following :ref:`from_source`.
-
-To create a new hemoCell case it is the easiest to create a new folder within
-the ``cases`` directory with the name of your case. When this folder is created
-you can run ``make cmakefiles`` in the cases directory to create the cMakeFile
-in the new directory.
-
-.. code-block:: console
-
-    vikko@the9:~/HemoCell/cases$ ls
-    CMakeLists_template.txt  oneCellShear  PLT_template.xml     stretchCell
-    Makefile                 pipeflow      RBC_HO_template.xml
-    vikko@the9:~/HemoCell/cases$ mkdir newCase
-    vikko@the9:~/HemoCell/cases$ make cmakefiles 
-    cp  CMakeLists_template.txt newCase/CMakeLists.txt
-    sed -i 's/FOLDER_NAME__/newCase/g' newCase/CMakeLists.txt
-    vikko@the9:~/HemoCell/cases$ ls newCase/
-    CMakeLists.txt
-
-Within this directory there must be a ``.cpp`` file with the same name, so:
-
-.. code-block:: console
-    
-    vikko@the9:~/HemoCell/cases/newCase$ touch newCase.cpp
-
-Editing your newCase.cpp
-------------------------
-
-Firstly we have to include the headers we need in ``newCase.cpp``.
-
-.. code-block:: c++
-
-  // Include most of the interface offered by the hemocell library
-  #include <hemocell.h> 
-  // This is the mechanical model for the cells that we want to use later on,
-  // alternatives can be found in the mechanics folder
-  #include <rbcHighOrderModel.h>
-  // These are functions found in the helpers folder, they are not in the core of
-  // hemoCell but can be handy nonetheless
-  #include <cellInfo.h>
-  #include <fluidInfo.h>
-
-After that we have to define a main function as this will become the main
-program. it is useful to include the ``config.xml`` file as first argument,
-and also check for it:
-
-.. code-block:: c++
-
-  int main (int argc, char * argv[]) {
-    if(argc < 2) {
-      cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
-      return -1;
-    }
+int main (int argc, char * argv[]) {
+  if(argc < 2) {
+    cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
+    return -1;
   }
-
-The first thing that should be done in a hemoCell case is initializing the
-HemoCell object:
-
-.. code-block:: c++
 
   // The first argument is the config.xml location, the second and third argument
   // are necessary as a passthrough for the palabos initialization
   HemoCell hemocell(argv[1],argc,argv);
 
-
-Afterwards we must define the parameters for the lattice boltzmann simulation.
-These are read in from the ``config.xml`` file:
-
-.. code-block:: c++
-  
   // Calculate and load in the lattice boltzmann parameters from the config file
   // that will be used later on. Pretend that we are calculating the parameters
   // for a pipe, to get an acceptable maximum velocity.
@@ -85,13 +31,6 @@ These are read in from the ``config.xml`` file:
   // want.
   T poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / param::pipe_radius / param::pipe_radius;
 
-
-Since we want to create the simplest possible case we do not load in any stl
-file but just create a cube with one periodic direction. An example of how to load in a stl file
-can be found in ``pipeflow.cpp`` within the :ref:`pipeflow` case.
-
-.. code-block:: c++
-
   // First we create a Palabos management object 
   // The first three arguments are the number of fluid cells in x,y and z
   // direction, so this is a 50x50x50 block, the fourth argument is the fluid
@@ -100,16 +39,11 @@ can be found in ``pipeflow.cpp`` within the :ref:`pipeflow` case.
 
   // Initialize the fluid lattice within hemocell
   hemocell.initializeLattice(management);
- 
+
   // Just to be sure disable all periodicity. Afterwards enable it in the
   // x-direction
   hemocell.lattice->periodicity().toggleAll(false);
   hemocell.lattice->periodicity().toggle(0,true);
-
-Then we set up the rest of the simulation, the comments should explain
-everything:
-
-.. code-block:: c++
 
   //After we set up the fluid, it is time to set up the particles in the
   //simulation
@@ -134,14 +68,14 @@ everything:
 
   // Request outputs from the simulation, here we have requested all of the
   // possible outputs!
-  hemocell.setOutputs("RBC_HO", { OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE,
-                                  OUTPUT_FORCE_VOLUME, OUTPUT_FORCE_BENDING, OUTPUT_FORCE_REPULSION,
+  hemocell.setOutputs("RBC_HO", { OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE, 
+                                  OUTPUT_FORCE_VOLUME, OUTPUT_FORCE_BENDING, OUTPUT_FORCE_REPULSION, 
                                   OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC,
                                   OUTPUT_INNER_LINKS, OUTPUT_CELL_ID, OUTPUT_VERTEX_ID } );
   hemocell.setFluidOutputs( { OUTPUT_VELOCITY, OUTPUT_DENSITY, OUTPUT_FORCE,
                               OUTPUT_SHEAR_RATE, OUTPUT_STRAIN_RATE,
-                              OUTPUT_SHEAR_STRESS, OUTPUT_BOUNDARY, OUTPUT_OMEGA,
-                              OUTPUT_CELL_DENSITY } );
+                              OUTPUT_SHEAR_STRESS, OUTPUT_BOUNDARY, OUTPUT_OMEGA, 
+															OUTPUT_CELL_DENSITY } );
 
   //Load the particles from all the *.pos files
   hemocell.loadParticles();
@@ -153,38 +87,20 @@ everything:
   unsigned int tmeas = (*hemocell.cfg)["sim"]["tmeas"].read<unsigned int>();
 
 
-Finally we come to the main running loop, this case is very simple and has no
-checkpointing etc. built in, these features can be found in the other example
-cases:
-
-.. code-block:: c++
-
   //This is the main running loop, run for tmax iterations.
   while (hemocell.iter < tmax ) {
     //Advance the fluid field and cellfields one tick.
     hemocell.iterate();
-
+    
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                 plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-
+    
     // When we want to save
     if (hemocell.iter % tmeas == 0) {
       hemocell.writeOutput();
     }
   }
   return 0;
-
-
-You can download this file from :download:`here <downloads/newCase.cpp>`
-
-Creating a bare config.xml
---------------------------
-
-
-Creating the initial positions for the Cells
---------------------------------------------
-
-
-
+}

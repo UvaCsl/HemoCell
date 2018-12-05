@@ -21,9 +21,10 @@ model.
    :maxdepth: 2
 
    QuickStart
-   Case
    Downloads
    hemocell_cases
+   Case
+   xml_files
 
 .. toctree::
    :maxdepth: 1
