@@ -39,11 +39,26 @@ int main (int argc, char * argv[]) {
 
   // Initialize the fluid lattice within hemocell
   hemocell.initializeLattice(management);
-
   // Just to be sure disable all periodicity. Afterwards enable it in the
   // x-direction
   hemocell.lattice->periodicity().toggleAll(false);
   hemocell.lattice->periodicity().toggle(0,true);
+  // Set up bounceback boundaries in the other directions
+  Box3D topChannel(0, 49, 0, 49, 49, 49);
+  Box3D bottomChannel( 0, 49, 0, 49, 0, 0);
+  Box3D backChannel( 0, 49, 49, 49, 0, 49);
+  Box3D frontChannel( 0, 49, 0, 0, 0, 49);
+
+  defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR> );
+  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
+  defineDynamics(*hemocell.lattice, backChannel, new BounceBack<T, DESCRIPTOR> );
+  defineDynamics(*hemocell.lattice, frontChannel, new BounceBack<T, DESCRIPTOR> );
+  //Disable statistics to run faster
+  hemocell.lattice->toggleInternalStatistics(false);
+  //Equilibrate everything
+  hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
+  //Finalize everything
+  hemocell.lattice->initialize();
 
   //After we set up the fluid, it is time to set up the particles in the
   //simulation
@@ -75,7 +90,10 @@ int main (int argc, char * argv[]) {
   hemocell.setFluidOutputs( { OUTPUT_VELOCITY, OUTPUT_DENSITY, OUTPUT_FORCE,
                               OUTPUT_SHEAR_RATE, OUTPUT_STRAIN_RATE,
                               OUTPUT_SHEAR_STRESS, OUTPUT_BOUNDARY, OUTPUT_OMEGA, 
-															OUTPUT_CELL_DENSITY } );
+                              OUTPUT_CELL_DENSITY } );
+                              
+  // Turn on periodicity in the X direction
+  hemocell.setSystemPeriodicity(0, true);
 
   //Load the particles from all the *.pos files
   hemocell.loadParticles();

@@ -30,6 +30,7 @@ model.
    :maxdepth: 1
 
    Scripts
+   other_topics
 
 .. toctree::
    :maxdepth: 1
