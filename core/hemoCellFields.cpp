@@ -408,7 +408,7 @@ void HemoCellFields::syncEnvelopes() {
           if (ppc.find(id) == ppc.end()) { continue; }
           for (int pid : ppc.at(id)) {
             if (pid <= -1) { continue; }
-            if (pid >= pf.particles.size()) { continue; }
+            if (pid >= (int) pf.particles.size()) { continue; }
             sendBuffer.resize(sendBuffer.size()+sizeof(HemoCellParticle::serializeValues_t));
             *((HemoCellParticle::serializeValues_t*)&sendBuffer[offset]) = pf.particles[pid].sv;
             offset += sizeof(HemoCellParticle::serializeValues_t);
@@ -419,19 +419,6 @@ void HemoCellFields::syncEnvelopes() {
       MPI_Isend(sendBuffer.data(),sendBuffer.size(),MPI_CHAR,status.MPI_SOURCE,42,MPI_COMM_WORLD,&reqs.back());
     }
 
-        // 3. Local copies which require no communication.
-    for (unsigned iSendRecv=0; iSendRecv<comms->sendRecvPackage.size(); ++iSendRecv) {
-        CommunicationInfo3D const& info = comms->sendRecvPackage[iSendRecv];
-        AtomicBlock3D const& fromBlock = immersedParticles->getComponent(info.fromBlockId);
-        AtomicBlock3D& toBlock = immersedParticles->getComponent(info.toBlockId);
-        plint deltaX = info.fromDomain.x0 - info.toDomain.x0;
-        plint deltaY = info.fromDomain.y0 - info.toDomain.y0;
-        plint deltaZ = info.fromDomain.z0 - info.toDomain.z0;
-        toBlock.getDataTransfer().attribute (
-                info.toDomain, deltaX, deltaY, deltaZ, fromBlock,
-                modif::hemocell, info.absoluteOffset );
-    }
-    
     vector<MPI_Request> recv_reqs(recv_procs.size());
     recvBuffers.resize(recv_procs.size());
     for (unsigned int i = 0 ; i < recv_procs.size() ; i ++) {
@@ -460,6 +447,18 @@ void HemoCellFields::syncEnvelopes() {
     }
 
     MPI_Waitall(reqs.size(),reqs.data(),MPI_STATUSES_IGNORE);
+    
+    // 3. Local copies which require no communication.
+    for (unsigned iSendRecv=0; iSendRecv<comms->sendRecvPackage.size(); ++iSendRecv) {
+        CommunicationInfo3D const& info = comms->sendRecvPackage[iSendRecv];
+        AtomicBlock3D const& fromBlock = immersedParticles->getComponent(info.fromBlockId);
+        AtomicBlock3D& toBlock = immersedParticles->getComponent(info.toBlockId);
+
+        toBlock.getDataTransfer().attribute (
+                info.toDomain, 0, 0, 0 , fromBlock,
+                modif::hemocell, info.absoluteOffset );
+    }
+    
   }
   global.statistics.getCurrent().stop();
 }
