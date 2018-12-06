@@ -100,9 +100,17 @@ example: The red blood cell material model will ignore inner edges.
   * **kVolume** Volume conservation coefficient (dimensionless)
   * **kArea** Local area conservation coefficient (dimensionless)
   * **kLink** Link force coefficient (dimensionless)
-  * **minNumTriangles** Minimum number of triangles to divide stl or mesh in, final number can be larger
+  * **minNumTriangles** Minimum number of triangles to create when not loading
+    stl file, final number can be larger
   * **radius** Radius of the cell in SI units (m). used for scaling in hemocell 
   * **Volume** Volume of a cell in µm, only used for density output.
+  * **enableInteriorViscosity** [0,1] use enable viscosity, should be used in
+    combination with **viscosityRatio**
+  * **viscosityRatio** ratio between interior and exterior viscosity
+  * **eta_m** membrane viscosity, currently not used
+  * **InnerEdges** contains **Edge** which contains two integers denoting which
+    vertices in the model should have an inner edge between them.
+
 
 The ``<Cell>.pos`` file should contain the number of cells (and thus number of following
 lines) on the first line. Then each following line should contain 6 floats.
