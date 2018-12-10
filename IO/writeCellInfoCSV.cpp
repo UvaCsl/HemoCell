@@ -30,12 +30,9 @@ namespace hemo {
 void writeCellInfo_CSV(HemoCell * hemocell) {
   global.statistics.getCurrent()["writeCellCSVInfo"].start();
 
-  CellInformationFunctionals::clear_list();
-  CellInformationFunctionals::calculate_vol_pos_area(hemocell);
-  CellInformationFunctionals::calculateCellAtomicBlock(hemocell);
-  CellInformationFunctionals::calculateCellType(hemocell);
-
-  
+  map<int,CellInformation> info_per_cell;
+  CellInformationFunctionals::calculateCellInformation(hemocell,info_per_cell);
+ 
   vector<std::string> fileNames = vector<std::string>(hemocell->cellfields->size());
   vector<ofstream> csvFiles = vector<ofstream>(fileNames.size());
   for (unsigned int i = 0 ; i < fileNames.size(); i++ ) {
@@ -45,10 +42,10 @@ void writeCellInfo_CSV(HemoCell * hemocell) {
       fileNames[i] = global::directories().getOutputDir() + "/csv/" + zeroPadNumber(hemocell->iter) + '/'  + "CellInfo_" + (*hemocell->cellfields)[i]->name + "." + to_string(global::mpi().getRank()) + ".csv";
     }
     csvFiles[i].open(fileNames[i], ofstream::trunc);
-    csvFiles[i] << "X,Y,Z,area,volume,atomic_block,cellId" << endl;
+    csvFiles[i] << "X,Y,Z,area,volume,atomic_block,cellId,baseCellId,velocity_x,velocity_y,velocity_z" << endl;
   }
   
-  for (auto & pair : CellInformationFunctionals::info_per_cell) {
+  for (auto & pair : info_per_cell) {
     const plint cid = ((pair.first%hemocell->cellfields->number_of_cells)+hemocell->cellfields->number_of_cells)%hemocell->cellfields->number_of_cells;
     CellInformation & cinfo = pair.second;
     
@@ -60,7 +57,8 @@ void writeCellInfo_CSV(HemoCell * hemocell) {
     
     if (cinfo.centerLocal) {
       csvFiles[cinfo.cellType] << cinfo.position[0] << "," << cinfo.position[1] << "," << cinfo.position[2] << ",";
-      csvFiles[cinfo.cellType] << cinfo.area << "," << cinfo.volume << "," << cinfo.blockId << "," << cid << endl;
+      csvFiles[cinfo.cellType] << cinfo.area << "," << cinfo.volume << "," << cinfo.blockId << "," << cid  << "," << cinfo.base_cell_id << ",";
+      csvFiles[cinfo.cellType] << cinfo.velocity[0] << "," << cinfo.velocity[1] << "," << cinfo.velocity[2] << endl;
     }
   }
   
