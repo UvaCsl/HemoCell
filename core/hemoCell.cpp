@@ -567,5 +567,15 @@ void HemoCell::sanityCheck() {
   if ((*cfg)["sim"]["tmax"].read<long int>() > 100000000000 ) {
     hlog << "(HemoCell) (SanityChecking) More than 100000000000 iterations requested, this means that the zero padding will not be consistent, therefore string sorting output will not work!" << endl;
   };
+  
+  // Check for possible overflows in calculating new cellIds
+  if (cellfields->number_of_cells) { // running with cells
+    if (cellfields->periodicity_limit_offset_y + cellfields->periodicity_limit_offset_z > INT_MAX/cellfields->number_of_cells) { //can HemoCellParticleDataTransfer::getOffset overflow?
+          cerr << "(SanityCheck) (HemoCellParticleDataTransfer) Integer overflow detected when calculating offset, refusing to invoke undefined behaviour later in the program" << endl;
+          cerr << "(SanityCheck) (HemoCellParticleDataTransfer) Either setSystemPeriodicityLimit is used wrongly or there are too many cells in the simulation" << endl;
+          exit(1);
+    }
+  }
+  
   sanityCheckDone = true;
 }

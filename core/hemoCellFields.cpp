@@ -404,7 +404,13 @@ void HemoCellFields::syncEnvelopes() {
         const map<int,vector<int>> & ppc = pf.get_particles_per_cell();
         
         for (int id : requested_ids) {
-          id = id - offset_p;
+          if (((offset_p < 0) && (id > INT_MAX+offset_p)) ||
+              ((offset_p > 0) && (id < INT_MIN+offset_p))) {
+            cout << "(HemoCellFields syncEnvelopes) Almost invoking overflow in periodic particle communication, resetting ID to base ID instead, this will most likely delete the particle" << endl;
+            id = base_cell_id(id);
+          } else {
+            id = id - offset_p;
+          }
           if (ppc.find(id) == ppc.end()) { continue; }
           for (int pid : ppc.at(id)) {
             if (pid <= -1) { continue; }
