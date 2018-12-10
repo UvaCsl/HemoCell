@@ -32,42 +32,47 @@ void writeCellInfo_CSV(HemoCell * hemocell) {
 
   map<int,CellInformation> info_per_cell;
   CellInformationFunctionals::calculateCellInformation(hemocell,info_per_cell);
- 
-  vector<std::string> fileNames = vector<std::string>(hemocell->cellfields->size());
-  vector<ofstream> csvFiles = vector<ofstream>(fileNames.size());
-  for (unsigned int i = 0 ; i < fileNames.size(); i++ ) {
-    if (hemocell->partOfpreInlet) {
-      fileNames[i] = global::directories().getOutputDir() + "/csv/" + zeroPadNumber(hemocell->iter) + '/'  + "CellInfo_PRE_" + (*hemocell->cellfields)[i]->name + "." + to_string(global::mpi().getRank()) + ".csv";
+  for (auto it = info_per_cell.cbegin(); it != info_per_cell.cend() ;) 
+  {
+    if (!it->second.centerLocal) {
+      it = info_per_cell.erase(it);
     } else {
-      fileNames[i] = global::directories().getOutputDir() + "/csv/" + zeroPadNumber(hemocell->iter) + '/'  + "CellInfo_" + (*hemocell->cellfields)[i]->name + "." + to_string(global::mpi().getRank()) + ".csv";
-    }
-    csvFiles[i].open(fileNames[i], ofstream::trunc);
-    csvFiles[i] << "X,Y,Z,area,volume,atomic_block,cellId,baseCellId,velocity_x,velocity_y,velocity_z" << endl;
-  }
-  
-  for (auto & pair : info_per_cell) {
-    const plint cid = ((pair.first%hemocell->cellfields->number_of_cells)+hemocell->cellfields->number_of_cells)%hemocell->cellfields->number_of_cells;
-    CellInformation & cinfo = pair.second;
-    
-    if (hemocell->outputInSiUnits) {
-      cinfo.position *= param::dx;
-      cinfo.area *= param::dx*param::dx;
-      cinfo.volume *= param::dx*param::dx*param::dx;
-    }
-    
-    if (cinfo.centerLocal) {
-      csvFiles[cinfo.cellType] << cinfo.position[0] << "," << cinfo.position[1] << "," << cinfo.position[2] << ",";
-      csvFiles[cinfo.cellType] << cinfo.area << "," << cinfo.volume << "," << cinfo.blockId << "," << cid  << "," << cinfo.base_cell_id << ",";
-      csvFiles[cinfo.cellType] << cinfo.velocity[0] << "," << cinfo.velocity[1] << "," << cinfo.velocity[2] << endl;
+      ++it;
     }
   }
   
-  for (ofstream & file : csvFiles) {
-    file.close();
+  HemoCellGatheringFunctional<CellInformation>::gather(info_per_cell);
+ 
+  if (!global::mpi().getRank()) {
+    vector<std::string> fileNames = vector<std::string>(hemocell->cellfields->size());
+    vector<ofstream> csvFiles = vector<ofstream>(fileNames.size());
+    for (unsigned int i = 0 ; i < fileNames.size(); i++ ) {
+      fileNames[i] = global::directories().getOutputDir() + "/csv/" +  (*hemocell->cellfields)[i]->name + "." + zeroPadNumber(hemocell->iter) + ".csv";
+      csvFiles[i].open(fileNames[i], ofstream::trunc);
+      csvFiles[i] << "X,Y,Z,area,volume,atomic_block,cellId,baseCellId,velocity_x,velocity_y,velocity_z" << endl;
+    }
+
+    for (auto & pair : info_per_cell) {
+      const plint cid = pair.first;
+      CellInformation & cinfo = pair.second;
+
+      if (hemocell->outputInSiUnits) {
+        cinfo.position *= param::dx;
+        cinfo.area *= param::dx*param::dx;
+        cinfo.volume *= param::dx*param::dx*param::dx;
+      }
+
+      if (cinfo.centerLocal) {
+        csvFiles[cinfo.cellType] << cinfo.position[0] << "," << cinfo.position[1] << "," << cinfo.position[2] << ",";
+        csvFiles[cinfo.cellType] << cinfo.area << "," << cinfo.volume << "," << cinfo.blockId << "," << cid  << "," << cinfo.base_cell_id << ",";
+        csvFiles[cinfo.cellType] << cinfo.velocity[0] << "," << cinfo.velocity[1] << "," << cinfo.velocity[2] << endl;
+      }
+    }
+
+    for (ofstream & file : csvFiles) {
+      file.close();
+    }
   }
-    
-  CellInformationFunctionals::clear_list();
-  
   global.statistics.getCurrent().stop();
 }
 

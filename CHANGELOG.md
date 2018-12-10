@@ -44,3 +44,5 @@ happens to be the inlet as well
   through CELL.xml file, see cases/RBC_HO_template.xml for an example
 - Output is saved in a seperate folder for each run, see pipeflow/config.xml for
   the options
+- CSV output is already concatenated in csv folder, now also includes
+  base_cell_id, correct cell_id and velocity

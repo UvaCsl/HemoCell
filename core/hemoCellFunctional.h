@@ -61,11 +61,6 @@ class HemoCellGatheringFunctional : public plb::BoxProcessingFunctional3D {
         int ID;
         GatherType g;
     };
-    union byteGatherType {
-        unsigned char b[sizeof(IDandGatherType)];
-        IDandGatherType g;
-    };
-    static_assert(sizeof(byteGatherType) == sizeof(IDandGatherType),"GaterhingFunctional union sizes do not match up");
 public:
     //Numblocks should be larger than the maximum number of blocks per process
     //The total can be retrieved from Multiblock.getManagment.getsparseblock.getnumblocks
@@ -95,13 +90,11 @@ public:
             be++;
         }
         for (auto const & entry : gatherValues) {
-            byteGatherType bg;
-            bg.g.ID = entry.first;
-            bg.g.g = entry.second;
-            for (unsigned int i = 0; i < sizeof(IDandGatherType) ; i++) {
-                sendbuffer[be] = bg.b[i];
-                be++;
-            }
+            IDandGatherType bg;
+            bg.ID = entry.first;
+            bg.g = entry.second;
+            *((IDandGatherType*)&sendbuffer[be]) = bg;
+            be+=sizeof(IDandGatherType);
         }
         
         std::vector<int> sendcounts(plb::global::mpi().getSize());
@@ -126,12 +119,10 @@ public:
                 be++;
             }
             for (int i = 0 ; i < local_number.i ; i++) {
-                byteGatherType bg;
-                for (unsigned int k = 0; k < sizeof(byteGatherType) ; k++) {
-                    bg.b[k] = receivebuffer[be];
-                    be++;
-                }
-                gatherValues[bg.g.ID] = bg.g.g;
+                IDandGatherType bg;
+                bg = *((IDandGatherType*)&receivebuffer[be]);
+                be += sizeof(IDandGatherType);
+                gatherValues[bg.ID] = bg.g;
             }
         }
         

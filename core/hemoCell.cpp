@@ -236,7 +236,7 @@ void HemoCell::writeOutput() {
   if (global::mpi().isMainProcessor()) {
     string folder = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) ;
     mkpath(folder.c_str(), 0777);
-    folder = global::directories().getOutputDir() + "/csv/" + zeroPadNumber(iter) ;
+    folder = global::directories().getOutputDir() + "/csv" ;
     mkpath(folder.c_str(), 0777);
   }
   global::mpi().barrier();
