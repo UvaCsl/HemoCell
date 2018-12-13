@@ -1,7 +1,7 @@
 Creating your own HemoCell Case
 ===============================
 
-This tutorial assumes that you have already compiled the hemocell library,
+This tutorial assumes that you have already compiled the HemoCell library,
 either by following :ref:`singularity` or by following :ref:`from_source`.
 
 To create a new hemoCell case it is the easiest to create a new folder within
@@ -34,7 +34,7 @@ Firstly we have to include the headers we need in ``newCase.cpp``.
 
 .. code-block:: c++
 
-  // Include most of the interface offered by the hemocell library
+  // Include most of the interface offered by the HemoCell library
   #include <hemocell.h> 
   // This is the mechanical model for the cells that we want to use later on,
   // alternatives can be found in the mechanics folder

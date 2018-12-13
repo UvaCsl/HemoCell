@@ -248,7 +248,7 @@ void HemoCell::writeOutput() {
   if (global.enableCEPACfield) {
     writeCEPACField_HDF5(*cellfields,param::dx,param::dt,iter);
   }
-  writeCellInfo_CSV(this);
+  writeCellInfo_CSV(*this);
   global.statistics.getCurrent().stop();
 
   //Repoint surfaceparticle forces for speed

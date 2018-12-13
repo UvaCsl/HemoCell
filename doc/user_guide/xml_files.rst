@@ -8,12 +8,12 @@ Config.xml
 
 The configuration that is used at runtime by the case. The configuration file 
 should be valid xml. The first tag should always be ``<hemocell>``. Within the 
-hemocell you can specify any tag that can be used in your simulation after you 
+HemoCell you can specify any tag that can be used in your simulation after you 
 initialized the config file like this:: 
    
   (*hemocell.cfg)["domain"]["<your attribute>"].read<type>() 
 
-Most tags are used within the hemocell framework to configure options. However
+Most tags are used within the HemoCell framework to configure options. However
 some are used from the **case.cpp** file and thus are not present in all cases.
 These options are denoted with a bold **case.cpp**. 
 
@@ -102,7 +102,7 @@ example: The red blood cell material model will ignore inner edges.
   * **kLink** Link force coefficient (dimensionless)
   * **minNumTriangles** Minimum number of triangles to create when not loading
     stl file, final number can be larger
-  * **radius** Radius of the cell in SI units (m). used for scaling in hemocell 
+  * **radius** Radius of the cell in SI units (m). used for scaling in HemoCell 
   * **Volume** Volume of a cell in µm, only used for density output.
   * **enableInteriorViscosity** [0,1] use enable viscosity, should be used in
     combination with **viscosityRatio**
@@ -122,23 +122,23 @@ the rotation in degrees in X,Y,Z respectively
 config/constant_defaults.h
 --------------------------
 
-This file is used to define compile time constants for the hemocell library. The
-hemocell library (in build/hemocell) is used to link all the **case.cpp** files
-against. For example, whenever you want to use hemocell with interior viscosity
+This file is used to define compile time constants for the HemoCell library. The
+HemoCell library (in build/hemocell) is used to link all the **case.cpp** files
+against. For example, whenever you want to use HemoCell with interior viscosity
 you must uncomment ``#define INTERIOR_VISCOSITY`` such that it is enabled. Below
 we listed the options present in this file and when you can use them
 
 * ``SOLIDIFY_MECHANICS`` Used for thrombus formation, relevant examples and
   source code is not yet available in V2.0
 * ``INTERIOR_VISCOSITY`` Enable if you want to run cases with interior
-  viscosity, adds two vectors to the hemocellparticle class, and thus has a
+  viscosity, adds two vectors to the HemoCellparticle class, and thus has a
   measurable performance impact (don't enable when not needed)
 * ``HEMOCELL_MATERIAL_INTEGRATION`` Defines how the velocity of the fluid is
   integrated to the particles. Euler [1] or Adams-Bashforth [2]. See
   ``src/hemoCellParticle.h`` for implementation details
 * ``DESCRIPTOR`` The collision operator and dimensionality of the underlying
   lattice boltzmann fluid. This collision operator is only used in the palabos
-  part of hemocell, find more information about it on `palabos.org`_.
+  part of HemoCell, find more information about it on `palabos.org`_.
 * ``FORCE_LIMIT`` Limits the force the particles can exert on the fluid field.
   This means that a particle can deform more, but in return the fluid field
   stays stable. The force is in picoNewton.
@@ -151,7 +151,7 @@ we listed the options present in this file and when you can use them
 * ``constructMeshElement``
 
   * ``RBC_FROM_SPHERE`` create the RBC model from mathematical equations (see
-    hemocell paper), accepts a minimum number of to be created vertices.
+    HemoCell paper), accepts a minimum number of to be created vertices.
   * ``ELLIPSOID_FROM_SPHERE`` mathimatically create a discretization which is
     mainly used for the PLT model.
   * ``STRING_FROM_VERTEXES`` legacy, not used anymore

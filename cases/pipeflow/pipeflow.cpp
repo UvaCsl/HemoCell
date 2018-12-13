@@ -5,6 +5,7 @@
 #include "cellInfo.h"
 #include "fluidInfo.h"
 #include "particleInfo.h"
+#include "writeCellInfoCSV.h"
 #include <fenv.h>
 
 int main(int argc, char *argv[]) {
@@ -101,6 +102,7 @@ int main(int argc, char *argv[]) {
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
+  unsigned int tcsv = (*cfg)["sim"]["tcsv"].read<unsigned int>();
 
   hlog << "(PipeFlow) Starting simulation..." << endl;
 
@@ -111,7 +113,7 @@ int main(int argc, char *argv[]) {
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                 plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-    
+
     if (hemocell.iter % tmeas == 0) {
         hlog << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
         hlog << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
@@ -133,6 +135,12 @@ int main(int argc, char *argv[]) {
         // pcout << "Particle velocity, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << endl;
         hemocell.writeOutput();
     }
+    
+    if (hemocell.iter % tcsv == 0) {
+      hlog << "Saving simple mean cell values to CSV at timestep " << hemocell.iter << endl;
+      writeCellInfo_CSV(hemocell);
+    }
+    
     if (hemocell.iter % tcheckpoint == 0) {
       hemocell.saveCheckPoint();
     }

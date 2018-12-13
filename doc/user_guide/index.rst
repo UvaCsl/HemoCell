@@ -46,7 +46,7 @@ Acknowledgments
 ----------------
 
 HemoCell is developed and maintained by the following persons. Any questions
-about hemocell can be directed toward: info@hemocell.eu.
+about HemoCell can be directed toward: info@hemocell.eu.
 
 .. list-table::
   :header-rows: 0

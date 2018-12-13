@@ -107,7 +107,7 @@ We have also added a ``./setup.sh`` which automatically downloads and patches
 the palabos library for convenience.
 
 Parmetis can be downloaded from the `parmetis <http://glaros.dtc.umn.edu/gkhome/metis/parmetis/download>`_ 
-site. Due to the license of parmetis we cannot distribute it with HemoCell. 
+site. Due to the license of parmetis we cannot distribute it with hemocell. 
 The parmetis download should be copied to the  ``./hemocell/external/`` directory. 
 If you need it
 because you want load balancing to be enabled you have to extract it with::
@@ -128,7 +128,7 @@ there. We recommend to do it in the following way::
 
 Cmake might sometimes fail while using the -j flag with make. Then simply try again.
 
-Each case depends on the hemocell build located in ``hemocell/build/hemocell``.
+Each case depends on the HemoCell build located in ``hemocell/build/hemocell``.
 Cmake is ran in this directory as a dependency of each case. It is also possible
 to first run ``cmake`` in the ``hemocell/build/hemocell`` directory to first
 build the library.

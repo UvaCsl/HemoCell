@@ -1,4 +1,4 @@
-// Include most of the interface offered by the hemocell library
+// Include most of the interface offered by the HemoCell library
 #include <hemocell.h>
 // This is the mechanical model for the cells that we want to use later on,
 // alternatives can be found in the mechanics folder
@@ -37,7 +37,7 @@ int main (int argc, char * argv[]) {
   // envelope size and must be two
   MultiBlockManagement3D management = defaultMultiBlockPolicy3D().getMultiBlockManagement(50, 50, 50, 2);
 
-  // Initialize the fluid lattice within hemocell
+  // Initialize the fluid lattice within HemoCell
   hemocell.initializeLattice(management);
   // Just to be sure disable all periodicity. Afterwards enable it in the
   // x-direction
