@@ -577,5 +577,23 @@ void HemoCell::sanityCheck() {
     }
   }
   
+  bool printed = false;
+  plint nx,ny,nz,numBlocks,numAllocatedCells;
+  Box3D smallest,largest;
+  //Check if atomic block sizes are in an acceptable range, not as fancy as the check in voxelizeDomain, maybe for later
+  getMultiBlockInfo(*lattice, nx, ny, nz, numBlocks, smallest, largest, numAllocatedCells);
+  //check largest
+  if (largest.getNx() > 25 || largest.getNy() > 25 || largest.getNz() > 25) {
+    hlog << getMultiBlockInfo(*lattice);
+    hlog << "(SanityCheck) one of the dimensions of the largest atomic block is more than 25.\n  This is inefficient, The best performance is with 16x16x16 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure accordingly." << endl;
+    printed = true;
+  } 
+  if (smallest.getNx() < 16 || smallest.getNy() < 16 || smallest.getNz() < 16) {
+    if(!printed) { hlog << getMultiBlockInfo(*lattice); }
+    hlog << "(SanityCheck) one of the dimensions of the smallest atomic block is less than 16.\n  This is inefficient, The best performance is with 16x16x16 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure accordingly." << endl;
+    printed = true;
+  }
+  
+  
   sanityCheckDone = true;
 }
