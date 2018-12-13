@@ -43,6 +43,7 @@
 <sim>
     <tmax> 1000 </tmax> <!-- total number of iterations -->
     <tmeas>  100 </tmeas> <!-- interval after which data is written --> 
+    <tcsv>  10000 </tcsv> <!-- interval after which simple mean cell values are written to a CSV file --> 
     <tcheckpoint> 200 </tcheckpoint> 
     <tbalance> 1000 </tbalance> <!-- interval after which balance is performed --> 
 </sim>
