@@ -5,27 +5,27 @@ This tutorial assumes that you have already compiled the HemoCell library,
 either by following :ref:`singularity` or by following :ref:`from_source`.
 
 To create a new hemoCell case it is the easiest to create a new folder within
-the ``cases`` directory with the name of your case. When this folder is created
-you can run ``make cmakefiles`` in the cases directory to create the cMakeFile
+the ``examples`` directory with the name of your case. When this folder is created
+you can run ``make cmakefiles`` in the examples directory to create the cMakeFile
 in the new directory.
 
 .. code-block:: console
 
-    vikko@the9:~/HemoCell/cases$ ls
+    vikko@the9:~/HemoCell/examples$ ls
     CMakeLists_template.txt  oneCellShear  PLT_template.xml     stretchCell
     Makefile                 pipeflow      RBC_HO_template.xml
-    vikko@the9:~/HemoCell/cases$ mkdir newCase
-    vikko@the9:~/HemoCell/cases$ make cmakefiles 
+    vikko@the9:~/HemoCell/examples$ mkdir newCase
+    vikko@the9:~/HemoCell/examples$ make cmakefiles 
     cp  CMakeLists_template.txt newCase/CMakeLists.txt
     sed -i 's/FOLDER_NAME__/newCase/g' newCase/CMakeLists.txt
-    vikko@the9:~/HemoCell/cases$ ls newCase/
+    vikko@the9:~/HemoCell/examples$ ls newCase/
     CMakeLists.txt
 
 Within this directory there must be a ``.cpp`` file with the same name, so:
 
 .. code-block:: console
     
-    vikko@the9:~/HemoCell/cases/newCase$ touch newCase.cpp
+    vikko@the9:~/HemoCell/examples/newCase$ touch newCase.cpp
 
 Editing your newCase.cpp
 ------------------------
@@ -227,13 +227,13 @@ means that the following config file is enough to run our newCase.
   </hemocell>
 
 Now there is only one more xml file missing, namely the RBC_HO.xml file.
-Fortunately this file is included in the cases folder, you can copy it to the
+Fortunately this file is included in the examples folder, you can copy it to the
 newCase as following:
 
 .. code-block:: console
 
-    vikko@the9:~/HemoCell/cases$ cp RBC_HO_template.xml newCase/RBC_HO.xml
-    vikko@the9:~/HemoCell/cases$ ls newCase/
+    vikko@the9:~/HemoCell/examples$ cp RBC_HO_template.xml newCase/RBC_HO.xml
+    vikko@the9:~/HemoCell/examples$ ls newCase/
     CMakeLists.txt  config.xml  newCase.cpp  RBC_HO.xml
 
 Creating the initial positions for the Cells
@@ -293,7 +293,7 @@ create only RBC in a 25x25x25 domain:
                   density       density       diameter      diameter       per particle
 
         68764  0.1604380013  0.1604380013  1.2985355219  1.2985355219  0.000000000000000 PACKING DONE 
-    vikko@the9:~/HemoCell/tools/packCells$ cp RBC.pos ../../cases/newCase/RBC_HO.pos
+    vikko@the9:~/HemoCell/tools/packCells$ cp RBC.pos ../../examples/newCase/RBC_HO.pos
 
 With the RBC_HO.pos file present in the newCase directory all the pieces should
 be there to run our first newly created case!
@@ -306,7 +306,7 @@ command and checking if you get similar output:
 
 .. code-block:: console
 
-    vikko@the9:~/HemoCell/cases$ ls newCase/
+    vikko@the9:~/HemoCell/examples$ ls newCase/
     CMakeLists.txt  config.xml  newCase.cpp  RBC_HO.pos RBC_HO.xml
 
 Compile our case by executing the folling commands, replace X by the number of
@@ -314,12 +314,12 @@ cores you want to run on:
 
 .. code-block:: console 
 
-    vikko@the9:~/HemoCell/cases/newCase$ mkdir build
-    vikko@the9:~/HemoCell/cases/newCase$ cd build
-    vikko@the9:~/HemoCell/cases/newCase/build$ cmake ../
-    vikko@the9:~/HemoCell/cases/newCase/build$ make -j4
-    vikko@the9:~/HemoCell/cases/newCase/build$ cd ../
-    vikko@the9:~/HemoCell/cases/newCase/$ mpirun -n X ./newCase config.xml
+    vikko@the9:~/HemoCell/examples/newCase$ mkdir build
+    vikko@the9:~/HemoCell/examples/newCase$ cd build
+    vikko@the9:~/HemoCell/examples/newCase/build$ cmake ../
+    vikko@the9:~/HemoCell/examples/newCase/build$ make -j4
+    vikko@the9:~/HemoCell/examples/newCase/build$ cd ../
+    vikko@the9:~/HemoCell/examples/newCase/$ mpirun -n X ./newCase config.xml
 
 Finally the output should be stored in ``tmp/``. see :ref:`read_output` on how
 to parse this output.

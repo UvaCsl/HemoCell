@@ -13,11 +13,11 @@ From:ubuntu:16.04
   #Create our scripts, compatible with 2.2 and lower
   cat <<EOF > /usr/local/bin/compile
 #!/bin/bash
-if [ ! -d "hemocell/cases" ]; then
-echo "hemocell/cases folder doesn't exists, did you ran make_library first?"
+if [ ! -d "hemocell/examples" ]; then
+echo "hemocell/examples folder doesn't exists, did you ran make_library first?"
 exit 1
 fi
-cd hemocell/cases
+cd hemocell/examples
 if [ "\$#" -lt 1 ]; then
   echo "Usage: compile <case>"
   exit 1
@@ -36,11 +36,11 @@ EOF
 
   cat <<EOF > /usr/local/bin/compile_all
 #!/bin/bash
-if [ ! -d "hemocell/cases" ]; then
-echo "hemocell/cases folder doesn't exists, did you ran make_library first?"
+if [ ! -d "hemocell/examples" ]; then
+echo "hemocell/examples folder doesn't exists, did you ran make_library first?"
 exit 1
 fi
-cd hemocell/cases
+cd hemocell/examples
 make
 EOF
 
@@ -56,11 +56,11 @@ EOF
 
   cat <<EOF > /usr/local/bin/run
 #!/bin/bash
-if [[ ! -d "hemocell/cases/\${@:(-2):1}/" ]]; then
-echo "hemocell/cases/\${@:(-2):1}/ doesn't exists. are you in the right directory?  is the case name the second to last argument?"
+if [[ ! -d "hemocell/examples/\${@:(-2):1}/" ]]; then
+echo "hemocell/examples/\${@:(-2):1}/ doesn't exists. are you in the right directory?  is the case name the second to last argument?"
 exit 1
 fi
-(cd hemocell/cases/\${@:(-2):1};mpirun \$@)
+(cd hemocell/examples/\${@:(-2):1};mpirun \$@)
 EOF
 
   cat <<EOF > /usr/local/bin/post_process
@@ -70,13 +70,13 @@ if [ \$# -lt 1 ]; then
   exit 1
 fi
 for case; do
-if [ ! -d "hemocell/cases/\${case}" ]; then
+if [ ! -d "hemocell/examples/\${case}" ]; then
   echo "Case \${case} doesn't exist. exiting ..."
   exit 1
 fi
-(cd hemocell/cases/\${case}/tmp;rm *.xmf *.csv)
-(cd hemocell/cases/\${case};../../scripts/batchPostProcess.sh)
-(cd hemocell/cases/\${case}/tmp;../../../scripts/CellInfoMergeCSV.sh)
+(cd hemocell/examples/\${case}/tmp;rm *.xmf *.csv)
+(cd hemocell/examples/\${case};../../scripts/batchPostProcess.sh)
+(cd hemocell/examples/\${case}/tmp;../../../scripts/CellInfoMergeCSV.sh)
 done
 EOF
 

@@ -5,7 +5,7 @@ TODO
 
 .. _cases_make:
 
-hemocell/cases/MakeFile
+hemocell/examples/MakeFile
 -----------------------
 
 make **cmakefiles**
@@ -39,10 +39,10 @@ hemocell/scripts/batchPostProcess.sh
 
 This scripts uses the ``*XMF.py`` files to generate all necessary xmf-files so
 that the output of a job can be read into ParaView and others. This script
-should be run within the ``hemocell/cases/<case>`` or
-``hemocell/cases/<case>/tmp`` directory. like so::
+should be run within the ``hemocell/examples/<case>`` or
+``hemocell/examples/<case>/tmp`` directory. like so::
 
-  cd hemocell/cases/<case>
+  cd hemocell/examples/<case>
   ../../scripts/batchPostProcess.sh
 
 hemocell/scripts/cartesius[_intel]_env.sh
@@ -61,5 +61,5 @@ hemocell/scripts/CellInfoMergeCSV.sh
 This script merges the CSV output from multiple processors into a single one in
 the current directory. Use it in the ``tmp`` directory like this::
 
-  cd hemocell/cases/<case>/tmp/
+  cd hemocell/examples/<case>/tmp/
   . ./scripts/CellInfoMergeCSV.sh
