@@ -62,6 +62,6 @@ HemoCell related papers
 -----------------------
 
 .. rubric:: References
-.. [#HC] `Cellular Level In-silico Modeling of Blood Rheology with An Improved Material Model for Red Blood Cells, Fronties in physiology, 8, 563. <https://doi.org/10.3389/fphys.2017.00563>`_ Zavodszky, G., van Rooij, B., Azizi, V., Alowayyed, S., & Hoekstra, A.
-.. [#IV] `Numerical Investigation of the Effects of Red Blood Cell Cytoplasmic Viscosity Contrasts on Single Cell and Bulk Transport Behaviour.  Applied Sciences 8. <https://doi.org/10.3390/app8091616>`_ M de Haan, G Zavodszky, V Azizi, A Hoekstra.
+.. [#HC] `Cellular Level In-silico Modeling of Blood Rheology with An Improved Material Model for Red Blood Cells, Fronties in physiology, 8, 563. <https://doi.org/10.3389/fphys.2017.00563>`_ Závodszky, G., van Rooij, B., Azizi, V., Alowayyed, S., & Hoekstra, A.
+.. [#IV] `Numerical Investigation of the Effects of Red Blood Cell Cytoplasmic Viscosity Contrasts on Single Cell and Bulk Transport Behaviour.  Applied Sciences 8. <https://doi.org/10.3390/app8091616>`_ M de Haan, G Závodszky, V Azizi, A Hoekstra.
 .. [#LB] `Load balancing of parallel cell-based blood flow simulations. Journal of computational science 24, 1-7. <https://doi.org/10.1016/j.jocs.2017.11.008>`_ S Alowayyed, G Závodszky, V Azizi & AG Hoekstra.
