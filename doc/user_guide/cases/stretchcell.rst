@@ -1,1 +1,1 @@
-../../../cases/stretchCell/README
+../../../examples/stretchCell/README

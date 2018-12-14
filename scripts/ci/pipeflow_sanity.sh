@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-cd ${CI_PROJECT_DIR}/cases/pipeflow
+cd ${CI_PROJECT_DIR}/examples/pipeflow
 mpirun --allow-run-as-root -n 4 ./pipeflow ../../scripts/ci/config-pipeflow.xml
 cd tmp/log
 if [ -n "`cat logfile | grep "# of cells" | cut -d: -f2 | cut -d" " -f2 | grep -v 32`" ]; then

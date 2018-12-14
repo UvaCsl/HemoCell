@@ -1,1 +1,1 @@
-../../../cases/pipeflow/README
+../../../examples/pipeflow/README

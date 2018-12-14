@@ -1,1 +1,1 @@
-../../../cases/oneCellShear/README
+../../../examples/oneCellShear/README

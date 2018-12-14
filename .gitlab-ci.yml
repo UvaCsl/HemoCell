@@ -7,8 +7,8 @@ stages:
 #Files that are needed for tests from build environment
 cache:
   paths:
-    - cases/pipeflow/pipeflow
-    - cases/stretchCell/stretchCell
+    - examples/pipeflow/pipeflow
+    - examples/stretchCell/stretchCell
 
 before_script:
   - apt-get update > /dev/null
@@ -20,6 +20,8 @@ build_cases:
   stage: build
   script:
     - cd ${CI_PROJECT_DIR}/cases
+    - make -j4 all > /dev/null
+    - cd ${CI_PROJECT_DIR}/examples
     - make -j4 all > /dev/null
 
 test_pipeflow:
