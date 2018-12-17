@@ -46,7 +46,7 @@ EOF
 
   cat <<EOF > /usr/local/bin/make_library
 cp -r /hemocell .
-if [ ! -e hemocell/palabos_dev.tgz ]; then
+if [ ! -d hemocell/palabos ]; then
   (cd hemocell;./setup.sh)
 fi
 
@@ -74,9 +74,7 @@ if [ ! -d "hemocell/examples/\${case}" ]; then
   echo "Case \${case} doesn't exist. exiting ..."
   exit 1
 fi
-(cd hemocell/examples/\${case}/tmp;rm *.xmf *.csv)
 (cd hemocell/examples/\${case};../../scripts/batchPostProcess.sh)
-(cd hemocell/examples/\${case}/tmp;../../../scripts/CellInfoMergeCSV.sh)
 done
 EOF
 
