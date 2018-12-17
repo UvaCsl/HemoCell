@@ -19,8 +19,10 @@ before_script:
 build_cases:
   stage: build
   script:
-    - cd ${CI_PROJECT_DIR}/cases
-    - make -j4 all > /dev/null
+    - if [ -d {CI_PROJECT_DIR}/cases ]; then
+    -   cd ${CI_PROJECT_DIR}/cases
+    -   make -j4 all > /dev/null
+    - fi
     - cd ${CI_PROJECT_DIR}/examples
     - make -j4 all > /dev/null
 
