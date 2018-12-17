@@ -1,6 +1,5 @@
 #include "hemocell.h"
 #include "rbcHighOrderModel.h"
-// #include "wbcHighOrderModel.h" // in case of WBC uncomment this
 #include "helper/hemoCellStretch.h"
 #include "helper/cellInfo.h"
 
