@@ -39,4 +39,5 @@ test_stretchCell:
   stage: test
   script:
     - ${CI_PROJECT_DIR}/scripts/ci/stretchCell_sanity.sh
+  dependencies:
     - build_cases
