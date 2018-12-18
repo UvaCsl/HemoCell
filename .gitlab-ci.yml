@@ -24,6 +24,7 @@ build_cases:
     - cd ${CI_PROJECT_DIR}/examples
     - make -j4 all > /dev/null
   artifacts:
+    expire_in: 2 hrs
     paths:
       - examples/pipeflow/pipeflow
       - examples/stretchCell/stretchCell
