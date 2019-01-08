@@ -857,7 +857,6 @@ void HemoCellParticleField::solidifyCells() {
   }
   removeParticles(1);
   for (Dot3D & b_particle : boundaryParticles) {
-      cout << "Hello" << endl;
     for (int x = b_particle.x-1; x <= b_particle.x+1; x++) {
       if (x < 0 || x > this->atomicLattice->getNx()-1) {continue;}
       for (int y = b_particle.y-1; y <= b_particle.y+1; y++) {

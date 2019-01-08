@@ -103,6 +103,8 @@ int main(int argc, char *argv[]) {
   hemocell.lattice->initialize();   
   hemocell.cellfields->CEPACfield->initialize();   
 
+  hemocell.enableBoundaryParticles((*cfg)["domain"]["kRep"].read<T>(), (*cfg)["domain"]["BRepCutoff"].read<T>(),(*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  
   //loading the cellfield
   if (not cfg->checkpointed) {
     hemocell.loadParticles();

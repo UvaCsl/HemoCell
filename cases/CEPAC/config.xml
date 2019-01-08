@@ -41,6 +41,7 @@
     <particleEnvelope> 25 </particleEnvelope>
     <kRep> 2e-22 </kRep> <!-- Repulsion Constant -->
     <RepCutoff> 0.7 </RepCutoff> <!-- RepulsionCutoff -->
+    <BRepCutoff> 0.7 </BRepCutoff> <!-- RepulsionCutoff -->
 </domain>
 
 <sim>
