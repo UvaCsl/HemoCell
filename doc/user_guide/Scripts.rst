@@ -1,8 +1,6 @@
 Scripts within HemoCell
 =======================
 
-TODO
-
 .. _cases_make:
 
 hemocell/examples/MakeFile
