@@ -209,6 +209,8 @@ void Packing::initBlood(float sizeX, float sizeY, float sizeZ, int maxSteps, dou
   No_cells_y = ceil(sizeY);
   No_cells_z = ceil(sizeZ);
 
+  cout << endl << "Number of bins: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
+
   Ntau = 102400;
 
   Max_steps = maxSteps; // if force-free configuration is not possible, still stop calculation at some point
