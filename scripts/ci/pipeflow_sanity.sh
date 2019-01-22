@@ -4,8 +4,8 @@ set -e
 cd ${CI_PROJECT_DIR}/examples/pipeflow
 mpirun --allow-run-as-root -n 4 ./pipeflow ../../scripts/ci/config-pipeflow.xml
 cd tmp/log
-if [ -n "`cat logfile | grep "# of cells" | cut -d: -f2 | cut -d" " -f2 | grep -v 32`" ]; then
-  echo "Error in number of cells, 32 Expected"
+if [ -n "`cat logfile | grep "# of cells" | cut -d: -f2 | cut -d" " -f2 | grep -v 42`" ]; then
+  echo "Error in number of cells, 42 Expected"
   exit 1
 fi
 if [ -n "`cat logfile |grep "viscosity" | cut -d: -f 4 |cut -d" " -f2 | xargs -n 1 echo 1.03 \< | bc | grep -v 1`" ]; then
