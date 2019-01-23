@@ -6,12 +6,7 @@
 
 #MacOS X compatible version:
 export scriptsDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 echo ${scriptsDir}
-[[ -z $1 ]] || ( echo "Clearing XDMF files..."; rm -rf tmp/*.xmf )
-if [ -d tmp ]; then
-  cd tmp; 
-fi
 
 if command -v python; then
 python_c=python
@@ -21,41 +16,45 @@ else
 pyton_c=python2
 fi
 
-# Fluid
-${python_c} ${scriptsDir}/FluidHDF5.py; 
+erase_things=$1
 
-# Cells of different types
-if [ ! -d ./csv ]; then
-  echo "No hdf5 folder, exiting"
-  exit 0
-fi
-for dir in ./hdf5/*/
-do
-  filenames=`ls ${dir}* | cut -d/ -f4 | cut -d. -f1 | sort| uniq`
-  for name in $filenames
+function do_work {
+  if [ ! -d ./hdf5 ]; then
+    return
+  fi
+
+  [[ -z $erase_things ]] || ( echo "Clearing XDMF files..."; rm -rf *.xmf )
+
+  # Fluid
+  ${python_c} ${scriptsDir}/FluidHDF5.py; 
+
+  for dir in ./hdf5/*/
   do
-    if [ $name == "Fluid" ]; then
-      continue
-    fi
-    if [ $name == "Fluid_PRE" ]; then
-      ${python_c} ${scriptsDir}/FluidHDF5.py Fluid_PRE; 
-      continue
-    fi
-    if [ $name == "CEPAC" ]; then
-      ${python_c} ${scriptsDir}/FluidHDF5.py CEPAC; 
-      continue
-    fi
-    echo ${name}:
-    ${python_c} ${scriptsDir}/CellHDF5toXMF.py ${name}; 
+    filenames=`ls ${dir}* | cut -d/ -f4 | cut -d. -f1 | sort| uniq`
+    for name in $filenames
+    do
+      if [ $name == "Fluid" ]; then
+        continue
+      fi
+      if [ $name == "Fluid_PRE" ]; then
+        ${python_c} ${scriptsDir}/FluidHDF5.py Fluid_PRE; 
+        continue
+      fi
+      if [ $name == "CEPAC" ]; then
+        ${python_c} ${scriptsDir}/FluidHDF5.py CEPAC; 
+        continue
+      fi
+      echo ${name}:
+      ${python_c} ${scriptsDir}/CellHDF5toXMF.py ${name}; 
+    done
+    break;
   done
-  break;
+}
+
+do_work;
+
+for dir in */ ; do
+  cd $dir;
+  do_work;
+  cd ../;
 done
-# vWF
-#${scriptsDir}/VWFHDF5toXMF.py VWF;
-
-# Boundary particles
-#${scriptsDir}/ParticleField3D_HDF5toXMF.py BoundaryParticles; 
-
-# trombosit
-#${scriptsDir}/ParticleField3D_HDF5toXMF.py ActivatedBoundaryParticles;
-#${scriptsDir}/../trombosit/BondParticleField3D_HDF5toXMF.py BondFieldParticles; 

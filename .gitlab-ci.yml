@@ -5,10 +5,10 @@ stages:
   - test
 
 #Files that are needed for tests from build environment
-cache:
-  paths:
-    - cases/pipeflow/pipeflow
-    - cases/stretchCell/stretchCell
+#cache:
+#  paths:
+#    - examples/pipeflow/pipeflow
+#    - examples/stretchCell/stretchCell
 
 before_script:
   - apt-get update > /dev/null
@@ -21,13 +21,24 @@ build_cases:
   script:
     - cd ${CI_PROJECT_DIR}/cases
     - make -j4 all > /dev/null
+    - cd ${CI_PROJECT_DIR}/examples
+    - make -j4 all > /dev/null
+  artifacts:
+    expire_in: 2 hrs
+    paths:
+      - examples/pipeflow/pipeflow
+      - examples/stretchCell/stretchCell
 
 test_pipeflow:
   stage: test
   script:
     - ${CI_PROJECT_DIR}/scripts/ci/pipeflow_sanity.sh
+  dependencies:
+    - build_cases
 
 test_stretchCell:
   stage: test
   script:
     - ${CI_PROJECT_DIR}/scripts/ci/stretchCell_sanity.sh
+  dependencies:
+    - build_cases

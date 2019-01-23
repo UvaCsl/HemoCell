@@ -45,7 +45,7 @@ inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, 
     Box3D fluidbb = fluid.getBoundingBox();
     Dot3D rrelfluidloc; // used later;
     int denyLayerSize; // used later;
-    HemoCellParticle to_add_particle; // used_later
+    HemoCellParticle::serializeValues_t to_add_particle; // used_later
 
     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
         hemo::Array<T,3> vertex = startingPoint + mesh->getVertex(iVertex);
@@ -85,8 +85,8 @@ inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, 
         }  
       }
       
-      to_add_particle = HemoCellParticle(vertex,cellId,iVertex,celltype);
-      particleField.addParticle(&to_add_particle);
+      to_add_particle = HemoCellParticle(vertex,cellId,iVertex,celltype).sv;
+      particleField.addParticle(to_add_particle);
 no_add:;
     }
 }
@@ -273,15 +273,11 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
 			delete meshCopy;
         }
 
-        
-        //SYNC THEM ENVELOPES
-        //cellFields.syncEnvelopes();
-        // DELETE CELLS THAT ARE NOT WHOLE
         particleFields[iCF]->deleteIncompleteCells(iCF,false);
         std::vector<HemoCellParticle*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);
         
-//delete meshes[iCF];
+        delete meshes[iCF];
     }
     //cout << "Atomic Block ID: " << particleFields[0]->atomicBlockId;
     //cout    << " Total complete cells (with periodicity): " << particleFields[0]->get_lpc().size() << std::endl;

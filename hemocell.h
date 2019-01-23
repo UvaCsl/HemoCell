@@ -1,3 +1,26 @@
+/*
+This file is part of the HemoCell library
+
+HemoCell is developed and maintained by the Computational Science Lab 
+in the University of Amsterdam. Any questions or remarks regarding this library 
+can be sent to: info@hemocell.eu
+
+When using the HemoCell library in scientific work please cite the
+corresponding paper: https://doi.org/10.3389/fphys.2017.00563
+
+The HemoCell library is free software: you can redistribute it and/or
+modify it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+The library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #ifndef HEMOCELL_H
 #define HEMOCELL_H
 
@@ -9,8 +32,6 @@
 #include "hemoCellFields.h"
 
 /* IO */
-#include "meshMetrics.h"
-#include "meshGeneratingFunctions.h"
 #include "loadBalancer.h"
 #include "profiler.h"
 
@@ -57,6 +78,11 @@ class HemoCell {
    */
   HemoCell(char * configFileName, int argc, char* argv[]);
 
+  /*
+   * Clean up hemocell
+   */
+  ~HemoCell();
+  
   /**
    *  Set all the fluid nodes to these values
    * 
@@ -82,35 +108,8 @@ class HemoCell {
   */
   template<class Mechanics>
   void addCellType(string name, int constructType) {
-    string materialXML = name + ".xml";
-    Config *materialCfg = new Config(materialXML.c_str());
-    TriangularSurfaceMesh<T> * meshElement;
-    
-    T aspectRatio = 0.3;
-    if (constructType == ELLIPSOID_FROM_SPHERE) {
-      aspectRatio = (*materialCfg)["MaterialModel"]["aspectRatio"].read<T>();
-    }
-    
-    if(constructType == STRING_FROM_VERTEXES) {
-      hlog << "(HemoCell) (AddCellType) Error STRING_FROM_VERTEXES not supported anymore" << std::endl;
-			exit(1);
-    } else {
-      TriangleBoundary3D<T> * boundaryElement = NULL;
-      try {
-        boundaryElement = new TriangleBoundary3D<T>(constructMeshElement(constructType, 
-                           (*materialCfg)["MaterialModel"]["radius"].read<T>()/param::dx, 
-                           0, param::dx, 
-                           (*materialCfg)["MaterialModel"]["StlFile"].read<string>(), plb::Array<T,3>(0.,0.,0.), aspectRatio));
-      } catch (std::invalid_argument & exeption) {
-        boundaryElement = new TriangleBoundary3D<T>(constructMeshElement(constructType, 
-                           (*materialCfg)["MaterialModel"]["radius"].read<T>()/param::dx, 
-                           (*materialCfg)["MaterialModel"]["minNumTriangles"].read<T>(), param::dx, 
-                           string(""), plb::Array<T,3>(0.,0.,0.), aspectRatio));
-      }
-      meshElement = new TriangularSurfaceMesh<T>(boundaryElement->getMesh());
-    }
-    HemoCellField * cellfield = cellfields->addCellType(*meshElement, name);
-    Mechanics * mechanics = new Mechanics((*materialCfg), *cellfield);
+    HemoCellField * cellfield = cellfields->addCellType(name,constructType);
+    Mechanics * mechanics = new Mechanics(*cellfield->materialCfg, *cellfield);
     cellfield->mechanics = mechanics;
     cellfield->statistics();
   }
@@ -137,21 +136,6 @@ class HemoCell {
   void enableSolidifyMechanics(string name) {
     hlog << "(HemoCell) Enabling Solidify Mechanics for " << name << " mechanical model" << endl;
     (*cellfields)[name]->doSolidifyMechanics = true;
-  }
-  
-    //Enable InteriorViscosity mechanics of a celltype
-  void enableInteriorViscosity(string name) {
-#ifdef INTERIOR_VISCOSITY
-    if (!global.enableInteriorViscosity) {
-      hlog << "(HemoCell) Error, enableInteriorViscosity called, but global interior Viscosity not enabled (config->parmeters->enableInteriorViscosity)" << endl;
-      exit(1);
-    }
-    hlog << "(HemoCell) Enabling Interior Viscosity Mechanics for " << name << " mechanical model" << endl;
-    (*cellfields)[name]->doInteriorViscosity = true;
-#else
-    hlog << "(HemoCell) Error, interior viscosity of " << name << " requested but INTERIOR_VISCOSITY was not defined compile time, exiting" << endl;
-    exit(1);
-#endif
   }
   
   //Set the separation of when velocity is interpolated to the particle
@@ -219,10 +203,6 @@ public:
   ///Restructure the grid, has an optional argument to specify whether a checkpoint from this iteration is available, default is YES!
   void doRestructure(bool checkpoint_avail = true);
   
-  //Find and specify variables for the preInlets according to the flagmatrix and desired (default) parameters
-  void specifyPreInlet(MultiScalarField3D<int>& flagMatrix);
-  
-  
   ///Initialize the fluid field with the given management, should be done after specifing the pre inlets and before initializing the cellfields
   void initializeLattice(MultiBlockManagement3D const & management);
  
@@ -232,18 +212,18 @@ public:
   
   map<plint,plint> BlockToMpi;
   
-  LoadBalancer * loadBalancer;
+  LoadBalancer * loadBalancer = 0;
   ///The fluid lattice
   MultiBlockLattice3D<T, DESCRIPTOR> * lattice = 0;
   
-  MultiBlockManagement3D * preinlet_management, * lattice_management;
+  MultiBlockManagement3D * preinlet_management = 0, * lattice_management = 0;
   
-  Config * cfg;
+  Config * cfg = 0;
   ///The cellfields contains the particle field and all celltypes
-  HemoCellFields * cellfields;
+  HemoCellFields * cellfields = 0;
   unsigned int iter = 0;
   
-  XMLreader * documentXML; //Needed for legacy checkpoint reading TODO fix
+  XMLreader * documentXML = 0; //Needed for legacy checkpoint reading TODO fix
   private:
   /// Store the last time (iteration) output occured
   unsigned int lastOutputAt = 0;

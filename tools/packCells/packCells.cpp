@@ -170,14 +170,16 @@ int main(int argc, char *argv[])
 
   if(scale < 0.0) { // Calculate optimal scaling automatically
     // Get the smallest radius
-    double minR = 100000000000.0; //WARNING: will not work for cells with R > 100 km ;)
+    double maxR = 0.0; 
     for(auto cell : cellTypes) {
-      double min_loc = min(min(cell.dx, cell.dy), cell.dz);
-      if (min_loc < minR)
-        minR = min_loc;
+      double max_loc = max(max(cell.dx, cell.dy), cell.dz);
+      if (max_loc > maxR)
+        maxR = max_loc;
     }
 
-    scale = 1.1/minR; // -> scaled R > 1.0
+    double minD = min(min(sX, sY),sZ);
+
+    scale = maxR/minD; // -> scaled R > 1.0
   }
 
   cout.setf (ios::fixed, ios::floatfield);

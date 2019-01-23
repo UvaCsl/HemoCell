@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include "genericFunctions.h"
 
 namespace hemo {
   using namespace std;
@@ -62,6 +63,16 @@ BlockDomain::DomainT CopyFromNeighbor::appliesTo() const {
 
 // ---------------------- Read in STL geometry ---------------------------------
 
+void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeWidth, plb::plint refDirLength, plb::plint refDir,
+                          std::auto_ptr<plb::VoxelizedDomain3D<T>> & voxelizedDomain, std::auto_ptr<plb::MultiScalarField3D<int>> & flagMatrix, plint blockSize, int particleEnvelope) {
+  VoxelizedDomain3D<T> * voxelizedDomain_t;
+  plb::MultiScalarField3D<int> * flagMatrix_t;
+  getFlagMatrixFromSTL(meshFileName, extendedEnvelopeWidth, refDirLength, refDir,
+                          voxelizedDomain_t, flagMatrix_t, blockSize, particleEnvelope);
+  voxelizedDomain = std::auto_ptr<plb::VoxelizedDomain3D<T>>(voxelizedDomain_t);
+  flagMatrix = std::auto_ptr<plb::MultiScalarField3D<int>>(flagMatrix_t);
+}
+
 void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint refDirLength, plint refDir,
                           VoxelizedDomain3D<T> *&voxelizedDomain, MultiScalarField3D<int> *&flagMatrix, plint blockSize, int particleEnvelope) {
     plint extraLayer = 0;   // Make the bounding box larger; for visualization purposes
@@ -71,12 +82,18 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
     // Requirement: margin>=borderWidth.
     plint margin = 1;  // Extra margin of allocated cells around the obstacle.
 
+    if(!file_exists(meshFileName)) {
+      hlog << "(Voxelizer) Error: " << meshFileName << " is not an existing stl file." << endl;
+      exit(1);
+    }
+    
     TriangleSet<T> *triangleSet = new TriangleSet<T>(meshFileName, DBL);
 
     DEFscaledMesh<T> *defMesh =
             new DEFscaledMesh<T>(*triangleSet, refDirLength, refDir, margin, extraLayer);
-    TriangleBoundary3D<T> boundary(*defMesh);
+    TriangleBoundary3D<T> boundary(*defMesh,false);
     delete defMesh;
+    delete triangleSet;
     boundary.getMesh().inflate();
 
     voxelizedDomain = new VoxelizedDomain3D<T>(
@@ -93,7 +110,7 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
     }
     // Print out if parameters where optimal.
     if (blockSize > 0) {
-      if (blockSize < particleEnvelope+1 || blockSize > particleEnvelope*1.25) {
+      if (blockSize < particleEnvelope/2 || blockSize > particleEnvelope*1.25) {
         hlog << "(Voxelizer) (Warning) BlockSize is non optimal (" << blockSize << "), consider setting it to [" << to_string(particleEnvelope+1) << "," << to_string(particleEnvelope*1.25) << "]" << endl;
       }
       plint numBlocks = voxelizedDomain->getVoxelMatrix().getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
@@ -104,7 +121,7 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
       }
     } else {
       VoxelizedDomain3D<T> * temp = new VoxelizedDomain3D<T>(
-            boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, particleEnvelope+3);
+            boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, 16);
       plint numBlocks = temp->getVoxelMatrix().getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
       if (numBlocks != global::mpi().getSize()) {
         hlog << "(Voxelizer) (Warning) Running with " << global::mpi().getSize() << " CPU's, consider running with " << numBlocks << " CPU's for optimal efficiency" << endl;

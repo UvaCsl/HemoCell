@@ -28,38 +28,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*
  * Which version are we at
  */
-#define VERSION_MAJOR 1
-#define VERSION_MINOR 4
-
-/*
-Choose kernel. 
-Phi1 [1], Phi2 [2] - Default, Phi3 [3], Phi4 [4],  Phi4c [5]
-*/
-#ifndef HEMOCELL_KERNEL
-#define HEMOCELL_KERNEL 2
-#endif
-
-/*
-Choose material model.
-1 - Dao/Suresh model (+Fedosov 2010 improvements)
-2 - HO model (Default - this is the validated model)
-*/
-#ifndef HEMOCELL_MATERIAL_MODEL
-#define HEMOCELL_MATERIAL_MODEL 2
-#endif
-
-/*
-Choose to use precalculated curvature angles for equilibrium cell shapes.
-*/
-#ifndef PRECALCULATED_ANGLES
-#define PRECALCULATED_ANGLES
-#endif
+#define VERSION_MAJOR 2
+#define VERSION_MINOR 0
 
 // Use for solidifying, performance impact so only enable when using
+#ifndef SOLIDIFY_MECHANICS
 //#define SOLIDIFY_MECHANICS
+#endif
 
 // Use for Interior Viscosity mechanics, performance impact so only enable when using
+#ifndef INTERIOR_VISCOSITY
 //#define INTERIOR_VISCOSITY
+#endif
 
 /*
 Choose material integration method.
@@ -90,26 +70,7 @@ FORCE_LIMIT sets the allowed maximal force coming from the constitutive model (i
 #ifndef FORCE_LIMIT
 #define FORCE_LIMIT 50.0 
 #endif
-/*
-Choose bending force implementation. This is a numerical modelling choice.
-[1] - Local only bending implementation acting on the two opposing vertices of the surfaces with the bending angle.
-[2] - Distributed bending using all four vertices with wieghting.
-[3] - Distributed bending using all four vertices.
-Note: 	[1] is advised for cases where structural rigidity is needed. 
-		[2] is an intermediate modell between [1] and [3] using four vertices, however, weighting them. So far seem to be the best option.
-		[3] is useful for having increased numerical stability (req.: dx<= 0.5 um, otherwise oscillates). 
-*/
-#ifndef HEMOCELL_MEMBRANE_BENDING
-#define HEMOCELL_MEMBRANE_BENDING 1
-#endif
 
-/*
- * Particle Field Type:
- * Correct options are:
- * DenseParticleField3D [Palabos]
- * LightParticleField3D [Palabos]
- * HemoParticleField3D  [HemoCell]
- */
 #ifndef HEMOCELL_PARTICLE_FIELD
 #define HEMOCELL_PARTICLE_FIELD class HemoCellParticleField
 #endif
@@ -167,7 +128,18 @@ typedef long int plint;
 typedef long unsigned int pluint;
 #endif
 
-//Maximum buffer length before writeback is forced in custom particle communication
-#define HEMO_MAX_TRANSFER_CHAR 1000000
+namespace hemo {
+///Used to circumvent buffer initialization of characters
+struct NoInitChar
+{
+    char value;
+    NoInitChar() {
+        // do nothing
+        static_assert(sizeof *this == sizeof value, "invalid size");
+        static_assert(__alignof *this == __alignof value, "invalid alignment");
+    }
+    ~NoInitChar() {};
+};
+} 
 
 #endif

@@ -1,9 +1,11 @@
 
 HemoCell Getting Started
-===================
+========================
 
 To get quickly started with HemoCell we recommend using our singularity [#SL]_
 which can be downloaded from here: :ref:`downloads`.
+
+.. _singularity:
 
 HemoCell with singularity
 ------------------------------------
@@ -34,19 +36,21 @@ singularity exec hemocell.img **make_library**
   while using the dependencies from the singularity image
 
 singularity exec hemocell.img **compile** [*<case>*,...]
-  This will try to compile the *case* within the ``./hemocell/cases/<case>`` folder.
+  This will try to compile the *case* within the ``./hemocell/examples/<case>`` folder.
   While compiling it will use the dependencies from the singularity image.                                                                
 singularity exec hemocell.img **compile_all**
-  This will try to compile all the cases within the ``./hemocell/cases/`` folder.
+  This will try to compile all the cases within the ``./hemocell/examples/`` folder.
   While compiling it will use the dependencies from the singularity image.                                                                
 singularity exec hemocell.img **run** [--optional mpirun args] *<case>* <config>.xml
-  This runs the HemoCell *case* within ``./hemocell/cases/<case>``. The executable
+  This runs the HemoCell *case* within ``./hemocell/examples/<case>``. The executable
   is called with mpirun and optional arguments (like -n 4). The output is thus
-  stored in ``./hemocell/cases/<case>/tmp/``
+  stored in ``./hemocell/examples/<case>/tmp/``
 
 singularity exec hemocell.img **post_process** [*<case>*,...]
-  This creates the ``*.xmf`` and ``*.csv`` files in the ``./hemocell/cases/<case>/tmp`` 
+  This creates the ``*.xmf`` and ``*.csv`` files in the ``./hemocell/examples/<case>/tmp`` 
   directory. These files can be used to analyze the data (e.g. with Paraview [#PF]_). This script removes previously generated csv and xmf files
+
+.. _from_source:
 
 Setting up HemoCell from source
 -------------------------------
@@ -76,6 +80,11 @@ Requirements for compiling and/or running HemoCell from source:
   | Palabos     | 2.0     |
   +-------------+---------+
 
+.. note::
+
+  These are minimal requirements, avoid OpenMPI 2.0.X as in our experience it
+  introduces huge memory leaks
+
 On ubuntu 16.04 most of these dependencies can be installed by running::
   
   sudo apt-get install make cmake g++-5 g++ libopenmpi-dev libhdf5-dev patch python-h5py
@@ -98,7 +107,7 @@ We have also added a ``./setup.sh`` which automatically downloads and patches
 the palabos library for convenience.
 
 Parmetis can be downloaded from the `parmetis <http://glaros.dtc.umn.edu/gkhome/metis/parmetis/download>`_ 
-site. Due to the license of parmetis we cannot distribute it with HemoCell. 
+site. Due to the license of parmetis we cannot distribute it with hemocell. 
 The parmetis download should be copied to the  ``./hemocell/external/`` directory. 
 If you need it
 because you want load balancing to be enabled you have to extract it with::
@@ -119,14 +128,16 @@ there. We recommend to do it in the following way::
 
 Cmake might sometimes fail while using the -j flag with make. Then simply try again.
 
-Each case depends on the hemocell build located in ``hemocell/build/hemocell``.
+Each case depends on the HemoCell build located in ``hemocell/build/hemocell``.
 Cmake is ran in this directory as a dependency of each case. It is also possible
 to first run ``cmake`` in the ``hemocell/build/hemocell`` directory to first
 build the library.
 
-Furthermore a ``MakeFile`` is provided in the ``hemocell/cases`` directory. this
+Furthermore a ``MakeFile`` is provided in the ``hemocell/examples`` directory. this
 makefile can be used to update build files for all cases (see :ref:`cases_make`
 for more info)
+
+.. _packcells:
 
 Generating initial positions for cells
 --------------------------------------
@@ -158,8 +169,17 @@ A HemoCell case should be run within the folder containing the ``.xml`` and
 ``mpirun``. The only argument for the case should be the ``config.xml`` file.
 A typical command looks like this::
 
-  cd hemocell/cases/pipeflow
+  cd hemocell/examples/pipeflow
   mpirun -n 4 ./pipeflow config.xml
+
+Case output folder
+------------------
+
+The output of a case is usually written to the ``<case>/tmp`` folder. The
+checkpoints are the ``.xml`` and ``.dat`` files. When a new checkpoint is
+created they are moved to ``.xml.old and ``.dat.old``. The hdf5 output is stored
+per timestep in ``tmp/hdf5`` and the csv output in ``tmp/csv``. See
+:any:`read_output` and :any:`bpp` for more info.
 
 
 .. _read_output:
@@ -181,6 +201,19 @@ When you have created the ``.xmf`` files you can load them into paraview, please
 select the *Legacy* xdmf file format when loading them in. the HemoCell ``.xmf``
 files are not yet Xdmf3 compatible.
 
+Resuming from a checkpoint
+--------------------------
+
+To resume from a checkpoint you should run the executable from the directory you
+ran it originally from (so the directory with the ``.xml`` and ``.pos`` files
+visible. The first argument should be ``tmp/checkpoint.xml`` instead of
+``config.xml``. HemoCell should then automatically resume from the last saved
+checkpoint.
+
+.. note::
+  
+  The number of processors on which you run the case doesn't need to be the
+  same!
 
 .. [#PF] `https://paraview.org <https://paraview.org>`_
 

@@ -31,9 +31,15 @@ int main(int argc, char *argv[]) {
   param::lbm_base_parameters((*cfg));
   param::printParameters();
   
-  hlog << "(PreInlets) Finding preInlet from flagmatrix" << endl;
-  hemocell.specifyPreInlet(*flagMatrix);
-  
+  hlog << "(PreInlets) creating preInlet" << endl;
+  hemocell.preInlet = new hemo::PreInlet(&hemocell,flagMatrix);
+
+  Box3D slice = flagMatrix->getBoundingBox();
+  slice.x0 = slice.x1 - 10;
+  slice.x1 = slice.x0;
+ 
+  hemocell.preInlet->preInletFromSlice(Direction::Xpos,slice);
+    
   hlog << "(PipeFlow) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.initializeLattice(voxelizedDomain->getMultiBlockManagement());
  
@@ -41,16 +47,15 @@ int main(int argc, char *argv[]) {
     hemocell.lattice->periodicity().toggleAll(false);
   }
   
-
-  //Setting Preinlet creation
-  plb::Array<double,3> speed = {0,0,0};
-  createPreInletVelocityBoundary(hemocell.lattice, flagMatrix, speed, hemocell);
-  mapPreInletParticleBoundary(hemocell);
-
+    //Setting Preinlet creation
+  hemocell.preInlet->initializePreInlet();
+  
+  
   hlog << "(PipeFlow) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl; 
   boundaryFromFlagMatrix(hemocell.lattice,flagMatrix,hemocell.partOfpreInlet);
+
   
-  hemocell.preInlet->createBoundary(hemocell.lattice,flagMatrix);
+  hemocell.preInlet->createBoundary();
   
   hemocell.lattice->toggleInternalStatistics(false);
 
@@ -85,10 +90,10 @@ int main(int argc, char *argv[]) {
 
   if (!hemocell.partOfpreInlet) {
     Box3D bb = hemocell.lattice->getBoundingBox();
-  Box3D outlet(bb.x0,bb.x1,bb.y0,bb.y1,bb.z1-1,bb.z1);
+  Box3D outlet(bb.x0,bb.x0+2,bb.y0,bb.y1,bb.z0,bb.z1);
   OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = new BoundaryConditionInstantiator3D 
           < T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T,DESCRIPTOR> > ();
-  boundary->addPressureBoundary2P(outlet,*hemocell.lattice,boundary::density);
+  boundary->addPressureBoundary0N(outlet,*hemocell.lattice,boundary::density);
   setBoundaryDensity(*hemocell.lattice,outlet, 1.0);
   }
   
@@ -128,8 +133,7 @@ int main(int argc, char *argv[]) {
       hemocell.preInlet->setDrivingForce();
     }
     
-    applyPreInletVelocityBoundary(hemocell);
-    applyPreInletParticleBoundary(hemocell);
+    hemocell.preInlet->applyPreInlet();
 
     // Only enable if PARMETIS build is available
     /*

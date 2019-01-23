@@ -31,6 +31,7 @@ class PreInlet;
 #include "core/geometry3D.h"
 #include "atomicBlock/atomicBlock3D.h"
 #include "config.h"
+#include "hemocell.h"
 
 #ifndef HEMOCELL_H
 namespace hemo {
@@ -73,11 +74,22 @@ public:
                                 boundingBox(b_), foundPreInlet(fp_) {}
   };
   
-  PreInlet(plb::MultiScalarField3D<int> & flagMatrix, hemo::HemoCell * hemocell_);
+  PreInlet(hemo::HemoCell * hemocell_, plb::MultiScalarField3D<int> * flagMatrix_);
   inline plint getNumberOfNodes() { return cellsInBoundingBox(location);}
-  void createBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> *,plb::MultiScalarField3D<int> * flagMatrix);
+  void createBoundary();
   void setDrivingForce();
   void calculateDrivingForce();
+  void applyPreInletVelocityBoundary();
+  void applyPreInletParticleBoundary();
+  void applyPreInlet() { applyPreInletVelocityBoundary(); applyPreInletParticleBoundary(); };
+  void initializePreInletParticleBoundary();
+  void initializePreInletVelocityBoundary();
+  void initializePreInlet() { initializePreInletVelocityBoundary(); initializePreInletParticleBoundary(); };
+  
+  void autoPreinletFromBoundary(Direction);
+  void preInletFromSlice(Direction direction_, Box3D boundary);
+  
+  Direction direction = Direction::Zneg;
   plb::Box3D location;
   plb::Box3D fluidInlet;
   int nProcs = 0;
@@ -95,53 +107,8 @@ public:
   std::vector<int> particle_receivers;
   std::vector<int> particle_senders;
   HemoCell * hemocell;
+  MultiScalarField3D<int> *flagMatrix = 0; 
 };
-
-}
-
-  #include "hemocell.h"
-
-namespace hemo {
-struct particle_hdf5_t {
-  float location[3];
-  float velocity[3];
-  int cell_id;
-  int vertex_id;
-  unsigned int particle_type;
-};
-
-class createPreInlet {
-  class createPreInletFunctional: public HemoCellFunctional {
-    createPreInlet & parent;
-    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D*>);
-    createPreInletFunctional * clone() const;
-  public:
-    createPreInletFunctional(createPreInlet & parent_) : parent(parent_) {}
-  };
-
-  HemoCell & hemocell;
-  Box3D domain;
-  Box3D fluidDomain;
-  string outputFileName;
-  int particlePositionTimeStep;
-  Direction flowDir;
-  plint file_id, dataspace_velocity_id,dataset_velocity_id = -1,plist_dataset_collective_id;
-  plint particle_type_mem, particle_type_h5;
-  bool reducedPrecision;
-  int reducedPrecisionDirection;
-  int desired_iterations;
-  //ofstream counter;
-  int current_velocity_field = -1;  
-public:
-  createPreInlet(Box3D domain, string outputFileName, int particlePositionTimestep, Direction flow_direction, HemoCell & hemocell, int desired_iterations, bool reducedPrecision_ = false);
-  void saveCurrent();
-  ~createPreInlet();
-};
-
-void mapPreInletParticleBoundary(HemoCell & hemocell);
-void createPreInletVelocityBoundary(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagmatrix,plb::Array<double,3> speed, HemoCell & hemocell);
-void applyPreInletVelocityBoundary(HemoCell & hemocell);
-void applyPreInletParticleBoundary(HemoCell & hemocell);
 
 }
 #endif /* PREINLET_H */

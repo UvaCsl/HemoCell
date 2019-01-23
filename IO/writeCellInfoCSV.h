@@ -11,7 +11,7 @@
 #include "hemocell.h"
 
 namespace hemo {
-  void writeCellInfo_CSV(HemoCell *);
+  void writeCellInfo_CSV(HemoCell &);
 }
 #endif /* WRITECELLINFOCSV_H */
 

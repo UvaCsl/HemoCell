@@ -1,0 +1,27 @@
+Pipeflow
+--------
+
+The pipeflow case is a very generic case that can readily be used as a basis for
+many other projects. The domain is a tube (loaded from ``tube.stl``) with
+periodicity in the x-direction. The domain is (depending on the config files)
+initialized with Red Blood Cells and Platelets with a hematocrit of 40%
+
+The most important adjustable variables are in the ``config.xml`` file.
+
+- ``<domain><refDirN>`` This controls how much fluid cells there are
+  perpendicular to the flow direction, that is the same as the diameter of the
+  pipe. One fluid cell usually translates to 0.5 µm in reality. Therefore, this
+  parameter controls the size of your pipe!
+- ``<domain><Re>`` Used to calculate the driving force of the periodic pipeflow
+  system. The Reynolds number corresponds to the one that would be found when
+  the system is run without any cells! Therefore, velocities might be a bit lower
+  than expected with cells present. If you set this too high the simulation will
+  become unstable!
+- ``<domain><geometry>`` which stl file do you read in? The default is a simple
+  periodic pipe.
+
+
+The default ``*.pos`` file contain many positions for the red blood cells generated
+by the packcells tool. When you increase the size of the pipe
+more cells will fit but only according to these ``*.pos`` files. You might want to create your own distributions with the
+following tool: :ref:`packcells`.

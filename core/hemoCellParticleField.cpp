@@ -43,12 +43,10 @@ HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
     : AtomicBlock3D(rhs), particleDataTransfer(*(new HemoCellParticleDataTransfer()))
 {
     boundingBox = Box3D(0,this->getNx()-1, 0, this->getNy()-1, 0, this->getNz()-1);
-    HemoCellParticle tmp;
     dataTransfer = &particleDataTransfer;
     particleDataTransfer.setBlock(*this);
     for (const HemoCellParticle & particle : rhs.particles) {
-      tmp = particle;
-      addParticle(&tmp);
+      addParticle(particle.sv);
     }
     ppc_up_to_date = false;
     lpc_up_to_date = false;
@@ -162,31 +160,33 @@ void HemoCellParticleField::addParticle(const HemoCellParticle::serializeValues_
   const hemo::Array<T,3> & pos = sv.position;
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
 
-  cellFields->celltype_per_cell[sv.cellId] = sv.celltype; 
-  
   if( this->isContainedABS(pos, this->getBoundingBox()) )
   {
     //check if we have particle already, if so, we must overwrite but not
     //forget to delete the old entry
-    if ((!(particles_per_cell.find(sv.cellId) == 
-      particles_per_cell.end())) && particles_per_cell.at(sv.cellId)[sv.vertexId] != -1) {
-      local_sparticle =  &particles[particles_per_cell.at(sv.cellId)[sv.vertexId]];
+    if ((!(particles_per_cell.find(sv.cellId) == particles_per_cell.end()))) { 
+      if (particles_per_cell.at(sv.cellId)[sv.vertexId] != -1) {
+        local_sparticle =  &particles[particles_per_cell.at(sv.cellId)[sv.vertexId]];
 
-      //If our particle is local, do not replace it, envelopes are less important
-      if (isContainedABS(local_sparticle->sv.position, localDomain)) {
-        return;
+        //If our particle is local, do not replace it, envelopes are less important
+        if (isContainedABS(local_sparticle->sv.position, localDomain)) {
+          return;
+        } else {
+          //We have the particle already, replace it
+          local_sparticle->sv = sv;
+          particle = local_sparticle;
+          particle->setTag(-1);
+
+          //Invalidate lpc hemo::Array
+          lpc_up_to_date = false;
+          pg_up_to_date = false;
+
+        }
       } else {
-        //We have the particle already, replace it
-        local_sparticle->sv = sv;
-        particle = local_sparticle;
-        particle->setTag(-1);
-
-        //Invalidate lpc hemo::Array
-        lpc_up_to_date = false;
-        pg_up_to_date = false;
-
+        goto outer_else;
       }
     } else {
+outer_else:
       //new entry
       particles.emplace_back(sv);
       particle = &particles.back();
@@ -410,7 +410,6 @@ int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
   //For now abuse tagging and the remove function
   for ( const auto &lpc_it : particles_per_cell ) {
     int cellid = lpc_it.first;
-    if (!(*cellFields)[cellFields->celltype_per_cell[cellid]]->deleteIncomplete) { continue; }
     bool broken = false;
     for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
       if (particles_per_cell.at(cellid)[i] == -1) {
@@ -453,7 +452,6 @@ int HemoCellParticleField::deleteIncompleteCells(const bool verbose) {
   //For now abuse tagging and the remove function
   for ( const auto &lpc_it : particles_per_cell ) {
     int cellid = lpc_it.first;
-    if (!(*cellFields)[cellFields->celltype_per_cell[cellid]]->deleteIncomplete) { continue; }
     bool broken = false;
     for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
       if (particles_per_cell.at(cellid)[i] == -1) {
@@ -675,14 +673,9 @@ void HemoCellParticleField::applyRepulsionForce(bool forced) {
 
 #ifdef INTERIOR_VISCOSITY
 void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
-  double const omegaExt = 1.0/param::tau;
-
   // This could be done less complex I guess?
   for (const HemoCellParticle & particle : particles) { // Go over each particle
      if (!(*cellFields)[particle.sv.celltype]->doInteriorViscosity) { continue; }
-    
-    // Find the interior relaxation parameter for particletype
-    const double omegaInt = 1.0/(*cellFields)[particle.sv.celltype]->interiorViscosityTau;
 
     for (unsigned int i = 0; i < particle.kernelCoordinates.size(); i++) {
       const hemo::Array<T, 3> latPos = particle.kernelCoordinates[i]-(particle.sv.position-atomicLattice->getLocation());
@@ -693,9 +686,9 @@ void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
       T dot1 = hemo::dot(latPos, normalP);
 
       if (dot1 < 0.) {  // Node is inside
-        particle.kernelLocations[i]->getDynamics().setOmega(omegaInt);
+        particle.kernelLocations[i]->attributeDynamics((*cellFields)[particle.sv.celltype]->innerViscosityDynamics);
       } else {  // Node is outside
-        particle.kernelLocations[i]->getDynamics().setOmega(omegaExt);
+        particle.kernelLocations[i]->attributeDynamics(&atomicLattice->getBackgroundDynamics());
       }
     }
   }
@@ -704,14 +697,15 @@ void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
 // For performance reason, this is only executed once every n iterations to make
 // sure that there are no higher viscosity grid points left after substantial movement
 void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
-  // Set the omega values on the lattice to outer viscosity
-  double const omegaExt = 1.0/param::tau;
-  
   // Reset all the lattice points to the orignal relaxation parameter
   for (plint iX = atomicLattice->getBoundingBox().x0; iX <= atomicLattice->getBoundingBox().x1; iX++) {
     for (plint iY = atomicLattice->getBoundingBox().y0; iY <= atomicLattice->getBoundingBox().y1; iY++) {
       for (plint iZ = atomicLattice->getBoundingBox().z0; iZ <= atomicLattice->getBoundingBox().z1; iZ++) {
-        atomicLattice->get(iX, iY, iZ).getDynamics().setOmega(omegaExt);
+        for (HemoCellField * cellfield : cellFields->cellFields) {
+          if ( &atomicLattice->get(iX, iY, iZ).getDynamics() == cellfield->innerViscosityDynamics) {
+            atomicLattice->get(iX, iY, iZ).attributeDynamics(&atomicLattice->getBackgroundDynamics());
+          }
+        }
       }
     }
   }
@@ -726,11 +720,7 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
     if (!(*cellFields)[ctype]->doInteriorViscosity) {
       continue;
     }
-
-    // Find the interior relaxation parameter for particletype
-    // Only for RBC now
-    const double omegaInt = 1.0/(*cellFields)[ctype]->interiorViscosityTau;
-
+    
     hemo::OctreeStructCell octCell(3, 1, 30,
                                   (*cellFields)[ctype]->mechanics->cellConstants.triangle_list,
                                   particles, cell);
@@ -738,7 +728,7 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
     vector<Cell<T,DESCRIPTOR>*> innerNodes;
     octCell.findInnerNodes(atomicLattice,particles,cell,innerNodes);
     for (Cell<T,DESCRIPTOR>* node : innerNodes) {
-      node->getDynamics().setOmega(omegaInt);
+      node->attributeDynamics((*cellFields)[ctype]->innerViscosityDynamics);
     }
   }
 }
@@ -867,7 +857,6 @@ void HemoCellParticleField::solidifyCells() {
   }
   removeParticles(1);
   for (Dot3D & b_particle : boundaryParticles) {
-      cout << "Hello" << endl;
     for (int x = b_particle.x-1; x <= b_particle.x+1; x++) {
       if (x < 0 || x > this->atomicLattice->getNx()-1) {continue;}
       for (int y = b_particle.y-1; y <= b_particle.y+1; y++) {

@@ -61,7 +61,11 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[])
   pcout << "(HemoCell) (Config) reading " << configFileName << endl;
   cfg = new Config(configFileName);
   documentXML = new XMLreader(configFileName);
-  loadDirectories(configFileName, cfg);
+  if (cfg->checkpointed) {
+    pcout << "(HemoCell) (Config) Checkpointed config, deferring the loading of the directories (out,log,checkpoint) until loadCheckpoint is called" << endl;
+  } else {
+    loadDirectories(cfg);
+  }
   loadGlobalConfigValues(cfg);
   printHeader();
   
@@ -81,6 +85,34 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[])
   sigaction(SIGUSR2,&sa,0);
  
   
+}
+
+HemoCell::~HemoCell() {
+  if (cellfields) {
+    delete cellfields;
+  }
+  if (cfg) {
+    delete cfg;
+  }
+  if (documentXML){
+    delete documentXML;
+    documentXML = 0;
+  }
+  if (lattice) {
+    delete lattice;
+  }
+  if (lattice_management) {
+    delete lattice_management;
+  }
+  if (loadBalancer) {
+    delete loadBalancer;
+  }
+  if (preInlet) { 
+    delete preInlet;
+  }
+  if (preinlet_management) {
+    delete preinlet_management;
+  }
 }
 
 void HemoCell::latticeEquilibrium(T rho, hemo::Array<T, 3> vel) {
@@ -153,7 +185,7 @@ void HemoCell::loadParticles() {
 void HemoCell::loadCheckPoint() {
   hlog << "(HemoCell) (Saving Functions) Loading Checkpoint"  << endl;
   if (global.enableInteriorViscosity) {
-    hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing, you have been warned" << endl;
+    hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing" << endl;
   }
   cellfields->load(documentXML, iter, cfg);
 }
@@ -161,7 +193,7 @@ void HemoCell::loadCheckPoint() {
 void HemoCell::saveCheckPoint() {
   hlog << "(HemoCell) (Saving Functions) Saving Checkpoint at timestep " << iter << endl;
   if (global.enableInteriorViscosity) {
-    hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing, you have been warned" << endl;
+    hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing" << endl;
   }
   cellfields->save(documentXML, iter, cfg);
 }
@@ -204,7 +236,7 @@ void HemoCell::writeOutput() {
   if (global::mpi().isMainProcessor()) {
     string folder = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) ;
     mkpath(folder.c_str(), 0777);
-    folder = global::directories().getOutputDir() + "/csv/" + zeroPadNumber(iter) ;
+    folder = global::directories().getOutputDir() + "/csv" ;
     mkpath(folder.c_str(), 0777);
   }
   global::mpi().barrier();
@@ -216,7 +248,7 @@ void HemoCell::writeOutput() {
   if (global.enableCEPACfield) {
     writeCEPACField_HDF5(*cellfields,param::dx,param::dt,iter);
   }
-  writeCellInfo_CSV(this);
+  writeCellInfo_CSV(*this);
   global.statistics.getCurrent().stop();
 
   //Repoint surfaceparticle forces for speed
@@ -276,15 +308,13 @@ void HemoCell::iterate() {
   // ### 6 ###
   cellfields->applyConstitutiveModel();    // Calculate Force on Vertices 
 
-#ifdef INTERIOR_VISCOSITY
   if (global.enableInteriorViscosity && iter % cellfields->interiorViscosityEntireGridTimescale == 0) {
     cellfields->deleteIncompleteCells(); // Must be done, next function expects whole cells
     cellfields->findInternalParticleGridPoints();
   }
   if (global.enableInteriorViscosity && iter % cellfields->interiorViscosityTimescale == 0) {
-    //cellfields->internalGridPointsMembrane();
+    cellfields->internalGridPointsMembrane();
   }
-#endif  
   
   //We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
   if(iter % cellfields->particleVelocityUpdateTimescale == 0) {
@@ -300,13 +330,6 @@ void HemoCell::iterate() {
           DESCRIPTOR<T>::ExternalField::forceBeginsAt,
           plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
   global.statistics.getCurrent().stop();
-  
-  //Small sanity check to see if our MPI is still sane (do we have any unprocessed messages?)
-  int flag;
-  MPI_Iprobe(MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&flag,MPI_STATUS_IGNORE);
-  if (flag) {
-    cout << "Error there are messages while they are not expected" << endl;
-  }
   
   iter++;
   global.statistics.getCurrent().stop();
@@ -372,18 +395,12 @@ void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRe
   boundaryRepulsionEnabled = true;
 }
 
-void HemoCell::specifyPreInlet(MultiScalarField3D<int>& flagMatrix) {
-  preInlet = new PreInlet(flagMatrix,this);
-  preInlet->preinlet_length = (*cfg)["preInlet"]["parameters"]["lengthN"].read<int>();
-  preInlet->location.z0 -= preInlet->preinlet_length;
-}
-
 void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   if (lattice) {
     delete lattice;
   }
 
-  if (!preInlet->initialized) {
+  if (!preInlet) {
     hlog << "(HemoCell) No preinlet specified, running with all cores on domain with given management" << endl;
     lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(management,
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
@@ -517,6 +534,16 @@ void HemoCell::sanityCheck() {
   if (cellfields->max_neighbours > 30) {
     hlog << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << cellfields->max_neighbours << " Usually it should be < 30 ! Check the atomic block structure!" << endl;
   }
+  
+  if (global.enableInteriorViscosity) {
+    if (cellfields->interiorViscosityEntireGridTimescale == 1) {
+      hlog << "(HemoCell) WARNING: Interior viscosity (entire grid) timescale is 1, did you forget to call hemocell->setInteriorViscosityTimescaleSeparation()?" << endl;
+
+    }
+    if (cellfields->interiorViscosityTimescale == 1) {
+      hlog << "(HemoCell) WARNING: Interior viscosity timescale is 1, did you forget to call hemocell->setInteriorViscosityTimescaleSeparation()?" << endl;
+    }
+  }
     
   //Parameter Sanity
 #ifdef FORCE_LIMIT
@@ -536,5 +563,37 @@ void HemoCell::sanityCheck() {
     hlog << "(WARNING!!!) lattice velocity [" << param::u_lbm_max << "] is too high [>0.1]!" << std::endl;
   }
      
+  
+  if ((*cfg)["sim"]["tmax"].read<long int>() > 100000000000 ) {
+    hlog << "(HemoCell) (SanityChecking) More than 100000000000 iterations requested, this means that the zero padding will not be consistent, therefore string sorting output will not work!" << endl;
+  };
+  
+  // Check for possible overflows in calculating new cellIds
+  if (cellfields->number_of_cells) { // running with cells
+    if (cellfields->periodicity_limit_offset_y + cellfields->periodicity_limit_offset_z > INT_MAX/cellfields->number_of_cells) { //can HemoCellParticleDataTransfer::getOffset overflow?
+          cerr << "(SanityCheck) (HemoCellParticleDataTransfer) Integer overflow detected when calculating offset, refusing to invoke undefined behaviour later in the program" << endl;
+          cerr << "(SanityCheck) (HemoCellParticleDataTransfer) Either setSystemPeriodicityLimit is used wrongly or there are too many cells in the simulation" << endl;
+          exit(1);
+    }
+  }
+  
+  bool printed = false;
+  plint nx,ny,nz,numBlocks,numAllocatedCells;
+  Box3D smallest,largest;
+  //Check if atomic block sizes are in an acceptable range, not as fancy as the check in voxelizeDomain, maybe for later
+  getMultiBlockInfo(*lattice, nx, ny, nz, numBlocks, smallest, largest, numAllocatedCells);
+  //check largest
+  if (largest.getNx() > 25 || largest.getNy() > 25 || largest.getNz() > 25) {
+    hlog << getMultiBlockInfo(*lattice);
+    hlog << "(SanityCheck) one of the dimensions of the largest atomic block is more than 25.\n  This is inefficient, The best performance is with 16x16x16 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure accordingly." << endl;
+    printed = true;
+  } 
+  if (smallest.getNx() < 16 || smallest.getNy() < 16 || smallest.getNz() < 16) {
+    if(!printed) { hlog << getMultiBlockInfo(*lattice); }
+    hlog << "(SanityCheck) one of the dimensions of the smallest atomic block is less than 16.\n  This is inefficient, The best performance is with 16x16x16 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure accordingly." << endl;
+    printed = true;
+  }
+  
+  
   sanityCheckDone = true;
 }

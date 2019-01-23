@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "cellInfo.h"
 #include "hemocell.h"
+#include "hemoCellParticleField.h"
 
 namespace hemo {
 
@@ -142,8 +143,8 @@ void CellInformationFunctionals::CellBoundingBox::processGenericBlocks(Box3D dom
       bbox[3] = bbox[3] < particle->sv.position[1] ? particle->sv.position[1] : bbox[3];
       bbox[4] = bbox[4] > particle->sv.position[2] ? particle->sv.position[2] : bbox[4];
       bbox[5] = bbox[5] < particle->sv.position[2] ? particle->sv.position[2] : bbox[5];
-
-    }
+    
+      }
     info_per_cell[cid].bbox = bbox;
   }
 }
@@ -164,6 +165,104 @@ void CellInformationFunctionals::CellType::processGenericBlocks(Box3D domain, st
 
     info_per_cell[cid].cellType = pf->particles[pf->get_particles_per_cell().at(cid)[0]].sv.celltype;
   }
+}
+
+void CellInformationFunctionals::allCellInformation::processGenericBlocks(plb::Box3D domain, std::vector<plb::AtomicBlock3D*> blocks) {
+  HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
+  const map<int,vector<int>> & ppc = pf->get_particles_per_cell();
+  
+  
+  for (const auto & pair : pf->get_lpc()) {
+    const int & cid = pair.first;
+    hemo::Array<T,6> bbox;
+    hemo::Array<T,3> position = {0.,0.,0.};
+    hemo::Array<T,3> velocity = {0.,0.,0.};
+    T max_stretch = 0., distance = 0.;
+    T total_area = 0., volume = 0.;
+    
+    if (ppc.find(cid) == ppc.end()) { continue; }
+    const vector<int> & cell = ppc.at(cid);
+    if (cell[0] == -1) { continue;}
+    
+    HemoCellParticle * particle = &pf->particles[cell[0]];
+    const pluint ctype = pf->particles[cell[0]].sv.celltype;
+
+    //Bounding box init
+    bbox[0] = particle->sv.position[0];
+    bbox[1] = particle->sv.position[0];
+    bbox[2] = particle->sv.position[1];
+    bbox[3] = particle->sv.position[1];
+    bbox[4] = particle->sv.position[2];
+    bbox[5] = particle->sv.position[2];
+    
+    for (unsigned int i = 0 ; i < cell.size() ; i++ ) {
+      if (cell[i] == -1) { 
+        cout << "(CellInfoFunctional) Warning, incomplete cell detected, removing from output" << endl;
+        goto ignore_cell;
+      }
+      particle = &pf->particles[cell[i]];
+      
+      //Bounding Box
+      bbox[0] = bbox[0] > particle->sv.position[0] ? particle->sv.position[0] : bbox[0];
+      bbox[1] = bbox[1] < particle->sv.position[0] ? particle->sv.position[0] : bbox[1];
+      bbox[2] = bbox[2] > particle->sv.position[1] ? particle->sv.position[1] : bbox[2];
+      bbox[3] = bbox[3] < particle->sv.position[1] ? particle->sv.position[1] : bbox[3];
+      bbox[4] = bbox[4] > particle->sv.position[2] ? particle->sv.position[2] : bbox[4];
+      bbox[5] = bbox[5] < particle->sv.position[2] ? particle->sv.position[2] : bbox[5];
+      
+      //position
+      position += particle->sv.position;
+      
+      //velocity
+      velocity += particle->sv.v;
+      
+      //Cell stretch (max)
+      for (unsigned int j = i + 1 ; j < cell.size() ; j ++) {
+        if (cell[j] == -1) {goto ignore_cell;}
+        HemoCellParticle * particle2 = &pf->particles[cell[j]];
+        distance = sqrt( pow(particle->sv.position[0]-particle2->sv.position[0],2) +
+                                pow(particle->sv.position[1]-particle2->sv.position[1],2) +
+                                pow(particle->sv.position[2]-particle2->sv.position[2],2));
+        max_stretch = max_stretch < distance ? distance : max_stretch;
+      }
+
+    }
+
+    for (hemo::Array<plint,3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
+      const hemo::Array<T,3> & v0 = pf->particles[cell[triangle[0]]].sv.position;
+      const hemo::Array<T,3> & v1 = pf->particles[cell[triangle[1]]].sv.position;
+      const hemo::Array<T,3> & v2 = pf->particles[cell[triangle[2]]].sv.position;
+
+      //area
+      total_area += computeTriangleArea(v0,v1,v2);  
+      
+      //Volume
+      const T v210 = v2[0]*v1[1]*v0[2];
+      const T v120 = v1[0]*v2[1]*v0[2];
+      const T v201 = v2[0]*v0[1]*v1[2];
+      const T v021 = v0[0]*v2[1]*v1[2];
+      const T v102 = v1[0]*v0[1]*v2[2];
+      const T v012 = v0[0]*v1[1]*v2[2];
+      volume += (1.0/6.0)*(-v210+v120+v201-v021-v102+v012);
+    }
+    
+    info_per_cell[cid].volume = volume;
+    info_per_cell[cid].area = total_area;
+    info_per_cell[cid].position = position/T(cell.size());
+    info_per_cell[cid].velocity = velocity/T(cell.size());
+    //It could be local on another block on the same processor
+    if (!info_per_cell[cid].centerLocal) {
+      info_per_cell[cid].centerLocal = pf->isContainedABS(info_per_cell[cid].position,pf->localDomain);
+    }
+
+    info_per_cell[cid].stretch = max_stretch;
+    info_per_cell[cid].blockId = pf->atomicBlockId;
+    info_per_cell[cid].cellType = pf->particles[pf->get_particles_per_cell().at(cid)[0]].sv.celltype;
+    info_per_cell[cid].bbox = bbox;    
+    info_per_cell[cid].base_cell_id = hemocell->cellfields->base_cell_id(cid);
+ignore_cell:;
+  }
+
 }
 
 void CellInformationFunctionals::calculateCellVolume(HemoCell * hemocell_) {
@@ -265,6 +364,17 @@ pluint CellInformationFunctionals::getNumberOfCellsFromType(HemoCell* hemocell, 
   return total;
 }
 
+void CellInformationFunctionals::calculateCellInformation(HemoCell * hemocell, map<int, CellInformation> & ret) {
+  // Make it saver by not using static objects in functional;
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(hemocell->cellfields->immersedParticles);
+  
+  hemocell->cellfields->syncEnvelopes();
+
+  applyProcessingFunctional(new allCellInformation(hemocell,ret),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
+}
+
+
 
 CellInformationFunctionals::CellVolume * CellInformationFunctionals::CellVolume::clone() const { return new CellInformationFunctionals::CellVolume(*this);}
 CellInformationFunctionals::CellArea * CellInformationFunctionals::CellArea::clone() const { return new CellInformationFunctionals::CellArea(*this);}
@@ -273,6 +383,8 @@ CellInformationFunctionals::CellStretch * CellInformationFunctionals::CellStretc
 CellInformationFunctionals::CellBoundingBox * CellInformationFunctionals::CellBoundingBox::clone() const { return new CellInformationFunctionals::CellBoundingBox(*this);}
 CellInformationFunctionals::CellAtomicBlock * CellInformationFunctionals::CellAtomicBlock::clone() const { return new CellInformationFunctionals::CellAtomicBlock(*this);}
 CellInformationFunctionals::CellType * CellInformationFunctionals::CellType::clone() const { return new CellInformationFunctionals::CellType(*this);}
+CellInformationFunctionals::allCellInformation * CellInformationFunctionals::allCellInformation::clone() const { return new CellInformationFunctionals::allCellInformation(*this);}
+
 
 
 map<int,CellInformation> CellInformationFunctionals::info_per_cell = map<int,CellInformation>();

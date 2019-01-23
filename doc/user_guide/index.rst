@@ -21,13 +21,16 @@ model.
    :maxdepth: 2
 
    QuickStart
+   hemocell_cases
    Case
-   Downloads
+   xml_files
+   Scripts
+   other_topics
 
 .. toctree::
    :maxdepth: 1
 
-   Scripts
+   Downloads
 
 .. toctree::
    :maxdepth: 1
@@ -43,15 +46,15 @@ Acknowledgments
 ----------------
 
 HemoCell is developed and maintained by the following persons. Any questions
-about hemocell can be directed toward: info@hemocell.eu.
+about HemoCell can be directed toward: info@hemocell.eu.
 
 .. list-table::
   :header-rows: 0
 
-  * - Victor azizi  
+  * - Victor Azizi  
     - Lead Programmer
     - V.W.AziziTarksalooyeh at uva.nl
-  * - Gábor Zavodszky 
+  * - Gábor Závodszky 
     - Developer and user 
     - G.Zavodszky at uva.nl
   * - Britt van Rooij 
@@ -70,6 +73,6 @@ about hemocell can be directed toward: info@hemocell.eu.
   * :ref:`search`
 
 .. rubric:: References
-.. [#HC] `Zavodszky, G., van Rooij, B., Azizi, V., Alowayyed, S., & Hoekstra, A. (2017).  Cellular Level In-silico Modeling of Blood Rheology with An Improved Material Model for Red Blood Cells, Fronties in physiology, 8, 563. <https://doi.org/10.3389/fphys.2017.00563>`_
+.. [#HC] `Závodszky, G., van Rooij, B., Azizi, V., Alowayyed, S., & Hoekstra, A. (2017).  Cellular Level In-silico Modeling of Blood Rheology with An Improved Material Model for Red Blood Cells, Fronties in physiology, 8, 563. <https://doi.org/10.3389/fphys.2017.00563>`_
 
 .. _palabos.org: http://palabos.org

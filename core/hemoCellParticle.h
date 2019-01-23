@@ -103,11 +103,6 @@ public:
       force_inner_link = copy.force_inner_link;
     }
   }
-  HemoCellParticle() {
-    sv = {};
-    force_total = {0.,0.,0.};
-    tag = -1;
-  }
   
   HemoCellParticle (hemo::Array<T,3> position_, plint cellId_, plint vertexId_,pluint celltype_) {
     sv.v = {0.,0.,0.};

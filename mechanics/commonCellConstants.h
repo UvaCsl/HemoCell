@@ -60,7 +60,6 @@ class CommonCellConstants {
   public: 
   static CommonCellConstants CommonCellConstantsConstructor(HemoCellField &, hemo::Config & modelCfg_);
 
-
   HemoCellField & cellField;
   const std::vector<hemo::Array<plint,3>> triangle_list;
   const std::vector<hemo::Array<plint,2>> edge_list;

@@ -32,7 +32,7 @@ namespace hemo {
     const T EPSILON = 0.0000001;
     T det,invDet,u,v; // Some floats
     hemo::Array<T, 3> edge1, edge2, pvec, svec, qvec;
-    hemo::Array<T, 3> rayVector = {(T)40,(T)0,(T)0};
+    hemo::Array<T, 3> rayVector = {(T)-40,(T)-40,(T)-40};
     hemo::Array<plint,3> & rayOrigin = rayPoint;
 
     // Define edges

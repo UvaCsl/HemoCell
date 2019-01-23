@@ -1,0 +1,26 @@
+Cellcollision with interior viscosity
+-------------------------------------
+
+This is the cellcollision case with added interior viscosity. This case is used
+in the paper by de Haan et al. [#IV]_. To generate the cases necessary for this
+paper please see the ``Generate`` folder and the README file therein.
+
+The cellCollision case is a case with (usually) a RBC and a PLT that collide due
+to a shear flow within the domain. The initial positions can be edited in the
+corresponding ``CELL.pos`` files.
+
+
+The most important adjustable variables are in the ``config.xml`` file.
+
+- ``<domain><shearrate>`` This controls the shear rate that is present across
+  the domain between the two velocity boundaries.
+- ``<sim><interiorViscosity>`` This controls how often the interior and exterior
+  fluid cells are determined at the boundary of the cells. If the cells move a
+  lot this can lead to interior viscosity "leaking" to the outside, however we have
+  not experienced this. This method has a low performance impact and can thus be
+  called more often than the following function
+- ``<sim><interiorViscosityEntireGrid>`` Recalculate the interior and exterior
+  fluid of every cell exactly with raytracing. This is a very expensive method
+  and thus should not be could that often.
+
+.. [#IV] `Numerical Investigation of the Effects of Red Blood Cell Cytoplasmic Viscosity Contrasts on Single Cell and Bulk Transport Behaviour.  Applied Sciences 8. <https://doi.org/10.3390/app8091616>`_ M de Haan, G Zavodszky, V Azizi, A Hoekstra.
