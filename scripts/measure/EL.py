@@ -3,6 +3,7 @@ from numpy.linalg import eig, inv
 from scipy.spatial.distance import pdist
 from scipy.spatial.distance import squareform
 import math
+import pdb
 
 
 def get_mario_curves(what="full",datapath = "/Users/bczaja/Work/PHD/michigan/EL_curves/"):
@@ -80,28 +81,29 @@ def ellipsePlots(center, phi, axes):
     return u+Ell_rot[0,:], v+Ell_rot[1,:] 
 
 
-def elongation_index(x,y):
+def elongation_index(x,y,dx=0.5e-6):
     new =[]
-    dx =1.5
-    for i in np.arange(np.min(x),np.max(x),dx):
+    slice_dx =dx
+    for i in np.arange(np.min(x),np.max(x)+slice_dx,slice_dx):
         #Get the indexes of the masked region
-        idx_mask = np.where((x <= i +dx) & (x> i))[0]
-
+        idx_mask = np.where((x <= i + slice_dx) & (x> i))
         #Make sure that data exists in this range
         if len(y[idx_mask]) >0:
         
+        
+            
             #Get the unique min and max
             ymax = np.unique(np.max(y[idx_mask]))[0]
             ymin = np.unique(np.min(y[idx_mask]))[0]
-            
+                    
             #Find again the index of the min and max
-            final_idx_max = np.where(y == ymax)[0][0]
-            final_idx_min = np.where(y == ymin)[0][0]
+            final_idx_max = np.where((y == ymax) & (x<=i+slice_dx) & (x>i))[0][0]
+            final_idx_min = np.where((y == ymin) & (x<=i+slice_dx) & (x>i))[0][0]
             
-            #get the corresponmding xcoordinate for the ymax
+            #get the corresponding xcoordinate for the ymax
             x_for_ymax = x[final_idx_max]
             x_for_ymin = x[final_idx_min]
-            
+    
             new.append(np.array([x_for_ymax,ymax]))
             new.append(np.array([x_for_ymin,ymin]))
         
