@@ -13,3 +13,5 @@ Cases in HemoCell
 
 .. include:: cases/cellCollision_interior_viscosity.rst
 
+.. include:: cases/pipeflow_with_preinlet.rst
+

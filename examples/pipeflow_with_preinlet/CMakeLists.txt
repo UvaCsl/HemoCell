@@ -2,8 +2,8 @@
 # Build settings. Set these.
 
 # Project setup
-SET(PROJECT_NAME stl_preinlet)
-SET(PROJECT_SRC "stl_preinlet.cpp")
+SET(PROJECT_NAME pipeflow_with_preinlet)
+SET(PROJECT_SRC "pipeflow_with_preinlet.cpp")
 
 # HemoCell location relative to CMakelists.txt
 SET(HEMOCELL_BASE_DIR "./../../")
