@@ -1,6 +1,5 @@
 #include "hemocell.h"
 #include "rbcHighOrderModel.h"
-#include "wbcHighOrderModel.h"
 #include "pltSimpleModel.h"
 #include "cellInfo.h"
 #include "fluidInfo.h"
