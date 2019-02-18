@@ -31,6 +31,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <logfile.h>
 
 namespace hemo {
+/**
+ * Profiler is a class that can be used to track (wall clock) time spent between
+ * start and stop invocations. Start and stop can be invoked multiple times per
+ * object.
+ * 
+ * Profiler supports hierarchy, with the [string] operator you can start or
+ * retrieve subtimers.
+ * 
+ * Profiler has a getCurrent() function which can be used to retrieve the last
+ * started (sub)timer. With this functionality you can time a function
+ * which is called through different paths as different functions in the
+ * hierarchy.
+ */
 class Profiler {
 public:
   Profiler(std::string name_);
