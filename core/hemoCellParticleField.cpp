@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemocell.h"
 #include "octree.h"
 #include "mollerTrumbore.h"
+#include <Eigen3/Eigenvalues>
 
 namespace hemo { 
 /* *************** class HemoParticleField3D ********************** */
@@ -805,7 +806,7 @@ void HemoCellParticleField::populateBoundaryParticles() {
               for (int zz = z-1; zz <= z+1; zz++) {
                 if (zz < 0 || zz > this->atomicLattice->getNz()-1) {continue;}
                 if (!this->atomicLattice->get(xx,yy,zz).getDynamics().isBoundary()) {
-                  boundaryParticles.push_back({x,y,z}); 
+                  boundaryParticles.push_back({x,y,z});       
                   goto end_inner_loop;
                 }
               }
@@ -847,30 +848,115 @@ void HemoCellParticleField::applyBoundaryRepulsionForce() {
   }
 }
 
+void HemoCellParticleField::populateBindingSites() {
+  //qqw2qswws32 <- Greatly appreciated input of Gábor
+
+  for (int x = 0; x < this->atomicLattice->getNx()-1; x++) {
+    for (int y = 0; y < this->atomicLattice->getNy()-1; y++) {
+      for (int z = 0; z < this->atomicLattice->getNz()-1; z++) {
+        if (this->atomicLattice->get(x,y,z).getDynamics().isBoundary()) {
+          for (int xx = x-1; xx <= x+1; xx++) {
+            if (xx < 0 || xx > this->atomicLattice->getNx()-1) {continue;}
+            for (int yy = y-1; yy <= y+1; yy++) {
+              if (yy < 0 || yy > this->atomicLattice->getNy()-1) {continue;}
+              for (int zz = z-1; zz <= z+1; zz++) {
+                if (zz < 0 || zz > this->atomicLattice->getNz()-1) {continue;}
+                if (!this->atomicLattice->get(xx,yy,zz).getDynamics().isBoundary()) {
+                  bindingSites.push_back({x,y,z});
+                  goto end_inner_loop;
+                }
+              }
+            }
+          }
+        }
+end_inner_loop:;
+      }
+    }
+  }
+}
+
+
+T HemoCellParticleField::eigenValueFromCell(plb::Cell<T,DESCRIPTOR> & cell) {
+    T n = 3;
+    plb::Array<T,SymmetricTensor<T,DESCRIPTOR>::n> element;
+    cell.computePiNeq(element);
+    T omega     = cell.getDynamics().getOmega();
+    T rhoBar    = cell.getDynamics().computeRhoBar(cell);
+    T prefactor = - omega * DESCRIPTOR<T>::invCs2 *
+                 DESCRIPTOR<T>::invRho(rhoBar) / (T)2;
+        for (int iTensor=0; iTensor<SymmetricTensor<T,DESCRIPTOR>::n; ++iTensor) {
+            element[iTensor] *= prefactor;
+        }
+
+    Array<Array<T,3>,3> S;  // Strain-rate tensor (symmetric).
+    S[0][0] = element[0]; //s[xx];
+    S[0][1] = element[1]; //s[xy];
+    S[0][2] = element[2]; //s[xz];
+                
+    S[1][0] = element[1]; //s[yx];
+    S[1][1] = element[3]; //s[yy];
+    S[1][2] = element[4]; //s[yz];
+
+    S[2][0] = element[2]; //s[zx];
+    S[2][1] = element[4]; //s[zy];
+    S[2][2] = element[6]; //s[zz];
+    
+    Eigen::Matrix<T,3,3> A;
+    for (plint i = 0; i < 3; i++) {
+        for (plint j = 0; j < 3; j++) {
+            A(i, j) = S[i][j];
+        }
+     }
+
+    bool computeEigenvectors = false;
+    Eigen::EigenSolver<Eigen::Matrix<T,3,3> > es(A, computeEigenvectors);
+    std::vector<T> lambda(3);
+    lambda[0] = std::real(es.eigenvalues()[0]);
+    lambda[1] = std::real(es.eigenvalues()[1]);
+    lambda[2] = std::real(es.eigenvalues()[2]);
+    std::sort(lambda.begin(), lambda.end());
+                
+//    Array<Array<T,3>,3> x;  // Eigenvectors of S.
+//    Array<T,3> d;           // Eigenvalues of S.
+//    Eigen::eigenDecomposition(S, x, d);
+//    std::vector<T> lambda(3);
+//    lambda[0] = d[0];
+//    lambda[1] = d[1];
+//    lambda[2] = d[2];
+ //   std::sort(lambda.begin(), lambda.end());
+    T tresca = lambda[0]-lambda[2]/2;
+    return tresca;
+}
+
 void HemoCellParticleField::solidifyCells() {
 #ifdef SOLIDIFY_MECHANICS
   for (HemoCellField * type : cellFields->cellFields) {
     ppc_up_to_date = false;
     if(type->doSolidifyMechanics) {
-      type->mechanics->solidifyMechanics(get_particles_per_cell(),particles, this->atomicLattice, this->CEPAClattice, type->ctype);
+      type->mechanics->solidifyMechanics(get_particles_per_cell(),particles, this->atomicLattice, this->CEPAClattice, type->ctype, bindingSites);
     }
   }
   removeParticles(1);
-  for (Dot3D & b_particle : boundaryParticles) {
+  if(!pg_up_to_date) {
+    update_pg();
+  }
+
+  for (Dot3D & b_particle : bindingSites) {
     for (int x = b_particle.x-1; x <= b_particle.x+1; x++) {
       if (x < 0 || x > this->atomicLattice->getNx()-1) {continue;}
       for (int y = b_particle.y-1; y <= b_particle.y+1; y++) {
         if (y < 0 || y > this->atomicLattice->getNy()-1) {continue;}
-        for (int z = b_particle.z-1; z <= b_particle.z+1; z++) {
-          if (z < 0 || z > this->atomicLattice->getNz()-1) {continue;}
+	for (int z = b_particle.z-1; z <= b_particle.z+1; z++) {
+	  if (z < 0 || z > this->atomicLattice->getNz()-1) {continue;}
           const int & index = grid_index(x,y,z);
           for (unsigned int i = 0 ; i < particle_grid_size[index] ; i++ ) {
             HemoCellParticle & lParticle = particles[particle_grid[index][i]];
             const hemo::Array<T,3> dv = lParticle.sv.position - (b_particle + this->atomicLattice->getLocation()); 
             const T distance = sqrt(dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2]); 
-            const hemo::Array<T,9> shearrate;
-            if (distance < (*cellFields)[lParticle.sv.celltype]->mechanics->cfg["MaterialModel"]["distanceThreshold"].read<T>()) { 
-              lParticle.sv.solidify = true; 
+            T tresca = eigenValueFromCell(this->atomicLattice->get(x,y,z));
+ 	    if ((distance <= (*cellFields)[lParticle.sv.celltype]->mechanics->cfg["MaterialModel"]["distanceThreshold"].read<T>())  
+                    && (abs(tresca/1e-7) > (*cellFields)[lParticle.sv.celltype]->mechanics->cfg["MaterialModel"]["shearThreshold"].read<T>()) ) { 
+	      lParticle.sv.solidify = true;
             } 
           }
         }

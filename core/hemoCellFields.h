@@ -142,6 +142,9 @@ public:
 
   /// Add boundary particles on the fluid-solid boundary
   void populateBoundaryParticles();
+
+  /// Add bindingSites
+  void populateBindingSites();
   
   /// Delete non local particles (do not delete in envelopesize)
   void deleteNonLocalParticles(int envelope);
@@ -291,6 +294,10 @@ public:
   class HemoPopulateBoundaryParticles: public HemoCellFunctional {
    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
    HemoPopulateBoundaryParticles * clone() const;
+  };
+  class HemoPopulateBindingSites: public HemoCellFunctional {
+   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+   HemoPopulateBindingSites * clone() const;
   };
   class HemoDeleteNonLocalParticles: public HemoCellFunctional {
    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);

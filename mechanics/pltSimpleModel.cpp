@@ -207,14 +207,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 }
 
 #ifdef SOLIDIFY_MECHANICS
-void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc,std::vector<HemoCellParticle>& particles,plb::BlockLattice3D<T,DESCRIPTOR> * fluid,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPAC, pluint ctype) {
-  hemo::Array<T,3> * pos;
-  Dot3D const& location_CEPAC = CEPAC->getLocation();
-  Dot3D const& location_fluid = fluid->getLocation();
-  double threshold = cfg["MaterialModel"]["solidifyThreshold"].read<double>();
-  double shear_threshold = cfg["MaterialModel"]["shearThreshold"].read<double>();
-  double wall_distance = cfg["MaterialModel"]["distanceThreshold"].read<double>();
-
+void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc,std::vector<HemoCellParticle>& particles,plb::BlockLattice3D<T,DESCRIPTOR> * fluid,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPAC, pluint ctype, vector<plb::Dot3D>& bindingSites) {
   //For all cells
   for (auto & pair : ppc) {
     bool broken = false;
@@ -233,108 +226,38 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
       //Firstly check if any particle should be solidified
       if (particles[particle].sv.solidify) {
         solidify = true;
-          break;
+        break;
       }
     }
 
     // If it was tagged last round, solidify it now
     if (solidify) {
-        //pcout << particles[cell[0]].sv.cellId << endl;
       hemo::OctreeStructCell octCell(3, 1, 30, cellConstants.triangle_list, particles, cell);
  
       vector<Array<plint,3>> innerNodes;
       octCell.findInnerNodes(fluid,particles,cell,innerNodes);
-      //pcout << innerNodes[0][0] << endl;      
       for (Array<plint,3> & node : innerNodes) {
-            //pcout << node[0] << endl;
           if (!fluid->get(node[0],node[1],node[2]).getDynamics().isBoundary()) {
           defineDynamics(*fluid,node[0],node[1],node[2],new BounceBack<T,DESCRIPTOR>(1.));
           
+          //Check if node is already solidified
+          Dot3D newsite = {node[0],node[1],node[2]};
+          for (Dot3D & site : bindingSites) {
+            if (site == newsite) {
+              goto no_add;
+            }
+          }
+          bindingSites.push_back({node[0],node[1],node[2]});
+          no_add:;
         }
       }
 
-      vector<Array<plint,3>> innerNodesCEPAC;
-      octCell.findInnerNodes(CEPAC,particles,cell,innerNodesCEPAC);
-      for (Array<plint,3> & node : innerNodesCEPAC) {
-        if (!CEPAC->get(node[0],node[1],node[2]).getDynamics().isBoundary()) {
-          defineDynamics(*CEPAC,node[0],node[1],node[2],new BounceBack<T,CEPAC_DESCRIPTOR>(1.));
-        }
-      }
-
-
+      
       for (const int & particle : cell) {
         particles[particle].tag = 1; //tag for removal
       }
-    } //else {
-      //Otherwise, see if we have to tag for solidify
-//      for (const int & particle : cell) {
-//        pos = &particles[particle].sv.position;
-//      
-//        int x = pos->operator[](0)-location_CEPAC.x+0.5;
-//        int y = pos->operator[](1)-location_CEPAC.y+0.5;
-//        int z = pos->operator[](2)-location_CEPAC.z+0.5;
-//        if ((x >= 0) && (x < CEPAC->getNx()) &&
-//            (y >= 0) && (y < CEPAC->getNy()) &&
-//            (z >= 0) && (z < CEPAC->getNz()) ) {
- //         if (CEPAC->get(x,y,z).computeDensity() > threshold) {
-//            particles[particle].sv.solidify = true;
-//            //pcout << particles[particle].sv.cellId << endl;
-//          }
-//        }
-//      }
-//      for (const int & particle : cell) {
-//        pos = &particles[particle].sv.position;
-//        
-//        int x_f = pos->operator[](0)-location_fluid.x+0.5;
-//        int y_f = pos->operator[](1)-location_fluid.y+0.5;
-//        int z_f = pos->operator[](2)-location_fluid.z+0.5;
-//        
-//         if ( (x_f > fluid->getBoundingBox().x0-0.5) && (x_f <= fluid->getBoundingBox().x1+0.5) &&
-//	   (y_f > fluid->getBoundingBox().y0-0.5) && (y_f <= fluid->getBoundingBox().y1+0.5) &&
-//	   (z_f > fluid->getBoundingBox().z0-0.5) && (z_f <= fluid->getBoundingBox().z1+0.5) );
-//        { continue;
-//         }
-//           
-//        T x_f_r = pos->operator[](0)-location_fluid.x;
-//        T y_f_r = pos->operator[](1)-location_fluid.y;
-//        T z_f_r = pos->operator[](2)-location_fluid.z;
-//        
-//         if ( (x_f_r > fluid->getBoundingBox().x0-0.5) && (x_f_r <= fluid->getBoundingBox().x1+0.5) &&
-//	   (y_f_r > fluid->getBoundingBox().y0-0.5) && (y_f_r <= fluid->getBoundingBox().y1+0.5) &&
-//	   (z_f_r > fluid->getBoundingBox().z0-0.5) && (z_f_r <= fluid->getBoundingBox().z1+0.5) );
-//        { continue;
-//         }
-//        
-//        //plb::Array<T,6> shearrate;
-//        double avg_shearrate;
-//        //fluid->get(x_f,y_f,z_f).computeShearRate(*fluid,shearrate,x_f,y_f,z_f);
-//        //avg_shearrate=sqrt(shearrate[1]*shearrate[1]+shearrate[2]*shearrate[2]+shearrate[4]*shearrate[4])/param::dt;
-//        
-//        std::auto_ptr<TensorField3D<T,6> > strainrate (computeStrainRateFromStress(*fluid));
-//        std::auto_ptr<ScalarField3D<T> > shearrate_scalar (computeSymmetricTensorNorm(*strainrate));
-//        avg_shearrate = computeAverage(*shearrate_scalar);
-//        //plb::Array<T,6> strainrate;
-//        //computeStrainRateFromStress(*fluid,strainrate,fluid->getBoundingBox());
-        
-//        if ((avg_shearrate > shear_threshold )) {
-//            for (int xx = x_f-6; xx<=x_f+6; xx++) {
-//                for (int yy = y_f-6; yy<= y_f+6; yy++) {
-//                    for (int zz = z_f-6; zz<=z_f+6; zz++) {
-//                        if (fluid->get(xx,yy,zz).getDynamics().isBoundary()) {
-//                            if(sqrt((xx-x_f_r)*(xx-x_f_r) + (yy-y_f_r)*(yy-y_f_r)+(zz-z_f_r)*(zz-z_f_r)) > wall_distance ) {
-//                                particles[particle].sv.solidify = true;
-//                            }
-//                        }
-//                    }
-//                }
-//                
-//            }
-//        }
-//            
-//        }
-//    }
-//  }
-}
+    } 
+  }
 }
 #endif
 

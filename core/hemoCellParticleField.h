@@ -74,6 +74,9 @@ public:
     void syncEnvelopes();
     void populateBoundaryParticles();
     void applyBoundaryRepulsionForce();
+    void populateBindingSites();
+
+    T eigenValueFromCell(plb::Cell<T,DESCRIPTOR> & cell);
     
     void solidifyCells();
     
@@ -131,6 +134,8 @@ public:
 
     vector<plint> neighbours;
     vector<plb::Dot3D> boundaryParticles;
+    vector<plb::Dot3D> bindingSites;
+    vector<plb::Dot3D> solidified;
     pluint envelopeSize;
     pluint getsize() { return particles.size();}
     plint nearestCell(T const) const;

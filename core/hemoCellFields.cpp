@@ -556,6 +556,16 @@ void HemoCellFields::populateBoundaryParticles() {
     applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
 }
 
+void HemoCellFields::HemoPopulateBindingSites::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->populateBindingSites();
+}
+void HemoCellFields::populateBindingSites() {
+    vector<MultiBlock3D*>wrapper;
+    wrapper.push_back(immersedParticles);
+    HemoPopulateBindingSites * fnct = new HemoPopulateBindingSites();
+    applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
+}
+
 void HemoCellFields::HemoSeperateForceVectors::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->separateForceVectors();
 }
@@ -650,6 +660,7 @@ HemoCellFields::HemoSetParticles *        HemoCellFields::HemoSetParticles::clon
 HemoCellFields::HemoPopulateBoundaryParticles *        HemoCellFields::HemoPopulateBoundaryParticles::clone() const { return new HemoCellFields::HemoPopulateBoundaryParticles(*this);}
 HemoCellFields::HemoDeleteNonLocalParticles *        HemoCellFields::HemoDeleteNonLocalParticles::clone() const { return new HemoCellFields::HemoDeleteNonLocalParticles(*this);}
 HemoCellFields::HemoSolidifyCells *        HemoCellFields::HemoSolidifyCells::clone() const { return new HemoCellFields::HemoSolidifyCells(*this);}
+HemoCellFields::HemoPopulateBindingSites * HemoCellFields::HemoPopulateBindingSites::clone() const { return new HemoCellFields::HemoPopulateBindingSites(*this);}
 
 
 void HemoCellFields::HemoSyncEnvelopes::getTypeOfModification(std::vector<modif::ModifT>& modified) const {
