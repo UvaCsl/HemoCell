@@ -44,8 +44,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace hemo;
 
 volatile sig_atomic_t interrupted = 0;
+bool interrupt_handler_set = false;
 void set_interrupt(int signum) {
   interrupted = 1;
+}
+
+void set_interrupt_handler() {
+  ///Set signal handlers to exit gracefully on many signals
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(struct sigaction));
+  sa.sa_handler = set_interrupt;
+  sigaction(SIGINT,&sa,0);
+  sigaction(SIGTERM,&sa,0);
+  sigaction(SIGHUP,&sa,0);
+  sigaction(SIGQUIT,&sa,0);
+  sigaction(SIGABRT,&sa,0);
+  sigaction(SIGUSR1,&sa,0);
+  sigaction(SIGUSR2,&sa,0);
+  interrupt_handler_set = true;
 }
 
 HemoCell::HemoCell(char * configFileName, int argc, char * argv[])
@@ -71,19 +87,6 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[])
   
   //Start statistics
   global.statistics.start();
-  
-  ///Set signal handlers to exit gracefully on many signals
-  struct sigaction sa;
-  memset(&sa, 0, sizeof(struct sigaction));
-  sa.sa_handler = set_interrupt;
-  sigaction(SIGINT,&sa,0);
-  sigaction(SIGTERM,&sa,0);
-  sigaction(SIGHUP,&sa,0);
-  sigaction(SIGQUIT,&sa,0);
-  sigaction(SIGABRT,&sa,0);
-  sigaction(SIGUSR1,&sa,0);
-  sigaction(SIGUSR2,&sa,0);
- 
   
 }
 
@@ -259,6 +262,9 @@ void HemoCell::writeOutput() {
 }
 
 void HemoCell::checkExitSignals() {
+  if (!interrupt_handler_set) {
+    set_interrupt_handler();
+  }
   if (interrupted == 1) {
     cout << endl << "Caught Signal, saving work and quitting!" << endl << std::flush;
     exit(1);
