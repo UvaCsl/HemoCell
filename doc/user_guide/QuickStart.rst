@@ -206,7 +206,7 @@ Resuming from a checkpoint
 
 To resume from a checkpoint you should run the executable from the directory you
 ran it originally from (so the directory with the ``.xml`` and ``.pos`` files
-visible. The first argument should be ``tmp/checkpoint.xml`` instead of
+visible. The first argument should be ``tmp{_x}/checkpoint/checkpoint.xml`` instead of
 ``config.xml``. HemoCell should then automatically resume from the last saved
 checkpoint.
 
