@@ -153,7 +153,7 @@ class HemoCell {
   void enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRepulsionCutoff, unsigned int timestep = 1);
   
   //Set the minimum distance of the particles of a type to the solid, must be called BEFORE loadparticles
-  void setMinimumDistanceFromSolid(string name, T distance);
+  void setInitialMinimumDistanceFromSolid(string name, T distance);
   
   //Set the output of the fluid field
   void setFluidOutputs(vector<int> outputs);

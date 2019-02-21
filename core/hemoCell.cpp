@@ -375,7 +375,7 @@ void HemoCell::setInteriorViscosityTimeScaleSeperation(unsigned int separation, 
   cellfields->interiorViscosityEntireGridTimescale = separation_entire_grid;
 }
 
-void HemoCell::setMinimumDistanceFromSolid(string name, T distance) {
+void HemoCell::setInitialMinimumDistanceFromSolid(string name, T distance) {
   hlog << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << " micrometer for " << name << endl; 
   if (loadParticlesIsCalled) {
     pcout << "(HemoCell) (Set Distance) WARNING: this function is called after the particles are loaded, so it probably has no effect" << endl;

@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
 
   hemocell.addCellType<WbcHighOrderModel>("WBC_HO", WBC_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("WBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  hemocell.setMinimumDistanceFromSolid("WBC_HO", 1); //Micrometer! not LU
+  hemocell.setInitialMinimumDistanceFromSolid("WBC_HO", 1); //Micrometer! not LU
 
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
