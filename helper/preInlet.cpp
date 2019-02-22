@@ -123,6 +123,7 @@ void PreInlet::initializePreInletParticleBoundary() {
 }
 
 void PreInlet::applyPreInletParticleBoundary() {
+  global.statistics.getCurrent()["applyPreInletParticleBoundary"].start();
   vector<MPI_Request> requests;
   vector<vector<char>> buffers;
   MPI_Barrier(MPI_COMM_WORLD);
@@ -206,8 +207,10 @@ void PreInlet::applyPreInletParticleBoundary() {
     }
   }
   MPI_Barrier(MPI_COMM_WORLD);
+  global.statistics.getCurrent().stop();
 }
 void PreInlet::applyPreInletVelocityBoundary() {
+  global.statistics.getCurrent()["applyPreInletVelocityBoundary"].start();
   MPI_Barrier(MPI_COMM_WORLD);
   vector<MPI_Request> reqs;
   Box3D & domain = fluidInlet;
@@ -245,6 +248,7 @@ void PreInlet::applyPreInletVelocityBoundary() {
     }
   }
   MPI_Waitall(reqs.size(),&reqs[0],MPI_STATUS_IGNORE);
+  global.statistics.getCurrent().stop();
 }
 void PreInlet::initializePreInletVelocityBoundary() {
   OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* bc =
