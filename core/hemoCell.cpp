@@ -40,6 +40,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "preInlet.h"
+#include "bindingField.h"
 
 using namespace hemo;
 
@@ -191,6 +192,9 @@ void HemoCell::loadCheckPoint() {
     hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing" << endl;
   }
   cellfields->load(documentXML, iter, cfg);
+  if (global.enableSolidifyMechanics) {
+    bindingFieldHelper::restore(*cellfields);
+  }
 }
 
 void HemoCell::saveCheckPoint() {
@@ -199,6 +203,9 @@ void HemoCell::saveCheckPoint() {
     hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing" << endl;
   }
   cellfields->save(documentXML, iter, cfg);
+  if (global.enableSolidifyMechanics) {
+    bindingFieldHelper::get(*cellfields).checkpoint();
+  }
 }
 
 void HemoCell::writeOutput() {

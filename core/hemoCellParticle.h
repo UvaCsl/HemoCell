@@ -23,8 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #ifndef SURFACE_PARTICLE_3D_H
 #define SURFACE_PARTICLE_3D_H
-
-class HemoCellParticle;
+namespace hemo {
+  class HemoCellParticle;
+}
 #include "helper/array.h"
 #include "core/cell.hh"
 

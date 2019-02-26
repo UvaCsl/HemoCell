@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include "bindingField.h"
 
 
 namespace hemo {
@@ -207,7 +208,7 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
 }
 
 #ifdef SOLIDIFY_MECHANICS
-void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc,std::vector<HemoCellParticle>& particles,plb::BlockLattice3D<T,DESCRIPTOR> * fluid,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPAC, pluint ctype, vector<plb::Dot3D>& bindingSites) {
+void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc,std::vector<HemoCellParticle>& particles,plb::BlockLattice3D<T,DESCRIPTOR> * fluid,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPAC, pluint ctype, HemoCellParticleField & pf) {
   //For all cells
   for (auto & pair : ppc) {
     bool broken = false;
@@ -239,20 +240,10 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
       for (Array<plint,3> & node : innerNodes) {
           if (!fluid->get(node[0],node[1],node[2]).getDynamics().isBoundary()) {
           defineDynamics(*fluid,node[0],node[1],node[2],new BounceBack<T,DESCRIPTOR>(1.));
-          
-          //Check if node is already solidified
-          Dot3D newsite = {node[0],node[1],node[2]};
-          for (Dot3D & site : bindingSites) {
-            if (site == newsite) {
-              goto no_add;
-            }
-          }
-          bindingSites.push_back({node[0],node[1],node[2]});
-          no_add:;
+          bindingFieldHelper::get(*pf.cellFields).add(pf, {node[0],node[1],node[2]});
         }
       }
-
-      
+     
       for (const int & particle : cell) {
         particles[particle].tag = 1; //tag for removal
       }

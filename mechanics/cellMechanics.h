@@ -26,6 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace hemo {
   class CellMechanics;
 }
+
+#include "hemoCellParticleField.h"
 #include "hemoCellParticle.h"
 #include "commonCellConstants.h"
 #include "meshMetrics.h"
@@ -42,7 +44,7 @@ class CellMechanics {
   
   virtual void ParticleMechanics(std::map<int,std::vector<HemoCellParticle *>> &,const std::map<int,bool> &, pluint ctype) = 0 ;
   virtual void statistics() = 0;
-  virtual void solidifyMechanics(const std::map<int,std::vector<int>>&,std::vector<HemoCellParticle>&,plb::BlockLattice3D<T,DESCRIPTOR> *,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> *, pluint ctype, std::vector<plb::Dot3D>&) {};
+  virtual void solidifyMechanics(const std::map<int,std::vector<int>>&,std::vector<HemoCellParticle>&,plb::BlockLattice3D<T,DESCRIPTOR> *,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> *, pluint ctype, HemoCellParticleField &) {};
   
   
   T calculate_kLink(Config & cfg, plb::MeshMetrics<T> & meshmetric){

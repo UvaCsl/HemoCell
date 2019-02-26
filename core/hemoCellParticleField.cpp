@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemocell.h"
 #include "octree.h"
 #include "mollerTrumbore.h"
+#include "bindingField.h"
 #include <Eigen3/Eigenvalues>
 
 namespace hemo { 
@@ -862,7 +863,7 @@ void HemoCellParticleField::populateBindingSites() {
               for (int zz = z-1; zz <= z+1; zz++) {
                 if (zz < 0 || zz > this->atomicLattice->getNz()-1) {continue;}
                 if (!this->atomicLattice->get(xx,yy,zz).getDynamics().isBoundary()) {
-                  bindingSites.push_back({x,y,z});
+                  bindingFieldHelper::get(*cellFields).add(*this, {x,y,z});
                   goto end_inner_loop;
                 }
               }
@@ -933,7 +934,7 @@ void HemoCellParticleField::solidifyCells() {
   for (HemoCellField * type : cellFields->cellFields) {
     ppc_up_to_date = false;
     if(type->doSolidifyMechanics) {
-      type->mechanics->solidifyMechanics(get_particles_per_cell(),particles, this->atomicLattice, this->CEPAClattice, type->ctype, bindingSites);
+      type->mechanics->solidifyMechanics(get_particles_per_cell(),particles, this->atomicLattice, this->CEPAClattice, type->ctype, *this);
     }
   }
   removeParticles(1);
@@ -941,7 +942,7 @@ void HemoCellParticleField::solidifyCells() {
     update_pg();
   }
 
-  for (Dot3D & b_particle : bindingSites) {
+  for (const Dot3D & b_particle : bindingSites) {
     for (int x = b_particle.x-1; x <= b_particle.x+1; x++) {
       if (x < 0 || x > this->atomicLattice->getNx()-1) {continue;}
       for (int y = b_particle.y-1; y <= b_particle.y+1; y++) {

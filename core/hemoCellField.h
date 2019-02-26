@@ -27,10 +27,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace hemo {
 class HemoCellField;
 }
+#include "config.h"
 #include "constant_defaults.h"
 #include "cellMechanics.h"
 #include "meshMetrics.h"
 #include "hemoCellFields.h"
+#include "hemoCellParticle.h"
 
 #include "multiBlock/multiBlockLattice3D.hh"
 #include "particles/multiParticleField3D.hh"

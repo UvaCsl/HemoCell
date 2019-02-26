@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cellInfo.h"
 #include "fluidInfo.h"
 #include "particleInfo.h"
+#include "bindingField.h"
 #include <fenv.h>
 
 int main(int argc, char *argv[]) {
@@ -82,7 +83,8 @@ int main(int argc, char *argv[]) {
   vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
   hemocell.setOutputs("PLT", outputs);
 
-  outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE,OUTPUT_SHEAR_RATE,OUTPUT_STRAIN_RATE,OUTPUT_SHEAR_STRESS,OUTPUT_BOUNDARY};
+  outputs =
+{OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE,OUTPUT_SHEAR_RATE,OUTPUT_STRAIN_RATE,OUTPUT_SHEAR_STRESS,OUTPUT_BOUNDARY,OUTPUT_BINDING_SITES};
   hemocell.setFluidOutputs(outputs);
 
   //Boundary Conditions

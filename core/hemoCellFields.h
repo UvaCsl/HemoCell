@@ -30,6 +30,7 @@ class HemoCellFields;
 #include "genericFunctions.h"
 #include "hemoCellFunctional.h"
 #include "hemoCellField.h"
+#include "hemoCellParticle.h"
 #include "config.h"
 #include <unistd.h>
 

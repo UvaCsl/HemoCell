@@ -134,8 +134,6 @@ public:
 
     vector<plint> neighbours;
     vector<plb::Dot3D> boundaryParticles;
-    vector<plb::Dot3D> bindingSites;
-    vector<plb::Dot3D> solidified;
     pluint envelopeSize;
     pluint getsize() { return particles.size();}
     plint nearestCell(T const) const;
@@ -195,7 +193,10 @@ public:
     HemoCellParticleDataTransfer & particleDataTransfer;
 public:
     plb::Box3D localDomain;
-
+    
+    //These should be edited through the helper/solidifyField.h functions
+    std::set<plb::Dot3D> bindingSites;
+    plb::ScalarField3D<bool> * bindingField = 0;
 };
 
 }
