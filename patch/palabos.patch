@@ -915,6 +915,25 @@ index 866622e..8f8c4cb 100644
  }
  
  bool MultiBlockManagement3D::equivalentTo(MultiBlockManagement3D const& rhs) const {
+diff --git a/src/multiBlock/multiDataField3D.hh b/src/multiBlock/multiDataField3D.hh
+index 0729c59..3ed05c1 100644
+--- a/src/multiBlock/multiDataField3D.hh
++++ b/src/multiBlock/multiDataField3D.hh
+@@ -802,9 +802,11 @@ void MultiNTensorField3D<T>::reset() {
+ 
+ template<typename T>
+ void MultiNTensorField3D<T>::allocateFields() {
+-    std::vector<T> iniVal(this->getNdim());
+-    std::fill(iniVal.begin(), iniVal.end(), T());
+-    allocateFields(&iniVal[0]);
++    //std::vector<T> iniVal(this->getNdim());
++    //std::fill(iniVal.begin(), iniVal.end(), T());
++  const T * iniVal = new T[this->getNdim()];
++    allocateFields(iniVal);
++    delete[] iniVal;
+ }
+ 
+ template<typename T>
 diff --git a/src/multiBlock/sparseBlockStructure3D.cpp b/src/multiBlock/sparseBlockStructure3D.cpp
 index a8ae15e..fe3e896 100644
 --- a/src/multiBlock/sparseBlockStructure3D.cpp
