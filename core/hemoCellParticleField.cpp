@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "octree.h"
 #include "mollerTrumbore.h"
 #include "bindingField.h"
+#include "interiorViscosity.h"
 #include <Eigen3/Eigenvalues>
 
 namespace hemo { 
@@ -67,6 +68,15 @@ HemoCellParticleField::~HemoCellParticleField()
   if(particle_grid_size) {
     delete[] particle_grid_size;
     particle_grid_size = 0;
+  }
+  
+  // Sanitize for MultiBlockLattice destructor (releasememory). It can't handle releasing non-background dynamics that are not singular
+  if (global.enableInteriorViscosity) {
+    for (const Dot3D & internalPoint : internalPoints ) {
+      atomicLattice->get(internalPoint.x,internalPoint.y,internalPoint.z);
+      atomicLattice->get(internalPoint.x,internalPoint.y,internalPoint.z).attributeDynamics(&atomicLattice->getBackgroundDynamics());
+    }
+    InteriorViscosityHelper::get(*cellFields).empty(*this);
   }
 }
 
@@ -688,8 +698,15 @@ void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
       T dot1 = hemo::dot(latPos, normalP);
 
       if (dot1 < 0.) {  // Node is inside
+        InteriorViscosityHelper::get(*cellFields).add(*this, {particle.kernelCoordinates[i][0],
+                particle.kernelCoordinates[i][1],
+                particle.kernelCoordinates[i][2]},
+                (*cellFields)[particle.sv.celltype]->interiorViscosityTau);
         particle.kernelLocations[i]->attributeDynamics((*cellFields)[particle.sv.celltype]->innerViscosityDynamics);
       } else {  // Node is outside
+        InteriorViscosityHelper::get(*cellFields).remove(*this, {particle.kernelCoordinates[i][0],
+                                                                particle.kernelCoordinates[i][1],
+                                                                particle.kernelCoordinates[i][2]});
         particle.kernelLocations[i]->attributeDynamics(&atomicLattice->getBackgroundDynamics());
       }
     }
@@ -700,18 +717,12 @@ void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
 // sure that there are no higher viscosity grid points left after substantial movement
 void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
   // Reset all the lattice points to the orignal relaxation parameter
-  for (plint iX = atomicLattice->getBoundingBox().x0; iX <= atomicLattice->getBoundingBox().x1; iX++) {
-    for (plint iY = atomicLattice->getBoundingBox().y0; iY <= atomicLattice->getBoundingBox().y1; iY++) {
-      for (plint iZ = atomicLattice->getBoundingBox().z0; iZ <= atomicLattice->getBoundingBox().z1; iZ++) {
-        for (HemoCellField * cellfield : cellFields->cellFields) {
-          if ( &atomicLattice->get(iX, iY, iZ).getDynamics() == cellfield->innerViscosityDynamics) {
-            atomicLattice->get(iX, iY, iZ).attributeDynamics(&atomicLattice->getBackgroundDynamics());
-          }
-        }
-      }
-    }
+  for (const Dot3D & internalPoint : internalPoints ) {
+    atomicLattice->get(internalPoint.x,internalPoint.y,internalPoint.z);
+    atomicLattice->get(internalPoint.x,internalPoint.y,internalPoint.z).attributeDynamics(&atomicLattice->getBackgroundDynamics());
   }
-
+  InteriorViscosityHelper::get(*cellFields).empty(*this);
+  
   for (const auto & pair : get_lpc()) { // Go over each cell?
     const int & cid = pair.first;
     const vector<int> & cell = get_particles_per_cell().at(cid);
@@ -727,10 +738,11 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
                                   (*cellFields)[ctype]->mechanics->cellConstants.triangle_list,
                                   particles, cell);
 
-    vector<Cell<T,DESCRIPTOR>*> innerNodes;
+    std::set<Array<plint,3>> innerNodes;
     octCell.findInnerNodes(atomicLattice,particles,cell,innerNodes);
-    for (Cell<T,DESCRIPTOR>* node : innerNodes) {
-      node->attributeDynamics((*cellFields)[ctype]->innerViscosityDynamics);
+    for (const Array<plint,3> & node : innerNodes) {
+      InteriorViscosityHelper::get(*cellFields).add(*this, {node[0],node[1],node[2]},(*cellFields)[ctype]->interiorViscosityTau );
+      atomicLattice->get(node[0],node[1],node[2]).attributeDynamics((*cellFields)[ctype]->innerViscosityDynamics);
     }
   }
 }

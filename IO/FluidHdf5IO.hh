@@ -162,6 +162,11 @@ public:
           name = "BindingSites";
           dim[3] = 1;
         break;
+        case OUTPUT_INTERIOR_POINTS:
+          output = outputInteriorPoints();
+          name = "InteriorPoints";
+          dim[3] = 1;
+        break;
         case OUTPUT_OMEGA:
           output = outputOmega();
           name = "Omega";
@@ -324,7 +329,28 @@ private:
     }
     return output;
   }
-  
+
+  float * outputInteriorPoints() {
+    float * output = new float [(*nCells)];
+    if (!particlefield->interiorViscosityField) {
+      pcout << "(FluidHdf5) (Error) OUTPUT_INTERIOR_POINTS requested, but interior viscosity not used, outputting a zero field" << endl;
+      for (hsize_t i = 0 ; i < *nCells ; i++) {
+        output[i] = 0;
+      }
+      return output;
+    }
+    unsigned int n = 0;
+    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
+      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
+        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
+          output[n] = (particlefield->interiorViscosityField->get(iX,iY,iZ));
+          n++;
+        }
+      }
+    }
+    return output;
+  }
+   
   float * outputOmega() {
     float * output = new float [(*nCells)];
     unsigned int n = 0;

@@ -104,7 +104,7 @@ namespace hemo {
       }
       
       template<template<typename U> class Descriptor>
-      void findInnerNodes(plb::BlockLattice3D<T,Descriptor> * fluid, std::vector<HemoCellParticle> & particles, const std::vector<int> & cell, std::vector<Array<plint,3>> & innerNodes) {
+      void findInnerNodes(plb::BlockLattice3D<T,Descriptor> * fluid, std::vector<HemoCellParticle> & particles, const std::vector<int> & cell, std::set<Array<plint,3>> & innerNodes) {
         innerNodes.clear();
         hemo::Array<T,6> bbox = bBox;
         //Adjust bbox to fit local atomic block
@@ -139,7 +139,7 @@ namespace hemo {
                 int x_l = x-fluid->getLocation().x;
                 int y_l = y-fluid->getLocation().y;
                 int z_l = z-fluid->getLocation().z;
-                innerNodes.push_back({x_l,y_l,z_l});
+                innerNodes.insert({x_l,y_l,z_l});
               }
             }
           }

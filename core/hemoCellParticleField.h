@@ -183,7 +183,8 @@ public:
   const map<int,vector<int>> & get_preinlet_particles_per_cell();
   const map<int,bool> & get_lpc();
   
-  vector<hemo::Array<plint, 3>> internalPoints; // Store found interior points
+  set<plb::Dot3D> internalPoints; // Store found interior points
+  plb::ScalarField3D<T> * interiorViscosityField = 0;
   
     
     //vector<vector<vector<vector<HemoCellParticle*>>>> particle_grid; //maybe better to make custom data structure, But that would be slower

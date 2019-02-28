@@ -235,9 +235,9 @@ void PltSimpleModel::solidifyMechanics(const std::map<int,std::vector<int>>& ppc
     if (solidify) {
       hemo::OctreeStructCell octCell(3, 1, 30, cellConstants.triangle_list, particles, cell);
  
-      vector<Array<plint,3>> innerNodes;
+      set<Array<plint,3>> innerNodes;
       octCell.findInnerNodes(fluid,particles,cell,innerNodes);
-      for (Array<plint,3> & node : innerNodes) {
+      for (const Array<plint,3> & node : innerNodes) {
           if (!fluid->get(node[0],node[1],node[2]).getDynamics().isBoundary()) {
           defineDynamics(*fluid,node[0],node[1],node[2],new BounceBack<T,DESCRIPTOR>(1.));
           bindingFieldHelper::get(*pf.cellFields).add(pf, {node[0],node[1],node[2]});

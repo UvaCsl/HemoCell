@@ -41,6 +41,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.hh"
 #include "preInlet.h"
 #include "bindingField.h"
+#include "interiorViscosity.h"
 
 using namespace hemo;
 
@@ -188,23 +189,23 @@ void HemoCell::loadParticles() {
 
 void HemoCell::loadCheckPoint() {
   hlog << "(HemoCell) (Saving Functions) Loading Checkpoint"  << endl;
-  if (global.enableInteriorViscosity) {
-    hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing" << endl;
-  }
   cellfields->load(documentXML, iter, cfg);
   if (global.enableSolidifyMechanics) {
     bindingFieldHelper::restore(*cellfields);
+  }
+  if (global.enableInteriorViscosity) {
+    InteriorViscosityHelper::restore(*cellfields);
   }
 }
 
 void HemoCell::saveCheckPoint() {
   hlog << "(HemoCell) (Saving Functions) Saving Checkpoint at timestep " << iter << endl;
-  if (global.enableInteriorViscosity) {
-    hlog << "(HemoCell) (Saving Functions) Interior Viscosity Entire Grid Refresh does not behave sane with checkpointing" << endl;
-  }
   cellfields->save(documentXML, iter, cfg);
   if (global.enableSolidifyMechanics) {
     bindingFieldHelper::get(*cellfields).checkpoint();
+  }
+  if (global.enableInteriorViscosity) {
+    InteriorViscosityHelper::get(*cellfields).checkpoint();
   }
 }
 
@@ -313,7 +314,9 @@ void HemoCell::iterate() {
   }
 
   if(global.enableSolidifyMechanics && !(iter%cellfields->solidifyTimescale)) {
+    global.statistics.getCurrent()["solidifyCells"].start();
     cellfields->solidifyCells();
+    global.statistics.getCurrent().stop();
   }
   // ### 5 ###
   cellfields->advanceParticles();
@@ -323,10 +326,14 @@ void HemoCell::iterate() {
 
   if (global.enableInteriorViscosity && iter % cellfields->interiorViscosityEntireGridTimescale == 0) {
     cellfields->deleteIncompleteCells(); // Must be done, next function expects whole cells
+    global.statistics.getCurrent()["internalParticleGridPoints"].start();
     cellfields->findInternalParticleGridPoints();
+    global.statistics.getCurrent().stop();
   }
   if (global.enableInteriorViscosity && iter % cellfields->interiorViscosityTimescale == 0) {
+    global.statistics.getCurrent()["internalGridPointsMembrane"].start();
     cellfields->internalGridPointsMembrane();
+    global.statistics.getCurrent().stop();
   }
   
   //We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
