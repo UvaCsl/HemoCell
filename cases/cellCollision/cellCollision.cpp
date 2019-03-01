@@ -78,9 +78,9 @@ int main(int argc, char* argv[])
 	// ----------------------- Init cell models --------------------------
 	
 	hemocell.initializeCellfield();
-	hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
+	hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
 	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC}; 
-	hemocell.setOutputs("RBC_HO", outputs);
+	hemocell.setOutputs("RBC", outputs);
 
 	hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
 	hemocell.setOutputs("PLT", outputs);

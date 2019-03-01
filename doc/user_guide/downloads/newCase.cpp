@@ -70,12 +70,12 @@ int main (int argc, char * argv[]) {
   // the directory (where CELL is the string input).
   // The second argument defines how a cell is build up. see
   // config/constant_defaults.h for options.
-  hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
+  hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
 
   // Only update the forces resulting from the mechanical deformation every X
   // timesteps, recalculating this is the most costly step and since our
   // timestep is so small it can be done intermittently
-  hemocell.setMaterialTimeScaleSeparation("RBC_HO", 20);
+  hemocell.setMaterialTimeScaleSeparation("RBC", 20);
 
   // Only update the integrated velocity (from the fluid field to the particles)
   // every X timesteps.
@@ -83,7 +83,7 @@ int main (int argc, char * argv[]) {
 
   // Request outputs from the simulation, here we have requested all of the
   // possible outputs!
-  hemocell.setOutputs("RBC_HO", { OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE, 
+  hemocell.setOutputs("RBC", { OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE, 
                                   OUTPUT_FORCE_VOLUME, OUTPUT_FORCE_BENDING, OUTPUT_FORCE_REPULSION, 
                                   OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC,
                                   OUTPUT_INNER_LINKS, OUTPUT_CELL_ID, OUTPUT_VERTEX_ID } );

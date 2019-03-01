@@ -13,8 +13,8 @@ The most important adjustable variables are in the ``config.xml`` file.
 - ``<domain><shearrate>`` the shear rate in reciprocal seconds, used to
   calculate the top and bottom velocity boundary conditions.
 
-Furthermore, it is possible to do tanktreading by adjusting ``''RBC_HO''``
-throughout the oneCellShear.cpp file to ``''RBC_HO_tt''``. This loads the
-different .pos file present within the directory (RBC_HO.xml and RBC_HO_tt.xml)
+Furthermore, it is possible to do tanktreading by adjusting ``''RBC''``
+throughout the oneCellShear.cpp file to ``''RBC_tt''``. This loads the
+different .pos file present within the directory (RBC.xml and RBC_tt.xml)
 are the same.
 

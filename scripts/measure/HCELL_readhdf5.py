@@ -136,10 +136,10 @@ def core_read_processor(f,r,p,ct3,full,half,t,datapath,ct3name,n):
 		#open file
 		#Read HemoCell v2.0 and v1.0 output. Try to catch files that do not exist. 
 		try:
-			RBC_file = h5py.File(time_path+"/RBC_HO." + str(t).zfill(12) +".p." +str(n) +".h5","r")	
+			RBC_file = h5py.File(time_path+"/RBC." + str(t).zfill(12) +".p." +str(n) +".h5","r")	
 		except:
 			try:
-				RBC_file = h5py.File(datapath+str(t)+"/RBC_HO." + str(t) +".p." +str(n) +".h5","r")
+				RBC_file = h5py.File(datapath+str(t)+"/RBC." + str(t) +".p." +str(n) +".h5","r")
 			except (OSError, IOError):
 				raise
 

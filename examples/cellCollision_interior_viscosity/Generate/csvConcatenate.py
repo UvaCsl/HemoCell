@@ -6,7 +6,7 @@ import os
 # import sys
 
   # Set the cell type names to look for
-cellTypes = ["RBC_HO", "PLT"]
+cellTypes = ["RBC", "PLT"]
   # Set the last iteration where we had all cells
 maxIter = 700000
   # Shear rate

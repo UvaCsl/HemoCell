@@ -79,14 +79,14 @@ int main(int argc, char *argv[]) {
   //Adding all the cells
   hemocell.initializeCellfield();
 
-  hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
-  hemocell.setMaterialTimeScaleSeparation("RBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  hemocell.setInitialMinimumDistanceFromSolid("RBC_HO", 1); //Micrometer! not LU
+  hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
+  hemocell.setMaterialTimeScaleSeparation("RBC", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  hemocell.setInitialMinimumDistanceFromSolid("RBC", 1); //Micrometer! not LU
 
  hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
   vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
-  hemocell.setOutputs("RBC_HO", outputs);
+  hemocell.setOutputs("RBC", outputs);
 
   outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE};
   hemocell.setFluidOutputs(outputs);
@@ -116,8 +116,8 @@ int main(int argc, char *argv[]) {
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
 
   hlog << "(unbounded) Starting simulation..." << endl;
-  hlog << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC_HO") << endl;
-  int ncells = CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC_HO");
+  hlog << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC") << endl;
+  int ncells = CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC");
   hlog << " | RBC Volume ratio [x100%]: " << ncells * 77.0 * 100 / (nx * ny * nz) << endl;
   hlog << "(main)   nCells (global) = " << ncells << endl ;
 
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
        if (hemocell.iter % tmeas == 0) {
       hlog << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
       hlog << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
-      hlog << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC_HO");
+      hlog << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC");
       FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell); double toMpS = param::dx / param::dt;
       hlog << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg * toMpS<< " m/s, rel. app. viscosity: " << (param::u_lbm_max*0.5) / finfo.avg << endl;
       

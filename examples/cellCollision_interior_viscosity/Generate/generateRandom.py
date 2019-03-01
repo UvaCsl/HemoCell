@@ -23,7 +23,7 @@ for i in range(cores*nodes):
     print folderPath
 
 
-    with open(folderPath+'/RBC_HO.pos', 'wb') as f:
+    with open(folderPath+'/RBC.pos', 'wb') as f:
         f.write('1\n')
 
         f.write('5.5 {0:.1f} 7.0 {1} {2} {3}'.format(center+tn, rand.randint(0,359), rand.randint(0,359), rand.randint(0,359)))

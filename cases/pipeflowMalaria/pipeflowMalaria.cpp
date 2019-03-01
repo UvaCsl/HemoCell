@@ -77,9 +77,9 @@ int main(int argc, char *argv[]) {
   //Adding all the cells
   hemocell.initializeCellfield();
 
-  hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
-  hemocell.setMaterialTimeScaleSeparation("RBC_HO", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  hemocell.setInitialMinimumDistanceFromSolid("RBC_HO", 0.25); //Micrometer! not LU
+  hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
+  hemocell.setMaterialTimeScaleSeparation("RBC", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  hemocell.setInitialMinimumDistanceFromSolid("RBC", 0.25); //Micrometer! not LU
 
   hemocell.addCellType<RbcMalariaModel>("RBC_MALARIA", MESH_FROM_STL);
   hemocell.setMaterialTimeScaleSeparation("RBC_MALARIA", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
   //hemocell.setRepulsionTimeScaleSeperation((*cfg)["ibm"]["stepMaterialEvery"].read<int>());
 
   vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
-  hemocell.setOutputs("RBC_HO", outputs);
+  hemocell.setOutputs("RBC", outputs);
   hemocell.setOutputs("RBC_MALARIA", outputs);
   hemocell.setOutputs("PLT", outputs);
 
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
     if (hemocell.iter % tmeas == 0) {
         pcout << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
         pcout << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
-        pcout << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC_HO");
+        pcout << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC");
         pcout << ", vRBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC_MALARIA");
         pcout << ", PLT: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "PLT") << endl;
         FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell); T toMpS = param::dx / param::dt;

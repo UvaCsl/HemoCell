@@ -34,7 +34,7 @@ def open_csv_files(r=True,p=True,ct3=True,begin=0,end=0,timestep=100000,datapath
 
 		for n in range(nprocs):
 			if r:
-				with open(timepath+'/CellInfo_RBC_HO.'+str(n)+'.csv', 'r') as csvfile:
+				with open(timepath+'/CellInfo_RBC.'+str(n)+'.csv', 'r') as csvfile:
 					next(csvfile,None)
 					tmpfiledata = csv.reader(csvfile, delimiter=',',quoting=csv.QUOTE_NONNUMERIC)
 					for row in tmpfiledata:

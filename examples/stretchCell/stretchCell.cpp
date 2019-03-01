@@ -81,9 +81,9 @@ int main(int argc, char* argv[])
 	// ----------------------- Init cell models --------------------------
 	
 	hemocell.initializeCellfield();
-	hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
+	hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
 	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC, OUTPUT_VERTEX_ID, OUTPUT_CELL_ID};
-	hemocell.setOutputs("RBC_HO", outputs);
+	hemocell.setOutputs("RBC", outputs);
 
 	outputs = {OUTPUT_VELOCITY,OUTPUT_FORCE};
 	hemocell.setFluidOutputs(outputs);
@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
 
 // Setting up the stretching
   unsigned int n_forced_lsps = 1 + 6;// + 12;
-  HemoCellStretch cellStretch(*(*hemocell.cellfields)["RBC_HO"],n_forced_lsps, param::ef_lbm);
+  HemoCellStretch cellStretch(*(*hemocell.cellfields)["RBC"],n_forced_lsps, param::ef_lbm);
   
   hlog << "(CellStretch) External stretching force [pN(flb)]: " <<(*cfg)["parameters"]["stretchForce"].read<T>() << " (" << param::ef_lbm  << ")" << endl;
     
@@ -112,12 +112,12 @@ int main(int argc, char* argv[])
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
 
   // Get undeformed values
-  T volume_lbm = (*hemocell.cellfields)["RBC_HO"]->meshmetric->getVolume();
-  T surface_lbm = (*hemocell.cellfields)["RBC_HO"]->meshmetric->getSurface();
+  T volume_lbm = (*hemocell.cellfields)["RBC"]->meshmetric->getVolume();
+  T surface_lbm = (*hemocell.cellfields)["RBC"]->meshmetric->getSurface();
   T volume_eq = volume_lbm/pow(1e-6/param::dx,3);
   T surface_eq = surface_lbm/pow(1e-6/param::dx,2);
 
-  hemo::Array<T,6> bb =  (*hemocell.cellfields)["RBC_HO"]->getOriginalBoundingBox();
+  hemo::Array<T,6> bb =  (*hemocell.cellfields)["RBC"]->getOriginalBoundingBox();
   hlog << "Original Bounding box:" << endl;
   hlog << "\tx: " << bb[0] << " : " << bb[1] << endl;
   hlog << "\ty: " << bb[2] << " : " << bb[3] << endl;

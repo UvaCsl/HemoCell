@@ -319,7 +319,7 @@ def createXDMF(fnameString, processorStrings, iterDir):
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        sys.argv += ['RBC_HO']
+        sys.argv += ['RBC']
     for identifier in sys.argv[1:]:
         try:
             if os.environ["ABSPATH"] == "1":

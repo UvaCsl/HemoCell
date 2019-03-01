@@ -13,7 +13,7 @@ in the new directory.
 
     vikko@the9:~/HemoCell/examples$ ls
     CMakeLists_template.txt  oneCellShear  PLT_template.xml     stretchCell
-    Makefile                 pipeflow      RBC_HO_template.xml
+    Makefile                 pipeflow      RBC_template.xml
     vikko@the9:~/HemoCell/examples$ mkdir newCase
     vikko@the9:~/HemoCell/examples$ make cmakefiles 
     cp  CMakeLists_template.txt newCase/CMakeLists.txt
@@ -137,12 +137,12 @@ everything:
   // the directory (where CELL is the string input).
   // The second argument defines how a cell is build up. see
   // config/constant_defaults.h for options.
-  hemocell.addCellType<RbcHighOrderModel>("RBC_HO", RBC_FROM_SPHERE);
+  hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
 
   // Only update the forces resulting from the mechanical deformation every X
   // timesteps, recalculating this is the most costly step and since our
   // timestep is so small it can be done intermittently
-  hemocell.setMaterialTimeScaleSeparation("RBC_HO", 20);
+  hemocell.setMaterialTimeScaleSeparation("RBC", 20);
 
   // Only update the integrated velocity (from the fluid field to the particles)
   // every X timesteps.
@@ -150,7 +150,7 @@ everything:
 
   // Request outputs from the simulation, here we have requested all of the
   // possible outputs!
-  hemocell.setOutputs("RBC_HO", { OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE,
+  hemocell.setOutputs("RBC", { OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE,
                                   OUTPUT_FORCE_VOLUME, OUTPUT_FORCE_BENDING, OUTPUT_FORCE_REPULSION,
                                   OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC,
                                   OUTPUT_INNER_LINKS, OUTPUT_CELL_ID, OUTPUT_VERTEX_ID } );
@@ -226,20 +226,20 @@ means that the following config file is enough to run our newCase.
 
   </hemocell>
 
-Now there is only one more xml file missing, namely the RBC_HO.xml file.
+Now there is only one more xml file missing, namely the RBC.xml file.
 Fortunately this file is included in the examples folder, you can copy it to the
 newCase as following:
 
 .. code-block:: console
 
-    vikko@the9:~/HemoCell/examples$ cp RBC_HO_template.xml newCase/RBC_HO.xml
+    vikko@the9:~/HemoCell/examples$ cp RBC_template.xml newCase/RBC.xml
     vikko@the9:~/HemoCell/examples$ ls newCase/
-    CMakeLists.txt  config.xml  newCase.cpp  RBC_HO.xml
+    CMakeLists.txt  config.xml  newCase.cpp  RBC.xml
 
 Creating the initial positions for the Cells
 --------------------------------------------
 
-As a final touch we must create an RBC_HO.pos file which contains the positions
+As a final touch we must create an RBC.pos file which contains the positions
 of the RBC's that we want in our simulation. For this we use the tool that is
 described in :ref:`packcells`. Run packCells with the following command to
 create only RBC in a 25x25x25 domain:
@@ -293,9 +293,9 @@ create only RBC in a 25x25x25 domain:
                   density       density       diameter      diameter       per particle
 
         68764  0.1604380013  0.1604380013  1.2985355219  1.2985355219  0.000000000000000 PACKING DONE 
-    vikko@the9:~/HemoCell/tools/packCells$ cp RBC.pos ../../examples/newCase/RBC_HO.pos
+    vikko@the9:~/HemoCell/tools/packCells$ cp RBC.pos ../../examples/newCase/RBC.pos
 
-With the RBC_HO.pos file present in the newCase directory all the pieces should
+With the RBC.pos file present in the newCase directory all the pieces should
 be there to run our first newly created case!
 
 Running our newly created case
@@ -307,7 +307,7 @@ command and checking if you get similar output:
 .. code-block:: console
 
     vikko@the9:~/HemoCell/examples$ ls newCase/
-    CMakeLists.txt  config.xml  newCase.cpp  RBC_HO.pos RBC_HO.xml
+    CMakeLists.txt  config.xml  newCase.cpp  RBC.pos RBC.xml
 
 Compile our case by executing the folling commands, replace X by the number of
 cores you want to run on:

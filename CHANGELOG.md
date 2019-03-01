@@ -41,7 +41,7 @@ Version 1.5
   preinletFromSlice() you can call autoPreinletFromBoundary() if the boundary
 happens to be the inlet as well
 - Interior viscosity edge tracking works again, enable interior viscosity
-  through CELL.xml file, see cases/RBC_HO_template.xml for an example
+  through CELL.xml file, see cases/RBC_template.xml for an example
 - Output is saved in a seperate folder for each run, see pipeflow/config.xml for
   the options
 - CSV output is already concatenated in csv folder, now also includes
