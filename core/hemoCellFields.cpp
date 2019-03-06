@@ -290,6 +290,9 @@ void HemoCellFields::save(XMLreader *xmlr, unsigned int iter, Config * cfg)
 void readPositionsCellFields(std::string particlePosFile) {
 }
 
+
+//void HemoCellFields::
+
 void HemoCellFields::HemoFindInternalParticleGridPoints::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->findInternalParticleGridPoints(domain);
 }
@@ -565,6 +568,18 @@ void HemoCellFields::populateBindingSites() {
     HemoPopulateBindingSites * fnct = new HemoPopulateBindingSites();
     applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
 }
+void HemoCellFields::HemoupdateResidenceTime::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->updateResidenceTime(rtime);
+}
+void HemoCellFields::updateResidenceTime(unsigned int rtime) {
+    global.statistics.getCurrent()["updateResidenceTime"].start();
+    vector<MultiBlock3D*>wrapper;
+    wrapper.push_back(immersedParticles);
+    HemoupdateResidenceTime * fnct = new HemoupdateResidenceTime();
+    fnct->rtime = rtime;
+    applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
+    global.statistics.getCurrent().stop();
+}
 
 void HemoCellFields::HemoSeperateForceVectors::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->separateForceVectors();
@@ -661,6 +676,7 @@ HemoCellFields::HemoPopulateBoundaryParticles *        HemoCellFields::HemoPopul
 HemoCellFields::HemoDeleteNonLocalParticles *        HemoCellFields::HemoDeleteNonLocalParticles::clone() const { return new HemoCellFields::HemoDeleteNonLocalParticles(*this);}
 HemoCellFields::HemoSolidifyCells *        HemoCellFields::HemoSolidifyCells::clone() const { return new HemoCellFields::HemoSolidifyCells(*this);}
 HemoCellFields::HemoPopulateBindingSites * HemoCellFields::HemoPopulateBindingSites::clone() const { return new HemoCellFields::HemoPopulateBindingSites(*this);}
+HemoCellFields::HemoupdateResidenceTime * HemoCellFields::HemoupdateResidenceTime::clone() const { return new HemoCellFields::HemoupdateResidenceTime(*this);}
 
 
 void HemoCellFields::HemoSyncEnvelopes::getTypeOfModification(std::vector<modif::ModifT>& modified) const {
