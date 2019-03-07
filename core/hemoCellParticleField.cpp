@@ -563,7 +563,7 @@
 
   void HemoCellParticleField::updateResidenceTime(unsigned int rtime) {
     for (HemoCellParticle & sparticle : particles) {
-      sparticle.sv.restime += rtime;
+      sparticle.sv.restime += (rtime - sparticle.sv.restime);
     }
   }
 
