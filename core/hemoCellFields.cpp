@@ -153,6 +153,8 @@ HemoCellField * HemoCellFields::operator[](string name)
           return cellFields[i];
       }
   } 
+  hlog << "(Error) (CellFields) " << name << "Celltype requested but it does not exist" << endl;
+	exit(1);	
   return NULL;
 }
 
