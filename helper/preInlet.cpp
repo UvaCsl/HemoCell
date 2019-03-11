@@ -159,7 +159,7 @@ void PreInlet::applyPreInletParticleBoundary() {
 
         Dot3D shift = hemocell->cellfields->immersedParticles->getComponent(bid).getLocation();
         domain = domain.shift(-shift.x,-shift.y,-shift.z);
-        hemocell->cellfields->immersedParticles->getComponent(bid).particleDataTransfer.send(domain,buffers.back(),modif::hemocell);
+        hemocell->cellfields->immersedParticles->getComponent(bid).particleDataTransfer.send_preinlet(domain,buffers.back(),modif::hemocell);
         for (auto & pair : particleReceiveMpi) {
           const int & pid = pair.first;
           requests.push_back(MPI_Request());
