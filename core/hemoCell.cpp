@@ -127,6 +127,9 @@ void HemoCell::latticeEquilibrium(T rho, hemo::Array<T, 3> vel) {
 }
 
 void HemoCell::initializeCellfield() {
+  if (!domain_lattice) {
+    domain_lattice = lattice;
+  }
   cellfields = new HemoCellFields(*lattice,(*cfg)["domain"]["particleEnvelope"].read<int>(),*this);
 
   //Set envelope of fluid to 1 again, while maintaining outer one for correct force distribution
