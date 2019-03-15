@@ -169,6 +169,9 @@ public:
   pluint envelopeSize;
   /// palabos field storing the particles
   plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles = 0;
+  /// seperate preinlet and domain pointers whenever necessary
+  plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * preinlet_immersedParticles = 0, * domain_immersedParticles = 0;
+
   /// palabos field for storing the CPAC scalar field if used
   plb::MultiBlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPACfield = 0; 
 

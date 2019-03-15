@@ -233,12 +233,12 @@ void PreInlet::applyPreInletVelocityBoundary() {
         if (!hemocell->lattice->get(x,y,z).getDynamics().isBoundary()) {
           if (hemocell->partOfpreInlet) {
             hemocell->lattice->getComponent(bId).get(x,y,z).computeVelocity(vel);
-            int dest = hemocell->lattice_management->getThreadAttribution().getMpiProcess(hemocell->lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
+            int dest = hemocell->domain_lattice_management->getThreadAttribution().getMpiProcess(hemocell->domain_lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
             reqs.emplace_back();
             MPI_Isend(&vel[0],3*sizeof(T),MPI_CHAR,dest,tag,MPI_COMM_WORLD,&reqs.back());
           } else {
             Box3D point(x,x,y,y,z,z);
-            int source = hemocell->preinlet_management->getThreadAttribution().getMpiProcess(hemocell->preinlet_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
+            int source = hemocell->preinlet_lattice_management->getThreadAttribution().getMpiProcess(hemocell->preinlet_lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
             MPI_Recv(&vel[0],3*sizeof(T),MPI_CHAR,source,tag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
             setBoundaryVelocity(hemocell->lattice->getComponent(bId),point,vel);
           }

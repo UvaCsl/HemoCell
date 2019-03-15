@@ -41,7 +41,7 @@
 <sim>
     <tmax> 10000 </tmax> <!-- total number of iterations -->
     <tmeas> 500 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint> 1000000 </tcheckpoint> 
+    <tcheckpoint> 1000 </tcheckpoint> 
     <tbalance> 1000 </tbalance> <!-- interval after which balance is performed --> 
 </sim>
 

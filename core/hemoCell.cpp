@@ -106,8 +106,8 @@ HemoCell::~HemoCell() {
   if (lattice) {
     delete lattice;
   }
-  if (lattice_management) {
-    delete lattice_management;
+  if (domain_lattice_management) {
+    delete domain_lattice_management;
   }
   if (loadBalancer) {
     delete loadBalancer;
@@ -115,8 +115,8 @@ HemoCell::~HemoCell() {
   if (preInlet) { 
     delete preInlet;
   }
-  if (preinlet_management) {
-    delete preinlet_management;
+  if (preinlet_lattice_management) {
+    delete preinlet_lattice_management;
   }
 }
 
@@ -427,6 +427,7 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
             defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
             new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+    domain_lattice = lattice;
     return;
   }
   if (global::mpi().getSize() <= 1) {
@@ -470,25 +471,27 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   
   SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet->location,preInlet->nProcs);
   ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet->BlockToMpi);
-  preinlet_management = new MultiBlockManagement3D(sb_preinlet,eta_preinlet,management.getEnvelopeWidth(),management.getRefinementLevel());
+  preinlet_lattice_management = new MultiBlockManagement3D(sb_preinlet,eta_preinlet,management.getEnvelopeWidth(),management.getRefinementLevel());
 
   SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(),nProcs);
   ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
-  lattice_management = new MultiBlockManagement3D(sb,eta,management.getEnvelopeWidth(),management.getRefinementLevel());
+  domain_lattice_management = new MultiBlockManagement3D(sb,eta,management.getEnvelopeWidth(),management.getRefinementLevel());
+  
+  preinlet_lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(*preinlet_lattice_management,
+            defaultMultiBlockPolicy3D().getBlockCommunicator(),
+            defaultMultiBlockPolicy3D().getCombinedStatistics(),
+            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+  domain_lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(*domain_lattice_management,
+            defaultMultiBlockPolicy3D().getBlockCommunicator(),
+            defaultMultiBlockPolicy3D().getCombinedStatistics(),
+            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
   
   if (!partOfpreInlet) {
-    lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(*lattice_management,
-            defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+    lattice = domain_lattice;
   } else {
-    
-    lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(*preinlet_management,
-            defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+    lattice = preinlet_lattice;
     preInlet->partOfpreInlet = true;
   }
 }
