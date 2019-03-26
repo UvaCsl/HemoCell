@@ -53,6 +53,7 @@ public:
     plint cellId;
     
     uint16_t vertexId;
+    unsigned int restime;
     
     unsigned char celltype;
 
@@ -113,6 +114,7 @@ public:
     sv.cellId = cellId_;
     sv.vertexId = vertexId_;
     sv.celltype=celltype_;
+    sv.restime= 0.0;
 #ifdef SOLIDIFY_MECHANICS
     sv.solidify = false;
 #endif
@@ -161,6 +163,7 @@ public:
    
     tag = copy.tag;
     sv.cellId = copy.sv.cellId;
+    sv.restime = copy.sv.restime;
     sv.vertexId = copy.sv.vertexId;
     sv.celltype = copy.sv.celltype;
 

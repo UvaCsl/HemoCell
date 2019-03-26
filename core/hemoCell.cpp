@@ -215,6 +215,11 @@ void HemoCell::saveCheckPoint() {
 void HemoCell::writeOutput() {
   global.statistics["output"].start();
   std::string tpi = ((iter != lastOutputAt) ? Profiler::toString((global.statistics.elapsed()-lastOutput)/(iter-lastOutputAt)):"0.00");
+
+  //save Residence time
+  //Needs to be used before LastOutputAT is updated
+  cellfields->updateResidenceTime((iter - lastOutputAt));
+
   
   lastOutput = global.statistics.elapsed();
   lastOutputAt  = iter;
@@ -255,6 +260,9 @@ void HemoCell::writeOutput() {
   }
   global::mpi().barrier();
 
+
+
+  
   //Write Output
   global.statistics.getCurrent()["writeOutput"].start();
   writeCellField3D_HDF5(*cellfields,param::dx,param::dt,iter);
