@@ -1,7 +1,8 @@
 import numpy as np
 
 
-def rectangle_volume_fraction(cell,CELLVOL,envelope=60.):
+
+def rectangle_volume_fraction(cell,CELLVOL,X,Y,Z,envelope=60.):
     '''Calculated X,Y,Z cell volume fraction in a rectangular chamber
 
     Keyword arguments:
@@ -14,15 +15,15 @@ def rectangle_volume_fraction(cell,CELLVOL,envelope=60.):
     '''
 
     steps = 1  #step size in micrometers
-    binsx = np.arange(-envelope,np.max(np.array(cell[0].position)[:,0])+envelope,steps)
-    binsy = np.arange(-envelope,np.max(np.array(cell[0].position)[:,1])+envelope,steps)
-    binsz = np.arange(-1.5,np.max(np.array(cell[0].position)[:,2])+steps+10,steps)
+    binsx = np.arange(-steps+np.min(np.array(cell[0].position)[:,0]),np.max(np.array(cell[0].position)[:,0])+steps,steps)
+    binsy = np.arange(-steps+np.min(np.array(cell[0].position)[:,1]),np.max(np.array(cell[0].position)[:,1])+steps,steps)
+    binsz = np.arange(-steps+np.min(np.array(cell[0].position)[:,2]),np.max(np.array(cell[0].position)[:,2])+steps,steps)
     
-    Xsimlength = np.max(binsx) - np.min(binsx)
-    Ysimlength = np.max(binsy) - np.min(binsy)
-    Zsimlength = np.max(binsz) - np.min(binsz)
-
-    Nlsps_per_cell = cell_statistics(cell[0])[0]
+    Xsimlength = X
+    Ysimlength = Y
+    Zsimlength = Z
+    
+    Nlsps_per_cell = HCELL_measure.cell_statistics(cell[0])[0]
     
     cell_histx = []
     cell_histy = []
@@ -49,10 +50,6 @@ def rectangle_volume_fraction(cell,CELLVOL,envelope=60.):
     cell_histz = np.mean(cell_histz,axis=0)
 
     return(cell_histx,cell_histy,cell_histz)
-
-
-
-
 
 
 def pipeflow_MSD_cell_centers(cell,X,Y,Z,dx=1,refdir=0):
@@ -115,6 +112,141 @@ def pipeflow_MSD_cell_centers(cell,X,Y,Z,dx=1,refdir=0):
 
 
 
+def pipeflow_histcoll_cell_centers(cell,X,Y,Z,dx=1,refdir=0):
+    R = np.sqrt(Z**2 +Y**2)
+    L = X
+    R0 = np.sqrt((Z*0.5)**2 +(Y*0.5)**2)
+    R -= R0
+
+    print("N of Cells deleted = ",len(cell[0].cid) - len(cell[-1].cid))
+    print("% of Cells deleted = ",(len(cell[0].cid) - len(cell[-1].cid))/len(cell[0].cid)*100.)
+
+    #Get final info to make sure that you calculate MSD for cells that are not deleted
+    pos = np.array(cell[-1].position)
+    cid_final = np.array(cell[-1].cid)
+    r_final = np.sqrt((pos[:,1] - Y*.5)**2 + (pos[:,2] - Z*0.5)**2)
+    tmp_final = np.array([r_final,cid_final])
+    #sorted on increasing CID
+    tmp_final = tmp_final.T[tmp_final.T[:,1].argsort()].T
+
+
+    radial_and_cids_overtime = []
+    for t in range(len(cell)):
+
+        #get positions
+        pos = np.array(cell[t].position)
+        #Convert to r and make the center of tube the origin
+        r = np.sqrt((pos[:,1] - Y*.5)**2 + (pos[:,2] - Z*0.5)**2)
+        #create array of positions (r) and cids
+        cid = np.array(cell[t].cid)
+        tmp = np.array([r,cid])
+
+        #now sort them on increasing CID
+        tmp = tmp.T[tmp.T[:,1].argsort()].T
+
+        tmp_rs_cids = []
+        for i in tmp_final[1]:
+            if len(np.where(tmp[1] == i)[0]) >0:
+                idx = np.where(tmp[1] == i)[0][0]
+                tmp_rs_cids.append(np.array([tmp[0][idx],tmp[1][idx]]))
+        radial_and_cids_overtime.append(np.array(tmp_rs_cids))
+
+    radial_and_cids_overtime = np.array(radial_and_cids_overtime)
+    
+
+    #now calculate the mean squared displacements
+    rposses = []
+    for i in range(len(radial_and_cids_overtime)):
+        rposses.append(radial_and_cids_overtime[i][:,0])
+    rposses = np.array(rposses)
+
+    #This is how you get it for the entire ensemble
+    #11.23.2018
+    diff = np.diff(rposses.T)
+    diff_sq = diff**2
+    MSD = np.mean(diff_sq,axis=0)
+
+    #BEN you need to figure out how to get this for different locations within the tube
+    #11.23.2018
+    return(MSD)
+
+
+
+
+def rectangle_MSD_cell_centers(cell,direction="X",dx=1,version="new"):
+
+    print("N of Cells deleted = ",len(cell[0].cid) - len(cell[-1].cid))
+    print("% of Cells deleted = ",(len(cell[0].cid) - len(cell[-1].cid))/len(cell[0].cid)*100.)
+
+    #Get final info to make sure that you calculate MSD for cells that are not deleted
+    pos = np.array(cell[-1].position)
+    if version == "OLD" or version =="old":
+        cid_final = np.array(cell[-1].cid)
+    else:
+        cid_final = np.array(cell[-1].bcid)
+    if direction == "X" or direction == "x":
+        r_final = pos[:,0]
+    if direction == "Y" or direction == "y":
+        r_final = pos[:,1]
+    if direction == "Z" or direction == "z":
+        r_final = pos[:,2]
+
+    tmp_final = np.array([r_final,cid_final])
+    #sorted on increasing CID
+    tmp_final = tmp_final.T[tmp_final.T[:,1].argsort()].T
+
+
+    position_and_cids_overtime = []
+    for t in range(len(cell)):
+
+        #get positions
+        if direction == "X" or direction == "x":
+            rp = np.array(cell[t].position)[:,0]
+
+        if direction == "Y" or direction == "y":
+            rp = np.array(cell[t].position)[:,1]
+
+        if direction == "Z" or direction == "z":
+            rp = np.array(cell[t].position)[:,2]
+
+        #create array of positions (r) and cids
+        if version == "OLD" or version =="old":
+            cid = np.array(cell[t].cid)
+        else:
+            cid = np.array(cell[t].bcid)
+        tmp = np.array([rp,cid])
+
+        #now sort them on increasing CID
+        tmp = tmp.T[tmp.T[:,1].argsort()].T
+        tmp_rs_cids = []
+        for i in tmp_final[1]:
+            if len(np.where(tmp[1] == i)[0]) >0:
+                idx = np.where(tmp[1] == i)[0][0]
+                tmp_rs_cids.append(np.array([tmp[0][idx],tmp[1][idx]]))
+                #print(t,i,idx,np.array([tmp[0][idx],tmp[1][idx]]))
+        position_and_cids_overtime.append(np.array(tmp_rs_cids))
+        #pdb.set_trace()
+
+    position_and_cids_overtime = np.array(position_and_cids_overtime)
+    
+
+    #now calculate the mean squared displacements
+    rposses = []
+    for i in range(len(position_and_cids_overtime)):
+        rposses.append(position_and_cids_overtime[i][:,0])
+    rposses = np.array(rposses)
+    #pdb.set_trace()
+    #This is how you get it for the entire ensemble
+    #11.23.2018
+    diff = np.diff(rposses.T)
+    diff_sq = diff**2
+    MSD = np.mean(diff_sq,axis=0)
+
+    #BEN you need to figure out how to get this for different locations within the tube
+    #11.23.2018
+    return(MSD)
+
+
 
 def pipeflow_radial_volumefraction(cell,X,Y,Z,dx,refdir=0):
 
@@ -159,7 +291,17 @@ def pipeflow_radial_volumefraction(cell,X,Y,Z,dx,refdir=0):
 
 
 
-def pipe_volumefraction(cell,R,L):
+def pipe_totalvolumefraction(cell,R,L):
+    '''Calculates total volume fraction in a pipe
+    
+    Keyword arguments:
+    cell -- cell (class), can be indexed over time
+    R -- radius (float), Radius of pipe in micro meters
+    L -- length (float), Length of pipe in micro meters 
+
+    Returns:
+    Total volume fraction of given cell type in a pipe
+    '''
     
     lsp_per_cell,N_cells = cell_statistics(cell)
     
@@ -171,6 +313,31 @@ def pipe_volumefraction(cell,R,L):
     pipe_volume = np.pi*R*R*L
     
     return(N_cells*cell_vol/pipe_volume)
+
+
+def rectangle_totalvolumefraction(cell,X,Y,Z):
+    '''Calculates total volume fraction in a rectangle
+    
+    Keyword arguments:
+    cell -- cell (class), can be indexed over time
+    X -- X length (float), Length of pipe in micro meters in X dimension 
+    Y -- Y length (float), Length of pipe in micro meters in Y dimension 
+    Z -- YZ length (float), Length of pipe in micro meters in Z dimension 
+
+    Returns:
+    Total volume fraction of given cell type in a rectangle 
+    '''
+    
+    lsp_per_cell,N_cells = cell_statistics(cell)
+    
+    if lsp_per_cell >=640 and lsp_per_cell <=650:
+        cell_vol = 90
+    elif lsp_per_cell > 60 and lsp_per_cell < 70:
+        cell_vol = 11
+
+    rectangle_volume = X*Y*Z
+    
+    return(N_cells*cell_vol/rectangle_volume)
     
 def cell_statistics(cell):
 

@@ -66,7 +66,7 @@ class LSP_CELL(object):
 
 
 #The read function
-def core_read_processor(f,r,p,ct3,full,half,t,datapath,ct3name,n):
+def core_read_processor(f,r,p,ct3,full,half,t,datapath,rbcname,pltname,ct3name,n):
 	fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel = ([] for i in range(10))
 	rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rcid = ([] for i in range(16))
 	pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pcid = ([] for i in range(16))
@@ -83,10 +83,10 @@ def core_read_processor(f,r,p,ct3,full,half,t,datapath,ct3name,n):
 		#open file
 		#Read HemoCell v2.0 and v1.0 output. Try to catch files that do not exist. 
 		try:
-			fluid_file = h5py.File(time_path+"/fluid." + str(t).zfill(12) +".p." +str(n) +".h5","r")	
+			fluid_file = h5py.File(time_path+"/Fluid." + str(t).zfill(12) +".p." +str(n) +".h5","r")	
 		except:
 			try:
-				fluid_file = h5py.File(datapath+str(t)+"/fluid." + str(t) +".p." +str(n) +".h5","r")
+				fluid_file = h5py.File(datapath+str(t)+"/Fluid." + str(t) +".p." +str(n) +".h5","r")
 			except (OSError, IOError):
 				raise
 
@@ -136,10 +136,10 @@ def core_read_processor(f,r,p,ct3,full,half,t,datapath,ct3name,n):
 		#open file
 		#Read HemoCell v2.0 and v1.0 output. Try to catch files that do not exist. 
 		try:
-			RBC_file = h5py.File(time_path+"/RBC." + str(t).zfill(12) +".p." +str(n) +".h5","r")	
+			RBC_file = h5py.File(time_path+"/"+rbcname+"." + str(t).zfill(12) +".p." +str(n) +".h5","r")	
 		except:
 			try:
-				RBC_file = h5py.File(datapath+str(t)+"/RBC." + str(t) +".p." +str(n) +".h5","r")
+				RBC_file = h5py.File(datapath+str(t)+"/"+rbcname+"." + str(t) +".p." +str(n) +".h5","r")
 			except (OSError, IOError):
 				raise
 
@@ -175,10 +175,10 @@ def core_read_processor(f,r,p,ct3,full,half,t,datapath,ct3name,n):
 		#open file
 		#Read HemoCell v2.0 and v1.0 output. Try to catch files that do not exist. 
 		try:
-			platelet_file = h5py.File(time_path+"/PLT." + str(t).zfill(12) +".p." +str(n) +".h5","r")	
+			platelet_file = h5py.File(time_path+"/"+pltname+"." + str(t).zfill(12) +".p." +str(n) +".h5","r")	
 		except:
 			try:
-				platelet_file = h5py.File(datapath+str(t)+"/PLT." + str(t) +".p." +str(n) +".h5","r")
+				platelet_file = h5py.File(datapath+str(t)+"/"+pltname+"." + str(t) +".p." +str(n) +".h5","r")
 			except (OSError, IOError):
 				raise
 
@@ -260,7 +260,7 @@ def core_read_processor(f,r,p,ct3,full,half,t,datapath,ct3name,n):
 
 #The wrapper around the read function 
 #This will read in a time range and all the run processors
-def open_hdf5_files(f=True,r=True,p=True,ct3=True,full=False,half=False,read_procs=1,begin=0,end=0,timestep=100000,datapath=".",ct3name="RBC_stiff",nprocs=1):
+def open_hdf5_files(f=True,r=True,p=True,ct3=True,full=False,half=False,read_procs=1,begin=0,end=0,timestep=100000,datapath=".",rbcname="RBC_HO",pltname="PLT",ct3name="RBC_stiff",nprocs=1):
 
 	fluid =[]
 	rbc =[]
@@ -279,7 +279,7 @@ def open_hdf5_files(f=True,r=True,p=True,ct3=True,full=False,half=False,read_pro
 			pool = Pool(read_procs)
 			iter_procs = (i for i in range(nprocs))
 			#Prepare the function for pool.map
-			read_function = partial(core_read_processor,f,r,p,ct3,full,half,t,datapath,ct3name)
+			read_function = partial(core_read_processor,f,r,p,ct3,full,half,t,datapath,rbcname,pltname,ct3name)
 			#Read in parallel
 			result = np.array(pool.map(read_function,iter_procs))
 			pool.close()
