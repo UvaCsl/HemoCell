@@ -450,10 +450,11 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   totalNodes += preInlet->getNumberOfNodes();
   totalNodes += cellsInBoundingBox(management.getBoundingBox());
   
-  preInlet->nProcs = global::mpi().getSize()*(preInlet->getNumberOfNodes()/(T)totalNodes);
+ /* preInlet->nProcs = global::mpi().getSize()*(preInlet->getNumberOfNodes()/(T)totalNodes);
   if (preInlet->nProcs == 0) {
     preInlet->nProcs = 1;
-  }
+  }*/
+  preInlet->nProcs = 5;
   
   int nProcs = global::mpi().getSize()-preInlet->nProcs;
   
