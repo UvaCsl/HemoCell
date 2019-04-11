@@ -65,7 +65,8 @@ public:
     virtual void spreadParticleForce(plb::Box3D domain);
     void separateForceVectors();
     void unifyForceVectors();
-    
+    void updateResidenceTime(unsigned int rtime);
+
     virtual void findInternalParticleGridPoints(plb::Box3D domain);
     virtual void internalGridPointsMembrane(plb::Box3D domain);
     
@@ -117,6 +118,7 @@ public:
     void outputVertexId    (plb::Box3D,vector<vector<T>>&, pluint, std::string&);
     void outputCellId    (plb::Box3D,vector<vector<T>>&, pluint, std::string&);
     void outputForceInnerLink   (plb::Box3D,vector<vector<T>>&, pluint, std::string&);
+    void outputResTime   (plb::Box3D,vector<vector<T>>&, pluint, std::string&);
 
 
     void AddOutputMap();
