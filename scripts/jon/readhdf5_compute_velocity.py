@@ -4,7 +4,6 @@ from pathlib import Path
 sys.path.append("C:/Users/jdabo/Desktop/")
 import HCELL_readhdf5_boundary as HCELL_readhdf5
 #import HCELL_readhdf5
-#import HCELL_measure as measure
 import numpy as np
 import numpy.ma as ma
 
@@ -21,12 +20,6 @@ timestep =     2500   # What was the time step?
 TIME_begin = 227500   # When do you want to start reading the data
 TIME_end =   230000   # When do you want to end reading the data.
 DX = 5e-7;   DT = 1e-7
-
-if len(sys.argv) > 1:
-    datapath = sys.argv[1]
-    for arg in str(sys.argv):
-        if arg == '-r' or arg == '-R':
-            REVERSE_X = True
 
 REVERSE_X = True     # Measure in -x direction instead of x direction
 
@@ -89,10 +82,9 @@ def getSpatialBoundaries():
         if pos_triplet[2] > zmax:
             zmax = pos_triplet[2]
     return xmin, xmax, ymin, ymax, zmin, zmax
-    
-    
+   
 #%%
-def plotFluidVelocityHeatmap(xmin, xmax, ymin, ymax, zmin, zmax):
+def computeVelocityXaverage(xmin, xmax, ymin, ymax, zmin, zmax):
     # We're going to average over x dimension
     x_range = int(round(xmax - xmin)) + 1;
     y_range = int(round(ymax - ymin)) + 1;
@@ -120,29 +112,78 @@ def plotFluidVelocityHeatmap(xmin, xmax, ymin, ymax, zmin, zmax):
             (y,z) = pos_triplet[1:]
             average_slice[pos_to_index[(y,z)]] += -vel_triplet[0] if REVERSE_X else -vel_triplet[0]
             already_done.append(list(pos_triplet))
-    
     average_slice /= x_range  # Average
-    conversion_factor = DX / DT * 1000  # times 1000 for m/s -> mm/s
-    average_slice *= conversion_factor
+    
+    return average_slice
 
+
+#%%
+def plotFluidVelocityHeatmap(average_slice):
+    # Convert values from LU to SI for plot
+    conversion_factor = DX / DT * 1000   # *1000 for m/s -> mm/s
+    average_slice_convert = average_slice * conversion_factor
+    
     # Plot
-    plt.imshow(average_slice, cmap='hot')
+    import seaborn    
+    plt.imshow(average_slice_convert, cmap='hot')
     plt.title("Preinlet x-averaged fluid velocity in mm/s.")
     plt.xlabel(r"Y position in $\mu$m.")
     plt.ylabel(r"Z position in $\mu$m.")
     ax = plt.gca()
     ticks = [0, 10, 20, 30]
-    labels = ["0", "5", "10", "15"]
+    spatial_conv_factor = 0.5
+    labels = [str(tick * spatial_conv_factor) for tick in ticks]
     ax.set_xticks(ticks[:-1])
     ax.set_xticklabels(labels[:-1])
     ax.set_yticks(ticks)
     ax.set_yticklabels(labels)
-    #plt.xticks(ticks, labels)
-    #plt.yticks(ticks, labels)
     plt.colorbar()
     plt.show()
-    
+
 #%%
-xmin, xmax, ymin, ymax, zmin, zmax = getSpatialBoundaries()
+# Plot fluid velocity versus radius profile
+def plotFluidVelocityVSradius(average_slice, ymin, ymax, zmin, zmax):    
+
+    # This function returns distance to center
+    def compute_distance(Y,Z,middle):
+        dist = np.linalg.norm(np.array([[Y - middle[0], 0],[0, Z - middle[1]]]))
+        if Y < middle[0]:
+            dist *= -1
+        return dist
+    
+    # Compute y/z center of slice    
+    middle = (ymin + (ymax - ymin) / 2.0, zmin + (zmax - zmin) / 2.0)
+    fluid_vel_radius = {}    
+    for y, row in enumerate(average_slice):
+        for z, vel in enumerate(row):
+            if vel > 0.0:  # We don't care about 0-velocity cells outside of boundary
+                Y = y + ymin;   Z = z + zmin
+                dist = compute_distance(Y,Z,middle)
+                fluid_vel_radius[dist] = vel
+                            
+    Xplot = sorted(fluid_vel_radius.keys())
+    Yplot = [fluid_vel_radius[key] for key in Xplot]
+
+    # Convert values from LU to SI for plot
+    conversion_factor = DX / DT * 1000   # *1000 for m/s -> mm/s
+    Yplot = [vel * conversion_factor for vel in Yplot]
+    
+    # 2 LU is one micron
+    Xplot = [length * 0.5 for length in Xplot]
+
+    import seaborn    
+    plt.plot(Xplot, Yplot, "r.")
+    plt.ylabel("Velocity in mm/s")
+    plt.xlabel(r"Distance from center of pipe in $\mu$m.")
+    plt.show()
+
+#%%
 printFluidVelocity()
-plotFluidVelocityHeatmap(xmin, xmax, ymin, ymax, zmin, zmax)
+
+xmin, xmax, ymin, ymax, zmin, zmax = getSpatialBoundaries()
+
+average_slice = computeVelocityXaverage(xmin, xmax, ymin, ymax, zmin, zmax)
+
+plotFluidVelocityHeatmap(average_slice)
+
+plotFluidVelocityVSradius(average_slice, ymin, ymax, zmin, zmax)
