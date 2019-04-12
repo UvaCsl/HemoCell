@@ -1,9 +1,12 @@
-from matplotlib import pyplot as plt
 import sys
-from pathlib import Path
-sys.path.append("C:/Users/jdabo/Desktop/")
+sys.path.append("C:/Users/jdabo/Desktop/")  # 'default'
+# Command-line arguments
+args = sys.argv
+for i, arg in enumerate(args):
+    if arg == "-l":      # Readhdf5 library
+        sys.path.append(args[i+1])
+from matplotlib import pyplot as plt        
 import HCELL_readhdf5_boundary as HCELL_readhdf5
-#import HCELL_readhdf5
 import numpy as np
 import numpy.ma as ma
 
@@ -13,15 +16,28 @@ import numpy.ma as ma
 datapath = "C:/Users/jdabo/Desktop/" # WINDOWS
 
 #FIRST SPECIFY SOME STUFF ABOUT YOUR DATA
-nprocs = 1           # How many procs did you run on?
-nprocs_preinlet = 5   # How many of those were devoted to the preinlet?
-read_procs = 1        # Number of cores you want to read in with
+nprocs = 45           # How many procs did you run on?
+read_procs = 4        # Number of cores you want to read in with
 timestep =     2500   # What was the time step?
 TIME_begin = 227500   # When do you want to start reading the data
 TIME_end =   230000   # When do you want to end reading the data.
 DX = 5e-7;   DT = 1e-7
 
-REVERSE_X = True     # Measure in -x direction instead of x direction
+for i, arg in enumerate(args):
+    if arg == "-d":      # data
+        datapath = args[i+1]
+    if arg == "-tmin":   # time first step (inclusive)
+        TIME_begin = int(args[i+1])
+    if arg == "-tmax":   # time last step (exclusive I think)
+        print(args[i+1])        
+        TIME_end = int(args[i+1])        
+    if arg == "-tstep":  # time step
+        timestep = int(args[i+1])
+    if arg == "-n":      # Number of processors the sim was run on
+        nprocs = int(args[i+1])
+    reverse_X = False
+    if arg == "R":
+        reverse_X = True
 
 #%%
 
@@ -29,7 +45,7 @@ REVERSE_X = True     # Measure in -x direction instead of x direction
 #fluid, _, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, r=False, p=False, read_procs=read_procs, nprocs=nprocs, begin=TIME_begin, end=TIME_end, timestep=timestep, datapath=datapath)
 
 fluid_pre, _, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, r=False, \
-    p=False, read_procs=read_procs, nprocs=nprocs_preinlet, begin=TIME_begin, \
+    p=False, read_procs=read_procs, nprocs=nprocs, begin=TIME_begin, \
     end=TIME_end, timestep=timestep, datapath=datapath, fluidname='Fluid_PRE')
 
 #%%
@@ -126,7 +142,7 @@ def plotFluidVelocityHeatmap(average_slice):
     # Plot
     import seaborn    
     plt.imshow(average_slice_convert, cmap='hot')
-    plt.title("Preinlet x-averaged fluid velocity in mm/s.")
+    plt.title("x-averaged fluid velocity in mm/s.")
     plt.xlabel(r"Y position in $\mu$m.")
     plt.ylabel(r"Z position in $\mu$m.")
     ax = plt.gca()
@@ -173,8 +189,10 @@ def plotFluidVelocityVSradius(average_slice, ymin, ymax, zmin, zmax):
 
     import seaborn    
     plt.plot(Xplot, Yplot, "r.")
+    plt.title("Fluid velocity versus distance from center")
     plt.ylabel("Velocity in mm/s")
     plt.xlabel(r"Distance from center of pipe in $\mu$m.")
+    plt.grid(True)
     plt.show()
 
 #%%
