@@ -35,9 +35,9 @@ for i, arg in enumerate(args):
         timestep = int(args[i+1])
     if arg == "-n":      # Number of processors the sim was run on
         nprocs = int(args[i+1])
-    reverse_X = False
+    REVERSE_X = False
     if arg == "R":
-        reverse_X = True
+        REVERSE_X = True
 
 #%%
 
@@ -198,10 +198,17 @@ def plotFluidVelocityVSradius(average_slice, ymin, ymax, zmin, zmax):
 #%%
 printFluidVelocity()
 
-xmin, xmax, ymin, ymax, zmin, zmax = getSpatialBoundaries()
+# Check if we want to do all the other plotting stuff
+doTheRest = True
+for arg in args:
+	if arg == "stats":
+		doTheRest = False
+	
+if doTheRest:
+	xmin, xmax, ymin, ymax, zmin, zmax = getSpatialBoundaries()
 
-average_slice = computeVelocityXaverage(xmin, xmax, ymin, ymax, zmin, zmax)
+	average_slice = computeVelocityXaverage(xmin, xmax, ymin, ymax, zmin, zmax)
 
-plotFluidVelocityHeatmap(average_slice)
+	plotFluidVelocityHeatmap(average_slice)
 
-plotFluidVelocityVSradius(average_slice, ymin, ymax, zmin, zmax)
+	plotFluidVelocityVSradius(average_slice, ymin, ymax, zmin, zmax)
