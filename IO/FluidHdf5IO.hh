@@ -507,7 +507,7 @@ private:
     }   
      
     if (cellfields.hemocell.outputInSiUnits) {
-      for (unsigned int i = 0 ; i < (*nCells) ; i++) {
+      for (unsigned int i = 0 ; i < (*nCells)*6 ; i++) {
         output[i] = output[i]*(1/(param::dt));
       }
     }
