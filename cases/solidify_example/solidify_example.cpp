@@ -100,7 +100,8 @@ int main(int argc, char *argv[]) {
 
   hemocell.lattice->initialize();   
 
-  hemocell.cellfields->populateBindingSites();  
+  Box3D bindingbox = bottomChannel;
+  hemocell.cellfields->populateBindingSites(&bindingbox);  
   
   //loading the cellfield
   if (not cfg->checkpointed) {

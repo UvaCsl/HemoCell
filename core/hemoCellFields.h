@@ -145,7 +145,7 @@ public:
   void populateBoundaryParticles();
 
   /// Add bindingSites
-  void populateBindingSites();
+  void populateBindingSites(plb::Box3D * box = 0);
   
   /// Delete non local particles (do not delete in envelopesize)
   void deleteNonLocalParticles(int envelope);

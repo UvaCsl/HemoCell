@@ -28,7 +28,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mollerTrumbore.h"
 #include "bindingField.h"
 #include "interiorViscosity.h"
+#pragma GCC diagnostic push 
+#pragma GCC diagnostic ignored "-Wint-in-bool-context"
 #include <Eigen3/Eigenvalues>
+#pragma GCC diagnostic pop
 
 namespace hemo { 
 /* *************** class HemoParticleField3D ********************** */
@@ -861,12 +864,12 @@ void HemoCellParticleField::applyBoundaryRepulsionForce() {
   }
 }
 
-void HemoCellParticleField::populateBindingSites() {
+void HemoCellParticleField::populateBindingSites(plb::Box3D & domain) {
   //qqw2qswws32 <- Greatly appreciated input of Gábor
 
-  for (int x = 0; x < this->atomicLattice->getNx()-1; x++) {
-    for (int y = 0; y < this->atomicLattice->getNy()-1; y++) {
-      for (int z = 0; z < this->atomicLattice->getNz()-1; z++) {
+  for (int x = domain.x0; x <= domain.x1; x++) {
+    for (int y = domain.y0; y <= domain.y1; y++) {
+      for (int z = domain.z0; z <= domain.z1; z++) {
         if (this->atomicLattice->get(x,y,z).getDynamics().isBoundary()) {
           for (int xx = x-1; xx <= x+1; xx++) {
             if (xx < 0 || xx > this->atomicLattice->getNx()-1) {continue;}

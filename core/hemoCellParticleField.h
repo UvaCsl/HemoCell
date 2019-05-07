@@ -74,7 +74,7 @@ public:
     void syncEnvelopes();
     void populateBoundaryParticles();
     void applyBoundaryRepulsionForce();
-    void populateBindingSites();
+    void populateBindingSites(plb::Box3D & domain);
 
     T eigenValueFromCell(plb::Cell<T,DESCRIPTOR> & cell);
     
