@@ -27,7 +27,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.hh"
 
 namespace hemo {
-  bindingFieldHelper::bindingFieldHelper(HemoCellFields & cellFields_) : cellFields(cellFields_) {
+  bindingFieldHelper::bindingFieldHelper(HemoCellFields * cellFields_) : cellFields(*cellFields_) {
+    //Check if function is not called too early
+    if (!cellFields_) {
+      pcout << "(BindingField) ERROR: Bindingfield is requested while cellfields is not initialized. Perhaps populateBindingSites is called before hemocell.initializeCellFields?" << endl;
+      exit(1);
+    }
+    
     //Create bindingfield with same properties as fluid field underlying the particleField.
     multiBindingField = new plb::MultiScalarField3D<bool>(
             MultiBlockManagement3D (

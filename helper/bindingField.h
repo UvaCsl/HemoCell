@@ -31,7 +31,7 @@ namespace hemo {
   class bindingFieldHelper {
   public:
     static bindingFieldHelper& get(HemoCellFields & cellFields) {
-      static bindingFieldHelper instance(cellFields);
+      static bindingFieldHelper instance(&cellFields);
       return instance;
     }
       
@@ -48,7 +48,7 @@ namespace hemo {
     HemoCellFields & cellFields;
     plb::MultiScalarField3D<bool> * multiBindingField = 0;
     
-    bindingFieldHelper(HemoCellFields & cellFields);
+    bindingFieldHelper(HemoCellFields * cellFields);
     ~bindingFieldHelper();
     
     void refillBindingSites();
