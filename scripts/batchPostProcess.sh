@@ -10,10 +10,10 @@ echo ${scriptsDir}
 
 if command -v python; then
 python_c=python
-elif commond -v python3; then
+elif command -v python3; then
 python_c=python3
 else
-pyton_c=python2
+python_c=python2
 fi
 
 erase_things=$1
