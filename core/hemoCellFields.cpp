@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemocell.h"
 #include "readPositionsBloodCells.h"
 #include "constantConversion.h"
+#include "bindingField.h"
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
@@ -587,20 +588,22 @@ void HemoCellFields::populateBoundaryParticles() {
 }
 
 void HemoCellFields::HemoPopulateBindingSites::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[1])->populateBindingSites(domain);
+    dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->populateBindingSites(domain);
 }
 void HemoCellFields::populateBindingSites(plb::Box3D * box) {
-    vector<MultiBlock3D*>wrapper;
-    wrapper.push_back(hemocell.lattice);
-    wrapper.push_back(immersedParticles);
-    Box3D domain;
-    if(box) {
-      domain = *box;
-    } else {
-      domain = immersedParticles->getBoundingBox();
-    }
-    HemoPopulateBindingSites * fnct = new HemoPopulateBindingSites();
-    applyProcessingFunctional(fnct,domain,wrapper);
+  //Initialize bindingField before entering functional
+  bindingFieldHelper::get(*this);
+  
+  vector<MultiBlock3D*>wrapper;
+  wrapper.push_back(immersedParticles);
+  Box3D domain;
+  if(box) {
+    domain = *box;
+  } else {
+    domain = immersedParticles->getBoundingBox();
+  }
+  HemoPopulateBindingSites * fnct = new HemoPopulateBindingSites();
+  applyProcessingFunctional(fnct,domain,wrapper);
 }
 
 void HemoCellFields::HemoSeperateForceVectors::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {

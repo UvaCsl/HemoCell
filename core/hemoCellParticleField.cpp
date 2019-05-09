@@ -864,9 +864,13 @@ void HemoCellParticleField::applyBoundaryRepulsionForce() {
   }
 }
 
-void HemoCellParticleField::populateBindingSites(plb::Box3D & domain) {
+void HemoCellParticleField::populateBindingSites(plb::Box3D & domain_) {
   //qqw2qswws32 <- Greatly appreciated input of Gábor
-
+  
+  //Translate domain to make sense in the lattice domain.
+  Dot3D shift = this->getLocation() - this->atomicLattice->getLocation();
+  Box3D domain = domain_.shift(shift.x,shift.y,shift.z);
+  
   for (int x = domain.x0; x <= domain.x1; x++) {
     for (int y = domain.y0; y <= domain.y1; y++) {
       for (int z = domain.z0; z <= domain.z1; z++) {
@@ -889,11 +893,11 @@ end_inner_loop:;
       }
     }
   }
+  cout << "End" << endl;
 }
 
 
 T HemoCellParticleField::eigenValueFromCell(plb::Cell<T,DESCRIPTOR> & cell) {
-    T n = 3;
     plb::Array<T,SymmetricTensor<T,DESCRIPTOR>::n> element;
     cell.computePiNeq(element);
     T omega     = cell.getDynamics().getOmega();
@@ -915,7 +919,7 @@ T HemoCellParticleField::eigenValueFromCell(plb::Cell<T,DESCRIPTOR> & cell) {
 
     S[2][0] = element[2]; //s[zx];
     S[2][1] = element[4]; //s[zy];
-    S[2][2] = element[6]; //s[zz];
+    S[2][2] = element[5]; //s[zz];
     
     Eigen::Matrix<T,3,3> A;
     for (plint i = 0; i < 3; i++) {
