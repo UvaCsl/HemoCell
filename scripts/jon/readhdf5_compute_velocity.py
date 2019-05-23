@@ -1,56 +1,31 @@
 import sys
-sys.path.append("C:/Users/jdabo/MYSTUFF/STAGE_local/hemocell/scripts/measure/")  # 'default'
-# Command-line arguments
-args = sys.argv
-for i, arg in enumerate(args):
-    if arg == "-l":      # Readhdf5 library
-        sys.path.append(args[i+1])
-from matplotlib import pyplot as plt    
-import HCELL_readhdf5_boundary as HCELL_readhdf5
+sys.path.append("L:/hemocell/scripts/measure/")  # 'default'
+import HCELL_readhdf5_jon as HCELL_readhdf5
 import numpy as np
-import numpy.ma as ma
-import seaborn as sb
-sb.set()
+import matplotlib.pyplot as plt
+import seaborn as sb;    sb.set()
 
 # Where does the data sit?
-datapath = "C:/Users/jdabo/Desktop/long_run/AR2_R0.049/output/hdf5/"
-
-DX = 5e-7;   DT = 1e-7;
+datapath = "L:/hemocell/cases/AR2_stiff/output/hdf5/"
 
 #FIRST SPECIFY SOME STUFF ABOUT YOUR DATA
-nprocs = 1             # -n How many procs did you run on?
-read_procs = 4         # -d Number of cores you want to read in with
-timestep =    100000   # -tstep What was the time step?
-TIME_begin = 8000000   # -tmin When do you want to start reading the data
-TIME_end =   8100000   # -tmax When do you want to end reading the data.
-REVERSE_X = False      # Simulation is going from x -> -x or reverse
-SAVE_FIGS = False      # Savae figure instead of showing
+nprocs = 5              # How many procs did you run on?
+read_procs = 4           # Number of cores you want to read in with
+DX = 5e-7;   DT = 1e-7
 
-for i, arg in enumerate(args):
-    if arg == "-d":      # data
-        datapath = args[i+1]
-    if arg == "-tmin":   # time first step (inclusive)
-        TIME_begin = int(args[i+1])
-    if arg == "-tmax":   # time last step (exclusive I think)
-        print(args[i+1])        
-        TIME_end = int(args[i+1])        
-    if arg == "-tstep":  # time step
-        timestep = int(args[i+1])
-    if arg == "-n":      # Number of processors the sim was run on
-        nprocs = int(args[i+1])
-    if arg == "R":
-        REVERSE_X = True
-    if arg == "save_figs":
-        SAVE_FIGS = True
+timesteps = [10000000, 10000100]
 
-#%%
+REVERSE_X = True
+SAVE_FIGS = False
+
+    #%%
 
 # Read data
 #fluid, _, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, r=False, p=False, read_procs=read_procs, nprocs=nprocs, begin=TIME_begin, end=TIME_end, timestep=timestep, datapath=datapath)
 
 fluid_pre, _, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, r=False, \
-    p=False, read_procs=read_procs, nprocs=nprocs, begin=TIME_begin, \
-    end=TIME_end, timestep=timestep, datapath=datapath, fluidname='Fluid_PRE')
+    p=False, read_procs=read_procs, nprocs=nprocs, timesteps=timesteps, \
+    datapath=datapath, fluidname='Fluid_PRE')
 
 #%%
 fluid = fluid_pre[-1]  # (look at last time instance)
@@ -61,7 +36,6 @@ vel = np.array(fluid.velocity)
 bdrs = np.array(fluid.boundary)
 
 #%%
-REVERSE_X = True
 
 def removeDuplicates(pos, vel, bdrs):
     pos, indices = np.unique(pos, return_index = True, axis=0)
@@ -71,7 +45,7 @@ def removeDuplicates(pos, vel, bdrs):
 
 def printFluidVelocity(pos, vel, bdrs):
     # Compute average and maximum velocity
-    max_vel = -np.infty
+    max_vels = {}
     running_sum = 0.0;
     count = 0
     for pos_triplet, vel_triplet, bdry in zip(pos, vel, bdrs):
@@ -81,12 +55,17 @@ def printFluidVelocity(pos, vel, bdrs):
             vel_x = -vel_triplet[0] if REVERSE_X else vel_triplet[0]            
             running_sum += vel_x
             count += 1
-            if vel_x > max_vel:
-                max_vel = vel_x
-    conversion_factor = DX / DT
+            # See if this max is highest for this slice
+            x = pos_triplet[0]
+            if not x in max_vels:
+                max_vels[x] = vel_x
+            elif vel_x > max_vels[x]:
+                max_vels[x] = vel_x
+            
+    conversion_factor = (DX / DT) * 1000   # *1000 for m/s -> mm/s
     print("")
-    print("Max  fluid velocity mm/s: " + str(max_vel * conversion_factor * 1000))  # *1000 for m/s -> mm/s
-    print("Mean fluid velocity mm/s: " + str((running_sum / count) * conversion_factor * 1000))
+    print("Median max fluid velocity mm/s: " + str(np.median(list(max_vels.values())) * conversion_factor))
+    print("Mean       fluid velocity mm/s: " + str((running_sum / count) * conversion_factor))
     
 # Get the x,y,z boundaries of geometry bounding box
 def getSpatialBoundaries(pos):
@@ -217,12 +196,9 @@ pos, vel, bdrs = removeDuplicates(pos, vel, bdrs)
 #%%
 printFluidVelocity(pos, vel, bdrs)
 #%%
-# Check if we want to do all the other plotting stuff
-doTheRest = True
-for arg in args:
-	if arg == "stats":
-		doTheRest = False
-	
+doTheRest = False
+
+# Check if we want to do all the other plotting stuff	
 if doTheRest:
 	xmin, xmax, ymin, ymax, zmin, zmax = getSpatialBoundaries(pos)
 

@@ -1,65 +1,48 @@
 import sys
-sys.path.append("C:/Users/jdabo/MYSTUFF/STAGE_local/hemocell/scripts/measure/")  # 'default'
-# Command-line arguments
-args = sys.argv
-for i, arg in enumerate(args):
-    if arg == "-l":      # Readhdf5 library
-        sys.path.append(args[i+1])
+sys.path.append("/home/jdbouter/hemocell/scripts/measure/")  # 'default'
+#sys.path.append("L:/hemocell/scripts/measure/")  # 'default'
+import matplotlib
 from matplotlib import pyplot as plt        
-import HCELL_readhdf5_boundary as HCELL_readhdf5
+import HCELL_readhdf5_jon as HCELL_readhdf5
 import numpy as np
-import numpy.ma as ma
+import csv
 
 # Where does the data sit?
-#datapath = "L:/hemocell/examples/short_AR1/output_0/hdf5/"
-#datapath = "C:/Users/jdabo/MYSTUFF/STAGE_local/hemocell/examples/with_aneurysm/output/hdf5/"
-datapath = "C:/Users/jdabo/Desktop/long_run/AR2_R0.049/output/hdf5/" # WINDOWS
+datapath = "/home/jdbouter/no_backup/AR2_stiff/output/hdf5/"
+#datapath = "L:/no_backup/AR2/output/hdf5/"
 
 #FIRST SPECIFY SOME STUFF ABOUT YOUR DATA
-nprocs = 44           # How many procs did you run on?
-read_procs = 4        # Number of cores you want to read in with
-timestep =    100000  # What was the time step?
-TIME_begin = 7000000   # When do you want to start reading the data
-TIME_end =   8100000   # When do you want to end reading the data.
+nprocs = 40             # How many procs did you run on?
+read_procs = 16          # Number of cores you want to read in with
+timestep =     100000
+TIME_begin =   100000   # When do you want to start reading the data
+TIME_end =   10000000   # When do you want to end reading the data.
 DX = 5e-7;   DT = 1e-7
 
 SAVE_FIGS = False
-for i, arg in enumerate(args):
-    if arg == "-d":      # data
-        datapath = args[i+1]
-    if arg == "-tmin":   # time first step (inclusive)
-        TIME_begin = int(args[i+1])
-    if arg == "-tmax":   # time last step (exclusive I think)
-        TIME_end = int(args[i+1])        
-    if arg == "-tstep":  # time step
-        timestep = int(args[i+1])
-    if arg == "-n":      # Number of processors the sim was run on
-        nprocs = int(args[i+1])
-    if arg == "save_figs":
-        SAVE_FIGS = True
 
 #%%
 
-Z_SLICE_GEOMETRY = 67.5
+timesteps = list(range(TIME_begin, TIME_end + timestep, timestep))
 
 #%%
 
-# Read t=0 Fluid box, only for the geometry boundaries
-fluid, _, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, r=False, \
-    p=False, read_procs=read_procs, nprocs=nprocs, begin=0, \
-    end=0+timestep, timestep=timestep, datapath=datapath, fluidname='Fluid')
-fluid=fluid[0]
+## Read t=0 Fluid box, only for the geometry boundaries
+#fluid, _, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, r=False, \
+#    p=False, read_procs=read_procs, nprocs=nprocs, timesteps=[timesteps[0]], \
+#    datapath=datapath, fluidname='Fluid')
+#fluid=fluid[0]
 
 #%%
 
 # Read RBC data
-_, RBC, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, f=False, r=True, \
-    p=False, read_procs=read_procs, nprocs=nprocs, begin=TIME_begin, \
-    end=TIME_end, timestep=timestep, datapath=datapath, rbcname='RBC')
+#_, RBC, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, f=False, r=True, \
+#    p=False, read_procs=read_procs, nprocs=nprocs, timesteps=timesteps, \
+#    datapath=datapath, rbcname='RBC')
 
 #%%
 
-fluid_position = np.array(fluid.position)
+#fluid_position = np.array(fluid.position)
 
 #%%
 
@@ -98,7 +81,7 @@ def getGeometrySlice(fluid_position, fluid_boundary, xmin, xmax, ymin, ymax, zmi
             geo_slice[i,j] = 1
     return geo_slice
 
-def computeTimeAveragedSideview(RBC, xmin, xmax, ymin, ymax, zmin, zmax):
+def computeTimeAveragedSideview(RBC, timesteps, xmin, xmax, ymin, ymax, zmin, zmax):
     x_range = int(round(xmax - xmin)) + 1
     y_range = int(round(ymax - ymin)) + 1
     
@@ -120,6 +103,15 @@ def computeTimeAveragedSideview(RBC, xmin, xmax, ymin, ymax, zmin, zmax):
             
         sideview += np.array( [ [len(id_list) for id_list in list_of_id_lists] \
                               for list_of_id_lists in unique_ids_per_dxdy]   )
+    
+        with open("/home/jdbouter/no_backup/AR2_stiff/output/sideview.csv", "w+") as my_csv:
+            csvWriter = csv.writer(my_csv, delimiter=' ')
+            try:
+                csvWriter.writerow(["time n/N", str(timesteps[t_idx]), str(t_idx) + "/" + str(N_t)])
+            except:
+                pass
+            csvWriter.writerows(sideview)
+    
     sideview /= N_t
     return sideview
 
@@ -140,7 +132,8 @@ def plotSideview(sideview, geo_slice):
     
     # Color map for RBCs, interpolating between zero-value = geometry color and 1.0 = red
     # WRITE EXPLANATION FOR THR
-    THR = int(np.floor(N/2))
+    fraction_max = 0.75
+    THR = int(np.floor(N * fraction_max))
     c1 = np.ones(N)
     c1[:THR] = np.linspace(geometry_color[0], 1.0, THR)
     c2 = np.zeros(N)
@@ -158,7 +151,10 @@ def plotSideview(sideview, geo_slice):
     # Plot
     fig, ax = plt.subplots(1, 1)
     ax.imshow(geo_slice.transpose(), cmap='geo_map')
-    ax.imshow(sideview.transpose(), cmap='RBC_colors')
+    test = ax.imshow(sideview.transpose(), cmap='RBC_colors')
+    colorbar = plt.colorbar(test)
+    colorbar.ax.set_ylabel('# of iter.', rotation=270)
+    colorbar.set_clim(0, 80)
     ax = plt.gca()
     xticks = ax.get_xticks()
     yticks = ax.get_yticks()
@@ -169,27 +165,39 @@ def plotSideview(sideview, geo_slice):
     ax.set_xticklabels(xlabels)
     ax.set_yticks(yticks)
     ax.set_yticklabels(ylabels)    
-    #ax.set_xlim([0, 800])
-    #ax.set_ylim([0, 300])
+    ax.set_xlim([0, 400])
+    ax.set_ylim([250, 0])
     plt.grid(True)
     plt.title("RBC location averaged over time")
     plt.xlabel(r"Position in $\mu$m")
     plt.ylabel(r"Position in $\mu$m")
     if SAVE_FIGS:
+        matplotlib.use('Agg')
         plt.savefig("RBCs_pos_over_time")
     else:
+        matplotlib.use('Qt5Agg')
         plt.show()
         
 # %%
-xmin, xmax, ymin, ymax, zmin, zmax = getSpatialBoundaries(fluid)
+#xmin, xmax, ymin, ymax, zmin, zmax = getSpatialBoundaries(fluid_position)
 
 #%%
-#bleh = np.array(fluid.position)
-geo_slice = getGeometrySlice(fluid_position, np.array(fluid.boundary), xmin, \
-                             xmax, ymin, ymax, zmin, zmax, Z_SLICE_GEOMETRY)
+#Z_SLICE_GEOMETRY = 101.5
+#geo_slice = getGeometrySlice(fluid_position, np.array(fluid.boundary), xmin, \
+#                             xmax, ymin, ymax, zmin, zmax, Z_SLICE_GEOMETRY)
 
 #%%
-sideview = computeTimeAveragedSideview(RBC, xmin, xmax, ymin, ymax, zmin, zmax)
+
+import pickle
+#pickle.dump(geo_slice, open("geometry_slice.pickle", "wb"), protocol = 2)
+#pickle.dump([xmin, xmax, ymin, ymax, zmin, zmax], open("spatial_boundaries.pickle", "wb"), protocol = 2)
+xmin, xmax, ymin, ymax, zmin, zmax = \
+    pickle.load(open("L:/hemocell/scripts/jon/AR2_spatial_boundaries.pickle", "rb"))
+geo_slice = pickle.load(open("L:/hemocell/scripts/jon/AR2_geometry_slice.pickle", "rb"))
+
+#%%
+#sideview = computeTimeAveragedSideview(RBC, timesteps, xmin, xmax, ymin, ymax, zmin, zmax)
+sideview = np.loadtxt(open("L:/no_backup/AR2_stiff/output/sideview.csv", "rb"), delimiter=" ", skiprows=1)
 
 #%%
 #plotSideview(sideview, geo_slice)
