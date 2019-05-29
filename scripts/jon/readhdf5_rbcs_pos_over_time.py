@@ -33,102 +33,7 @@ N_t = len(timesteps)
 
 #%%
 
-# Read t=0 Fluid box, only for the geometry boundaries
-fluid, _, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, r=False, \
-    p=False, read_procs=read_procs, nprocs=nprocs, timesteps=[timesteps[0]], \
-    datapath=datapath, fluidname='Fluid')
-fluid=fluid[0]
-
-#%%
-
-# Read RBC data
-#_, RBC, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, f=False, r=True, \
-#    p=False, read_procs=read_procs, nprocs=nprocs, timesteps=timesteps, \
-#    datapath=datapath, rbcname='RBC')
-
-#%%
-
-fluid_position = np.array(fluid.position)
-
-#%%
-
-# Get the x,y,z boundaries of geometry bounding box
-def getSpatialBoundaries(fluid_position):
-    xmin, ymin, zmin =  np.infty,  np.infty,  np.infty
-    xmax, ymax, zmax = -np.infty, -np.infty, -np.infty
-    for pos_triplet in fluid_position:        
-        # Update min/max boundaries
-        if pos_triplet[0] < xmin:
-            xmin = pos_triplet[0]
-        if pos_triplet[0] > xmax:
-            xmax = pos_triplet[0]
-        if pos_triplet[1] < ymin:
-            ymin = pos_triplet[1]
-        if pos_triplet[1] > ymax:
-            ymax = pos_triplet[1]
-        if pos_triplet[2] < zmin:
-            zmin = pos_triplet[2]
-        if pos_triplet[2] > zmax:
-            zmax = pos_triplet[2]
-            
-    return xmin, xmax, ymin, ymax, zmin, zmax
-
-# Get a 2d-array of geometry boundary cells
-def getGeometrySlice(fluid_position, fluid_boundary, xmin, xmax, ymin, ymax, zmin, zmax, Z_SLICES_GEOMETRY):
-    x_range = int(round(xmax - xmin)) + 1
-    y_range = int(round(ymax - ymin)) + 1    
-    geo_slice = np.ones((x_range, y_range), dtype=int)
-    EPS = 1e-5  # crude compare floats threshold
-    for pos_triplet, bdry in zip(fluid_position, fluid_boundary):
-        # Check if the z coordinate is in one of the specified slices
-        z_coordinate_in_slice = False
-        z = pos_triplet[2]
-        for SLICE in Z_SLICES_GEOMETRY:
-            if abs(z - SLICE) < EPS:
-                z_coordinate_in_slice = True
-        # Assign 1 in geo_slice if it's boundary (i.e. outside of geometry fluid field)
-        if z_coordinate_in_slice and int(bdry) == 0:
-            x,y = pos_triplet[0:2]
-            i = int(round(x - xmin))
-            j = int(round(y - ymin))
-            geo_slice[i,j] = 0
-    return geo_slice
-
-def computeTimeAveragedSideview(RBC, timesteps, xmin, xmax, ymin, ymax, zmin, zmax):
-    x_range = int(round(xmax - xmin)) + 1
-    y_range = int(round(ymax - ymin)) + 1
-    
-    sideview = np.zeros((x_range, y_range))
-    N_t = len(RBC)  # number of time steps
-    
-    for t_idx in range(N_t):
-        rbc = RBC[t_idx]
-        # 2d array of lists, dimensions x/y
-        unique_ids_per_dxdy = [[ [] for j in range(y_range)] for i in range(x_range)]  
-        for pos_triplet, cid in zip(np.array(rbc.position), np.array(rbc.cid)):
-            x,y = pos_triplet[0:2]
-            # LSP positions can be outside normal xmin/xmax range; exclude
-            if x > xmin and x < xmax and y > ymin and y < ymax:  
-                i = int(round(x - xmin))
-                j = int(round(y - ymin))
-                if not cid in unique_ids_per_dxdy[i][j]:
-                    unique_ids_per_dxdy[i][j].append(cid)
-            
-        sideview += np.array( [ [len(id_list) for id_list in list_of_id_lists] \
-                              for list_of_id_lists in unique_ids_per_dxdy]   )
-    
-        with open("L:/no_backup/AR2_stiff/output/sideview.csv", "w+") as my_csv:
-            csvWriter = csv.writer(my_csv, delimiter=' ')
-            try:
-                csvWriter.writerow(["time n/N", str(timesteps[t_idx]), str(t_idx) + "/" + str(N_t)])
-            except:
-                pass
-            csvWriter.writerows(sideview)
-    
-    sideview /= N_t
-    return sideview
-
-def plotSideview(sideview, geo_slice, N_t):
+def plotDifference(diff1, diff2, geo_slice, N_t):
     # First create two color maps. One for the geometry contour and one with 
     # transparency for the overlaid RBC heat map
     from matplotlib.colors import LinearSegmentedColormap
@@ -139,36 +44,57 @@ def plotSideview(sideview, geo_slice, N_t):
     geometry_color = [c/N for c in geometry_color]
     geometry_color.append(1.0)  # no transparency
     white_c = [1.0, 1.0, 1.0, 1.0]
+    #red_c = [1.0, 0.0, 0.0, 1.0]
+    green_c = [0.0, 1.0, 0.0, 1.0]
+    blue_c = [0.0, 0.0, 1.0, 1.0]
+    
     
     geometry_color_array = np.array([geometry_color, white_c])
     map_object = LinearSegmentedColormap.from_list(name='geo_map', colors=geometry_color_array)
     plt.register_cmap(cmap=map_object)
     
-    # Comment here
+    # Create color map for normal RBCs
     c1 = np.ones(N)
-    c1 = np.linspace(geometry_color[0], 1.0, N)
+    c1 = np.linspace(geometry_color[0], green_c[0], N)
     c2 = np.zeros(N)
-    c2 = np.linspace(geometry_color[1], 0.0, N)
+    c2 = np.linspace(geometry_color[1], green_c[1], N)
     c3 = np.zeros(N)
-    c3 = np.linspace(geometry_color[2], 0.0, N)
+    c3 = np.linspace(geometry_color[2], green_c[2], N)
     c4 = np.ones(N)
-    c4 = np.linspace(0.0, 1.0, N)
+    c4 = np.linspace(0.0, 1.0, N)   # transparency
     color_array = np.array([c1, c2, c3, c4]).transpose()
     
     # create a colormap object and register
     map_object = LinearSegmentedColormap.from_list(name='RBC_colors', colors=color_array)
     plt.register_cmap(cmap=map_object)
+
+    # Create color map for normal RBCs
+    c1 = np.ones(N)
+    c1 = np.linspace(geometry_color[0], blue_c[0], N)
+    c2 = np.zeros(N)
+    c2 = np.linspace(geometry_color[1], blue_c[1], N)
+    c3 = np.zeros(N)
+    c3 = np.linspace(geometry_color[2], blue_c[2], N)
+    c4 = np.ones(N)
+    c4 = np.linspace(0.0, 1.0, N)   # transparency
+    color_array = np.array([c1, c2, c3, c4]).transpose()
     
-    # Changed sideview so that it's a fraction of timesteps
-    sideview /= N_t
+    # create a colormap object and register
+    map_object = LinearSegmentedColormap.from_list(name='RBC_stiff_colors', colors=color_array)
+    plt.register_cmap(cmap=map_object)
     
     # Mirror both matrices
     geo_slice = np.array(geo_slice[::-1])
-    sideview  = np.array(sideview[::-1])
+    diff1  = np.array(diff1[::-1])
+    diff2  = np.array(diff2[::-1])
+
+    # Divide through time to get fraction of time
+    diff1 /= N_t;   diff2 /= N_t
     
     # Transform sideview data with log for log scaling
     TwoPlusLog = lambda v : 2 + np.log10(v) if v > 0.0 else 0.0
-    sideview = np.array([[TwoPlusLog(v) for v in row] for row in sideview])
+    diff1 = np.array([[TwoPlusLog(v) for v in row] for row in diff1])
+    diff2 = np.array([[TwoPlusLog(v) for v in row] for row in diff2])
     
     # Plot
     FONTSIZE = 24
@@ -177,8 +103,9 @@ def plotSideview(sideview, geo_slice, N_t):
     matplotlib.rc('ytick', labelsize=FONTSIZE) 
     fig, ax = plt.subplots(1, 1)
     ax.imshow(geo_slice.transpose(), cmap='geo_map')
-    fig2 = ax.imshow(sideview.transpose(), cmap='RBC_colors')
-    colorbar = plt.colorbar(fig2)
+    fig2 = ax.imshow(diff1.transpose(), cmap='RBC_stiff_colors')
+    fig3 = ax.imshow(diff2.transpose(), cmap='RBC_colors')
+    colorbar = plt.colorbar(fig3)
     colorbar.ax.set_ylabel('Avg # of RBCs present over time', rotation=270, labelpad=40, fontsize=FONTSIZE)
     colorbar.set_ticks([0.0, 0.5, 1.0, 1.5])
     colorbar.set_ticklabels(["0.01", r"10$^{-1.5}$", "0.1", r"10$^{-0.5}$"])
@@ -206,23 +133,23 @@ def plotSideview(sideview, geo_slice, N_t):
         plt.show()
 
 #%%        
-#xmin, xmax, ymin, ymax, zmin, zmax = getSpatialBoundaries(fluid_position)
-#
-#geo_slice = getGeometrySlice(fluid_position, np.array(fluid.boundary), xmin, \
-#                             xmax, ymin, ymax, zmin, zmax, Z_SLICES_GEOMETRY)
-#
-#
-#pickle.dump(geo_slice, open("L:/hemocell/scripts/jon/AR2_geometry_slice.pickle", "wb"), protocol = 2)
-#pickle.dump([xmin, xmax, ymin, ymax, zmin, zmax], \
-#            open("L:/hemocell/scripts/jon/AR2_spatial_boundaries.pickle", "wb"), protocol = 2)
+
 xmin, xmax, ymin, ymax, zmin, zmax = \
     pickle.load(open("L:/hemocell/scripts/jon/AR2_spatial_boundaries.pickle", "rb"))
 geo_slice = pickle.load(open("L:/hemocell/scripts/jon/AR2_geometry_slice.pickle", "rb"))
 
 #%%
-#sideview = computeTimeAveragedSideview(RBC, timesteps, xmin, xmax, ymin, ymax, zmin, zmax)
-sideview = np.loadtxt(open("L:/no_backup/AR2/output/sideview.csv", "rb"), delimiter=" ", skiprows=1)
+sideview1 = np.loadtxt(open("L:/no_backup/AR2/output/sideview.csv", "rb"), delimiter=" ", skiprows=1)
+sideview2 = np.loadtxt(open("L:/no_backup/AR2_stiff/output/sideview.csv", "rb"), delimiter=" ", skiprows=1)
 
-plotSideview(sideview, geo_slice, N_t)
+diff1 = np.zeros(sideview1.shape)
+diff2 = np.zeros(sideview1.shape)
+I,J = sideview1.shape
+for i in range(I):
+    for j in range(J):
+        diff1[i][j] = sideview2[i][j] - sideview1[i][j]
+        diff2[i][j] = sideview1[i][j] - sideview2[i][j]
+
+plotDifference(diff1, diff2, geo_slice, N_t)
 
 #%%
