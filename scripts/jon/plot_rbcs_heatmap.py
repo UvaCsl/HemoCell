@@ -1,37 +1,14 @@
 import sys
-#sys.path.append("/home/jdbouter/hemocell/scripts/measure/")  # 'default'
-sys.path.append("L:/hemocell/scripts/measure/")  # 'default'
+sys.path.append("L:/hemocell/scripts/jon/")  # 'default'
 import matplotlib
 from matplotlib import pyplot as plt        
-import HCELL_readhdf5_jon as HCELL_readhdf5
 import numpy as np
-import csv
 import pickle
+import csv
 
-# Where does the data sit?
-#datapath = "/home/jdbouter/no_backup/AR2_stiff/output/hdf5/"
-datapath = "L:/no_backup/AR2/output/hdf5/"
-
-#FIRST SPECIFY SOME STUFF ABOUT YOUR DATA
-nprocs = 40             # How many procs did you run on?
-read_procs = 4          # Number of cores you want to read in with
-timestep =     100000
-TIME_begin =   100000   # When do you want to start reading the data
-TIME_end =   10000000   # When do you want to end reading the data.
-DX = 5e-7;   DT = 1e-7
+#%%
 
 SAVE_FIGS = False
-
-#%%
-
-Z_SLICES_GEOMETRY = list(np.arange(93.5, 110.5))
-
-#%%
-
-timesteps = list(range(TIME_begin, TIME_end + timestep, timestep))
-N_t = len(timesteps)
-
-#%%
 
 def plotSideview(sideview, geo_slice, N_t):
     # First create two color maps. One for the geometry contour and one with 
@@ -210,28 +187,38 @@ def plotDifference(diff1, diff2, geo_slice, N_t):
         plt.show()
 
 #%%        
+CASE = "AR1"
+RESULTS_PATH = "L:/no_backup/" + CASE + "/output/heatmap/"
 
-xmin, xmax, ymin, ymax, zmin, zmax = \
-    pickle.load(open("L:/hemocell/scripts/jon/AR2_spatial_boundaries.pickle", "rb"))
-geo_slice = pickle.load(open("L:/hemocell/scripts/jon/AR2_geometry_slice.pickle", "rb"))
+boundaries_path = RESULTS_PATH + CASE + "_spatial_boundaries.pickle"
+geo_slice_path = RESULTS_PATH + CASE + "_geometry_slice.pickle"
+        
+xmin, xmax, ymin, ymax, zmin, zmax = pickle.load(open(boundaries_path, "rb"))
+geo_slice = pickle.load(open(geo_slice_path, "rb"))
 
 #%%
-sideview1 = np.loadtxt(open("L:/no_backup/AR2/output/sideview.csv", "rb"), delimiter=" ", skiprows=1)
-sideview2 = np.loadtxt(open("L:/no_backup/AR2_stiff/output/sideview.csv", "rb"), delimiter=" ", skiprows=1)
+sideview_path = RESULTS_PATH + CASE + "_sideview.csv"
 
-absdiff = np.zeros(sideview1.shape)
-diff1 = np.zeros(sideview1.shape)
-diff2 = np.zeros(sideview1.shape)
-I,J = sideview1.shape
-for i in range(I):
-    for j in range(J):
-        absdiff[i][j] = abs(sideview2[i][j] - sideview1[i][j])
-        diff1[i][j] = sideview2[i][j] - sideview1[i][j]
-        diff2[i][j] = sideview1[i][j] - sideview2[i][j]
+with open(sideview_path, newline='\r\n') as f:
+  reader = csv.reader(f, delimiter = ' ')
+  row1 = next(reader)  # gets the first line
+  N_t = int(row1[1])
 
-#plotSideview(absdiff, geo_slice, N_t)
+sideview = np.loadtxt(open(sideview_path, "rb"), delimiter=" ", skiprows=1)
+
+#absdiff = np.zeros(sideview1.shape)
+#diff1 = np.zeros(sideview1.shape)
+#diff2 = np.zeros(sideview1.shape)
+#I,J = sideview1.shape
+#for i in range(I):
+#    for j in range(J):
+#        absdiff[i][j] = abs(sideview2[i][j] - sideview1[i][j])
+#        diff1[i][j] = sideview2[i][j] - sideview1[i][j]
+#        diff2[i][j] = sideview1[i][j] - sideview2[i][j]
+
+plotSideview(sideview, geo_slice, N_t)
 #plotSideview(diff1, geo_slice, N_t)
 #plotSideview(diff2, geo_slice, N_t)
-plotDifference(diff1, diff2, geo_slice, N_t)
+#plotDifference(diff1, diff2, geo_slice, N_t)
 
 #%%
