@@ -1,11 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import seaborn as sb;   sb.set()
-
-# Function for annotating each bar
-def annotateBars(row, ax):
-    ax.text()
 
 # Read data and sort
 data = pd.read_csv("measurements.csv", delimiter = " ", index_col = False) 
@@ -62,17 +57,10 @@ for df, cellName in zip([RBC, PLT], cellNames):
     yticks = ax.get_yticks()
     ax.set_yticklabels(yticks, fontsize = FONTSIZE)
 
-    # Apply annotations
-    #data.apply(annotateBars, ax=ax, axis=1)
-
     # Shrink current axis's width by 20% on the right
     box = ax.get_position()
     ax.set_position([box.x0, box.y0,
                      box.width * 0.8, box.height])
-    
-    
-    #legend1 = pyplot.legend(plot_lines[0], ["algo1", "algo2", "algo3"], loc=1)
-    #pyplot.legend([l[0] for l in plot_lines], parameters, loc=4)
     
     # Put a bar legend to the right of axis
     legend1 = ax.legend(loc='upper center', bbox_to_anchor=(1.11, 0.725),
@@ -90,4 +78,6 @@ for df, cellName in zip([RBC, PLT], cellNames):
 
     # Title and show
     plt.title("Average " + cellName + " velocity by region and case", fontsize = FONTSIZE)
+    plt.xlabel("region", fontsize = FONTSIZE)
+    plt.ylabel("Velocity (mm/s)", fontsize = FONTSIZE)
     plt.show()

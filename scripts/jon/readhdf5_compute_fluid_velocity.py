@@ -1,94 +1,81 @@
 import sys
-sys.path.append("C:/Users/jdabo/Desktop/")  # 'default'
-# Command-line arguments
-args = sys.argv
-for i, arg in enumerate(args):
-    if arg == "-l":      # Readhdf5 library
-        sys.path.append(args[i+1])
-from matplotlib import pyplot as plt        
-import HCELL_readhdf5_boundary as HCELL_readhdf5
+sys.path.append("L:/hemocell/scripts/measure/")  # 'default'
+import HCELL_readhdf5_jon as HCELL_readhdf5
 import numpy as np
-import numpy.ma as ma
-
-# Where does the data sit?
-datapath = "C:/Users/jdabo/Desktop/hdf5/"
-
-DX = 5e-7;   DT = 1e-7;
+import matplotlib
+import matplotlib.pyplot as plt
+import seaborn as sb;    sb.set()
 
 #FIRST SPECIFY SOME STUFF ABOUT YOUR DATA
-nprocs = 10           # -n How many procs did you run on?
-read_procs = 4        # -d Number of cores you want to read in with
-timestep =     2500   # -tstep What was the time step?
-TIME_begin = 97500   # -tmin When do you want to start reading the data
-TIME_end =   100000   # -tmax When do you want to end reading the data.
-REVERSE_X = True     # Simulation is going from x -> -x or reverse
+nprocs = 5              # How many procs did you run on?
+read_procs = 4           # Number of cores you want to read in with
+DX = 5e-7;   DT = 1e-7
 
-SAVE_FIGS = False
+timesteps = [10000]
+
 REVERSE_X = True
-for i, arg in enumerate(args):
-    if arg == "-d":      # data
-        datapath = args[i+1]
-    if arg == "-tmin":   # time first step (inclusive)
-        TIME_begin = int(args[i+1])
-    if arg == "-tmax":   # time last step (exclusive I think)
-        print(args[i+1])        
-        TIME_end = int(args[i+1])        
-    if arg == "-tstep":  # time step
-        timestep = int(args[i+1])
-    if arg == "-n":      # Number of processors the sim was run on
-        nprocs = int(args[i+1])
-    if arg == "R":
-        REVERSE_X = True
-    if arg == "save_figs":
-        SAVE_FIGS = True
+SAVE_FIGS = False
 
 #%%
 
-# Read data
-#fluid, _, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, r=False, p=False, read_procs=read_procs, nprocs=nprocs, begin=TIME_begin, end=TIME_end, timestep=timestep, datapath=datapath)
+datapath = "L:/no_backup/AR2/output/hdf5/"
 
-fluid_pre, _, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, r=False, \
-    p=False, read_procs=read_procs, nprocs=nprocs, begin=TIME_begin, \
-    end=TIME_end, timestep=timestep, datapath=datapath, fluidname='Fluid_PRE')
-
-#%%
-fluid = fluid_pre[-1]  # (look at last time instance)
+fluid, _, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, r=False, \
+    p=False, read_procs=read_procs, nprocs=nprocs, timesteps=timesteps, \
+    datapath=datapath, fluidname='Fluid_PRE')
 
 #%%
+def removeDuplicates(pos, vel, bdrs):
+    pos, indices = np.unique(pos, return_index = True, axis=0)
+    vel = vel[indices]
+    bdrs = bdrs[indices]
+    return pos, vel, bdrs
 
-def removeDuplicates(fluid):
-    pos, indices = np.unique(fluid.position, return_index = True, axis=0)
-    vel = np.array(fluid.velocity)[indices]
-    bdry = np.array(fluid.boundary)[indices]
-    fluid.position = pos
-    fluid.velocity = vel
-    fluid.boundary = bdry
-    return fluid
-
-def printFluidVelocity(fluid):
-    # Compute average and maximum velocity
-    max_vel = -np.infty
-    running_sum = 0.0;
-    count = 0
-    for pos_triplet, vel_triplet, bdry in zip(fluid.position, fluid.velocity, fluid.boundary):
-        # If this cell is WITHIN geometry boundary
-        if bdry[0] == 0.0:
-            # Index [0] is for gettin velocity in x-direction only
-            vel_x = -vel_triplet[0] if REVERSE_X else vel_triplet[0]            
-            running_sum += vel_x
-            count += 1
-            if vel_x > max_vel:
-                max_vel = vel_x
-    conversion_factor = DX / DT
+def printFluidVelocity(fluid_pre):
+    # Iterate over time
+    mean_vels_over_time = []
+    max_vels_over_time = []
+    for fluid_t in fluid_pre:
+        pos = np.array(fluid_first_t.position)
+        vel = np.array(fluid_first_t.velocity)
+        bdrs = np.array(fluid_first_t.boundary)  
+        # Compute average and maximum velocity
+        max_vels = {}  # per slice, with unique x-values as key for the slice
+        running_sum = 0.0;
+        count = 0
+        for pos_triplet, vel_triplet, bdry in zip(pos, vel, bdrs):
+            # If this cell is WITHIN geometry boundary
+            if bdry[0] == 0.0:
+                # Index [0] is for gettin velocity in x-direction only
+                vel_x = -vel_triplet[0] if REVERSE_X else vel_triplet[0]            
+                running_sum += vel_x
+                count += 1
+                # See if this max is highest for this slice
+                x = pos_triplet[0]
+                if not x in max_vels:
+                    max_vels[x] = vel_x
+                elif vel_x > max_vels[x]:
+                    max_vels[x] = vel_x
+                    
+        # Average / max fluid velocity over entire domain
+        mean_vels_over_time.append(running_sum / count)
+        # So this is the max fluid velocity averaged over all x slices
+        max_vels_over_time.append(np.mean(list(max_vels.values())))
+                    
+    # Average over time
+    mean_vel = np.mean(mean_vels_over_time)
+    max_vel = np.mean(max_vels_over_time)
+            
+    conversion_factor = (DX / DT) * 1000   # *1000 for m/s -> mm/s
     print("")
-    print("Max  fluid velocity mm/s: " + str(max_vel * conversion_factor * 1000))  # *1000 for m/s -> mm/s
-    print("Mean fluid velocity mm/s: " + str((running_sum / count) * conversion_factor * 1000))
+    print("Mean     fluid velocity mm/s: " + str(mean_vel * conversion_factor))
+    print("Mean max fluid velocity mm/s: " + str(max_vel  * conversion_factor))
     
 # Get the x,y,z boundaries of geometry bounding box
-def getSpatialBoundaries(fluid):
+def getSpatialBoundaries(pos):
     xmin, ymin, zmin =  np.infty,  np.infty,  np.infty
     xmax, ymax, zmax = -np.infty, -np.infty, -np.infty
-    for pos_triplet in np.array(fluid.position):
+    for pos_triplet in np.array(pos):
         if pos_triplet[0] < xmin:
             xmin = pos_triplet[0]
         if pos_triplet[0] > xmax:
@@ -103,7 +90,7 @@ def getSpatialBoundaries(fluid):
             zmax = pos_triplet[2]
     return xmin, xmax, ymin, ymax, zmin, zmax
    
-def computeVelocityXaverage(fluid, xmin, xmax, ymin, ymax, zmin, zmax):
+def computeVelocityXaverage(pos, vel, xmin, xmax, ymin, ymax, zmin, zmax):
     # We're going to average over x dimension
     x_range = int(round(xmax - xmin)) + 1;
     y_range = int(round(ymax - ymin)) + 1;
@@ -120,51 +107,51 @@ def computeVelocityXaverage(fluid, xmin, xmax, ymin, ymax, zmin, zmax):
             z += 1.0
         y += 1.0    
     
-    # Keeps track of coordinates already done; skip double values
-    already_done = []
-    
     # Compute average x-velocity slice where the slice has y/z dimensions (so average over x dimension)
     print("Computing x-averaged velocity slice...")
     print("Percentage: ", end = ' ')
-    length = float(len(fluid.velocity))
+    length = float(len(vel))
     count = 0;    already_printed = []
-    for pos_triplet, vel_triplet, bdry in zip(fluid.position, fluid.velocity, fluid.boundary):
+    for pos_triplet, vel_triplet in zip(pos, vel):
         percentage = int(round((count / length) * 100))
-        if percentage % 10 == 0:
-            if not percentage in already_printed:
-                print(percentage, end=' ')
-                already_printed.append(percentage)
+        if not percentage in already_printed and percentage % 10 == 0:
+            print(percentage, end=' ')
+            already_printed.append(percentage)
 
         (y,z) = pos_triplet[1:]
-        average_slice[pos_to_index[(y,z)]] += -vel_triplet[0] if REVERSE_X else -vel_triplet[0]
-        already_done.append(list(pos_triplet))
+        average_slice[pos_to_index[(y,z)]] += -vel_triplet[0] if REVERSE_X else vel_triplet[0]
             
         count += 1
     average_slice /= x_range  # Average
     
-    print(" ")
+    print("")
     return average_slice
 
+
+FONTSIZE = 24
 
 def plotFluidVelocityHeatmap(average_slice):
     # Convert values from LU to SI for plot
     conversion_factor = DX / DT * 1000   # *1000 for m/s -> mm/s
     average_slice_convert = average_slice * conversion_factor
     
+    matplotlib.rc('xtick', labelsize=FONTSIZE) 
+    matplotlib.rc('ytick', labelsize=FONTSIZE) 
+    
     # Plot
     plt.figure(0)
-    plt.imshow(average_slice_convert, cmap='hot')
-    plt.title("x-averaged fluid velocity in mm/s.")
-    plt.xlabel(r"Y position in $\mu$m.")
-    plt.ylabel(r"Z position in $\mu$m.")
+    plt.imshow(average_slice_convert, cmap="hot")
+    plt.title("x-averaged fluid velocity in mm/s.", fontsize = FONTSIZE)
+    plt.xlabel(r"Y position in $\mu$m.", fontsize = FONTSIZE)
+    plt.ylabel(r"Z position in $\mu$m.", fontsize = FONTSIZE)
     ax = plt.gca()
     ticks = [0, 10, 20, 30]
     spatial_conv_factor = 0.5
     labels = [str(tick * spatial_conv_factor) for tick in ticks]
     ax.set_xticks(ticks[:-1])
-    ax.set_xticklabels(labels[:-1])
+    ax.set_xticklabels(labels[:-1], fontsize = FONTSIZE)
     ax.set_yticks(ticks)
-    ax.set_yticklabels(labels)
+    ax.set_yticklabels(labels, fontsize = FONTSIZE)
     plt.colorbar()
     if not SAVE_FIGS:
         plt.show()
@@ -202,32 +189,37 @@ def plotFluidVelocityVSradius(average_slice, ymin, ymax, zmin, zmax):
     Xplot = [length * 0.5 for length in Xplot]
 
     plt.figure(1)
+    #sb.scatterplot(Xplot, Yplot)
     plt.plot(Xplot, Yplot, "r.")
-    plt.title("Fluid velocity versus distance from center")
-    plt.ylabel("Velocity in mm/s")
-    plt.xlabel(r"Distance from center of pipe in $\mu$m.")
+    plt.title("Fluid velocity versus distance from center", fontsize = FONTSIZE)
+    plt.ylabel("Velocity in mm/s", fontsize = FONTSIZE)
+    plt.xlabel(r"Distance from center of pipe in $\mu$m.", fontsize = FONTSIZE)
     plt.grid(True)
     if not SAVE_FIGS:
         plt.show()
     else:
         plt.savefig('vel_vs_radius.png')
+   
+    
 
 #%%
-fluid = removeDuplicates(fluid)
+printFluidVelocity(fluid_pre)
 #%%
-printFluidVelocity(fluid)
-#%%
+
 # Check if we want to do all the other plotting stuff
 doTheRest = True
-for arg in args:
-	if arg == "stats":
-		doTheRest = False
-	
 if doTheRest:
-	xmin, xmax, ymin, ymax, zmin, zmax = getSpatialBoundaries(fluid)
+    # Put data in numpy array once
+    fluid_first_t = fluid_pre[0]
+    pos = np.array(fluid_first_t.position)
+    vel = np.array(fluid_first_t.velocity)
+    bdrs = np.array(fluid_first_t.boundary)       
+    
+    xmin, xmax, ymin, ymax, zmin, zmax = getSpatialBoundaries(pos)
 
-	average_slice = computeVelocityXaverage(fluid, xmin, xmax, ymin, ymax, zmin, zmax)
+    average_slice = computeVelocityXaverage(pos, vel, xmin, xmax, ymin, ymax, zmin, zmax)
 
-	plotFluidVelocityHeatmap(average_slice)
+#%%
+    plotFluidVelocityHeatmap(average_slice)
 
-	plotFluidVelocityVSradius(average_slice, ymin, ymax, zmin, zmax)
+    plotFluidVelocityVSradius(average_slice, ymin, ymax, zmin, zmax)
