@@ -387,6 +387,25 @@ void PreInlet::preInletFromSlice(Direction direction_, Box3D boundary) {
   if (direction == Direction::Zpos) {
     location.z1 += preinlet_length;
   }
+  Box3D system = hemocell->lattice->getBoundingBox();
+  if (direction == Direction::Xneg || direction == Direction::Xpos) {
+    if (location.y0 < system.y0 ) { location.y0 =system.y0; }
+    if (location.y1 > system.y1 ) { location.y1 =system.y1; }
+    if (location.z0 < system.z0 ) { location.z0 =system.z0; }
+    if (location.z1 > system.z1 ) { location.z1 =system.z1; }
+  }
+  if (direction == Direction::Yneg || direction == Direction::Ypos) {
+    if (location.x0 < system.x0 ) { location.x0 =system.x0; }
+    if (location.x1 > system.x1 ) { location.x1 =system.x1; }
+    if (location.z0 < system.z0 ) { location.z0 =system.z0; }
+    if (location.z1 > system.z1 ) { location.z1 =system.z1; }
+  }
+  if (direction == Direction::Zneg || direction == Direction::Zpos) {
+    if (location.y0 < system.y0 ) { location.y0 =system.y0; }
+    if (location.y1 > system.y1 ) { location.y1 =system.y1; }
+    if (location.x0 < system.x0 ) { location.x0 =system.x0; }
+    if (location.x1 > system.x1 ) { location.x1 =system.x1; }
+  }
 }
 
 void PreInlet::CreatePreInletBoundingBox::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
@@ -498,11 +517,44 @@ void PreInlet::autoPreinletFromBoundary(Direction dir_) {
   if (direction == Direction::Zpos) {
     location.z1 += preinlet_length;
   }
+    Box3D system = hemocell->lattice->getBoundingBox();
+  if (direction == Direction::Xneg || direction == Direction::Xpos) {
+    if (location.y0 < system.y0 ) { location.y0 =system.y0; }
+    if (location.y1 > system.y1 ) { location.y1 =system.y1; }
+    if (location.z0 < system.z0 ) { location.z0 =system.z0; }
+    if (location.z1 > system.z1 ) { location.z1 =system.z1; }
+  }
+  if (direction == Direction::Yneg || direction == Direction::Ypos) {
+    if (location.x0 < system.x0 ) { location.x0 =system.x0; }
+    if (location.x1 > system.x1 ) { location.x1 =system.x1; }
+    if (location.z0 < system.z0 ) { location.z0 =system.z0; }
+    if (location.z1 > system.z1 ) { location.z1 =system.z1; }
+  }
+  if (direction == Direction::Zneg || direction == Direction::Zpos) {
+    if (location.y0 < system.y0 ) { location.y0 =system.y0; }
+    if (location.y1 > system.y1 ) { location.y1 =system.y1; }
+    if (location.x0 < system.x0 ) { location.x0 =system.x0; }
+    if (location.x1 > system.x1 ) { location.x1 =system.x1; }
+  }
 }
 
 PreInlet::PreInlet(HemoCell * hemocell_, plb::MultiScalarField3D<int> * flagMatrix_) {
   hemocell = hemocell_;
   flagMatrix = flagMatrix_;
+  preinlet_length = (*hemocell->cfg)["preInlet"]["parameters"]["lengthN"].read<int>();
+}
+
+PreInlet::PreInlet(HemoCell * hemocell_, plb::MultiBlockManagement3D & management) {
+  hemocell = hemocell_;
+  flagMatrix = new plb::MultiScalarField3D<int>(management,
+            defaultMultiBlockPolicy3D().getBlockCommunicator(),
+            defaultMultiBlockPolicy3D().getCombinedStatistics(),
+            defaultMultiBlockPolicy3D().getMultiScalarAccess<int>(),
+            1);
+  vector<MultiBlock3D *> wrapper;
+  wrapper.push_back(hemocell->lattice);
+  wrapper.push_back(flagMatrix);
+  applyProcessingFunctional(new FillFlagMatrix(),hemocell->lattice->getBoundingBox(),wrapper);
   preinlet_length = (*hemocell->cfg)["preInlet"]["parameters"]["lengthN"].read<int>();
 }
 
@@ -519,6 +571,19 @@ void PreInlet::CreateDrivingForceFunctional::processGenericBlocks(plb::Box3D dom
   }
 }
 
+void PreInlet::FillFlagMatrix::processGenericBlocks(plb::Box3D domain, std::vector<plb::AtomicBlock3D*> blocks) {
+  BlockLattice3D<T,DESCRIPTOR> * ff = dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[0]);
+  ScalarField3D<int> * sf = dynamic_cast<ScalarField3D<int>*>(blocks[1]);
+  for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
+    for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
+      for (int z  = domain.z0 ; z <= domain.z1 ; z++) {
+        if (ff->get(x,y,z).getDynamics().isBoundary()) {
+          sf->get(x,y,z) = 0;
+        }
+      }
+    }
+  }
+}
 
 void PreInlet::calculateDrivingForce() {
   map<int,plint> areas;
@@ -597,9 +662,9 @@ void PreInlet::setDrivingForce() {
 void PreInlet::createBoundary() {
   plb::Box3D domain = location; 
 
-  for (int x  = domain.x0-1 ; x <= domain.x1 ; x++) {
-    for (int y  = domain.y0-1 ; y <= domain.y1 ; y++) {
-      for (int z  = domain.z0-1 ; z <= domain.z1 ; z++) {
+  for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
+    for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
+      for (int z  = domain.z0 ; z <= domain.z1 ; z++) {
         bool fluid = false;
         if (direction == Direction::Xneg || direction == Direction::Xpos) {
           if (y == location.y0-1 || z == location.z0-1) {
@@ -644,4 +709,5 @@ void PreInlet::createBoundary() {
 
 PreInlet::CreatePreInletBoundingBox *        PreInlet::CreatePreInletBoundingBox::clone() const { return new PreInlet::CreatePreInletBoundingBox(*this);}
 PreInlet::CreateDrivingForceFunctional *        PreInlet::CreateDrivingForceFunctional::clone() const { return new PreInlet::CreateDrivingForceFunctional(*this);}
+PreInlet::FillFlagMatrix * PreInlet::FillFlagMatrix::clone() const { return new PreInlet::FillFlagMatrix(*this);}
 }

@@ -1,0 +1,42 @@
+<?xml version="1.0" ?>
+<hemocell>
+<MaterialModel>
+    <comment>Parameters for the platelet constitutive model.</comment>
+    <name>PLT</name>
+    <aspectRatio>0.434782608696</aspectRatio> <!-- [0.4347826] -->
+    <eta_m> 0.0 </eta_m> <!-- Additional viscosity (for cytoskeleton + membrane) acting between outer vertices around angle edges [0.002 Pa s] -->
+    <kBend> 250 </kBend> <!-- Bending force modulus [250 in k_BT units, 4.142e-21 N m] -->
+    <kVolume> 100.0 </kVolume> <!-- Volume conservation coefficient (dimensionless) [100] --> 
+    <kArea> 8.0 </kArea> <!--Local area conservation coefficient (dimensionless) [8] --> 
+    <kLink> 25.0 </kLink> <!-- Link force coefficient (dimensionless) [25.0] -->
+    <kInnerLink> 25.0 </kInnerLink> <!-- Link force coefficient (dimensionless) [15.0] -->
+    <minNumTriangles> 66 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact. [66]-->
+    <InnerEdges>
+        <Edge> 60 65 </Edge>
+        <Edge> 62 64 </Edge>
+        <Edge> 37 42 </Edge>
+        <Edge> 54 56 </Edge>
+        <Edge> 34 40 </Edge>
+        <Edge> 25 46 </Edge>
+        <Edge> 50 59 </Edge>
+        <Edge> 29 47 </Edge>
+        <Edge> 61 63 </Edge>
+        
+        <Edge> 26 45 </Edge>
+        <Edge> 33 43 </Edge>
+        <Edge> 27 35 </Edge>
+        <Edge> 32 39 </Edge>
+
+        <Edge> 49 51 </Edge>
+        <Edge> 0 4 </Edge>
+        <Edge> 48 52 </Edge>
+        <Edge> 6 10 </Edge>
+        <Edge> 53 55 </Edge>
+        <Edge> 19 21 </Edge>
+        <Edge> 57 58 </Edge>
+        <Edge> 15 13 </Edge>
+    </InnerEdges>
+    <radius> 1.25e-6 </radius> <!-- Radius of the cell in [1.25 um] -->
+    <Volume> 11 </Volume> <!-- Volume of the cell in µm³ -->
+</MaterialModel>
+</hemocell>

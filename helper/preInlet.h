@@ -74,7 +74,13 @@ public:
                                 boundingBox(b_), foundPreInlet(fp_) {}
   };
   
+  class FillFlagMatrix: public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+    FillFlagMatrix * clone() const;
+  };
+  
   PreInlet(hemo::HemoCell * hemocell_, plb::MultiScalarField3D<int> * flagMatrix_);
+  PreInlet(hemo::HemoCell * hemocell_, plb::MultiBlockManagement3D & management);
   inline plint getNumberOfNodes() { return cellsInBoundingBox(location);}
   void createBoundary();
   void setDrivingForce();
