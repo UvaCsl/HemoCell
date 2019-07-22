@@ -1,11 +1,11 @@
-#HCELL_readhdf5.py 
+#HCELL_read.py 
 #Written by Ben Czaja 26.09.2018
 #This code is parallelized to read in mulitple Nprocs at the same time
 #This code is NOT parallelized on time
 #If the number of run cores ==1 then the program will read in serial automatically
-
 import numpy as np
 import h5py
+import csv
 from multiprocessing import Pool
 from functools import partial
 import errno
@@ -64,9 +64,30 @@ class LSP_CELL(object):
 		self.position = position
 		self.cid = cid
 
+class CSVCELL(object):
+	"""__init__() functions as the class constructor"""
+	def __init__(self,
+	position = None,
+	area = None,
+	volume = None,
+	atomicblock =None,
+	cid =None,
+	bcid =None,
+	velocity =None
+	):
+		self.position = position
+		self.area = area
+		self.volume = volume
+		self.atomicblock = atomicblock
+		self.cid = cid
+		self.bcid = bcid
+		self.velocity = velocity
+
+
+
 
 #The read function
-def core_read_processor(f,r,p,ct3,full,half,t,datapath,rbcname,pltname,ct3name,n):
+def core_read_processor(f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,rbcname,pltname,ct3name,n):
 	fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel = ([] for i in range(10))
 	rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rcid = ([] for i in range(16))
 	pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pcid = ([] for i in range(16))
@@ -91,19 +112,25 @@ def core_read_processor(f,r,p,ct3,full,half,t,datapath,rbcname,pltname,ct3name,n
 				raise
 
 		print(fluid_file)
-		#get data
-		if full:
-			fdt.extend(fluid_file["dt"])
-			fdx.extend(fluid_file["dx"])				
-			fdxdydz.extend(fluid_file["dxdydz"])
-			fiter.extend(fluid_file["iteration"])
-			fNpart.extend(fluid_file["numberOfcells"])	
-			fprocid.extend(fluid_file["processorId"])
-			frelpos.extend(fluid_file["relativePosition"])
-			fsubdomsize.extend(fluid_file["subdomainSize"])
-			fvel.extend(fluid_file["Velocity"])
 
-		if half:
+		#get data
+		if "dt" in fluidoutputs:
+			fdt.extend(fluid_file["dt"])
+		if "dx" in fluidoutputs:
+			fdx.extend(fluid_file["dx"])				
+		if "dxdydz" in fluidoutputs:
+			fdxdydz.extend(fluid_file["dxdydz"])
+		if "iteration" in fluidoutputs:
+			fiter.extend(fluid_file["iteration"])
+		if "numberofcells" in fluidoutputs:
+			fNpart.extend(fluid_file["numberOfcells"])	
+		if "processorId" in fluidoutputs:
+			fprocid.extend(fluid_file["processorId"])
+		if "relativeposition" in fluidoutputs:
+			frelpos.extend(fluid_file["relativePosition"])
+		if "subdomainsize" in fluidoutputs:	
+			fsubdomsize.extend(fluid_file["subdomainSize"])
+		if "Velocity" in fluidoutputs:
 			pos =[]
 			vel = []
 			tempvel = np.array(fluid_file["Velocity"])
@@ -124,11 +151,6 @@ def core_read_processor(f,r,p,ct3,full,half,t,datapath,rbcname,pltname,ct3name,n
 			fpos.extend(pos)
 			fvel.extend(vel)
 
-			#fdt.extend(fluid_file["dt"])
-			#fdx.extend(fluid_file["dx"])				
-			#fdxdydz.extend(fluid_file["dxdydz"])
-
-
 		#close file
 		fluid_file.close()
 
@@ -145,29 +167,38 @@ def core_read_processor(f,r,p,ct3,full,half,t,datapath,rbcname,pltname,ct3name,n
 
 		print(RBC_file)
 		#get data
-		if full:
+		if "dt" in celloutputs:
 			rdt.extend(RBC_file["dt"])
-			rdx.extend(RBC_file["dx"])			
-			riter.extend(RBC_file["iteration"])			
-			rNpart.extend(RBC_file["numberOfParticles"])			
-			rNproc.extend(RBC_file["numberOfProcessors"])			
+		if "dx" in celloutputs:
+			rdx.extend(RBC_file["dx"])
+		if "iteration" in celloutputs:			
+			riter.extend(RBC_file["iteration"])
+		if "numberOfParticles" in celloutputs:		
+			rNpart.extend(RBC_file["numberOfParticles"])	
+		if "numberOfProcessors" in celloutputs:		
+			rNproc.extend(RBC_file["numberOfProcessors"])
+		if "numberOfTriangles" in celloutputs:
 			rNtri.extend(RBC_file["numberOfTriangles"])
+		if "processorId" in celloutputs:
 			rprocid.extend(RBC_file["processorId"])
+		if "Area force" in celloutputs:
 			rFarea.extend(RBC_file["Area force"])
+		if "Bending force" in celloutputs:
 			rFbend.extend(RBC_file["Bending force"])
+		if "Link force" in celloutputs:
 			rFlink.extend(RBC_file["Link force"])
+		if "Total force" in celloutputs:
 			rFtotal.extend(RBC_file["Total force"])
+		if "Viscous force" in celloutputs:
 			rFvisc.extend(RBC_file["Viscous force"])
+		if "Volume force" in celloutputs:
 			rFvol.extend(RBC_file["Volume force"])
+		if "Triangles" in celloutputs:
 			rtriangles.extend(RBC_file["Triangles"])
+		if "Position" in celloutputs:
 			rpos.extend(RBC_file["Position"])
-		if half:
-			rpos.extend(RBC_file["Position"])
+		if "Cell Id" in celloutputs:
 			rcid.extend(RBC_file["Cell Id"])
-			#rcid.extend(RBC_file["Vertex Id"])
-			#rprocid.extend(RBC_file["processorId"])
-			#rdt.extend(RBC_file["dt"])
-			#rdx.extend(RBC_file["dx"])
 
 		#close file
 		RBC_file.close()
@@ -184,29 +215,38 @@ def core_read_processor(f,r,p,ct3,full,half,t,datapath,rbcname,pltname,ct3name,n
 
 		print(platelet_file)
 		#get data
-		if full:
-			pdt.extend(platelet_file["dt"])
-			pdx.extend(platelet_file["dx"])			
-			piter.extend(platelet_file["iteration"])			
-			pNpart.extend(platelet_file["numberOfParticles"])			
-			pNproc.extend(platelet_file["numberOfProcessors"])			
-			pNtri.extend(platelet_file["numberOfTriangles"])
-			pprocid.extend(platelet_file["processorId"])
-			pFarea.extend(platelet_file["Area force"])
-			pFbend.extend(platelet_file["Bending force"])
-			pFlink.extend(platelet_file["Link force"])
-			pFtotal.extend(platelet_file["Total force"])
-			pFvisc.extend(platelet_file["Viscous force"])
-			pFvol.extend(platelet_file["Volume force"])
-			ptriangles.extend(platelet_file["Triangles"])
-			ppos.extend(platelet_file["Position"])
-		if half:
-			ppos.extend(platelet_file["Position"])
-			pcid.extend(platelet_file["Cell Id"])
-
-			#rprocid.extend(RBC_file["processorId"])
-			#rdt.extend(RBC_file["dt"])
-			#rdx.extend(RBC_file["dx"])
+		if "dt" in celloutputs:
+			rdt.extend(platelet_file["dt"])
+		if "dx" in celloutputs:
+			rdx.extend(platelet_file["dx"])
+		if "iteration" in celloutputs:			
+			riter.extend(platelet_file["iteration"])
+		if "numberOfParticles" in celloutputs:		
+			rNpart.extend(platelet_file["numberOfParticles"])	
+		if "numberOfProcessors" in celloutputs:		
+			rNproc.extend(platelet_file["numberOfProcessors"])
+		if "numberOfTriangles" in celloutputs:
+			rNtri.extend(platelet_file["numberOfTriangles"])
+		if "processorId" in celloutputs:
+			rprocid.extend(platelet_file["processorId"])
+		if "Area force" in celloutputs:
+			rFarea.extend(platelet_file["Area force"])
+		if "Bending force" in celloutputs:
+			rFbend.extend(platelet_file["Bending force"])
+		if "Link force" in celloutputs:
+			rFlink.extend(platelet_file["Link force"])
+		if "Total force" in celloutputs:
+			rFtotal.extend(platelet_file["Total force"])
+		if "Viscous force" in celloutputs:
+			rFvisc.extend(platelet_file["Viscous force"])
+		if "Volume force" in celloutputs:
+			rFvol.extend(platelet_file["Volume force"])
+		if "Triangles" in celloutputs:
+			rtriangles.extend(platelet_file["Triangles"])
+		if "Position" in celloutputs:
+			rpos.extend(platelet_file["Position"])
+		if "Cell Id" in celloutputs:
+			rcid.extend(platelet_file["Cell Id"])
 
 		#close file
 		platelet_file.close()
@@ -225,28 +265,38 @@ def core_read_processor(f,r,p,ct3,full,half,t,datapath,rbcname,pltname,ct3name,n
 
 		print(ct3_file)
 		#get data
-		if full:
-			ct3dt.extend(    ct3_file["dt"])
-			ct3dx.extend(    ct3_file["dx"])			
-			ct3iter.extend(  ct3_file["iteration"])			
-			ct3Npart.extend( ct3_file["numberOfParticles"])			
-			ct3Nproc.extend( ct3_file["numberOfProcessors"])			
-			ct3Ntri.extend(  ct3_file["numberOfTriangles"])
-			ct3procid.extend(ct3_file["processorId"])
-			ct3Farea.extend( ct3_file["Area force"])
-			ct3Fbend.extend( ct3_file["Bending force"])
-			ct3Flink.extend( ct3_file["Link force"])
-			ct3Ftotal.extend(ct3_file["Total force"])
-			ct3Fvisc.extend( ct3_file["Viscous force"])
-			ct3Fvol.extend(  ct3_file["Volume force"])
-			ct3triangles.extend(ct3_file["Triangles"])
-			ct3pos.extend(ct3_file["Position"])
-		if half:
-			ct3pos.extend(ct3_file["Position"])
-			ct3cid.extend(ct3_file["Cell Id"])
-			#rprocid.extend(RBC_file["processorId"])
-			#rdt.extend(RBC_file["dt"])
-			#rdx.extend(RBC_file["dx"])
+		if "dt" in celloutputs:
+			rdt.extend(ct3_file["dt"])
+		if "dx" in celloutputs:
+			rdx.extend(ct3_file["dx"])
+		if "iteration" in celloutputs:			
+			riter.extend(ct3_file["iteration"])
+		if "numberOfParticles" in celloutputs:		
+			rNpart.extend(ct3_file["numberOfParticles"])	
+		if "numberOfProcessors" in celloutputs:		
+			rNproc.extend(ct3_file["numberOfProcessors"])
+		if "numberOfTriangles" in celloutputs:
+			rNtri.extend(ct3_file["numberOfTriangles"])
+		if "processorId" in celloutputs:
+			rprocid.extend(ct3_file["processorId"])
+		if "Area force" in celloutputs:
+			rFarea.extend(ct3_file["Area force"])
+		if "Bending force" in celloutputs:
+			rFbend.extend(ct3_file["Bending force"])
+		if "Link force" in celloutputs:
+			rFlink.extend(ct3_file["Link force"])
+		if "Total force" in celloutputs:
+			rFtotal.extend(ct3_file["Total force"])
+		if "Viscous force" in celloutputs:
+			rFvisc.extend(ct3_file["Viscous force"])
+		if "Volume force" in celloutputs:
+			rFvol.extend(ct3_file["Volume force"])
+		if "Triangles" in celloutputs:
+			rtriangles.extend(ct3_file["Triangles"])
+		if "Position" in celloutputs:
+			rpos.extend(ct3_file["Position"])
+		if "Cell Id" in celloutputs:
+			rcid.extend(ct3_file["Cell Id"])
 
 		#close file
 		ct3_file.close()
@@ -260,7 +310,7 @@ def core_read_processor(f,r,p,ct3,full,half,t,datapath,rbcname,pltname,ct3name,n
 
 #The wrapper around the read function 
 #This will read in a time range and all the run processors
-def open_hdf5_files(f=True,r=True,p=True,ct3=True,full=False,half=False,read_procs=1,begin=0,end=0,timestep=100000,datapath=".",rbcname="RBC_HO",pltname="PLT",ct3name="RBC_stiff",nprocs=1):
+def open_hdf5_files(f=True,r=True,p=True,ct3=True,fluidoutputs=[""],celloutputs=[""],read_procs=1,begin=0,end=0,timestep=100000,datapath=".",rbcname="RBC_HO",pltname="PLT",ct3name="RBC_stiff",nprocs=1):
 
 	fluid =[]
 	rbc =[]
@@ -279,7 +329,7 @@ def open_hdf5_files(f=True,r=True,p=True,ct3=True,full=False,half=False,read_pro
 			pool = Pool(read_procs)
 			iter_procs = (i for i in range(nprocs))
 			#Prepare the function for pool.map
-			read_function = partial(core_read_processor,f,r,p,ct3,full,half,t,datapath,rbcname,pltname,ct3name)
+			read_function = partial(core_read_processor,f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,rbcname,pltname,ct3name)
 			#Read in parallel
 			result = np.array(pool.map(read_function,iter_procs))
 			pool.close()
@@ -352,7 +402,7 @@ def open_hdf5_files(f=True,r=True,p=True,ct3=True,full=False,half=False,read_pro
 
 		elif nprocs ==1:
 			#Read in serial if only 1 run processor
-			result = core_read_processor(f,r,p,ct3,full,half,t,datapath,ct3name,0)
+			result = core_read_processor(f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,ct3name,0)
 
 			fdt         = result[0]
 			fdx         = result[1]
@@ -416,10 +466,6 @@ def open_hdf5_files(f=True,r=True,p=True,ct3=True,full=False,half=False,read_pro
 			ct3pos        = result[56]
 			ct3cid        = result[57]
 
-
-
-
-
 		if f:
 			fluid.append(FLUID(fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel))
 		if r:
@@ -433,4 +479,129 @@ def open_hdf5_files(f=True,r=True,p=True,ct3=True,full=False,half=False,read_pro
 	return np.array(fluid),np.array(rbc),np.array(platelet),np.array(celltype3)
 
 
-#
+
+def open_csv_files(r=True,p=True,ct3=True,begin=0,end=0,timestep=100000,datapath=".",rbcname="RBC_HO",pltname="PLT",ct3name="RBC_stiff"):
+
+	RBC = []
+	PLT = []
+	CT3 = []
+	print("reading in ... ")
+	print(datapath)
+	for t in range(begin,end,timestep):
+
+		#timepath = datapath+str(t).zfill(12)
+		#timepath = datapath+str(t)
+		#print(str(t).zfill(12))
+		rposition,rarea,rvolume,ratomicblock,rcid,rbcid,rvelocity = ([] for i in range(7))
+		pposition,parea,pvolume,patomicblock,pcid,pbcid,pvelocity = ([] for i in range(7))
+		cposition,carea,cvolume,catomicblock,ccid,cbcid,cvelocity = ([] for i in range(7))
+		if r:
+			with open(datapath+rbcname+'.'+str(t).zfill(12)+'.csv', 'r') as csvfile:
+			#with open(timepath+'/CellInfo_RBC_HO.'+str(n)+'.csv', 'r') as csvfile:
+				next(csvfile,None)
+				tmpfiledata = csv.reader(csvfile, delimiter=',',quoting=csv.QUOTE_NONNUMERIC)
+				for row in tmpfiledata:
+					rposition.extend([[row[0],row[1],row[2]]])
+					rarea.extend([row[3]])
+					rvolume.extend([row[4]])
+					ratomicblock.extend([row[5]])
+					rcid.extend([row[6]])
+					rbcid.extend([row[7]])
+					rvelocity.extend([[row[8],row[9],row[10]]])
+
+		if p:
+			with open(datapath+pltname+'.'+str(t).zfill(12)+'.csv', 'r') as csvfile:
+			#with open(timepath+'/CellInfo_PLT.'+str(n)+'.csv', 'r') as csvfile:
+				next(csvfile,None)
+				tmpfiledata = csv.reader(csvfile, delimiter=',',quoting=csv.QUOTE_NONNUMERIC)
+				for row in tmpfiledata:
+					pposition.extend([[row[0],row[1],row[2]]])
+					parea.extend([row[3]])
+					pvolume.extend([row[4]])
+					patomicblock.extend([row[5]])
+					pcid.extend([row[6]])
+					pbcid.extend([row[7]])
+					pvelocity.extend([[row[8],row[9],row[10]]])
+		if ct3:
+			with open(datapath+ct3name+'.'+str(t).zfill(12)+'.csv', 'r') as csvfile:
+			#with open(timepath+'/CellInfo_RBC_stiff.'+str(n)+'.csv', 'r') as csvfile:
+				next(csvfile,None)
+				tmpfiledata = csv.reader(csvfile, delimiter=',',quoting=csv.QUOTE_NONNUMERIC)
+				for row in tmpfiledata:
+					cposition.extend([[row[0],row[1],row[2]]])
+					carea.extend([row[3]])
+					cvolume.extend([row[4]])
+					catomicblock.extend([row[5]])
+					ccid.extend([row[6]])
+					cbcid.extend([row[7]])
+					cvelocity.extend([[row[8],row[9],row[10]]])
+		if r:
+			RBC.append(CSVCELL(rposition,rarea,rvolume,ratomicblock,rcid,rbcid,rvelocity))
+		if p:
+			PLT.append(CSVCELL(pposition,parea,pvolume,patomicblock,pcid,pbcid,pvelocity))
+		if ct3:
+			CT3.append(CSVCELL(cposition,carea,cvolume,catomicblock,ccid,cbcid,cvelocity))
+
+
+
+	return(np.array(RBC),np.array(PLT),np.array(CT3))
+
+def open_csv_files_OLD(r=True,p=True,ct3=True,begin=0,end=0,timestep=100000,datapath=".",nprocs=1,rbcname="RBC_HO",pltname="PLT",ct3name="RBC_stiff"):
+
+	RBC = []
+	PLT = []
+	CT3 = []
+	print("reading in ... ")
+	print(datapath)
+	for t in range(begin,end,timestep):
+
+		timepath = datapath+str(t).zfill(12)
+		#timepath = datapath+str(t)
+		#print(str(t).zfill(12))
+		rposition,rarea,rvolume,ratomicblock,rcid,rbcid,rvelocity = ([] for i in range(7))
+		pposition,parea,pvolume,patomicblock,pcid,pbcid,pvelocity = ([] for i in range(7))
+		cposition,carea,cvolume,catomicblock,ccid,cbcid,cvelocity = ([] for i in range(7))
+		for n in range(0,nprocs):
+			if r:
+				#with open(datapath+'RBC_HO.'+str(t).zfill(12)+'.csv', 'r') as csvfile:
+				with open(timepath+'/CellInfo_'+rbcname+'.'+str(n)+'.csv', 'r') as csvfile:
+					next(csvfile,None)
+					tmpfiledata = csv.reader(csvfile, delimiter=',',quoting=csv.QUOTE_NONNUMERIC)
+					for row in tmpfiledata:
+						rposition.extend([[row[0],row[1],row[2]]])
+						rarea.extend([row[3]])
+						rvolume.extend([row[4]])
+						ratomicblock.extend([row[5]])
+						rcid.extend([row[6]])
+			if p:
+				#with open(datapath+'PLT.'+str(t).zfill(12)+'.csv', 'r') as csvfile:
+				with open(timepath+'/CellInfo_'+pltname+'.'+str(n)+'.csv', 'r') as csvfile:
+					next(csvfile,None)
+					tmpfiledata = csv.reader(csvfile, delimiter=',',quoting=csv.QUOTE_NONNUMERIC)
+					for row in tmpfiledata:
+						pposition.extend([[row[0],row[1],row[2]]])
+						parea.extend([row[3]])
+						pvolume.extend([row[4]])
+						patomicblock.extend([row[5]])
+						pcid.extend([row[6]])
+			if ct3:
+				#with open(datapath+'RBC_stiff.'+str(t).zfill(12)+'.csv', 'r') as csvfile:
+				with open(timepath+'/CellInfo_'+ct3name+'.'+str(n)+'.csv', 'r') as csvfile:
+					next(csvfile,None)
+					tmpfiledata = csv.reader(csvfile, delimiter=',',quoting=csv.QUOTE_NONNUMERIC)
+					for row in tmpfiledata:
+						cposition.extend([[row[0],row[1],row[2]]])
+						carea.extend([row[3]])
+						cvolume.extend([row[4]])
+						catomicblock.extend([row[5]])
+						ccid.extend([row[6]])
+			if r:
+				RBC.append(CSVCELL(rposition,rarea,rvolume,ratomicblock,rcid))
+			if p:
+				PLT.append(CSVCELL(pposition,parea,pvolume,patomicblock,pcid))
+			if ct3:
+				CT3.append(CSVCELL(cposition,carea,cvolume,catomicblock,ccid))
+
+
+
+	return(np.array(RBC),np.array(PLT),np.array(CT3))
