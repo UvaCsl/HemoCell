@@ -216,37 +216,37 @@ def core_read_processor(f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,rbcname,pl
 		print(platelet_file)
 		#get data
 		if "dt" in celloutputs:
-			rdt.extend(platelet_file["dt"])
+			pdt.extend(platelet_file["dt"])
 		if "dx" in celloutputs:
-			rdx.extend(platelet_file["dx"])
+			pdx.extend(platelet_file["dx"])
 		if "iteration" in celloutputs:			
-			riter.extend(platelet_file["iteration"])
+			piter.extend(platelet_file["iteration"])
 		if "numberOfParticles" in celloutputs:		
-			rNpart.extend(platelet_file["numberOfParticles"])	
+			pNpart.extend(platelet_file["numberOfParticles"])	
 		if "numberOfProcessors" in celloutputs:		
-			rNproc.extend(platelet_file["numberOfProcessors"])
+			pNproc.extend(platelet_file["numberOfProcessors"])
 		if "numberOfTriangles" in celloutputs:
-			rNtri.extend(platelet_file["numberOfTriangles"])
+			pNtri.extend(platelet_file["numberOfTriangles"])
 		if "processorId" in celloutputs:
-			rprocid.extend(platelet_file["processorId"])
+			pprocid.extend(platelet_file["processorId"])
 		if "Area force" in celloutputs:
-			rFarea.extend(platelet_file["Area force"])
+			pFarea.extend(platelet_file["Area force"])
 		if "Bending force" in celloutputs:
-			rFbend.extend(platelet_file["Bending force"])
+			pFbend.extend(platelet_file["Bending force"])
 		if "Link force" in celloutputs:
-			rFlink.extend(platelet_file["Link force"])
+			pFlink.extend(platelet_file["Link force"])
 		if "Total force" in celloutputs:
-			rFtotal.extend(platelet_file["Total force"])
+			pFtotal.extend(platelet_file["Total force"])
 		if "Viscous force" in celloutputs:
-			rFvisc.extend(platelet_file["Viscous force"])
+			pFvisc.extend(platelet_file["Viscous force"])
 		if "Volume force" in celloutputs:
-			rFvol.extend(platelet_file["Volume force"])
+			pFvol.extend(platelet_file["Volume force"])
 		if "Triangles" in celloutputs:
-			rtriangles.extend(platelet_file["Triangles"])
+			ptriangles.extend(platelet_file["Triangles"])
 		if "Position" in celloutputs:
-			rpos.extend(platelet_file["Position"])
+			ppos.extend(platelet_file["Position"])
 		if "Cell Id" in celloutputs:
-			rcid.extend(platelet_file["Cell Id"])
+			pcid.extend(platelet_file["Cell Id"])
 
 		#close file
 		platelet_file.close()
@@ -266,37 +266,37 @@ def core_read_processor(f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,rbcname,pl
 		print(ct3_file)
 		#get data
 		if "dt" in celloutputs:
-			rdt.extend(ct3_file["dt"])
+			ct3dt.extend(ct3_file["dt"])
 		if "dx" in celloutputs:
-			rdx.extend(ct3_file["dx"])
+			ct3dx.extend(ct3_file["dx"])
 		if "iteration" in celloutputs:			
-			riter.extend(ct3_file["iteration"])
+			ct3iter.extend(ct3_file["iteration"])
 		if "numberOfParticles" in celloutputs:		
-			rNpart.extend(ct3_file["numberOfParticles"])	
+			ct3Npart.extend(ct3_file["numberOfParticles"])	
 		if "numberOfProcessors" in celloutputs:		
-			rNproc.extend(ct3_file["numberOfProcessors"])
+			ct3Nproc.extend(ct3_file["numberOfProcessors"])
 		if "numberOfTriangles" in celloutputs:
-			rNtri.extend(ct3_file["numberOfTriangles"])
+			ct3Ntri.extend(ct3_file["numberOfTriangles"])
 		if "processorId" in celloutputs:
-			rprocid.extend(ct3_file["processorId"])
+			ct3procid.extend(ct3_file["processorId"])
 		if "Area force" in celloutputs:
-			rFarea.extend(ct3_file["Area force"])
+			ct3Farea.extend(ct3_file["Area force"])
 		if "Bending force" in celloutputs:
-			rFbend.extend(ct3_file["Bending force"])
+			ct3Fbend.extend(ct3_file["Bending force"])
 		if "Link force" in celloutputs:
-			rFlink.extend(ct3_file["Link force"])
+			ct3Flink.extend(ct3_file["Link force"])
 		if "Total force" in celloutputs:
-			rFtotal.extend(ct3_file["Total force"])
+			ct3Ftotal.extend(ct3_file["Total force"])
 		if "Viscous force" in celloutputs:
-			rFvisc.extend(ct3_file["Viscous force"])
+			ct3Fvisc.extend(ct3_file["Viscous force"])
 		if "Volume force" in celloutputs:
-			rFvol.extend(ct3_file["Volume force"])
+			ct3Fvol.extend(ct3_file["Volume force"])
 		if "Triangles" in celloutputs:
-			rtriangles.extend(ct3_file["Triangles"])
+			ct3triangles.extend(ct3_file["Triangles"])
 		if "Position" in celloutputs:
-			rpos.extend(ct3_file["Position"])
+			ct3pos.extend(ct3_file["Position"])
 		if "Cell Id" in celloutputs:
-			rcid.extend(ct3_file["Cell Id"])
+			ct3cid.extend(ct3_file["Cell Id"])
 
 		#close file
 		ct3_file.close()
