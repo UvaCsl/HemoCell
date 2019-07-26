@@ -2,6 +2,111 @@ import numpy as np
 
 
 
+
+def pipeflow_radial_volume_fraction_CSV_multipop(cell1,cell2,X,Y,Z,CELLVOL=90,steps=1,dx=.5):
+    #lsp_per_cell,N_cells = cell_statistics(cell[0])
+    cell_vol = CELLVOL
+    R = np.sqrt(Z**2 +Y**2)
+    L = X
+    R0 = np.sqrt((Z*0.5)**2 +(Y*0.5)**2)
+    R -= R0
+    rbins = []
+    #for r in np.arange(np.max(R) - RCFL,np.max(R)):
+    for r in np.arange(0,R0,steps):
+        #print (r)
+        tmpbin =[]
+        for i in range(len(cell1)):
+            pos1 = np.array(cell1[i].position)*dx
+            pos2 = np.array(cell2[i].position)*dx
+            
+            pos = np.concatenate([pos1,pos2])
+            
+            xcell = pos[:,0]
+            ycell = pos[:,1] - 0.5*Y
+            zcell = pos[:,2] - 0.5*Z
+            rcell = np.sqrt(ycell**2+zcell**2)
+            #This is for RBCs being saved 3 times
+            #rcell = np.unique(rcell)
+            rmask = (rcell <= r+steps) & (rcell > r)
+            if len(rcell[rmask]) == 0:
+                tmpbin.append(0)
+            else:
+                #tmpbin.append(len(rcell[rmask]))
+                tmpbin.append(len(rcell[rmask]))
+        #print(len(rcell[rmask]))
+        #print(np.mean(tmpbin))
+        #print(len(rcell))
+        slice_area = np.pi*(r+steps)**2 - np.pi*r**2
+        # N_lsps per slice area
+        #rbins.append(np.mean(tmpbin))
+        #pdb.set_trace()
+        rbins.append(np.mean(tmpbin)*cell_vol/slice_area/L)
+    
+    R_hematocrit = np.array(rbins)
+    R_wall = int(0.5*Y)
+    CFL =0
+    R_wall += 1
+    R_hematocrit = R_hematocrit[:R_wall]
+    if CELLVOL >50:
+        for i in range(R_wall):
+            if R_hematocrit[i] >= np.mean(R_hematocrit[:R_wall])*.01:
+                R_last = i
+        CFL = R_wall-R_last
+        
+    return(R_hematocrit,CFL)
+
+
+
+def pipeflow_radial_volume_fraction_CSV(cell,X,Y,Z,CELLVOL=90,steps=1,dx=.5):
+    #lsp_per_cell,N_cells = cell_statistics(cell[0])
+    cell_vol = CELLVOL
+    R = np.sqrt(Z**2 +Y**2)
+    L = X
+    R0 = np.sqrt((Z*0.5)**2 +(Y*0.5)**2)
+    R -= R0
+    rbins = []
+    #for r in np.arange(np.max(R) - RCFL,np.max(R)):
+    for r in np.arange(0,R0,steps):
+        #print (r)
+        tmpbin =[]
+        for i in range(len(cell)):
+            pos = np.array(cell[i].position)*dx
+            
+            xcell = pos[:,0]
+            ycell = pos[:,1] - 0.5*Y
+            zcell = pos[:,2] - 0.5*Z
+            rcell = np.sqrt(ycell**2+zcell**2)
+            #This is for RBCs being saved 3 times
+            #rcell = np.unique(rcell)
+            rmask = (rcell <= r+steps) & (rcell > r)
+            if len(rcell[rmask]) == 0:
+                tmpbin.append(0)
+            else:
+                #tmpbin.append(len(rcell[rmask]))
+                tmpbin.append(len(rcell[rmask]))
+        #print(len(rcell[rmask]))
+        #print(np.mean(tmpbin))
+        #print(len(rcell))
+        slice_area = np.pi*(r+steps)**2 - np.pi*r**2
+        # N_lsps per slice area
+        #rbins.append(np.mean(tmpbin))
+        #pdb.set_trace()
+        rbins.append(np.mean(tmpbin)*cell_vol/slice_area/L)
+    
+    R_hematocrit = np.array(rbins)
+    R_wall = int(0.5*Y)
+    CFL =0
+    R_wall += 1
+    R_hematocrit = R_hematocrit[:R_wall]
+    if CELLVOL >50:
+        for i in range(R_wall):
+            if R_hematocrit[i] >= np.mean(R_hematocrit[:R_wall])*.01:
+                R_last = i
+        CFL = R_wall-R_last
+        
+    return(R_hematocrit,CFL)
+
+
 def rectangle_volume_fraction(cell,CELLVOL,X,Y,Z,envelope=60.):
     '''Calculated X,Y,Z cell volume fraction in a rectangular chamber
 
@@ -23,7 +128,7 @@ def rectangle_volume_fraction(cell,CELLVOL,X,Y,Z,envelope=60.):
     Ysimlength = Y
     Zsimlength = Z
     
-    Nlsps_per_cell = HCELL_measure.cell_statistics(cell[0])[0]
+    Nlsps_per_cell = cell_statistics(cell[0])[0]
     
     cell_histx = []
     cell_histy = []
@@ -52,33 +157,49 @@ def rectangle_volume_fraction(cell,CELLVOL,X,Y,Z,envelope=60.):
     return(cell_histx,cell_histy,cell_histz)
 
 
-def pipeflow_MSD_cell_centers(cell,X,Y,Z,dx=1,refdir=0):
+def pipeflow_MSD_cell_centers(cell,X,Y,Z,rbins=np.linspace(0,51,6),dx=1,OLD=True,tstep=1):
     R = np.sqrt(Z**2 +Y**2)
     L = X
     R0 = np.sqrt((Z*0.5)**2 +(Y*0.5)**2)
     R -= R0
-
-    print("N of Cells deleted = ",len(cell[0].cid) - len(cell[-1].cid))
-    print("% of Cells deleted = ",(len(cell[0].cid) - len(cell[-1].cid))/len(cell[0].cid)*100.)
-
-    #Get final info to make sure that you calculate MSD for cells that are not deleted
-    pos = np.array(cell[-1].position)
-    cid_final = np.array(cell[-1].cid)
-    r_final = np.sqrt((pos[:,1] - Y*.5)**2 + (pos[:,2] - Z*0.5)**2)
-    tmp_final = np.array([r_final,cid_final])
-    #sorted on increasing CID
-    tmp_final = tmp_final.T[tmp_final.T[:,1].argsort()].T
-
+    
+    if OLD:
+        print("N of Cells deleted = ",len(cell[0].cid) - len(cell[-1].cid))
+        print("% of Cells deleted = ",(len(cell[0].cid) - len(cell[-1].cid))/len(cell[0].cid)*100.)
+    
+        #Get final info to make sure that you calculate MSD for cells that are not deleted
+        pos = np.array(cell[-1].position)
+        cid_final = np.array(cell[-1].cid)
+        print(np.min(cid_final))
+        r_final = np.sqrt((pos[:,1] - Y*.5)**2 + (pos[:,2] - Z*0.5)**2)
+        tmp_final = np.array([r_final,cid_final])
+        #sorted on increasing CID
+        tmp_final = tmp_final.T[tmp_final.T[:,1].argsort()].T
+    else:
+        print("N of Cells deleted = ",len(cell[0].bcid) - len(cell[-1].bcid))
+        print("% of Cells deleted = ",(len(cell[0].bcid) - len(cell[-1].bcid))/len(cell[0].bcid)*100.)
+    
+        #Get final info to make sure that you calculate MSD for cells that are not deleted
+        pos = np.array(cell[-1].position)
+        cid_final = np.array(cell[-1].bcid)
+        print(np.min(cid_final))
+        r_final = np.sqrt((pos[:,1] - Y*.5)**2 + (pos[:,2] - Z*0.5)**2)
+        tmp_final = np.array([r_final,cid_final])
+        #sorted on increasing CID
+        tmp_final = tmp_final.T[tmp_final.T[:,1].argsort()].T
 
     radial_and_cids_overtime = []
-    for t in range(len(cell)):
+    for t in range(0,len(cell),tstep):
 
         #get positions
-        pos = np.array(cell[t].position)
+        pos = np.array(cell[t].position)*dx
         #Convert to r and make the center of tube the origin
         r = np.sqrt((pos[:,1] - Y*.5)**2 + (pos[:,2] - Z*0.5)**2)
         #create array of positions (r) and cids
-        cid = np.array(cell[t].cid)
+        if OLD:
+            cid = np.array(cell[t].cid)
+        else:
+            cid = np.array(cell[t].bcid)
         tmp = np.array([r,cid])
 
         #now sort them on increasing CID
@@ -105,10 +226,32 @@ def pipeflow_MSD_cell_centers(cell,X,Y,Z,dx=1,refdir=0):
     diff = np.diff(rposses.T)
     diff_sq = diff**2
     MSD = np.mean(diff_sq,axis=0)
+    
+    #GET MSD per different radial location in the cylinder
+    MSD_R = []
+    # Loop through radial section
+    for r in rbins:
+        if r == 0:
+            continue
+        r_idx = np.where(r == rbins)[0][0]
+        #loop through the next timestep
+        MSDdt = []
+        #initialize an all true mask
+        for t in range(1,len(radial_and_cids_overtime)):
+            rs0 = radial_and_cids_overtime[t-1][:,0]
+            rs1 = radial_and_cids_overtime[t][:,0]
+            #Find a mask that is in the radial section & in both timesteps (now & now -1)
+            Rmaskdt = ((rs0 <= r) & (rs0 > rbins[r_idx-1])) & ((rs1 <= r) & (rs1 > rbins[r_idx-1])) 
+            rpos0 = radial_and_cids_overtime[t-1][:,0][Rmaskdt]
+            rpos1 = radial_and_cids_overtime[t][:,0][Rmaskdt] 
+            MSDdt.append(np.mean((rpos1-rpos0)**2))
+            
+        #Take the ensemble mean per timestep
+        MSD_R.append(MSDdt)
+        
+    MSD_R = np.array(MSD_R)
 
-    #BEN you need to figure out how to get this for different locations within the tube
-    #11.23.2018
-    return(MSD)
+    return(MSD,MSD_R)
 
 
 
@@ -248,7 +391,8 @@ def rectangle_MSD_cell_centers(cell,direction="X",dx=1,version="new"):
 
 
 
-def pipeflow_radial_volumefraction(cell,X,Y,Z,dx,refdir=0):
+
+def pipeflow_radial_volume_fraction(cell,X,Y,Z,dx=0.5,refdir=0,steps=1):
 
     lsp_per_cell,N_cells = cell_statistics(cell[0])
     
@@ -256,18 +400,19 @@ def pipeflow_radial_volumefraction(cell,X,Y,Z,dx,refdir=0):
         cell_vol = 90
     elif lsp_per_cell > 60 and lsp_per_cell < 70:
         cell_vol = 11
-
+    
     R = np.sqrt(Z**2 +Y**2)
     L = X
     R0 = np.sqrt((Z*0.5)**2 +(Y*0.5)**2)
     R -= R0
     
     rbins = []
-    for r in np.arange(R):
-        print (r)
+    radii = np.arange(0,0.5*Y+1,steps)
+    for r in radii:
+        #print (r)
         tmpbin =[]
         for i in range(len(cell)):
-            pos = np.array(cell[i].position)*dx*1e6
+            pos = np.array(cell[i].position)*dx
             
             xcell = pos[:,0]
             ycell = pos[:,1] - 0.5*Y
@@ -275,19 +420,77 @@ def pipeflow_radial_volumefraction(cell,X,Y,Z,dx,refdir=0):
             rcell = np.sqrt(ycell**2+zcell**2)
             #This is for RBCs being saved 3 times
             rcell = np.unique(rcell)
-            rmask = (rcell <= r+1) & (rcell > r)
+            rmask = (rcell <= r+steps) & (rcell > r)
             if len(rcell[rmask]) == 0:
                 tmpbin.append(0)
             else:
                 tmpbin.append(len(rcell[rmask]))
-        slice_area = np.pi*(r+1)**2 - np.pi*r**2
+        slice_area = np.pi*(r+steps)**2 - np.pi*r**2
         # N_lsps per slice area
-        #rbins.append(np.mean(tmpbin)*90./slice_area)
         rbins.append(np.mean(tmpbin)/lsp_per_cell*cell_vol/slice_area/L)
     
-    R_hematocrit = np.array(rbins)
+    R_hematocrit = np.array([radii,rbins])
+    CFL=0
+    if cell_vol == 90:
+        for r in R_hematocrit[0]:
+            idx = np.where(r==R_hematocrit[0])[0][0]
+            if R_hematocrit[1][idx] <= np.mean(R_hematocrit[1])*0.05:
+                CFL = np.max(R_hematocrit[0]) -  r
+                break
+                
+    return(R_hematocrit,CFL)
+
+
+def pipeflow_radial_volume_fraction_multipop(cell1,cell2,X,Y,Z,dx=0.5,refdir=0,steps=1):
+
+    lsp_per_cell,N_cells = cell_statistics(cell1[0])
     
-    return(R_hematocrit)
+    if lsp_per_cell >=640 and lsp_per_cell <=650:
+        cell_vol = 90
+    elif lsp_per_cell > 60 and lsp_per_cell < 70:
+        cell_vol = 11
+        
+    R = np.sqrt(Z**2 +Y**2)
+    L = X
+    R0 = np.sqrt((Z*0.5)**2 +(Y*0.5)**2)
+    R -= R0
+    
+    rbins = []
+    radii = np.arange(0,0.5*Y+1,steps)
+    for r in radii:
+        #print (r)
+        tmpbin =[]
+        for i in range(len(cell1)):
+            pos1 = np.array(cell1[i].position)*dx
+            pos2 = np.array(cell2[i].position)*dx
+            
+            pos = np.concatenate([pos1,pos2])
+            
+            xcell = pos[:,0]
+            ycell = pos[:,1] - 0.5*Y
+            zcell = pos[:,2] - 0.5*Z
+            rcell = np.sqrt(ycell**2+zcell**2)
+            #This is for RBCs being saved 3 times
+            rcell = np.unique(rcell)
+            rmask = (rcell <= r+steps) & (rcell > r)
+            if len(rcell[rmask]) == 0:
+                tmpbin.append(0)
+            else:
+                tmpbin.append(len(rcell[rmask]))
+        slice_area = np.pi*(r+steps)**2 - np.pi*r**2
+        # N_lsps per slice area
+        rbins.append(np.mean(tmpbin)/lsp_per_cell*cell_vol/slice_area/L)
+    
+    R_hematocrit = np.array([radii,rbins])
+    CFL=0
+    if cell_vol == 90:
+        for r in R_hematocrit[0]:
+            idx = np.where(r==R_hematocrit[0])[0][0]
+            if R_hematocrit[1][idx] <= np.mean(R_hematocrit[1])*0.05:
+                CFL = np.max(R_hematocrit[0]) -  r
+                break
+                
+    return(R_hematocrit,CFL)
 
 
 

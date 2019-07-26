@@ -595,12 +595,12 @@ def open_csv_files_OLD(r=True,p=True,ct3=True,begin=0,end=0,timestep=100000,data
 						cvolume.extend([row[4]])
 						catomicblock.extend([row[5]])
 						ccid.extend([row[6]])
-			if r:
-				RBC.append(CSVCELL(rposition,rarea,rvolume,ratomicblock,rcid))
-			if p:
-				PLT.append(CSVCELL(pposition,parea,pvolume,patomicblock,pcid))
-			if ct3:
-				CT3.append(CSVCELL(cposition,carea,cvolume,catomicblock,ccid))
+		if r:
+			RBC.append(CSVCELL(rposition,rarea,rvolume,ratomicblock,rcid))
+		if p:
+			PLT.append(CSVCELL(pposition,parea,pvolume,patomicblock,pcid))
+		if ct3:
+			CT3.append(CSVCELL(cposition,carea,cvolume,catomicblock,ccid))
 
 
 
