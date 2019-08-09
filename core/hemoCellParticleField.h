@@ -47,6 +47,7 @@ public:
     virtual void applyConstitutiveModel(bool forced = false);
     virtual void addParticle(HemoCellParticle* particle);
     void addParticle(const HemoCellParticle::serializeValues_t & sv);
+    void addParticlePreinlet(const HemoCellParticle::serializeValues_t & sv);
 
     virtual void removeParticles(plb::Box3D domain);
     virtual void removeParticles_inverse(plb::Box3D domain);

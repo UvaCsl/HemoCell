@@ -176,6 +176,41 @@ void HemoCellParticleDataTransfer::receive (Box3D const & domain, char * buffer,
   global.statistics.getCurrent().stop();
 }
 
+void HemoCellParticleDataTransfer::receivePreInlet (char * buffer, unsigned int size, modif::ModifT kind, Dot3D absoluteOffset )
+{
+  global.statistics.getCurrent()["MpiReceivePreInlet"].start();
+  //const map<int,bool> & lpc = particleField->get_lpc();
+  
+  if ((kind==modif::hemocell || kind==modif::dataStructure))
+  {
+    int offset = getOffset(absoluteOffset);
+    hemo::Array<T,3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
+    unsigned int posInBuffer = 0;
+    
+    HemoCellParticle::serializeValues_t * newParticle;;
+    while (posInBuffer < size) {
+        // 1. Generate dynamics object, and unserialize dynamic data.
+      newParticle = (HemoCellParticle::serializeValues_t*)&buffer[posInBuffer];
+      posInBuffer += sizeof(HemoCellParticle::serializeValues_t);
+      //Edit in buffer, but it is not used again anyway
+      newParticle->position += realAbsoluteOffset;
+          //Check for overflows
+      if (((offset < 0) && (newParticle->cellId < INT_MIN-offset)) ||
+          ((offset > 0) && (newParticle->cellId > INT_MAX-offset))) {
+        cout << "(HemoCellParticleDataTransfer) Almost invoking overflow in periodic particle communication, resetting ID to base ID instead, this will most likely delete the particle" << endl;
+        newParticle->cellId = particleField->cellFields->base_cell_id(newParticle->cellId);
+      } else {
+        newParticle->cellId += offset;
+      }
+      
+      //Check if we have any of this cell, if so, it was not deleted, and therefore we should not add it
+      //if (lpc.find(newParticle->cellId) != lpc.end()) { continue; }
+      particleField->addParticlePreinlet(*newParticle);
+    }
+  }
+  global.statistics.getCurrent().stop();
+}
+
 void HemoCellParticleDataTransfer::receive (char * buffer, unsigned int size, modif::ModifT kind, Dot3D absoluteOffset )
 {
   if (absoluteOffset.x == 0 && absoluteOffset.y == 0 && absoluteOffset.z == 0) {

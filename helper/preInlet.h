@@ -87,7 +87,8 @@ public:
   void calculateDrivingForce();
   void applyPreInletVelocityBoundary();
   void applyPreInletParticleBoundary();
-  void applyPreInlet() { applyPreInletVelocityBoundary(); applyPreInletParticleBoundary(); };
+  void applyPreInlet() { applyPreInletVelocityBoundary();
+                         applyPreInletParticleBoundary(); };
   void initializePreInletParticleBoundary();
   void initializePreInletVelocityBoundary();
   void initializePreInlet() { initializePreInletVelocityBoundary(); initializePreInletParticleBoundary(); };

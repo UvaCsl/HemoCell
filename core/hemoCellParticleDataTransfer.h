@@ -45,6 +45,8 @@ public:
     void receive(Box3D const & domain, char *, unsigned int size, modif::ModifT, Dot3D absoluteOffset);
     void receive(char *, unsigned int size, modif::ModifT);
     void receive(char *, unsigned int size, modif::ModifT, Dot3D absoluteOffset);
+    void receivePreInlet(char *, unsigned int size, modif::ModifT, Dot3D absoluteOffset);
+
     virtual void receive(Box3D domain, std::vector<NoInitChar> const& buffer);
     virtual void receive(Box3D domain, std::vector<NoInitChar> const& buffer, Dot3D absoluteOffset);
     virtual void receive(Box3D domain, std::vector<char> const& buffer, modif::ModifT kind);

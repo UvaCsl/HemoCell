@@ -234,6 +234,55 @@ outer_else:
   }
 }
 
+void HemoCellParticleField::addParticlePreinlet(const HemoCellParticle::serializeValues_t & sv) {
+  HemoCellParticle * local_sparticle, * particle;
+  const hemo::Array<T,3> & pos = sv.position;
+  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
+
+  if( this->isContainedABS(pos, this->getBoundingBox()) )
+  {
+    //check if we have particle already, if so, we must overwrite but not
+    //forget to delete the old entry
+    if ((!(particles_per_cell.find(sv.cellId) == particles_per_cell.end()))) { 
+      if (particles_per_cell.at(sv.cellId)[sv.vertexId] != -1) {
+        return;       
+      } else {
+        goto outer_else;
+      }
+    } else {
+outer_else:
+      //new entry
+      particles.emplace_back(sv);
+      particle = &particles.back();
+      
+      //invalidate ppt
+      ppt_up_to_date=false;
+        if(this->isContainedABS(pos, localDomain)) {
+          _lpc[particle->sv.cellId] = true;
+        }
+        if (ppc_up_to_date) { //Otherwise its rebuild anyway
+         insert_ppc(particle, particles.size()-1);
+        }
+      
+      if (pg_up_to_date) {
+        Dot3D const& location = this->atomicLattice->getLocation();
+        hemo::Array<T,3>  & pos = particle->sv.position;
+        int x = pos[0]-location.x+0.5;
+        int y = pos[1]-location.y+0.5;
+        int z = pos[2]-location.z+0.5;
+        if ((x >= 0) && (x <= this->atomicLattice->getNx()) &&
+            (y >= 0) && (y <= this->atomicLattice->getNy()) &&
+            (z >= 0) && (z <= this->atomicLattice->getNz()) ) 
+        {
+          unsigned int index = grid_index(x,y,z);
+          particle_grid[index][particle_grid_size[index]] = particles.size()-1;
+          particle_grid_size[index]++;
+        }
+      }
+    }
+  }
+}
+
 void inline HemoCellParticleField::insert_ppc(HemoCellParticle* sparticle, unsigned int index) {
   if (_particles_per_cell.find(sparticle->sv.cellId) == _particles_per_cell.end()) {
     _particles_per_cell[sparticle->sv.cellId].resize((*cellFields)[sparticle->sv.celltype]->numVertex,-1);

@@ -124,6 +124,10 @@ void PreInlet::initializePreInletParticleBoundary() {
 
 void PreInlet::applyPreInletParticleBoundary() {
   global.statistics.getCurrent()["applyPreInletParticleBoundary"].start();
+  if (!partOfpreInlet) {
+    hemocell->cellfields->syncEnvelopes();
+    hemocell->cellfields->deleteIncompleteCells(false);   
+  }
   vector<MPI_Request> requests;
   vector<vector<char>> buffers;
   MPI_Barrier(MPI_COMM_WORLD);
@@ -198,7 +202,7 @@ void PreInlet::applyPreInletParticleBoundary() {
         }
         for (int bId : hemocell->cellfields->immersedParticles->getLocalInfo().getBlocks()) {
   
-          hemocell->cellfields->immersedParticles->getComponent(bId).particleDataTransfer.receive(&buffers.back()[0],buffers.back().size(),modif::hemocell,offset);
+          hemocell->cellfields->immersedParticles->getComponent(bId).particleDataTransfer.receivePreInlet(&buffers.back()[0],buffers.back().size(),modif::hemocell,offset);
           hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_ppc();
           hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_lpc();
           hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_pg();
