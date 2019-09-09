@@ -992,7 +992,7 @@ T HemoCellParticleField::eigenValueFromCell(plb::Cell<T,DESCRIPTOR> & cell) {
 //    lambda[1] = d[1];
 //    lambda[2] = d[2];
  //   std::sort(lambda.begin(), lambda.end());
-    T tresca = lambda[0]-lambda[2]/2;
+    T tresca = (lambda[0]-lambda[2])/2;
     return tresca;
 }
 
