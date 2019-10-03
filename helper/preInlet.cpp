@@ -29,6 +29,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "boundaryCondition/boundaryInstantiator3D.h"
 #include "hemoCellFields.h"
 
+// JON addition
+#include <string>
+
 namespace hemo {
   struct Box3D_simple {
     plint x0,x1,y0,y1,z0,z1;
@@ -519,11 +522,77 @@ void PreInlet::CreateDrivingForceFunctional::processGenericBlocks(plb::Box3D dom
   }
 }
 
+// void PreInlet::calculateDrivingForce() {
+//   map<int,plint> areas;
+//   plint fluidArea = 0;
+//   double re = (*hemocell->cfg)["preInlet"]["parameters"]["Re"].read<T>();
 
-void PreInlet::calculateDrivingForce() {
+//   if (partOfpreInlet) {
+    
+//     plb::Box3D domain = hemocell->lattice->getBoundingBox();
+//     if (direction == Direction::Xneg) {
+//       domain.x1 = domain.x0 = domain.x0 + 2;
+//     } 
+//     if (direction == Direction::Yneg) {
+//       domain.y1 = domain.y0 = domain.y0 + 2;
+//     } 
+//     if (direction == Direction::Zneg) {
+//       domain.z1 = domain.z0 = domain.z0 + 2;
+//     }
+//     if (direction == Direction::Xpos) {
+//       domain.x0 = domain.x1 = domain.x1 - 2;
+//     } 
+//     if (direction == Direction::Ypos) {
+//       domain.y0 = domain.y1 = domain.y1 - 2;
+//     } 
+//     if (direction == Direction::Zpos) {
+//       domain.z0 = domain.z1 = domain.z1 - 2;
+//     } 
+//     vector<MultiBlock3D*> wrapper;
+//     wrapper.push_back(hemocell->lattice);
+//     applyProcessingFunctional(new CreateDrivingForceFunctional(fluidArea),domain,wrapper);
+//     areas[global::mpi().getRank()] = fluidArea;
+//   }
+  
+//   HemoCellGatheringFunctional<plint>::gather(areas);
+  
+//     fluidArea = 0;
+//     for (auto & pair: areas) {
+//       fluidArea += pair.second;
+//     }
+    
+//     T pipe_radius = sqrt(fluidArea/PI);
+//     hlog << "(Parameters) Your preInlet pipe has a calculated radius of " << pipe_radius << " LU, assuming a perfect circle" << std::endl;
+//   if(partOfpreInlet) {     
+//     T u_lbm_max = re * param::nu_lbm / (pipe_radius*2);
+//     drivingForce =  8 * param::nu_lbm * (u_lbm_max * 0.5) / pipe_radius / pipe_radius;
+//   }
+// }
+
+// JON: input time / normalized velocity arrays by reference and read them in
+void PreInlet::readNormalizedVelocities(std::string pulseFileName, vector<double> &t_array, vector<double> &v_array) {
+  
+  ifstream pulseFile;
+  pulseFile.open(pulseFileName);
+
+  std::string line;
+
+  while (std::getline(pulseFile, line))
+  {
+      std::string DELIM = " ";
+      std::string t = line.substr(0, line.find(DELIM));
+      std::string v = line.substr(line.find(DELIM), line.size());
+      
+      t_array.push_back(stod(t));
+      v_array.push_back(stod(v));
+  }
+  pulseFile.close();
+}
+
+void PreInlet::calculateDrivingForceTimeDependent() {
   map<int,plint> areas;
   plint fluidArea = 0;
-  double re = (*hemocell->cfg)["preInlet"]["parameters"]["Re"].read<T>();
+  double avg_re = (*hemocell->cfg)["preInlet"]["parameters"]["Re"].read<T>();
 
   if (partOfpreInlet) {
     
@@ -554,21 +623,76 @@ void PreInlet::calculateDrivingForce() {
   
   HemoCellGatheringFunctional<plint>::gather(areas);
   
-    fluidArea = 0;
-    for (auto & pair: areas) {
-      fluidArea += pair.second;
-    }
-    
-    T pipe_radius = sqrt(fluidArea/PI);
-    hlog << "(Parameters) Your preInlet pipe has a calculated radius of " << pipe_radius << " LU, assuming a perfect circle" << std::endl;
-  if(partOfpreInlet) {     
-    T u_lbm_max = re * param::nu_lbm / (pipe_radius*2);
-    drivingForce =  8 * param::nu_lbm * (u_lbm_max * 0.5) / pipe_radius / pipe_radius;
+  fluidArea = 0;
+  for (auto & pair: areas) {
+    fluidArea += pair.second;
   }
+  
+  T pipe_radius = sqrt(fluidArea/PI);
+  hlog << "(Parameters) Your preInlet pipe has a calculated radius of " << pipe_radius << " LU, assuming a perfect circle" << std::endl;
+
+  // JON: calculate average driving force first off of average Re
+  if(partOfpreInlet) {
+    T u_lbm_max = avg_re * param::nu_lbm / (pipe_radius * 2);
+    avgDrivingForce = 8 * param::nu_lbm * (u_lbm_max * 0.5) / pipe_radius / pipe_radius;
+  }
+  // JON: read pulse data, compute driving forces over time, add to vector
+  string pulseFileName = (*hemocell->cfg)["preInlet"]["parameters"]["pulseFileName"].read<string>();
+  readNormalizedVelocities(pulseFileName, normalizedVelocityTimes, normalizedVelocityValues);
+
 }
 
-void PreInlet::setDrivingForce() {
+double PreInlet::interpolate(vector<double> &xData, vector<double> &yData, double x, bool extrapolate)
+{
+   int size = xData.size();
+
+   // find left end of interval for interpolation
+   int i = 0;
+   // special case: beyond right end
+   if ( x >= xData[size - 2] )
+   {
+      i = size - 2;
+   }
+   else
+   {
+      while ( x > xData[i+1] ) i++;
+   }
+   // points on either side (unless beyond ends)
+   double xL = xData[i], yL = yData[i], xR = xData[i+1], yR = yData[i+1];
+   // if beyond ends of array and not extrapolating
+   if ( !extrapolate )
+   {
+      if ( x < xL ) yR = yL;
+      if ( x > xR ) yL = yR;
+   }
+
+   // gradient
+   double dydx = ( yR - yL ) / ( xR - xL );
+
+   // linear interpolation
+   return yL + dydx * ( x - xL ); 
+}
+
+// JON: average function...
+double PreInlet::average(vector<double> values) {
+  double sum = 0.0;
+  int N = values.size();
+  for (int i = 0; i < N; i++) {
+    sum += values[i];
+  }
+  return sum / N;
+}
+
+// JON: this function is similar to setDrivingForce() but it reads in a value
+// from pulsatile velocity data and then interpolates driving force
+void PreInlet::setDrivingForceTimeDependent(double t) {
   if (partOfpreInlet) {
+    // JON: Compute current driving force based on ratio of data-derived "current velocity" 
+    // and average velocity
+    double current_vel = PreInlet::interpolate(normalizedVelocityTimes, normalizedVelocityValues, t, false);
+    double average_vel = PreInlet::average(normalizedVelocityValues);
+    double drivingForce = (current_vel / average_vel) * avgDrivingForce;
+      
     plb::Array<T,3> force(0.,0.,0.);
     if (direction == Direction::Xneg) {
       force[0] = drivingForce;
@@ -593,6 +717,33 @@ void PreInlet::setDrivingForce() {
                     force);
   }
 }
+
+// void PreInlet::setDrivingForce() {
+//   if (partOfpreInlet) {    
+//     plb::Array<T,3> force(0.,0.,0.);
+//     if (direction == Direction::Xneg) {
+//       force[0] = drivingForce;
+//     } 
+//     if (direction == Direction::Yneg) {
+//       force[1] = drivingForce;
+//     } 
+//     if (direction == Direction::Zneg) {
+//       force[2] = drivingForce;
+//     }
+//     if (direction == Direction::Xpos) {
+//       force[0] = -drivingForce;
+//     } 
+//     if (direction == Direction::Ypos) {
+//       force[1] = -drivingForce;
+//     } 
+//     if (direction == Direction::Zpos) {
+//       force[2] = -drivingForce;
+//     }
+//     setExternalVector(*hemocell->lattice, (*hemocell->lattice).getBoundingBox(),
+//                     DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+//                     force);
+//   }
+// }
 
 void PreInlet::createBoundary() {
   plb::Box3D domain = location; 

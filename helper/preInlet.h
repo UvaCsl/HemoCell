@@ -77,8 +77,13 @@ public:
   PreInlet(hemo::HemoCell * hemocell_, plb::MultiScalarField3D<int> * flagMatrix_);
   inline plint getNumberOfNodes() { return cellsInBoundingBox(location);}
   void createBoundary();
-  void setDrivingForce();
-  void calculateDrivingForce();
+  void readNormalizedVelocities(std::string pulseFileName, vector<double> &t_array, vector<double> &v_array);
+  // void setDrivingForce();
+  // void calculateDrivingForce();
+  void setDrivingForceTimeDependent(double t);
+  void calculateDrivingForceTimeDependent();
+  double interpolate(vector<double> &xData, vector<double> &yData, double x, bool extrapolate);
+  double average(vector<double> values);
   void applyPreInletVelocityBoundary();
   void applyPreInletParticleBoundary();
   void applyPreInlet() { applyPreInletVelocityBoundary(); applyPreInletParticleBoundary(); };
@@ -94,7 +99,9 @@ public:
   plb::Box3D fluidInlet;
   int nProcs = 0;
   bool initialized = false;
-  double drivingForce = 0.0;
+  double avgDrivingForce = 0.0;
+  std::vector<double> normalizedVelocityTimes;
+  std::vector<double> normalizedVelocityValues;
   std::map<plint,plint> BlockToMpi;
   std::map<int,plint> particleSendMpi; // the value equals the number of atomic blocks that are sent.
   std::map<int,bool> particleReceiveMpi;
