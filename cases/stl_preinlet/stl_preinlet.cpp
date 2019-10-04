@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
-  unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
+  //unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
 
   
