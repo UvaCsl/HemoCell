@@ -1,10 +1,10 @@
 import sys
-sys.path.append("L:/hemocell/scripts/measure/")  # 'default'
+sys.path.append("C:\\Users\\jdabo\\Dropbox\\STAGE\\code\\jon")  # 'default'
 import HCELL_readhdf5_jon as HCELL_readhdf5
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-import seaborn as sb;    sb.set()
+import seaborn as sb;    sb.set();   sb.set_style("whitegrid")
 
 #FIRST SPECIFY SOME STUFF ABOUT YOUR DATA
 nprocs = 5              # How many procs did you run on?
@@ -18,7 +18,7 @@ SAVE_FIGS = False
 
 #%%
 
-datapath = "L:/no_backup/AR2/output/hdf5/"
+datapath = "L:\\no_backup\\AR2\\output\\hdf5\\"
 
 fluid, _, _, _ = HCELL_readhdf5.open_hdf5_files(ct3=False, half=True, r=False, \
     p=False, read_procs=read_procs, nprocs=nprocs, timesteps=timesteps, \
@@ -36,9 +36,9 @@ def printFluidVelocity(fluid_pre):
     mean_vels_over_time = []
     max_vels_over_time = []
     for fluid_t in fluid_pre:
-        pos = np.array(fluid_first_t.position)
-        vel = np.array(fluid_first_t.velocity)
-        bdrs = np.array(fluid_first_t.boundary)  
+        pos = np.array(fluid_t.position)
+        vel = np.array(fluid_t.velocity)
+        bdrs = np.array(fluid_t.boundary)  
         # Compute average and maximum velocity
         max_vels = {}  # per slice, with unique x-values as key for the slice
         running_sum = 0.0;
@@ -128,7 +128,7 @@ def computeVelocityXaverage(pos, vel, xmin, xmax, ymin, ymax, zmin, zmax):
     return average_slice
 
 
-FONTSIZE = 24
+FONTSIZE = 36
 
 def plotFluidVelocityHeatmap(average_slice):
     # Convert values from LU to SI for plot
@@ -141,7 +141,7 @@ def plotFluidVelocityHeatmap(average_slice):
     # Plot
     plt.figure(0)
     plt.imshow(average_slice_convert, cmap="hot")
-    plt.title("x-averaged fluid velocity in mm/s.", fontsize = FONTSIZE)
+    #plt.title("Average cross-sectional pre-inlet plasma velocity in mm/s.", y=1.05, fontsize = FONTSIZE)
     plt.xlabel(r"Y position in $\mu$m.", fontsize = FONTSIZE)
     plt.ylabel(r"Z position in $\mu$m.", fontsize = FONTSIZE)
     ax = plt.gca()
@@ -152,7 +152,9 @@ def plotFluidVelocityHeatmap(average_slice):
     ax.set_xticklabels(labels[:-1], fontsize = FONTSIZE)
     ax.set_yticks(ticks)
     ax.set_yticklabels(labels, fontsize = FONTSIZE)
-    plt.colorbar()
+    cbar = plt.colorbar()
+    cbar.set_label('Velocity in mm/s', rotation=90, fontsize = FONTSIZE)
+    cbar.ax.yaxis.set_label_position('left')
     if not SAVE_FIGS:
         plt.show()
     else:
@@ -191,26 +193,26 @@ def plotFluidVelocityVSradius(average_slice, ymin, ymax, zmin, zmax):
     plt.figure(1)
     #sb.scatterplot(Xplot, Yplot)
     plt.plot(Xplot, Yplot, "r.")
-    plt.title("Fluid velocity versus distance from center", fontsize = FONTSIZE)
+    #plt.title("Average pre-inlet plasma velocity versus radial distance", y = 1.02, fontsize = FONTSIZE)
     plt.ylabel("Velocity in mm/s", fontsize = FONTSIZE)
-    plt.xlabel(r"Distance from center of pipe in $\mu$m.", fontsize = FONTSIZE)
+    plt.xlabel(r"Distance from center of pre-inlet in $\mu$m.", fontsize = FONTSIZE)
     plt.grid(True)
     if not SAVE_FIGS:
         plt.show()
     else:
         plt.savefig('vel_vs_radius.png')
-   
     
 
 #%%
-printFluidVelocity(fluid_pre)
+
+printFluidVelocity(fluid)
 #%%
 
 # Check if we want to do all the other plotting stuff
 doTheRest = True
 if doTheRest:
     # Put data in numpy array once
-    fluid_first_t = fluid_pre[0]
+    fluid_first_t = fluid[0]
     pos = np.array(fluid_first_t.position)
     vel = np.array(fluid_first_t.velocity)
     bdrs = np.array(fluid_first_t.boundary)       
@@ -222,4 +224,4 @@ if doTheRest:
 #%%
     plotFluidVelocityHeatmap(average_slice)
 
-    plotFluidVelocityVSradius(average_slice, ymin, ymax, zmin, zmax)
+    #plotFluidVelocityVSradius(average_slice, ymin, ymax, zmin, zmax)
