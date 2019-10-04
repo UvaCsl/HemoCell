@@ -8,7 +8,7 @@
     <Cells>
       <Cell materialModel="RBC" xml="preinlet_RBC.xml" />
     </Cells>
-    <pulseFile> "pulse_avg_proportion.txt" </pulseFile>
+    <pulseFileName> "pulse_vel_normalized.txt" </pulseFileName>
   </parameters>
 </preInlet>
 
