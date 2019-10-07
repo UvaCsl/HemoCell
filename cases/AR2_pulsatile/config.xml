@@ -8,12 +8,13 @@
     <Cells>
       <Cell materialModel="RBC" xml="preinlet_RBC.xml" />
     </Cells>
-    <pulseFileName> "pulse_vel_normalized.txt" </pulseFileName>
+    <pulseFileName> pulse_vel_normalized.txt </pulseFileName>
+    <nProcs> 1 </nProcs>
   </parameters>
 </preInlet>
 
 <parameters>
-    <warmup> 1000 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <warmup> 0 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
     <maxFlin> 0.0035 </maxFlin>
     <outputDirectory>output</outputDirectory> <!-- This is the base directory, appended with _x when it already exists -->
@@ -28,7 +29,7 @@
 </ibm>
 
 <domain>
-    <geometry> shortoutlet_AR2_rotated.stl </geometry>
+    <geometry> vessel_wide.stl </geometry>
     <fluidEnvelope> 2 </fluidEnvelope>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.1e-6 </nuP>   <!-- Kinematic viscosity of blood plasma, physical units [m^2/s]-->
@@ -38,16 +39,16 @@
     <refDirN> 408 </refDirN>  <!-- Number of numerical cell in the reference direction -->
     <blockSize> -1 </blockSize>
     <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
-    <particleEnvelope> 35 </particleEnvelope>
+    <particleEnvelope> 25 </particleEnvelope>
     <kRep> 2e-22 </kRep> <!-- Repulsion Constant -->
     <RepCutoff> 0.7 </RepCutoff> <!-- RepulsionCutoff -->
 </domain>
 
 <sim>
-    <tmax> 10000000 </tmax> <!-- total number of iterations -->
-    <tmeas> 10000 </tmeas> <!-- interval after which data is written --> 
+    <tmax> 10 </tmax> <!-- total number of iterations -->
+    <tmeas> 1 </tmeas> <!-- interval after which data is written --> 
     <tcheckpoint> 20000 </tcheckpoint> 
-    <tbalance> 10000 </tbalance> <!-- interval after which balance is performed --> 
+    <tbalance> 1 </tbalance> <!-- interval after which balance is performed --> 
 </sim>
 
 </hemocell>

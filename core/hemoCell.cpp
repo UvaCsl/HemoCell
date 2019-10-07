@@ -454,7 +454,7 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   if (preInlet->nProcs == 0) {
     preInlet->nProcs = 1;
   }*/
-  preInlet->nProcs = 5;
+  preInlet->nProcs = (*cfg)["preInlet"]["parameters"]["nProcs"].read<int>();
   
   int nProcs = global::mpi().getSize()-preInlet->nProcs;
   
