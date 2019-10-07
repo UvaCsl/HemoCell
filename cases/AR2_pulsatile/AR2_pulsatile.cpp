@@ -87,9 +87,13 @@ int main(int argc, char *argv[]) {
   hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
   // Driving Force
-  hemocell.preInlet->calculateDrivingForceTimeDependent();
+  hemocell.preInlet->calculateDrivingForce();
+
+  // JON: read time depenent pulse data, an array of velocity vs time values 
+  // pulse data is used to modulate driving force computed above
+  if (hemocell.preInlet->readNormalizedVelocities() == false)  return -1;
  
-  hemocell.lattice->initialize();   
+  hemocell.lattice->initialize();
 
   // Adding all the cells
   hemocell.initializeCellfield();
@@ -157,6 +161,7 @@ int main(int argc, char *argv[]) {
     if (hemocell.partOfpreInlet) {
       //Set driving force as required after each iteration
       hemocell.preInlet->setDrivingForceTimeDependent(hemocell.iter * param::dt);
+      //hemocell.preInlet->setDrivingForce();
     }
     
     hemocell.preInlet->applyPreInlet();
