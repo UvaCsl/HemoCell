@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
   hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
   // Driving Force
-  hemocell.preInlet->calculateDrivingForceTimeDependent();
+  hemocell.preInlet->calculateDrivingForce();
  
   hemocell.lattice->initialize();   
 
@@ -156,7 +156,7 @@ int main(int argc, char *argv[]) {
     
     if (hemocell.partOfpreInlet) {
       //Set driving force as required after each iteration
-      hemocell.preInlet->setDrivingForceTimeDependent();
+      hemocell.preInlet->setDrivingForce();
     }
     
     hemocell.preInlet->applyPreInlet();
