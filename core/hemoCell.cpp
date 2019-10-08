@@ -450,11 +450,15 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   totalNodes += preInlet->getNumberOfNodes();
   totalNodes += cellsInBoundingBox(management.getBoundingBox());
   
- /* preInlet->nProcs = global::mpi().getSize()*(preInlet->getNumberOfNodes()/(T)totalNodes);
+  preInlet->nProcs = global::mpi().getSize()*(preInlet->getNumberOfNodes()/(T)totalNodes);
   if (preInlet->nProcs == 0) {
     preInlet->nProcs = 1;
-  }*/
-  preInlet->nProcs = (*cfg)["preInlet"]["parameters"]["nProcs"].read<int>();
+  }
+
+  // JON addition: Try to read in number of processors allocated to preinlet from config file. 
+  // Just continue with value computed above if reading it from XML throws an exception because it does not exist
+  try  { preInlet->nProcs = (*cfg)["preInlet"]["parameters"]["nProcs"].read<int>(); }
+  catch (const std::invalid_argument& e)  {}
   
   int nProcs = global::mpi().getSize()-preInlet->nProcs;
   
