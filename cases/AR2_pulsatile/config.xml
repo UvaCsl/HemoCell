@@ -8,13 +8,14 @@
     <Cells>
       <Cell materialModel="RBC" xml="preinlet_RBC.xml" />
     </Cells>
-    <pulseFileName> pulse_vel_normalized.txt </pulseFileName>
-    <nProcs> 1 </nProcs>
+    <pulseFileName> pulse_vel_normalized_loop.txt </pulseFileName> <!-- This data has to describe one complete beat in t/v values -->
+    <nProcs> 5 </nProcs>
+    <pFrequency> 1.0 </pFrequency> <!-- This is in Hz or number of heart beats per second -->
   </parameters>
 </preInlet>
 
 <parameters>
-    <warmup> 0 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <warmup> 1000 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
     <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
     <maxFlin> 0.0035 </maxFlin>
     <outputDirectory>output</outputDirectory> <!-- This is the base directory, appended with _x when it already exists -->
@@ -45,10 +46,10 @@
 </domain>
 
 <sim>
-    <tmax> 10 </tmax> <!-- total number of iterations -->
-    <tmeas> 1 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint> 20000 </tcheckpoint> 
-    <tbalance> 1 </tbalance> <!-- interval after which balance is performed --> 
+    <tmax> 10000000 </tmax> <!-- total number of iterations -->
+    <tmeas> 100000 </tmeas> <!-- interval after which data is written --> 
+    <tcheckpoint> 100000 </tcheckpoint> 
+    <tbalance> 100000 </tbalance> <!-- interval after which balance is performed --> 
 </sim>
 
 </hemocell>

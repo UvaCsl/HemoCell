@@ -607,6 +607,13 @@ bool PreInlet::readNormalizedVelocities() {
   // Set average velocity
   average_vel = PreInlet::average(normalizedVelocityValues);
 
+  // Length of heartbeat pulse is also important
+  pulseEndTime = normalizedVelocityTimes[normalizedVelocityTimes.size() - 1];
+
+  // Read in pulsatility frequency value. Just leave it at its value as per the input pulse data if it's not in the XML.
+  try  { pFrequency = (*hemocell->cfg)["preInlet"]["parameters"]["pFrequency"].read<double>(); }
+  catch (const std::invalid_argument& e)  { pFrequency = 1.0 / pulseEndTime; }
+
   return true;
 }
 
@@ -646,11 +653,18 @@ double PreInlet::interpolate(vector<double> &xData, vector<double> &yData, doubl
 // from pulsatile velocity data and then interpolates driving force
 void PreInlet::setDrivingForceTimeDependent(double t) {
   if (partOfpreInlet) {
+    // Multiply time value by frequency and length of input pulse in order to get appropriate point
+    // input beat curve
+    t *= pFrequency * pulseEndTime;
+
+    // Time value must wrap around normalized velocity data in order to generate periodic heart beat
+    t = fmod(t, pulseEndTime);
+
     // JON: Compute current driving force based on ratio of data-derived "current velocity" 
     // and average velocity
     double current_vel = PreInlet::interpolate(normalizedVelocityTimes, normalizedVelocityValues, t, false);
     double currentDrivingForce = (current_vel / average_vel) * drivingForce;
-      
+
     plb::Array<T,3> force(0.,0.,0.);
     if (direction == Direction::Xneg) {
       force[0] = currentDrivingForce;

@@ -100,6 +100,8 @@ public:
   bool initialized = false;
   double drivingForce = 0.0;
   double average_vel = 0.0;
+  double pulseEndTime = 1.0;
+  double pFrequency = 1.0;
   std::vector<double> normalizedVelocityTimes;
   std::vector<double> normalizedVelocityValues;
   std::map<plint,plint> BlockToMpi;
