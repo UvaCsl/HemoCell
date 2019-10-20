@@ -8,7 +8,7 @@ fi
 
 if [ ! -e "palabos_dev.tgz" ]; then
 echo "=================== Downloading palabos =========================="
-  wget -O palabos_dev.tgz http://www.palabos.org/images/palabos_releases/palabos-v2.0r0.tgz || { echo "Error Downloading palabos, exiting ..."; exit 1;}
+  wget -O palabos_dev.tgz https://palabos.unige.ch/index.php/download_file/view/1/135/ || { echo "Error Downloading palabos, exiting ..."; exit 1;}
 fi
 
 echo "=================== Uncompressing palabos ==========================="
