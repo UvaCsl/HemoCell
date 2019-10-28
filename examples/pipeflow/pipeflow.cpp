@@ -69,10 +69,7 @@ int main(int argc, char *argv[]) {
 
   //Driving Force
   T poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / param::pipe_radius / param::pipe_radius;
-  setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-                    DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-                    plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-
+  
   hemocell.lattice->initialize();   
 
   //Adding all the cells
@@ -116,6 +113,9 @@ int main(int argc, char *argv[]) {
   
   if (hemocell.iter == 0) {
     hlog << "(PipeFlow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
+	setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
+                    DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+                    plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
     for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) { 
       hemocell.lattice->collideAndStream(); 
     }
