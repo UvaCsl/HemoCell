@@ -310,10 +310,12 @@ void HemoCell::iterate() {
   global.statistics.getCurrent()["collideAndStream"].start();
   lattice->collideAndStream();
   global.statistics.getCurrent().stop();
-  if (global.enableCEPACfield) {
-    global.statistics.getCurrent()["CEPACcollideAndStream"].start();
-    cellfields->CEPACfield->collideAndStream();
-    global.statistics.getCurrent().stop();
+
+  if (global.enableCEPACfield)
+    {
+      global.statistics.getCurrent()["CEPACcollideAndStream"].start();
+      cellfields->CEPACfield->collideAndStream();
+      global.statistics.getCurrent().stop();
   }
 
   if(iter %cellfields->particleVelocityUpdateTimescale == 0) {

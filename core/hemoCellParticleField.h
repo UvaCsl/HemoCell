@@ -197,6 +197,7 @@ public:
 
     HemoCellParticleDataTransfer & particleDataTransfer;
 public:
+    plint addParticleCount = 0;
     plb::Box3D localDomain;
     
     //These should be edited through the helper/solidifyField.h functions

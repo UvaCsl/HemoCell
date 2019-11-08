@@ -36,7 +36,7 @@ namespace hemo {
     static T dt,dx,dm,df;
     static T nu_p,rho_p,kBT_p;
     static T tau,re;
-    static T nu_lbm, u_lbm_max, kBT_lbm, shearrate_lbm;
+    static T nu_lbm, u_lbm_max, kBT_lbm, shearrate_lbm, LE_force;
   #ifdef FORCE_LIMIT
     static T f_limit;
   #endif
@@ -49,6 +49,7 @@ namespace hemo {
     static void lbm_pipe_parameters(Config & cfg, plb::MultiScalarField3D<int> * sf);
     static void lbm_pipe_parameters(Config & cfg, int nY);
     static void lbm_shear_parameters(Config & cfg, T nx);
+    static void lbm_LE_parameters(Config & cfg, T ny);
     static void lbm_base_parameters(Config & cfg);
     static void printParameters();
   };

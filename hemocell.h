@@ -41,6 +41,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /* Helpers */
 #include "preInlet.h"
+// #include "leesEdwardsBC.h"
 
 /* Always used palabos functions in case files*/
 #ifndef COMPILING_HEMOCELL_LIBRARY
@@ -50,8 +51,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace hemo;
 using namespace plb;
 #endif
-
-
 
 namespace hemo { 
 
@@ -128,6 +127,10 @@ class HemoCell {
   bool repulsionEnabled = false;
   bool boundaryRepulsionEnabled = false;
   void setRepulsion(T repulsionConstant, T repulsionCutoff);
+
+  // Lees-Edwards boundary condition
+  bool leesEdwardsBC = false;
+  double * LEcurrentDisplacement;
 
   //Set the timescale separation of the particles of a particle type
   void setMaterialTimeScaleSeparation(string name, unsigned int separation);

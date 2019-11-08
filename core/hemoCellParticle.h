@@ -192,7 +192,7 @@ public:
          *  2: Adams-Bashforth
          */
         #if HEMOCELL_MATERIAL_INTEGRATION == 1
-              sv.position += sv.v;    
+              sv.position += sv.v;
 
         #elif HEMOCELL_MATERIAL_INTEGRATION == 2
               hemo::Array<T,3> dxyz = (1.5*v - 0.5*vPrevious);
