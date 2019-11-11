@@ -27,6 +27,7 @@ namespace hemo {
 
 void HemoCellParticleField::AddOutputMap() {
   outputFunctionMap[OUTPUT_POSITION] = &HemoCellParticleField::outputPositions;
+  outputFunctionMap[OUTPUT_VELOCITY] = &HemoCellParticleField::outputVelocities;
   outputFunctionMap[OUTPUT_FORCE] = &HemoCellParticleField::outputForces;
   outputFunctionMap[OUTPUT_FORCE_VOLUME] = &HemoCellParticleField::outputForceVolume;
   outputFunctionMap[OUTPUT_FORCE_AREA] = &HemoCellParticleField::outputForceArea;
@@ -72,6 +73,37 @@ void HemoCellParticleField::outputPositions(Box3D domain,vector<vector<T>>& outp
     for (vector<T> & tf : output) {
       for (T & n : tf) {
         n = n * param::dx;
+      }
+    }
+  }
+}
+
+void HemoCellParticleField::outputVelocities(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
+  deleteIncompleteCells(ctype);
+  name = "Velocity";
+  output.clear();
+  HemoCellParticle * sparticle;
+  const map<int,bool> & lpc = get_lpc();
+  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
+  for ( const auto &lpc_it : lpc ) {
+    int cellid = lpc_it.first;
+    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
+    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
+    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
+      if (particles_per_cell.at(cellid)[i] == -1) { continue; }
+      sparticle = &particles[particles_per_cell.at(cellid)[i]];
+
+      vector<T> pbv;
+      pbv.push_back(sparticle->sv.v[0]);
+      pbv.push_back(sparticle->sv.v[1]);
+      pbv.push_back(sparticle->sv.v[2]);
+      output.push_back(pbv); //TODO, memory copy
+    }
+  }
+  if(cellFields->hemocell.outputInSiUnits) {
+    for (vector<T> & tf : output) {
+      for (T & n : tf) {
+        n = n * param::dx/param::dt;
       }
     }
   }

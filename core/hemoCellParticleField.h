@@ -104,6 +104,7 @@ public:
     }
     //Ugly output functions:
     void outputPositions(plb::Box3D,vector<vector<T>>&, pluint, std::string&); 
+    void outputVelocities(plb::Box3D,vector<vector<T>>&, pluint, std::string&); 
     void outputForces   (plb::Box3D,vector<vector<T>>&, pluint, std::string&);
     void outputForceVolume   (plb::Box3D,vector<vector<T>>&, pluint, std::string&);
     void outputForceArea   (plb::Box3D,vector<vector<T>>&, pluint, std::string&);

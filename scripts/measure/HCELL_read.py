@@ -44,6 +44,7 @@ class LSP_CELL(object):
 	 Fvol=None,
 	 triangles=None,
 	 position=None,
+	 velocity=None,
 	 cid =None
 	 ):
 
@@ -62,6 +63,7 @@ class LSP_CELL(object):
 		self.Fvol = Fvol
 		self.triangles = triangles
 		self.position = position
+		self.velocity = velocity
 		self.cid = cid
 
 class CSVCELL(object):
@@ -89,9 +91,9 @@ class CSVCELL(object):
 #The read function
 def core_read_processor(f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,rbcname,pltname,ct3name,n):
 	fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel = ([] for i in range(10))
-	rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rcid = ([] for i in range(16))
-	pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pcid = ([] for i in range(16))
-	ct3dt,ct3dx,ct3iter,ct3Npart,ct3Nproc,ct3Ntri,ct3procid,ct3Farea,ct3Fbend,ct3Flink,ct3Ftotal,ct3Fvisc,ct3Fvol,ct3triangles,ct3pos,ct3cid = ([] for i in range(16))
+	rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rvel,rcid = ([] for i in range(17))
+	pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pvel,pcid = ([] for i in range(17))
+	ct3dt,ct3dx,ct3iter,ct3Npart,ct3Nproc,ct3Ntri,ct3procid,ct3Farea,ct3Fbend,ct3Flink,ct3Ftotal,ct3Fvisc,ct3Fvol,ct3triangles,ct3pos,ct3vel,ct3cid = ([] for i in range(17))
 
 	time_path = datapath+str(t).zfill(12)
 	#time_path = datapath+str(t)
@@ -197,6 +199,8 @@ def core_read_processor(f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,rbcname,pl
 			rtriangles.extend(RBC_file["Triangles"])
 		if "Position" in celloutputs:
 			rpos.extend(RBC_file["Position"])
+		if "Velocity" in celloutputs:
+			rvel.extend(RBC_file["Velocity"])
 		if "Cell Id" in celloutputs:
 			rcid.extend(RBC_file["Cell Id"])
 
@@ -245,6 +249,8 @@ def core_read_processor(f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,rbcname,pl
 			ptriangles.extend(platelet_file["Triangles"])
 		if "Position" in celloutputs:
 			ppos.extend(platelet_file["Position"])
+		if "Velocity" in celloutputs:
+			pvel.extend(platelet_file["Velocity"])
 		if "Cell Id" in celloutputs:
 			pcid.extend(platelet_file["Cell Id"])
 
@@ -295,6 +301,8 @@ def core_read_processor(f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,rbcname,pl
 			ct3triangles.extend(ct3_file["Triangles"])
 		if "Position" in celloutputs:
 			ct3pos.extend(ct3_file["Position"])
+		if "Velocity" in celloutputs:
+			ct3vel.extend(ct3_file["Velocity"])
 		if "Cell Id" in celloutputs:
 			ct3cid.extend(ct3_file["Cell Id"])
 
@@ -302,9 +310,9 @@ def core_read_processor(f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,rbcname,pl
 		ct3_file.close()
 
 	return(fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel,
-		rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rcid,
-		pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pcid,
-		ct3dt,ct3dx,ct3iter,ct3Npart,ct3Nproc,ct3Ntri,ct3procid,ct3Farea,ct3Fbend,ct3Flink,ct3Ftotal,ct3Fvisc,ct3Fvol,ct3triangles,ct3pos,ct3cid)
+		rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rvel,rcid,
+		pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pvel,pcid,
+		ct3dt,ct3dx,ct3iter,ct3Npart,ct3Nproc,ct3Ntri,ct3procid,ct3Farea,ct3Fbend,ct3Flink,ct3Ftotal,ct3Fvisc,ct3Fvol,ct3triangles,ct3pos,ct3vel,ct3cid)
 
 
 
@@ -319,9 +327,9 @@ def open_hdf5_files(f=True,r=True,p=True,ct3=True,fluidoutputs=[""],celloutputs=
 
 	for t in range(begin,end,timestep):
 		fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel = ([] for i in range(10))
-		rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rcid = ([] for i in range(16))
-		pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pcid = ([] for i in range(16))
-		ct3dt,ct3dx,ct3iter,ct3Npart,ct3Nproc,ct3Ntri,ct3procid,ct3Farea,ct3Fbend,ct3Flink,ct3Ftotal,ct3Fvisc,ct3Fvol,ct3triangles,ct3pos,ct3cid = ([] for i in range(16))
+		rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rvel,rcid = ([] for i in range(17))
+		pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pvel,pcid = ([] for i in range(17))
+		ct3dt,ct3dx,ct3iter,ct3Npart,ct3Nproc,ct3Ntri,ct3procid,ct3Farea,ct3Fbend,ct3Flink,ct3Ftotal,ct3Fvisc,ct3Fvol,ct3triangles,ct3pos,ct3vel,ct3cid = ([] for i in range(17))
 
 		#Check if the  run procs are actually >1
 		if read_procs >1:
@@ -364,41 +372,44 @@ def open_hdf5_files(f=True,r=True,p=True,ct3=True,fluidoutputs=[""],celloutputs=
 				rFvol.extend(result[i,22])
 				rtriangles.extend(result[i,23])
 				rpos.extend(result[i,24])
-				rcid.extend(result[i,25])
+				rvel.extend(result[i,25])
+				rcid.extend(result[i,26])
 	
-				pdt.extend(result[i,26])
-				pdx.extend(result[i,27])
-				piter.extend(result[i,28])
-				pNpart.extend(result[i,29])
-				pNproc.extend(result[i,30])
-				pNtri.extend(result[i,31])
-				pprocid.extend(result[i,32])
-				pFarea.extend(result[i,33])
-				pFbend.extend(result[i,34])
-				pFlink.extend(result[i,35])
-				pFtotal.extend(result[i,36])
-				pFvisc.extend(result[i,37])
-				pFvol.extend(result[i,38])
-				ptriangles.extend(result[i,39])
-				ppos.extend(result[i,40])
-				pcid.extend(result[i,41])
+				pdt.extend(result[i,27])
+				pdx.extend(result[i,28])
+				piter.extend(result[i,29])
+				pNpart.extend(result[i,30])
+				pNproc.extend(result[i,31])
+				pNtri.extend(result[i,32])
+				pprocid.extend(result[i,33])
+				pFarea.extend(result[i,34])
+				pFbend.extend(result[i,35])
+				pFlink.extend(result[i,36])
+				pFtotal.extend(result[i,37])
+				pFvisc.extend(result[i,38])
+				pFvol.extend(result[i,39])
+				ptriangles.extend(result[i,40])
+				ppos.extend(result[i,41])
+				pvel.extend(result[i,42])
+				pcid.extend(result[i,43])
 
-				ct3dt.extend(result[i,42])
-				ct3dx.extend(result[i,43])
-				ct3iter.extend(result[i,44])
-				ct3Npart.extend(result[i,45])
-				ct3Nproc.extend(result[i,46])
-				ct3Ntri.extend(result[i,47])
-				ct3procid.extend(result[i,48])
-				ct3Farea.extend(result[i,49])
-				ct3Fbend.extend(result[i,50])
-				ct3Flink.extend(result[i,51])
-				ct3Ftotal.extend(result[i,52])
-				ct3Fvisc.extend(result[i,53])
-				ct3Fvol.extend(result[i,54])
-				ct3triangles.extend(result[i,54])
-				ct3pos.extend(result[i,56])						
-				ct3cid.extend(result[i,57])	
+				ct3dt.extend(result[i,44])
+				ct3dx.extend(result[i,45])
+				ct3iter.extend(result[i,46])
+				ct3Npart.extend(result[i,47])
+				ct3Nproc.extend(result[i,48])
+				ct3Ntri.extend(result[i,49])
+				ct3procid.extend(result[i,50])
+				ct3Farea.extend(result[i,51])
+				ct3Fbend.extend(result[i,52])
+				ct3Flink.extend(result[i,53])
+				ct3Ftotal.extend(result[i,54])
+				ct3Fvisc.extend(result[i,55])
+				ct3Fvol.extend(result[i,56])
+				ct3triangles.extend(result[i,57])
+				ct3pos.extend(result[i,58])						
+				ct3vel.extend(result[i,59])						
+				ct3cid.extend(result[i,60])	
 
 		elif nprocs ==1:
 			#Read in serial if only 1 run processor
@@ -430,50 +441,53 @@ def open_hdf5_files(f=True,r=True,p=True,ct3=True,fluidoutputs=[""],celloutputs=
 			rFvol       = result[22]
 			rtriangles  = result[23]
 			rpos        = result[24]
-			rcid        = result[25]
+			rvel        = result[25]
+			rcid        = result[26]
 
-			pdt         = result[26]
-			pdx         = result[27]
-			piter       = result[28]
-			pNpart      = result[29]
-			pNproc      = result[30]
-			pNtri       = result[31]
-			pprocid     = result[32]
-			pFarea      = result[33]
-			pFbend      = result[34]
-			pFlink      = result[35]
-			pFtotal     = result[36]
-			pFvisc      = result[37]
-			pFvol       = result[38]
-			ptriangles  = result[39]
-			ppos        = result[40]
-			pcid        = result[41]
+			pdt         = result[27]
+			pdx         = result[28]
+			piter       = result[29]
+			pNpart      = result[30]
+			pNproc      = result[31]
+			pNtri       = result[32]
+			pprocid     = result[33]
+			pFarea      = result[34]
+			pFbend      = result[35]
+			pFlink      = result[36]
+			pFtotal     = result[37]
+			pFvisc      = result[38]
+			pFvol       = result[39]
+			ptriangles  = result[40]
+			ppos        = result[41]
+			pvel        = result[42]
+			pcid        = result[43]
 
-			ct3dt         = result[42]
-			ct3dx         = result[43]
-			ct3iter       = result[44]
-			ct3Npart      = result[45]
-			ct3Nproc      = result[46]
-			ct3Ntri       = result[47]
-			ct3procid     = result[48]
-			ct3Farea      = result[49]
-			ct3Fbend      = result[50]
-			ct3Flink      = result[51]
-			ct3Ftotal     = result[52]
-			ct3Fvisc      = result[53]
-			ct3Fvol       = result[54]
-			ct3triangles  = result[55]
-			ct3pos        = result[56]
-			ct3cid        = result[57]
+			ct3dt         = result[44]
+			ct3dx         = result[45]
+			ct3iter       = result[46]
+			ct3Npart      = result[47]
+			ct3Nproc      = result[48]
+			ct3Ntri       = result[49]
+			ct3procid     = result[50]
+			ct3Farea      = result[51]
+			ct3Fbend      = result[52]
+			ct3Flink      = result[53]
+			ct3Ftotal     = result[54]
+			ct3Fvisc      = result[55]
+			ct3Fvol       = result[56]
+			ct3triangles  = result[57]
+			ct3pos        = result[58]
+			ct3vel        = result[59]
+			ct3cid        = result[60]
 
 		if f:
 			fluid.append(FLUID(fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel))
 		if r:
-			rbc.append(LSP_CELL(rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rcid))
+			rbc.append(LSP_CELL(rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rvel,rcid))
 		if p:
-			platelet.append(LSP_CELL(pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pcid))
+			platelet.append(LSP_CELL(pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pvel,pcid))
 		if ct3:
-			celltype3.append(LSP_CELL(ct3dt,ct3dx,ct3iter,ct3Npart,ct3Nproc,ct3Ntri,ct3procid,ct3Farea,ct3Fbend,ct3Flink,ct3Ftotal,ct3Fvisc,ct3Fvol,ct3triangles,ct3pos,ct3cid))
+			celltype3.append(LSP_CELL(ct3dt,ct3dx,ct3iter,ct3Npart,ct3Nproc,ct3Ntri,ct3procid,ct3Farea,ct3Fbend,ct3Flink,ct3Ftotal,ct3Fvisc,ct3Fvol,ct3triangles,ct3pos,ct3vel,ct3cid))
 
 
 	return np.array(fluid),np.array(rbc),np.array(platelet),np.array(celltype3)
