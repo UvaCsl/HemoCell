@@ -139,7 +139,7 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
 
         fIn >> Np[j];
         if (first_time) {
-          hlog << "(readPositionsBloodCels) Particle count in file (" << cellFields[j]->name << "): " << Np[j] << "." << endl;
+          hlog << "(readPositionsBloodCells) Particle count in file (" << cellFields[j]->name << "): " << Np[j] << "." << endl;
         }
         packPositions[j].resize(Np[j]); packAngles[j].resize(Np[j]);cellIdss[j].resize(Np[j]);
         int less = 0;
@@ -319,7 +319,7 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & c
     for (pluint icf = 0; icf < cellFields.size(); ++icf) {
         fluidAndParticleFieldsArg.push_back(cellFields[icf]->getParticleField3D());
     }
-    hlog << "(readPositionsBloodCels) Reading particle positions..." << std::endl;
+    hlog << "(readPositionsBloodCells) Reading particle positions..." << std::endl;
     
     if (cellFields.hemocell.preInlet && cellFields.hemocell.preInlet->initialized && !cellFields.hemocell.partOfpreInlet) { } else {
     applyProcessingFunctional(
