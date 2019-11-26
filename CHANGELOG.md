@@ -13,6 +13,7 @@ UNRELEASED
   * Added support for interior viscosity
   * Added velocity output for hemoCellParticleField
   * Added curved pipeflow with pre-inlet example
+  * Added support for pulsatility
 * Structure
   * Rename HemoCell::setMinimumDistanceFromSolid to HemoCell::setInitialMinimumDistanceFromSolid
   * Rename all occurences of RBC_HO to RBC, both in filenames and source code
@@ -37,5 +38,30 @@ to be added
 
 2.0 (Dec 17 2018)
 -----------------
-to be added
+* Added compile time constants PREINLET_MECHANICS and SOLIDIFY_MECHANICS to constant_defaults
+* Added runtime preinlets, see stl_preinlet for examples, instead of preinletFromSlice() you can call autoPreinletFromBoundary() if the boundary happens to be the inlet as well
+* Interior viscosity edge tracking works again, enable interior viscosity through CELL.xml file, see cases/RBC_template.xml for an example
+* Output is saved in a seperate folder for each run, see pipeflow/config.xml for the options
+* CSV output is already concatenated in csv folder, now also includes base_cell_id, correct cell_id and velocity
+
+1.4 (Jul 9 2018)
+----------------
+* Added hemocell.statistics as an advanced (fully recursive) profiling tool
+* Added OUTPUT_INNER_LINKS to output possibility
+
+0.5
+---
+* Inner links are specified in the <CellType>.xml file through "CellMechanics"->"InnerEdges"->"Edge"
+* Added MESH_FROM_STL for addCellType. Takes a triangulized STL file from xml-file->"MaterialModel"->"StlFile".
+* Added "Volume" option for Celltype xml files
+* Added Celdensity output for fluid field
+* Added preInlet possibility and cases
+* Default is now HDF5 with openmpi support, if not present, using a preInlet will generate an error when using multiple processors
+* variables checkpointDirectory and outputdirectory can now be specified in the config.xml
+
+0.4
+---
+* Periodicity limit can now be set (hemocell::setSystemPeriodicityLimit) per axis, default is 100, this means that a cell can wrap around a maximum of 100 times over a given axis
+* Loadbalancer now reloads the old (smallest possible) atomic blocks before load balancing, this means timing information is not available as weight, only the number of lsps (or any other measure you come up with)
+* The CmakeFile for a case can be generated from cases/CMakeLists_template.txt by the makefile (cases/Makefile). running make in ./cases will create and build all cases.
 
