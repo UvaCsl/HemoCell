@@ -40,6 +40,7 @@ public:
     HemoCellParticleDataTransfer();
     virtual plint staticCellSize() const;
     virtual void send(Box3D domain, std::vector<char>& buffer, modif::ModifT kind) const;
+    virtual void send_preinlet(Box3D domain, std::vector<char>& buffer, modif::ModifT kind) const;
     //Much faster since we can circumvent memcpy (twice!)
     void receive(Box3D const & domain, char *, unsigned int size, modif::ModifT);
     void receive(Box3D const & domain, char *, unsigned int size, modif::ModifT, Dot3D absoluteOffset);

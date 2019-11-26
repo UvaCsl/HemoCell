@@ -215,6 +215,11 @@ void HemoCell::saveCheckPoint() {
 void HemoCell::writeOutput() {
   global.statistics["output"].start();
   std::string tpi = ((iter != lastOutputAt) ? Profiler::toString((global.statistics.elapsed()-lastOutput)/(iter-lastOutputAt)):"0.00");
+
+  //save Residence time
+  //Needs to be used before LastOutputAT is updated
+  cellfields->updateResidenceTime((iter - lastOutputAt));
+
   
   lastOutput = global.statistics.elapsed();
   lastOutputAt  = iter;
@@ -255,6 +260,9 @@ void HemoCell::writeOutput() {
   }
   global::mpi().barrier();
 
+
+
+  
   //Write Output
   global.statistics.getCurrent()["writeOutput"].start();
   writeCellField3D_HDF5(*cellfields,param::dx,param::dt,iter);
@@ -446,6 +454,11 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   if (preInlet->nProcs == 0) {
     preInlet->nProcs = 1;
   }
+
+  // JON addition: Try to read in number of processors allocated to preinlet from config file. 
+  // Just continue with value computed above if reading it from XML throws an exception because it does not exist
+  try  { preInlet->nProcs = (*cfg)["preInlet"]["parameters"]["nProcs"].read<int>(); }
+  catch (const std::invalid_argument& e)  {}
   
   int nProcs = global::mpi().getSize()-preInlet->nProcs;
   

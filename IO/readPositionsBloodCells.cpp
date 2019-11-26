@@ -158,7 +158,6 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
               packPositions[j][i-less][2] += cellFields.hemocell.preInlet->location.z0/dx;
             }
             
-            
             //Check if it actually fits (mostly) in this atomic block
             if (packPositions[j][i-less][0]*dx < realDomain.x0 - cfg["domain"]["particleEnvelope"].read<int>() ||
                 packPositions[j][i-less][0]*dx > realDomain.x1 + cfg["domain"]["particleEnvelope"].read<int>() ||

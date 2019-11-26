@@ -110,6 +110,7 @@ FORCE_LIMIT sets the allowed maximal force coming from the constitutive model (i
 #define OUTPUT_INTERIOR_POINTS 15
 #define OUTPUT_SHEAR_RATE 16
 #define OUTPUT_STRAIN_RATE 17
+#define OUTPUT_RES_TIME 18
 
 //==================== Not really an option but a nice shortcut
 #define param Parameters

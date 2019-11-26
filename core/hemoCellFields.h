@@ -153,6 +153,9 @@ public:
   /// Conditionally solidify cells if requested
   void solidifyCells();
   
+  /// increment cell residence time 
+  void updateResidenceTime(unsigned int rtime);
+  
   //Class Variables
   
   ///the fluid lattice
@@ -313,6 +316,12 @@ public:
   class HemoSolidifyCells: public HemoCellFunctional {
     void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     HemoSolidifyCells * clone() const;
+  };
+  class HemoupdateResidenceTime: public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+    HemoupdateResidenceTime * clone() const;
+  public:
+    unsigned int rtime;
   };
 };
 }

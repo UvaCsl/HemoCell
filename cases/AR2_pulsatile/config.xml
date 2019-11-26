@@ -1,0 +1,55 @@
+<?xml version="1.0" ?>
+<hemocell>
+
+<preInlet>
+  <parameters>
+    <lengthN> 250 </lengthN> <!-- Lenght in Lattice Units -->
+    <Re> 0.054 </Re>
+    <Cells>
+      <Cell materialModel="RBC" xml="preinlet_RBC.xml" />
+    </Cells>
+    <pulseFileName> pulse_vel_normalized_loop.txt </pulseFileName> <!-- This data has to describe one complete beat in t/v values -->
+    <nProcs> 5 </nProcs>
+    <pFrequency> 1.0 </pFrequency> <!-- This is in Hz or number of heart beats per second -->
+  </parameters>
+</preInlet>
+
+<parameters>
+    <warmup> 1000 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
+    <maxFlin> 0.0035 </maxFlin>
+    <outputDirectory>output</outputDirectory> <!-- This is the base directory, appended with _x when it already exists -->
+    <checkpointDirectory>checkpoint</checkpointDirectory> <!-- relative to outputDirectory -->
+    <logDirectory>log</logDirectory> <!-- relative to outputDirectory -->
+    <logFile>logfile</logFile> <!-- relative to logDirectory, if it exists (possible with ../log as logDirectory), add .x for a new version -->    
+</parameters>
+
+<ibm>
+    <stepMaterialEvery> 20 </stepMaterialEvery> <!-- Update particle material model after this many fluid time steps. -->
+    <stepParticleEvery> 5 </stepParticleEvery> <!-- Update particles position after this many fluid time steps. -->
+</ibm>
+
+<domain>
+    <geometry> vessel_wide.stl </geometry>
+    <fluidEnvelope> 2 </fluidEnvelope>
+    <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
+    <nuP> 1.1e-6 </nuP>   <!-- Kinematic viscosity of blood plasma, physical units [m^2/s]-->
+    <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dt> 1e-7 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
+    <refDir> 0 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
+    <refDirN> 408 </refDirN>  <!-- Number of numerical cell in the reference direction -->
+    <blockSize> -1 </blockSize>
+    <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
+    <particleEnvelope> 25 </particleEnvelope>
+    <kRep> 2e-22 </kRep> <!-- Repulsion Constant -->
+    <RepCutoff> 0.7 </RepCutoff> <!-- RepulsionCutoff -->
+</domain>
+
+<sim>
+    <tmax> 10000000 </tmax> <!-- total number of iterations -->
+    <tmeas> 100000 </tmeas> <!-- interval after which data is written --> 
+    <tcheckpoint> 100000 </tcheckpoint> 
+    <tbalance> 100000 </tbalance> <!-- interval after which balance is performed --> 
+</sim>
+
+</hemocell>

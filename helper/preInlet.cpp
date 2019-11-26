@@ -163,7 +163,7 @@ void PreInlet::applyPreInletParticleBoundary() {
 
         Dot3D shift = hemocell->cellfields->immersedParticles->getComponent(bid).getLocation();
         domain = domain.shift(-shift.x,-shift.y,-shift.z);
-        hemocell->cellfields->immersedParticles->getComponent(bid).particleDataTransfer.send(domain,buffers.back(),modif::hemocell);
+        hemocell->cellfields->immersedParticles->getComponent(bid).particleDataTransfer.send_preinlet(domain,buffers.back(),modif::hemocell);
         for (auto & pair : particleReceiveMpi) {
           const int & pid = pair.first;
           requests.push_back(MPI_Request());
@@ -590,6 +590,7 @@ void PreInlet::FillFlagMatrix::processGenericBlocks(plb::Box3D domain, std::vect
 }
 
 void PreInlet::calculateDrivingForce() {
+
   map<int,plint> areas;
   plint fluidArea = 0;
   double re = (*hemocell->cfg)["preInlet"]["parameters"]["Re"].read<T>();
@@ -633,6 +634,129 @@ void PreInlet::calculateDrivingForce() {
   if(partOfpreInlet) {     
     T u_lbm_max = re * param::nu_lbm / (pipe_radius*2);
     drivingForce =  8 * param::nu_lbm * (u_lbm_max * 0.5) / pipe_radius / pipe_radius;
+  }
+}
+
+// JON: average function...
+double PreInlet::average(vector<double> values) {
+  double sum = 0.0;
+  int N = values.size();
+  for (int i = 0; i < N; i++) {
+    sum += values[i];
+  }
+  return sum / N;
+}
+
+// JON: Read pulsatility data into normalizedVelocityTimes / normalizedVelocityValues arrays which are declared in preInlet.h
+// Also computes average which is a constant that is used every time that setDrivingForceTimeDependent() is called
+bool PreInlet::readNormalizedVelocities() {
+
+  // Open file
+  std::string pulseFileName = (*hemocell->cfg)["preInlet"]["parameters"]["pulseFileName"].read<std::string>();
+  std::ifstream pulseFile(pulseFileName);
+
+  // Check if pulsatility file was found
+  if (!pulseFile.is_open()) {
+    cout << "*** WARNING! pulsatility data file " << pulseFileName << " does not exist!" << endl;
+    return false;
+  }
+
+  // Read and parse data into arrays
+  std::string line;
+  while (std::getline(pulseFile, line))
+  {
+      std::string DELIM = " ";
+      std::string t = line.substr(0, line.find(DELIM));
+      std::string v = line.substr(line.find(DELIM), line.size());
+      
+      normalizedVelocityTimes .push_back(stod(t));
+      normalizedVelocityValues.push_back(stod(v));
+  }
+  pulseFile.close();
+
+  // Set average velocity
+  average_vel = PreInlet::average(normalizedVelocityValues);
+
+  // Length of heartbeat pulse is also important
+  pulseEndTime = normalizedVelocityTimes[normalizedVelocityTimes.size() - 1];
+
+  // Read in pulsatility frequency value. Just leave it at its value as per the input pulse data if it's not in the XML.
+  try  { pFrequency = (*hemocell->cfg)["preInlet"]["parameters"]["pFrequency"].read<double>(); }
+  catch (const std::invalid_argument& e)  { pFrequency = 1.0 / pulseEndTime; }
+
+  return true;
+}
+
+// JON: got this interpolation from the internet somewhere
+double PreInlet::interpolate(vector<double> &xData, vector<double> &yData, double x, bool extrapolate)
+{
+   int size = xData.size();
+
+   // find left end of interval for interpolation
+   int i = 0;
+   // special case: beyond right end
+   if ( x >= xData[size - 2] )
+   {
+      i = size - 2;
+   }
+   else
+   {
+      while ( x > xData[i+1] ) i++;
+   }
+   // points on either side (unless beyond ends)
+   double xL = xData[i], yL = yData[i], xR = xData[i+1], yR = yData[i+1];
+   // if beyond ends of array and not extrapolating
+   if ( !extrapolate )
+   {
+      if ( x < xL ) yR = yL;
+      if ( x > xR ) yL = yR;
+   }
+
+   // gradient
+   double dydx = ( yR - yL ) / ( xR - xL );
+
+   // linear interpolation
+   return yL + dydx * ( x - xL ); 
+}
+
+// JON: this function is similar to setDrivingForce() but it reads in a value
+// from pulsatile velocity data and then interpolates driving force
+void PreInlet::setDrivingForceTimeDependent(double t) {
+  if (partOfpreInlet) {
+    // Multiply time value by frequency and length of input pulse in order to get appropriate point
+    // input beat curve
+    t *= pFrequency * pulseEndTime;
+
+    // Time value must wrap around normalized velocity data in order to generate periodic heart beat
+    t = fmod(t, pulseEndTime);
+
+    // JON: Compute current driving force based on ratio of data-derived "current velocity" 
+    // and average velocity
+    double current_vel = PreInlet::interpolate(normalizedVelocityTimes, normalizedVelocityValues, t, false);
+    double currentDrivingForce = (current_vel / average_vel) * drivingForce;
+
+    plb::Array<T,3> force(0.,0.,0.);
+    if (direction == Direction::Xneg) {
+      force[0] = currentDrivingForce;
+    } 
+    if (direction == Direction::Yneg) {
+      force[1] = currentDrivingForce;
+    } 
+    if (direction == Direction::Zneg) {
+      force[2] = currentDrivingForce;
+    }
+    if (direction == Direction::Xpos) {
+      force[0] = -currentDrivingForce;
+    } 
+    if (direction == Direction::Ypos) {
+      force[1] = -currentDrivingForce;
+    } 
+    if (direction == Direction::Zpos) {
+      force[2] = -currentDrivingForce;
+    }
+    setExternalVector(*hemocell->lattice, (*hemocell->lattice).getBoundingBox(),
+                    DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+                    force);
   }
 }
 

@@ -613,6 +613,13 @@ void HemoCellParticleField::separateForceVectors() {
   }
 }
 
+  void HemoCellParticleField::updateResidenceTime(unsigned int rtime) {
+    for (HemoCellParticle & sparticle : particles) {
+      sparticle.sv.restime += rtime;
+    }
+  }
+
+
 void HemoCellParticleField::unifyForceVectors() {
   for (const hemo::Array<T,3>* mem : allocated_for_output) {
     delete mem;
