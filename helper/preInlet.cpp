@@ -391,6 +391,10 @@ void PreInlet::preInletFromSlice(Direction direction_, Box3D boundary) {
   if (direction == Direction::Zpos) {
     location.z1 += preinlet_length;
   }
+  if (!hemocell->lattice) {
+    hlog << "(PreInlet::preInletFromSlice) preInletFromSlice called without setting up a lattice first" << endl;
+    exit(1);
+  }
   Box3D system = hemocell->lattice->getBoundingBox();
   if (direction == Direction::Xneg || direction == Direction::Xpos) {
     if (location.y0 < system.y0 ) { location.y0 =system.y0; }
@@ -521,7 +525,11 @@ void PreInlet::autoPreinletFromBoundary(Direction dir_) {
   if (direction == Direction::Zpos) {
     location.z1 += preinlet_length;
   }
-    Box3D system = hemocell->lattice->getBoundingBox();
+  if (!hemocell->lattice) {
+    hlog << "(PreInlet::autoPreinletFromBoundary) autoPreinletFromBoundary called without setting up a lattice first" << endl;
+    exit(1);
+  }
+  Box3D system = hemocell->lattice->getBoundingBox();
   if (direction == Direction::Xneg || direction == Direction::Xpos) {
     if (location.y0 < system.y0 ) { location.y0 =system.y0; }
     if (location.y1 > system.y1 ) { location.y1 =system.y1; }
