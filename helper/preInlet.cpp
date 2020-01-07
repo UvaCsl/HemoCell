@@ -393,26 +393,26 @@ void PreInlet::preInletFromSlice(Direction direction_, Box3D boundary) {
   }
   if (!hemocell->lattice) {
     hlog << "(PreInlet::preInletFromSlice) preInletFromSlice called without setting up a lattice first" << endl;
-    exit(1);
-  }
-  Box3D system = hemocell->lattice->getBoundingBox();
-  if (direction == Direction::Xneg || direction == Direction::Xpos) {
-    if (location.y0 < system.y0 ) { location.y0 =system.y0; }
-    if (location.y1 > system.y1 ) { location.y1 =system.y1; }
-    if (location.z0 < system.z0 ) { location.z0 =system.z0; }
-    if (location.z1 > system.z1 ) { location.z1 =system.z1; }
-  }
-  if (direction == Direction::Yneg || direction == Direction::Ypos) {
-    if (location.x0 < system.x0 ) { location.x0 =system.x0; }
-    if (location.x1 > system.x1 ) { location.x1 =system.x1; }
-    if (location.z0 < system.z0 ) { location.z0 =system.z0; }
-    if (location.z1 > system.z1 ) { location.z1 =system.z1; }
-  }
-  if (direction == Direction::Zneg || direction == Direction::Zpos) {
-    if (location.y0 < system.y0 ) { location.y0 =system.y0; }
-    if (location.y1 > system.y1 ) { location.y1 =system.y1; }
-    if (location.x0 < system.x0 ) { location.x0 =system.x0; }
-    if (location.x1 > system.x1 ) { location.x1 =system.x1; }
+  } else {
+    Box3D system = hemocell->lattice->getBoundingBox();
+    if (direction == Direction::Xneg || direction == Direction::Xpos) {
+      if (location.y0 < system.y0 ) { location.y0 =system.y0; }
+      if (location.y1 > system.y1 ) { location.y1 =system.y1; }
+      if (location.z0 < system.z0 ) { location.z0 =system.z0; }
+      if (location.z1 > system.z1 ) { location.z1 =system.z1; }
+    }
+    if (direction == Direction::Yneg || direction == Direction::Ypos) {
+      if (location.x0 < system.x0 ) { location.x0 =system.x0; }
+      if (location.x1 > system.x1 ) { location.x1 =system.x1; }
+      if (location.z0 < system.z0 ) { location.z0 =system.z0; }
+      if (location.z1 > system.z1 ) { location.z1 =system.z1; }
+    }
+    if (direction == Direction::Zneg || direction == Direction::Zpos) {
+      if (location.y0 < system.y0 ) { location.y0 =system.y0; }
+      if (location.y1 > system.y1 ) { location.y1 =system.y1; }
+      if (location.x0 < system.x0 ) { location.x0 =system.x0; }
+      if (location.x1 > system.x1 ) { location.x1 =system.x1; }
+    }
   }
 }
 
@@ -527,26 +527,26 @@ void PreInlet::autoPreinletFromBoundary(Direction dir_) {
   }
   if (!hemocell->lattice) {
     hlog << "(PreInlet::autoPreinletFromBoundary) autoPreinletFromBoundary called without setting up a lattice first" << endl;
-    exit(1);
-  }
-  Box3D system = hemocell->lattice->getBoundingBox();
-  if (direction == Direction::Xneg || direction == Direction::Xpos) {
-    if (location.y0 < system.y0 ) { location.y0 =system.y0; }
-    if (location.y1 > system.y1 ) { location.y1 =system.y1; }
-    if (location.z0 < system.z0 ) { location.z0 =system.z0; }
-    if (location.z1 > system.z1 ) { location.z1 =system.z1; }
-  }
-  if (direction == Direction::Yneg || direction == Direction::Ypos) {
-    if (location.x0 < system.x0 ) { location.x0 =system.x0; }
-    if (location.x1 > system.x1 ) { location.x1 =system.x1; }
-    if (location.z0 < system.z0 ) { location.z0 =system.z0; }
-    if (location.z1 > system.z1 ) { location.z1 =system.z1; }
-  }
-  if (direction == Direction::Zneg || direction == Direction::Zpos) {
-    if (location.y0 < system.y0 ) { location.y0 =system.y0; }
-    if (location.y1 > system.y1 ) { location.y1 =system.y1; }
-    if (location.x0 < system.x0 ) { location.x0 =system.x0; }
-    if (location.x1 > system.x1 ) { location.x1 =system.x1; }
+  } else {
+    Box3D system = hemocell->lattice->getBoundingBox();
+    if (direction == Direction::Xneg || direction == Direction::Xpos) {
+      if (location.y0 < system.y0 ) { location.y0 =system.y0; }
+      if (location.y1 > system.y1 ) { location.y1 =system.y1; }
+      if (location.z0 < system.z0 ) { location.z0 =system.z0; }
+      if (location.z1 > system.z1 ) { location.z1 =system.z1; }
+    }
+    if (direction == Direction::Yneg || direction == Direction::Ypos) {
+      if (location.x0 < system.x0 ) { location.x0 =system.x0; }
+      if (location.x1 > system.x1 ) { location.x1 =system.x1; }
+      if (location.z0 < system.z0 ) { location.z0 =system.z0; }
+      if (location.z1 > system.z1 ) { location.z1 =system.z1; }
+    }
+    if (direction == Direction::Zneg || direction == Direction::Zpos) {
+      if (location.y0 < system.y0 ) { location.y0 =system.y0; }
+      if (location.y1 > system.y1 ) { location.y1 =system.y1; }
+      if (location.x0 < system.x0 ) { location.x0 =system.x0; }
+      if (location.x1 > system.x1 ) { location.x1 =system.x1; }
+    }
   }
 }
 
