@@ -8,7 +8,7 @@
     <Cells>
       <Cell materialModel="RBC" xml="preinlet_RBC.xml" />
     </Cells>
-    <pulseFileName> pulse_vel_normalized_loop.txt </pulseFileName> <!-- This data has to describe one complete beat in t/v values -->
+    <pulseFileName> pulse_vel_normalized.txt </pulseFileName> <!-- This data has to describe one complete beat in t/v values -->
     <nProcs> 5 </nProcs>
     <pFrequency> 1.0 </pFrequency> <!-- This is in Hz or number of heart beats per second -->
   </parameters>
@@ -30,7 +30,7 @@
 </ibm>
 
 <domain>
-    <geometry> vessel_wide.stl </geometry>
+    <geometry> shortoutlet_AR2_rotated.stl </geometry>
     <fluidEnvelope> 2 </fluidEnvelope>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.1e-6 </nuP>   <!-- Kinematic viscosity of blood plasma, physical units [m^2/s]-->
