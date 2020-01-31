@@ -6,8 +6,8 @@ In this changelog, we consider the following classes of changes:
 * Structure: any changes to the structure of HemoCell that may break existing cases.
 * Fixes: (small) changes that do not fall in the other categories.
 
-UNRELEASED
-----------
+2.1 (Feb X 2020)
+----------------
 * Features
   * Added support for binding sites
   * Added support for interior viscosity
@@ -18,6 +18,7 @@ UNRELEASED
   * Rename HemoCell::setMinimumDistanceFromSolid to HemoCell::setInitialMinimumDistanceFromSolid
   * Rename all occurences of RBC_HO to RBC, both in filenames and source code
   * Merge csv and hdf5 reader for scripts
+  * The preinlet setup now adjusts the preinlet to always be on the lattice, if the lattice is set up before the preinlet (a warning is given otherwise)
 * Fixes
   * Do not override interrupt handlers until the first iteration has started
   * Added missing AGPL license header to several files
