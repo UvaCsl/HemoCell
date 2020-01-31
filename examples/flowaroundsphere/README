@@ -1,0 +1,8 @@
+---------------------------
+Hemocell - flowaroundsphere
+---------------------------
+This case simulates the flow around a spherical object that has been placed on the bottom of the channel. This mimics the experiments performed by [1]. The flow is driven by a velocity on the top plane of the channel, the bottom plane is a bounce back boundary and periodic boundary conditions are applied in the other directions. The size of the bead can be changed by varying the parameter: sphere_diameter. For examples see [2].
+
+[1] Nesbitt, W. S., Westein, E., Tovar-Lopez, F. J., Tolouei, E., Mitchell, A., Fu, J., ... & Jackson, S. P. (2009). A shear gradient–dependent platelet aggregation mechanism drives thrombus formation. Nature medicine, 15(6), 665.
+
+[2] van Rooij, B. J. M., Závodszky, G., Azizi Tarksalooyeh, V. W., & Hoekstra, A. G. (2019). Identifying the start of a platelet aggregate by the shear rate and the cell-depleted layer. Journal of the Royal Society Interface, 16(159), 20190148.

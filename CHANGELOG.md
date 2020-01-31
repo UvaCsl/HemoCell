@@ -14,6 +14,7 @@ In this changelog, we consider the following classes of changes:
   * Added velocity output for hemoCellParticleField
   * Added curved pipeflow with pre-inlet example
   * Added support for pulsatility
+  * Addded microcontraction and flowaroundsphere examples
 * Structure
   * Rename HemoCell::setMinimumDistanceFromSolid to HemoCell::setInitialMinimumDistanceFromSolid
   * Rename all occurences of RBC_HO to RBC, both in filenames and source code

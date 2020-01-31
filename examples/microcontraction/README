@@ -1,0 +1,8 @@
+---------------------------
+Hemocell - microcontraction
+---------------------------
+This case simulates the flow through a microfluidic device that was used by [1]. The flow is driven by a body force and has a periodic boundary condition in the direction of the flow. The other sides of the channel are bounce back boundaries. The angle of the stenotic part in the channel can be changed by varying the parameter: c_angle_degrees. For an example see [2].
+
+[1] Tovar-Lopez, F. J., Rosengarten, G., Westein, E., Khoshmanesh, K., Jackson, S. P., Mitchell, A., & Nesbitt, W. S. (2010). A microfluidics device to monitor platelet aggregation dynamics in response to strain rate micro-gradients in flowing blood. Lab on a Chip, 10(3), 291-302.
+
+[2] van Rooij, B. J. M., Závodszky, G., Azizi Tarksalooyeh, V. W., & Hoekstra, A. G. (2019). Identifying the start of a platelet aggregate by the shear rate and the cell-depleted layer. Journal of the Royal Society Interface, 16(159), 20190148.
