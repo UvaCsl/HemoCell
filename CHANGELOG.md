@@ -6,7 +6,7 @@ In this changelog, we consider the following classes of changes:
 * Structure: any changes to the structure of HemoCell that may break existing cases.
 * Fixes: (small) changes that do not fall in the other categories.
 
-2.1 (Feb X 2020)
+2.1 (Feb 6 2020)
 ----------------
 * Features
   * Added support for binding sites
