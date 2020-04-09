@@ -59,6 +59,7 @@ void writeCellInfo_CSV(HemoCell & hemocell) {
       if (hemocell.outputInSiUnits) {
         cinfo.position *= param::dx;
         cinfo.area *= param::dx*param::dx;
+        cinfo.velocity *= param::dx/param::dt;
         cinfo.volume *= param::dx*param::dx*param::dx;
       }
 
