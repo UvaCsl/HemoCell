@@ -349,7 +349,7 @@ def open_hdf5_files(f=True,r=True,p=True,ct3=True,fluidoutputs=[""],celloutputs=
 	celltype3 =[]
 
 	for t in range(begin,end,timestep):
-		fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel,fstress = ([] for i in range(11))
+		fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel,fstress,fshear,fstrain = ([] for i in range(13))
 		rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rvel,rcid = ([] for i in range(17))
 		pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pvel,pcid = ([] for i in range(17))
 		ct3dt,ct3dx,ct3iter,ct3Npart,ct3Nproc,ct3Ntri,ct3procid,ct3Farea,ct3Fbend,ct3Flink,ct3Ftotal,ct3Fvisc,ct3Fvol,ct3triangles,ct3pos,ct3vel,ct3cid = ([] for i in range(17))
