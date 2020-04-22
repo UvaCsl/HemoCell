@@ -15,7 +15,20 @@ import os
 
 #Fluid class of attributes from the hdf5 files
 class FLUID(object):
-	def __init__(self, dt=None,dx=None,dxdydz=None,iteration=None,numberofcells=None,processorId=None,relativeposition=None,subdomainsize=None,position=None,velocity=None,stress=None):
+	def __init__(self, dt=None,
+		dx=None,
+		dxdydz=None,
+		iteration=None,
+		numberofcells=None,
+		processorId=None,
+		relativeposition=None,
+		subdomainsize=None,
+		position=None,
+		velocity=None,
+		stress=None,
+		shear=None,
+		strain=None):
+
 		self.dt = dt 
 		self.dx = dx
 		self.dxdydz = dxdydz
@@ -27,6 +40,8 @@ class FLUID(object):
 		self.position = position
 		self.velocity = velocity
 		self.stress = stress
+		self.shear = shear
+		self.strain = strain
 #Cell class of attributes from the hdf5 files (Can be RBCs, WBCs, Platlets from HemoCell)
 class LSP_CELL(object):
 	def __init__(self,
@@ -91,7 +106,7 @@ class CSVCELL(object):
 
 #The read function
 def core_read_processor(f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,rbcname,pltname,ct3name,n):
-	fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel,fstress = ([] for i in range(11))
+	fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel,fstress,fshear,fstrain = ([] for i in range(13))
 	rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rvel,rcid = ([] for i in range(17))
 	pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pvel,pcid = ([] for i in range(17))
 	ct3dt,ct3dx,ct3iter,ct3Npart,ct3Nproc,ct3Ntri,ct3procid,ct3Farea,ct3Fbend,ct3Flink,ct3Ftotal,ct3Fvisc,ct3Fvol,ct3triangles,ct3pos,ct3vel,ct3cid = ([] for i in range(17))
@@ -135,6 +150,11 @@ def core_read_processor(f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,rbcname,pl
 			fsubdomsize.extend(fluid_file["subdomainSize"])
 		if "ShearStress" in fluidoutputs:	
 			fstress.extend(fluid_file["ShearStress"])
+		if "ShearRate" in fluidoutputs:	
+			fshear.extend(fluid_file["ShearRate"])
+		if "StrainRate" in fluidoutputs:	
+			fstrain.extend(fluid_file["StrainRate"])
+
 		if "Velocity" in fluidoutputs:
 			pos =[]
 			vel = []
@@ -312,7 +332,7 @@ def core_read_processor(f,r,p,ct3,fluidoutputs,celloutputs,t,datapath,rbcname,pl
 		#close file
 		ct3_file.close()
 
-	return(fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel,fstress,
+	return(fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel,fstress,fshear,fstrain,
 		rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rvel,rcid,
 		pdt,pdx,piter,pNpart,pNproc,pNtri,pprocid,pFarea,pFbend,pFlink,pFtotal,pFvisc,pFvol,ptriangles,ppos,pvel,pcid,
 		ct3dt,ct3dx,ct3iter,ct3Npart,ct3Nproc,ct3Ntri,ct3procid,ct3Farea,ct3Fbend,ct3Flink,ct3Ftotal,ct3Fvisc,ct3Fvol,ct3triangles,ct3pos,ct3vel,ct3cid)
@@ -360,60 +380,62 @@ def open_hdf5_files(f=True,r=True,p=True,ct3=True,fluidoutputs=[""],celloutputs=
 				fpos.extend(result[i,8])
 				fvel.extend(result[i,9])
 				fstress.extend(result[i,10])
+				fshear.extend(result[i,11])
+				fstrain.extend(result[i,12])
 	
-				rdt.extend(result[i,11])
-				rdx.extend(result[i,12])
-				riter.extend(result[i,13])
-				rNpart.extend(result[i,14])
-				rNproc.extend(result[i,15])
-				rNtri.extend(result[i,16])
-				rprocid.extend(result[i,17])
-				rFarea.extend(result[i,18])
-				rFbend.extend(result[i,19])
-				rFlink.extend(result[i,20])
-				rFtotal.extend(result[i,21])
-				rFvisc.extend(result[i,22])
-				rFvol.extend(result[i,23])
-				rtriangles.extend(result[i,24])
-				rpos.extend(result[i,25])
-				rvel.extend(result[i,26])
-				rcid.extend(result[i,27])
+				rdt.extend(result[i,13])
+				rdx.extend(result[i,14])
+				riter.extend(result[i,15])
+				rNpart.extend(result[i,16])
+				rNproc.extend(result[i,17])
+				rNtri.extend(result[i,18])
+				rprocid.extend(result[i,19])
+				rFarea.extend(result[i,20])
+				rFbend.extend(result[i,21])
+				rFlink.extend(result[i,22])
+				rFtotal.extend(result[i,23])
+				rFvisc.extend(result[i,24])
+				rFvol.extend(result[i,25])
+				rtriangles.extend(result[i,26])
+				rpos.extend(result[i,27])
+				rvel.extend(result[i,28])
+				rcid.extend(result[i,29])
 	
-				pdt.extend(result[i,28])
-				pdx.extend(result[i,29])
-				piter.extend(result[i,30])
-				pNpart.extend(result[i,31])
-				pNproc.extend(result[i,32])
-				pNtri.extend(result[i,33])
-				pprocid.extend(result[i,34])
-				pFarea.extend(result[i,35])
-				pFbend.extend(result[i,36])
-				pFlink.extend(result[i,37])
-				pFtotal.extend(result[i,38])
-				pFvisc.extend(result[i,39])
-				pFvol.extend(result[i,40])
-				ptriangles.extend(result[i,41])
-				ppos.extend(result[i,42])
-				pvel.extend(result[i,43])
-				pcid.extend(result[i,44])
+				pdt.extend(result[i,30])
+				pdx.extend(result[i,31])
+				piter.extend(result[i,32])
+				pNpart.extend(result[i,33])
+				pNproc.extend(result[i,34])
+				pNtri.extend(result[i,35])
+				pprocid.extend(result[i,36])
+				pFarea.extend(result[i,37])
+				pFbend.extend(result[i,38])
+				pFlink.extend(result[i,39])
+				pFtotal.extend(result[i,40])
+				pFvisc.extend(result[i,41])
+				pFvol.extend(result[i,42])
+				ptriangles.extend(result[i,43])
+				ppos.extend(result[i,44])
+				pvel.extend(result[i,45])
+				pcid.extend(result[i,46])
 
-				ct3dt.extend(result[i,45])
-				ct3dx.extend(result[i,46])
-				ct3iter.extend(result[i,47])
-				ct3Npart.extend(result[i,48])
-				ct3Nproc.extend(result[i,49])
-				ct3Ntri.extend(result[i,50])
-				ct3procid.extend(result[i,51])
-				ct3Farea.extend(result[i,52])
-				ct3Fbend.extend(result[i,53])
-				ct3Flink.extend(result[i,54])
-				ct3Ftotal.extend(result[i,55])
-				ct3Fvisc.extend(result[i,56])
-				ct3Fvol.extend(result[i,57])
-				ct3triangles.extend(result[i,58])
-				ct3pos.extend(result[i,59])						
-				ct3vel.extend(result[i,60])						
-				ct3cid.extend(result[i,61])	
+				ct3dt.extend(result[i,47])
+				ct3dx.extend(result[i,48])
+				ct3iter.extend(result[i,49])
+				ct3Npart.extend(result[i,50])
+				ct3Nproc.extend(result[i,51])
+				ct3Ntri.extend(result[i,52])
+				ct3procid.extend(result[i,53])
+				ct3Farea.extend(result[i,54])
+				ct3Fbend.extend(result[i,55])
+				ct3Flink.extend(result[i,56])
+				ct3Ftotal.extend(result[i,57])
+				ct3Fvisc.extend(result[i,58])
+				ct3Fvol.extend(result[i,59])
+				ct3triangles.extend(result[i,60])
+				ct3pos.extend(result[i,61])						
+				ct3vel.extend(result[i,62])						
+				ct3cid.extend(result[i,63])	
 
 		elif nprocs ==1:
 			#Read in serial if only 1 run processor
@@ -430,63 +452,65 @@ def open_hdf5_files(f=True,r=True,p=True,ct3=True,fluidoutputs=[""],celloutputs=
 			fpos        = result[8]
 			fvel        = result[9]
 			fstress     = result[10]
+			fshear      = result[11]
+			fstrain     = result[12]
 
-			rdt         = result[11]
-			rdx         = result[12]
-			riter       = result[13]
-			rNpart      = result[14]
-			rNproc      = result[15]
-			rNtri       = result[16]
-			rprocid     = result[17]
-			rFarea      = result[18]
-			rFbend      = result[19]
-			rFlink      = result[20]
-			rFtotal     = result[21]
-			rFvisc      = result[22]
-			rFvol       = result[23]
-			rtriangles  = result[24]
-			rpos        = result[25]
-			rvel        = result[26]
-			rcid        = result[27]
+			rdt         = result[13]
+			rdx         = result[14]
+			riter       = result[15]
+			rNpart      = result[16]
+			rNproc      = result[17]
+			rNtri       = result[18]
+			rprocid     = result[19]
+			rFarea      = result[20]
+			rFbend      = result[21]
+			rFlink      = result[22]
+			rFtotal     = result[23]
+			rFvisc      = result[24]
+			rFvol       = result[25]
+			rtriangles  = result[26]
+			rpos        = result[27]
+			rvel        = result[28]
+			rcid        = result[29]
 
-			pdt         = result[28]
-			pdx         = result[29]
-			piter       = result[30]
-			pNpart      = result[31]
-			pNproc      = result[32]
-			pNtri       = result[33]
-			pprocid     = result[34]
-			pFarea      = result[35]
-			pFbend      = result[36]
-			pFlink      = result[37]
-			pFtotal     = result[38]
-			pFvisc      = result[39]
-			pFvol       = result[40]
-			ptriangles  = result[41]
-			ppos        = result[42]
-			pvel        = result[43]
-			pcid        = result[44]
+			pdt         = result[30]
+			pdx         = result[31]
+			piter       = result[32]
+			pNpart      = result[33]
+			pNproc      = result[34]
+			pNtri       = result[35]
+			pprocid     = result[36]
+			pFarea      = result[37]
+			pFbend      = result[38]
+			pFlink      = result[39]
+			pFtotal     = result[40]
+			pFvisc      = result[41]
+			pFvol       = result[42]
+			ptriangles  = result[43]
+			ppos        = result[44]
+			pvel        = result[45]
+			pcid        = result[46]
 
-			ct3dt         = result[45]
-			ct3dx         = result[46]
-			ct3iter       = result[47]
-			ct3Npart      = result[48]
-			ct3Nproc      = result[49]
-			ct3Ntri       = result[50]
-			ct3procid     = result[51]
-			ct3Farea      = result[52]
-			ct3Fbend      = result[53]
-			ct3Flink      = result[54]
-			ct3Ftotal     = result[55]
-			ct3Fvisc      = result[56]
-			ct3Fvol       = result[57]
-			ct3triangles  = result[58]
-			ct3pos        = result[59]
-			ct3vel        = result[60]
-			ct3cid        = result[61]
+			ct3dt         = result[47]
+			ct3dx         = result[48]
+			ct3iter       = result[49]
+			ct3Npart      = result[50]
+			ct3Nproc      = result[51]
+			ct3Ntri       = result[52]
+			ct3procid     = result[53]
+			ct3Farea      = result[54]
+			ct3Fbend      = result[55]
+			ct3Flink      = result[56]
+			ct3Ftotal     = result[57]
+			ct3Fvisc      = result[58]
+			ct3Fvol       = result[59]
+			ct3triangles  = result[60]
+			ct3pos        = result[61]
+			ct3vel        = result[62]
+			ct3cid        = result[63]
 
 		if f:
-			fluid.append(FLUID(fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel,fstress))
+			fluid.append(FLUID(fdt,fdx,fdxdydz,fiter,fNpart,fprocid,frelpos,fsubdomsize,fpos,fvel,fstress,fshear,fstrain))
 		if r:
 			rbc.append(LSP_CELL(rdt,rdx,riter,rNpart,rNproc,rNtri,rprocid,rFarea,rFbend,rFlink,rFtotal,rFvisc,rFvol,rtriangles,rpos,rvel,rcid))
 		if p:
