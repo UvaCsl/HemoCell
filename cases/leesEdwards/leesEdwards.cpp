@@ -19,9 +19,9 @@ int main (int argc, char * argv[]) {
   HemoCell hemocell(argv[1],argc,argv);
   Config * cfg = hemocell.cfg;
 
-  plint nz = 50.0*(1e6*(*cfg)["domain"]["dx"].read<T>());
-  plint ny = 50.0*(1e6*(*cfg)["domain"]["dx"].read<T>());
-  plint nx = 50.0*(1e6*(*cfg)["domain"]["dx"].read<T>());
+  plint nz = 100.0*(1e6*(*cfg)["domain"]["dx"].read<T>());
+  plint ny = 100.0*(1e6*(*cfg)["domain"]["dx"].read<T>());
+  plint nx = 100.0*(1e6*(*cfg)["domain"]["dx"].read<T>());
   double dt = (*cfg)["domain"]["dt"].read<double>();
   plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
 
@@ -50,9 +50,9 @@ int main (int argc, char * argv[]) {
   hemocell.setParticleVelocityUpdateTimeScaleSeparation(5);
   hemocell.setOutputs("RBC_HO", {OUTPUT_POSITION,OUTPUT_VELOCITY,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC} );
 
-  hemocell.setFluidOutputs( { OUTPUT_VELOCITY, OUTPUT_BOUNDARY, OUTPUT_SHEAR_STRESS, OUTPUT_DENSITY } );
+  hemocell.setFluidOutputs( { OUTPUT_VELOCITY, OUTPUT_BOUNDARY, OUTPUT_SHEAR_STRESS,OUTPUT_STRAIN_RATE, OUTPUT_DENSITY } );
 
-  // hemocell.loadParticles();
+  hemocell.loadParticles();
 
   if (hemocell.iter == 0)    {
     pcout << "(OneCellShear) fresh start: warming up cell-free fluid domain for " << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
