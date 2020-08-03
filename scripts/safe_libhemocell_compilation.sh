@@ -5,8 +5,8 @@ HEMOCELL_DIR=${BASEDIR}/../
 cd ${HEMOCELL_DIR}/build/hemocell/
 
 #only allow ONE process
-exec 200>./lock
-flock -n 200 || exit 0
+# exec 200>./lock
+# flock -n 200 || exit 0
 reset -I xterm ||
 cmake ./
 

@@ -66,6 +66,7 @@ void Parameters::lbm_pipe_parameters(Config & cfg, plb::MultiScalarField3D<int> 
     domain.x1 = domain.x0;
     T fluidArea = plb::computeSum<int>(*sf,domain);
     
+    plb::pcout << fluidArea << std::endl;
     pipe_radius = sqrt(fluidArea/PI);
     hlog << "(Parameters) Your pipe has a calculated radius of " << pipe_radius << " LU, assuming a perfect circle" << std::endl;
     u_lbm_max = re * nu_lbm / (pipe_radius*2);
@@ -86,6 +87,17 @@ void Parameters::lbm_shear_parameters(Config & cfg,T nx) {
   re = (nx* (shearrate_p * (nx*0.5))) / nu_p;
   shearrate_lbm = shearrate_p*dt;
   u_lbm_max = shearrate_lbm;  
+}
+
+void Parameters::lbm_LE_parameters(Config & cfg, T nz) {
+  Parameters::lbm_base_parameters(cfg);
+  T shearrate_p = cfg["domain"]["shearrate"].read<T>();
+  re = (nz * (shearrate_p * (nz * 0.5))) / nu_p;
+  // plb::pcout << shearrate_p << std::endl;
+  shearrate_lbm = shearrate_p * dt;
+  T Vmax = shearrate_lbm * nz * 0.5;
+  LE_force = 8 * nu_lbm * Vmax * 0.5 / pow(nz/4, 2);
+
 }
 
 void Parameters::printParameters() {
@@ -113,6 +125,7 @@ T Parameters::re = 0.0;
 T Parameters::nu_lbm = 0.0;
 T Parameters::u_lbm_max = 0.0;
 T Parameters::shearrate_lbm = 0.0;
+T Parameters::LE_force = 0.0;
 
 T Parameters::kBT_lbm = 0.0;
 T Parameters::kBT_p = 0.0;

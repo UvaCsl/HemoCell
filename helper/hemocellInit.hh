@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -58,20 +58,26 @@ void iniLatticeSquareCouette( MultiBlockLattice3D<T,Descriptor>& lattice,
                  OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T shearRate)
 {
 
-    Box3D top   = Box3D(0, nx-1, 0,  0,    0, nz-1);
-    Box3D bottom  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
+    Box3D top   = Box3D(0, nx-1, 0, ny-1, nz-1, nz-1);
+    Box3D bottom  = Box3D(0, nx-1, 0, ny-1, 0, 0);
 
     //lattice.periodicity().toggleAll(true);
     lattice.periodicity().toggle(0, true);
-    lattice.periodicity().toggle(1, false);
-    lattice.periodicity().toggle(2, true);
+    lattice.periodicity().toggle(1, true);
+    lattice.periodicity().toggle(2, false);
 
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, top );
     boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, bottom );
 
-    T vHalf = (ny-1)*shearRate*0.5;
+    T vHalf = (nz-1)*shearRate*0.5;
     setBoundaryVelocity(lattice, top, plb::Array<T,3>(-vHalf,0.0,0.0));
     setBoundaryVelocity(lattice, bottom, plb::Array<T,3>(vHalf,0.0,0.0));
+
+    // plb::Cell<double, plb::descriptors::ForcedD3Q19Descriptor> cell = lattice.get(0,0,0);
+    // // plb::Dynamics<double, plb::descriptors::ForcedD3Q19Descriptor> cellDynamics = cell.getDynamics();
+    // plb::Array<double, 19ul> rawPop = cell.getRawPopulations();
+    // cout << rawPop[0] << std::endl;
+
 
     setExternalVector( lattice, lattice.getBoundingBox(),
             Descriptor<T>::ExternalField::forceBeginsAt, plb::Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
