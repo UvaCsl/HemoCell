@@ -213,10 +213,11 @@ void PreInlet::applyPreInletParticleBoundary() {
   MPI_Barrier(MPI_COMM_WORLD);
   global.statistics.getCurrent().stop();
 }
+
 void PreInlet::applyPreInletVelocityBoundary() {
   global.statistics.getCurrent()["applyPreInletVelocityBoundary"].start();
   MPI_Barrier(MPI_COMM_WORLD);
-  vector<MPI_Request> reqs;
+
   Box3D & domain = fluidInlet;
   Box3D result;
   int z_o = domain.getNz();
@@ -226,10 +227,10 @@ void PreInlet::applyPreInletVelocityBoundary() {
   for (int bId : hemocell->lattice->getLocalInfo().getBlocks()) {
     Box3D bulk = hemocell->lattice->getMultiBlockManagement().getBulk(bId);
     if (!intersect(domain,bulk,result)) { continue; }
-  
+
     const Dot3D & loc = hemocell->lattice->getComponent(bId).getLocation();
     result = result.shift(-loc.x,-loc.y,-loc.z);
-    
+
     for (int x  = result.x0 ; x <= result.x1 ; x++) {
      for (int y  = result.y0 ; y <= result.y1 ; y++) {
       for (int z  = result.z0 ; z <= result.z1 ; z++) {
@@ -238,12 +239,17 @@ void PreInlet::applyPreInletVelocityBoundary() {
           if (hemocell->partOfpreInlet) {
             hemocell->lattice->getComponent(bId).get(x,y,z).computeVelocity(vel);
             int dest = hemocell->domain_lattice_management->getThreadAttribution().getMpiProcess(hemocell->domain_lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
-            reqs.emplace_back();
-            MPI_Isend(&vel[0],3*sizeof(T),MPI_CHAR,dest,tag,MPI_COMM_WORLD,&reqs.back());
+
+            // send velocity from preInlet boundary
+            MPI_Send(&vel[0],3*sizeof(T),MPI_CHAR,dest,tag,MPI_COMM_WORLD);
           } else {
             Box3D point(x,x,y,y,z,z);
             int source = hemocell->preinlet_lattice_management->getThreadAttribution().getMpiProcess(hemocell->preinlet_lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
+
+            // receive velocity from preInlet
             MPI_Recv(&vel[0],3*sizeof(T),MPI_CHAR,source,tag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+
+            // update velocity lattice main domain
             setBoundaryVelocity(hemocell->lattice->getComponent(bId),point,vel);
           }
         }
@@ -251,9 +257,9 @@ void PreInlet::applyPreInletVelocityBoundary() {
      }
     }
   }
-  MPI_Waitall(reqs.size(),&reqs[0],MPI_STATUS_IGNORE);
   global.statistics.getCurrent().stop();
 }
+
 void PreInlet::initializePreInletVelocityBoundary() {
   OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* bc =
         createZouHeBoundaryCondition3D<T,DESCRIPTOR>();
