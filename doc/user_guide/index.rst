@@ -51,15 +51,32 @@ about HemoCell can be directed toward: info@hemocell.eu.
 .. list-table::
   :header-rows: 0
 
-  * - Victor Azizi  
-    - Lead Programmer
-    - V.W.AziziTarksalooyeh at uva.nl
+
   * - Gábor Závodszky 
-    - Developer and user 
+    - Developper and Co-PI
     - G.Zavodszky at uva.nl
+  * - Alfons Hoekstra
+    - Co-PI
+  * - Ben Czaja
+    - Developper 
+    - B.E.Czaja at uva.nl
+  * - Christian Spieker
+    - Developper 
+    - C.J.Spieker at uva.nl
+  * - Max van der Kolk
+    - Developper and package maintainer
+    - M.vanderkolk at uva.nl  
+  * - Mark Wijzenbroek
+    - Package maintainer
+  * - Victor Azizi  
+    - Former developper
   * - Britt van Rooij 
-    - Developer and user 
-    - B.J.M.vanRooij at uva.nl
+    - Former developper 
+  * - Daan van Ingen
+    - Former contributor
+  * - Mike de Haan
+    - Former contributor
+   
 
 *When using HemoCell please* **cite** *the HemoCell paper* [#HC]_.
 
