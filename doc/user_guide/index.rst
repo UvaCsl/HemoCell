@@ -57,6 +57,7 @@ about HemoCell can be directed toward: info@hemocell.eu.
     - G.Zavodszky at uva.nl
   * - Alfons Hoekstra
     - Co-PI
+    - 
   * - Ben Czaja
     - Developper 
     - B.E.Czaja at uva.nl
@@ -68,14 +69,19 @@ about HemoCell can be directed toward: info@hemocell.eu.
     - M.vanderkolk at uva.nl  
   * - Mark Wijzenbroek
     - Package maintainer
+    - 
   * - Victor Azizi  
     - Former developper
+    - 
   * - Britt van Rooij 
     - Former developper 
+    - 
   * - Daan van Ingen
     - Former contributor
+    - 
   * - Mike de Haan
     - Former contributor
+    - 
    
 
 *When using HemoCell please* **cite** *the HemoCell paper* [#HC]_.
