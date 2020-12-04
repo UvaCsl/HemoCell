@@ -1,14 +1,13 @@
-Cellcollision with interior viscosity
--------------------------------------
+Cell collision with interior viscosity
+--------------------------------------
 
-This is the cellcollision case with added interior viscosity. This case is used
-in the paper by de Haan et al. [#IV]_. To generate the cases necessary for this
-paper please see the ``Generate`` folder and the README file therein.
+This is the ``cellcollision`` case with added interior viscosity. This case is
+used in the paper by de Haan et al. [#IV]_. To generate the cases necessary for
+this paper please see the ``Generate`` folder and the README file therein.
 
 The cellCollision case is a case with (usually) a RBC and a PLT that collide due
 to a shear flow within the domain. The initial positions can be edited in the
 corresponding ``CELL.pos`` files.
-
 
 The most important adjustable variables are in the ``config.xml`` file.
 

@@ -29,7 +29,7 @@ Running a pure fluid flow (without cells)
 -----------------------------------------
 
 With HemoCell it is possible to run a pure fluid flow, meaning that no cells are present within the domain.
-This is actually the same as just running a fluid simulation with palabos. The simplest way to remove all the cells is to set the number of cells in the ``CELL.pos`` files to zero (first line). Or to remove the addCellType and all subsequent functions that request that specific celltype (such as setOutputs) from the ``case.cpp`` file. 
+This is actually the same as just running a fluid simulation with Palabos. The simplest way to remove all the cells is to set the number of cells in the ``CELL.pos`` files to zero (first line). Or to remove the addCellType and all subsequent functions that request that specific celltype (such as setOutputs) from the ``case.cpp`` file. 
 
 However this still leaves a small overhead as the function for the material model are still called (although little work is done inside them as there are no cells). This can be circumvented by replacing 
 
@@ -58,10 +58,3 @@ file.
 
   #include "writeCellInfoCSV.h"
 
-HemoCell related papers
------------------------
-
-.. rubric:: References
-.. [#HC] `Cellular Level In-silico Modeling of Blood Rheology with An Improved Material Model for Red Blood Cells, Fronties in physiology, 8, 563. <https://doi.org/10.3389/fphys.2017.00563>`_ Závodszky, G., van Rooij, B., Azizi, V., Alowayyed, S., & Hoekstra, A.
-.. [#IV] `Numerical Investigation of the Effects of Red Blood Cell Cytoplasmic Viscosity Contrasts on Single Cell and Bulk Transport Behaviour.  Applied Sciences 8. <https://doi.org/10.3390/app8091616>`_ M de Haan, G Závodszky, V Azizi, A Hoekstra.
-.. [#LB] `Load balancing of parallel cell-based blood flow simulations. Journal of computational science 24, 1-7. <https://doi.org/10.1016/j.jocs.2017.11.008>`_ S Alowayyed, G Závodszky, V Azizi & AG Hoekstra.

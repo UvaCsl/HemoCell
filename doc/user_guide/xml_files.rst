@@ -1,13 +1,11 @@
 Configuration Files
 ===================
 
-.. _config.xml:
-
 Config.xml
 ----------
 
 The configuration that is used at runtime by the case. The configuration file 
-should be valid xml. The first tag should always be ``<hemocell>``. Within the 
+should be valid XML. The first tag should always be ``<hemocell>``. Within the
 HemoCell you can specify any tag that can be used in your simulation after you 
 initialized the config file like this:: 
    
@@ -137,13 +135,13 @@ we listed the options present in this file and when you can use them
   integrated to the particles. Euler [1] or Adams-Bashforth [2]. See
   ``src/hemoCellParticle.h`` for implementation details
 * ``DESCRIPTOR`` The collision operator and dimensionality of the underlying
-  lattice boltzmann fluid. This collision operator is only used in the palabos
-  part of HemoCell, find more information about it on `palabos.org`_.
+  lattice boltzmann fluid. This collision operator is only used in the Palabos
+  part of HemoCell, find more information about it on `Palabos`_.
 * ``FORCE_LIMIT`` Limits the force the particles can exert on the fluid field.
   This means that a particle can deform more, but in return the fluid field
   stays stable. The force is in picoNewton.
 * ``HEMOCELL_PARTICLE_FILED`` This has been built in and can't change anymore,
-  it used to be interchangable with palabos particle fields very early on.
+  it used to be interchangable with Palabos particle fields very early on.
 * ``OUTPUT_XXX`` Defines the outputs that can be requested in a **case.cpp** for
   either the fluid or the cells.
 * ``T`` It is possible to define ``T`` as float instead of double, this
@@ -160,4 +158,4 @@ we listed the options present in this file and when you can use them
   * ``MESH_FROM_STL`` load the vertices from a stl file defined in the CELL.xml
     file 
 
-.. _palabos.org: http://palabos.org
+.. _Palabos: https://palabos.unige.ch/

@@ -1,7 +1,7 @@
 StretchCell
 -----------
 
-The stretchCell cases used for validation of the material models used in
+The ``stretchCell`` cases used for validation of the material models used in
 HemoCell. A single cell is initialized in a domain with periodicity in all
 directions. The only external force is on the outer points of the opposing sides
 of the cell. In this manner the cell is stretched. This is validated against

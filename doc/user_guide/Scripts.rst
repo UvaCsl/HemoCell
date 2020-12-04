@@ -3,23 +3,25 @@ Scripts within HemoCell
 
 .. _cases_make:
 
-hemocell/examples/MakeFile
+hemocell/examples/makefile
 --------------------------
 
-make **cmakefiles**
+Multiple helper commands are accessable through ``make``: 
+
+* make **cmakefiles**
 
   replace ``<case>/CmakeLists.txt`` with ``./CmakeLists_template.txt`` if you
   want to update the build process for all cases.
 
-make  **executables**
+* make  **executables**
 
   compile every case
 
-make **all**
+* make **all**
   
   synonym for ``make executables``
 
-make **clean**
+* make **clean**
 
   remove all build directories, CMakeLists.txt and executables
 
@@ -27,8 +29,8 @@ make **clean**
 hemocell/patch/patchPLB.sh
 --------------------------
 
-used to patch Palabos to add some features that HemoCell needs but are by
-default not available.
+Patch Palabos to add some features that HemoCell needs but are by default not
+available.
 
 .. _bpp:
 

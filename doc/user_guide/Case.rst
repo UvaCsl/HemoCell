@@ -1,10 +1,10 @@
 Creating your own HemoCell Case
 ===============================
 
-This tutorial assumes that you have already compiled the HemoCell library,
-either by following :ref:`singularity` or by following :ref:`from_source`.
+This tutorial assumes that you have already compiled the HemoCell library
+following :ref:`from_source`.
 
-To create a new hemoCell case it is the easiest to create a new folder within
+To create a new HemoCell case it is the easiest to create a new folder within
 the ``examples`` directory with the name of your case. When this folder is created
 you can run ``make cmakefiles`` in the examples directory to create the cMakeFile
 in the new directory.
@@ -40,7 +40,7 @@ Firstly we have to include the headers we need in ``newCase.cpp``.
   // alternatives can be found in the mechanics folder
   #include <rbcHighOrderModel.h>
   // These are functions found in the helpers folder, they are not in the core of
-  // hemoCell but can be handy nonetheless
+  // HemoCell but can be handy nonetheless
   #include <cellInfo.h>
   #include <fluidInfo.h>
 
@@ -57,13 +57,13 @@ and also check for it:
     }
   }
 
-The first thing that should be done in a hemoCell case is initializing the
+The first thing that should be done in a HemoCell case is initializing the
 HemoCell object:
 
 .. code-block:: c++
 
   // The first argument is the config.xml location, the second and third argument
-  // are necessary as a passthrough for the palabos initialization
+  // are necessary as a passthrough for the Palabos initialization
   HemoCell hemocell(argv[1],argc,argv);
 
 
