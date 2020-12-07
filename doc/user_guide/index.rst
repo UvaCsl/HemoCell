@@ -53,7 +53,7 @@ questions can be directed towards: info@hemocell.eu.
   :header-rows: 0
 
   * - Gábor Závodszky 
-    - Developper and Co-PI
+    - Developer and Co-PI
     - G.Zavodszky at uva.nl
   * - Alfons Hoekstra
     - Co-PI

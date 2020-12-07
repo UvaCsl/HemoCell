@@ -6,6 +6,13 @@ In this changelog, we consider the following classes of changes:
 * Structure: any changes to the structure of HemoCell that may break existing cases.
 * Fixes: (small) changes that do not fall in the other categories.
 
+2.2 (Dec 7 2020)
+----------------
+* Features
+  * Added support for Lees-Edwards boundary conditions
+* Fixes
+  * Fix a bug in the velocity output when SI units were used
+
 2.1 (Feb 6 2020)
 ----------------
 * Features
