@@ -70,12 +70,18 @@ questions can be directed towards: info@hemocell.eu.
   * - Mark Wijzenbroek
     - Package maintainer
     - 
+  * - Lampros Mountrakis
+    - Former developer
+    -
   * - Victor Azizi  
     - Former developer
     - 
   * - Britt van Rooij 
     - Former developer 
-    - 
+    -
+  * - Saad Allowayyed
+    - Former developer
+    -   
   * - Daan van Ingen
     - Former contributor
     - 
