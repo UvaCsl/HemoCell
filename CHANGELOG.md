@@ -9,7 +9,12 @@ In this changelog, we consider the following classes of changes:
 2.2 (Dec 7 2020)
 ----------------
 * Features
-  * Added support for Lees-Edwards boundary conditions
+  * Added support for Lees-Edwards boundary conditions (single core only for now, example soon to come with publication).
+  * Significantly improved and updated the documentation.
+  * Publications using HemoCell added to documentation.
+  * Updated the website with more examples in the gallery.
+  * Added further output fields: e.g. shear rate, strain rate, shear stress.
+  * Several small updates and QoL improvements in the otput processing scripts.
 * Fixes
   * Fix a bug in the velocity output when SI units were used
 
