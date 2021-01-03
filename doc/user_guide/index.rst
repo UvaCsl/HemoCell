@@ -85,6 +85,9 @@ questions can be directed towards: info@hemocell.eu.
   * - Daan van Ingen
     - Former contributor
     - 
+  * - Hendrik Cornelisse
+    - Former contributor
+    -
   * - Mike de Haan
     - Former contributor
     - 
@@ -92,6 +95,9 @@ questions can be directed towards: info@hemocell.eu.
     - Former contributor
     -
   * - Jonathan de Bouter
+    - Former contributor
+    -
+  * - Roland Joo-Kovacs
     - Former contributor
     -
    
