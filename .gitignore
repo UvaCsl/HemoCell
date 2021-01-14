@@ -14,6 +14,15 @@ tools/packCells/*.pos
 tools/packCells/packCells
 *.log
 
+# ignore test executable
+hemocell_test
+
+# ignore (example) `tmp` output folders
+**/tmp_*/
+
+# ignore any archives
+**/*.tar*
+
 # Ignore IDE, buildsystem and OS specific cache directories and object files
 .idea/
 *sconsign.dblite
@@ -21,4 +30,3 @@ tools/packCells/packCells
 *.DS_Store
 *.plist
 
-# Ignore the default case binary names

@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -22,6 +22,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "hemocell.h"
+#include "voxelizeDomain.h"
 #include "rbcHighOrderModel.h"
 #include "pltSimpleModel.h"
 #include "cellInfo.h"
@@ -30,30 +31,39 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "writeCellInfoCSV.h"
 #include <fenv.h>
 
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+typedef double T;
+
+using namespace plb;
+using namespace hemo;
+
 int main(int argc, char *argv[]) {
   if(argc < 2) {
-    cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
+      std::cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
     return -1;
   }
 
   HemoCell hemocell(argv[1], argc, argv);
   Config * cfg = hemocell.cfg;
 
-  hlogfile << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl; 
+
+  hlogfile << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl;
 
   std::auto_ptr<MultiScalarField3D<int>> flagMatrix;
-  std::auto_ptr<VoxelizedDomain3D<T>> voxelizedDomain; 
-  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),  
-                       (*cfg)["domain"]["fluidEnvelope"].read<int>(),  
-                       (*cfg)["domain"]["refDirN"].read<int>(),  
-                       (*cfg)["domain"]["refDir"].read<int>(),  
-                       voxelizedDomain, flagMatrix,  
+  std::auto_ptr<VoxelizedDomain3D<T>> voxelizedDomain;
+  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),
+                       (*cfg)["domain"]["fluidEnvelope"].read<int>(),
+                       (*cfg)["domain"]["refDirN"].read<int>(),
+                       (*cfg)["domain"]["refDir"].read<int>(),
+                       voxelizedDomain, flagMatrix,
                        (*cfg)["domain"]["blockSize"].read<int>(),
-                       (*cfg)["domain"]["particleEnvelope"].read<int>()); 
+                       (*cfg)["domain"]["particleEnvelope"].read<int>());
 
   param::lbm_pipe_parameters((*cfg),flagMatrix.get());
   param::printParameters();
-  
+
   hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
             voxelizedDomain.get()->getMultiBlockManagement(),
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
@@ -69,8 +79,8 @@ int main(int argc, char *argv[]) {
 
   //Driving Force
   T poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / param::pipe_radius / param::pipe_radius;
-  
-  hemocell.lattice->initialize();   
+
+  hemocell.lattice->initialize();
 
   //Adding all the cells
   hemocell.initializeCellfield();
@@ -81,7 +91,7 @@ int main(int argc, char *argv[]) {
 
   hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  
+
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
   //hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<T>(), (*cfg)["domain"]["RepCutoff"].read<T>());
@@ -99,7 +109,7 @@ int main(int argc, char *argv[]) {
 
   // Enable boundary particles
   //hemocell.enableBoundaryParticles((*cfg)["domain"]["kRep"].read<T>(), (*cfg)["domain"]["BRepCutoff"].read<T>(),(*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  
+
   //loading the cellfield
   if (not cfg->checkpointed) {
     hemocell.loadParticles();
@@ -110,14 +120,14 @@ int main(int argc, char *argv[]) {
 
   //Restructure atomic blocks on processors when possible
   //hemocell.doRestructure(false); // cause errors
-  
+
   if (hemocell.iter == 0) {
     hlog << "(PipeFlow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
 	setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                     DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                     plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) { 
-      hemocell.lattice->collideAndStream(); 
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
+      hemocell.lattice->collideAndStream();
     }
   }
 
@@ -130,7 +140,7 @@ int main(int argc, char *argv[]) {
 
   while (hemocell.iter < tmax ) {
     hemocell.iterate();
-    
+
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
@@ -157,12 +167,12 @@ int main(int argc, char *argv[]) {
         // pcout << "Particle velocity, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << endl;
         hemocell.writeOutput();
     }
-    
+
     if (hemocell.iter % tcsv == 0) {
       hlog << "Saving simple mean cell values to CSV at timestep " << hemocell.iter << endl;
       writeCellInfo_CSV(hemocell);
     }
-    
+
     if (hemocell.iter % tcheckpoint == 0) {
       hemocell.saveCheckPoint();
     }
