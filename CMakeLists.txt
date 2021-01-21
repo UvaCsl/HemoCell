@@ -1,168 +1,61 @@
-#=======================================
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
-#=======================================
-# Build settings for hemocell 
-SET(PROJECT_NAME hemocell)
+# hemocell project definition
+set(PROJECT_NAME hemocell)
+project(${PROJECT_NAME} VERSION 2.2 LANGUAGES CXX C)
 
-PROJECT(${PROJECT_NAME} VERSION 2.2 LANGUAGES CXX C)
+# FIXME: are these directories needed to explicitly store
+set(HEMOCELL_BASE_DIR ".")
+set(PALABOS_DIR "${HEMOCELL_BASE_DIR}/palabos")
 
-# HemoCell and palabos directories relative to CMakelists.txt
-SET(HEMOCELL_BASE_DIR ".")
-SET(PALABOS_DIR "${HEMOCELL_BASE_DIR}/palabos")
+message(STATUS "HEMOCELL_DIR: " ${HEMOCELL_BASE_DIR} )
+message(STATUS "PALABOS_DIR : " ${PALABOS_DIR} )
 
-# TODO: set default build type
+set(DEFAULT_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE STRING "Choose build type" FORCE)
 
-# Build settings
-SET(ENABLE_MPI 1) # For windows builds set to zero
-SET(ENABLE_PARMETIS 0) # Do we enable load_balancing stuff? 
-SET(BUILD_TYPE Release)  # Debug or Release
+# default values of dependency discovery
+set(MPI_FOUND NO)
+set(HDF5_FOUND NO)
 
-MESSAGE( STATUS "HEMOCELL_DIR:         " ${HEMOCELL_BASE_DIR} )
-MESSAGE( STATUS "PALABOS_DIR:          " ${PALABOS_DIR} )
-
-#=======================================
-# Set up cmake environment
-
+# include CMake functionaltiy
 include(cmake/functions.cmake)
+include(cmake/setup_mpi.cmake)
+include(cmake/setup_hdf5.cmake)
+include(cmake/setup_googletest.cmake)
 
-SET(CMAKE_VERBOSE_MAKEFILE 1)
-INCLUDE(GNUInstallDirs)
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
+# define standard installation directories
+include(GNUInstallDirs)
 
-FIND_PACKAGE(MPI REQUIRED)
-INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
+include(CTest)
+if(BUILD_TESTING)
+    # install testing framework if tests are required
+    ConfigureGTest()
+endif()
 
-#===================================
-#Pasumo options 
+# reduced verbosity during compilation
+set(CMAKE_VERBOSE_MAKEFILE 0)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
+
+# FIXME: update these flags if needed
+# pasumo options
 ADD_DEFINITIONS("-DPLB_MPI_PARALLEL")
 ADD_DEFINITIONS("-DPLB_USE_POSIX")
 ADD_DEFINITIONS("-DPLB_SMP_PARALLEL")
 ADD_DEFINITIONS("-DCOMPILING_HEMOCELL_LIBRARY")
 IF(APPLE)
+    # FIXME: the compilation on Mac OS seems broken at this moment
     ADD_DEFINITIONS("-DPLB_MAC_OS_X")
 ENDIF(APPLE)
 
-# FIXME: clean up dependencies below 
+# FIXME: add `Parmetis` & `Metis` dependencies; current targets are
+# removed in this version as no examples nor tests are using this funcionality
+# of the repository.
 
-#===================================
-# Link HDF5
-SET(HDF5_PREFER_PARALLEL 1)
-SET(HDF5_USE_STATIC_LIBRARIES 1)
-FIND_PACKAGE(HDF5 REQUIRED COMPONENTS C HL)
-if(NOT ${HDF5_FOUND})
-  message(fatal_error "Hdf5 Libraries not found!")
-endif(NOT ${HDF5_FOUND})
-INCLUDE_DIRECTORIES(AFTER ${HDF5_INCLUDE_DIRS})
-message(STATUS "HDF5 Include dir:     ${HDF5_INCLUDE_DIRS}")
-
-#===================================
-# Link parmetis and metis; typically at `hemocell/external/`
-
-IF(ENABLE_PARMETIS)
-FIND_PATH(PARMETIS_INCLUDE_DIR parmetis.h HINTS
-    ${HEMOCELL_BASE_DIR}/external/parmetis-4.0.3/include/)
-IF(NOT PARMETIS_INCLUDE_DIR)
-  MESSAGE(FATAL_ERROR "Parmetis include path not found!")
-ENDIF(NOT PARMETIS_INCLUDE_DIR)
-MESSAGE( STATUS "PARMETIS INCLUDE DIR:       " ${PARMETIS_INCLUDE_DIR})
-FIND_PATH(METIS_INCLUDE_DIR metis.h HINTS
-    ${HEMOCELL_BASE_DIR}/external/parmetis-4.0.3/metis/include/)
-IF(NOT METIS_INCLUDE_DIR)
-  MESSAGE(FATAL_ERROR "Metis include path not found!")
-ENDIF(NOT METIS_INCLUDE_DIR)
-MESSAGE( STATUS "METIS INCLUDE DIR:       " ${METIS_INCLUDE_DIR})
-
-INCLUDE_DIRECTORIES(${PARMETIS_INCLUDE_DIR})
-INCLUDE_DIRECTORIES(${METIS_INCLUDE_DIR})
-
-FIND_LIBRARY(PARMETIS_LIBRARY libparmetis.a HINTS
-    ${HEMOCELL_BASE_DIR}/external/parmetis-4.0.3/build/*/*) 
-IF(PARMETIS_LIBRARY STREQUAL "PARMETIS_LIBRARY-NOTFOUND")
-  MESSAGE(FATAL_ERROR "Parmetis Library not found, try compiling
-  external/parmetis-4.0.3?!")
-ENDIF(PARMETIS_LIBRARY STREQUAL "PARMETIS_LIBRARY-NOTFOUND")
-MESSAGE( STATUS "PARMETIS LIBRARY DIR:       " ${PARMETIS_LIBRARY})
-
-FIND_LIBRARY(METIS_LIBRARY libmetis.a HINTS
-    ${HEMOCELL_BASE_DIR}/external/parmetis-4.0.3/build/*/*) 
-IF(METIS_LIBRARY STREQUAL "METIS_LIBRARY-NOTFOUND")
-  MESSAGE(FATAL_ERROR "Metis Library not found,try compiling
-  external/parmetis-4.0.3? ")
-ENDIF(METIS_LIBRARY STREQUAL "METIS_LIBRARY-NOTFOUND")
-MESSAGE( STATUS "METIS LIBRARY DIR:       " ${METIS_LIBRARY})
-
-ADD_DEFINITIONS("-DHEMO_PARMETIS")
-ENDIF(ENABLE_PARMETIS)
-
-#=======================================
-# FIXME: move into separate function call? 
-# Create tests
-include(CTest)
-if(BUILD_TESTING)
-        ##################################
-        # Download and install GoogleTest
-        # see https://github.com/google/googletest/tree/v1.10.x/googletest
-        configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
-        execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-          RESULT_VARIABLE result
-          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
-        if(result)
-          message(FATAL_ERROR "CMake step for googletest failed: ${result}")
-        endif()
-        execute_process(COMMAND ${CMAKE_COMMAND} --build .
-          RESULT_VARIABLE result
-          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
-        if(result)
-          message(FATAL_ERROR "Build step for googletest failed: ${result}")
-        endif()
-
-        # Prevent overriding the parent project's compiler/linker
-        # settings on Windows
-        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
-        # Add googletest directly to our build. This defines
-        # the gtest and gtest_main targets.
-        add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
-                         ${CMAKE_CURRENT_BINARY_DIR}/googletest-build)
-
-        MESSAGE(STATUS "GoogleTest: done")
-endif()
-
-#=======================================
-# Detect MPI compiler 
-OPTION(ENABLE_MPI "Enable MPI" ${DEFAULT})
-INCLUDE(FindMPI)
-IF(MPI_CXX_FOUND)
-  SET(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
-ELSE(MPI_CXX_FOUND)
-  MESSAGE(FATAL_ERROR "MPI-COMPILER NOT found!")
-ENDIF(MPI_CXX_FOUND)
-
-#=======================================
-# Report compiler and its ID
-MESSAGE(STATUS "Compiler: ${MPI_CXX_COMPILER}, ${CMAKE_CXX_COMPILER_ID}, ${CMAKE_CXX_COMPILER_VERSION}")
-
-# Set up correct flags for compiler
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -std=c++11")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -Wformat -Wformat-security")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=format-security")
-IF(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-empty-body")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-qualifiers")
-ELSEIF(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd858")
-ENDIF()
-
-#===================================
-# all source directories of interest for `hemocell`
 # FIXME: `palabos` should probably be compiled as a library and just linked
-set(SRC_DIR_LIST 
+
+# all source directories of interest for `hemocell`
+set(SRC_DIR_LIST
         ${CMAKE_CURRENT_SOURCE_DIR}/config
         ${CMAKE_CURRENT_SOURCE_DIR}/core
         ${CMAKE_CURRENT_SOURCE_DIR}/helper
@@ -173,55 +66,53 @@ set(SRC_DIR_LIST
         ${CMAKE_CURRENT_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml
 )
 
-#===================================
-# Define `hemocell` as static library
+# `hemocell` as static library
 add_source_to_library(${PROJECT_NAME} "${SRC_DIR_LIST}")
 
-#===================================
-# Include directories 
-LIST(APPEND SRC_DIR_LIST 
+# include additional directories from palabos/`externalLibraries`
+list(APPEND SRC_DIR_LIST
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries
 )
+
 target_include_directories(${PROJECT_NAME} PUBLIC ${SRC_DIR_LIST})
 
-# link HDF5 dependency 
-target_link_libraries(${PROJECT_NAME} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
-INCLUDE_DIRECTORIES(AFTER ${HDF5_INCLUDE_DIRS})
+# link dependencies
+ConfigureMPI(${PROJECT_NAME})  # updates `{CMAKE -> MPI}_CXX_COMPILER`
+ConfigureHDF5(${PROJECT_NAME})
 
-# FIXME: create function to include the following dependencies
+if(NOT (${MPI_FOUND} AND ${HDF5_FOUND}))
+        message(FATAL_ERROR "\nOne or more required package (MPI, HDF5) not found.")
+endif()
 
-#IF(ENABLE_PARMETIS)
-#  add_custom_target(hemocell_with_parmetis ALL 
-#    COMMAND ${CMAKE_AR} crsT lib${PROJECT_NAME}.a
-#    $<TARGET_FILE:${PROJECT_NAME}_pre_all_deps> ${PARMETIS_LIBRARY}
-#    ${METIS_LIBRARY}
-#    DEPENDS hemocell_pre_finalize)
-#ELSE(ENABLE_PARMETIS)
-#  add_custom_target(hemocell_with_parmetis ALL)
-#ENDIF(ENABLE_PARMETIS)
-    
-#might work someday, not now, must be linked in the case
-#add_custom_target(hemocell_with_hdf5 ALL 
-#  COMMAND ${CMAKE_AR} crsT lib${PROJECT_NAME}.a
-#  $<TARGET_FILE:${PROJECT_NAME}_pre_all_deps> ${HDF5_LIBRARIES})
+message(STATUS "Compiler: \
+${CMAKE_CXX_COMPILER}, \
+${CMAKE_CXX_COMPILER_ID}, \
+${CMAKE_CXX_COMPILER_VERSION}.")
 
-# finalize library
-#add_custom_target(hemocell_finalize ALL 
-#  COMMAND ${CMAKE_AR} crsT lib${PROJECT_NAME}.a
-#  $<TARGET_FILE:${PROJECT_NAME}_pre_all_deps>
-#  DEPENDS hemocell_pre_finalize hemocell_with_parmetis)
+# default flags
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -Wformat -Wformat-security")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=format-security")
 
-#=======================================
-# Create examples: 
-# This ensures all examples are compiled
+# Specialised flags
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-empty-body")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-qualifiers")
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd858")
+endif()
+
+# compile examples
 add_subdirectory(examples/pipeflow)
 
-#=======================================
-# Create tests:
-# Builds all tests when testing is enabled, pass `-DBUILD_TESTING=OFF` to 
-# disable test generation
+# compile tests
 if(BUILD_TESTING)
-        MESSAGE( STATUS "making tests")
+        # to disable compilation provide `-DBUILD_TESTING=OFF` to CMake
         add_subdirectory(tests)
 endif()
