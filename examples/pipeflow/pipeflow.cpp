@@ -21,7 +21,7 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "hemocell.h"
+#include <hemocell.h>
 #include "voxelizeDomain.h"
 #include "rbcHighOrderModel.h"
 #include "pltSimpleModel.h"
@@ -36,7 +36,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 typedef double T;
 
-using namespace plb;
 using namespace hemo;
 
 int main(int argc, char *argv[]) {
@@ -174,7 +173,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (hemocell.iter % tcheckpoint == 0) {
-      hemocell.saveCheckPoint();
+       hemocell.saveCheckPoint();
     }
   }
 

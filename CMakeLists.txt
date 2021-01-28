@@ -109,7 +109,7 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
 endif()
 
 # compile examples
-add_subdirectory(examples/pipeflow)
+add_subdirectory(examples)
 
 # compile tests
 if(BUILD_TESTING)
