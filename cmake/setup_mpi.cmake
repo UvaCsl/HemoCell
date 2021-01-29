@@ -7,6 +7,6 @@ function(ConfigureMPI TARGET)
         set(MPI_FOUND YES PARENT_SCOPE)
         set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER} PARENT_SCOPE)
 
-        target_include_directories(${TARGET} PRIVATE ${MPI_CXX_INCLUDE_DIRS})
-        target_link_libraries(${TARGET} PRIVATE MPI::MPI_CXX)
+        target_include_directories(${TARGET} PRIVATE ${MPI_INCLUDE_DIRS})
+        target_link_libraries(${TARGET} PRIVATE ${MPI_LIBRARIES})
 endfunction(ConfigureMPI)
