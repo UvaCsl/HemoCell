@@ -184,7 +184,7 @@ public:
   void saveCheckPoint();
 
   ///Specify whether the output is in SI or LBM units
-  bool outputInSiUnits = false;
+  bool outputInSiUnits = true;
   
   ///Write the specified output to hdf5 files
   void writeOutput();
