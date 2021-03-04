@@ -18,7 +18,11 @@ set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE STRING "Choose build type" FO
 set(MPI_FOUND NO)
 set(HDF5_FOUND NO)
 
-# include CMake functionaltiy
+# Include options for hemocell add additional CMake functionality. Note, the
+# options can add items, such as cached variables (`-D` compile flags) to
+# add additional definitions. This can, for instance, be used to enable
+# the `INTERIOR_VISCOSITY` option.
+include(cmake/options.cmake)
 include(cmake/functions.cmake)
 include(cmake/setup_mpi.cmake)
 include(cmake/setup_hdf5.cmake)

@@ -24,6 +24,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HEMOCELLINIT_HH
 #define HEMOCELLINIT_HH
 
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
 template <typename T>
 class CouetteDensityAndVelocity {
 public:
@@ -53,13 +56,13 @@ void CouetteDensityAndVelocity<T>::operator()(plint iX, plint iY, plint iZ, T &r
 
 /* ************* iniLatticeSquareCouette ******************* */
 template<typename T, template<class U> class Descriptor>
-void iniLatticeSquareCouette( MultiBlockLattice3D<T,Descriptor>& lattice,
+void iniLatticeSquareCouette(plb::MultiBlockLattice3D<T,Descriptor>& lattice,
                  plint nx, plint ny, plint nz,
-                 OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T shearRate)
+                 plb::OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T shearRate)
 {
 
-    Box3D top   = Box3D(0, nx-1, 0, ny-1, nz-1, nz-1);
-    Box3D bottom  = Box3D(0, nx-1, 0, ny-1, 0, 0);
+    plb::Box3D top = plb::Box3D(0, nx-1, 0, ny-1, nz-1, nz-1);
+    plb::Box3D bottom = plb::Box3D(0, nx-1, 0, ny-1, 0, 0);
 
     //lattice.periodicity().toggleAll(true);
     lattice.periodicity().toggle(0, true);

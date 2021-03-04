@@ -7,6 +7,11 @@
 #include "writeCellInfoCSV.h"
 #include <fenv.h>
 
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+using namespace hemo;
+
 int main (int argc, char * argv[]) {
   if(argc < 2) {
     cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;

@@ -22,7 +22,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <hemocell.h>
-#include "voxelizeDomain.h"
+#include <helper/voxelizeDomain.h>
 #include "rbcHighOrderModel.h"
 #include "pltSimpleModel.h"
 #include "cellInfo.h"

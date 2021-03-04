@@ -3,13 +3,14 @@
  * Student ID: 10800301
  * Description:
  * This code is based on the pipeflow with preinlet case.
- * Some minor changes have been made in order to implement the curved vessel geometry 
+ * Some minor changes have been made in order to implement the curved vessel geometry
  * in the simulation.
- * The positions of the inlet and outlet slice have been altered to match the curved 
+ * The positions of the inlet and outlet slice have been altered to match the curved
  * vessel simulation domain.
  */
 
 #include "hemocell.h"
+#include <helper/voxelizeDomain.h>
 #include "rbcHighOrderModel.h"
 #include "pltSimpleModel.h"
 #include "cellInfo.h"
@@ -17,6 +18,11 @@
 #include "particleInfo.h"
 #include "preInlet.h"
 #include <fenv.h>
+
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+using namespace hemo;
 
 
 /*Main program*/
@@ -33,21 +39,21 @@ int main (int argc, char * argv[]) {
   Config * cfg = hemocell.cfg;
 
   /*Define parameters for lattice Boltzmann simulation, read from config.xml */
-  hlog << "(Stl preinlet) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl; 
-  MultiScalarField3D<int> *flagMatrix = 0; 
-  VoxelizedDomain3D<double> * voxelizedDomain = 0; 
-  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),  
-            (*cfg)["domain"]["fluidEnvelope"].read<int>(),  
-            (*cfg)["domain"]["refDirN"].read<int>(),  
-            (*cfg)["domain"]["refDir"].read<int>(),  
-            voxelizedDomain, flagMatrix,  
-            (*cfg)["domain"]["blockSize"].read<int>()); 
-   
+  hlog << "(Stl preinlet) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl;
+  MultiScalarField3D<int> *flagMatrix = 0;
+  VoxelizedDomain3D<double> * voxelizedDomain = 0;
+  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),
+            (*cfg)["domain"]["fluidEnvelope"].read<int>(),
+            (*cfg)["domain"]["refDirN"].read<int>(),
+            (*cfg)["domain"]["refDir"].read<int>(),
+            voxelizedDomain, flagMatrix,
+            (*cfg)["domain"]["blockSize"].read<int>());
+
   hlog << "(Stl preinlet) (Parameters) setting lbm parameters" << endl;
 
   param::lbm_base_parameters((*cfg));
   param::printParameters();
-  
+
   hlog << "(PreInlets) creating preInlet" << endl;
   hemocell.preInlet = new hemo::PreInlet(&hemocell,flagMatrix);
 
@@ -72,25 +78,25 @@ int main (int argc, char * argv[]) {
 
   /*Slightly increase the height of the inlet to hopefully let the simulation run.*/
   slice.y1 = 42;
- 
+
   // Direction:: -> define the inflow direction (preInlet is on the X negative side)
   hemocell.preInlet->preInletFromSlice(Direction::Xpos,slice);
-    
+
   hlog << "(Stl preinlet) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.initializeLattice(voxelizedDomain->getMultiBlockManagement());
- 
+
     if (!hemocell.partOfpreInlet) {
       hemocell.lattice->periodicity().toggleAll(false);
     }
-  
+
     // Setting Preinlet creation
     hemocell.preInlet->initializePreInlet();
-  
-    hlog << "(Stl preinlet) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl; 
+
+    hlog << "(Stl preinlet) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl;
     boundaryFromFlagMatrix(hemocell.lattice,flagMatrix,hemocell.partOfpreInlet);
 
     hemocell.preInlet->createBoundary();
-  
+
     /*Disable statistics so it runs faster*/
     hemocell.lattice->toggleInternalStatistics(false);
 
@@ -99,8 +105,8 @@ int main (int argc, char * argv[]) {
 
     // Driving Force
   hemocell.preInlet->calculateDrivingForce();
- 
-  hemocell.lattice->initialize();   
+
+  hemocell.lattice->initialize();
 
   // Adding all the cells
   hemocell.initializeCellfield();
@@ -111,7 +117,7 @@ int main (int argc, char * argv[]) {
 
   hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  
+
     hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
     //hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<double>(), (*cfg)["domain"]["RepCutoff"].read<double>());
@@ -149,12 +155,12 @@ int main (int argc, char * argv[]) {
       //outlet.y0 = 80;
       //outlet.y1 = 122;
 
-      OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = new BoundaryConditionInstantiator3D 
+      OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = new BoundaryConditionInstantiator3D
         < T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T,DESCRIPTOR> > ();
       boundary->addPressureBoundary0N(outlet,*hemocell.lattice,boundary::density);
       setBoundaryDensity(*hemocell.lattice,outlet, 1.0);
     }
-  
+
     //loading the cellfield
     if (not cfg->checkpointed) {
       hemocell.loadParticles();
@@ -162,14 +168,14 @@ int main (int argc, char * argv[]) {
     } else {
       hemocell.loadCheckPoint();
     }
- 
+
     //Restructure atomic blocks on processors when possible
     //hemocell.doRestructure(false); // cause errors(?)
-  
+
     if (hemocell.iter == 0) {
       pcout << "(Stl preinlet) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
-      for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) { 
-          hemocell.lattice->collideAndStream(); 
+      for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
+          hemocell.lattice->collideAndStream();
       }
     }
 
@@ -179,18 +185,18 @@ int main (int argc, char * argv[]) {
     unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
 
-  
+
     pcout << "(Stl preinlet) Starting simulation..." << endl;
 
     while (hemocell.iter < tmax ) {
       //preinlet.update();
       hemocell.iterate();
-    
+
       if (hemocell.partOfpreInlet) {
         //Set driving force as required after each iteration
         hemocell.preInlet->setDrivingForce();
       }
-    
+
       hemocell.preInlet->applyPreInlet();
 
       // Load-balancing! Only enable if PARMETIS build is available
