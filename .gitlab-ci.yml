@@ -13,6 +13,17 @@ variables:
   # Export `noninteractive` frontend to prevent requesting user input.
   DEBIAN_FRONTEND: "noninteractive"
 
+# Define pipeline trigger behaviour. The pipeline is triggered by:
+# - a merge request: run a merge request pipeline
+# - a change to a branch, but an open merge reqeust: no branch pipeline
+# - a change to a branch, but no open merge request: run branch pipeline
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+
 # Single stage pipeline to build hemocell, where tests are evaluated for
 # the Ubuntu job only.
 stages:
@@ -35,6 +46,10 @@ stages:
       - apt-cache/
       - ccache/
 
+# Template to invoke tests after compilation.
+.test-script: &test-script
+ - make test
+
 # Template for building hemocell, takes care of compilation
 .build-template: &build-template
   stage: build
@@ -46,10 +61,9 @@ stages:
     - cmake .. -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
     - cmake --build . -- -j 2
     - ccache --show-stats
+    # evaluate tests
+    - make test
 
-# Template to invoke tests after compilation.
-.test-script: &test-script
- - make test
 
 # Definitions to build and test on various containers. Note: currently the
 # tests are evaluated for each container.
@@ -58,12 +72,8 @@ Ubuntu:
   image: ubuntu:20.04
   <<: *job-template
   <<: *build-template
-  script-test:
-    - *test-script
 
 Debian:
   image: debian:9
   <<: *job-template
   <<: *build-template
-  script-test:
-    - *test-script
