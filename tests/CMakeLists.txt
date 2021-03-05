@@ -1,0 +1,17 @@
+# create a test executable for each source file in `tests/`
+set (BINARY ${CMAKE_PROJECT_NAME}_test)
+file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES false *.h *.cpp)
+set(SOURCES ${TEST_SOURCES})
+
+# define a test executable per discovered source file 
+add_executable(${BINARY} ${TEST_SOURCES})
+
+# tests to be runnable with `make test`
+add_test(NAME ${BINARY} COMMAND ${BINARY})
+
+# link with static `hemocell` library, test framework
+target_link_libraries(${BINARY} "${PROJECT_NAME}" gtest)
+
+# FIXME: unclear why this link is required; should already be static linked
+target_link_libraries(${BINARY} ${HDF5_C_HL_LIBRARIES} ${HDF5_LIBRARIES})
+

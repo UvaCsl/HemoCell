@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -27,9 +27,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "helper/hemocellInit.hh"
 #include "helper/cellInfo.h"
 
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+using namespace hemo;
+
 
 int main(int argc, char* argv[])
-{   
+{
 	if(argc < 2)
 	{
 			cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
@@ -39,7 +44,7 @@ int main(int argc, char* argv[])
 	HemoCell hemocell(argv[1], argc, argv);
 	Config * cfg = hemocell.cfg;
 
-	
+
 
 
 // ----------------- Read in config file & calc. LBM parameters ---------------------------
@@ -77,10 +82,10 @@ int main(int argc, char* argv[])
 	hemocell.lattice->initialize();
 
 	// ----------------------- Init cell models --------------------------
-	
+
 	hemocell.initializeCellfield();
 	hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
-	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC}; 
+	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC};
 	hemocell.setOutputs("RBC", outputs);
 
 	hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
@@ -103,11 +108,11 @@ int main(int argc, char* argv[])
   }
 
 
-  if (hemocell.iter == 0) { 
-    pcout << "(CellCollision) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl; 
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {  
-      hemocell.lattice->collideAndStream();  
-    } 
+  if (hemocell.iter == 0) {
+    pcout << "(CellCollision) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
+      hemocell.lattice->collideAndStream();
+    }
   }
 
   pcout << "(CellCollision) Shear rate: " << (*cfg)["domain"]["shearrate"].read<double>() << " s^-1." << endl;
@@ -115,13 +120,13 @@ int main(int argc, char* argv[])
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
-  
+
     // Set the property to calculate this
 
 
 
   while (hemocell.iter < tmax ) {
-    
+
     hemocell.iterate();
 
     if (hemocell.iter % tmeas == 0) {

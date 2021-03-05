@@ -1,21 +1,26 @@
 #!/bin/bash
 trap "exit" INT
 
+# This script invokes the compilation of the example present in the current
+# directory.
+
 echo "=========== Building =========="
 date
 
-if [ ! -d "./build" ]; then
+example=${PWD}
+
+if [ ! -d "../../build" ]; then
   echo "* Running CMake..."
-  mkdir build
-  cd build
+  mkdir ../../build
+  cd ../../build || exit 1
   cmake ..
-  cd ..
+  cd "$example" || exit 1
 fi
 
 echo "* Compiling..."
-cd build; 
-script -q -c 'make -j 4' 2>&1 >/dev/null | grep 'Error\|error\|\*\*\*'; 
-cd ..
+cd ../../build || exit 1
+cmake --build . --target "${example##*/}"
+cd "$example" || exit 1
 
 date
 echo "=========== Done ==========="

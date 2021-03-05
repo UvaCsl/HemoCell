@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -28,6 +28,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "fluidInfo.h"
 #include "particleInfo.h"
 #include <fenv.h>
+#include <helper/voxelizeDomain.h>
+
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+using namespace hemo;
+
 
 int main(int argc, char *argv[]) {
   if(argc < 2) {
@@ -38,21 +45,21 @@ int main(int argc, char *argv[]) {
   HemoCell hemocell(argv[1], argc, argv);
   Config * cfg = hemocell.cfg;
 
-  hlogfile << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl; 
+  hlogfile << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl;
 
   std::auto_ptr<MultiScalarField3D<int>> flagMatrix;
-  std::auto_ptr<VoxelizedDomain3D<T>> voxelizedDomain; 
-  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),  
-                       (*cfg)["domain"]["fluidEnvelope"].read<int>(),  
-                       (*cfg)["domain"]["refDirN"].read<int>(),  
-                       (*cfg)["domain"]["refDir"].read<int>(),  
-                       voxelizedDomain, flagMatrix,  
+  std::auto_ptr<VoxelizedDomain3D<T>> voxelizedDomain;
+  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),
+                       (*cfg)["domain"]["fluidEnvelope"].read<int>(),
+                       (*cfg)["domain"]["refDirN"].read<int>(),
+                       (*cfg)["domain"]["refDir"].read<int>(),
+                       voxelizedDomain, flagMatrix,
                        (*cfg)["domain"]["blockSize"].read<int>(),
-                       (*cfg)["domain"]["particleEnvelope"].read<int>()); 
+                       (*cfg)["domain"]["particleEnvelope"].read<int>());
 
   param::lbm_pipe_parameters((*cfg),flagMatrix.get());
   param::printParameters();
-  
+
   hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
             voxelizedDomain.get()->getMultiBlockManagement(),
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
@@ -72,7 +79,7 @@ int main(int argc, char *argv[]) {
                     DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                     plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
 
-  hemocell.lattice->initialize();   
+  hemocell.lattice->initialize();
 
   //Adding all the cells
   hemocell.initializeCellfield();
@@ -97,7 +104,7 @@ int main(int argc, char *argv[]) {
 
   // Enable boundary particles
   //hemocell.enableBoundaryParticles((*cfg)["domain"]["kRep"].read<T>(), (*cfg)["domain"]["BRepCutoff"].read<T>(),(*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  
+
   //loading the cellfield
   if (not cfg->checkpointed) {
     hemocell.loadParticles();
@@ -108,11 +115,11 @@ int main(int argc, char *argv[]) {
 
   //Restructure atomic blocks on processors when possible
   //hemocell.doRestructure(false); // cause errors
-  
+
   if (hemocell.iter == 0) {
     hlog << "(PipeFlow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) { 
-      hemocell.lattice->collideAndStream(); 
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
+      hemocell.lattice->collideAndStream();
     }
   }
 
@@ -124,12 +131,12 @@ int main(int argc, char *argv[]) {
 
   while (hemocell.iter < tmax ) {
     hemocell.iterate();
-    
+
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                 plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-    
+
     if (hemocell.iter % tmeas == 0) {
         hlog << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
         hlog << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);

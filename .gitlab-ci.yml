@@ -1,44 +1,79 @@
-image: ubuntu:16.04
+variables:
+  # Set `CCACHE_BASEDIR` and `CCACHE_DIR` to point `ccache` towards the cached
+  # path on the gitlab-runner. This enables to cache the output of `ccache`
+  # between various runs.
+  CCACHE_BASEDIR: "${CI_PROJECT_DIR}"
+  CCACHE_DIR: "${CI_PROJECT_DIR}/ccache"
+  # Set `ccache` to `content` to prevent rebuilding of the CI/CD containers to
+  # trigger a recreate of the cache. By using `content` the compiler's `mtime`
+  # is not considered as part of the hash.
+  CCACHE_COMPILERCHECK: "content"
+  # Enable caching for `apt-get`.
+  APT_CACHE_DIR: "${CI_PROJECT_DIR}/apt-cache"
+  # Export `noninteractive` frontend to prevent requesting user input.
+  DEBIAN_FRONTEND: "noninteractive"
 
+# Define pipeline trigger behaviour. The pipeline is triggered by:
+# - a merge request: run a merge request pipeline
+# - a change to a branch, but an open merge reqeust: no branch pipeline
+# - a change to a branch, but no open merge request: run branch pipeline
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+
+# Single stage pipeline to build hemocell, where tests are evaluated for
+# the Ubuntu job only.
 stages:
   - build
-  - test
 
-#Files that are needed for tests from build environment
-#cache:
-#  paths:
-#    - examples/pipeflow/pipeflow
-#    - examples/stretchCell/stretchCell
+# Template for setting up of each job, takes care of:
+# - initialising cache directories;
+# - installing dependencies in the container;
+# - defining the shared cache, most predominantly for `ccache`.
+.job-template: &job-template
+  before_script:
+    - mkdir -pv $APT_CACHE_DIR ccache
+    - apt-get update --yes -qq
+    - apt-get -o dir::cache::archives="$APT_CACHE_DIR" install --yes -qq git g++ gcc cmake make libopenmpi-dev libhdf5-mpi-dev libhdf5-dev patch wget ccache
+  cache:
+    # Cache is shared between branches, but has a unique cache per job.
+    key: "$CI_JOB_NAME"
+    paths:
+      # Note: directories should align with `$APT_CACHE_DIR` and `$CCACHE_DIR`.
+      - apt-cache/
+      - ccache/
 
-before_script:
-  - apt-get update > /dev/null
-  - apt-get -y install git bc make cmake g++-5 g++ libopenmpi-dev libhdf5-dev patch python-h5py wget > /dev/null
-  - cd ${CI_PROJECT_DIR}
-  - ./setup.sh > /dev/null
+# Template to invoke tests after compilation.
+.test-script: &test-script
+ - make test
 
-build_cases:
+# Template for building hemocell, takes care of compilation
+.build-template: &build-template
   stage: build
   script:
-    - cd ${CI_PROJECT_DIR}/cases
-    - make -j4 all > /dev/null
-    - cd ${CI_PROJECT_DIR}/examples
-    - make -j4 all > /dev/null
-  artifacts:
-    expire_in: 2 hrs
-    paths:
-      - examples/pipeflow/pipeflow
-      - examples/stretchCell/stretchCell
+    # output of patching `palabos` is dropped
+    - ./setup.sh > /dev/null
+    # compile hemocell
+    - mkdir -p build && cd build
+    - cmake .. -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    - cmake --build . -- -j 2
+    - ccache --show-stats
+    # evaluate tests
+    - make test
 
-test_pipeflow:
-  stage: test
-  script:
-    - ${CI_PROJECT_DIR}/scripts/ci/pipeflow_sanity.sh
-  dependencies:
-    - build_cases
 
-test_stretchCell:
-  stage: test
-  script:
-    - ${CI_PROJECT_DIR}/scripts/ci/stretchCell_sanity.sh
-  dependencies:
-    - build_cases
+# Definitions to build and test on various containers. Note: currently the
+# tests are evaluated for each container.
+
+Ubuntu:
+  image: ubuntu:20.04
+  <<: *job-template
+  <<: *build-template
+
+Debian:
+  image: debian:9
+  <<: *job-template
+  <<: *build-template
