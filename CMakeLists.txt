@@ -115,6 +115,9 @@ endif()
 # compile examples
 add_subdirectory(examples)
 
+# compile cases
+add_subdirectory(cases)
+
 # compile tests
 if(BUILD_TESTING)
         # to disable compilation provide `-DBUILD_TESTING=OFF` to CMake
