@@ -116,7 +116,9 @@ endif()
 add_subdirectory(examples)
 
 # compile cases
-add_subdirectory(cases)
+if(EXISTS "cases")
+        add_subdirectory(cases)
+endif()
 
 # compile tests
 if(BUILD_TESTING)
