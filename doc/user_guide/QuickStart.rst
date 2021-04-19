@@ -39,23 +39,27 @@ On Ubuntu 16.04 most of these dependencies can be installed by running::
         patch \
         python-h5py
 
-This leaves the `Palabos`_ and `Parmetis`_ dependencies. Palabos can be
-downloaded from their `releases
+This leaves the `Palabos`_ and `Parmetis`_ dependencies. For Palabos we
+currently use the ``v2.2.1`` version with an additional patch. To automatically
+download this specific Palabos version and apply our patch, the setup script
+``hemocell/setup.sh`` can be evaluated::
+
+  # from ./hemocell/
+  ./setup.sh
+
+You can also op to manually download Palabos through their `releases
 <https://gitlab.com/unigespc/palabos/-/releases>`_. After downloading Palabos
-is extracted to ``./hemocell/palabos``::
-  
-  tar -xzf palabos-v2.0r0.tgz 
-  mv palabos-v2.0r0 ./hemocell/palabos
+should be extracted to ``./hemocell/palabos``::
+
+  tar -xzf palabos-v2.2.1.tar.gz
+  mv palabos-v2.2.1 ./hemocell/palabos
 
 After this Palabos must be patched. This can be done by running
 ``./patchPLB.sh`` from the ``./hemocell/patch/`` directory, like so::
 
   cd hemocell/patch && ./patchPLB.sh
 
-The patching should succeed even though there can be an offset in some files.
-
-For convenience, we have added a setup script ``hemocell/setup.sh`` to
-automatically download and patch the Palabos library.
+The patching should succeed even though there might be an offset in some files.
 
 `Parmetis`_ can be downloaded from their `downloads
 <http://glaros.dtc.umn.edu/gkhome/metis/parmetis/download>`_. Due to the
@@ -64,33 +68,33 @@ download should be copied to the  ``./hemocell/external/`` directory. If you
 need it because you want load balancing to be enabled you have to extract it
 with::
 
-  cd hemocell/external && tar -xzf parmetis-4.0.3.tar.gz 
+  cd hemocell/external && tar -xzf parmetis-4.0.3.tar.gz
 
 Compiling HemoCell from source
 ------------------------------
 
-To compile HemoCell you can navigate to a case and invoke ``cmake``
-there. We recommend to do it in the following way::
+HemoCell and the available examples can be compiled from the root directory
+using ``cmake``::
 
-  cd <path/to/case>
+  # within ./hemocell/
   mkdir build
   cd build
-  cmake ../
-  make
+  cmake ..
+  cmake --build .
 
-CMake can exploit parallelism when building by providing the ``-j`` flag to
-indicate the number of jobs, e.g. ``cmake ../ -j 4``. It might be that CMake
-fails when providing this flag, in that case, simply rerunning the command will
-typically resolve the errors.
+CMake can exploit parallelism when building by providing the ``--parallel`` flag
+to indicate the number of jobs, e.g. ``cmake --build . --parallel $(nproc)`` to
+use the available number of cores on the machine.
 
-Each case depends on the HemoCell build located in ``hemocell/build/hemocell``.
-Cmake is ran in this directory as a dependency of each case. It is also possible
-to first run ``cmake`` in the ``hemocell/build/hemocell`` directory to first
-build the library.
+This should compile HemoCell and all examples located in ``hemocell/examples``.
+The executable for each example is placed in its corresponding directory with
+its name matching the directory name, e.g. ``hemocell/examples/cube`` will
+provide an executable at ``hemocell/examples/cube/cube``.
 
-Furthermore a ``makefile`` is provided in the ``hemocell/examples`` directory. This
-makefile can be used to update build files for all cases (see :ref:`cases_make`
-for more info)
+To test if the library is successfully compiled, you can evaluate the defined
+tests::
+
+  make test
 
 .. _packcells:
 
