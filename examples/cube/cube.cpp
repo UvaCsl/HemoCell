@@ -45,12 +45,14 @@ int main(int argc, char *argv[]) {
   HemoCell hemocell(argv[1], argc, argv);
   Config *cfg = hemocell.cfg;
 
-  // equal sized-cube
+  // number of cells along each axis
   int nx, ny, nz;
-  nx = ny = nz = (*cfg)["domain"]["refDirN"].read<int>();
+  nx = (*cfg)["domain"]["nx"].read<int>();
+  ny = (*cfg)["domain"]["ny"].read<int>();
+  nz = (*cfg)["domain"]["nz"].read<int>();
 
   hlog << "(unbounded) (Parameters) calculating flow parameters" << endl;
-  param::lbm_shear_parameters((*cfg), nx);
+  param::lbm_shear_parameters((*cfg), nz);
   param::printParameters();
 
   hlog << "(unbounded) (Fluid) Initializing Palabos Fluid Field" << endl;
@@ -61,38 +63,41 @@ int main(int argc, char *argv[]) {
       defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
       new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
 
-
   OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
                 = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
 
   hemocell.lattice->toggleInternalStatistics(false);
 
-  // top and bottom sides of the domain
+  // extract sides of the rectangular domain for assignment of boundary
+  // conditions along the outer planes of the domain
   Box3D top = Box3D(0, nx-1, 0, ny-1, nz-1, nz-1);
   Box3D bottom = Box3D(0, nx-1, 0, ny-1, 0, 0);
+  Box3D front = Box3D(0, nx-1, 0, 0, 0, nz-1);
+  Box3D back  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
 
   // all directions have periodicity
-  hemocell.lattice->periodicity().toggle(0, true);
-  hemocell.lattice->periodicity().toggle(1, true);
-  hemocell.lattice->periodicity().toggle(2, true);
+  hemocell.lattice->periodicity().toggleAll(false);
+
+  // bounce back conditions along the front and back of the domain
+  defineDynamics(*hemocell.lattice, front, new BounceBack<T, DESCRIPTOR> );
+  defineDynamics(*hemocell.lattice, back, new BounceBack<T, DESCRIPTOR> );
 
   // assign velocity at top/bottom
   (*boundaryCondition).setVelocityConditionOnBlockBoundaries ( *hemocell.lattice, top );
   (*boundaryCondition).setVelocityConditionOnBlockBoundaries ( *hemocell.lattice, bottom );
 
-  // define shear rate along z axis
+  // define shear velocity along top/bottom planes (z axis)
+  // shear velocity given by `height * shear rate / 2`
   T vHalf = (nz-1)*param::shearrate_lbm*0.5;
   setBoundaryVelocity(*hemocell.lattice, top, plb::Array<T,3>(-vHalf,0.0,0.0));
   setBoundaryVelocity(*hemocell.lattice, bottom, plb::Array<T,3>(vHalf,0.0,0.0));
 
-  // not sure what this does?
   hemocell.latticeEquilibrium(1., plb::Array<T, 3>(0.0, 0.0, 0.0));
 
-  // ??
+  // report basic information regarding the current multi-block configuration
   hlog << getMultiBlockInfo(*hemocell.lattice) << endl;
 
   // assign force vector equal in x, y, z directions
-  // FIXME (*hemocell.lattice). to hemocell.lattice->?
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                     DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                     plb::Array<T, DESCRIPTOR<T>::d>(
@@ -104,23 +109,25 @@ int main(int argc, char *argv[]) {
   // initialise the cells
   hemocell.initializeCellfield();
 
+  // the desired RBC type
   hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
+
+  // define update increments
   hemocell.setMaterialTimeScaleSeparation(
       "RBC", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-
   hemocell.setParticleVelocityUpdateTimeScaleSeparation(
       (*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
+  // hemocell output fields
   vector<int> outputs = {OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE};
   hemocell.setOutputs("RBC", outputs);
 
+  // LBM fluid output fields
   outputs = {OUTPUT_VELOCITY, OUTPUT_DENSITY};
   hemocell.setFluidOutputs(outputs);
 
-  // Turn on periodicity in the all directions
+  // Turn on periodicity in the `x`-direction: along shear
   hemocell.setSystemPeriodicity(0, true);
-  hemocell.setSystemPeriodicity(1, true);
-  hemocell.setSystemPeriodicity(2, true);
 
   // loading the cellfield
   if (not cfg->checkpointed) {
@@ -153,12 +160,6 @@ int main(int argc, char *argv[]) {
   while (hemocell.iter < tmax) {
     hemocell.iterate();
 
-    // Set driving force as required after each iteration
-//    setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
-//                      DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-//                      plb::Array<T, DESCRIPTOR<T>::d>(
-//                          poiseuilleForce, 0, 0));
-//
     if (hemocell.iter % tmeas == 0) {
       hlog << "(main) Stats. @ " << hemocell.iter << " ("
            << hemocell.iter * param::dt << " s):" << endl;

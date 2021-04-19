@@ -3,10 +3,13 @@ if [[ "$0" == "$BASH_SOURCE" ]]; then
  echo "Script is a subshell, this wont work, source it instead!"
  exit 1
 fi
-module load pre2019
-module rm mpi fortran c
-module load OpenMPI/3.0.0-GCC-6.4.0-2.28
-module load cmake/3.7.2
-module load hdf5/serial/intel/1.10.0-patch1
-module load python/3.5.2
+
+# If module enviroment fails to init on Lisa uncomment next line
+#. /sara/sw/modules/module/init/bash
+
+module load 2020
+module load CMake/3.16.4-GCCcore-9.3.0
+module load GCC/9.3.0
+module load HDF5/1.10.6-gompi-2020a
+module load OpenMPI/4.0.3-GCC-9.3.0
 module list
