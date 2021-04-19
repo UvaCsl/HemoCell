@@ -1,23 +1,26 @@
 #!/bin/sh
 trap "exit" INT
 
+# supported tag and download target
+tag="v2.2.1"
+target="https://gitlab.com/unigespc/palabos/-/archive/${tag}/palabos-${tag}.tar.gz"
+
+# clean old palabos
 if [ -d "palabos" ]; then
-echo "=================== Removing existing palabos source ========================"
   rm -r ./palabos
 fi
 
-if [ ! -e "palabos_dev.tgz" ]; then
-echo "=================== Downloading palabos =========================="
-  wget -O palabos_dev.tgz https://palabos.unige.ch/index.php/download_file/view/1/135/ || { echo "Error Downloading palabos, exiting ..."; exit 1;}
+# obtain new tag
+if [ ! -e "palabos.tar.gz" ]; then
+  wget -O palabos.tar.gz ${target} || { echo "Error Downloading palabos, exiting ..."; exit 1;}
 fi
 
-echo "=================== Uncompressing palabos ==========================="
-tar -xvzf palabos_dev.tgz
+# extract source
+tar -xzf palabos.tar.gz
 mv palabos-* palabos
 
-echo "=================== Patching palabos ============================="
-cd patch
-./patchPLB.sh
-cd ..
-
-echo "================= Done ===================="
+# apply the patch
+(
+  cd patch || { echo "Patch directory not present"; exit 1; }
+  ./patchPLB.sh
+)

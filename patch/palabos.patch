@@ -1,8 +1,8 @@
 diff --git a/src/atomicBlock/atomicBlock3D.h b/src/atomicBlock/atomicBlock3D.h
-index 1fb0ad1..2604122 100644
+index 68e6c7f..e30830d 100644
 --- a/src/atomicBlock/atomicBlock3D.h
 +++ b/src/atomicBlock/atomicBlock3D.h
-@@ -174,6 +174,7 @@ private:
+@@ -183,6 +183,7 @@ private:
      StatSubscriber3D statisticsSubscriber;
      DataProcessorVector explicitInternalProcessors;
      DataProcessorVector automaticInternalProcessors;
@@ -11,21 +11,10 @@ index 1fb0ad1..2604122 100644
  };
  
 diff --git a/src/atomicBlock/blockLattice3D.h b/src/atomicBlock/blockLattice3D.h
-index d672045..6a0a0b8 100644
+index 05bd9a0..6ce0c00 100644
 --- a/src/atomicBlock/blockLattice3D.h
 +++ b/src/atomicBlock/blockLattice3D.h
-@@ -28,6 +28,10 @@
- #ifndef BLOCK_LATTICE_3D_H
- #define BLOCK_LATTICE_3D_H
- 
-+namespace plb {
-+    template<typename T, template<typename U> class Descriptor> class BlockLattice3D;
-+}
-+
- #include "core/globalDefs.h"
- #include "core/plbDebug.h"
- #include "core/cell.h"
-@@ -43,7 +47,7 @@ namespace plb {
+@@ -52,7 +52,7 @@ namespace plb {
  
  template<typename T, template<typename U> class Descriptor> struct Dynamics;
  template<typename T, template<typename U> class Descriptor> class BlockLattice3D;
@@ -34,7 +23,7 @@ index d672045..6a0a0b8 100644
  
  template<typename T, template<typename U> class Descriptor>
  class BlockLatticeDataTransfer3D : public BlockDataTransfer3D {
-@@ -131,14 +135,14 @@ public:
+@@ -140,14 +140,14 @@ public:
          PLB_PRECONDITION(iX<this->getNx());
          PLB_PRECONDITION(iY<this->getNy());
          PLB_PRECONDITION(iZ<this->getNz());
@@ -51,7 +40,7 @@ index d672045..6a0a0b8 100644
      }
      /// Specify wheter statistics measurements are done on a rect. domain
      virtual void specifyStatisticsStatus (
-@@ -191,10 +195,10 @@ private:
+@@ -200,10 +200,10 @@ private:
      plint allocatedMemory() const;
  private:
      void periodicDomain(Box3D domain);
@@ -64,10 +53,10 @@ index d672045..6a0a0b8 100644
  public:
      static CachePolicy3D& cachePolicy();
      template<typename T_, template<typename U_> class Descriptor_>
-@@ -207,6 +211,16 @@ public:
-     friend class WaveAbsorptionExternalRhoJcollideAndStream3D;
-     template<typename T_, template<typename U_> class Descriptor_>
+@@ -218,6 +218,16 @@ public:
      friend class OnLinkExternalRhoJcollideAndStream3D;
+     template<typename T_, template<typename U_> class Descriptor_>
+     friend class GrayScaleCollideAndStream3D;
 +    template<typename T_, template<typename U_> class Descriptor_>
 +    friend class ImplicitGrid3D;
 +};
@@ -82,10 +71,10 @@ index d672045..6a0a0b8 100644
  
  template<typename T, template<typename U> class Descriptor>
 diff --git a/src/atomicBlock/blockLattice3D.hh b/src/atomicBlock/blockLattice3D.hh
-index 8d9eb08..b41bbcb 100644
+index 815b086..1254c8e 100644
 --- a/src/atomicBlock/blockLattice3D.hh
 +++ b/src/atomicBlock/blockLattice3D.hh
-@@ -55,7 +55,7 @@ BlockLattice3D<T,Descriptor>::BlockLattice3D (
+@@ -64,7 +64,7 @@ BlockLattice3D<T,Descriptor>::BlockLattice3D (
          plint nx_, plint ny_, plint nz_,
          Dynamics<T,Descriptor>* backgroundDynamics_ )
     :  AtomicBlock3D(nx_, ny_, nz_, new BlockLatticeDataTransfer3D<T,Descriptor>()),
@@ -94,7 +83,7 @@ index 8d9eb08..b41bbcb 100644
  {
      plint nx = this->getNx();
      plint ny = this->getNy();
-@@ -65,7 +65,7 @@ BlockLattice3D<T,Descriptor>::BlockLattice3D (
+@@ -74,7 +74,7 @@ BlockLattice3D<T,Descriptor>::BlockLattice3D (
      for (plint iX=0; iX<nx; ++iX) {
          for (plint iY=0; iY<ny; ++iY) {
              for (plint iZ=0; iZ<nz; ++iZ) {
@@ -103,7 +92,7 @@ index 8d9eb08..b41bbcb 100644
              }
          }
      }
-@@ -104,7 +104,8 @@ template<typename T, template<typename U> class Descriptor>
+@@ -113,7 +113,8 @@ template<typename T, template<typename U> class Descriptor>
  BlockLattice3D<T,Descriptor>::BlockLattice3D(BlockLattice3D<T,Descriptor> const& rhs)
      : BlockLatticeBase3D<T,Descriptor>(rhs),
        AtomicBlock3D(rhs),
@@ -113,7 +102,7 @@ index 8d9eb08..b41bbcb 100644
  {
      plint nx = this->getNx();
      plint ny = this->getNy();
-@@ -113,9 +114,9 @@ BlockLattice3D<T,Descriptor>::BlockLattice3D(BlockLattice3D<T,Descriptor> const&
+@@ -122,9 +123,9 @@ BlockLattice3D<T,Descriptor>::BlockLattice3D(BlockLattice3D<T,Descriptor> const&
      for (plint iX=0; iX<nx; ++iX) {
          for (plint iY=0; iY<ny; ++iY) {
              for (plint iZ=0; iZ<nz; ++iZ) {
@@ -125,7 +114,7 @@ index 8d9eb08..b41bbcb 100644
                  // Get an independent clone of the dynamics,
                  //   or assign backgroundDynamics
                  if (&cell.getDynamics()==rhs.backgroundDynamics) {
-@@ -167,7 +168,7 @@ void BlockLattice3D<T,Descriptor>::specifyStatisticsStatus(Box3D domain, bool st
+@@ -176,7 +177,7 @@ void BlockLattice3D<T,Descriptor>::specifyStatisticsStatus(Box3D domain, bool st
      for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
          for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
              for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
@@ -134,7 +123,7 @@ index 8d9eb08..b41bbcb 100644
              }
          }
      }
-@@ -181,8 +182,8 @@ void BlockLattice3D<T,Descriptor>::collide(Box3D domain) {
+@@ -190,8 +191,8 @@ void BlockLattice3D<T,Descriptor>::collide(Box3D domain) {
      for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
          for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
              for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
@@ -145,7 +134,7 @@ index 8d9eb08..b41bbcb 100644
              }
          }
      }
-@@ -344,13 +345,6 @@ void BlockLattice3D<T,Descriptor>::allocateAndInitialize() {
+@@ -353,13 +354,6 @@ void BlockLattice3D<T,Descriptor>::allocateAndInitialize() {
      plint ny = this->getNy();
      plint nz = this->getNz();
      rawData = new Cell<T,Descriptor> [nx*ny*nz];
@@ -159,7 +148,7 @@ index 8d9eb08..b41bbcb 100644
  }
  
  template<typename T, template<typename U> class Descriptor>
-@@ -361,7 +355,7 @@ void BlockLattice3D<T,Descriptor>::releaseMemory() {
+@@ -370,7 +364,7 @@ void BlockLattice3D<T,Descriptor>::releaseMemory() {
      for (plint iX=0; iX<nx; ++iX) {
          for (plint iY=0; iY<ny; ++iY) {
              for (plint iZ=0; iZ<nz; ++iZ) {
@@ -168,7 +157,7 @@ index 8d9eb08..b41bbcb 100644
                  if (dynamics != backgroundDynamics) {
                      delete dynamics;
                  }
-@@ -370,21 +364,17 @@ void BlockLattice3D<T,Descriptor>::releaseMemory() {
+@@ -379,21 +373,17 @@ void BlockLattice3D<T,Descriptor>::releaseMemory() {
      }
      delete backgroundDynamics;
      delete [] rawData;
@@ -192,7 +181,7 @@ index 8d9eb08..b41bbcb 100644
  }
  
  template<typename T, template<typename U> class Descriptor>
-@@ -435,8 +425,8 @@ void BlockLattice3D<T,Descriptor>::boundaryStream(Box3D bound, Box3D domain) {
+@@ -444,8 +434,8 @@ void BlockLattice3D<T,Descriptor>::boundaryStream(Box3D bound, Box3D domain) {
                           nextY>=bound.y0 && nextY<=bound.y1 &&
                           nextZ>=bound.z0 && nextZ<=bound.z1 )
                      {
@@ -203,7 +192,7 @@ index 8d9eb08..b41bbcb 100644
                      }
                  }
              }
-@@ -461,8 +451,8 @@ void BlockLattice3D<T,Descriptor>::bulkStream(Box3D domain) {
+@@ -470,8 +460,8 @@ void BlockLattice3D<T,Descriptor>::bulkStream(Box3D domain) {
                      plint nextX = iX + Descriptor<T>::c[iPop][0];
                      plint nextY = iY + Descriptor<T>::c[iPop][1];
                      plint nextZ = iZ + Descriptor<T>::c[iPop][2];
@@ -214,7 +203,7 @@ index 8d9eb08..b41bbcb 100644
                  }
              }
          }
-@@ -505,7 +495,7 @@ void BlockLattice3D<T,Descriptor>::linearBulkCollideAndStream(Box3D domain) {
+@@ -514,7 +504,7 @@ void BlockLattice3D<T,Descriptor>::linearBulkCollideAndStream(Box3D domain) {
      for (plint iX=domain.x0; iX<=domain.x1; ++iX) {
          for (plint iY=domain.y0; iY<=domain.y1; ++iY) {
              for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
@@ -223,7 +212,7 @@ index 8d9eb08..b41bbcb 100644
                  latticeTemplates<T,Descriptor>::swapAndStream3D(grid, iX, iY, iZ);
              }
          }
-@@ -555,7 +545,7 @@ void BlockLattice3D<T,Descriptor>::blockwiseBulkCollideAndStream(Box3D domain) {
+@@ -564,7 +554,7 @@ void BlockLattice3D<T,Descriptor>::blockwiseBulkCollideAndStream(Box3D domain) {
                               ++innerZ)
                          {
                              // Collide the cell.
@@ -232,7 +221,7 @@ index 8d9eb08..b41bbcb 100644
                                      this->getInternalStatistics() );
                              // Swap the populations on the cell, and then with post-collision
                              //   neighboring cell, to perform the streaming step.
-@@ -638,8 +628,8 @@ void BlockLattice3D<T,Descriptor>::periodicDomain(Box3D domain) {
+@@ -647,8 +637,8 @@ void BlockLattice3D<T,Descriptor>::periodicDomain(Box3D domain) {
                          plint nextY = (iY+ny)%ny;
                          plint nextZ = (iZ+nz)%nz;
                          std::swap (
@@ -243,7 +232,7 @@ index 8d9eb08..b41bbcb 100644
                      }
                  }
              }
-@@ -647,6 +637,19 @@ void BlockLattice3D<T,Descriptor>::periodicDomain(Box3D domain) {
+@@ -656,6 +646,19 @@ void BlockLattice3D<T,Descriptor>::periodicDomain(Box3D domain) {
      }
  }
  
@@ -264,10 +253,10 @@ index 8d9eb08..b41bbcb 100644
  
  template<typename T, template<typename U> class Descriptor>
 diff --git a/src/basicDynamics/dynamicsProcessor3D.hh b/src/basicDynamics/dynamicsProcessor3D.hh
-index 8005825..feda2f7 100644
+index 950e729..00cae3b 100644
 --- a/src/basicDynamics/dynamicsProcessor3D.hh
 +++ b/src/basicDynamics/dynamicsProcessor3D.hh
-@@ -94,8 +94,8 @@ void ExternalRhoJcollideAndStream3D<T,Descriptor>::boundaryStream (
+@@ -103,8 +103,8 @@ void ExternalRhoJcollideAndStream3D<T,Descriptor>::boundaryStream (
                      if ( nextX>=bound.x0 && nextX<=bound.x1 && nextY>=bound.y0 && nextY<=bound.y1 &&
                           nextZ>=bound.z0 && nextZ<=bound.z1 )
                      {
@@ -278,7 +267,7 @@ index 8005825..feda2f7 100644
                      }
                  }
              }
-@@ -274,8 +274,8 @@ void PackedExternalRhoJcollideAndStream3D<T,Descriptor>::boundaryStream (
+@@ -283,8 +283,8 @@ void PackedExternalRhoJcollideAndStream3D<T,Descriptor>::boundaryStream (
                      if ( nextX>=bound.x0 && nextX<=bound.x1 && nextY>=bound.y0 && nextY<=bound.y1 &&
                           nextZ>=bound.z0 && nextZ<=bound.z1 )
                      {
@@ -289,7 +278,7 @@ index 8005825..feda2f7 100644
                      }
                  }
              }
-@@ -498,8 +498,8 @@ void WaveAbsorptionExternalRhoJcollideAndStream3D<T,Descriptor>::boundaryStream
+@@ -507,8 +507,8 @@ void WaveAbsorptionExternalRhoJcollideAndStream3D<T,Descriptor>::boundaryStream
                      if ( nextX>=bound.x0 && nextX<=bound.x1 && nextY>=bound.y0 && nextY<=bound.y1 &&
                           nextZ>=bound.z0 && nextZ<=bound.z1 )
                      {
@@ -300,7 +289,7 @@ index 8005825..feda2f7 100644
                      }
                  }
              }
-@@ -641,7 +641,7 @@ void OnLinkExternalRhoJcollideAndStream3D<T,Descriptor>::collide (
+@@ -650,7 +650,7 @@ void OnLinkExternalRhoJcollideAndStream3D<T,Descriptor>::collide (
  }
  
  template<typename T, template<typename U> class Descriptor>
@@ -309,7 +298,7 @@ index 8005825..feda2f7 100644
                              plint iX, plint iY, plint iZ)
  {
      static int bbId = BounceBack<T,Descriptor>().getId();
-@@ -650,16 +650,16 @@ void onLinkSwapAndStream3D( Cell<T,Descriptor> ***grid,
+@@ -659,16 +659,16 @@ void onLinkSwapAndStream3D( Cell<T,Descriptor> ***grid,
          plint nextX = iX + Descriptor<T>::c[iPop][0];
          plint nextY = iY + Descriptor<T>::c[iPop][1];
          plint nextZ = iZ + Descriptor<T>::c[iPop][2];
@@ -333,7 +322,7 @@ index 8005825..feda2f7 100644
          }
       }
  }
-@@ -702,11 +702,11 @@ void OnLinkExternalRhoJcollideAndStream3D<T,Descriptor>::boundaryStream (
+@@ -711,11 +711,11 @@ void OnLinkExternalRhoJcollideAndStream3D<T,Descriptor>::boundaryStream (
                      if ( nextX>=bound.x0 && nextX<=bound.x1 && nextY>=bound.y0 && nextY<=bound.y1 &&
                           nextZ>=bound.z0 && nextZ<=bound.z1 )
                      {
@@ -350,10 +339,10 @@ index 8005825..feda2f7 100644
                      }
                  }
 diff --git a/src/basicDynamics/isoThermalDynamics.h b/src/basicDynamics/isoThermalDynamics.h
-index 4cdc153..8c1f965 100644
+index 0997934..c8a74b4 100644
 --- a/src/basicDynamics/isoThermalDynamics.h
 +++ b/src/basicDynamics/isoThermalDynamics.h
-@@ -31,6 +31,7 @@
+@@ -40,6 +40,7 @@
  
  #include "core/globalDefs.h"
  #include "core/dynamics.h"
@@ -361,44 +350,36 @@ index 4cdc153..8c1f965 100644
  
  namespace plb {
  
-@@ -62,6 +63,12 @@ public:
-     /// Returns 0, as a default value for isothermal flow.
+@@ -72,6 +73,12 @@ public:
      virtual void computeHeatFlux( Cell<T,Descriptor> const& cell,
                                    Array<T,Descriptor<T>::d>& q ) const;
-+    
-+    // Compute the shear rate 
-+  //  virtual void computeShearRate (
-+    //    Cell<T,Descriptor> const& cell, 
-+      //  BlockLattice3D<T, Descriptor>& lattice, 
-+        //Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const;
  
++    // Compute the shear rate
++  //  virtual void computeShearRate (
++    //    Cell<T,Descriptor> const& cell,
++      //  BlockLattice3D<T, Descriptor>& lattice,
++        //Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const;
++
  /* *************** Switch between population and moment representation ****** */
  
+     /// Number of variables required to decompose a population representation into moments.
 diff --git a/src/basicDynamics/isoThermalDynamics.hh b/src/basicDynamics/isoThermalDynamics.hh
-index 7751f78..2d141fa 100644
+index 3caf297..3dadf06 100644
 --- a/src/basicDynamics/isoThermalDynamics.hh
 +++ b/src/basicDynamics/isoThermalDynamics.hh
-@@ -41,6 +41,7 @@
- #include "core/latticeStatistics.h"
+@@ -51,6 +51,7 @@
  #include <algorithm>
  #include <limits>
+ #include <cstdlib>
 +#include "atomicBlock/blockLattice3D.h"
  
  namespace plb {
  
 diff --git a/src/core/cell.h b/src/core/cell.h
-index 8ca5cc2..fe54420 100644
+index 8807600..de508d7 100644
 --- a/src/core/cell.h
 +++ b/src/core/cell.h
-@@ -34,6 +34,7 @@
- #include "core/dynamics.h"
- #include "core/array.h"
- #include "core/hierarchicSerializer.h"
-+#include "atomicBlock/blockLattice3D.h"
- 
- namespace plb {
- 
-@@ -49,7 +50,7 @@ public:
+@@ -58,7 +58,7 @@ public:
          PLB_PRECONDITION( index < ExternalField::numScalars );
          return data+index;
      }
@@ -407,7 +388,7 @@ index 8ca5cc2..fe54420 100644
      T data[ExternalField::numScalars];
  };
  
-@@ -161,7 +162,7 @@ public:
+@@ -170,7 +170,7 @@ public:
      void specifyStatisticsStatus(bool status) {
          takesStat = status;
      }
@@ -416,27 +397,7 @@ index 8ca5cc2..fe54420 100644
      /// You can't use this method. Use BlockLattice::attributeDynamics instead.
      /** This is one of the rare cases of a method accepting a pointer but
       *  not managing memory itself. Memory of the dynamics is handled by
-@@ -259,6 +260,19 @@ public:
-         dynamics->computeHeatFlux(*this, q);
-     }
- 
-+    /// Compute the shear rate tensor
-+    /** \param shearrate shearrate 
-+        \param lattice the lattice over which to calculate shearrate 
-+     */
-+    void computeShearRate (
-+        BlockLattice3D<T, Descriptor>& lattice,
-+        Array<T,9>& shearrate, 
-+        plint x, plint y, plint z) const
-+        {
-+            PLB_PRECONDITION( dynamics );
-+            dynamics->computeShearRate(*this, lattice, shearrate, x, y, z);
-+        }
-+    
-     /// Compute user-defined moment on the cell.
-     /** \param momentId Identifier for the moment.
-      *  \param moment return value: computed moment.
-@@ -371,7 +385,9 @@ private:
+@@ -380,7 +380,9 @@ private:
      void iniExternal();
  private:
      Array<T,Descriptor<T>::numPop> f;         ///< distribution functions
@@ -447,10 +408,10 @@ index 8ca5cc2..fe54420 100644
      Dynamics<T,Descriptor>*        dynamics;  ///< local LB dynamics
  };
 diff --git a/src/core/dynamics.h b/src/core/dynamics.h
-index 4225a81..65cb0f1 100644
+index d9654cd..a528ccc 100644
 --- a/src/core/dynamics.h
 +++ b/src/core/dynamics.h
-@@ -29,11 +29,16 @@
+@@ -38,6 +38,10 @@
  #ifndef DYNAMICS_H
  #define DYNAMICS_H
  
@@ -461,103 +422,20 @@ index 4225a81..65cb0f1 100644
  #include "core/globalDefs.h"
  #include "core/util.h"
  #include "core/blockStatistics.h"
- #include "core/array.h"
- #include "latticeBoltzmann/geometricOperationTemplates.h"
-+#include "atomicBlock/blockLattice3D.h"
- 
- namespace plb {
- 
-@@ -146,7 +151,12 @@ struct Dynamics {
+@@ -155,7 +159,7 @@ struct Dynamics {
          Cell<T,Descriptor> const& cell, Array<T,SymmetricTensor<T,Descriptor>::n>& stress ) const =0;
      /// Compute the heat flux in lattice units
      virtual void computeHeatFlux( Cell<T,Descriptor> const& cell,
 -                                  Array<T,Descriptor<T>::d>& q ) const =0;
 +                                  Array<T,Descriptor<T>::d>& q ) const =0; 
-+    // Compute the shear rate 
-+    virtual void computeShearRate (
-+        Cell<T,Descriptor> const& cell, 
-+        BlockLattice3D<T, Descriptor>& lattice, 
-+        Array<T,9>& shearrate, plint x, plint y, plint z) const {}; 
      /// Compute additional user-defined moments
      virtual void computeMoment( Cell<T,Descriptor> const& cell,
                                  plint momentId, T* moment ) const =0;
-@@ -321,6 +331,10 @@ public:
-     /// Compute the heat flux in lattice units
-     virtual void computeHeatFlux( Cell<T,Descriptor> const& cell,
-                                   Array<T,Descriptor<T>::d>& q ) const;
-+    /// Compute the shear rate tensor
-+    virtual void computeShearRate( Cell<T,Descriptor> const& cell, 
-+        BlockLattice3D<T, Descriptor>& lattice, 
-+        Array<T,9>& shearrate, plint x, plint y, plint z) const;    
-     /// Compute additional user-defined moments
-     virtual void computeMoment( Cell<T,Descriptor> const& cell,
-                                 plint momentId, T* moment ) const;
-diff --git a/src/core/dynamics.hh b/src/core/dynamics.hh
-index 940bcd6..56ec014 100644
---- a/src/core/dynamics.hh
-+++ b/src/core/dynamics.hh
-@@ -40,6 +40,7 @@
- #include "multiGrid/multiGridUtil.h"
- #include <algorithm>
- #include <limits>
-+#include "atomicBlock/blockLattice3D.h"
- 
- namespace plb {
- 
-@@ -349,6 +350,48 @@ void BasicBulkDynamics<T,Descriptor>::computeHeatFlux (
-     q.resetToZero();
- }
- 
-+
-+template<typename T, template<typename U> class Descriptor>
-+void BasicBulkDynamics<T,Descriptor>::computeShearRate( 
-+    Cell<T,Descriptor> const& cell, 
-+    BlockLattice3D<T, Descriptor>& lattice, 
-+    Array<T,9>& shearrate, plint x, plint y, plint z) const    
-+    {
-+    Array<T,3> velp1;
-+    Array<T,3> veln1;
-+    Array<T,3> velp2;
-+    Array<T,3> veln2;
-+    Array<T,3> velp3;
-+    Array<T,3> veln3;
-+    
-+    
-+    // velocity gradients in x-direction
-+    lattice.get(x+1,y,z).computeVelocity(velp1); //vel at cell+1
-+    lattice.get(x-1,y,z).computeVelocity(veln1); //vel at cell-1
-+         
-+     // velocity gradients in y-direction
-+    lattice.get(x,y+1,z).computeVelocity(velp2); //vel at cell+1
-+    lattice.get(x,y-1,z).computeVelocity(veln2); //vel at cell-1
-+    
-+    // velocity gradients in z-direction
-+    lattice.get(x,y,z+1).computeVelocity(velp3); //vel at cell+1
-+    lattice.get(x,y,z-1).computeVelocity(veln3); //vel at cell-1
-+
-+    shearrate[0] = (velp1[0]-veln1[0])/2; // dv_x /2*dx 
-+    shearrate[3] = (velp1[1]-veln1[1])/2; // dv_y/ 2*dx
-+    shearrate[6] = (velp1[2]-veln1[2])/2; // dv_z /2*dx
-+    
-+    shearrate[1] = (velp2[0]-veln2[0])/2; // dv_x / 2*dy
-+    shearrate[4] = (velp2[1]-veln2[1])/2; // dv_y / 2*dy
-+    shearrate[7] = (velp2[2]-veln2[2])/2; // dv_z / 2*dy
-+    
-+    shearrate[2] = (velp3[0]-veln3[0])/2; // dv_x / 2*dz
-+    shearrate[5] = (velp3[1]-veln3[1])/2; // dv_y / 2*dz
-+    shearrate[8] = (velp3[2]-veln3[2])/2; // dv_z / 2*dz    
-+    
-+ }
-+
-+
- template<typename T, template<typename U> class Descriptor>
- void BasicBulkDynamics<T,Descriptor>::computeMoment(
-         Cell<T,Descriptor> const& cell, plint momentId, T* moment ) const
 diff --git a/src/core/globalDefs.h b/src/core/globalDefs.h
-index 2caeb76..06f02e6 100644
+index 3c4bf44..4cb8a2d 100644
 --- a/src/core/globalDefs.h
 +++ b/src/core/globalDefs.h
-@@ -187,10 +187,12 @@ namespace modif {
+@@ -196,10 +196,12 @@ namespace modif {
          dynamicVariables =2,  //< Only content of dynamics objects, but no static content.
          allVariables     =3,  //< Both the static and dynamic cell content.
          dataStructure    =4,  //< Recreate dynamics and copy both static and dynamic content.
@@ -572,43 +450,11 @@ index 2caeb76..06f02e6 100644
  
      /// If two data processors act on a block, combine their ModifT modification to
      ///   determine a resulting (worst-case) ModifT modification.
-diff --git a/src/core/implicitGrid3D.h b/src/core/implicitGrid3D.h
-new file mode 100644
-index 0000000..2c19702
---- /dev/null
-+++ b/src/core/implicitGrid3D.h
-@@ -0,0 +1,25 @@
-+#ifndef IMPLICITGRID3D_H
-+#define IMPLICITGRID3D_H
-+
-+namespace plb {
-+  template<typename T, template<typename U> class Descriptor> struct ImplicitGrid3D;
-+}
-+#include "core/globalDefs.h"
-+#include "atomicBlock/blockLattice3D.h"
-+
-+namespace plb {
-+  template<typename T, template<typename U> class Descriptor>
-+  struct ImplicitGrid3D {
-+          BlockLattice3D<T,Descriptor>& parent;
-+          const int nX,nY,nZ;
-+          ImplicitGrid3D(BlockLattice3D<T,Descriptor>& parent_) 
-+         : parent(parent_), nX(parent.getNx()), nY(parent.getNy()), nZ(parent.getNz()) {}
-+          const Cell<T,Descriptor> & operator () (int x,int y,int z) const {
-+            return parent.rawData[z + nZ*(y+nY*x)];
-+          };
-+          Cell<T,Descriptor> & operator () (int x,int y,int z) {
-+            return parent.rawData[z + nZ*(y+nY*x)];
-+          };
-+  };
-+}
-+#endif
-\ No newline at end of file
 diff --git a/src/core/plbInit.cpp b/src/core/plbInit.cpp
-index dbd0053..f46612b 100644
+index 1aeb37b..8ae00bd 100644
 --- a/src/core/plbInit.cpp
 +++ b/src/core/plbInit.cpp
-@@ -37,7 +37,7 @@ namespace plb {
+@@ -46,7 +46,7 @@ namespace plb {
  
  void plbInit(int *argc, char ***argv, bool verbous) {
      global::mpi().init(argc, argv, verbous);
@@ -618,10 +464,10 @@ index dbd0053..f46612b 100644
      global::plbRandom<double>().seed(10);
      global::plbRandom<plint>().seed(10);
 diff --git a/src/dataProcessors/dataAnalysisFunctional3D.hh b/src/dataProcessors/dataAnalysisFunctional3D.hh
-index 330a6a3..ff18828 100644
+index bb9a42b..e77bfac 100644
 --- a/src/dataProcessors/dataAnalysisFunctional3D.hh
 +++ b/src/dataProcessors/dataAnalysisFunctional3D.hh
-@@ -1917,7 +1917,7 @@ void BoxStrainRateFromStressFunctional3D<T,Descriptor>::process (
+@@ -1969,7 +1969,7 @@ void BoxStrainRateFromStressFunctional3D<T,Descriptor>::process (
              for (plint iZ=domain.z0; iZ<=domain.z1; ++iZ) {
                  Cell<T,Descriptor> const& cell = lattice.get(iX,iY,iZ);
                  Array<T,SymmetricTensor<T,Descriptor>::n>& element
@@ -629,25 +475,12 @@ index 330a6a3..ff18828 100644
 +                    = S.get(iX,iY,iZ);
                  cell.computePiNeq(element);
                  T omega     = cell.getDynamics().getOmega();
-                 T rhoBar    = cell.getDynamics().computeRhoBar(cell);
-diff --git a/src/gridRefinement/couplingInterfaceGenerator3D.h b/src/gridRefinement/couplingInterfaceGenerator3D.h
-index af5a9c5..790aa71 100644
---- a/src/gridRefinement/couplingInterfaceGenerator3D.h
-+++ b/src/gridRefinement/couplingInterfaceGenerator3D.h
-@@ -142,7 +142,7 @@ public:
-     ~GridLevelContainer3D();
-     
-     MultiContainerBlock3D& getDataProcessors() {
--        return dataProcessors;
-+        return *dataProcessors;
-     }
-     MultiBlockLattice3D<T,Descriptor> &getLattice() const {
-         return *lattice;
+                 if (cell.getDynamics().hasMoments()) {
 diff --git a/src/latticeBoltzmann/latticeTemplates.h b/src/latticeBoltzmann/latticeTemplates.h
-index 2ab085b..83d726c 100644
+index dd9bc8f..dc57862 100644
 --- a/src/latticeBoltzmann/latticeTemplates.h
 +++ b/src/latticeBoltzmann/latticeTemplates.h
-@@ -56,7 +56,7 @@ static void swapAndStream2D(Cell<T,Descriptor> **grid, plint iX, plint iY)
+@@ -65,7 +65,7 @@ static void swapAndStream2D(Cell<T,Descriptor> **grid, plint iX, plint iY)
  }
  
  /// Swap ("bounce-back") values of a cell (3D), and apply streaming step
@@ -656,7 +489,7 @@ index 2ab085b..83d726c 100644
                              plint iX, plint iY, plint iZ)
  {
      const plint half = Descriptor<T>::q/2;
-@@ -64,10 +64,10 @@ static void swapAndStream3D(Cell<T,Descriptor> ***grid,
+@@ -73,10 +73,10 @@ static void swapAndStream3D(Cell<T,Descriptor> ***grid,
          plint nextX = iX + Descriptor<T>::c[iPop][0];
          plint nextY = iY + Descriptor<T>::c[iPop][1];
          plint nextZ = iZ + Descriptor<T>::c[iPop][2];
@@ -672,10 +505,10 @@ index 2ab085b..83d726c 100644
  }
  
 diff --git a/src/latticeBoltzmann/latticeTemplates3D.h b/src/latticeBoltzmann/latticeTemplates3D.h
-index 0e5feb5..dc8c17e 100644
+index 3b9a871..d0054d3 100644
 --- a/src/latticeBoltzmann/latticeTemplates3D.h
 +++ b/src/latticeBoltzmann/latticeTemplates3D.h
-@@ -31,6 +31,8 @@
+@@ -40,6 +40,8 @@
  
  #include "core/globalDefs.h"
  #include "latticeBoltzmann/nearestNeighborLattices3D.h"
@@ -684,7 +517,7 @@ index 0e5feb5..dc8c17e 100644
  
  namespace plb {
  
-@@ -38,16 +40,16 @@ template<typename T>
+@@ -47,16 +49,16 @@ template<typename T>
  struct latticeTemplates<T, descriptors::D3Q19Descriptor> {
  
  static void swapAndStreamCell (
@@ -707,7 +540,7 @@ index 0e5feb5..dc8c17e 100644
                              plint iX, plint iY, plint iZ)
  {
      T fTmp;
-@@ -68,16 +70,16 @@ template<typename T>
+@@ -77,16 +79,16 @@ template<typename T>
  struct latticeTemplates<T, descriptors::ForcedD3Q19Descriptor> {
  
  static void swapAndStreamCell (
@@ -730,7 +563,7 @@ index 0e5feb5..dc8c17e 100644
                              plint iX, plint iY, plint iZ)
  {
      T fTmp;
-@@ -98,16 +100,16 @@ template<typename T>
+@@ -107,16 +109,16 @@ template<typename T>
  struct latticeTemplates<T, descriptors::D3Q15Descriptor> {
  
  static void swapAndStreamCell (
@@ -753,7 +586,7 @@ index 0e5feb5..dc8c17e 100644
                              plint iX, plint iY, plint iZ)
  {
      T fTmp;
-@@ -127,16 +129,16 @@ template<typename T>
+@@ -136,16 +138,16 @@ template<typename T>
  struct latticeTemplates<T, descriptors::ForcedD3Q15Descriptor> {
  
  static void swapAndStreamCell (
@@ -777,37 +610,1580 @@ index 0e5feb5..dc8c17e 100644
  {
      T fTmp;
 diff --git a/src/libraryInterfaces/TINYXML_xmlIO.cpp b/src/libraryInterfaces/TINYXML_xmlIO.cpp
-index 6149f51..5a4dd8b 100644
+index 924abba..97ab071 100644
 --- a/src/libraryInterfaces/TINYXML_xmlIO.cpp
 +++ b/src/libraryInterfaces/TINYXML_xmlIO.cpp
-@@ -172,6 +172,7 @@ XMLreader::~XMLreader() {
-         std::vector<XMLreader*>& children = it->second.children;
-         for (pluint iNode=0; iNode<children.size(); ++iNode) {
-             delete children[iNode];
+@@ -1,436 +1,437 @@
+-/* This file is part of the Palabos library.
+-*
+-* The Palabos softare is developed since 2011 by FlowKit-Numeca Group Sarl
+-* (Switzerland) and the University of Geneva (Switzerland), which jointly
+-* own the IP rights for most of the code base. Since October 2019, the
+-* Palabos project is maintained by the University of Geneva and accepts
+-* source code contributions from the community.
+-*
+-* Contact:
+-* Jonas Latt
+-* Computer Science Department
+-* University of Geneva
+-* 7 Route de Drize
+-* 1227 Carouge, Switzerland
+-* jonas.latt@unige.ch
+-*
+-* The most recent release of Palabos can be downloaded at
+-* <https://palabos.unige.ch/>
+-*
+-* The library Palabos is free software: you can redistribute it and/or
+-* modify it under the terms of the GNU Affero General Public License as
+-* published by the Free Software Foundation, either version 3 of the
+-* License, or (at your option) any later version.
+-*
+-* The library is distributed in the hope that it will be useful,
+-* but WITHOUT ANY WARRANTY; without even the implied warranty of
+-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-* GNU Affero General Public License for more details.
+-*
+-* You should have received a copy of the GNU Affero General Public License
+-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-*/
+-
+-/** \file
+- * Input/Output in XML format -- non-generic code.
+- */
+-
+-#include "core/globalDefs.h"
+-#include "core/plbDebug.h"
+-#include "core/util.h"
+-#include "libraryInterfaces/TINYXML_xmlIO.h"
+-#include "libraryInterfaces/TINYXML_xmlIO.hh"
+-#include "core/runTimeDiagnostics.h"
+-#include "parallelism/mpiManager.h"
+-#include "io/parallelIO.h"
+-#include <algorithm>
+-#include <cctype>
+-
+-namespace plb {
+-
+-XMLreader XMLreader::notFound;
+-
+-XMLreader::XMLreader( std::vector<TiXmlNode*> pParentVect )
+-{
+-    if (global::mpi().isMainProcessor()) {
+-        mainProcessorIni(pParentVect);
+-    }
+-    else {
+-        slaveProcessorIni();
+-    }
+-}
+-
+-XMLreader::XMLreader( std::string fName )
+-{
+-
+-    TiXmlDocument* doc = 0;
+-    bool loadOK = false;
+-    std::string errorMessage;
+-    if (global::mpi().isMainProcessor()) {
+-        doc = new TiXmlDocument(fName.c_str());
+-        loadOK = doc->LoadFile();
+-        if (!loadOK) {
+-            errorMessage = "Problem processing input XML file " + fName + ": " + doc->ErrorDesc();
+-        }
+-    }
+-
+-    global::mpi().bCast(errorMessage);
+-    plbMainProcIOError(!loadOK, errorMessage);
+-
+-    if (global::mpi().isMainProcessor()) {
+-        mainProcessorIni(doc);
+-        delete doc;
+-    }
+-    else {
+-        slaveProcessorIni();
+-    }
+-}
+-
+-//Transform a string into a xml object
+-void XMLreader::XMLreader_parse_from_string(const char * raw_xml){
+-    TiXmlDocument *doc = new TiXmlDocument();
+-    doc->Parse(raw_xml, 0, TIXML_ENCODING_UTF8);
+-    if (global::mpi().isMainProcessor()) {
+-        mainProcessorIni(doc);
+-    }
+-    else {
+-        slaveProcessorIni();
+-    }
+-}
+-
+-void XMLreader::mainProcessorIni( TiXmlNode* pParent ) {
+-    std::vector<TiXmlNode*> pParentVect;
+-    pParentVect.push_back(pParent);
+-    mainProcessorIni(pParentVect);
+-}
+-
+-void XMLreader::mainProcessorIni( std::vector<TiXmlNode*> pParentVect )
+-{
+-    std::map<plint, TiXmlNode*> parents;
+-    for (pluint iParent=0; iParent<pParentVect.size(); ++iParent) {
+-        PLB_PRECONDITION( pParentVect[iParent]->Type()==TiXmlNode::DOCUMENT ||
+-                          pParentVect[iParent]->Type()==TiXmlNode::ELEMENT );
+-
+-        TiXmlElement* pParentElement = pParentVect[iParent]->ToElement();
+-        plint id=0;
+-        if (pParentElement) {
+-            const char* attribute = pParentElement->Attribute("id");
+-            if (attribute) {
+-                std::stringstream attributestr(attribute);
+-                attributestr >> id;
+-            }
+-        }
+-        parents[id] = pParentVect[iParent];
+-    }
+-
+-    plint numId = (plint)parents.size();
+-    global::mpi().bCast(&numId, 1);
+-
+-    std::map<plint, TiXmlNode*>::iterator it = parents.begin();
+-    name = it->second->ValueStr();
+-    global::mpi().bCast(name);
+-
+-    for (; it != parents.end(); ++it) {
+-        plint id = it->first;
+-        global::mpi().bCast(&id, 1);
+-
+-        TiXmlNode* pParent = it->second;
+-        Data& data = data_map[id];
+-        data.text="";
+-
+-        typedef std::map<std::string, std::vector<TiXmlNode*> > ChildMap;
+-        ChildMap childMap;
+-        TiXmlNode* pChild;
+-        for ( pChild = pParent->FirstChild(); pChild != 0; pChild = pChild->NextSibling()) 
+-        {
+-            int type = pChild->Type();
+-            if ( type==TiXmlNode::ELEMENT ) {
+-                std::string name(pChild->Value());
+-                childMap[name].push_back(pChild);
+-            }
+-            else if ( type==TiXmlNode::TEXT ) {
+-                data.text = pChild->ToText()->ValueStr();
+-            }
+-        }
+-        global::mpi().bCast(data.text);
+-        plint numChildren = (plint) childMap.size();
+-        global::mpi().bCast(&numChildren, 1);
+-
+-        for (ChildMap::iterator it = childMap.begin(); it != childMap.end(); ++it) {
+-            std::vector<TiXmlNode*> pChildVect = it->second;
+-            data.children.push_back( new XMLreader( pChildVect ) );
+-        }
+-    }
+-}
+-
+-void XMLreader::slaveProcessorIni()
+-{
+-    plint numId = 0;
+-    global::mpi().bCast(&numId, 1);
+-    global::mpi().bCast(name);
+-
+-    for (plint iId=0; iId<numId; ++iId) {
+-        plint id=0;
+-        global::mpi().bCast(&id, 1);
+-        Data& data = data_map[id];
+-        global::mpi().bCast(data.text);
+-        plint numChildren=0;
+-        global::mpi().bCast(&numChildren, 1);
+-
+-        for(plint iChild=0; iChild<numChildren; ++iChild) {
+-            std::vector<TiXmlNode*> noParam;
+-            data.children.push_back( new XMLreader(noParam) );
+-        }
+-    }
+-}
+-
+-XMLreader::XMLreader() {
+-    name = "XML node not found";
+-}
+-
+-XMLreader::~XMLreader() {
+-    std::map<plint,Data>::iterator it = data_map.begin();
+-    for (; it != data_map.end(); ++it) {
+-        std::vector<XMLreader*>& children = it->second.children;
+-        for (pluint iNode=0; iNode<children.size(); ++iNode) {
+-            delete children[iNode];
+-        }
+-    }
+-}
+-
+-void XMLreader::print(int indent) const {
+-    std::string indentStr(indent, ' ');
+-    pcout << indentStr << "[" << name << "]" << std::endl;
+-    std::string text = getFirstText();
+-    if (!text.empty()) {
+-        pcout << indentStr << "  " << text << std::endl;
+-    }
+-    std::vector<XMLreader*> const& children = data_map.begin()->second.children;
+-    for (pluint iNode=0; iNode<children.size(); ++iNode) {
+-        children[iNode]->print(indent+2);
+-    }
+-}
+-
+-XMLreaderProxy XMLreader::operator[] (std::string name) const
+-{
+-    Data const& data = data_map.begin()->second;
+-    for (pluint iNode=0; iNode<data.children.size(); ++iNode) {
+-        if (data.children[iNode]->name == name) {
+-            return XMLreaderProxy(data.children[iNode]);
+-        }
+-    }
+-    plbIOError( std::string("Element ")+name+std::string(" not found in XML file.") );
+-    return XMLreaderProxy(0);
+-}
+-
+-XMLreaderProxy XMLreader::getElement(std::string name, plint id) const {
+-    std::map<plint,Data>::const_iterator it = data_map.find(id);
+-    if (it==data_map.end()) {
+-        std::stringstream idStr;
+-        idStr << id;
+-        plbIOError (
+-                std::string("Element with id ") +
+-                idStr.str() + std::string(" does not exist") );
+-    }
+-    std::vector<XMLreader*> const& children = it->second.children;
+-    for (pluint iNode=0; iNode<children.size(); ++iNode) {
+-        if (children[iNode]->name == name) {
+-            return XMLreaderProxy(children[iNode]);
+-        }
+-    }
+-    plbIOError( std::string("Element ")+name+std::string(" not found in XML file.") );
+-    return XMLreaderProxy(0);
+-}
+-
+-std::string XMLreader::getName() const {
+-    return name;
+-}
+-
+-std::string XMLreader::getText() const {
+-    return data_map.begin()->second.text;
+-}
+-
+-std::string XMLreader::getText(plint id) const {
+-    std::map<plint,Data>::const_iterator it = data_map.find(id);
+-    if (it != data_map.end()) {
+-        return it->second.text;
+-    }
+-    else {
+-        return "";
+-    }
+-}
+-
+-plint XMLreader::getFirstId() const {
+-    return data_map.begin()->first;
+-}
+-
+-std::string XMLreader::getFirstText() const {
+-    return data_map.begin()->second.text;
+-}
+-
+-bool XMLreader::idExists(plint id) const {
+-    std::map<plint,Data>::const_iterator it = data_map.find(id);
+-    if (it != data_map.end()) {
+-        return true;
+-    }
+-    else {
+-        return false;
+-    }
+-}
+-
+-bool XMLreader::getNextId(plint& id) const {
+-    std::map<plint,Data>::const_iterator it = data_map.find(id);
+-    if (it != data_map.end()) {
+-        ++it;
+-        if (it != data_map.end()) {
+-            id = it->first;
+-            return true;
+-        }
+-    }
+-    return false;
+-}
+-
+-std::vector<XMLreader*> const& XMLreader::getChildren(plint id) const
+-{
+-    std::map<plint,Data>::const_iterator it = data_map.find(id);
+-    if (it==data_map.end()) {
+-        plbIOError(std::string("Cannot access id ")+util::val2str(id)+" in XML element " + name);
+-    }
+-    return it->second.children;
+-}
+-
+-XMLreaderProxy::XMLreaderProxy(XMLreader const* reader_)
+-    : reader(reader_)
+-{
+-    if (reader) {
+-        id = reader->getFirstId();
+-    }
+-    else {
+-        id = 0;
+-    }
+-}
+-
+-XMLreaderProxy::XMLreaderProxy(XMLreader const* reader_, plint id_)
+-    : reader(reader_),
+-      id(id_)
+-{ }
+-
+-XMLreaderProxy XMLreaderProxy::operator[] (std::string name) const
+-{
+-    if (!reader) {
+-        plbIOError(std::string("Cannot read value from XML element ") + name);
+-    }
+-    return reader->getElement(name, id);
+-}
+-
+-XMLreaderProxy XMLreaderProxy::operator[] (plint newId) const {
+-    if (!reader) {
+-        plbIOError(std::string("Cannot read value from XML element"));
+-    }
+-    if (!reader->idExists(newId)) {
+-        std::stringstream newIdStr;
+-        newIdStr << newId;
+-        plbIOError (
+-                std::string("Id ") + newIdStr.str() +
+-                std::string(" does not exist in XML element") );
+-    }
+-    return XMLreaderProxy(reader, newId);
+-}
+-
+-bool XMLreaderProxy::isValid() const {
+-    return reader;
+-}
+-
+-plint XMLreaderProxy::getId() const {
+-    return id;
+-}
+-
+-XMLreaderProxy XMLreaderProxy::iterId() const {
+-    if (!reader) {
+-        plbIOError(std::string("Use of invalid XML element"));
+-    }
+-    plint newId = id;
+-    if (reader->getNextId(newId)) {
+-        return XMLreaderProxy(reader, newId);
+-    }
+-    else {
+-        return XMLreaderProxy(0);
+-    }
+-}
+-
+-std::string XMLreaderProxy::getName() const {
+-    if (!reader) {
+-        plbIOError(std::string("Cannot read value from XML element "));
+-    }
+-    return reader->getName();
+-}
+-
+-std::vector<XMLreader*> const& XMLreaderProxy::getChildren() const {
+-    if (!reader) {
+-        plbIOError(std::string("Cannot read value from XML element "));
+-    }
+-    return reader->getChildren(id);
+-}
+-
+-
+-XMLwriter::XMLwriter()
+-    : isDocument(true),
+-      currentId(0)
+-{ }
+-
+-XMLwriter::~XMLwriter() {
+-    std::map<plint,Data>::iterator it = data_map.begin();
+-    for (; it != data_map.end(); ++it) {
+-        std::vector<XMLwriter*>& children = it->second.children;
+-        for (pluint iNode=0; iNode<children.size(); ++iNode) {
+-            delete children[iNode];
+-        }
+-    }
+-}
+-
+-XMLwriter::XMLwriter(std::string name_)
+-    : isDocument(false),
+-      name(name_),
+-      currentId(0)
+-{ }
+-
+-void XMLwriter::setString(std::string const& value)
+-{
+-    data_map[currentId].text = value;
+-}
+-
+-
+-XMLwriter& XMLwriter::operator[] (std::string name) {
+-    std::vector<XMLwriter*>& children = data_map[currentId].children;
+-    // If node already exists, simply return it.
+-    for (pluint iNode=0; iNode<data_map[currentId].children.size(); ++iNode) {
+-        if (data_map[currentId].children[iNode]->name == name) {
+-            return *children[iNode];
+-        }
+-    }
+-    // Else, create and return it.
+-    children.push_back(new XMLwriter(name));
+-    return *children.back();
+-}
+-
+-XMLwriter& XMLwriter::operator[] (plint id) {
+-    currentId = id;
+-    return *this;
+-}
+-
+-void XMLwriter::print(std::string fName) const {
+-    plb_ofstream ofile(fName.c_str());
+-    plbIOError( !ofile.is_open(), std::string("Could not open file ") + fName
+-                                  + std::string(" for write access") );
+-    toOutputStream(ofile);
+-}
+-
+-std::string XMLwriter::sprint()
+-{
+-    std::stringstream a;
+-    toOutputStream_parrallel(a);
+-    return a.str();
+-}
+-
+-
+-}  // namespace plb
++/* This file is part of the Palabos library.
++*
++* The Palabos softare is developed since 2011 by FlowKit-Numeca Group Sarl
++* (Switzerland) and the University of Geneva (Switzerland), which jointly
++* own the IP rights for most of the code base. Since October 2019, the
++* Palabos project is maintained by the University of Geneva and accepts
++* source code contributions from the community.
++*
++* Contact:
++* Jonas Latt
++* Computer Science Department
++* University of Geneva
++* 7 Route de Drize
++* 1227 Carouge, Switzerland
++* jonas.latt@unige.ch
++*
++* The most recent release of Palabos can be downloaded at
++* <https://palabos.unige.ch/>
++*
++* The library Palabos is free software: you can redistribute it and/or
++* modify it under the terms of the GNU Affero General Public License as
++* published by the Free Software Foundation, either version 3 of the
++* License, or (at your option) any later version.
++*
++* The library is distributed in the hope that it will be useful,
++* but WITHOUT ANY WARRANTY; without even the implied warranty of
++* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++* GNU Affero General Public License for more details.
++*
++* You should have received a copy of the GNU Affero General Public License
++* along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++/** \file
++ * Input/Output in XML format -- non-generic code.
++ */
++
++#include "core/globalDefs.h"
++#include "core/plbDebug.h"
++#include "core/util.h"
++#include "libraryInterfaces/TINYXML_xmlIO.h"
++#include "libraryInterfaces/TINYXML_xmlIO.hh"
++#include "core/runTimeDiagnostics.h"
++#include "parallelism/mpiManager.h"
++#include "io/parallelIO.h"
++#include <algorithm>
++#include <cctype>
++
++namespace plb {
++
++XMLreader XMLreader::notFound;
++
++XMLreader::XMLreader( std::vector<TiXmlNode*> pParentVect )
++{
++    if (global::mpi().isMainProcessor()) {
++        mainProcessorIni(pParentVect);
++    }
++    else {
++        slaveProcessorIni();
++    }
++}
++
++XMLreader::XMLreader( std::string fName )
++{
++
++    TiXmlDocument* doc = 0;
++    bool loadOK = false;
++    std::string errorMessage;
++    if (global::mpi().isMainProcessor()) {
++        doc = new TiXmlDocument(fName.c_str());
++        loadOK = doc->LoadFile();
++        if (!loadOK) {
++            errorMessage = "Problem processing input XML file " + fName + ": " + doc->ErrorDesc();
++        }
++    }
++
++    global::mpi().bCast(errorMessage);
++    plbMainProcIOError(!loadOK, errorMessage);
++
++    if (global::mpi().isMainProcessor()) {
++        mainProcessorIni(doc);
++        delete doc;
++    }
++    else {
++        slaveProcessorIni();
++    }
++}
++
++//Transform a string into a xml object
++void XMLreader::XMLreader_parse_from_string(const char * raw_xml){
++    TiXmlDocument *doc = new TiXmlDocument();
++    doc->Parse(raw_xml, 0, TIXML_ENCODING_UTF8);
++    if (global::mpi().isMainProcessor()) {
++        mainProcessorIni(doc);
++    }
++    else {
++        slaveProcessorIni();
++    }
++}
++
++void XMLreader::mainProcessorIni( TiXmlNode* pParent ) {
++    std::vector<TiXmlNode*> pParentVect;
++    pParentVect.push_back(pParent);
++    mainProcessorIni(pParentVect);
++}
++
++void XMLreader::mainProcessorIni( std::vector<TiXmlNode*> pParentVect )
++{
++    std::map<plint, TiXmlNode*> parents;
++    for (pluint iParent=0; iParent<pParentVect.size(); ++iParent) {
++        PLB_PRECONDITION( pParentVect[iParent]->Type()==TiXmlNode::DOCUMENT ||
++                          pParentVect[iParent]->Type()==TiXmlNode::ELEMENT );
++
++        TiXmlElement* pParentElement = pParentVect[iParent]->ToElement();
++        plint id=0;
++        if (pParentElement) {
++            const char* attribute = pParentElement->Attribute("id");
++            if (attribute) {
++                std::stringstream attributestr(attribute);
++                attributestr >> id;
++            }
++        }
++        parents[id] = pParentVect[iParent];
++    }
++
++    plint numId = (plint)parents.size();
++    global::mpi().bCast(&numId, 1);
++
++    std::map<plint, TiXmlNode*>::iterator it = parents.begin();
++    name = it->second->ValueStr();
++    global::mpi().bCast(name);
++
++    for (; it != parents.end(); ++it) {
++        plint id = it->first;
++        global::mpi().bCast(&id, 1);
++
++        TiXmlNode* pParent = it->second;
++        Data& data = data_map[id];
++        data.text="";
++
++        typedef std::map<std::string, std::vector<TiXmlNode*> > ChildMap;
++        ChildMap childMap;
++        TiXmlNode* pChild;
++        for ( pChild = pParent->FirstChild(); pChild != 0; pChild = pChild->NextSibling()) 
++        {
++            int type = pChild->Type();
++            if ( type==TiXmlNode::ELEMENT ) {
++                std::string name(pChild->Value());
++                childMap[name].push_back(pChild);
++            }
++            else if ( type==TiXmlNode::TEXT ) {
++                data.text = pChild->ToText()->ValueStr();
++            }
++        }
++        global::mpi().bCast(data.text);
++        plint numChildren = (plint) childMap.size();
++        global::mpi().bCast(&numChildren, 1);
++
++        for (ChildMap::iterator it = childMap.begin(); it != childMap.end(); ++it) {
++            std::vector<TiXmlNode*> pChildVect = it->second;
++            data.children.push_back( new XMLreader( pChildVect ) );
++        }
++    }
++}
++
++void XMLreader::slaveProcessorIni()
++{
++    plint numId = 0;
++    global::mpi().bCast(&numId, 1);
++    global::mpi().bCast(name);
++
++    for (plint iId=0; iId<numId; ++iId) {
++        plint id=0;
++        global::mpi().bCast(&id, 1);
++        Data& data = data_map[id];
++        global::mpi().bCast(data.text);
++        plint numChildren=0;
++        global::mpi().bCast(&numChildren, 1);
++
++        for(plint iChild=0; iChild<numChildren; ++iChild) {
++            std::vector<TiXmlNode*> noParam;
++            data.children.push_back( new XMLreader(noParam) );
++        }
++    }
++}
++
++XMLreader::XMLreader() {
++    name = "XML node not found";
++}
++
++XMLreader::~XMLreader() {
++    std::map<plint,Data>::iterator it = data_map.begin();
++    for (; it != data_map.end(); ++it) {
++        std::vector<XMLreader*>& children = it->second.children;
++        for (pluint iNode=0; iNode<children.size(); ++iNode) {
++            delete children[iNode];
 +            children[iNode] = 0;
-         }
-     }
- }
++        }
++    }
++}
++
++void XMLreader::print(int indent) const {
++    std::string indentStr(indent, ' ');
++    pcout << indentStr << "[" << name << "]" << std::endl;
++    std::string text = getFirstText();
++    if (!text.empty()) {
++        pcout << indentStr << "  " << text << std::endl;
++    }
++    std::vector<XMLreader*> const& children = data_map.begin()->second.children;
++    for (pluint iNode=0; iNode<children.size(); ++iNode) {
++        children[iNode]->print(indent+2);
++    }
++}
++
++XMLreaderProxy XMLreader::operator[] (std::string name) const
++{
++    Data const& data = data_map.begin()->second;
++    for (pluint iNode=0; iNode<data.children.size(); ++iNode) {
++        if (data.children[iNode]->name == name) {
++            return XMLreaderProxy(data.children[iNode]);
++        }
++    }
++    plbIOError( std::string("Element ")+name+std::string(" not found in XML file.") );
++    return XMLreaderProxy(0);
++}
++
++XMLreaderProxy XMLreader::getElement(std::string name, plint id) const {
++    std::map<plint,Data>::const_iterator it = data_map.find(id);
++    if (it==data_map.end()) {
++        std::stringstream idStr;
++        idStr << id;
++        plbIOError (
++                std::string("Element with id ") +
++                idStr.str() + std::string(" does not exist") );
++    }
++    std::vector<XMLreader*> const& children = it->second.children;
++    for (pluint iNode=0; iNode<children.size(); ++iNode) {
++        if (children[iNode]->name == name) {
++            return XMLreaderProxy(children[iNode]);
++        }
++    }
++    plbIOError( std::string("Element ")+name+std::string(" not found in XML file.") );
++    return XMLreaderProxy(0);
++}
++
++std::string XMLreader::getName() const {
++    return name;
++}
++
++std::string XMLreader::getText() const {
++    return data_map.begin()->second.text;
++}
++
++std::string XMLreader::getText(plint id) const {
++    std::map<plint,Data>::const_iterator it = data_map.find(id);
++    if (it != data_map.end()) {
++        return it->second.text;
++    }
++    else {
++        return "";
++    }
++}
++
++plint XMLreader::getFirstId() const {
++    return data_map.begin()->first;
++}
++
++std::string XMLreader::getFirstText() const {
++    return data_map.begin()->second.text;
++}
++
++bool XMLreader::idExists(plint id) const {
++    std::map<plint,Data>::const_iterator it = data_map.find(id);
++    if (it != data_map.end()) {
++        return true;
++    }
++    else {
++        return false;
++    }
++}
++
++bool XMLreader::getNextId(plint& id) const {
++    std::map<plint,Data>::const_iterator it = data_map.find(id);
++    if (it != data_map.end()) {
++        ++it;
++        if (it != data_map.end()) {
++            id = it->first;
++            return true;
++        }
++    }
++    return false;
++}
++
++std::vector<XMLreader*> const& XMLreader::getChildren(plint id) const
++{
++    std::map<plint,Data>::const_iterator it = data_map.find(id);
++    if (it==data_map.end()) {
++        plbIOError(std::string("Cannot access id ")+util::val2str(id)+" in XML element " + name);
++    }
++    return it->second.children;
++}
++
++XMLreaderProxy::XMLreaderProxy(XMLreader const* reader_)
++    : reader(reader_)
++{
++    if (reader) {
++        id = reader->getFirstId();
++    }
++    else {
++        id = 0;
++    }
++}
++
++XMLreaderProxy::XMLreaderProxy(XMLreader const* reader_, plint id_)
++    : reader(reader_),
++      id(id_)
++{ }
++
++XMLreaderProxy XMLreaderProxy::operator[] (std::string name) const
++{
++    if (!reader) {
++        plbIOError(std::string("Cannot read value from XML element ") + name);
++    }
++    return reader->getElement(name, id);
++}
++
++XMLreaderProxy XMLreaderProxy::operator[] (plint newId) const {
++    if (!reader) {
++        plbIOError(std::string("Cannot read value from XML element"));
++    }
++    if (!reader->idExists(newId)) {
++        std::stringstream newIdStr;
++        newIdStr << newId;
++        plbIOError (
++                std::string("Id ") + newIdStr.str() +
++                std::string(" does not exist in XML element") );
++    }
++    return XMLreaderProxy(reader, newId);
++}
++
++bool XMLreaderProxy::isValid() const {
++    return reader;
++}
++
++plint XMLreaderProxy::getId() const {
++    return id;
++}
++
++XMLreaderProxy XMLreaderProxy::iterId() const {
++    if (!reader) {
++        plbIOError(std::string("Use of invalid XML element"));
++    }
++    plint newId = id;
++    if (reader->getNextId(newId)) {
++        return XMLreaderProxy(reader, newId);
++    }
++    else {
++        return XMLreaderProxy(0);
++    }
++}
++
++std::string XMLreaderProxy::getName() const {
++    if (!reader) {
++        plbIOError(std::string("Cannot read value from XML element "));
++    }
++    return reader->getName();
++}
++
++std::vector<XMLreader*> const& XMLreaderProxy::getChildren() const {
++    if (!reader) {
++        plbIOError(std::string("Cannot read value from XML element "));
++    }
++    return reader->getChildren(id);
++}
++
++
++XMLwriter::XMLwriter()
++    : isDocument(true),
++      currentId(0)
++{ }
++
++XMLwriter::~XMLwriter() {
++    std::map<plint,Data>::iterator it = data_map.begin();
++    for (; it != data_map.end(); ++it) {
++        std::vector<XMLwriter*>& children = it->second.children;
++        for (pluint iNode=0; iNode<children.size(); ++iNode) {
++            delete children[iNode];
++        }
++    }
++}
++
++XMLwriter::XMLwriter(std::string name_)
++    : isDocument(false),
++      name(name_),
++      currentId(0)
++{ }
++
++void XMLwriter::setString(std::string const& value)
++{
++    data_map[currentId].text = value;
++}
++
++
++XMLwriter& XMLwriter::operator[] (std::string name) {
++    std::vector<XMLwriter*>& children = data_map[currentId].children;
++    // If node already exists, simply return it.
++    for (pluint iNode=0; iNode<data_map[currentId].children.size(); ++iNode) {
++        if (data_map[currentId].children[iNode]->name == name) {
++            return *children[iNode];
++        }
++    }
++    // Else, create and return it.
++    children.push_back(new XMLwriter(name));
++    return *children.back();
++}
++
++XMLwriter& XMLwriter::operator[] (plint id) {
++    currentId = id;
++    return *this;
++}
++
++void XMLwriter::print(std::string fName) const {
++    plb_ofstream ofile(fName.c_str());
++    plbIOError( !ofile.is_open(), std::string("Could not open file ") + fName
++                                  + std::string(" for write access") );
++    toOutputStream(ofile);
++}
++
++std::string XMLwriter::sprint()
++{
++    std::stringstream a;
++    toOutputStream_parrallel(a);
++    return a.str();
++}
++
++
++}  // namespace plb
 diff --git a/src/libraryInterfaces/TINYXML_xmlIO.h b/src/libraryInterfaces/TINYXML_xmlIO.h
-index ec64f81..2333dff 100644
+index 9608415..4e899d4 100644
 --- a/src/libraryInterfaces/TINYXML_xmlIO.h
 +++ b/src/libraryInterfaces/TINYXML_xmlIO.h
-@@ -76,6 +76,7 @@ public:
-     XMLreaderProxy(XMLreader const* reader_);
-     XMLreaderProxy(XMLreader const* reader_, plint id_);
-     template <typename T> void read(T& values) const;
+@@ -1,139 +1,140 @@
+-/* This file is part of the Palabos library.
+-*
+-* The Palabos softare is developed since 2011 by FlowKit-Numeca Group Sarl
+-* (Switzerland) and the University of Geneva (Switzerland), which jointly
+-* own the IP rights for most of the code base. Since October 2019, the
+-* Palabos project is maintained by the University of Geneva and accepts
+-* source code contributions from the community.
+-*
+-* Contact:
+-* Jonas Latt
+-* Computer Science Department
+-* University of Geneva
+-* 7 Route de Drize
+-* 1227 Carouge, Switzerland
+-* jonas.latt@unige.ch
+-*
+-* The most recent release of Palabos can be downloaded at
+-* <https://palabos.unige.ch/>
+-*
+-* The library Palabos is free software: you can redistribute it and/or
+-* modify it under the terms of the GNU Affero General Public License as
+-* published by the Free Software Foundation, either version 3 of the
+-* License, or (at your option) any later version.
+-*
+-* The library is distributed in the hope that it will be useful,
+-* but WITHOUT ANY WARRANTY; without even the implied warranty of
+-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-* GNU Affero General Public License for more details.
+-*
+-* You should have received a copy of the GNU Affero General Public License
+-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-*/
+-
+-/** \file
+- * Input/Output in XML format -- header file.
+- */
+-
+-#ifndef XML_IO_H
+-#define XML_IO_H
+-
+-#include <string>
+-#include <vector>
+-#include <map>
+-#include "tinyxml/tinyxml.h"
+-#include "core/array.h"
+-
+-namespace plb {
+-
+-class XMLreaderProxy;
+-
+-class XMLreader {
+-public:
+-    XMLreader();
+-    XMLreader( std::string fName );
+-    void XMLreader_parse_from_string( const char *raw_xml);
+-    XMLreader( std::vector<TiXmlNode*> pParentVect );
+-    ~XMLreader();
+-    void print(int indent) const;
+-    XMLreaderProxy operator[] (std::string name) const;
+-    XMLreaderProxy getElement(std::string name, plint id) const;
+-    std::string getName() const;
+-    std::string getText() const;
+-    std::string getText(plint id) const;
+-    plint getFirstId() const;
+-    std::string getFirstText() const;
+-    bool idExists(plint id) const;
+-    bool getNextId(plint& id) const;
+-    std::vector<XMLreader*> const& getChildren(plint id) const;
+-private:
+-    void mainProcessorIni(TiXmlNode* pParent);
+-    void mainProcessorIni(std::vector<TiXmlNode*> pParentVect);
+-    void slaveProcessorIni();
+-
+-private:
+-    struct Data {
+-        std::string text;
+-        std::vector<XMLreader*> children;
+-    };
+-private:
+-    std::string name;
+-    std::map<plint,Data> data_map;
+-    static XMLreader notFound;
+-};
+-
+-class XMLreaderProxy {
+-public:
+-    XMLreaderProxy(XMLreader const* reader_);
+-    XMLreaderProxy(XMLreader const* reader_, plint id_);
+-    template <typename T> void read(T& values) const;
+-    template <typename T> bool readNoThrow(T& values) const;
+-    template <typename T> void read(std::vector<T>& values) const;
+-    template <typename T> bool readNoThrow(std::vector<T>& values) const;
+-    template <typename T, plint N> void read(Array<T,N>& values) const;
+-    template <typename T, plint N> bool readNoThrow(Array<T,N>& values) const;
+-    XMLreaderProxy operator[] (std::string name) const;
+-    XMLreaderProxy operator[] (plint newId) const;
+-    bool isValid() const;
+-    plint getId() const;
+-    XMLreaderProxy iterId() const;
+-    std::string getName() const;
+-    std::vector<XMLreader*> const& getChildren() const;
+-private:
+-    XMLreader const* reader;
+-    plint id;
+-};
+-
+-class XMLwriter {
+-public:
+-    XMLwriter();
+-    ~XMLwriter();
+-    template<typename T> void set(T const& value, plint precision=-1);
+-    void setString(std::string const& value);
+-    template<typename T> void set(std::vector<T> const& values, plint precision=-1);
+-    template<typename T, int N> void set(Array<T,N> const& values, plint precision=-1);
+-    XMLwriter& operator[] (std::string name);
+-    XMLwriter& operator[] (plint id);
+-    template<typename ostrT>
+-    void toOutputStream_parrallel(ostrT& ostr, int indent=0) const;
+-    template<typename ostrT>
+-    void toOutputStream(ostrT& ostr, int indent=0) const;
+-    void print(std::string fName) const;
+-    std::string sprint();
+-private:
+-    XMLwriter( std::string name_ );
+-private:
+-    struct Data {
+-        std::string text;
+-        std::vector<XMLwriter*> children;
+-    };
+-private: 
+-    bool isDocument;
+-    std::string name;
+-    std::map<plint,Data> data_map;
+-    plint currentId;
+-};
+-
+-}  // namespace plb
+-
+-#endif  // XML_IO_H
++/* This file is part of the Palabos library.
++*
++* The Palabos softare is developed since 2011 by FlowKit-Numeca Group Sarl
++* (Switzerland) and the University of Geneva (Switzerland), which jointly
++* own the IP rights for most of the code base. Since October 2019, the
++* Palabos project is maintained by the University of Geneva and accepts
++* source code contributions from the community.
++*
++* Contact:
++* Jonas Latt
++* Computer Science Department
++* University of Geneva
++* 7 Route de Drize
++* 1227 Carouge, Switzerland
++* jonas.latt@unige.ch
++*
++* The most recent release of Palabos can be downloaded at
++* <https://palabos.unige.ch/>
++*
++* The library Palabos is free software: you can redistribute it and/or
++* modify it under the terms of the GNU Affero General Public License as
++* published by the Free Software Foundation, either version 3 of the
++* License, or (at your option) any later version.
++*
++* The library is distributed in the hope that it will be useful,
++* but WITHOUT ANY WARRANTY; without even the implied warranty of
++* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++* GNU Affero General Public License for more details.
++*
++* You should have received a copy of the GNU Affero General Public License
++* along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++/** \file
++ * Input/Output in XML format -- header file.
++ */
++
++#ifndef XML_IO_H
++#define XML_IO_H
++
++#include <string>
++#include <vector>
++#include <map>
++#include "tinyxml/tinyxml.h"
++#include "core/array.h"
++
++namespace plb {
++
++class XMLreaderProxy;
++
++class XMLreader {
++public:
++    XMLreader();
++    XMLreader( std::string fName );
++    void XMLreader_parse_from_string( const char *raw_xml);
++    XMLreader( std::vector<TiXmlNode*> pParentVect );
++    ~XMLreader();
++    void print(int indent) const;
++    XMLreaderProxy operator[] (std::string name) const;
++    XMLreaderProxy getElement(std::string name, plint id) const;
++    std::string getName() const;
++    std::string getText() const;
++    std::string getText(plint id) const;
++    plint getFirstId() const;
++    std::string getFirstText() const;
++    bool idExists(plint id) const;
++    bool getNextId(plint& id) const;
++    std::vector<XMLreader*> const& getChildren(plint id) const;
++private:
++    void mainProcessorIni(TiXmlNode* pParent);
++    void mainProcessorIni(std::vector<TiXmlNode*> pParentVect);
++    void slaveProcessorIni();
++
++private:
++    struct Data {
++        std::string text;
++        std::vector<XMLreader*> children;
++    };
++private:
++    std::string name;
++    std::map<plint,Data> data_map;
++    static XMLreader notFound;
++};
++
++class XMLreaderProxy {
++public:
++    XMLreaderProxy(XMLreader const* reader_);
++    XMLreaderProxy(XMLreader const* reader_, plint id_);
++    template <typename T> void read(T& values) const;
 +    template <typename T> T read() const;
-     template <typename T> bool readNoThrow(T& values) const;
-     template <typename T> void read(std::vector<T>& values) const;
-     template <typename T> bool readNoThrow(std::vector<T>& values) const;
++    template <typename T> bool readNoThrow(T& values) const;
++    template <typename T> void read(std::vector<T>& values) const;
++    template <typename T> bool readNoThrow(std::vector<T>& values) const;
++    template <typename T, plint N> void read(Array<T,N>& values) const;
++    template <typename T, plint N> bool readNoThrow(Array<T,N>& values) const;
++    XMLreaderProxy operator[] (std::string name) const;
++    XMLreaderProxy operator[] (plint newId) const;
++    bool isValid() const;
++    plint getId() const;
++    XMLreaderProxy iterId() const;
++    std::string getName() const;
++    std::vector<XMLreader*> const& getChildren() const;
++private:
++    XMLreader const* reader;
++    plint id;
++};
++
++class XMLwriter {
++public:
++    XMLwriter();
++    ~XMLwriter();
++    template<typename T> void set(T const& value, plint precision=-1);
++    void setString(std::string const& value);
++    template<typename T> void set(std::vector<T> const& values, plint precision=-1);
++    template<typename T, int N> void set(Array<T,N> const& values, plint precision=-1);
++    XMLwriter& operator[] (std::string name);
++    XMLwriter& operator[] (plint id);
++    template<typename ostrT>
++    void toOutputStream_parrallel(ostrT& ostr, int indent=0) const;
++    template<typename ostrT>
++    void toOutputStream(ostrT& ostr, int indent=0) const;
++    void print(std::string fName) const;
++    std::string sprint();
++private:
++    XMLwriter( std::string name_ );
++private:
++    struct Data {
++        std::string text;
++        std::vector<XMLwriter*> children;
++    };
++private: 
++    bool isDocument;
++    std::string name;
++    std::map<plint,Data> data_map;
++    plint currentId;
++};
++
++}  // namespace plb
++
++#endif  // XML_IO_H
 diff --git a/src/libraryInterfaces/TINYXML_xmlIO.hh b/src/libraryInterfaces/TINYXML_xmlIO.hh
-index 8ed6c59..e4b5c06 100644
+index 184d917..0fe9d58 100644
 --- a/src/libraryInterfaces/TINYXML_xmlIO.hh
 +++ b/src/libraryInterfaces/TINYXML_xmlIO.hh
-@@ -52,6 +52,19 @@ void XMLreaderProxy::read(T& value) const {
-     value = tmp;
- }
- 
+@@ -1,354 +1,367 @@
+-/* This file is part of the Palabos library.
+- *
+- * Copyright (C) 2011-2017 FlowKit Sarl
+- * Route d'Oron 2
+- * 1010 Lausanne, Switzerland
+- * E-mail contact: contact@flowkit.com
+- *
+- * The most recent release of Palabos can be downloaded at 
+- * <http://www.palabos.org/>
+- *
+- * The library Palabos is free software: you can redistribute it and/or
+- * modify it under the terms of the GNU Affero General Public License as
+- * published by the Free Software Foundation, either version 3 of the
+- * License, or (at your option) any later version.
+- *
+- * The library is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU Affero General Public License for more details.
+- *
+- * You should have received a copy of the GNU Affero General Public License
+- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-*/
+-
+-/** \file
+- * Input/Output in XML format -- generic code.
+- */
+-
+-#ifndef XML_IO_HH
+-#define XML_IO_HH
+-
+-#include "libraryInterfaces/TINYXML_xmlIO.h"
+-#include "core/runTimeDiagnostics.h"
+-#include "core/globalDefs.h"
+-#include "core/util.h"
+-#include "parallelism/mpiManager.h"
+-#include "io/parallelIO.h"
+-#include <typeinfo>
+-#include <cctype>
+-#include <iomanip>
+-
+-namespace plb {
+-
+-template <typename T>
+-void XMLreaderProxy::read(T& value) const {
+-    if (!reader) return;
+-    std::stringstream valueStr(reader->getText(id));
+-    T tmp = T();
+-    if (!(valueStr>>tmp)) {
+-        plbIOError(std::string("Cannot read value from XML element ") + reader->getName());
+-    }
+-    value = tmp;
+-}
+-
+-template <>
+-inline void XMLreaderProxy::read<bool>(bool& value) const {
+-    if (!reader) return;
+-    std::stringstream valueStr(reader->getText(id));
+-    std::string word;
+-    valueStr >> word;
+-    // Transform to lower-case, so that "true" and "false" are case-insensitive.
+-    word = util::tolower(word);
+-    if (word=="true") {
+-        value = true;
+-    }
+-    else if (word=="false") {
+-        value=false;
+-    }
+-    else {
+-        plbIOError(std::string("Cannot read boolean value from XML element ") + reader->getName());
+-    }
+-}
+-
+-template <>
+-inline void XMLreaderProxy::read<std::string>(std::string& entry) const {
+-    if (!reader) return;
+-    entry = reader->getText(id);
+-}
+-
+-template <typename T>
+-bool XMLreaderProxy::readNoThrow(T& value) const {
+-    if (!reader) return false;
+-    std::stringstream valueStr(reader->getText(id));
+-    T tmp = T();
+-    if (!(valueStr >> tmp)) {
+-        return false;
+-    }
+-    value = tmp;
+-    return true;
+-}
+-
+-template <>
+-inline bool XMLreaderProxy::readNoThrow<bool>(bool& value) const {
+-    if (!reader) return false;
+-    std::stringstream valueStr(reader->getText(id));
+-    std::string word;
+-    valueStr >> word;
+-    // Transform to lower-case, so that "true" and "false" are case-insensitive.
+-    word = util::tolower(word);
+-    if (word=="true") {
+-        value = true;
+-        return true;
+-    }
+-    else if (word=="false") {
+-        value=false;
+-        return true;
+-    }
+-    return false;
+-}
+-
+-template <>
+-inline bool XMLreaderProxy::readNoThrow<std::string>(std::string& entry) const {
+-    if (!reader) return false;
+-    entry = reader->getText(id);
+-    return true;
+-}
+-
+-template <typename T>
+-void XMLreaderProxy::read(std::vector<T>& values) const {
+-    if (!reader) return;
+-    std::stringstream multiValueStr(reader->getText(id));
+-    std::string word;
+-    std::vector<T> tmp(values);
+-    while (multiValueStr>>word) {
+-        std::stringstream valueStr(word);
+-        T value;
+-        if (!(valueStr >> value)) {
+-            plbIOError(std::string("Cannot read value array from XML element ") + reader->getName());
+-        }
+-        tmp.push_back(value);
+-    }
+-    values.swap(tmp);
+-}
+-
+-template <>
+-inline void XMLreaderProxy::read<bool>(std::vector<bool>& values) const {
+-    if (!reader) return;
+-    std::stringstream multiValueStr(reader->getText(id));
+-    std::string word;
+-    std::vector<bool> tmp(values);
+-    while (multiValueStr>>word) {
+-        bool value = false;
+-        word = util::tolower(word);
+-        if (word=="true") {
+-            value = true;
+-        }
+-        else if (word=="false") {
+-            value=false;
+-        }
+-        else {
+-            plbIOError(std::string("Cannot read boolean value from XML element ") + reader->getName());
+-        }
+-        tmp.push_back(value);
+-    }
+-    values.swap(tmp);
+-}
+-
+-template <typename T>
+-bool XMLreaderProxy::readNoThrow(std::vector<T>& values) const {
+-    if (!reader) return false;
+-    std::stringstream multiValueStr(reader->getText(id));
+-    std::string word;
+-    std::vector<T> tmp(values);
+-    while (multiValueStr>>word) {
+-        std::stringstream valueStr(word);
+-        T value;
+-        if (!(valueStr >> value)) {
+-            return false;
+-        }
+-        tmp.push_back(value);
+-    }
+-    values.swap(tmp);
+-    return true;
+-}
+-
+-template <typename T, plint N>
+-void XMLreaderProxy::read(Array<T,N>& values) const {
+-    if (!reader) return;
+-    std::stringstream multiValueStr(reader->getText(id));
+-    std::string word;
+-    values.resetToZero();
+-    plint i=0;
+-    while (multiValueStr>>word && i<N) {
+-        std::stringstream valueStr(word);
+-        T value;
+-        if (!(valueStr >> value)) {
+-            plbIOError(std::string("Cannot read value array from XML element ") + reader->getName());
+-        }
+-        values[i] = value;
+-        ++i;
+-    }
+-}
+-
+-template <typename T, plint N>
+-bool XMLreaderProxy::readNoThrow(Array<T,N>& values) const {
+-    if (!reader) return false;
+-    std::stringstream multiValueStr(reader->getText(id));
+-    std::string word;
+-    plint i=0;
+-    while (multiValueStr>>word && i<N) {
+-        std::stringstream valueStr(word);
+-        T value;
+-        if (!(valueStr >> value)) {
+-            return false;
+-        }
+-        values[i] = value;
+-        ++i;
+-    }
+-    return true;
+-}
+-
+-template<typename T> void XMLwriter::set(T const& value, plint precision)
+-{
+-    std::stringstream valuestr;
+-    if (precision >= 0) {
+-        valuestr << std::setprecision(precision);
+-    }
+-    valuestr << value;
+-    valuestr >> data_map[currentId].text;
+-}
+-
+-template<typename T> void XMLwriter::set(std::vector<T> const& values, plint precision)
+-{
+-    std::stringstream valuestr;
+-    if (precision >= 0) {
+-        valuestr << std::setprecision(precision);
+-    }
+-    for (pluint i=0; i<values.size(); ++i) {
+-        if (i != 0) {
+-            valuestr << " ";
+-        }
+-        valuestr << values[i];
+-    }
+-    data_map[currentId].text = valuestr.str();
+-}
+-
+-template<typename T, int N> void XMLwriter::set(Array<T,N> const& values, plint precision)
+-{
+-    std::stringstream valuestr;
+-    if (precision >= 0) {
+-        valuestr << std::setprecision(precision);
+-    }
+-    for (pluint i=0; i<N; ++i) {
+-        if (i != 0) {
+-            valuestr << " ";
+-        }
+-        valuestr << values[i];
+-    }
+-    data_map[currentId].text = valuestr.str();
+-}
+-
+-template<> inline void XMLwriter::set<bool>(bool const& value, plint precision)
+-{
+-    if (value) {
+-        data_map[currentId].text = "True";
+-    }
+-    else {
+-        data_map[currentId].text = "False";
+-    }
+-}
+-
+-template<typename ostrT>
+-void XMLwriter::toOutputStream_parrallel(ostrT& ostr, int indent) const {
+-
+-    if (data_map.empty()) return;
+-    if (isDocument) {
+-        ostr << "<?xml version=\"1.0\" ?>\n";
+-        std::vector<XMLwriter*> const& children = data_map.begin()->second.children;
+-        for (pluint iNode=0; iNode<children.size(); ++iNode) {
+-            children[iNode]->toOutputStream_parrallel(ostr);
+-        }
+-    } else {
+-        std::map<plint,Data>::const_iterator it = data_map.begin();
+-        for (; it != data_map.end(); ++it) {
+-            std::vector<XMLwriter*> const& children = it->second.children;
+-            std::string const& text = it->second.text;
+-            std::string indentStr(indent, ' ');
+-            ostr << indentStr << "<" << name;
+-            if (data_map.size()>1 || it->first!=0) {
+-                ostr << " id=\"" << it->first << "\"";
+-            }
+-            if (children.empty()) {
+-                ostr << ">";
+-            } else {
+-                ostr << ">\n";
+-            }
+-            if (!text.empty()) {
+-                if (children.empty()) {
+-                    ostr << " " << text << " ";
+-                } else {
+-                    ostr << indentStr << "    " << text << "\n";
+-                }
+-            }
+-            for (pluint iNode=0; iNode<children.size(); ++iNode) {
+-                children[iNode]->toOutputStream_parrallel(ostr, indent+4);
+-            }
+-            if (!children.empty()) {
+-                ostr << indentStr;
+-            }
+-            ostr << "</" << name << ">\n";
+-        }
+-    }
+-}
+-
+-template<typename ostrT>
+-void XMLwriter::toOutputStream(ostrT& ostr, int indent) const {
+-    if (!global::mpi().isMainProcessor()) return;
+-    if (data_map.empty()) return;
+-
+-    if (isDocument) {
+-        ostr << "<?xml version=\"1.0\" ?>\n";
+-        std::vector<XMLwriter*> const& children = data_map.begin()->second.children;
+-        for (pluint iNode=0; iNode<children.size(); ++iNode) {
+-            children[iNode]->toOutputStream(ostr);
+-        }
+-    }
+-    else {
+-        std::map<plint,Data>::const_iterator it = data_map.begin();
+-        for (; it != data_map.end(); ++it) {
+-            std::vector<XMLwriter*> const& children = it->second.children;
+-            std::string const& text = it->second.text;
+-            std::string indentStr(indent, ' ');
+-            ostr << indentStr << "<" << name;
+-            if (data_map.size()>1 || it->first!=0) {
+-                ostr << " id=\"" << it->first << "\"";
+-            }
+-            if (children.empty()) {
+-                ostr << ">";
+-            }
+-            else {
+-                ostr << ">\n";
+-            }
+-            if (!text.empty()) {
+-                if (children.empty()) {
+-                    ostr << " " << text << " ";
+-                }
+-                else {
+-                    ostr << indentStr << "    " << text << "\n";
+-                }
+-            }
+-            for (pluint iNode=0; iNode<children.size(); ++iNode) {
+-                children[iNode]->toOutputStream(ostr, indent+4);
+-            }
+-            if (!children.empty()) {
+-                ostr << indentStr;
+-            }
+-            ostr << "</" << name << ">\n";
+-        }
+-    }
+-}
+-
+-}  // namespace plb
+-
+-#endif  // XML_IO_HH
++/* This file is part of the Palabos library.
++ *
++ * Copyright (C) 2011-2017 FlowKit Sarl
++ * Route d'Oron 2
++ * 1010 Lausanne, Switzerland
++ * E-mail contact: contact@flowkit.com
++ *
++ * The most recent release of Palabos can be downloaded at 
++ * <http://www.palabos.org/>
++ *
++ * The library Palabos is free software: you can redistribute it and/or
++ * modify it under the terms of the GNU Affero General Public License as
++ * published by the Free Software Foundation, either version 3 of the
++ * License, or (at your option) any later version.
++ *
++ * The library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU Affero General Public License for more details.
++ *
++ * You should have received a copy of the GNU Affero General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++/** \file
++ * Input/Output in XML format -- generic code.
++ */
++
++#ifndef XML_IO_HH
++#define XML_IO_HH
++
++#include "libraryInterfaces/TINYXML_xmlIO.h"
++#include "core/runTimeDiagnostics.h"
++#include "core/globalDefs.h"
++#include "core/util.h"
++#include "parallelism/mpiManager.h"
++#include "io/parallelIO.h"
++#include <typeinfo>
++#include <cctype>
++#include <iomanip>
++
++namespace plb {
++
++template <typename T>
++void XMLreaderProxy::read(T& value) const {
++    if (!reader) return;
++    std::stringstream valueStr(reader->getText(id));
++    T tmp = T();
++    if (!(valueStr>>tmp)) {
++        plbIOError(std::string("Cannot read value from XML element ") + reader->getName());
++    }
++    value = tmp;
++}
++
 +template <typename T>
 +T XMLreaderProxy::read() const {
 +    if (!reader) {
@@ -821,14 +2197,311 @@ index 8ed6c59..e4b5c06 100644
 +    return tmp;
 +}
 +
- template <>
- inline void XMLreaderProxy::read<bool>(bool& value) const {
-     if (!reader) return;
++template <>
++inline void XMLreaderProxy::read<bool>(bool& value) const {
++    if (!reader) return;
++    std::stringstream valueStr(reader->getText(id));
++    std::string word;
++    valueStr >> word;
++    // Transform to lower-case, so that "true" and "false" are case-insensitive.
++    word = util::tolower(word);
++    if (word=="true") {
++        value = true;
++    }
++    else if (word=="false") {
++        value=false;
++    }
++    else {
++        plbIOError(std::string("Cannot read boolean value from XML element ") + reader->getName());
++    }
++}
++
++template <>
++inline void XMLreaderProxy::read<std::string>(std::string& entry) const {
++    if (!reader) return;
++    entry = reader->getText(id);
++}
++
++template <typename T>
++bool XMLreaderProxy::readNoThrow(T& value) const {
++    if (!reader) return false;
++    std::stringstream valueStr(reader->getText(id));
++    T tmp = T();
++    if (!(valueStr >> tmp)) {
++        return false;
++    }
++    value = tmp;
++    return true;
++}
++
++template <>
++inline bool XMLreaderProxy::readNoThrow<bool>(bool& value) const {
++    if (!reader) return false;
++    std::stringstream valueStr(reader->getText(id));
++    std::string word;
++    valueStr >> word;
++    // Transform to lower-case, so that "true" and "false" are case-insensitive.
++    word = util::tolower(word);
++    if (word=="true") {
++        value = true;
++        return true;
++    }
++    else if (word=="false") {
++        value=false;
++        return true;
++    }
++    return false;
++}
++
++template <>
++inline bool XMLreaderProxy::readNoThrow<std::string>(std::string& entry) const {
++    if (!reader) return false;
++    entry = reader->getText(id);
++    return true;
++}
++
++template <typename T>
++void XMLreaderProxy::read(std::vector<T>& values) const {
++    if (!reader) return;
++    std::stringstream multiValueStr(reader->getText(id));
++    std::string word;
++    std::vector<T> tmp(values);
++    while (multiValueStr>>word) {
++        std::stringstream valueStr(word);
++        T value;
++        if (!(valueStr >> value)) {
++            plbIOError(std::string("Cannot read value array from XML element ") + reader->getName());
++        }
++        tmp.push_back(value);
++    }
++    values.swap(tmp);
++}
++
++template <>
++inline void XMLreaderProxy::read<bool>(std::vector<bool>& values) const {
++    if (!reader) return;
++    std::stringstream multiValueStr(reader->getText(id));
++    std::string word;
++    std::vector<bool> tmp(values);
++    while (multiValueStr>>word) {
++        bool value = false;
++        word = util::tolower(word);
++        if (word=="true") {
++            value = true;
++        }
++        else if (word=="false") {
++            value=false;
++        }
++        else {
++            plbIOError(std::string("Cannot read boolean value from XML element ") + reader->getName());
++        }
++        tmp.push_back(value);
++    }
++    values.swap(tmp);
++}
++
++template <typename T>
++bool XMLreaderProxy::readNoThrow(std::vector<T>& values) const {
++    if (!reader) return false;
++    std::stringstream multiValueStr(reader->getText(id));
++    std::string word;
++    std::vector<T> tmp(values);
++    while (multiValueStr>>word) {
++        std::stringstream valueStr(word);
++        T value;
++        if (!(valueStr >> value)) {
++            return false;
++        }
++        tmp.push_back(value);
++    }
++    values.swap(tmp);
++    return true;
++}
++
++template <typename T, plint N>
++void XMLreaderProxy::read(Array<T,N>& values) const {
++    if (!reader) return;
++    std::stringstream multiValueStr(reader->getText(id));
++    std::string word;
++    values.resetToZero();
++    plint i=0;
++    while (multiValueStr>>word && i<N) {
++        std::stringstream valueStr(word);
++        T value;
++        if (!(valueStr >> value)) {
++            plbIOError(std::string("Cannot read value array from XML element ") + reader->getName());
++        }
++        values[i] = value;
++        ++i;
++    }
++}
++
++template <typename T, plint N>
++bool XMLreaderProxy::readNoThrow(Array<T,N>& values) const {
++    if (!reader) return false;
++    std::stringstream multiValueStr(reader->getText(id));
++    std::string word;
++    plint i=0;
++    while (multiValueStr>>word && i<N) {
++        std::stringstream valueStr(word);
++        T value;
++        if (!(valueStr >> value)) {
++            return false;
++        }
++        values[i] = value;
++        ++i;
++    }
++    return true;
++}
++
++template<typename T> void XMLwriter::set(T const& value, plint precision)
++{
++    std::stringstream valuestr;
++    if (precision >= 0) {
++        valuestr << std::setprecision(precision);
++    }
++    valuestr << value;
++    valuestr >> data_map[currentId].text;
++}
++
++template<typename T> void XMLwriter::set(std::vector<T> const& values, plint precision)
++{
++    std::stringstream valuestr;
++    if (precision >= 0) {
++        valuestr << std::setprecision(precision);
++    }
++    for (pluint i=0; i<values.size(); ++i) {
++        if (i != 0) {
++            valuestr << " ";
++        }
++        valuestr << values[i];
++    }
++    data_map[currentId].text = valuestr.str();
++}
++
++template<typename T, int N> void XMLwriter::set(Array<T,N> const& values, plint precision)
++{
++    std::stringstream valuestr;
++    if (precision >= 0) {
++        valuestr << std::setprecision(precision);
++    }
++    for (pluint i=0; i<N; ++i) {
++        if (i != 0) {
++            valuestr << " ";
++        }
++        valuestr << values[i];
++    }
++    data_map[currentId].text = valuestr.str();
++}
++
++template<> inline void XMLwriter::set<bool>(bool const& value, plint precision)
++{
++    if (value) {
++        data_map[currentId].text = "True";
++    }
++    else {
++        data_map[currentId].text = "False";
++    }
++}
++
++template<typename ostrT>
++void XMLwriter::toOutputStream_parrallel(ostrT& ostr, int indent) const {
++
++    if (data_map.empty()) return;
++    if (isDocument) {
++        ostr << "<?xml version=\"1.0\" ?>\n";
++        std::vector<XMLwriter*> const& children = data_map.begin()->second.children;
++        for (pluint iNode=0; iNode<children.size(); ++iNode) {
++            children[iNode]->toOutputStream_parrallel(ostr);
++        }
++    } else {
++        std::map<plint,Data>::const_iterator it = data_map.begin();
++        for (; it != data_map.end(); ++it) {
++            std::vector<XMLwriter*> const& children = it->second.children;
++            std::string const& text = it->second.text;
++            std::string indentStr(indent, ' ');
++            ostr << indentStr << "<" << name;
++            if (data_map.size()>1 || it->first!=0) {
++                ostr << " id=\"" << it->first << "\"";
++            }
++            if (children.empty()) {
++                ostr << ">";
++            } else {
++                ostr << ">\n";
++            }
++            if (!text.empty()) {
++                if (children.empty()) {
++                    ostr << " " << text << " ";
++                } else {
++                    ostr << indentStr << "    " << text << "\n";
++                }
++            }
++            for (pluint iNode=0; iNode<children.size(); ++iNode) {
++                children[iNode]->toOutputStream_parrallel(ostr, indent+4);
++            }
++            if (!children.empty()) {
++                ostr << indentStr;
++            }
++            ostr << "</" << name << ">\n";
++        }
++    }
++}
++
++template<typename ostrT>
++void XMLwriter::toOutputStream(ostrT& ostr, int indent) const {
++    if (!global::mpi().isMainProcessor()) return;
++    if (data_map.empty()) return;
++
++    if (isDocument) {
++        ostr << "<?xml version=\"1.0\" ?>\n";
++        std::vector<XMLwriter*> const& children = data_map.begin()->second.children;
++        for (pluint iNode=0; iNode<children.size(); ++iNode) {
++            children[iNode]->toOutputStream(ostr);
++        }
++    }
++    else {
++        std::map<plint,Data>::const_iterator it = data_map.begin();
++        for (; it != data_map.end(); ++it) {
++            std::vector<XMLwriter*> const& children = it->second.children;
++            std::string const& text = it->second.text;
++            std::string indentStr(indent, ' ');
++            ostr << indentStr << "<" << name;
++            if (data_map.size()>1 || it->first!=0) {
++                ostr << " id=\"" << it->first << "\"";
++            }
++            if (children.empty()) {
++                ostr << ">";
++            }
++            else {
++                ostr << ">\n";
++            }
++            if (!text.empty()) {
++                if (children.empty()) {
++                    ostr << " " << text << " ";
++                }
++                else {
++                    ostr << indentStr << "    " << text << "\n";
++                }
++            }
++            for (pluint iNode=0; iNode<children.size(); ++iNode) {
++                children[iNode]->toOutputStream(ostr, indent+4);
++            }
++            if (!children.empty()) {
++                ostr << indentStr;
++            }
++            ostr << "</" << name << ">\n";
++        }
++    }
++}
++
++}  // namespace plb
++
++#endif  // XML_IO_HH
 diff --git a/src/multiBlock/localMultiBlockInfo3D.cpp b/src/multiBlock/localMultiBlockInfo3D.cpp
-index 8cdd896..6116a8c 100644
+index 1ceb9d2..b39c648 100644
 --- a/src/multiBlock/localMultiBlockInfo3D.cpp
 +++ b/src/multiBlock/localMultiBlockInfo3D.cpp
-@@ -140,8 +140,9 @@ void LocalMultiBlockInfo3D::computeAllPeriodicOverlaps (
+@@ -149,8 +149,9 @@ void LocalMultiBlockInfo3D::computeAllPeriodicOverlaps (
          sparseBlock.getBulk(blockId, bulk);
          // Speed optimization: execute the test for periodicity
          //   only for bulk-domains which touch the bounding box.
@@ -840,10 +2513,10 @@ index 8cdd896..6116a8c 100644
              computePeriodicOverlaps(sparseBlock, blockId);
          }
 diff --git a/src/multiBlock/localMultiBlockInfo3D.h b/src/multiBlock/localMultiBlockInfo3D.h
-index 2db1e50..60134da 100644
+index 4ca9752..58cbda8 100644
 --- a/src/multiBlock/localMultiBlockInfo3D.h
 +++ b/src/multiBlock/localMultiBlockInfo3D.h
-@@ -129,6 +129,7 @@ private:
+@@ -138,6 +138,7 @@ private:
      /// Determine all blocks which are associated to the current MPI thread.
      void computeMyBlocks(SparseBlockStructure3D const& sparseBlock,
                           ThreadAttribution const& attribution);
@@ -851,7 +2524,7 @@ index 2db1e50..60134da 100644
      /// Compute normal overlaps for all local blocks.
      void computeAllNormalOverlaps(SparseBlockStructure3D const& sparseBlock);
      /// Compute normal overlaps for one local block.
-@@ -137,9 +138,11 @@ private:
+@@ -146,9 +147,11 @@ private:
      void computeAllPeriodicOverlaps(SparseBlockStructure3D const& sparseBlock);
      /// Compute periodic overlaps for one local block.
      void computePeriodicOverlaps(SparseBlockStructure3D const& sparseBlock, plint blockId);
@@ -865,10 +2538,10 @@ index 2db1e50..60134da 100644
      std::vector<PeriodicOverlap3D> periodicOverlaps;
      std::vector<PeriodicOverlap3D> periodicOverlapWithRemoteData;
 diff --git a/src/multiBlock/multiBlock3D.cpp b/src/multiBlock/multiBlock3D.cpp
-index 57c178e..f6e5e6f 100644
+index 9e88c7f..8bb3481 100644
 --- a/src/multiBlock/multiBlock3D.cpp
 +++ b/src/multiBlock/multiBlock3D.cpp
-@@ -250,7 +250,7 @@ MultiBlock3D::MultiBlock3D( MultiBlockManagement3D const& multiBlockManagement_,
+@@ -259,7 +259,7 @@ MultiBlock3D::MultiBlock3D( MultiBlockManagement3D const& multiBlockManagement_,
        internalStatistics(),
        combinedStatistics(combinedStatistics_),
        statSubscriber(*this),
@@ -877,7 +2550,7 @@ index 57c178e..f6e5e6f 100644
        periodicitySwitch(*this),
        internalModifT(modif::staticVariables)
  { 
-@@ -265,7 +265,7 @@ MultiBlock3D::MultiBlock3D(plint nx, plint ny, plint nz, plint envelopeWidth)
+@@ -274,7 +274,7 @@ MultiBlock3D::MultiBlock3D(plint nx, plint ny, plint nz, plint envelopeWidth)
        internalStatistics(),
        combinedStatistics(defaultMultiBlockPolicy3D().getCombinedStatistics()),
        statSubscriber(*this),
@@ -886,7 +2559,7 @@ index 57c178e..f6e5e6f 100644
        periodicitySwitch(*this),
        internalModifT(modif::staticVariables)
  {
-@@ -297,7 +297,7 @@ MultiBlock3D::MultiBlock3D(MultiBlock3D const& rhs, Box3D subDomain, bool crop)
+@@ -306,7 +306,7 @@ MultiBlock3D::MultiBlock3D(MultiBlock3D const& rhs, Box3D subDomain, bool crop)
        internalStatistics(),
        combinedStatistics(rhs.combinedStatistics->clone()),
        statSubscriber(*this),
@@ -895,7 +2568,7 @@ index 57c178e..f6e5e6f 100644
        periodicitySwitch(*this),
        internalModifT(rhs.internalModifT)
  {
-@@ -352,6 +352,10 @@ MultiBlockManagement3D const& MultiBlock3D::getMultiBlockManagement() const {
+@@ -361,6 +361,10 @@ MultiBlockManagement3D const& MultiBlock3D::getMultiBlockManagement() const {
      return multiBlockManagement;
  }
  
@@ -907,10 +2580,10 @@ index 57c178e..f6e5e6f 100644
      multiBlockManagement.setCoProcessors(coProcessors);
  }
 diff --git a/src/multiBlock/multiBlock3D.h b/src/multiBlock/multiBlock3D.h
-index 90fd434..15a7239 100644
+index b3ccc0d..f57432e 100644
 --- a/src/multiBlock/multiBlock3D.h
 +++ b/src/multiBlock/multiBlock3D.h
-@@ -152,6 +152,7 @@ public:
+@@ -161,6 +161,7 @@ public:
      std::vector<ProcessorStorage3D> const& getStoredProcessors() const;
  public:
      MultiBlockManagement3D const& getMultiBlockManagement() const;
@@ -919,10 +2592,10 @@ index 90fd434..15a7239 100644
      LocalMultiBlockInfo3D const& getLocalInfo() const;
      SparseBlockStructure3D const& getSparseBlockStructure() const;
 diff --git a/src/multiBlock/multiBlockManagement3D.cpp b/src/multiBlock/multiBlockManagement3D.cpp
-index 866622e..8f8c4cb 100644
+index c65b96f..222bc91 100644
 --- a/src/multiBlock/multiBlockManagement3D.cpp
 +++ b/src/multiBlock/multiBlockManagement3D.cpp
-@@ -194,8 +194,17 @@ void MultiBlockManagement3D::setRefinementLevel(plint newLevel) {
+@@ -203,8 +203,17 @@ void MultiBlockManagement3D::setRefinementLevel(plint newLevel) {
  }
  
  void MultiBlockManagement3D::changeEnvelopeWidth(plint newEnvelopeWidth) {
@@ -943,10 +2616,10 @@ index 866622e..8f8c4cb 100644
  
  bool MultiBlockManagement3D::equivalentTo(MultiBlockManagement3D const& rhs) const {
 diff --git a/src/multiBlock/multiDataField3D.hh b/src/multiBlock/multiDataField3D.hh
-index 0729c59..3ed05c1 100644
+index 13c9a1b..f56e0f7 100644
 --- a/src/multiBlock/multiDataField3D.hh
 +++ b/src/multiBlock/multiDataField3D.hh
-@@ -802,9 +802,11 @@ void MultiNTensorField3D<T>::reset() {
+@@ -813,9 +813,11 @@ void MultiNTensorField3D<T>::reset() {
  
  template<typename T>
  void MultiNTensorField3D<T>::allocateFields() {
@@ -962,10 +2635,10 @@ index 0729c59..3ed05c1 100644
  
  template<typename T>
 diff --git a/src/multiBlock/sparseBlockStructure3D.cpp b/src/multiBlock/sparseBlockStructure3D.cpp
-index a8ae15e..fe3e896 100644
+index c26e79d..5e38a3e 100644
 --- a/src/multiBlock/sparseBlockStructure3D.cpp
 +++ b/src/multiBlock/sparseBlockStructure3D.cpp
-@@ -78,6 +78,20 @@ SparseBlockStructure3D::SparseBlockStructure3D (
+@@ -87,6 +87,20 @@ SparseBlockStructure3D::SparseBlockStructure3D (
                                                 / (double)rhs.boundingBox.getNz() );
      if (gridNz < 1) gridNz = 1;
  }
@@ -986,7 +2659,7 @@ index a8ae15e..fe3e896 100644
  
  void SparseBlockStructure3D::addBlock(Box3D const& bulk, plint blockId) 
  {
-@@ -109,7 +123,7 @@ void SparseBlockStructure3D::removeBlock(plint blockId) {
+@@ -118,7 +132,7 @@ void SparseBlockStructure3D::removeBlock(plint blockId) {
      }
  }
  
@@ -995,7 +2668,7 @@ index a8ae15e..fe3e896 100644
      return bulks.find(blockId) != bulks.end();
  }
  
-@@ -788,7 +802,6 @@ SparseBlockStructure3D alignDistribution3D (
+@@ -797,7 +811,6 @@ SparseBlockStructure3D alignDistribution3D (
      return newSparseBlock;
  }
  
@@ -1004,10 +2677,10 @@ index a8ae15e..fe3e896 100644
      : sparseBlock(sparseBlock_)
  { }
 diff --git a/src/multiBlock/sparseBlockStructure3D.h b/src/multiBlock/sparseBlockStructure3D.h
-index b8d48a7..1fe555a 100644
+index ca4837d..4d6632d 100644
 --- a/src/multiBlock/sparseBlockStructure3D.h
 +++ b/src/multiBlock/sparseBlockStructure3D.h
-@@ -51,6 +51,8 @@ public:
+@@ -60,6 +60,8 @@ public:
                             plint gridNx_, plint gridNy_, plint gridNz_);
      /// Restrict an existing SparseBlockStructure3D to a sub-domain.
      SparseBlockStructure3D(SparseBlockStructure3D const& rhs, Box3D boundingBox_);
@@ -1016,7 +2689,7 @@ index b8d48a7..1fe555a 100644
      /// Add a new block to the sparse block-structure.
      void addBlock(Box3D const& bulk, Box3D const& uniqueBulk, plint blockId);
      /// Add a new block to the sparse block-structure; uniqueBulk = bulk.
-@@ -58,7 +60,7 @@ public:
+@@ -67,7 +69,7 @@ public:
      /// Remove an existing block from the sparse block-structure.
      void removeBlock(plint blockId);
      /// Check if a block with the given ID already exists in the block-structure.
@@ -1026,10 +2699,10 @@ index b8d48a7..1fe555a 100644
      plint nextIncrementalId() const;
      /// Return outer bounding box.
 diff --git a/src/offLattice/triangularSurfaceMesh.h b/src/offLattice/triangularSurfaceMesh.h
-index 1455aa9..303d559 100644
+index 81586f9..8bb6c17 100644
 --- a/src/offLattice/triangularSurfaceMesh.h
 +++ b/src/offLattice/triangularSurfaceMesh.h
-@@ -146,6 +146,12 @@ public:
+@@ -153,6 +153,12 @@ public:
      ///   3.] The third rotation is by an angle psi about the new z-axis.
      void rotate(T phi, T theta, T psi);
  
@@ -1043,10 +2716,10 @@ index 1455aa9..303d559 100644
      ///   The triangular surface mesh is smoothed by using a spatial
      ///   averaging algorithm. Interior vertices are treated differently
 diff --git a/src/offLattice/triangularSurfaceMesh.hh b/src/offLattice/triangularSurfaceMesh.hh
-index 622aa7d..ce82486 100644
+index 497f5eb..4603046 100644
 --- a/src/offLattice/triangularSurfaceMesh.hh
 +++ b/src/offLattice/triangularSurfaceMesh.hh
-@@ -33,6 +33,7 @@
+@@ -40,6 +40,7 @@
  #include <cstdio>
  #include <cstdlib>
  #include <cstring>
@@ -1054,7 +2727,7 @@ index 622aa7d..ce82486 100644
  #include "offLattice/triangularSurfaceMesh.h"
  #include "offLattice/triangleSet.h"
  #include "latticeBoltzmann/geometricOperationTemplates.h"
-@@ -290,6 +291,82 @@ void TriangularSurfaceMesh<T>::rotate(T phi, T theta, T psi)
+@@ -297,6 +298,82 @@ void TriangularSurfaceMesh<T>::rotate(T phi, T theta, T psi)
      }
  }
  
@@ -1138,10 +2811,10 @@ index 622aa7d..ce82486 100644
  void TriangularSurfaceMesh<T>::smooth(plint maxiter, T relax, bool isMeasureWeighted)
  {
 diff --git a/src/parallelism/parallelBlockCommunicator3D.cpp b/src/parallelism/parallelBlockCommunicator3D.cpp
-index c891d72..0b019a7 100644
+index 4bc39c7..a5cc7c9 100644
 --- a/src/parallelism/parallelBlockCommunicator3D.cpp
 +++ b/src/parallelism/parallelBlockCommunicator3D.cpp
-@@ -25,6 +25,8 @@
+@@ -34,6 +34,8 @@
  /** \file
   * Helper classes for parallel 3D multiblock lattice -- generic implementation.
   */
@@ -1150,7 +2823,7 @@ index c891d72..0b019a7 100644
  
  #include "parallelism/parallelBlockCommunicator3D.h"
  #include "multiBlock/multiBlock3D.h"
-@@ -36,6 +38,7 @@
+@@ -45,6 +47,7 @@
  #ifdef PLB_MPI_PARALLEL
  #include <mpi.h>
  #endif
@@ -1158,7 +2831,7 @@ index c891d72..0b019a7 100644
  
  namespace plb {
  
-@@ -107,8 +110,11 @@ CommunicationStructure3D::CommunicationStructure3D (
+@@ -116,8 +119,11 @@ CommunicationStructure3D::CommunicationStructure3D (
  
      sendComm = SendPoolCommunicator(sendPool);
      recvComm = RecvPoolCommunicator(recvPool);
@@ -1171,7 +2844,7 @@ index c891d72..0b019a7 100644
  
  
  CommunicationPattern3D::CommunicationPattern3D (
-@@ -232,6 +238,30 @@ void ParallelBlockCommunicator3D::duplicateOverlaps( MultiBlock3D& multiBlock,
+@@ -241,6 +247,30 @@ void ParallelBlockCommunicator3D::duplicateOverlaps( MultiBlock3D& multiBlock,
      communicate(*communication, multiBlock, multiBlock, whichData);
  }
  
@@ -1202,7 +2875,7 @@ index c891d72..0b019a7 100644
  void ParallelBlockCommunicator3D::communicate (
          std::vector<Overlap3D> const& overlaps,
          MultiBlock3D const& originMultiBlock,
-@@ -253,6 +283,7 @@ void ParallelBlockCommunicator3D::communicate (
+@@ -262,6 +292,7 @@ void ParallelBlockCommunicator3D::communicate (
          MultiBlock3D const& originMultiBlock,
          MultiBlock3D& destinationMultiBlock, modif::ModifT whichData ) const
  {
@@ -1210,19 +2883,10 @@ index c891d72..0b019a7 100644
      global::profiler().start("mpiCommunication");
      bool staticMessage = whichData == modif::staticVariables;
      // 1. Non-blocking receives.
-@@ -280,17 +311,77 @@ void ParallelBlockCommunicator3D::communicate (
+@@ -289,17 +320,77 @@ void ParallelBlockCommunicator3D::communicate (
                  info.toDomain, deltaX, deltaY, deltaZ, fromBlock,
                  whichData, info.absoluteOffset );
      }
--
--    // 4. Finalize the receives.
--    for (unsigned iRecv=0; iRecv<communication.recvPackage.size(); ++iRecv) {
--        CommunicationInfo3D const& info = communication.recvPackage[iRecv];
--        AtomicBlock3D& toBlock = destinationMultiBlock.getComponent(info.toBlockId);
--        toBlock.getDataTransfer().receive (
--                info.toDomain,
--                communication.recvComm.receiveMessage(info.fromProcessId, staticMessage),
--                whichData, info.absoluteOffset );
 +    
 +    if (whichData == modif::hemocell) {
 +      // 4. Become receptive (dynamic)
@@ -1250,7 +2914,15 @@ index c891d72..0b019a7 100644
 +        reqs[index] = MPI_REQUEST_NULL;
 +        
 +        if(!receives[index].pre_req_received) {
-+
+ 
+-    // 4. Finalize the receives.
+-    for (unsigned iRecv=0; iRecv<communication.recvPackage.size(); ++iRecv) {
+-        CommunicationInfo3D const& info = communication.recvPackage[iRecv];
+-        AtomicBlock3D& toBlock = destinationMultiBlock.getComponent(info.toBlockId);
+-        toBlock.getDataTransfer().receive (
+-                info.toDomain,
+-                communication.recvComm.receiveMessage(info.fromProcessId, staticMessage),
+-                whichData, info.absoluteOffset );
 +          //Got the sizes, wait for data
 +          receives[index].pre_req_received = true;
 +          
@@ -1299,10 +2971,10 @@ index c891d72..0b019a7 100644
      communication.sendComm.finalize(staticMessage);
      global::profiler().stop("mpiCommunication");
 diff --git a/src/parallelism/parallelBlockCommunicator3D.h b/src/parallelism/parallelBlockCommunicator3D.h
-index 879c653..0e0f2dc 100644
+index dee2863..4f12204 100644
 --- a/src/parallelism/parallelBlockCommunicator3D.h
 +++ b/src/parallelism/parallelBlockCommunicator3D.h
-@@ -59,6 +59,7 @@ struct CommunicationStructure3D
+@@ -68,6 +68,7 @@ struct CommunicationStructure3D
              MultiBlockManagement3D const& originManagement,
              MultiBlockManagement3D const& destinationManagement,
              plint sizeOfCell );
@@ -1310,7 +2982,7 @@ index 879c653..0e0f2dc 100644
      CommunicationPackage3D sendPackage;
      CommunicationPackage3D recvPackage;
      CommunicationPackage3D sendRecvPackage;
-@@ -77,20 +78,22 @@ public:
+@@ -86,20 +87,22 @@ public:
      void swap(ParallelBlockCommunicator3D& rhs);
      virtual ParallelBlockCommunicator3D* clone() const;
      virtual void duplicateOverlaps(MultiBlock3D& multiBlock, modif::ModifT whichData) const;
@@ -1336,10 +3008,10 @@ index 879c653..0e0f2dc 100644
  };
  
 diff --git a/src/parallelism/sendRecvPool.cpp b/src/parallelism/sendRecvPool.cpp
-index ff5eb57..57d9e8f 100644
+index 99cd4dc..69a7257 100644
 --- a/src/parallelism/sendRecvPool.cpp
 +++ b/src/parallelism/sendRecvPool.cpp
-@@ -110,8 +110,9 @@ void SendPoolCommunicator::startCommunication(int toProc, bool staticMessage)
+@@ -119,8 +119,9 @@ void SendPoolCommunicator::startCommunication(int toProc, bool staticMessage)
                      ( (int)entry.messages[iMessage].size() == entry.lengths[iMessage] ));
          PLB_ASSERT(pos+entry.messages[iMessage].size() <= entry.data.size());
          if( !entry.messages[iMessage].empty() && !entry.data.empty() ) {
@@ -1351,7 +3023,7 @@ index ff5eb57..57d9e8f 100644
          }
          pos+=entry.messages[iMessage].size();
      }
-@@ -154,6 +155,24 @@ void RecvPoolCommunicator::startBeingReceptive(bool staticMessage)
+@@ -163,6 +164,24 @@ void RecvPoolCommunicator::startBeingReceptive(bool staticMessage)
      }
  }
  
@@ -1377,10 +3049,10 @@ index ff5eb57..57d9e8f 100644
          int fromProc, bool staticMessage )
  {
 diff --git a/src/parallelism/sendRecvPool.h b/src/parallelism/sendRecvPool.h
-index 68c06dd..f79a3c7 100644
+index 89b17c0..6864086 100644
 --- a/src/parallelism/sendRecvPool.h
 +++ b/src/parallelism/sendRecvPool.h
-@@ -32,6 +32,7 @@
+@@ -41,6 +41,7 @@
  #include "core/globalDefs.h"
  #include "core/util.h"
  #include "parallelism/mpiManager.h"
@@ -1388,7 +3060,7 @@ index 68c06dd..f79a3c7 100644
  #include <map>
  #include <vector>
  #include <sstream>
-@@ -124,6 +125,17 @@ struct CommunicatorEntry {
+@@ -133,6 +134,17 @@ struct CommunicatorEntry {
      int currentMessage;
      MPI_Request sizeRequest, messageRequest;
      MPI_Status  sizeStatus, messageStatus;
@@ -1406,7 +3078,7 @@ index 68c06dd..f79a3c7 100644
  };
  
  /// The "in-action" device for all messages sent from a processor.
-@@ -136,7 +148,7 @@ public:
+@@ -145,7 +157,7 @@ public:
      void finalize(bool staticMessage);
  private:
      void startCommunication(int toProc, bool staticMessage);
@@ -1415,7 +3087,7 @@ index 68c06dd..f79a3c7 100644
      std::map<int, CommunicatorEntry > subscriptions;
  };
  
-@@ -147,11 +159,13 @@ public:
+@@ -156,11 +168,13 @@ public:
      RecvPoolCommunicator(SendRecvPool const& pool);
      /// Initiate non-blocking communication.
      void startBeingReceptive(bool staticMessage);
@@ -1431,10 +3103,10 @@ index 68c06dd..f79a3c7 100644
  };
  
 diff --git a/src/particles/particleField3D.h b/src/particles/particleField3D.h
-index 373596f..0709fa9 100644
+index d781a64..0b66b23 100644
 --- a/src/particles/particleField3D.h
 +++ b/src/particles/particleField3D.h
-@@ -70,6 +70,7 @@ public:
+@@ -79,6 +79,7 @@ public:
  public:
      /// Helper function: returns if a given particle is situated in the indicated (local) domain.
      bool isContained(Array<T,3> const& particlePos, Box3D box) const;
@@ -1443,10 +3115,10 @@ index 373596f..0709fa9 100644
              Array<T,3> const& position,
              plint& iX, plint& iY, plint& iZ ) const;
 diff --git a/src/particles/particleField3D.hh b/src/particles/particleField3D.hh
-index ed03698..2c723bd 100644
+index 9862cda..5bb83f8 100644
 --- a/src/particles/particleField3D.hh
 +++ b/src/particles/particleField3D.hh
-@@ -38,6 +38,20 @@ ParticleField3D<T,Descriptor>::ParticleField3D(plint nx, plint ny, plint nz, Blo
+@@ -47,6 +47,20 @@ ParticleField3D<T,Descriptor>::ParticleField3D(plint nx, plint ny, plint nz, Blo
      : AtomicBlock3D(nx,ny,nz, dataTransfer)
  { }
  
@@ -1467,7 +3139,7 @@ index ed03698..2c723bd 100644
  template<typename T, template<typename U> class Descriptor>
  bool ParticleField3D<T,Descriptor>::isContained (
          Array<T,3> const& particlePos, Box3D box ) const
-@@ -711,8 +725,10 @@ void LightParticleField3D<T,Descriptor>::swap(LightParticleField3D<T,Descriptor>
+@@ -720,8 +734,10 @@ void LightParticleField3D<T,Descriptor>::swap(LightParticleField3D<T,Descriptor>
  template<typename T, template<typename U> class Descriptor>
  void LightParticleField3D<T,Descriptor>::addParticle(Box3D domain, Particle3D<T,Descriptor>* particle) {
      Box3D finalDomain;
@@ -1479,7 +3151,7 @@ index ed03698..2c723bd 100644
      {
          particles.push_back(particle);
      }
-@@ -725,10 +741,12 @@ template<typename T, template<typename U> class Descriptor>
+@@ -734,10 +750,12 @@ template<typename T, template<typename U> class Descriptor>
  void LightParticleField3D<T,Descriptor>::removeParticles(Box3D domain) {
      std::vector<Particle3D<T,Descriptor>*> remainingParticles;
      Box3D finalDomain;
@@ -1493,7 +3165,7 @@ index ed03698..2c723bd 100644
                  delete particles[i];
              }
              else {
-@@ -745,8 +763,10 @@ void LightParticleField3D<T,Descriptor>::removeParticles(Box3D domain, plint tag
+@@ -754,8 +772,10 @@ void LightParticleField3D<T,Descriptor>::removeParticles(Box3D domain, plint tag
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
@@ -1505,7 +3177,7 @@ index ed03698..2c723bd 100644
                  particles[i]->getTag() == tag )
              {
                  delete particles[i];
-@@ -765,8 +785,10 @@ void LightParticleField3D<T,Descriptor>::findParticles (
+@@ -774,8 +794,10 @@ void LightParticleField3D<T,Descriptor>::findParticles (
  {
      found.clear();
      PLB_ASSERT( contained(domain, this->getBoundingBox()) );
@@ -1517,7 +3189,7 @@ index ed03698..2c723bd 100644
              found.push_back(particles[i]);
          }
      }
-@@ -778,8 +800,11 @@ void LightParticleField3D<T,Descriptor>::findParticles (
+@@ -787,8 +809,11 @@ void LightParticleField3D<T,Descriptor>::findParticles (
  {
      found.clear();
      PLB_ASSERT( contained(domain, this->getBoundingBox()) );
@@ -1530,7 +3202,7 @@ index ed03698..2c723bd 100644
              found.push_back(particles[i]);
          }
      }
-@@ -792,8 +817,10 @@ void LightParticleField3D<T,Descriptor>::velocityToParticleCoupling (
+@@ -801,8 +826,10 @@ void LightParticleField3D<T,Descriptor>::velocityToParticleCoupling (
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
@@ -1542,7 +3214,7 @@ index ed03698..2c723bd 100644
                  particles[i]->velocityToParticle(velocityField, scaling);
              }
          }
-@@ -822,8 +849,10 @@ void LightParticleField3D<T,Descriptor>::rhoBarJtoParticleCoupling (
+@@ -831,8 +858,10 @@ void LightParticleField3D<T,Descriptor>::rhoBarJtoParticleCoupling (
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
@@ -1554,7 +3226,7 @@ index ed03698..2c723bd 100644
                  particles[i]->rhoBarJtoParticle(rhoBarJfield, velIsJ, scaling);
              }
          }
-@@ -837,8 +866,10 @@ void LightParticleField3D<T,Descriptor>::fluidToParticleCoupling (
+@@ -846,8 +875,10 @@ void LightParticleField3D<T,Descriptor>::fluidToParticleCoupling (
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
@@ -1566,7 +3238,7 @@ index ed03698..2c723bd 100644
                  particles[i]->fluidToParticle(lattice, scaling);
              }
          }
-@@ -851,13 +882,16 @@ void LightParticleField3D<T,Descriptor>::advanceParticles(Box3D domain, T cutOff
+@@ -860,13 +891,16 @@ void LightParticleField3D<T,Descriptor>::advanceParticles(Box3D domain, T cutOff
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
@@ -1579,7 +3251,7 @@ index ed03698..2c723bd 100644
                  Array<T,3> oldPos( particle->getPosition() );
                  particle->advance();
 +                pos = particle->getPosition();
-                 if ( (cutOffValue>=T() && normSqr(oldPos-particle->getPosition())<cutOffValue) ||
+                 if ( (cutOffSpeedSqr>=T() && normSqr(oldPos-particle->getPosition()) < cutOffSpeedSqr) ||
 -                     (!this->isContained(particle->getPosition(),this->getBoundingBox()))  )
 +                     (!this->isContained(pos[0],pos[1],pos[2],this->getBoundingBox()))  )
                  {

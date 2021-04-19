@@ -407,6 +407,7 @@ private:
     float * output = new float [(*nCells)*6];
     unsigned int n = 0;
     plb::Array<T,6> stress;
+
     for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
       for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
         for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
@@ -437,12 +438,39 @@ private:
     float * output = new float [(*nCells)*9];
     unsigned int n = 0;
     plb::Array<T,9> shearrate;
+    plb::Array<T,3> velp1;
+    plb::Array<T,3> veln1;
+    plb::Array<T,3> velp2;
+    plb::Array<T,3> veln2;
+    plb::Array<T,3> velp3;
+    plb::Array<T,3> veln3;
 
     for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
       for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
         for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
 
-          ablock->get(iX,iY,iZ).computeShearRate(*ablock,shearrate,iX,iY,iZ);
+          // velocity gradients in y-direction
+          ablock->get(iX+1,iY,iZ).computeVelocity(velp1); //vel at cell+1
+          ablock->get(iX-1,iY,iZ).computeVelocity(veln1); //vel at cell+1
+
+          // velocity gradients in y-direction
+          ablock->get(iX,iY+1,iZ).computeVelocity(velp2); //vel at cell+1
+          ablock->get(iX,iY-1,iZ).computeVelocity(veln2); //vel at cell+1
+
+          // velocity gradients in z-direction
+          ablock->get(iX,iY,iZ+1).computeVelocity(velp3); //vel at cell+1
+          ablock->get(iX,iY,iZ-1).computeVelocity(veln3); //vel at cell+1
+
+          shearrate[0] = (velp1[0]-veln1[0])/2; // dv_x /2*dx
+          shearrate[3] = (velp1[1]-veln1[1])/2; // dv_y/ 2*dx
+          shearrate[6] = (velp1[2]-veln1[2])/2; // dv_z /2*dx
+          shearrate[1] = (velp2[0]-veln2[0])/2; // dv_x / 2*dy
+          shearrate[4] = (velp2[1]-veln2[1])/2; // dv_y / 2*dy
+          shearrate[7] = (velp2[2]-veln2[2])/2; // dv_z / 2*dy
+          shearrate[2] = (velp3[0]-veln3[0])/2; // dv_x / 2*dz
+          shearrate[5] = (velp3[1]-veln3[1])/2; // dv_y / 2*dz
+          shearrate[8] = (velp3[2]-veln3[2])/2; // dv_z / 2*dz
+
           output[n] = shearrate[0];
           output[n+1] = shearrate[1];
           output[n+2] = shearrate[2];
@@ -455,7 +483,7 @@ private:
           n += 9;
         }
       }
-    }   
+    }
      
     if (cellfields.hemocell.outputInSiUnits) {
       for (unsigned int i = 0 ; i < (*nCells)*9 ; i++) {
@@ -470,9 +498,9 @@ private:
     float * output = new float [(*nCells)*6];
     unsigned int n = 0;
     // calculate tensorfield strain rate
-    std::auto_ptr<TensorField3D<T,6> > strainrate (computeStrainRateFromStress(*ablock));
+    std::unique_ptr<TensorField3D<T,6> > strainrate (computeStrainRateFromStress(*ablock));
     // calculate norm of tensorfield
-    std::auto_ptr<ScalarField3D<T> > shearrate (computeSymmetricTensorNorm(*strainrate));
+    std::unique_ptr<ScalarField3D<T> > shearrate (computeSymmetricTensorNorm(*strainrate));
     
     //strainrate.get()
     
