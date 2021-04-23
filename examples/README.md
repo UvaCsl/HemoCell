@@ -22,6 +22,9 @@ To add example case `$new_example`:
 - Copy the template directory: `cp -r examples/template examples/$new_example`.
 - Add the example directory to `examples/CMakeLists.txt` by appending a line
   containing `add_subdirectory("$new_example")`.
-- Include your code in `$new_example/$new_example.cpp`.
+- Include your code that defines the `main` in `$new_example/$new_example.cpp`.
+  This file is automatically included for compilation by the template
+  `CMakeLists.txt`. If you would like to compile additional `*.cpp` or `*.h`
+  files, make sure to register them within `$new_example/CMakeLists.txt.`
 - Build `hemocell` as usual or provide `--target "$new_example$"` to only
   compile the newly added example.
