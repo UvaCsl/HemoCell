@@ -52,13 +52,8 @@ IF(APPLE)
     ADD_DEFINITIONS("-DPLB_MAC_OS_X")
 ENDIF(APPLE)
 
-# FIXME: add `Parmetis` & `Metis` dependencies; current targets are
-# removed in this version as no examples nor tests are using this funcionality
-# of the repository.
-
+# all source directories of interest for the `hemocell` libraries
 # FIXME: `palabos` should probably be compiled as a library and just linked
-
-# all source directories of interest for `hemocell`
 set(SRC_DIR_LIST
         ${CMAKE_CURRENT_SOURCE_DIR}/config
         ${CMAKE_CURRENT_SOURCE_DIR}/core
@@ -70,8 +65,21 @@ set(SRC_DIR_LIST
         ${CMAKE_CURRENT_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml
 )
 
-# `hemocell` as static library
-add_source_to_library(${PROJECT_NAME} "${SRC_DIR_LIST}")
+# Define a list of variants of the hemocell library that are compiled. These
+# coincide with specific compile definitions, e.g. enabling #defines, for
+# specific uses cases.
+set(LIBRARY_TARGETS
+        "${PROJECT_NAME}"
+        "${PROJECT_NAME}_interior_viscosity"
+)
+
+# add all source directories to each library variant
+foreach(TARGET ${LIBRARY_TARGETS})
+        add_source_to_library(${TARGET} "${SRC_DIR_LIST}")
+endforeach()
+
+# assert compile definitions per library targets
+target_compile_definitions("${PROJECT_NAME}_interior_viscosity" PUBLIC INTERIOR_VISCOSITY)
 
 # include additional directories from palabos/`externalLibraries`
 list(APPEND SRC_DIR_LIST
@@ -79,11 +87,17 @@ list(APPEND SRC_DIR_LIST
         ${CMAKE_CURRENT_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries
 )
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${SRC_DIR_LIST})
+foreach(TARGET ${LIBRARY_TARGETS})
+        target_include_directories(${TARGET} PUBLIC "${SRC_DIR_LIST}")
+endforeach()
 
 # link dependencies
-ConfigureMPI(${PROJECT_NAME})  # updates `{CMAKE -> MPI}_CXX_COMPILER`
-ConfigureHDF5(${PROJECT_NAME})
+ConfigureMPI("${LIBRARY_TARGETS}")  # updates `{CMAKE -> MPI}_CXX_COMPILER`
+ConfigureHDF5("${LIBRARY_TARGETS}")
+
+# FIXME: add `Parmetis` & `Metis` dependencies; current targets are
+# removed in this version as no examples nor tests are using this funcionality
+# of the repository.
 
 if(NOT (${MPI_FOUND} AND ${HDF5_FOUND}))
         message(FATAL_ERROR "\nOne or more required package (MPI, HDF5) not found.")
