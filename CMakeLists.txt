@@ -129,8 +129,10 @@ endif()
 # compile examples
 add_subdirectory(examples)
 
-# compile cases
-if(EXISTS "cases")
+# Add `hemocell/cases/` to compiled targets only if the `cases` dir exists to
+# avoid CMake errors when the directory does not exist, which applies to the
+# hemocell versions released through Github.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cases")
         add_subdirectory(cases)
 endif()
 
