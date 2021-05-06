@@ -17,6 +17,7 @@ set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE STRING "Choose build type" FO
 # default values of dependency discovery
 set(MPI_FOUND NO)
 set(HDF5_FOUND NO)
+set(PARMETIS_FOUND NO)
 
 # Include options for hemocell add additional CMake functionality. Note, the
 # options can add items, such as cached variables (`-D` compile flags) to
@@ -27,6 +28,8 @@ include(cmake/functions.cmake)
 include(cmake/setup_mpi.cmake)
 include(cmake/setup_hdf5.cmake)
 include(cmake/setup_googletest.cmake)
+include(cmake/find_parmetis.cmake)
+include(cmake/setup_parmetis.cmake)
 
 # define standard installation directories
 include(GNUInstallDirs)
@@ -65,6 +68,9 @@ set(SRC_DIR_LIST
         ${CMAKE_CURRENT_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml
 )
 
+# determine if optional dependencies are present on the system
+FindParmetis()
+
 # Define a list of variants of the hemocell library that are compiled. These
 # coincide with specific compile definitions, e.g. enabling #defines, for
 # specific uses cases.
@@ -73,6 +79,9 @@ set(LIBRARY_TARGETS
         "${PROJECT_NAME}_interior_viscosity"
         "${PROJECT_NAME}_solidify_mechanics"
 )
+if(${PARMETIS_FOUND})
+        list(APPEND LIBRARY_TARGETS "${PROJECT_NAME}_parmetis")
+endif()
 
 # add all source directories to each library variant
 foreach(TARGET ${LIBRARY_TARGETS})
@@ -82,6 +91,9 @@ endforeach()
 # assert compile definitions per library targets
 target_compile_definitions("${PROJECT_NAME}_interior_viscosity" PUBLIC INTERIOR_VISCOSITY)
 target_compile_definitions("${PROJECT_NAME}_solidify_mechanics" PUBLIC SOLIDIFY_MECHANICS)
+if(${PARMETIS_FOUND})
+        target_compile_definitions("${PROJECT_NAME}_parmetis" PUBLIC HEMO_PARMETIS)
+endif()
 
 # include additional directories from palabos/`externalLibraries`
 list(APPEND SRC_DIR_LIST
@@ -96,10 +108,7 @@ endforeach()
 # link dependencies
 ConfigureMPI("${LIBRARY_TARGETS}")  # updates `{CMAKE -> MPI}_CXX_COMPILER`
 ConfigureHDF5("${LIBRARY_TARGETS}")
-
-# FIXME: add `Parmetis` & `Metis` dependencies; current targets are
-# removed in this version as no examples nor tests are using this funcionality
-# of the repository.
+ConfigureParmetis("${PROJECT_NAME}_parmetis")
 
 if(NOT (${MPI_FOUND} AND ${HDF5_FOUND}))
         message(FATAL_ERROR "\nOne or more required package (MPI, HDF5) not found.")

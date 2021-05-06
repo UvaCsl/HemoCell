@@ -1,6 +1,10 @@
 #!/bin/sh
 trap "exit" INT
 
+# This script performs the setup of Palabos: it retrieves a tagged release from
+# their Gitlab pages, afterwhich additional hemocell-specific features are
+# added by applying the patch at `hemocell/patch`.
+
 # supported tag and download target
 tag="v2.2.1"
 target="https://gitlab.com/unigespc/palabos/-/archive/${tag}/palabos-${tag}.tar.gz"
