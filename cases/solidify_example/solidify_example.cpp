@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -31,6 +31,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "bindingField.h"
 #include <fenv.h>
 
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+typedef double T;
+
+using namespace hemo;
+
 int main(int argc, char *argv[]) {
   if(argc < 2) {
     cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
@@ -45,7 +52,7 @@ int main(int argc, char *argv[]) {
   hlog << "(unbounded) (Parameters) calculating flow parameters" << endl;
   param::lbm_pipe_parameters((*cfg),nx);
   param::printParameters();
-  
+
   hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
             defaultMultiBlockPolicy3D().getMultiBlockManagement(nx,ny,nz, (*cfg)["domain"]["fluidEnvelope"].read<int>()),
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
@@ -97,12 +104,11 @@ int main(int argc, char *argv[]) {
 
   defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR>(1.));
 
-
-  hemocell.lattice->initialize();   
+  hemocell.lattice->initialize();
 
   Box3D bindingbox = bottomChannel;
-  hemocell.cellfields->populateBindingSites(&bindingbox);  
-  
+  hemocell.cellfields->populateBindingSites(&bindingbox);
+
   //loading the cellfield
   if (not cfg->checkpointed) {
     hemocell.loadParticles();
@@ -119,7 +125,7 @@ int main(int argc, char *argv[]) {
 
   while (hemocell.iter < tmax ) {
     hemocell.iterate();
-    
+
     if (hemocell.iter % tmeas == 0) {
         hlog << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
         hlog << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);

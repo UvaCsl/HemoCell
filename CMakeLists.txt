@@ -71,6 +71,7 @@ set(SRC_DIR_LIST
 set(LIBRARY_TARGETS
         "${PROJECT_NAME}"
         "${PROJECT_NAME}_interior_viscosity"
+        "${PROJECT_NAME}_solidify_mechanics"
 )
 
 # add all source directories to each library variant
@@ -80,6 +81,7 @@ endforeach()
 
 # assert compile definitions per library targets
 target_compile_definitions("${PROJECT_NAME}_interior_viscosity" PUBLIC INTERIOR_VISCOSITY)
+target_compile_definitions("${PROJECT_NAME}_solidify_mechanics" PUBLIC SOLIDIFY_MECHANICS)
 
 # include additional directories from palabos/`externalLibraries`
 list(APPEND SRC_DIR_LIST
