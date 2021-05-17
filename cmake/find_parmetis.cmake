@@ -1,3 +1,19 @@
+# This routine attempts to locate the optional dependency to PARMETIS and METIS.
+# For both, it searches for its include directories and the libraries to be
+# included. We search in the typical paths:
+#
+# - /usr/local/include
+# - /usr/include/
+# - /usr/local/lib
+# - /usr/lib
+#
+# Additionally, we hint CMake to search in the `./external` directory that might
+# include a local installation of PARMETIS/METIS.
+#
+# If both PARMETIS and METIS are detected, the variable `PARMETIS_FOUND` is set
+# to true. This is done in the parent's scope to allow to toggle the compilation
+# behaviour depending on the presence of these libraries. Additionally, we set
+# `PARMETIS_DIRS` and `PARAMETIS_LIBS` to the detected library and source paths.
 function(FindParmetis)
         find_path(PARMETIS_INCLUDE_DIR parmetis.h
                 /usr/local/include

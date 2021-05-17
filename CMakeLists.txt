@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 set(PROJECT_NAME hemocell)
 project(${PROJECT_NAME} VERSION 2.2 LANGUAGES CXX C)
 
-# FIXME: are these directories needed to explicitly store
+# keep track of base directories for source of hemocell and palabos
 set(HEMOCELL_BASE_DIR ".")
 set(PALABOS_DIR "${HEMOCELL_BASE_DIR}/palabos")
 
@@ -19,11 +19,7 @@ set(MPI_FOUND NO)
 set(HDF5_FOUND NO)
 set(PARMETIS_FOUND NO)
 
-# Include options for hemocell add additional CMake functionality. Note, the
-# options can add items, such as cached variables (`-D` compile flags) to
-# add additional definitions. This can, for instance, be used to enable
-# the `INTERIOR_VISCOSITY` option.
-include(cmake/options.cmake)
+# Include CMake functions, mostly related to linking with dependencies
 include(cmake/functions.cmake)
 include(cmake/setup_mpi.cmake)
 include(cmake/setup_hdf5.cmake)
@@ -68,12 +64,19 @@ set(SRC_DIR_LIST
         ${CMAKE_CURRENT_SOURCE_DIR}/${PALABOS_DIR}/externalLibraries/tinyxml
 )
 
-# determine if optional dependencies are present on the system
+# Determine if optional dependencies are present on the system. This sets the
+# `{PARMETIS_FOUND}` flag when present, which will be used to toggle optional
+# behaviour during configuration and building.
 FindParmetis()
 
-# Define a list of variants of the hemocell library that are compiled. These
-# coincide with specific compile definitions, e.g. enabling #defines, for
-# specific uses cases.
+# Define multiple variants of the hemocell library that correspond to differetn
+# compilation options. These options are toggled by enabling different #define
+# macros. The following variants are compiled:
+#
+# - libhemocell.a: the default hemocell library without any flags set
+# - libhemocell_interior_viscosity.a: includes (optional) interior viscosity
+# - libhemocell_solidify_mechanics.a: includes (optional) solidification
+# - libhemocell_parmetis.a: includes (optional) link to PARMETIS
 set(LIBRARY_TARGETS
         "${PROJECT_NAME}"
         "${PROJECT_NAME}_interior_viscosity"

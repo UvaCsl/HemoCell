@@ -9,7 +9,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 get_filename_component(MAIN ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 add_executable(${EXEC_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${MAIN}.cpp")
 
-# link the executable to `hemocell` variant including interior viscosity
-# and `HDF5` dependencies
+# Note: here an explicit link is maed with the `_interior_viscosity` variant of
+# the hemocell library. This ensures that the required interior viscosity
+# behaviour is enable in the linked library.
 target_link_libraries(${EXEC_NAME} "${PROJECT_NAME}_interior_viscosity")
 target_link_libraries(${EXEC_NAME} ${HDF5_C_HL_LIBRARIES} ${HDF5_LIBRARIES})

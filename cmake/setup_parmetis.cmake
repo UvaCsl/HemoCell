@@ -1,3 +1,6 @@
+# Attaches the discovered PARMETIS directories to each target. Note: this is
+# only done when `PARMETIS_FOUND` is set to true. Otherwise, the necessary
+# libraries were not found and the targets do not require to be linked.
 function(ConfigureParmetis TARGETS)
         if(${PARMETIS_FOUND})
                 foreach(TARGET ${TARGETS})

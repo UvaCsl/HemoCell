@@ -9,6 +9,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 get_filename_component(MAIN ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 add_executable(${EXEC_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${MAIN}.cpp")
 
-# link the executable to `hemocell` and `HDF5` dependencies
+# Link the executable to the default `hemocell`. Alternative libraries can be
+# linked to include specific library features, such as:
+# - `${PROJECT_NAME}`: the default library
+# - `${PROJECT_NAME}_interior_viscosity`: enables interior viscosity
+# - `${PROJECT_NAME}_solidify_mechanics`: enables solidification mechanics
+# - `${PROJECT_NAME}_parmetis`: enables linking with PARMETIS/METIS
 target_link_libraries(${EXEC_NAME} ${PROJECT_NAME})
+
+# link the executable with `HDF5`
 target_link_libraries(${EXEC_NAME} ${HDF5_C_HL_LIBRARIES} ${HDF5_LIBRARIES})
