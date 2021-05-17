@@ -28,7 +28,7 @@ Dependency                         Version
   introduces memory leaks.
 
 On Ubuntu 16.04 most of these dependencies can be installed by running::
-  
+
   sudo apt-get install -y \
         make \
         cmake \
@@ -73,8 +73,9 @@ with::
 Compiling HemoCell from source
 ------------------------------
 
-HemoCell and the available examples can be compiled from the root directory
-using ``cmake``::
+HemoCell can be compiled from source using ``CMake``. In the root directory
+``./hemocell/``, execute the following instructions to configure and compile
+HemoCell::
 
   # within ./hemocell/
   mkdir build
@@ -82,14 +83,26 @@ using ``cmake``::
   cmake ..
   cmake --build .
 
-CMake can exploit parallelism when building by providing the ``--parallel`` flag
-to indicate the number of jobs, e.g. ``cmake --build . --parallel $(nproc)`` to
-use the available number of cores on the machine.
+By default all examples in ``hemocell/examples/`` are compiled and linked with
+the HemoCell library. To speed up the compilatin process, ``CMake`` can exploit
+parallelism when building the library and executable by providing the
+``--parallel`` flag. For instance to use all available cores on your machine
+during compilation::
 
-This should compile HemoCell and all examples located in ``hemocell/examples``.
-The executable for each example is placed in its corresponding directory with
-its name matching the directory name, e.g. ``hemocell/examples/cube`` will
-provide an executable at ``hemocell/examples/cube/cube``.
+  cmake --build . --parallel $(nproc)
+
+Afterwards, all examples should be compiled and the resulting executables are
+placed in the corresponding directories, i.e. the example
+``hemocell/examples/cube`` will generate an executable
+``hemocell/examples/cube/cube``.
+
+To only compile a specific example, the ``--target`` option can be provided to
+``CMake``. For each example directory a matching compilation target is defined
+with the same name as the example's directory. Thus, for the example
+``hemocell/examplles/cube`` the target ``cube`` is defined. To only compile that
+specific example, evaluate::
+
+  cmake --build . --parallel $(nproc) --target cube
 
 To test if the library is successfully compiled, you can evaluate the defined
 tests::
@@ -97,6 +110,7 @@ tests::
   make test
 
 .. _packcells:
+
 
 Generating initial positions for cells
 --------------------------------------
@@ -106,14 +120,14 @@ simulation with a different concentration of cells. For this we offer the
 ``packCells`` tool which can be found in the ``./hemocell/packCells`` directory.
 
 This tool has a CMake file and can be build with::
-  
+
   cd ./tools/packCells
   mkdir build && cd build
   cmake ../
   make
 
 The result should be a ``packCells`` binary. This program offers a rich suite of
-options to generate initial conditions for cells. Just type ``./packCells --help`` 
+options to generate initial conditions for cells. Just type ``./packCells --help``
 to see how it works.
 
 The resulting ``*.pos`` files can be copied to the case where you want to use
@@ -170,7 +184,7 @@ visible. The first argument should be ``tmp{_x}/checkpoint/checkpoint.xml`` inst
 checkpoint.
 
 .. note::
-  
+
   The number of processors used when reusing from a checkpoint does not need
   to be the same as the number of processors used for the initial run.
 

@@ -40,6 +40,9 @@ extensions = [
 breathe_projects = {"hemocell": "../doxygen/xml/"}
 breathe_default_project = "hemocell"
 
+# point `sphinxcontrib.bibtex` to the right bib file
+bibtex_bibfiles = ['refs.bib']
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 

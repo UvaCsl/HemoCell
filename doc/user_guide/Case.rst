@@ -4,28 +4,26 @@ Creating your own HemoCell Case
 This tutorial assumes that you have already compiled the HemoCell library
 following :ref:`from_source`.
 
-To create a new HemoCell case it is the easiest to create a new folder within
-the ``examples`` directory with the name of your case. When this folder is created
-you can run ``make cmakefiles`` in the examples directory to create the cMakeFile
-in the new directory.
+To add a new HemoCell case, you can follow the following steps:
 
-.. code-block:: console
+- Duplicate the template directory ``hemocell/examples/template`` with the name
+  of your case::
 
-    vikko@the9:~/HemoCell/examples$ ls
-    CMakeLists_template.txt  oneCellShear  PLT_template.xml     stretchCell
-    Makefile                 pipeflow      RBC_template.xml
-    vikko@the9:~/HemoCell/examples$ mkdir newCase
-    vikko@the9:~/HemoCell/examples$ make cmakefiles 
-    cp  CMakeLists_template.txt newCase/CMakeLists.txt
-    sed -i 's/FOLDER_NAME__/newCase/g' newCase/CMakeLists.txt
-    vikko@the9:~/HemoCell/examples$ ls newCase/
-    CMakeLists.txt
+    user@local: ~/hemocell/$ cp -r ./examples/template ./examples/newCase
 
-Within this directory there must be a ``.cpp`` file with the same name, so:
+  This provides a directory ``case`` with an already defined ``CMakeLists.txt``.
+- Register your case for compilation in ``hemocell/examples/CMakeLists.txt`` by
+  appending a line containing ``add_subdirectory("newCase")``. This ensures that
+  ``CMake`` picks up the directory of your example during the compilation
+  process and links it to the required libraries::
 
-.. code-block:: console
-    
-    vikko@the9:~/HemoCell/examples/newCase$ touch newCase.cpp
+    user@local: ~/hemocell/examples$ cp -r template newCase
+    user@local: ~/hemocell/examples$ echo 'add_subdirectory("newCase")' >> CMakeLists.txt
+
+- Within this directory the main file should be defined. Here, we assume the
+  file is given the same name as the directory::
+
+    user@local:~/hemocell/examples/case$ touch newCase.cpp
 
 Editing your newCase.cpp
 ------------------------
@@ -35,7 +33,7 @@ Firstly we have to include the headers we need in ``newCase.cpp``.
 .. code-block:: c++
 
   // Include most of the interface offered by the HemoCell library
-  #include <hemocell.h> 
+  #include <hemocell.h>
   // This is the mechanical model for the cells that we want to use later on,
   // alternatives can be found in the mechanics folder
   #include <rbcHighOrderModel.h>
@@ -71,7 +69,7 @@ Afterwards we must define the parameters for the lattice boltzmann simulation.
 These are read in from the ``config.xml`` file:
 
 .. code-block:: c++
-  
+
   // Calculate and load in the lattice boltzmann parameters from the config file
   // that will be used later on. Pretend that we are calculating the parameters
   // for a pipe, to get an acceptable maximum velocity.
@@ -92,7 +90,7 @@ can be found in ``pipeflow.cpp`` within the :ref:`pipeflow` case.
 
 .. code-block:: c++
 
-  // First we create a Palabos management object 
+  // First we create a Palabos management object
   // The first three arguments are the number of fluid cells in x,y and z
   // direction, so this is a 50x50x50 block, the fourth argument is the fluid
   // envelope size and must be two
@@ -100,7 +98,7 @@ can be found in ``pipeflow.cpp`` within the :ref:`pipeflow` case.
 
   // Initialize the fluid lattice within hemocell
   hemocell.initializeLattice(management);
- 
+
   // Just to be sure disable all periodicity. Afterwards enable it in the
   // x-direction
   hemocell.lattice->periodicity().toggleAll(false);
@@ -232,8 +230,8 @@ newCase as following:
 
 .. code-block:: console
 
-    vikko@the9:~/HemoCell/examples$ cp RBC_template.xml newCase/RBC.xml
-    vikko@the9:~/HemoCell/examples$ ls newCase/
+    user@local:~/hemocell/examples$ cp RBC_template.xml newCase/RBC.xml
+    user@local:~/hemocell/examples$ ls newCase/
     CMakeLists.txt  config.xml  newCase.cpp  RBC.xml
 
 Creating the initial positions for the Cells
@@ -246,7 +244,7 @@ create only RBC in a 25x25x25 domain:
 
 .. code-block:: console
 
-    vikko@the9:~/HemoCell/tools/packCells$ ./packCells
+    user@local:~/hemocell/tools/packCells$ ./packCells
     Insufficient arguments.
 
     USAGE: packCells sX sY sZ [OPTIONAL ARGUMENTS ...]
@@ -274,7 +272,7 @@ create only RBC in a 25x25x25 domain:
       --hematocrit and --RBC are mutually exclusive
       --hematocrit and --PLT are mutually exclusive
       --PLT-ratio is an No-Op without --hematocrit
-    vikko@the9:~/HemoCell/tools/packCells$ ./packCells  25 25 25 --plt_ratio 0 --hematocrit 0.3 -r
+    user@local:~/hemocell/tools/packCells$ ./packCells  25 25 25 --plt_ratio 0 --hematocrit 0.3 -r
     Loaded parameters, we found:
       Domain Size (µm): ( 25.000000 , 25.000000 , 25.000000 )
       Maximum Iterations : 2147483547
@@ -292,8 +290,8 @@ create only RBC in a 25x25x25 domain:
          Steps     Actual       Nominal        Inner         Outer             Force
                   density       density       diameter      diameter       per particle
 
-        68764  0.1604380013  0.1604380013  1.2985355219  1.2985355219  0.000000000000000 PACKING DONE 
-    vikko@the9:~/HemoCell/tools/packCells$ cp RBC.pos ../../examples/newCase/RBC.pos
+        68764  0.1604380013  0.1604380013  1.2985355219  1.2985355219  0.000000000000000 PACKING DONE
+    user@local:~/hemocell/tools/packCells$ cp RBC.pos ../../examples/newCase/RBC.pos
 
 With the RBC.pos file present in the newCase directory all the pieces should
 be there to run our first newly created case!
@@ -302,24 +300,50 @@ Running our newly created case
 ------------------------------
 
 Finally everything should be in place! confirm this by executing the following
-command and checking if you get similar output:
+command and checking if you get similar output::
 
-.. code-block:: console
-
-    vikko@the9:~/HemoCell/examples$ ls newCase/
+    user@local:~/hemocell/examples$ ls newCase/
     CMakeLists.txt  config.xml  newCase.cpp  RBC.pos RBC.xml
 
-Compile our case by executing the folling commands, replace X by the number of
-cores you want to run on:
+To compile the case, creating the ``hemocell/examples/newCase/newCase``
+executable, run the following commands from ``hemocell/``::
 
-.. code-block:: console 
+    user@local:~/hemocell/ mkdir build
+    user@local:~/hemocell/ cd build
+    user@local:~/hemocell/ cmake ..
+    user@local:~/hemocell/ cmake --build . --parallel $(nproc) --target newCase
 
-    vikko@the9:~/HemoCell/examples/newCase$ mkdir build
-    vikko@the9:~/HemoCell/examples/newCase$ cd build
-    vikko@the9:~/HemoCell/examples/newCase/build$ cmake ../
-    vikko@the9:~/HemoCell/examples/newCase/build$ make -j4
-    vikko@the9:~/HemoCell/examples/newCase/build$ cd ../
-    vikko@the9:~/HemoCell/examples/newCase/$ mpirun -n X ./newCase config.xml
+Or alternatively evaluate the ``./compile.sh`` script from within the
+``hemocell/examples/newCase`` directory which automates those steps.
 
-Finally the output should be stored in ``tmp/``. see :ref:`read_output` on how
-to parse this output.
+Afterwards, the executable ``newCase`` should be located at
+``hemocell/examples/newCase/``. The simulation can then be started as::
+
+    user@local:~/hemocell/examples/newCase/$ mpirun -n $(nproc) ./newCase config.xml
+
+where the number of used cores can be set by the ``-n`` flag. Once the
+simulation completes, its output will be stored in ``newCase/tmp/``. See
+:ref:`read_output` on how to parse and interpret the generated output.
+
+Compiling examples with special features
+----------------------------------------
+
+By default the examples are linked to the default HemoCell library
+(``libhemocell.a``). However, some examples require additional features to be
+enabled in the library. Currently, these consist of interior viscosity,
+solidification mechanics, and load-balancing through ``parmetis``. To enable
+these features, you are required to change the compilation target of your
+example. This can be done by modifying the ``target_link_libraries`` command in
+the ``CMakeLists.txt`` located in your example directory. To enable either of
+those options, please change the line accordingly:
+
+- Default: ``target_link_libraries(${EXEC} ${PROJECT_NAME})``
+- Interior viscosity: ``target_link_libraries(${EXEC} ${PROJECT_NAME}_interior_viscosity)``
+- Solidify mechanics: ``target_link_libraries(${EXEC} ${PROJECT_NAME}_solidify_mechanics)``
+- Load-balancing: ``target_link_libraries(${EXEC} ${PROJECT_NAME}_parmetis)``
+
+This changes the target library of your example to the corresponding libary with
+the required features enable.
+
+Note to enable load-balancing features, the optional dependency ``parmetis``
+should be present on the system (see :ref:`from_source`).
