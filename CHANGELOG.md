@@ -6,7 +6,7 @@ In this changelog, we consider the following classes of changes:
 * Structure: any changes to the structure of HemoCell that may break existing cases.
 * Fixes: (small) changes that do not fall in the other categories.
 
-2.3 (Jun 1 2020)
+2.3 (Jun 1 2021)
 ----------------
 * Features
   * Rebuilt the build environment. For more details, please see the quickstart guide in the documentation.
