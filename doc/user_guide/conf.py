@@ -94,7 +94,7 @@ language = None
 
 # NOTE: exclude files in `./cases` that are already discovered automatically
 # to suppress warnings that duplicate files are discovered.
-exclude_patterns = ['_build', 'cases']
+exclude_patterns = ['_build']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.

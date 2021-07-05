@@ -1,15 +1,11 @@
-Cases in HemoCell
-=================
+Example cases
+=============
 
-.. include:: cases/pipeflow.rst
+This page provides a set of starting examples to get familiar with HemoCell.
+The examples range from small, single cell cases to more advanced pipeflow
+examples.
 
-.. include:: cases/onecellshear.rst
+.. toctree::
+   :maxdepth: 1
 
-.. include:: cases/stretchcell.rst
-
-.. include:: cases/parachuting.rst
-
-.. include:: cases/cellCollision_interior_viscosity.rst
-
-.. include:: cases/pipeflow_with_preinlet.rst
-
+   cases/onecellshear.rst

@@ -70,6 +70,8 @@ with::
 
   cd hemocell/external && tar -xzf parmetis-4.0.3.tar.gz
 
+.. _compilation:
+
 Compiling HemoCell from source
 ------------------------------
 
