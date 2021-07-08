@@ -51,6 +51,11 @@ templates_path = ['_templates']
 # source_suffix = ['.rst', '.md']
 source_suffix = '.rst'
 
+# Ensure unique labels of sections by prefixing each section with the current
+# file. This allows to have multiple documentation pages with the same section
+# layout and still being able to uniquely refer to each individual section.
+autosectionlabel_prefix_document = True
+
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
 

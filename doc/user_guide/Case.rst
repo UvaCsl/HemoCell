@@ -86,7 +86,7 @@ These are read in from the ``config.xml`` file:
 
 Since we want to create the simplest possible case we do not load in any stl
 file but just create a cube with one periodic direction. An example of how to load in a stl file
-can be found in ``pipeflow.cpp`` within the :ref:`pipeflow` case.
+can be found in ``pipeflow.cpp`` within the :ref:`cases/pipeflow:pipeflow` case.
 
 .. code-block:: c++
 
