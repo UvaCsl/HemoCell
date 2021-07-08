@@ -45,13 +45,13 @@ within the ``case.cpp`` file
 Saving only the CSV output and not the HDF5 output
 --------------------------------------------------
 
-This is possible with the extra ``<sim><tcsv>`` parameter which is already added in the 
-:ref:`pipeflow` case. This parameter then controls a seperate call to writeCellInfo_CSV that writes only CSV output.
+This is possible with the extra ``<sim><tcsv>`` parameter which is already added in the
+:ref:`cases/pipeflow:Pipe flow` case. This parameter then controls a seperate call to writeCellInfo_CSV that writes only CSV output.
 To reduce the HDF5 output you can simply increate ``<sim><tmeas>`` in the config
 file.
 
 .. note::
-  
+
   Don't forget to include the right header:
 
 .. code-block:: c++
