@@ -6,6 +6,7 @@ material models used in ``HemoCell``. A single cell is initialised in a
 periodic domain, i.e. all external surfaces are subjected to periodic boundary
 conditions.
 
+The setup mimics the optical-tweezer stretching measurement. 
 A pair of external forces are applied on the outer points of the cell pointing
 in opposite directions. These forces *stretch* the cell, where its deformation
 can be validated with respect to experimental data.
@@ -23,7 +24,7 @@ After :ref:`compilation<compilation>`, the example can be run using single core 
 .. note::
    The stretching cell examples should be run with just a single processor, so
    either ``mpirun -n 1 ./stretchCell config.xml`` as above, or directly
-   ``./stretchCell config.xml``, as the helper function to stretch the cell only
+   ``./stretchCell config.xml``, as the helper function used to specify the stretching forces on the cell only
    supports sequential operation.
 
 The outcome files are generated in ``tmp/``, where the flow field and particle

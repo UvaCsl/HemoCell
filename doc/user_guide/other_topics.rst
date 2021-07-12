@@ -9,7 +9,7 @@ vertex locations are gathered from describing equations. The place where the
 method for generating the cell is defined is in the ``hemocell.addCellType<>()``
 function. 
 
-To load a celltype from stl you have to change the second argument to
+To load a cell-type from stl you have to change the second argument to
 ``MESH_FROM_STL``. This means that HemoCell will look at the stl file located at
 the place specified in the ``CELL.xml`` file. The specification of this file
 should be in the ``<hemocell><MaterialModel><StlFile>`` tag. 
@@ -28,10 +28,10 @@ should be in the ``<hemocell><MaterialModel><StlFile>`` tag.
 Running a pure fluid flow (without cells)
 -----------------------------------------
 
-With HemoCell it is possible to run a pure fluid flow, meaning that no cells are present within the domain.
-This is actually the same as just running a fluid simulation with Palabos. The simplest way to remove all the cells is to set the number of cells in the ``CELL.pos`` files to zero (first line). Or to remove the addCellType and all subsequent functions that request that specific celltype (such as setOutputs) from the ``case.cpp`` file. 
+With HemoCell it is possible to run a pure fluid flow, without any cells present within the domain.
+This is technically the same as just running a fluid simulation with Palabos. The simplest way to remove all the cells is to set the number of cells in the ``CELL.pos`` files to zero (first line). Or to remove the addCellType and all subsequent functions that request that specific cell-type (such as setOutputs) from the ``case.cpp`` file. 
 
-However this still leaves a small overhead as the function for the material model are still called (although little work is done inside them as there are no cells). This can be circumvented by replacing 
+However, this still leaves a small overhead as the function for the material model are still called (although little work is done inside them as there are no cells). This can be circumvented by replacing 
 
 +----------------------+------+------------------------------------------+
 | .. code-block:: c++  |      | .. code-block:: c++                      |
@@ -46,7 +46,7 @@ Saving only the CSV output and not the HDF5 output
 --------------------------------------------------
 
 This is possible with the extra ``<sim><tcsv>`` parameter which is already added in the
-:ref:`cases/pipeflow:Pipe flow` case. This parameter then controls a seperate call to writeCellInfo_CSV that writes only CSV output.
+:ref:`cases/pipeflow:Pipe flow` case. This parameter then controls a separate call to writeCellInfo_CSV that writes only CSV output.
 To reduce the HDF5 output you can simply increate ``<sim><tmeas>`` in the config
 file.
 

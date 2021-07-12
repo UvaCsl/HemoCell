@@ -65,12 +65,12 @@ HemoCell object:
   HemoCell hemocell(argv[1],argc,argv);
 
 
-Afterwards we must define the parameters for the lattice boltzmann simulation.
+Afterwards we must define the parameters for the lattice Boltzmann simulation.
 These are read in from the ``config.xml`` file:
 
 .. code-block:: c++
 
-  // Calculate and load in the lattice boltzmann parameters from the config file
+  // Calculate and load in the lattice Boltzmann parameters from the config file
   // that will be used later on. Pretend that we are calculating the parameters
   // for a pipe, to get an acceptable maximum velocity.
   param::lbm_pipe_parameters((*hemocell.cfg),50);
@@ -131,7 +131,7 @@ everything:
 
   // Add a particleType to the simulation, the template argument refers to the
   // corresponding mechanics in the mechanics/ folder
-  // The first argument must correspont with the CELL.xml and CELL.pos present in
+  // The first argument must correspond with the CELL.xml and CELL.pos present in
   // the directory (where CELL is the string input).
   // The second argument defines how a cell is build up. see
   // config/constant_defaults.h for options.
@@ -331,7 +331,7 @@ Compiling examples with special features
 By default the examples are linked to the default HemoCell library
 (``libhemocell.a``). However, some examples require additional features to be
 enabled in the library. Currently, these consist of interior viscosity,
-solidification mechanics, and load-balancing through ``parmetis``. To enable
+solidification mechanics, and load-balancing through ``Parmetis``. To enable
 these features, you are required to change the compilation target of your
 example. This can be done by modifying the ``target_link_libraries`` command in
 the ``CMakeLists.txt`` located in your example directory. To enable either of
@@ -342,8 +342,8 @@ those options, please change the line accordingly:
 - Solidify mechanics: ``target_link_libraries(${EXEC} ${PROJECT_NAME}_solidify_mechanics)``
 - Load-balancing: ``target_link_libraries(${EXEC} ${PROJECT_NAME}_parmetis)``
 
-This changes the target library of your example to the corresponding libary with
+This changes the target library of your example to the corresponding library with
 the required features enable.
 
-Note to enable load-balancing features, the optional dependency ``parmetis``
+Note to enable load-balancing features, the optional dependency ``Parmetis``
 should be present on the system (see :ref:`from_source`).

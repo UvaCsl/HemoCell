@@ -48,7 +48,7 @@ should be run within the ``hemocell/examples/<case>`` or
 hemocell/scripts/cartesius[_intel]_env.sh
 ------------------------------------------
 
-These files contain the corresponding build dependencies on the cartesius system
+These files contain the corresponding build dependencies on the Cartesius system
 of SurfSara. They should be sourced instead of executed::
 
   . ./scripts/cartesius_env.sh

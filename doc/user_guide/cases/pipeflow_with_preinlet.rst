@@ -18,10 +18,10 @@ After :ref:`compilation<compilation>`, the example can be run as:
 Pre-inlet boundary condition
 ============================
 
-The pre-inlet provides is one of the advanced boundary conditions in HemoCell and
-it provide a means to generate a periodic influx of particles into the main
+The pre-inlet is one of the advanced boundary conditions in HemoCell and
+it provides a mean to generate a periodic influx of particles into the main
 simulation domain. This is of specific interest when normal periodicity on the
-original simulation domain are not adequate. For instance, consider the
+original simulation domain is not adequate. For instance, consider the
 following scenario:
 
 - A complex simulation domain might have a large fluid area that slowly fills up
@@ -34,8 +34,8 @@ following scenario:
 - A simulation domain might not have matching inlet and outlets to specify
   periodic conditions, e.g. when the inlet and outlet have different
   non-matching diameters. In this case, the pre-inlet can be used to provide a
-  constant influx of particles at the inlet, where the particles at the outlet
-  are simply removed from the simulation.
+  constant influx of particles at the inlet, where the particles reaching the outlet
+  are removed from the simulation.
 
 The pipe flow scenario using the pre-inlet is visualised in the following
 sequence of images. The total domain contains two regions: the pre-inlet (blue,
@@ -47,15 +47,15 @@ in this case red blood cells, are initialised in the pre-inlet domain.
    :align: center
    :figwidth: 90%
 
-   A two-dimensional projection of the total domain consisting of the pre-inlet
-   (blue, left) and the main simulation domain (orange, right). The pre-inlet
+   A two-dimensional projection of the total domain consisting of the periodic pre-inlet
+   (blue, left) and the non-periodic main simulation domain (orange, right). The pre-inlet
    domain is seeded with a number of red blood cells at the start of the
    simulation.
 
 As the simulation progresses, the RBCs in the pre-inlet approach the main
 simulation domain. At this moment in time, these RBCs are *copied* into the main
 simulation domain as well as repeated again at the *inlet* of the pre-inlet.
-Notice how the RBCs near the boundary go from blue (pre-inlet) to orange (main
+Notice how the RBCs near the boundary change from blue (pre-inlet) to orange (main
 domain) as they cross this boundary. Additionally, you can see the cells near
 the boundary reappear at the pre-inlet's inlet.
 
@@ -106,7 +106,7 @@ domain.
 
 .. note::
 
-   Although the original cell positionings can be purely aimed at populating the
+   Although the original cell positioning can be purely aimed at populating the
    pre-inlet region of the domain, there is of course no limitation to pack the
    full domain. In that case, the cells that are present in the pre-inlet at
    initialisation will be subjected to the periodic behaviour of the pre-inlet

@@ -63,7 +63,7 @@ The patching should succeed even though there might be an offset in some files.
 
 `Parmetis`_ can be downloaded from their `downloads
 <http://glaros.dtc.umn.edu/gkhome/metis/parmetis/download>`_. Due to the
-license of parmetis we cannot distribute it with hemocell. The parmetis
+license of Parmetis we cannot distribute it with hemocell. The Parmetis
 download should be copied to the  ``./hemocell/external/`` directory. If you
 need it because you want load balancing to be enabled you have to extract it
 with::
@@ -86,7 +86,7 @@ HemoCell::
   cmake --build .
 
 By default all examples in ``hemocell/examples/`` are compiled and linked with
-the HemoCell library. To speed up the compilatin process, ``CMake`` can exploit
+the HemoCell library. To speed up the compilation process, ``CMake`` can exploit
 parallelism when building the library and executable by providing the
 ``--parallel`` flag. For instance to use all available cores on your machine
 during compilation::
@@ -117,7 +117,7 @@ tests::
 Generating initial positions for cells
 --------------------------------------
 
-At some point you might want to run a slighty different geometry, or run your
+At some point you might want to run a slightly different geometry, or run your
 simulation with a different concentration of cells. For this we offer the
 ``packCells`` tool which can be found in the ``./hemocell/packCells`` directory.
 
@@ -164,15 +164,15 @@ Parsing the output of a HemoCell case
 
 A HemoCell case produces multiple types of output. The simplest is the ``csv``
 output which consists of all the information about cells in csv files. To merge
-the csv files into a single one per timestep you can use the script :any:`ccsv`
+the csv files into a single one per time-step you can use the script :any:`ccsv`
 in the ``tmp`` directory. This will generate them for you.
 
-The more detailed ouput on both the fluid field and particle field is stored in
+The more detailed output on both the fluid field and particle field is stored in
 ``hdf5`` format. We recommend using the `XDMF`_ format to make these
 readable for `Paraview`_ . To generate ``*.xmf`` files run the :any:`bpp`
 script.
 
-When you have created the ``*.xmf`` files you can load them into paraview,
+When you have created the ``*.xmf`` files you can load them into Paraview,
 please select the *Legacy* XDMF file format when loading them in. The HemoCell
 ``.xmf`` files are not yet XDMF3 compatible.
 

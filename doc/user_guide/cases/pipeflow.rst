@@ -1,14 +1,14 @@
 Pipe flow
 ---------
 
-The example in ``examples/pipeflow/`` presents a generic pipe flow scenario that
+The example in ``examples/pipeflow/`` presents a generic cylindrical straight channel flow scenario that
 can be the basis for many other projects. The domain considers a single tube,
 given in ``tube.stl``, with periodicity along the length of the tube, i.e. an
 endless pipe flow configuration.
 
 The STL file is first voxelised to obtain a discretisation of the pipe domain,
-after which the periodic boundary conditions are applied. The domain is subjected
-to an equivalent external forcing to obtain a desired Poiseuille flow throughout
+after which the periodic boundary conditions are applied. The flow in the domain is driven by 
+applying a homogeneous external body-force, which leads to a Poiseuille flow profile throughout
 the domain.
 
 The examples considers both red blood cells (RBCs) and platelets (PLTs) of which
@@ -61,7 +61,7 @@ direction through the tube (``tube.stl``) is assumed aligned with the
 ``x``-axis. There are three parameters of specific interest for this example
 
 - ``<domain><refDirN>``: this controls the number of fluid cells perpendicular
-  to the flow direction. Thus, this parameter directly controls the diamter of
+  to the flow direction. Thus, this parameter directly controls the diameter of
   the pipe, as a single fluid cell translates to 0.5µm.
 
   .. note::
@@ -78,7 +78,7 @@ direction through the tube (``tube.stl``) is assumed aligned with the
      The Reynolds number corresponds to the one that would be found when
      the system is evaluated without any cells present. Thus, the observed
      velocities might be lower than expected when cells are present in the
-     system. For too larger Reynold numbers, the simulation might become
+     system. For too larger Reynolds numbers, the simulation might become
      unstable.
 
 - ``<domain><geometry>``: the STL file used for the discretisation, where

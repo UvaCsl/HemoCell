@@ -83,7 +83,7 @@ the RBC.
    :figwidth: 90%
 
    The trajectory of the PLT as it passes and interacts with the RBC in the
-   shear flow. The previous positions of the platelette are illustrated with
+   shear flow. The previous positions of the platelet are illustrated with
    slight opacity.
 
 Initial cell positioning
@@ -127,7 +127,7 @@ parameters to consider in this example:
   exterior fluid of every cell is computed *exactly* using ray tracing.
 
   .. note::
-     Note, this is extermely expensive and short intervals should be avoided.
+     Note, this is extremely expensive and short intervals should be avoided.
 
 Publication cases
 =================
