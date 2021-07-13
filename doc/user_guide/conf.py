@@ -12,8 +12,12 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
 import os
+import pathlib
+import subprocess
+import sys
+
+rootpath = pathlib.Path(__file__).parents[2]
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -23,7 +27,8 @@ import os
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+#
+# needs_sphinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -36,9 +41,6 @@ extensions = [
     'sphinxcontrib.bibtex',
     'breathe',
 ]
-
-breathe_projects = {"hemocell": "../doxygen/xml/"}
-breathe_default_project = "hemocell"
 
 # point `sphinxcontrib.bibtex` to the right bib file
 bibtex_bibfiles = ['refs.bib']
@@ -81,7 +83,7 @@ release = u'2.3'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -123,6 +125,12 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
+breathe_projects = {"hemocell": "../doxygen/xml/"}
+breathe_default_project = "hemocell"
+breathe_default_members = ('members', 'undoc-members')
+
+# -- Run doxygen manually, as readthedocs does not support it --
+subprocess.run(['doxygen', 'config.xml'], cwd=rootpath.joinpath('doc/doxygen'))
 
 # -- Options for HTML output ----------------------------------------------
 
