@@ -54,8 +54,9 @@ should be extracted to ``./hemocell/palabos``::
   tar -xzf palabos-v2.2.1.tar.gz
   mv palabos-v2.2.1 ./hemocell/palabos
 
-After this Palabos must be patched. This can be done by running
-``./patchPLB.sh`` from the ``./hemocell/patch/`` directory, like so::
+After this Palabos must be patched, see :ref:`patching-palabos`. This can be
+done by running ``./patchPLB.sh`` from the ``./hemocell/patch/`` directory, like
+so::
 
   cd hemocell/patch && ./patchPLB.sh
 

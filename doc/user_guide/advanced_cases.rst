@@ -1,7 +1,7 @@
-Other topics
-============
+Advanced use-cases
+==================
 
-Loading a cell from an stl file
+Loading a cell from an STL file
 -------------------------------
 
 Usually a cell is defined to be generated mathematically, this means that the

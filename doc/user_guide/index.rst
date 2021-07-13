@@ -25,8 +25,8 @@ the fluid and the mechanical model.
    hemocell_cases
    Case
    xml_files
-   Scripts
-   other_topics
+   helper_scripts
+   advanced_cases
 
 .. toctree::
    :maxdepth: 1
