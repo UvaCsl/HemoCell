@@ -68,5 +68,18 @@ file ``config.xml``, where the shear rate can be set manually by updating the
 ``<domain><shearrate>`` entry. Note, this value specifies the shear rate in
 ``1/s``.
 
+Rendering
+=========
+
+An example rendering pipeline with Blender is illustrated in the
+``hemocell/scripts/visualization/render_oneCellShear.py`` script, for more
+information see :ref:`Rendering with Blender<visualization:Blender>`.
+
+.. figure:: ../_static/blender-render-example.png
+   :alt: An example rendering using Blender
+   :align: center
+   :figwidth: 90%
+
+   An example rendering of the RBC using Blender.
 
 .. _gnuplot: http://www.gnuplot.info/

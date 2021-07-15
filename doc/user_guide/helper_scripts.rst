@@ -51,3 +51,30 @@ the current directory. Use it in the ``tmp`` directory like this::
 
   cd hemocell/examples/<case>/tmp/
   . ./scripts/CellInfoMergeCSV.sh
+
+
+.. _helper_scripts:xmf_to_x3d:
+
+convert_xmf_to_x3d.py
+----------------------------------------------------
+
+This script converts generated ``*.xmf`` particle files (RBC, PLT, etc.) to the
+X3D format for rendering purposes, e.g. using :ref:`visualization:Blender`. The
+script creates a ``x3d`` directory in the output directory of an example case
+and populates this with the ``*.x3d`` files. The script is used as follows
+
+.. code-block:: text
+
+   usage: convert_xmf_to_x3d.py [-h] [--view-size width height]
+                                [--smooth SMOOTH]
+                                path [path ...]
+
+   positional arguments:
+     path                  Directories containing XMF output files to
+                           convert to X3D scenes
+
+   optional arguments:
+     -h, --help            show this help message and exit
+     --view-size width height
+                           Set the render view-size in Paraview
+     --smooth SMOOTH       Number of mesh smoothing iterations

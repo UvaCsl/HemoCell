@@ -27,6 +27,7 @@ the fluid and the mechanical model.
    xml_files
    helper_scripts
    advanced_cases
+   visualization
 
 .. toctree::
    :maxdepth: 1
