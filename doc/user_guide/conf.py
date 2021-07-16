@@ -129,8 +129,16 @@ breathe_projects = {"hemocell": "../doxygen/xml/"}
 breathe_default_project = "hemocell"
 breathe_default_members = ('members', 'undoc-members')
 
-# -- Run doxygen manually, as readthedocs does not support it --
-subprocess.run(['doxygen', 'config.xml'], cwd=rootpath.joinpath('doc/doxygen'))
+# Run Doxygen manually to (re)generate the Doxygen pages that are included
+# within the Sphinx-documentation pages. If the command failed, e.g. when
+# Doxygen is not installed on the system, we can still continue. However, the
+# links to any Doxygen-generated pages will return in "file not found"
+# errors on the local pages.
+try:
+    subprocess.run(['doxygen', 'config.xml'],
+                   cwd=rootpath.joinpath('doc/doxygen'))
+except Exception as error:
+    print("\nFailed to generate Doxygen pages with error: {}\n".format(error))
 
 # -- Options for HTML output ----------------------------------------------
 
