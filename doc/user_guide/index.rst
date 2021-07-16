@@ -3,20 +3,82 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-HemoCell's User guide
-====================================
+HemoCell
+========
+
+HemoCell is a parallel computing framework for simulation of blood flows, i.e. a
+dense suspension with various types of embedded particles (cells). The library
+implements validated mechanical models for Red Blood Cells (RBCs) and is capable
+of reproducing emergent transport characteristics of such complex cellular
+systems :cite:`Zavodszky:2017`. HemoCell is capable of handling large simulation
+domain sizes and thereby allows to bridge the cell-based micro-scale to
+macroscopic simulation domains
+:cite:`zavodszky2019red,czaja2018cell,van2020haemodynamic`.
+
+For the simulation of dense flows, HemoCell considers an Immersed Boundary
+Method (IBM) to track the embedded particles, e.g. RBCs, platelets (PLTs), or
+custom cell types. The particles are tracked using a Lagrangian approach, where
+the flow field itself is implemented using a Lattice Boltzmann Method (LBM),
+currently implemented using the `Palabos`_ library. HemoCell then manages all
+required data structures, such as materials and cell models (particles), their
+interactions within the flow field, load-balancing, and communication between
+processors.
+
+The library provides validated and highly optimised mechanical models for the
+simulation of red blood cells :cite:`tarksalooyeh2019optimizing,Alowayyed:2018`.
+However, the library is extensible and allows to implement different mechanical
+(cell) models :cite:`czaja2020influence,Haan:2018` and cell-binding techniques
+:cite:`van2019identifying` to study numerous application-specific behaviour.
+
+.. figure:: _static/hemocell-structure.png
+   :alt: Code structure of HemoCell
+   :align: center
+   :figwidth: 90%
+
+The code is implemented in C/C++ with parallelism achieved through `MPI
+<https://en.wikipedia.org/wiki/Message_Passing_Interface>`_, although only for
+advanced use-cases the users are required to interact with the parallelism,
+which is otherwise hidden from the user. The system is build with `CMake
+<https://cmake.org/>`_ and runs on a variety of systems and HPC clusters (see
+:ref:`getting started<QuickStart:HemoCell Getting Started>`).
+
+Multiple examples are provided to illustrate typical use-cases of HemoCell:
+
+* Developing mechanical models for different cell types and their interaction.
+  These are typically quick running simulations on single processors (order of
+  seconds to minutes) that aim to investigate/validate different formulations of
+  mechanical models for the immersed cells, e.g.
+  :ref:`shearing<cases/stretchcell:One stretching cell>`,
+  :ref:`stretching<cases/onecellshear:One shearing cell>`, or
+  :ref:`"parachuting"<cases/parachuting:A parachuting cell>` of a single cell.
+  Additionally, one might want to study the interaction between colliding
+  particles, e.g. :ref:`cases/cellCollision_interior_viscosity:Colliding cells
+  with interior viscosity`.
+
+  .. image:: _static/cases/rbc-plt-trajectory.png
+     :width: 49%
+  .. image:: _static/cases/parachuting-sideview.png
+     :width: 49%
+
+* Studying large simulation domains with large number of immersed particles.
+  These simulations are typically derived from pipe flow conditions, where the
+  domain size, number of immersed particles, and flow conditions are varied.
+  These simulations can vary from quick running simulations on small hardware
+  (desktop/workstation) to long lasting simulations on large HPC compute
+  clusters with thousands of cores. Examples of smaller pipe flow cases are
+  presented in :ref:`cases/pipeflow:Pipe flow` and
+  :ref:`cases/pipeflow_with_preinlet:Pipe flow with periodic inflow`.
+
+  .. image:: _static/cases/pipeflow-initial.png
+     :width: 49%
+  .. image:: _static/cases/pipeflow-large.jpg
+     :width: 49%
 
 *When using HemoCell please cite the corresponding HemoCell paper(s)*
 :cite:`Zavodszky:2017`.
 
-HemoCell implements an immersed boundary method with a lattice Boltzmann method
-and langrangian structure points for the cells. The lattice Boltzmann method is
-implemented with the help of the `Palabos`_ library.
-On top of that HemoCell manages the structures (material, cells) and the
-interactions between these and the fluid. The update of the forces of the
-mechanical model of a cell are highly optimized as is the interaction between
-the fluid and the mechanical model. 
-
+User Guide
+==========
 
 .. toctree::
    :maxdepth: 2
@@ -45,7 +107,7 @@ the fluid and the mechanical model.
    hemocell_doxygen
 
 Acknowledgments
-----------------
+================
 
 HemoCell is developed and maintained by the following persons, where any
 questions can be directed towards: info@hemocell.eu.
@@ -53,45 +115,45 @@ questions can be directed towards: info@hemocell.eu.
 .. list-table::
   :header-rows: 0
 
-  * - Gábor Závodszky 
+  * - Gábor Závodszky
     - Developer and Co-PI
     - G.Zavodszky at uva.nl
   * - Alfons Hoekstra
     - Co-PI
-    - 
+    -
   * - Ben Czaja
-    - Developer 
+    - Developer
     - B.E.Czaja at uva.nl
   * - Christian Spieker
-    - Developer 
+    - Developer
     - C.J.Spieker at uva.nl
   * - Max van der Kolk
     - Developer and package maintainer
-    - M.vanderkolk at uva.nl  
+    - M.vanderkolk at uva.nl
   * - Mark Wijzenbroek
     - Package maintainer
-    - 
+    -
   * - Lampros Mountrakis
     - Former developer
     -
-  * - Victor Azizi  
+  * - Victor Azizi
     - Former developer
-    - 
-  * - Britt van Rooij 
-    - Former developer 
+    -
+  * - Britt van Rooij
+    - Former developer
     -
   * - Saad Allowayyed
     - Former developer
-    -   
+    -
   * - Daan van Ingen
     - Former contributor
-    - 
+    -
   * - Hendrik Cornelisse
     - Former contributor
     -
   * - Mike de Haan
     - Former contributor
-    - 
+    -
   * - Kevin de Vries
     - Former contributor
     -
@@ -101,7 +163,9 @@ questions can be directed towards: info@hemocell.eu.
   * - Roland Joo-Kovacs
     - Former contributor
     -
-   
+
+Citing HemoCell
+---------------
 
 *When using HemoCell please cite the HemoCell paper:*
 
@@ -119,8 +183,8 @@ questions can be directed towards: info@hemocell.eu.
     issn={1664-042X},
   }
 
-HemoCell related papers
------------------------
+HemoCell related publications
+=============================
 
 .. bibliography:: refs.bib
    :style: unsrt
