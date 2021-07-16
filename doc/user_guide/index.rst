@@ -6,27 +6,27 @@
 HemoCell
 ========
 
-HemoCell is a parallel computing framework for simulation of blood flows, i.e. a
-dense suspension with various types of embedded particles (cells). The library
-implements validated mechanical models for Red Blood Cells (RBCs) and is capable
-of reproducing emergent transport characteristics of such complex cellular
-systems :cite:`Zavodszky:2017`. HemoCell is capable of handling large simulation
-domain sizes and thereby allows to bridge the cell-based micro-scale to
-macroscopic simulation domains
-:cite:`zavodszky2019red,czaja2018cell,van2020haemodynamic`.
+HemoCell is a parallel computing framework for simulation of dense deformable
+capsule suspensions, with special emphasis on blood flows and blood related 
+vesicles (cells). The library implements validated mechanical models for 
+Red Blood Cells (RBCs) and is capable of reproducing emergent transport 
+characteristics of such complex cellular systems :cite:`Zavodszky:2017`. 
+HemoCell is capable of handling large simulation domain sizes and high shear-rate
+flows providing a virtual environment to evaluate a wide palette of microfluidic 
+scenarios :cite:`zavodszky2019red,czaja2018cell,van2020haemodynamic`.
 
-For the simulation of dense flows, HemoCell considers an Immersed Boundary
-Method (IBM) to track the embedded particles, e.g. RBCs, platelets (PLTs), or
-custom cell types. The particles are tracked using a Lagrangian approach, where
-the flow field itself is implemented using a Lattice Boltzmann Method (LBM),
-currently implemented using the `Palabos`_ library. HemoCell then manages all
-required data structures, such as materials and cell models (particles), their
-interactions within the flow field, load-balancing, and communication between
-processors.
+For the simulation of dense flows, HemoCell employs the Immersed Boundary
+Method (IBM) to couple the immersed vesicles, e.g. RBCs, platelets (PLTs), 
+leukocytes, or other custom cell types to the fluid (e.g., plasma). The particles 
+are tracked using a Lagrangian discrete element approach, while the flow field is
+implemented using the lattice Boltzmann method (LBM). The current implementation 
+is based on the `Palabos`_ library. HemoCell manages all required data structures, 
+such as materials and cell models (particles), their interactions within the flow field, 
+load-balancing, and communication among the processors.
 
 The library provides validated and highly optimised mechanical models for the
 simulation of red blood cells :cite:`tarksalooyeh2019optimizing,Alowayyed:2018`.
-However, the library is extensible and allows to implement different mechanical
+Furthermore, the library is extensible and allows to implement different mechanical
 (cell) models :cite:`czaja2020influence,Haan:2018` and cell-binding techniques
 :cite:`van2019identifying` to study numerous application-specific behaviour.
 
@@ -61,8 +61,8 @@ Multiple examples are provided to illustrate typical use-cases of HemoCell:
      :width: 49%
 
 * Studying large simulation domains with large number of immersed particles.
-  These simulations are typically derived from pipe flow conditions, where the
-  domain size, number of immersed particles, and flow conditions are varied.
+  These simulations are typically derived from straight channel flow conditions, 
+  where the domain size, number of immersed particles, and flow conditions are varied.
   These simulations can vary from quick running simulations on small hardware
   (desktop/workstation) to long lasting simulations on large HPC compute
   clusters with thousands of cores. Examples of smaller pipe flow cases are
