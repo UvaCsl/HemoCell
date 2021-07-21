@@ -427,11 +427,13 @@ void HemoCellParticleDataTransfer::attribute(
     int offset = getOffset(absoluteOffset);
     hemo::Array<T, 3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
     plint nZ = this->particleField->cellFields->hemocell.lattice->getNz();
-    if (absoluteOffset.z == -nZ) {
-      realAbsoluteOffset[0] += *this->particleField->cellFields->hemocell.LEcurrentDisplacement;
-    }
-    if (absoluteOffset.z == nZ) {
-      realAbsoluteOffset[0] -= *this->particleField->cellFields->hemocell.LEcurrentDisplacement;
+    if (this->particleField->cellFields->hemocell.leesEdwardsBC) {
+      if (absoluteOffset.z == -nZ) {
+        realAbsoluteOffset[0] += *this->particleField->cellFields->hemocell.LEcurrentDisplacement;
+      }
+      if (absoluteOffset.z == nZ) {
+        realAbsoluteOffset[0] -= *this->particleField->cellFields->hemocell.LEcurrentDisplacement;
+      }
     }
     //Calling addParticle on self can invalidate particles pointer array on realloc from vector
     //Do for every local communication to accomodate overcoupling particle field in the future.
