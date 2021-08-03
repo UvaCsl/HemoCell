@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+<hemocell>
+
+<parameters>
+    <warmup> 10 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
+</parameters>
+
+
+<ibm>
+    <shape> 1 </shape> <!-- shape: Sphere:[0], RBC from sphere:[1], Cell(defined):[2], RBC from file [3] RBC from Octahedron [4] Sphere from Octahedron [5] -->
+    <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
+    <stepMaterialEvery> 40 </stepMaterialEvery> <!-- Update particle material model after this many fluid time steps. -->
+    <stepParticleEvery> 5 </stepParticleEvery> <!-- Update particles position after this many fluid time steps. -->
+    <minForceLimit> 1e-3 </minForceLimit> <!-- Point of increase for integration steps -->
+    <maxForceLimit> 2e-3 </maxForceLimit> <!-- Point of decrease for integration steps -->
+</ibm>
+
+<domain>
+    <geometry> tube.stl </geometry>
+    <fluidEnvelope> 2 </fluidEnvelope>
+    <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
+    <nuP> 2.0e-6 </nuP>   <!-- 1.1e-6 Kinematic viscosity of blood plasma, physical units [m^2/s]-->
+    <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dt> 3e-8 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
+    <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
+    <refDirN> 60 </refDirN>  <!-- Number of numerical cell in the reference direction -->
+    <blockSize> -1 </blockSize>
+    <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
+    <Re> 1 </Re>   <!--Reynolds number-->
+    <particleEnvelope> 35 </particleEnvelope>
+    <kRep> 2e-22 </kRep> <!-- Repulsion Constant -->
+    <RepCutoff> 0.7 </RepCutoff> <!-- RepulsionCutoff -->
+    <capillaryD> 6.0e-6 </capillaryD> <!-- Capillary diamter in um -->
+    <drivingForce> 6.0e5 </drivingForce> <!-- driving force -->
+</domain>
+
+<sim>
+    <tmax> 20 </tmax> <!-- total number of iterations -->
+    <tmeas> 10 </tmeas> <!-- interval after which data is written -->
+    <tcheckpoint> 50000 </tcheckpoint>
+    <tbalance> 100 </tbalance> <!-- interval after which balance is performed -->
+</sim>
+
+</hemocell>

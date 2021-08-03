@@ -1,3 +1,4 @@
+add_subdirectory("capillary")
 add_subdirectory("cellCollision_interior_viscosity")
 add_subdirectory("cell_shapes")
 add_subdirectory("cube")
