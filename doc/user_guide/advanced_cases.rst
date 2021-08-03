@@ -10,4 +10,5 @@ and changing output behaviour.
 
    advanced_cases/custom_cells.rst
    advanced_cases/pure_flow_simulations.rst
+   advanced_cases/repulsion.rst
    advanced_cases/saving_csv_output_only.rst

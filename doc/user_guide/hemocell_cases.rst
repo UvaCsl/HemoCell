@@ -29,3 +29,4 @@ be excellent starting positions for typical simulations.
    cases/cellCollision_interior_viscosity.rst
    cases/pipeflow
    cases/pipeflow_with_preinlet.rst
+   cases/capillary_flow.rst
