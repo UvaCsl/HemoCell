@@ -62,8 +62,7 @@ stages:
     - cmake --build . -- -j 2
     - ccache --show-stats
     # evaluate tests
-    - make test
-
+    - ctest --output-on-failure
 
 # Definitions to build and test on various containers. Note: currently the
 # tests are evaluated for each container.
