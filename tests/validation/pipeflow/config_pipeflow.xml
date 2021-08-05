@@ -1,0 +1,41 @@
+<?xml version="1.0" ?>
+<hemocell>
+
+<parameters>
+    <maxPackIter> 20000 </maxPackIter> <!-- Number of maximal steps for inital packing -->
+    <checkpointDirectory>checkpoint</checkpointDirectory>
+    <outputDirectory>tmp</outputDirectory>
+    <logDirectory>log</logDirectory>
+    <logFile>logfile</logFile>
+</parameters>
+
+<ibm>
+    <minNumOfTriangles> 600 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
+    <stepMaterialEvery> 2 </stepMaterialEvery>
+    <stepParticleEvery> 2 </stepParticleEvery>
+</ibm>
+
+<domain>
+    <fluidEnvelope> 2 </fluidEnvelope>
+    <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
+    <nuP> 1.1e-6 </nuP>   <!-- Dynamic viscosity of blood plasma, physical units [m^2/s]-->
+    <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dt> 1e-7 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
+    <refDir> 1 </refDir>   <!-- Used for resloution  setting and  Re calculation as well -->
+    <refDirN> 50 </refDirN>  <!-- Number of numerical cell in the reference direction -->
+    <blockSize> -1 </blockSize>
+    <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
+    <Re> 0.5 </Re>   <!--Reynolds number-->
+    <particleEnvelope> 25 </particleEnvelope>
+    <kRep> 2e-22 </kRep> <!-- Repulsion Constant -->
+    <RepCutoff> 0.7 </RepCutoff> <!-- RepulsionCutoff -->
+</domain>
+
+<sim>
+    <tmax> 1000 </tmax>
+    <tmeas>  100 </tmeas> <!-- interval after which data is written -->
+    <tcsv>  10000 </tcsv> <!-- interval after which simple mean cell values are written to a CSV file -->
+    <tcheckpoint> 200 </tcheckpoint>
+</sim>
+
+</hemocell>
