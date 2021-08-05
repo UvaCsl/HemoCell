@@ -67,15 +67,29 @@ namespace hemo {
  */
 class HemoCell {
   public:
+  /** \brief Switch to indicate if the MPI instance is managed externally.
+   * The MPI instance is typically invoked when initialising the HemoCell class
+   * through the `plb::plbInit` routine. However, in some scenarios we might want
+   * to manually control the MPI environment and do not want HemoCell to setup
+   * MPI environment.
+   */
+  enum class MPIHandle {Internal, External};
+
   /**
    * Creates an hemocell object
-   * 
+   *
    * @param configFileName the location of the main config file
-   * 
+   *
    * Unfortunately, due to palabos regulations, it is required to pass the
    * commandline arguments
    */
-  HemoCell(char * configFileName, int argc, char* argv[]);
+  HemoCell(char * configFileName, int argc, char* argv[]) : HemoCell{ configFileName, argc, argv, HemoCell::MPIHandle::Internal } {};
+
+  /// Creates an HemoCell object and allows to indicate the MPI environment
+  /// is managed externally. If so, this constructor avoids plb::plbInit().
+  ///
+  /// @param mpi_handle the MPIHanndle indicator.
+  HemoCell(char * configFileName, int argc, char* argv[], HemoCell::MPIHandle mpi_handle);
 
   /*
    * Clean up hemocell

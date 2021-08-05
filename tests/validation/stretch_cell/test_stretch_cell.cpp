@@ -9,9 +9,9 @@
 /// Detailed validation test of the cell stretch problem.
 TEST(stretch_cell_validation, stretching) {
   char *args[] = {(char *)"test", (char *)"path", NULL};
-  char *inp = (char *)"validation/config_stretch_cell.xml";
+  char *inp = (char *)"validation/stretch_cell/config_stretch_cell.xml";
 
-  hemo::HemoCell hemocell(inp, 0, args);
+  hemo::HemoCell hemocell(inp, 0, args, hemo::HemoCell::MPIHandle::External);
   hemo::Config *cfg = hemocell.cfg;
   hemo::param::lbm_base_parameters(*cfg);
   hemo::param::ef_lbm =
@@ -44,9 +44,9 @@ TEST(stretch_cell_validation, stretching) {
   hemocell.lattice->initialize();
 
   hemocell.initializeCellfield();
-  hemocell.addCellType<hemo::RbcHighOrderModel>("validation/stretch_RBC", RBC_FROM_SPHERE);
+  hemocell.addCellType<hemo::RbcHighOrderModel>("validation/stretch_cell/stretch_RBC", RBC_FROM_SPHERE);
   hemocell.loadParticles();
-  auto cellfield = (*hemocell.cellfields)["validation/stretch_RBC"];
+  auto cellfield = (*hemocell.cellfields)["validation/stretch_cell/stretch_RBC"];
 
   // Setting up the stretching
   unsigned int n_forced_lsps = 1 + 6;

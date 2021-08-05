@@ -66,9 +66,11 @@ void set_interrupt_handler() {
   interrupt_handler_set = true;
 }
 
-HemoCell::HemoCell(char * configFileName, int argc, char * argv[])
+HemoCell::HemoCell(char * configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handler)
 {
-  plb::plbInit(&(argc),&(argv));
+  if (mpi_handler == HemoCell::MPIHandle::Internal) {
+    plb::plbInit(&(argc),&(argv));
+  }
 
   if (global.hemoCellInitialized) {
     pcout << "(HemoCell) (Error) Hemocell object already created, refusing to construct another one" << endl;
@@ -118,6 +120,10 @@ HemoCell::~HemoCell() {
   if (preinlet_lattice_management) {
     delete preinlet_lattice_management;
   }
+  // After cleaning up, signal that there is no hemocell instance initialised
+  // anymore, allowing to recreated another one if needed, for instance when
+  // running multiple test instances.
+  global.hemoCellInitialized = false;
 }
 
 void HemoCell::latticeEquilibrium(T rho, hemo::Array<T, 3> vel) {
