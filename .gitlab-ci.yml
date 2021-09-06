@@ -24,20 +24,29 @@ workflow:
       when: never
     - if: '$CI_COMMIT_BRANCH'
 
-# Single stage pipeline to build hemocell, where tests are evaluated for
-# the Ubuntu job only.
+# Tests are separated into stages `test` and `validation`, where the latter
+# should only consider explitit validation tests as defined in the
+# `Validation.*` test suite.
 stages:
   - build
+  - test
+  - validation
 
-# Template for setting up of each job, takes care of:
+# Template for setting up HemoCell for each job:
 # - initialising cache directories;
 # - installing dependencies in the container;
 # - defining the shared cache, most predominantly for `ccache`.
 .job-template: &job-template
   before_script:
+    # setup the environment and dependencies
     - mkdir -pv $APT_CACHE_DIR ccache
     - apt-get update --yes -qq
     - apt-get -o dir::cache::archives="$APT_CACHE_DIR" install --yes -qq git g++ gcc cmake make libopenmpi-dev libhdf5-mpi-dev libhdf5-dev patch wget ccache
+    # setup hemocell, e.g. patch `palabos`
+    - ./setup.sh > /dev/null
+    # ensure compiler commands use `ccache`
+    - mkdir -p build && cd build
+    - cmake .. -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
   cache:
     # Cache is shared between branches, but has a unique cache per job.
     key: "$CI_JOB_NAME"
@@ -46,33 +55,52 @@ stages:
       - apt-cache/
       - ccache/
 
-# Template to invoke tests after compilation.
-.test-script: &test-script
- - make test
-
-# Template for building hemocell, takes care of compilation
 .build-template: &build-template
   stage: build
   script:
-    # output of patching `palabos` is dropped
-    - ./setup.sh > /dev/null
-    # compile hemocell
-    - mkdir -p build && cd build
-    - cmake .. -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-    - cmake --build . -- -j 2
+    - cmake --build .
     - ccache --show-stats
-    # evaluate tests
-    - ctest --output-on-failure
 
-# Definitions to build and test on various containers. Note: currently the
-# tests are evaluated for each container.
+# Excludes validation tests
+.test-template: &test-template
+  stage: test
+  script:
+    - cmake --build . --target hemocell_test
+    - ccache --show-stats
+    - GTEST_FILTER="-Validation.*" ctest --output-on-failure
 
-Ubuntu:
+# Only validation tests
+.validation-template: &validation-template
+  stage: validation
+  script:
+    - cmake --build . --target hemocell_test
+    - ccache --show-stats
+    - GTEST_FILTER="Validation.*" ctest -V
+
+Ubuntu-build:
   image: ubuntu:20.04
   <<: *job-template
   <<: *build-template
 
-Debian:
+Ubuntu-test:
+  image: ubuntu:20.04
+  needs: [Ubuntu-build]
+  <<: *job-template
+  <<: *test-template
+
+Debian-build:
   image: debian:9
   <<: *job-template
   <<: *build-template
+
+Debian-test:
+  image: debian:9
+  needs: [Debian-build]
+  <<: *job-template
+  <<: *test-template
+
+Debian-validate:
+  needs: [Debian-test, Ubuntu-test]
+  image: debian:9
+  <<: *job-template
+  <<: *validation-template

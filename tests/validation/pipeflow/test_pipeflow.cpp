@@ -15,7 +15,7 @@ const unsigned max_iteration = 1000;
 const auto geometry_file = "../examples/pipeflow/tube.stl";
 
 /// Detailed validation test of the cell stretch problem.
-TEST(pipeflow_validation, pipeflow) {
+TEST(Validation, Pipeflow) {
   char *args[] = {(char *)"test", (char *)"path", NULL};
   char *inp = (char *)"validation/pipeflow/config_pipeflow.xml";
 

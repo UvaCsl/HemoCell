@@ -7,7 +7,7 @@
 #include "rbcHighOrderModel.h"
 
 /// Detailed validation test of the cell stretch problem.
-TEST(stretch_cell_validation, stretching) {
+TEST(Validation, StretchCell) {
   char *args[] = {(char *)"test", (char *)"path", NULL};
   char *inp = (char *)"validation/stretch_cell/config_stretch_cell.xml";
 
