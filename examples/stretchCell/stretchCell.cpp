@@ -21,108 +21,105 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "helper/cellInfo.h"
+#include "helper/hemoCellStretch.h"
 #include "hemocell.h"
 #include "rbcHighOrderModel.h"
-#include "helper/hemoCellStretch.h"
-#include "helper/cellInfo.h"
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
 using namespace hemo;
 
+// The used IBM kernel width.
+const plb::plint extendedEnvelopeWidth = 2;
 
-int main(int argc, char* argv[])
-{
-	if(argc < 2)
-	{
-			cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
-			return -1;
-	}
-
-	HemoCell hemocell(argv[1], argc, argv);
-	Config * cfg = hemocell.cfg;
-
-// ---------------------------- Calc. LBM parameters -------------------------------------------------
-	hlog << "(CellStretch) (Parameters) calculating shear flow parameters" << endl;
-
-  param::lbm_base_parameters(*cfg);
-
-  param::ef_lbm = (*cfg)["parameters"]["stretchForce"].read<T>()*1e-12 / param::df;
-
-  param::printParameters();
-
-	// ------------------------ Init lattice --------------------------------
-
-	plint nz = 13*(1e-6/(*cfg)["domain"]["dx"].read<T>());
-  plint nx = 2*nz;
-  plint ny = nz;
-
-	hlog << "(CellStretch) Initializing lattice: " << nx <<"x" << ny <<"x" << nz << " [lu]" << std::endl;
-
-	plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
-
-	hemocell.lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(
-			defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
-			defaultMultiBlockPolicy3D().getBlockCommunicator(),
-			defaultMultiBlockPolicy3D().getCombinedStatistics(),
-			defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-			new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
-
-
-	hemocell.lattice->toggleInternalStatistics(false);
-  hemocell.lattice->periodicity().toggleAll(false);
-
-  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
-          = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
-
-  boundaryCondition->setVelocityConditionOnBlockBoundaries(*hemocell.lattice);
-  setBoundaryVelocity(*hemocell.lattice, hemocell.lattice->getBoundingBox(), plb::Array<T,3>(0.,0.,0.) );
-
-  hemocell.latticeEquilibrium(1., hemo::Array<T, 3>({0.,0.,0.}));
-
-	hemocell.lattice->initialize();
-
-	// ----------------------- Init cell models --------------------------
-
-	hemocell.initializeCellfield();
-	hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
-	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
-	hemocell.setOutputs("RBC", outputs);
-
-	outputs = {OUTPUT_VELOCITY,OUTPUT_FORCE};
-	hemocell.setFluidOutputs(outputs);
-
-  hemocell.outputInSiUnits = true; //HDF5 output in SI units (except location (so fluid location, particle location is still in LU)
-
-// ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
-
-	//loading the cellfield
-  if (not cfg->checkpointed) {
-    hemocell.loadParticles();
-    hemocell.writeOutput();
-  } else {
-    hlog << "(CellStretch) CHECKPOINT found!" << endl;
-    hemocell.loadCheckPoint();
+int main(int argc, char *argv[]) {
+  if (argc < 2) {
+    cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
+    return -1;
   }
 
-// Setting up the stretching
-  unsigned int n_forced_lsps = 1 + 6;// + 12;
-  HemoCellStretch cellStretch(*(*hemocell.cellfields)["RBC"],n_forced_lsps, param::ef_lbm);
+  // Initialise HemoCell and parse the parameteres configuration file.
+  HemoCell hemocell(argv[1], argc, argv);
+  Config &cfg = *hemocell.cfg;
 
-  hlog << "(CellStretch) External stretching force [pN(flb)]: " <<(*cfg)["parameters"]["stretchForce"].read<T>() << " (" << param::ef_lbm  << ")" << endl;
+  param::lbm_base_parameters(cfg);
+  param::printParameters();
 
-  unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
-  unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
-  unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
+  // Extract the stretch force, both in lattice units and SI.
+  auto stretch_force = cfg["parameters"]["stretchForce"].read<T>();
+  auto stretch_force_si = stretch_force * 1e-12 / param::df;
+
+  // The resolution of the domain in number of cells to achieve an domain with
+  // size 26x13x13 micron (x, y, z).
+  plint nz = 13 * (1e-6 / cfg["domain"]["dx"].read<T>());
+  plint nx = 2 * nz;
+  plint ny = nz;
+  hlog << "Lattice: " << nx << "x" << ny << "x" << nz << " [lu]" << std::endl;
+
+  // An default initialisation for the lattice.
+  hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
+      defaultMultiBlockPolicy3D().getMultiBlockManagement(
+          nx, ny, nz, extendedEnvelopeWidth),
+      defaultMultiBlockPolicy3D().getBlockCommunicator(),
+      defaultMultiBlockPolicy3D().getCombinedStatistics(),
+      defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+      new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
+
+  hemocell.lattice->toggleInternalStatistics(false);
+  hemocell.lattice->periodicity().toggleAll(false);
+
+  // All boundaries are subjected to zero velocity.
+  OnLatticeBoundaryCondition3D<T, DESCRIPTOR> *boundaryCondition =
+      createLocalBoundaryCondition3D<T, DESCRIPTOR>();
+
+  boundaryCondition->setVelocityConditionOnBlockBoundaries(*hemocell.lattice);
+  setBoundaryVelocity(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
+                      plb::Array<T, 3>(0., 0., 0.));
+
+  // The domain is initialised with zero velocity.
+  hemocell.latticeEquilibrium(1., hemo::Array<T, 3>({0., 0., 0.}));
+  hemocell.lattice->initialize();
+
+  // Initialise cells particles
+  hemocell.initializeCellfield();
+  hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
+
+  // Define any output fields of interest to be written to HDF5 output. 
+  hemocell.setOutputs("RBC", {OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE,
+                              OUTPUT_FORCE_VOLUME, OUTPUT_FORCE_BENDING,
+                              OUTPUT_FORCE_LINK, OUTPUT_FORCE_AREA,
+                              OUTPUT_FORCE_VISC});
+  hemocell.setFluidOutputs({OUTPUT_VELOCITY, OUTPUT_FORCE});
+
+  // HDF5 output in SI units (except location (so fluid location, particle
+  // location is still in LU)
+  hemocell.outputInSiUnits = true;
+
+  // loading the cellfield
+  if (cfg.checkpointed) {
+    hemocell.loadCheckPoint();
+  } else {
+    hemocell.loadParticles();
+    hemocell.writeOutput();
+  }
+
+  // Setting up the stretching
+  auto rbc_field = (*hemocell.cellfields)["RBC"];
+  unsigned n_forced_lsps = 1 + 6;
+  HemoCellStretch cellStretch(*rbc_field, n_forced_lsps, stretch_force_si);
+
+  hlog << "External stretching force" << stretch_force << " [pN(flb)] ("
+       << stretch_force_si << ")" << endl;
 
   // Get undeformed values
-  T volume_lbm = (*hemocell.cellfields)["RBC"]->meshmetric->getVolume();
-  T surface_lbm = (*hemocell.cellfields)["RBC"]->meshmetric->getSurface();
-  T volume_eq = volume_lbm/pow(1e-6/param::dx,3);
-  T surface_eq = surface_lbm/pow(1e-6/param::dx,2);
+  T volume_lbm = rbc_field->meshmetric->getVolume();
+  T surface_lbm = rbc_field->meshmetric->getSurface();
+  T volume_eq = volume_lbm / pow(1e-6 / param::dx, 3);
+  T surface_eq = surface_lbm / pow(1e-6 / param::dx, 2);
 
-  hemo::Array<T,6> bb =  (*hemocell.cellfields)["RBC"]->getOriginalBoundingBox();
+  auto bb = rbc_field->getOriginalBoundingBox();
   hlog << "Original Bounding box:" << endl;
   hlog << "\tx: " << bb[0] << " : " << bb[1] << endl;
   hlog << "\ty: " << bb[2] << " : " << bb[3] << endl;
@@ -130,19 +127,26 @@ int main(int argc, char* argv[])
 
   // Creating output log file
   plb_ofstream fOut;
-  if(cfg->checkpointed)
-    fOut.open("stretch.log", std::ofstream::app);
-  else
-    fOut.open("stretch.log");
+  auto filename = "stretch-" + std::to_string((int)stretch_force) + ".log";
+  if (cfg.checkpointed) {
+    fOut.open(filename.c_str(), std::ofstream::app);
+  } else {
+    // Initialise file with header of data
+    fOut.open(filename.c_str());
+    fOut << "iteration axial transverse" << std::endl;
+  }
 
+  unsigned int tmax = cfg["sim"]["tmax"].read<unsigned int>();
+  unsigned int tmeas = cfg["sim"]["tmeas"].read<unsigned int>();
+  unsigned int tcheckpoint = cfg["sim"]["tcheckpoint"].read<unsigned int>();
 
-  while (hemocell.iter < tmax ) {
-
-    cellStretch.applyForce(); //IMPORTANT, not done normally in hemocell.iterate()
+  while (hemocell.iter < tmax) {
+    // NOTE: the `applyForce()` is not done in `hemocell.iterate()` and has to
+    // be called manually every iteration to ensure the forces are applied.
+    cellStretch.applyForce();
     hemocell.iterate();
 
-
-    if (hemocell.iter % tmeas == 0) {
+    if (hemocell.iter == 1 || hemocell.iter % tmeas == 0) {
       hemocell.writeOutput();
 
       // Fill up the static info structure with desired data
@@ -152,18 +156,22 @@ int main(int argc, char* argv[])
       CellInformationFunctionals::calculateCellStretch(&hemocell);
       CellInformationFunctionals::calculateCellBoundingBox(&hemocell);
 
-      T volume = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
-      T surface = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
-      hemo::Array<T,3> position = CellInformationFunctionals::info_per_cell[0].position/(1e-6/param::dx);
-      hemo::Array<T,6> bbox = CellInformationFunctionals::info_per_cell[0].bbox/(1e-6/param::dx);
-      T largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch)/(1e-6/param::dx);
+      T volume = (CellInformationFunctionals::info_per_cell[0].volume) / pow(1e-6 / param::dx, 3);
+      T surface = (CellInformationFunctionals::info_per_cell[0].area) / pow(1e-6 / param::dx, 2);
+      hemo::Array<T, 3> position = CellInformationFunctionals::info_per_cell[0].position / (1e-6 / param::dx);
+      hemo::Array<T, 6> bbox = CellInformationFunctionals::info_per_cell[0].bbox / (1e-6 / param::dx);
+      T largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch) / (1e-6 / param::dx);
 
-      hlog << "\t Cell center at: {" <<position[0]<<","<<position[1]<<","<<position[2] << "} µm" <<endl;
-      hlog << "\t Diameters: {" << bbox[1]-bbox[0] <<", " << bbox[3]-bbox[2] <<", " << bbox[5]-bbox[4] <<"}  µm" << endl;
-      hlog << "\t Surface: " << surface << " µm^2" << " (" << surface / surface_eq * 100.0 << "%)" << "  Volume: " << volume << " µm^3" << " (" << volume / volume_eq * 100.0 << "%)"<<endl;
-      hlog << "\t Largest diameter: " << largest_diam << " µm." << endl;
+      hlog << "\tCell center at: {" << position[0] << ", " << position[1] << ", " << position[2] << "} µm" << endl;
+      hlog << "\tDiameters: {" << bbox[1] - bbox[0] << ", " << bbox[3] - bbox[2] << ", " << bbox[5] - bbox[4] << "} µm" << endl;
+      hlog << "\tSurface: " << surface << " µm^2" << " (" << surface / surface_eq * 100.0 << "%)" << endl;
+      hlog << "\tVolume: " << volume << " µm^3" << " (" << volume / volume_eq * 100.0 << "%)" << endl;
+      hlog << "\tLargest diameter: " << largest_diam << " µm." << endl;
 
-      fOut << hemocell.iter << " " << bbox[1]-bbox[0] << " " << bbox[3]-bbox[2] << " " << bbox[5]-bbox[4] << " " << volume / volume_eq * 100.0 << " " << surface / surface_eq * 100.0 << endl;
+      // Track (iteration, axial, transverse) in the output file for
+      // possible post-processing.
+      fOut << hemocell.iter << " " << bbox[1] - bbox[0] << " "
+           << bbox[3] - bbox[2] << endl;
 
       CellInformationFunctionals::clear_list();
     }
@@ -171,12 +179,9 @@ int main(int argc, char* argv[])
     if (hemocell.iter % tcheckpoint == 0) {
       hemocell.saveCheckPoint();
     }
-
-
   }
 
   fOut.close();
   hlog << "(CellStretch) Simulation finished :)" << std::endl;
-
   return 0;
 }
