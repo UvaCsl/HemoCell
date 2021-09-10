@@ -15,7 +15,7 @@ formatting.
 
 ## Building the docs
 
-To build the docs ensure that `Doxygen` is kvailable on the system and that
+To build the docs ensure that `Doxygen` is available on the system and that
 `Sphinx` and its requirements given in `doc/requirements.txt` are available in
 the current Python environment. After activating your local virtual environment,
 these can be installed as `pip install -r requirements.txt`.

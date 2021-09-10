@@ -31,6 +31,7 @@ stages:
   - build
   - test
   - validation
+  - documentation
 
 # Template for setting up HemoCell for each job:
 # - initialising cache directories;
@@ -104,3 +105,15 @@ Debian-validate:
   image: debian:9
   <<: *job-template
   <<: *validation-template
+
+Documentation:
+  image: python:3.9-alpine
+  stage: documentation
+  needs: [Debian-validate]
+  script:
+    - apk update && apk add make doxygen graphviz ttf-freefont
+    - pip install -r doc/requirements.txt
+    - cd doc/user_guide && make html
+  artifacts:
+    paths:
+      - doc/user_guide/_build
