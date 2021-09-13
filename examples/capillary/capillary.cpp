@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "pltSimpleModel.h"
 #include "wbcHighOrderModel.h"
 
-#include "lykov.h"
+#include "bifurcation.h"
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "wedge.h"
@@ -36,22 +36,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace hemo;
 
 /// \brief Possible scenarios for the capillary flow examples.
-/// The Lykov variant considiers a split channel with two parallel capillaries,
+/// The Bifurcation variant considiers a split channel with two parallel capillaries,
 /// whereas the Wedge variant considers a triangular shaped wedge through which
 /// a cell is squeezed.
 enum Scenario {
-  Lykov, /// The Lykov capillary example.
+  Bifurcation, /// The bifurcating capillary geometry.
   Wedge, /// A wedge-like geometry.
 };
 
 /// The chosen scenario for the simulation.
-const auto scenario = Scenario::Lykov;
+const auto scenario = Scenario::Wedge;
 
 /// Driving force for the scenario: Scenario::Wedge.
 const double wedge_driving_force = 6.7e5;
 
-/// Extended envelope for the ibm kernel: 4 or 2 might be sufficient. NOTE:
-/// also depends on the used resolution dx.
+/// Extended envelope for the ibm kernel: 4 or 2 might be sufficient.
+/// NOTE: also depends on the used resolution dx.
 const unsigned extendedEnvelopeWidth = 2;
 
 int main(int argc, char *argv[]) {
@@ -73,8 +73,8 @@ int main(int argc, char *argv[]) {
   auto nz = 0;
 
   switch (scenario) {
-  case Scenario::Lykov:
-    std::tie(nx, ny, nz) = Lykov::domain_size(resolution);
+  case Scenario::Bifurcation:
+    std::tie(nx, ny, nz) = Bifurcation::domain_size(resolution);
     break;
   case Scenario::Wedge:
     std::tie(nx, ny, nz) = Wedge::domain_size(resolution);
@@ -94,10 +94,10 @@ int main(int argc, char *argv[]) {
   // bounce back dynamics) to specific regions of the fluid field.
   int error = 0;
   switch (scenario) {
-  case Scenario::Lykov: {
+  case Scenario::Bifurcation: {
     auto capillary_diameter = (*cfg)["domain"]["capillaryD"].read<double>();
     capillary_diameter /= param::dx;
-    error = Lykov::geometry(hemocell.lattice, resolution, capillary_diameter);
+    error = Bifurcation::geometry(hemocell.lattice, resolution, capillary_diameter);
     break;
   }
   case Scenario::Wedge:
@@ -116,10 +116,10 @@ int main(int argc, char *argv[]) {
   auto driving_force = plb::Array<double, 3>(0, 0, 0);
   std::string cell_type;
   switch (scenario) {
-  case Scenario::Lykov: {
+  case Scenario::Bifurcation: {
     auto dForce = (*cfg)["domain"]["drivingForce"].read<double>();
-    driving_force = Lykov::driving_force(dForce);
-    cell_type = "WBC_lykov";
+    driving_force = Bifurcation::driving_force(dForce);
+    cell_type = "WBC_bifurcation";
     break;
   }
   case Scenario::Wedge:

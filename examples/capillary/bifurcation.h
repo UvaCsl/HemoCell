@@ -5,7 +5,7 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
-class Lykov {
+class Bifurcation {
 public:
   static std::tuple<unsigned, unsigned, unsigned> domain_size(unsigned resolution);
 

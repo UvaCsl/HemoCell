@@ -1,16 +1,17 @@
 # Capillary examples
 
 This example contains two different examples highlighting capillary flows. The
-examples consider a wedge-like geometry and a two-capillary Lykov configuration.
+examples consider a wedge-like geometry and a two-capillary bifurcating
+configuration.
 
 ## Usage
 
 - For the wedge example, set `const auto scenario` to `Scenario::Wedge`, compile
   the problem, and run with the corresponding configuration file:
   `wedge_config.xml`.
-- For the two capillary example, set `const auto scenario` to `Scenario::Lykov`,
-  compile the problem, and run with the corresponding configuration file:
-  `lykov_config.xml`.
+- For the two capillary example, set `const auto scenario` to
+  `Scenario::Bifurcation`, compile the problem, and run with the corresponding
+  configuration file: `bifurcation.xml`.
 
 ## Wedge example
 

@@ -7,7 +7,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 # add executable from source files in current directory assuming
 # to add more source files, manually register them using `add_executable`
 get_filename_component(MAIN ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-add_executable(${EXEC_NAME} "lykov" "wedge" "${CMAKE_CURRENT_SOURCE_DIR}/${MAIN}.cpp")
+add_executable(${EXEC_NAME} "bifurcation" "wedge" "${CMAKE_CURRENT_SOURCE_DIR}/${MAIN}.cpp")
 
 # link the executable to `hemocell` and `HDF5` dependencies
 target_link_libraries(${EXEC_NAME} ${PROJECT_NAME})
