@@ -6,8 +6,9 @@ trap "exit" INT
 # added by applying the patch at `hemocell/patch`.
 
 # supported tag and download target
-tag="v2.2.1"
+tag="v2.3.0"
 target="https://gitlab.com/unigespc/palabos/-/archive/${tag}/palabos-${tag}.tar.gz"
+archive="palabos.tar.gz"
 
 # clean old palabos
 if [ -d "palabos" ]; then
@@ -15,12 +16,12 @@ if [ -d "palabos" ]; then
 fi
 
 # obtain new tag
-if [ ! -e "palabos.tar.gz" ]; then
-  wget -O palabos.tar.gz ${target} || { echo "Error Downloading palabos, exiting ..."; exit 1;}
+if [ ! -e "${archive}" ]; then
+  wget -qO "${archive}" "${target}" || { echo "Error Downloading palabos, exiting ..."; exit 1;}
 fi
 
 # extract source
-tar -xzf palabos.tar.gz
+tar -xzf "${archive}" && rm "${archive}"
 mv palabos-* palabos
 
 # apply the patch

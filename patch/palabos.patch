@@ -408,7 +408,7 @@ index 8807600..de508d7 100644
      Dynamics<T,Descriptor>*        dynamics;  ///< local LB dynamics
  };
 diff --git a/src/core/dynamics.h b/src/core/dynamics.h
-index d9654cd..a528ccc 100644
+index f3da5d2..a828350 100644
 --- a/src/core/dynamics.h
 +++ b/src/core/dynamics.h
 @@ -38,6 +38,10 @@
@@ -422,7 +422,7 @@ index d9654cd..a528ccc 100644
  #include "core/globalDefs.h"
  #include "core/util.h"
  #include "core/blockStatistics.h"
-@@ -155,7 +159,7 @@ struct Dynamics {
+@@ -159,7 +163,7 @@ struct Dynamics {
          Cell<T,Descriptor> const& cell, Array<T,SymmetricTensor<T,Descriptor>::n>& stress ) const =0;
      /// Compute the heat flux in lattice units
      virtual void computeHeatFlux( Cell<T,Descriptor> const& cell,
@@ -451,7 +451,7 @@ index 3c4bf44..4cb8a2d 100644
      /// If two data processors act on a block, combine their ModifT modification to
      ///   determine a resulting (worst-case) ModifT modification.
 diff --git a/src/core/plbInit.cpp b/src/core/plbInit.cpp
-index 1aeb37b..8ae00bd 100644
+index 32c2c1b..079a524 100644
 --- a/src/core/plbInit.cpp
 +++ b/src/core/plbInit.cpp
 @@ -46,7 +46,7 @@ namespace plb {
@@ -2887,6 +2887,15 @@ index 4bc39c7..a5cc7c9 100644
                  info.toDomain, deltaX, deltaY, deltaZ, fromBlock,
                  whichData, info.absoluteOffset );
      }
+-
+-    // 4. Finalize the receives.
+-    for (unsigned iRecv=0; iRecv<communication.recvPackage.size(); ++iRecv) {
+-        CommunicationInfo3D const& info = communication.recvPackage[iRecv];
+-        AtomicBlock3D& toBlock = destinationMultiBlock.getComponent(info.toBlockId);
+-        toBlock.getDataTransfer().receive (
+-                info.toDomain,
+-                communication.recvComm.receiveMessage(info.fromProcessId, staticMessage),
+-                whichData, info.absoluteOffset );
 +    
 +    if (whichData == modif::hemocell) {
 +      // 4. Become receptive (dynamic)
@@ -2914,15 +2923,7 @@ index 4bc39c7..a5cc7c9 100644
 +        reqs[index] = MPI_REQUEST_NULL;
 +        
 +        if(!receives[index].pre_req_received) {
- 
--    // 4. Finalize the receives.
--    for (unsigned iRecv=0; iRecv<communication.recvPackage.size(); ++iRecv) {
--        CommunicationInfo3D const& info = communication.recvPackage[iRecv];
--        AtomicBlock3D& toBlock = destinationMultiBlock.getComponent(info.toBlockId);
--        toBlock.getDataTransfer().receive (
--                info.toDomain,
--                communication.recvComm.receiveMessage(info.fromProcessId, staticMessage),
--                whichData, info.absoluteOffset );
++
 +          //Got the sizes, wait for data
 +          receives[index].pre_req_received = true;
 +          
@@ -3103,7 +3104,7 @@ index 89b17c0..6864086 100644
  };
  
 diff --git a/src/particles/particleField3D.h b/src/particles/particleField3D.h
-index d781a64..0b66b23 100644
+index 33112fd..f54dcaa 100644
 --- a/src/particles/particleField3D.h
 +++ b/src/particles/particleField3D.h
 @@ -79,6 +79,7 @@ public:
@@ -3115,7 +3116,7 @@ index d781a64..0b66b23 100644
              Array<T,3> const& position,
              plint& iX, plint& iY, plint& iZ ) const;
 diff --git a/src/particles/particleField3D.hh b/src/particles/particleField3D.hh
-index 9862cda..5bb83f8 100644
+index eb74593..59337e4 100644
 --- a/src/particles/particleField3D.hh
 +++ b/src/particles/particleField3D.hh
 @@ -47,6 +47,20 @@ ParticleField3D<T,Descriptor>::ParticleField3D(plint nx, plint ny, plint nz, Blo
@@ -3139,11 +3140,11 @@ index 9862cda..5bb83f8 100644
  template<typename T, template<typename U> class Descriptor>
  bool ParticleField3D<T,Descriptor>::isContained (
          Array<T,3> const& particlePos, Box3D box ) const
-@@ -720,8 +734,10 @@ void LightParticleField3D<T,Descriptor>::swap(LightParticleField3D<T,Descriptor>
+@@ -738,8 +752,10 @@ void LightParticleField3D<T,Descriptor>::swap(LightParticleField3D<T,Descriptor>
  template<typename T, template<typename U> class Descriptor>
  void LightParticleField3D<T,Descriptor>::addParticle(Box3D domain, Particle3D<T,Descriptor>* particle) {
      Box3D finalDomain;
-+    Array<T,3> pos; 
++    Array<T,3> pos;
 +    pos = particle->getPosition();
      if( intersect(domain, this->getBoundingBox(), finalDomain) &&
 -        this->isContained(particle->getPosition(), finalDomain) )
@@ -3151,11 +3152,11 @@ index 9862cda..5bb83f8 100644
      {
          particles.push_back(particle);
      }
-@@ -734,10 +750,12 @@ template<typename T, template<typename U> class Descriptor>
+@@ -752,10 +768,12 @@ template<typename T, template<typename U> class Descriptor>
  void LightParticleField3D<T,Descriptor>::removeParticles(Box3D domain) {
      std::vector<Particle3D<T,Descriptor>*> remainingParticles;
      Box3D finalDomain;
-+    Array<T,3> pos; 
++    Array<T,3> pos;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
          for (pluint i=0; i<particles.size(); ++i) {
@@ -3165,11 +3166,11 @@ index 9862cda..5bb83f8 100644
                  delete particles[i];
              }
              else {
-@@ -754,8 +772,10 @@ void LightParticleField3D<T,Descriptor>::removeParticles(Box3D domain, plint tag
+@@ -772,8 +790,10 @@ void LightParticleField3D<T,Descriptor>::removeParticles(Box3D domain, plint tag
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
-+        Array<T,3> pos; 
++        Array<T,3> pos;
          for (pluint i=0; i<particles.size(); ++i) {
 -            if (this->isContained(particles[i]->getPosition(),finalDomain) &&
 +            pos = particles[i]->getPosition();
@@ -3177,11 +3178,16 @@ index 9862cda..5bb83f8 100644
                  particles[i]->getTag() == tag )
              {
                  delete particles[i];
-@@ -774,8 +794,10 @@ void LightParticleField3D<T,Descriptor>::findParticles (
+@@ -788,12 +808,14 @@ void LightParticleField3D<T,Descriptor>::removeParticles(Box3D domain, plint tag
+ 
+ template<typename T, template<typename U> class Descriptor>
+ void LightParticleField3D<T,Descriptor>::findParticles (
+-        Box3D domain, std::vector<Particle3D<T,Descriptor>*>& found ) 
++        Box3D domain, std::vector<Particle3D<T,Descriptor>*>& found )
  {
      found.clear();
      PLB_ASSERT( contained(domain, this->getBoundingBox()) );
-+    Array<T,3> pos; 
++    Array<T,3> pos;
      for (pluint i=0; i<particles.size(); ++i) {
 -        if (this->isContained(particles[i]->getPosition(),domain)) {
 +        pos = particles[i]->getPosition();
@@ -3189,12 +3195,12 @@ index 9862cda..5bb83f8 100644
              found.push_back(particles[i]);
          }
      }
-@@ -787,8 +809,11 @@ void LightParticleField3D<T,Descriptor>::findParticles (
+@@ -805,8 +827,11 @@ void LightParticleField3D<T,Descriptor>::findParticles (
  {
      found.clear();
      PLB_ASSERT( contained(domain, this->getBoundingBox()) );
-+    Array<T,3> pos; 
-+        
++    Array<T,3> pos;
++
      for (pluint i=0; i<particles.size(); ++i) {
 -        if (this->isContained(particles[i]->getPosition(),domain)) {
 +        pos = particles[i]->getPosition();
@@ -3202,7 +3208,7 @@ index 9862cda..5bb83f8 100644
              found.push_back(particles[i]);
          }
      }
-@@ -801,8 +826,10 @@ void LightParticleField3D<T,Descriptor>::velocityToParticleCoupling (
+@@ -819,8 +844,10 @@ void LightParticleField3D<T,Descriptor>::velocityToParticleCoupling (
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
@@ -3214,7 +3220,7 @@ index 9862cda..5bb83f8 100644
                  particles[i]->velocityToParticle(velocityField, scaling);
              }
          }
-@@ -831,8 +858,10 @@ void LightParticleField3D<T,Descriptor>::rhoBarJtoParticleCoupling (
+@@ -849,8 +876,10 @@ void LightParticleField3D<T,Descriptor>::rhoBarJtoParticleCoupling (
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
@@ -3226,7 +3232,7 @@ index 9862cda..5bb83f8 100644
                  particles[i]->rhoBarJtoParticle(rhoBarJfield, velIsJ, scaling);
              }
          }
-@@ -846,8 +875,10 @@ void LightParticleField3D<T,Descriptor>::fluidToParticleCoupling (
+@@ -864,8 +893,10 @@ void LightParticleField3D<T,Descriptor>::fluidToParticleCoupling (
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
@@ -3238,11 +3244,11 @@ index 9862cda..5bb83f8 100644
                  particles[i]->fluidToParticle(lattice, scaling);
              }
          }
-@@ -860,13 +891,16 @@ void LightParticleField3D<T,Descriptor>::advanceParticles(Box3D domain, T cutOff
+@@ -878,13 +909,16 @@ void LightParticleField3D<T,Descriptor>::advanceParticles(Box3D domain, T cutOff
      Box3D finalDomain;
      if( intersect(domain, this->getBoundingBox(), finalDomain) )
      {
-+        Array<T,3> pos; 
++        Array<T,3> pos;
          for (pluint i=0; i<particles.size(); ++i) {
              Particle3D<T,Descriptor>* particle = particles[i];
 -            if (this->isContained(particle->getPosition(),finalDomain)) {
@@ -3251,7 +3257,7 @@ index 9862cda..5bb83f8 100644
                  Array<T,3> oldPos( particle->getPosition() );
                  particle->advance();
 +                pos = particle->getPosition();
-                 if ( (cutOffSpeedSqr>=T() && normSqr(oldPos-particle->getPosition()) < cutOffSpeedSqr) ||
+                 if ( (cutOffSpeedSqr>=T() && normSqr(oldPos-particle->getPosition())<cutOffSpeedSqr) ||
 -                     (!this->isContained(particle->getPosition(),this->getBoundingBox()))  )
 +                     (!this->isContained(pos[0],pos[1],pos[2],this->getBoundingBox()))  )
                  {
