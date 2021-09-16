@@ -23,6 +23,9 @@ hemocell_test
 # ignore any archives
 **/*.tar*
 
+# ignore any other ignore files (.ignore, .rgignore, ...)
+.*ignore
+
 # Ignore IDE, buildsystem and OS specific cache directories and object files
 .idea/
 *sconsign.dblite
