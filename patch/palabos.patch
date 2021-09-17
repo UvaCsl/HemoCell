@@ -338,43 +338,6 @@ index 950e729..00cae3b 100644
                          }
                      }
                  }
-diff --git a/src/basicDynamics/isoThermalDynamics.h b/src/basicDynamics/isoThermalDynamics.h
-index 0997934..c8a74b4 100644
---- a/src/basicDynamics/isoThermalDynamics.h
-+++ b/src/basicDynamics/isoThermalDynamics.h
-@@ -40,6 +40,7 @@
- 
- #include "core/globalDefs.h"
- #include "core/dynamics.h"
-+#include "atomicBlock/blockLattice3D.h"
- 
- namespace plb {
- 
-@@ -72,6 +73,12 @@ public:
-     virtual void computeHeatFlux( Cell<T,Descriptor> const& cell,
-                                   Array<T,Descriptor<T>::d>& q ) const;
- 
-+    // Compute the shear rate
-+  //  virtual void computeShearRate (
-+    //    Cell<T,Descriptor> const& cell,
-+      //  BlockLattice3D<T, Descriptor>& lattice,
-+        //Array<T,SymmetricTensor<T,Descriptor>::n>& shearrate, plint x, plint y, plint z) const;
-+
- /* *************** Switch between population and moment representation ****** */
- 
-     /// Number of variables required to decompose a population representation into moments.
-diff --git a/src/basicDynamics/isoThermalDynamics.hh b/src/basicDynamics/isoThermalDynamics.hh
-index 3caf297..3dadf06 100644
---- a/src/basicDynamics/isoThermalDynamics.hh
-+++ b/src/basicDynamics/isoThermalDynamics.hh
-@@ -51,6 +51,7 @@
- #include <algorithm>
- #include <limits>
- #include <cstdlib>
-+#include "atomicBlock/blockLattice3D.h"
- 
- namespace plb {
- 
 diff --git a/src/core/cell.h b/src/core/cell.h
 index 8807600..de508d7 100644
 --- a/src/core/cell.h
