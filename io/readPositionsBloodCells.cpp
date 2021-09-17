@@ -27,15 +27,93 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "logfile.h"
 #include "hemocell.h"
 #include "preInlet.h"
+#include "offLattice/triangularSurfaceMesh.h"
+#include "offLattice/triangularSurfaceMesh.hh"
+
 
 namespace hemo {
-  
+
+/// Rotates a triangular surface mesh inplace. The rotation is applied in order
+/// X, Y, Z. NOTE: plb::TriangularSurfaceMesh does provide an method to rotate
+/// the surface mesh, however, that routine is defined in ZYX order.
+template<typename T>
+void rotateTriangularMeshXYZ(plb::TriangularSurfaceMesh<T>* mesh, T alpha, T beta, T gamma) {
+  PLB_ASSERT((theta > T() || util::fpequal(theta, T(), eps0)) &&
+             (theta < PI  || util::fpequal(theta, PI, eps0)));
+
+  // Rotation matrix around x axis (column-first)
+  T a[3][3];
+  a[0][0] =  (T) 1.0;
+  a[0][1] =  (T) 0.0;
+  a[0][2] =  (T) 0.0;
+  a[1][0] =  (T) 0.0;
+  a[1][1] =  std::cos(alpha);
+  a[1][2] =  std::sin(alpha);
+  a[2][0] =  (T) 0.0;
+  a[2][1] = -std::sin(alpha);
+  a[2][2] =  std::cos(alpha);
+
+  // Rotation matrix around y axis (column-first)
+  T b[3][3];
+  b[0][0] =  std::cos(beta);
+  b[0][1] =  (T) 0.0;
+  b[0][2] =  -std::sin(beta);
+  b[1][0] =  (T) 0.0;
+  b[1][1] =  (T) 1.0;
+  b[1][2] =  (T) 0.0;
+  b[2][0] =  std::sin(beta);
+  b[2][1] =  (T) 0.0;
+  b[2][2] =  std::cos(beta);
+
+  // Ry * Rx
+  T c[3][3];
+  for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+          c[i][j] = (T) 0.0;
+          for (int k = 0; k < 3; k++) {
+              c[i][j] += a[k][j]*b[i][k];
+          }
+      }
+  }
+
+  // Rotation matrix around z axis (column-first)
+  b[0][0] =  std::cos(gamma);
+  b[0][1] =  std::sin(gamma);
+  b[0][2] =  (T) 0.0;
+  b[1][0] = -std::sin(gamma);
+  b[1][1] =  std::cos(gamma);
+  b[1][2] =  (T) 0.0;
+  b[2][0] =  (T) 0.0;
+  b[2][1] =  (T) 0.0;
+  b[2][2] =  (T) 1.0;
+
+  // Rz * [Ry*Rx]
+  for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+          a[i][j] = (T) 0.0;
+          for (int k = 0; k < 3; k++) {
+              a[i][j] += c[k][j]*b[i][k];
+          }
+      }
+  }
+
+  for (auto iVertex = 0; iVertex < mesh->getNumVertices(); iVertex++) {
+      Array<T,3> x = mesh->getVertex(iVertex);
+      for (int i = 0; i < 3; i++) {
+          mesh->getVertex(iVertex)[i] = (T) 0.0;
+          for (int j = 0; j < 3; j++) {
+              mesh->getVertex(iVertex)[i] += a[i][j]*x[j];
+          }
+      }
+  }
+}
+
 inline void meshRotation (TriangularSurfaceMesh<T> * mesh, hemo::Array<T,3> rotationAngles) {
     plb::Array<T,2> xRange, yRange, zRange;
     mesh->computeBoundingBox (xRange, yRange, zRange);
     plb::Array<T,3> meshCenter = plb::Array<T,3>(xRange[1] + xRange[0], yRange[1] + yRange[0], zRange[1] + zRange[0]) * (T)0.5;
     mesh->translate((T)-1.0 * meshCenter);
-    mesh->rotateXYZ(rotationAngles[0], rotationAngles[1], rotationAngles[2]);
+    rotateTriangularMeshXYZ(mesh, rotationAngles[0], rotationAngles[1], rotationAngles[2]);
     mesh->translate(meshCenter);
 }
 
