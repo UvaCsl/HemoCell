@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "config.h"
 #include "cellMechanics.h"
+#include "constant_defaults.h"
 #include "hemoCellField.h"
 
 namespace hemo {

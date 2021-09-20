@@ -76,7 +76,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
                                / /*cellConstants.area_mean_eq*/ cellConstants.triangle_area_eq_list[triangle_n];      
        
       //area force magnitude
-      const T afm = k_area * (areaRatio+areaRatio/std::fabs(0.09-areaRatio*areaRatio));
+      const T afm = k_area * (areaRatio+areaRatio/std::fabs(MaxCellSurfaceAreaChange-areaRatio*areaRatio));
 
       hemo::Array<T,3> centroid;
       centroid[0] = (v0[0]+v1[0]+v2[0])/3.0;
@@ -101,8 +101,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
 
     //Volume
     const T volume_frac = (volume-cellConstants.volume_eq)/cellConstants.volume_eq;
-    // NOTE: the constant `tau_v` was originally published as 0.1.
-    const T volume_force = -k_volume * volume_frac/std::fabs(0.01-volume_frac*volume_frac);
+    const T volume_force = -k_volume * volume_frac/std::fabs(MaxCellVolumetricChange-volume_frac*volume_frac);
     triangle_n = 0;
 
 //Volume force loop
@@ -155,15 +154,8 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const T dDev = (ndev - cellConstants.surface_patch_center_dist_eq_list[i] ) / cellConstants.edge_mean_eq; // Non-dimensional
 
       // TODO: scale bending force
-      // NOTE: the constant `tau_b`, used here as `(tau_b)^2 = 0.055` is
-      // reduced compared to the originally published value. The reduced
-      // value still shows force-displacement curves of the stretched cell
-      // within the validated bounds, while providing a much more stable
-      // simulation when the RBCs undergo high shear rates. The original values
-      // and the validation data can be found in the corresponding publication:
-      // https://doi.org/10.3389/fphys.2017.00563.
-      const hemo::Array<T,3> bending_force = k_bend * ( dDev + dDev/std::fabs(0.055-dDev*dDev)) * patch_normal; // tau_b comes from the angle limit w. eq.lat.tri. assumptiln
-      
+      const hemo::Array<T,3> bending_force = k_bend * ( dDev + dDev/std::fabs(MaxCellBendingAngle-dDev*dDev)) * patch_normal;
+
       //Apply bending force
       *cell[i]->force_bending += bending_force;
       
@@ -186,7 +178,7 @@ void RbcHighOrderModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & 
       const T edge_frac = (edge_length - /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n])
                                / /*cellConstants.edge_mean_eq*/ cellConstants.edge_length_eq_list[edge_n];
 
-      const T edge_force_scalar = k_link * ( edge_frac + edge_frac/std::fabs(9.0-edge_frac*edge_frac));   // allows at max. 300% stretch
+      const T edge_force_scalar = k_link * ( edge_frac + edge_frac/std::fabs(MaxCellPersistenceLength-edge_frac*edge_frac));
       const hemo::Array<T,3> force = edge_uv*edge_force_scalar;
       *cell[edge[0]]->force_link += force;
       *cell[edge[1]]->force_link -= force;

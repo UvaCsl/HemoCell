@@ -131,6 +131,50 @@ typedef long int plint;
 typedef long unsigned int pluint;
 #endif
 
+/** @defgroup cellgroup Cell mechanics constants
+ * A set of constants defining the cell stiffness for various deformation modes.
+ * The presentation and derivation of these constants are presented in the
+ * validation paper: https://doi.org/10.3389/fphys.2017.00563.
+ *
+ * Note that these parameters are not unique, i.e. multiple combinations of the
+ * constants can result in validated cell behaviour.
+ *
+ * The current set of parameters is slightly different as presented in the
+ * original publication, specifically \p MaxCellBendingAngle has been reduced to
+ * achieve improved stability when RBCs are subjected to high shear flows.
+ * Although this results in slightly stiffer cell mechanics, the obtained
+ * force-displacement curves are still within the range of the validation data.
+ * For reference, please refer to `examples/stretchCell`.
+ *
+ * All parameters are expressed as their squared value to prevent computation of
+ * the square at each evaluation.
+ *
+ * @{
+ */
+
+/** @brief The maximum volumetric change of an cell to maintain
+ * quasi-incompressibility.
+ */
+constexpr T MaxCellVolumetricChange = 0.01;
+/** @brief The maximum change of the cells surface area is limited to 30%. */
+constexpr T MaxCellSurfaceAreaChange = 0.09;
+/** @brief The maximum bending angle for red/white blood cells.
+ * The bending angle of the RBC/WBC are changed to allow for increased stability
+ * when encountering high shear flows during the simulations.
+ */
+constexpr T MaxCellBendingAngle = 0.0555;
+/** @brief The maximum bending angle for platelets.
+ * Approximately (pi/2)^2 as derived from the smallest representable curvature
+ * of the triangulated surface mesh.
+ */
+constexpr T MaxPLTBendingAngle = 2.467;
+/** @brief The maximum link force derived from persistence lengths.
+ * This maximum cell persistence length allows for at most 300% stretching.
+ */
+constexpr T MaxCellPersistenceLength = 9.0;
+
+/** @} */ // end of the cell group constants
+
 namespace hemo {
 ///Used to circumvent buffer initialization of characters
 struct NoInitChar

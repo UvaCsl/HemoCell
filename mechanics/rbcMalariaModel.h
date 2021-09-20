@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config.h"
 #include "cellMechanics.h"
 #include "hemoCellField.h"
+#include "constant_defaults.h"
 
 namespace hemo {
 class RbcMalariaModel : public CellMechanics {
