@@ -6,6 +6,21 @@ In this changelog, we consider the following classes of changes:
 * Structure: any changes to the structure of HemoCell that may break existing cases.
 * Fixes: (small) changes that do not fall in the other categories.
 
+2.4 (Sep 23 2021)
+-----------------
+* Features
+  * Added two capillary flow examples.
+  * Added, updated, and extended documentation of most example cases.
+  * Added helper functions in `helper/geometry.h` for boolean operations on domain functionals.
+  * Added script to convert HDF5 to the X3D format to enable rendering with Blender.
+  * Added validation tests based on cell stretching and pipe flow.
+* Structure
+  * Cell mechanics constants are moved to `config/constant_defaults.h`.
+  * The Doxygen pages are automatically generated when building the Sphinx documentation.
+  * The continuous integration pipeline is split into four stages: build, test, validation, and documentation.
+* Fixes
+  * Added guard statement to prevent reading uninitialised Lees-Edwards displacement values.
+
 2.3 (Jun 1 2021)
 ----------------
 * Features
