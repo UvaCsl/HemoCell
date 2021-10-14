@@ -1,35 +1,34 @@
-# Ignore build, result, and log directories
-log/
-tmp/
-palabos/
+# Build artefacts and test executables
 build/
-!build/*/CMakeLists.txt
-!build/*/build.def
-
-doc/doxygen/*/
-doc/user_guide/_build/*
-
-external/parmetis-*/
-tools/packCells/*.pos
-tools/packCells/packCells
-*.log
-
-# ignore test executable
+cmake-build*/
 hemocell_test
 
-# ignore (example) `tmp` output folders
-**/tmp_*/
+# External dependencies
+palabos/
+parmetis*/
 
-# ignore any archives
-**/*.tar*
+# Typical output directories generated under examples/
+log*/
+tmp*/
+output*/
 
-# ignore any other ignore files (.ignore, .rgignore, ...)
-.*ignore
-
-# Ignore IDE, buildsystem and OS specific cache directories and object files
-.idea/
-*sconsign.dblite
+# Object files, log files, archives
 *.o
+*.so
+*.a
+*.exe
+*.log
+*.tar
+*.xz
+*.gz
+
+# IDE or OS related files
+.idea/
+.cache/
+*sconsign.dblite
 *.DS_Store
 *.plist
 
+# Common other ignore files (fuzzy searchers etc.)
+.ignore
+.rgignore
