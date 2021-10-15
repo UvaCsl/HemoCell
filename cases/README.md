@@ -1,7 +1,12 @@
 # Cases
 
 This directory contains simulations cases using `hemocell`. Each directory
-represents a separate case study.
+represents a separate case study. Compared to the simulations given under
+`examples/` the ones found here (in `cases/`) are considered more experiment,
+potentially highlighting unvalidated and/or unfinished parts of the HemoCell
+library. Users should proceed with care when using, or extending, examples from
+the `cases/` directory and ensure they perform the necessary validation and
+verification of their numerical simulations.
 
 ## Compilation
 

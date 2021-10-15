@@ -39,3 +39,12 @@ To add example case `$new_example`:
   - `${PROJECT_NAME}_parmetis`
 - Build `hemocell` as usual or provide `--target "$new_example$"` to only
   compile the newly added example.
+
+## Cell parameters
+
+Example properties for red blood cells (RBC), white blood cells (WBC) and
+platelets (PLT) are given in `RBC_template.xml`, `WBC_template`, and
+`PLT_template.xml` respectively. These can be used as initial starting point to
+define the properties of these cells. Alternatively, you can consider the
+`RBC.xml`, `WBC.xml`, or `PLT.xml` files that are present in most examples
+herein.
