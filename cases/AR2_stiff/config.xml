@@ -18,7 +18,7 @@
     <outputDirectory>output</outputDirectory> <!-- This is the base directory, appended with _x when it already exists -->
     <checkpointDirectory>checkpoint</checkpointDirectory> <!-- relative to outputDirectory -->
     <logDirectory>log</logDirectory> <!-- relative to outputDirectory -->
-    <logFile>logfile</logFile> <!-- relative to logDirectory, if it exists (possible with ../log as logDirectory), add .x for a new version -->    
+    <logFile>logfile</logFile> <!-- relative to logDirectory, if it exists (possible with ../log as logDirectory), add .x for a new version -->
 </parameters>
 
 <ibm>
@@ -27,7 +27,7 @@
 </ibm>
 
 <domain>
-    <geometry> shortoutlet_AR2_rotated_stiff.stl </geometry>
+    <geometry> shortoutlet_AR2_rotated.stl </geometry>
     <fluidEnvelope> 2 </fluidEnvelope>
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.1e-6 </nuP>   <!-- Kinematic viscosity of blood plasma, physical units [m^2/s]-->
@@ -44,9 +44,9 @@
 
 <sim>
     <tmax> 10000000 </tmax> <!-- total number of iterations -->
-    <tmeas> 10000 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint> 20000 </tcheckpoint> 
-    <tbalance> 10000 </tbalance> <!-- interval after which balance is performed --> 
+    <tmeas> 10000 </tmeas> <!-- interval after which data is written -->
+    <tcheckpoint> 20000 </tcheckpoint>
+    <tbalance> 10000 </tbalance> <!-- interval after which balance is performed -->
 </sim>
 
 </hemocell>

@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -29,6 +29,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "fluidInfo.h"
 #include "particleInfo.h"
 #include <fenv.h>
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+using namespace hemo;
 
 /// A functional, used to instantiate bounce-back nodes at the locations of the sphere
 template<typename T>
@@ -133,7 +137,7 @@ int main(int argc, char *argv[]) {
   pcout << "(Flowchamber) (Parameters) calculating flow parameters" << endl;
   param::lbm_pipe_parameters((*cfg),hydraulic_radius);
   param::printParameters();
-  
+
   plint ytop = heightChannel*percentageSt; //percentage of stenosis
   plint xtopL = nx/2 - widthSt/2;
   plint xtopR = nx/2 + widthSt/2;
@@ -200,7 +204,7 @@ int main(int argc, char *argv[]) {
   hemocell.lattice->periodicity().toggleAll(false);
   hemocell.lattice->periodicity().toggle(0,true);
   hemocell.lattice->periodicity().toggle(2,true);
-  
+
   hemocell.latticeEquilibrium(1.,plb::Array<T, 3>(0.,0.,0.));
 
 // ---------------------------------------------------------------------------------------------
@@ -212,7 +216,7 @@ int main(int argc, char *argv[]) {
                     DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                     plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
 
-  hemocell.lattice->initialize();   
+  hemocell.lattice->initialize();
 
 // ---------------------------------------------------------------------------------------------
 
@@ -229,7 +233,7 @@ int main(int argc, char *argv[]) {
 
   hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  
+
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
   //hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<T>(), (*cfg)["domain"]["RepCutoff"].read<T>());
@@ -249,7 +253,7 @@ int main(int argc, char *argv[]) {
 
   // Enable boundary particles
   //hemocell.enableBoundaryParticles((*cfg)["domain"]["kRep"].read<T>(), (*cfg)["domain"]["BRepCutoff"].read<T>(),(*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  
+
   //loading the cellfield
   if (not cfg->checkpointed) {
     hemocell.loadParticles();
@@ -260,11 +264,11 @@ int main(int argc, char *argv[]) {
 
   //Restructure atomic blocks on processors when possible
   //hemocell.doRestructure(false); // cause errors
-  
+
   if (hemocell.iter == 0) {
     hlog << "(Flowchamber) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) { 
-      hemocell.lattice->collideAndStream(); 
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
+      hemocell.lattice->collideAndStream();
     }
   }
 
@@ -277,12 +281,12 @@ int main(int argc, char *argv[]) {
 
   while (hemocell.iter < tmax ) {
     hemocell.iterate();
-    
+
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                 plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-    
+
     // Only enable if PARMETIS build is available
     /*
      if (hemocell.iter % tbalance == 0) {

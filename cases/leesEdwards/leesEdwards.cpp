@@ -10,6 +10,8 @@
 #include "helper/leesEdwardsBC.h"
 #include "helper/cellInfo.h"
 
+using namespace hemo;
+
 int main (int argc, char * argv[]) {
   if(argc < 2) {
     cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;

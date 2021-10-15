@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "hemocell.h"
 #include "rbcHighOrderModel.h"
+#include "voxelizeDomain.h"
 #include "wbcHighOrderModel.h"
 #include "pltSimpleModel.h"
 #include "cellInfo.h"
@@ -30,30 +31,37 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "particleInfo.h"
 #include <fenv.h>
 
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+typedef double T;
+
+using namespace hemo;
+
 int main(int argc, char *argv[]) {
   if(argc < 2) {
-    cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
+    cout << "Usage: " << argv[0] << " <configuration.xml>" << std::endl;
     return -1;
   }
 
   HemoCell hemocell(argv[1], argc, argv);
   Config * cfg = hemocell.cfg;
 
-  hlogfile << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl; 
+  hlogfile << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << std::endl;
 
   std::auto_ptr<MultiScalarField3D<int>> flagMatrix;
-  std::auto_ptr<VoxelizedDomain3D<T>> voxelizedDomain; 
-  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),  
-                       (*cfg)["domain"]["fluidEnvelope"].read<int>(),  
-                       (*cfg)["domain"]["refDirN"].read<int>(),  
-                       (*cfg)["domain"]["refDir"].read<int>(),  
-                       voxelizedDomain, flagMatrix,  
+  std::auto_ptr<VoxelizedDomain3D<T>> voxelizedDomain;
+  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),
+                       (*cfg)["domain"]["fluidEnvelope"].read<int>(),
+                       (*cfg)["domain"]["refDirN"].read<int>(),
+                       (*cfg)["domain"]["refDir"].read<int>(),
+                       voxelizedDomain, flagMatrix,
                        (*cfg)["domain"]["blockSize"].read<int>(),
-                       (*cfg)["domain"]["particleEnvelope"].read<int>()); 
+                       (*cfg)["domain"]["particleEnvelope"].read<int>());
 
   param::lbm_pipe_parameters((*cfg),flagMatrix.get());
   param::printParameters();
-  
+
   hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
             voxelizedDomain.get()->getMultiBlockManagement(),
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
@@ -73,7 +81,7 @@ int main(int argc, char *argv[]) {
                     DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                     plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
 
-  hemocell.lattice->initialize();   
+  hemocell.lattice->initialize();
 
   //Adding all the cells
   hemocell.initializeCellfield();
@@ -84,7 +92,7 @@ int main(int argc, char *argv[]) {
 
   hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  
+
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
   //hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<T>(), (*cfg)["domain"]["RepCutoff"].read<T>());
@@ -104,7 +112,7 @@ int main(int argc, char *argv[]) {
 
   // Enable boundary particles
   //hemocell.enableBoundaryParticles((*cfg)["domain"]["kRep"].read<T>(), (*cfg)["domain"]["BRepCutoff"].read<T>(),(*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  
+
   //loading the cellfield
   if (not cfg->checkpointed) {
     hemocell.loadParticles();
@@ -115,11 +123,11 @@ int main(int argc, char *argv[]) {
 
   //Restructure atomic blocks on processors when possible
   //hemocell.doRestructure(false); // cause errors
-  
+
   if (hemocell.iter == 0) {
-    hlog << "(PipeFlow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) { 
-      hemocell.lattice->collideAndStream(); 
+    hlog << "(PipeFlow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << std::endl;
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
+      hemocell.lattice->collideAndStream();
     }
   }
 
@@ -127,25 +135,25 @@ int main(int argc, char *argv[]) {
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
 
-  hlog << "(PipeFlow) Starting simulation..." << endl;
+  hlog << "(PipeFlow) Starting simulation..." << std::endl;
 
   while (hemocell.iter < tmax ) {
     hemocell.iterate();
-    
+
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                 plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-    
+
     if (hemocell.iter % tmeas == 0) {
-        hlog << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
+        hlog << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << std::endl;
         hlog << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
         hlog << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC");
-        hlog << ", PLT: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "PLT") << endl;
+        hlog << ", PLT: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "PLT") << std::endl;
         FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell); T toMpS = param::dx / param::dt;
-        hlog << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg * toMpS<< " m/s, rel. app. viscosity: " << (param::u_lbm_max*0.5) / finfo.avg << endl;
+        hlog << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg * toMpS<< " m/s, rel. app. viscosity: " << (param::u_lbm_max*0.5) / finfo.avg << std::endl;
         ParticleStatistics pinfo = ParticleInfo::calculateForceStatistics(&hemocell); T topN = param::df * 1.0e12;
-        hlog << "\t Force  -  min.: " << pinfo.min * topN << " pN, max.: " << pinfo.max * topN << " pN (" << pinfo.max << " lf), mean: " << pinfo.avg * topN << " pN" << endl;
+        hlog << "\t Force  -  min.: " << pinfo.min * topN << " pN, max.: " << pinfo.max * topN << " pN (" << pinfo.max << " lf), mean: " << pinfo.avg * topN << " pN" << std::endl;
 
         // Additional useful stats, if needed
         //finfo = FluidInfo::calculateForceStatistics(&hemocell);
@@ -153,9 +161,9 @@ int main(int argc, char *argv[]) {
         // setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
         //           DESCRIPTOR<T>::ExternalField::forceBeginsAt,
         //           hemo::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-        // pcout << "Fluid force, Minimum: " << finfo.min << " Maximum: " << finfo.max << " Average: " << finfo.avg << endl;
+        // pcout << "Fluid force, Minimum: " << finfo.min << " Maximum: " << finfo.max << " Average: " << finfo.avg << std::endl;
         // ParticleStatistics pinfo = ParticleInfo::calculateVelocityStatistics(&hemocell);
-        // pcout << "Particle velocity, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << endl;
+        // pcout << "Particle velocity, Minimum: " << pinfo.min << " Maximum: " << pinfo.max << " Average: " << pinfo.avg << std::endl;
         hemocell.writeOutput();
     }
     if (hemocell.iter % tcheckpoint == 0) {
@@ -163,7 +171,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  hlog << "(main) Simulation finished :) " << endl;
+  hlog << "(main) Simulation finished :) " << std::endl;
 
   return 0;
 }

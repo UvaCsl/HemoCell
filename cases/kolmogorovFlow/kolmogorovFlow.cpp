@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -29,9 +29,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "helper/fluidInfo.h"
 #include "helper/particleInfo.h"
 
+using namespace hemo;
+
 
 int main(int argc, char* argv[])
-{   
+{
 	if(argc < 2)
 	{
 			cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
@@ -41,7 +43,7 @@ int main(int argc, char* argv[])
 	HemoCell hemocell(argv[1], argc, argv);
 	Config * cfg = hemocell.cfg;
 
-	
+
 
 // ----------------- Read in config file & calc. LBM parameters ---------------------------
 	pcout << "(KolmogorovFlow) (Parameters) calculating flow parameters" << endl;
@@ -68,13 +70,9 @@ int main(int argc, char* argv[])
 	pcout << "(KolmogorovFlow) Re corresponds to u_max = " << (param::re * param::nu_p)/(hemocell.lattice->getBoundingBox().getNy()/2.0*param::dx) << " [m/s]" << endl;
 
 	//Driving Force
-  pcout << "(KolmogorovFlow) (Fluid) Setting up driving force using parallel planes approximation" << endl; 
+  pcout << "(KolmogorovFlow) (Fluid) Setting up driving force using parallel planes approximation" << endl;
   double rPipe = (*cfg)["domain"]["refDirN"].read<int>()/4.0;
   double poiseuilleForce =  16 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
-	// -------------------------- Define boundary conditions ---------------------
-
-	OnLatticeBoundaryCondition3D<double,DESCRIPTOR>* boundaryCondition
-			= createLocalBoundaryCondition3D<double,DESCRIPTOR>();
 
 	hemocell.lattice->toggleInternalStatistics(false);
 
@@ -89,11 +87,11 @@ int main(int argc, char* argv[])
 
 
 	// ----------------------- Init cell models --------------------------
-	
+
 	hemocell.initializeCellfield();
 	hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
 	hemocell.setMaterialTimeScaleSeparation("RBC", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC, OUTPUT_FORCE_INNER_LINK, OUTPUT_VERTEX_ID, OUTPUT_CELL_ID}; 
+	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC, OUTPUT_FORCE_INNER_LINK, OUTPUT_VERTEX_ID, OUTPUT_CELL_ID};
 	hemocell.setOutputs("RBC", outputs);
 
 	hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
@@ -123,11 +121,11 @@ int main(int argc, char* argv[])
   }
 
 
-  if (hemocell.iter == 0) { 
-    pcout << "(KolmogorovFlow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl; 
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {  
-      hemocell.lattice->collideAndStream();  
-    } 
+  if (hemocell.iter == 0) {
+    pcout << "(KolmogorovFlow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
+      hemocell.lattice->collideAndStream();
+    }
   }
 
 
@@ -142,7 +140,7 @@ int main(int argc, char* argv[])
 
     setExternalVector( *hemocell.lattice, bottom,
             DESCRIPTOR<T>::ExternalField::forceBeginsAt, plb::Array<double,DESCRIPTOR<T>::d>(-poiseuilleForce,0.0,0.0));
-    
+
     hemocell.iterate();
 
     if (hemocell.iter % tmeas == 0) {

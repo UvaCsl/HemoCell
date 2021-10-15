@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -28,6 +28,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "fluidInfo.h"
 #include "particleInfo.h"
 #include <fenv.h>
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+using namespace hemo;
 
 int main(int argc, char *argv[]) {
   if(argc < 2) {
@@ -38,14 +42,14 @@ int main(int argc, char *argv[]) {
   HemoCell hemocell(argv[1], argc, argv);
   Config * cfg = hemocell.cfg;
 
-  
+
   int nx, ny, nz;
   nx = ny = nz = (*cfg)["domain"]["refDirN"].read<int>() ;
-  //nx = 2 * ny ; 
+  //nx = 2 * ny ;
   hlog << "(unbounded) (Parameters) calculating flow parameters" << endl;
   param::lbm_pipe_parameters((*cfg),nx);
   param::printParameters();
-  
+
   hlog << "(unbounded) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
             defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, (*cfg)["domain"]["fluidEnvelope"].read<int>()),
@@ -66,13 +70,13 @@ int main(int argc, char *argv[]) {
   hlog << getMultiBlockInfo(*hemocell.lattice) << endl;
 
   //Driving Force
-  hlog << "(PipeFlow) (Fluid) Setting up driving Force" << endl; 
+  hlog << "(PipeFlow) (Fluid) Setting up driving Force" << endl;
   double rPipe = (*cfg)["domain"]["refDirN"].read<int>()/2.0;
   double poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-  DESCRIPTOR<T>::ExternalField::forceBeginsAt,                                                                                    
+  DESCRIPTOR<T>::ExternalField::forceBeginsAt,
   plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, poiseuilleForce, poiseuilleForce));
- 
+
 
   hemocell.lattice->initialize();
 
@@ -102,11 +106,11 @@ int main(int argc, char *argv[]) {
   } else {
     hemocell.loadCheckPoint();
     }
-  
+
   if (hemocell.iter == 0) {
     hlog << "(unbounded) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) { 
-      hemocell.lattice->collideAndStream(); 
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
+      hemocell.lattice->collideAndStream();
     }
   }
 
@@ -120,12 +124,12 @@ int main(int argc, char *argv[]) {
 
   while (hemocell.iter < tmax ) {
     hemocell.iterate();
-    
+
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
 		      plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, poiseuilleForce, poiseuilleForce));
-   
+
 
        if (hemocell.iter % tmeas == 0) {
       hlog << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
@@ -133,7 +137,7 @@ int main(int argc, char *argv[]) {
       hlog << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC");
       FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell); double toMpS = param::dx / param::dt;
       hlog << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg * toMpS<< " m/s, rel. app. viscosity: " << (param::u_lbm_max*0.5) / finfo.avg << endl;
-      
+
 
       hemocell.writeOutput();
     }

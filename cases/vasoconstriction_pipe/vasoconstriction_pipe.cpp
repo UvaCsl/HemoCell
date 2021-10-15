@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -28,6 +28,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "fluidInfo.h"
 #include "particleInfo.h"
 #include <fenv.h>
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+using namespace hemo;
 
 
 /// A functional, used to instantiate bounce-back nodes at the locations of the sphere
@@ -39,26 +43,26 @@ public:
 		 Lycirc(Lycirc_),
 		 LradiusCyl(LradiusCyl_),
 		 LradiusSqr(LradiusCyl*LradiusCyl),
-		 xbegin(xbegin_), 
+		 xbegin(xbegin_),
 		 xend(xend_),
 		 SradiusCyl(SradiusCyl_),
 		 //SradiusSqr(SradiusCyl*SradiusCyl),
 		 L_constr(L_constr_)
 	{}
-	
+
 	virtual bool operator() (plint iX, plint iY, plint iZ) const {
 		return ((iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= LradiusSqr && iX >= 0 && iX < xbegin) ||
-			//((iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= (((LradiusCyl-SradiusCyl)/2)*(1-std::cos((2*iX)/((L_constr/10)*std::acos(-1))))+(SradiusCyl))*(((LradiusCyl-SradiusCyl)/2)*(1-std::cos((2*iX)/((L_constr/10)*std::acos(-1))))+(SradiusCyl)) && iX >= xbegin && iX < xend) || 
+			//((iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= (((LradiusCyl-SradiusCyl)/2)*(1-std::cos((2*iX)/((L_constr/10)*std::acos(-1))))+(SradiusCyl))*(((LradiusCyl-SradiusCyl)/2)*(1-std::cos((2*iX)/((L_constr/10)*std::acos(-1))))+(SradiusCyl)) && iX >= xbegin && iX < xend) ||
 			//((iZ-Sxcirc)*(iZ-Sxcirc) + (iY-Sycirc)*(iY-Sycirc) <= SradiusSqr && iX >=100 && iX <=150) ||
 			( (iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= ( ((LradiusCyl-SradiusCyl)/2)*std::cos( (2*std::acos(-1)/L_constr)*iX - (L_constr*xbegin) ) + ( ((LradiusCyl-SradiusCyl)/2) + SradiusCyl ) ) * ( ((LradiusCyl-SradiusCyl)/2)*std::cos( (2*std::acos(-1)/L_constr)*iX - (L_constr*xbegin) ) + ( ((LradiusCyl-SradiusCyl)/2) + SradiusCyl ) )  && iX >= xbegin && iX < xend ) ||
 			((iZ-Lxcirc)*(iZ-Lxcirc) + (iY-Lycirc)*(iY-Lycirc) >= LradiusSqr && iX >= xend && iX <= xend+xbegin);
-			
+
 	}
 
 	virtual CylinderShapeDomain3D<T>* clone() const{
 		return new CylinderShapeDomain3D<T>(*this);
 	}
-	
+
 private:
 	plint Lxcirc;
 	plint Lycirc;
@@ -82,7 +86,7 @@ int main(int argc, char *argv[]) {
   Config * cfg = hemocell.cfg;
 
   pcout << "(vasoconstriction) (Parameters) calculating flow parameters" << endl;
-  param::lbm_pipe_parameters((*cfg), (*cfg)["domain"]["refDirN"].read<int>()); 
+  param::lbm_pipe_parameters((*cfg), (*cfg)["domain"]["refDirN"].read<int>());
   param::printParameters();
 
 // ---------------------------- Create geometry ------------------------------------------------
@@ -91,7 +95,7 @@ int main(int argc, char *argv[]) {
   pcout << "(vasoconstriction) setting dimensions ..." << std::endl;
 
   plint Cfactor = 2;
-  plint nx = 6*(*cfg)["domain"]["refDirN"].read<int>(); //100lu=50um 
+  plint nx = 6*(*cfg)["domain"]["refDirN"].read<int>(); //100lu=50um
   plint ny = (*cfg)["domain"]["refDirN"].read<int>()+Cfactor;
   plint nz = ny+Cfactor;
 
@@ -107,18 +111,18 @@ int main(int argc, char *argv[]) {
   double perc_constr = 0.56; //28/50;
   plint xbegin = (nx-L_constr)/2;
   plint xend = xbegin + L_constr;
-  
+
   double SradiusCyl = LradiusCyl * (1.0-perc_constr);
-  
+
   pcout << "(vasoconstriction) (Parameters)";
-  pcout << "xbegin= " << xbegin; 
+  pcout << "xbegin= " << xbegin;
   pcout << "xend= " << xend;
   pcout << "radius lare = " << LradiusCyl;
   pcout << "radius small= " << SradiusCyl << endl;
-  
+
 // ---------------------------------------------------------------------------------------------
   plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
-  
+
   pcout << "(vasoconstriction) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
             defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
@@ -130,18 +134,18 @@ int main(int argc, char *argv[]) {
 
   defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
 	      new CylinderShapeDomain3D<T>(Lxcirc, Lycirc, LradiusCyl, xbegin, xend, SradiusCyl,L_constr),
-	      new BounceBack<T, DESCRIPTOR> );  
+	      new BounceBack<T, DESCRIPTOR> );
 
 
   hemocell.lattice->toggleInternalStatistics(false);
   hemocell.lattice->periodicity().toggleAll(true);
- 
+
 
   hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
 
   //Driving Force
-  pcout << "(vasoconstriction) (Fluid) Setting up driving Force" << endl; 
+  pcout << "(vasoconstriction) (Fluid) Setting up driving Force" << endl;
   double poiseuilleForce = 8 * param::nu_lbm * (param::u_lbm_max * 0.5) / LradiusCyl / LradiusCyl;
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                     DESCRIPTOR<double>::ExternalField::forceBeginsAt,
@@ -149,7 +153,7 @@ int main(int argc, char *argv[]) {
 
   pcout << "poiseuilleForce = " << poiseuilleForce << endl;
 
-  hemocell.lattice->initialize();   
+  hemocell.lattice->initialize();
 
   //Adding all the cells
   hemocell.initializeCellfield();
@@ -160,11 +164,11 @@ int main(int argc, char *argv[]) {
 
   hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  
+
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
 
-  vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC,OUTPUT_VERTEX_ID,OUTPUT_CELL_ID};
+  vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
   hemocell.setOutputs("RBC", outputs);
   hemocell.setOutputs("PLT", outputs);
 
@@ -190,8 +194,8 @@ int main(int argc, char *argv[]) {
                 plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
 
     pcout << "(vasoconstriction) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) { 
-      hemocell.lattice->collideAndStream(); 
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
+      hemocell.lattice->collideAndStream();
     }
     FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell); double toMpS = param::dx / param::dt;
     cellFreeVel = finfo.avg;
@@ -207,19 +211,19 @@ int main(int argc, char *argv[]) {
 
   while (hemocell.iter < tmax ) {
     hemocell.iterate();
-    
+
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                 plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-    
+
     // Only enable if PARMETIS build is available
     // if (hemocell.iter % tbalance == 0) {
     //   if(hemocell.calculateFractionalLoadImbalance() > 3) {
     //    // hemocell.doLoadBalance();
     //   }
     // }
-   
+
     if (hemocell.iter % tmeas == 0) {
       pcout << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
       pcout << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);

@@ -4,10 +4,14 @@
 #include "rbcMalariaModel.h"
 #include "helper/hemoCellStretch.h"
 #include "helper/cellInfo.h"
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+using namespace hemo;
 
 
 int main(int argc, char* argv[])
-{   
+{
 	if(argc < 2)
 	{
 			cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
@@ -16,7 +20,7 @@ int main(int argc, char* argv[])
 
 	HemoCell hemocell(argv[1], argc, argv);
 	Config * cfg = hemocell.cfg;
-	
+
 // ---------------------------- Calc. LBM parameters -------------------------------------------------
 	pcout << "(CellStretch) (Parameters) calculating shear flow parameters" << endl;
 
@@ -25,7 +29,7 @@ int main(int argc, char* argv[])
   param::ef_lbm = (*cfg)["parameters"]["stretchForce"].read<double>()*1e-12 / param::df;
 
   param::printParameters();
-  
+
 	// ------------------------ Init lattice --------------------------------
 
   plint nx = 50; //plint nx = 70; // in case of WBC use larger dimensions
@@ -52,19 +56,19 @@ int main(int argc, char* argv[])
 
   boundaryCondition->setVelocityConditionOnBlockBoundaries(*hemocell.lattice);
   setBoundaryVelocity(*hemocell.lattice, hemocell.lattice->getBoundingBox(), plb::Array<double,3>(0.,0.,0.) );
-  // Box3D x_n = Box3D(0,0,0,ny,0,nz); 
+  // Box3D x_n = Box3D(0,0,0,ny,0,nz);
   // boundaryCondition->addPressureBoundary0N(x_n, *hemocell.lattice);
-  // Box3D x_p = Box3D(nx,nx,0,ny,0,nz); 
+  // Box3D x_p = Box3D(nx,nx,0,ny,0,nz);
   // boundaryCondition->addPressureBoundary0N(x_p, *hemocell.lattice);
-  // Box3D y_n = Box3D(0,nx,0,0,0,nz); 
+  // Box3D y_n = Box3D(0,nx,0,0,0,nz);
   // boundaryCondition->addPressureBoundary0N(y_n, *hemocell.lattice);
-  // Box3D y_p = Box3D(0,nx,ny,ny,0,nz); 
+  // Box3D y_p = Box3D(0,nx,ny,ny,0,nz);
   // boundaryCondition->addPressureBoundary0N(y_p, *hemocell.lattice);
-  // Box3D z_n = Box3D(0,nx,0,ny,0,0); 
+  // Box3D z_n = Box3D(0,nx,0,ny,0,0);
   // boundaryCondition->addPressureBoundary0N(z_n, *hemocell.lattice);
-  // Box3D z_p = Box3D(0,nx,0,ny,nz,nz); 
+  // Box3D z_p = Box3D(0,nx,0,ny,nz,nz);
   // boundaryCondition->addPressureBoundary0N(z_p, *hemocell.lattice);
-  
+
   // setBoundaryDensity(*hemocell.lattice,x_n,1.);
   // setBoundaryDensity(*hemocell.lattice,x_p,1.);
   // setBoundaryDensity(*hemocell.lattice,y_n,1.);
@@ -78,17 +82,17 @@ int main(int argc, char* argv[])
 	hemocell.lattice->initialize();
 
 	// ----------------------- Init cell models --------------------------
-	
+
 	hemocell.initializeCellfield();
 	hemocell.addCellType<RbcMalariaModel>("RBC_MALARIA", MESH_FROM_STL);
 	// hemocell.addCellType<WbcHighOrderModel>("WBC_HO", WBC_SPHERE);
-	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC, OUTPUT_VERTEX_ID, OUTPUT_CELL_ID};
+	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
 	hemocell.setOutputs("RBC_MALARIA", outputs);
 	// hemocell.setOutputs("WBC_HO", outputs);
 
 	outputs = {OUTPUT_VELOCITY,OUTPUT_FORCE,OUTPUT_DENSITY};
 	hemocell.setFluidOutputs(outputs);
-        
+
   hemocell.outputInSiUnits = true; //HDF5 output in SI units (except location (so fluid location, particle location is still in LU)
 
 // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
@@ -106,9 +110,9 @@ int main(int argc, char* argv[])
   unsigned int n_forced_lsps = 1 + 6 + 6 + 6;// + 12;
   HemoCellStretch cellStretch(*(*hemocell.cellfields)["RBC_MALARIA"],n_forced_lsps, param::ef_lbm);
   // HemoCellStretch cellStretch(*(*hemocell.cellfields)["WBC_HO"],n_forced_lsps, param::ef_lbm);
-  
+
   pcout << "(CellStretch) External stretching force [pN(flb)]: " <<(*cfg)["parameters"]["stretchForce"].read<double>() << " (" << param::ef_lbm  << ")" << endl;
-    
+
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
@@ -127,7 +131,7 @@ int main(int argc, char* argv[])
   pcout << "\tx: " << bb[0] << " : " << bb[1] << endl;
   pcout << "\ty: " << bb[2] << " : " << bb[3] << endl;
   pcout << "\tz: " << bb[4] << " : " << bb[5] << endl;
-  
+
   // Creating output log file
   plb_ofstream fOut;
   if(cfg->checkpointed)
@@ -136,12 +140,12 @@ int main(int argc, char* argv[])
     fOut.open("stretch.log");
 
 
-  while (hemocell.iter < tmax ) {  
+  while (hemocell.iter < tmax ) {
 
     cellStretch.applyForce(); //IMPORTANT, not done normally in hemocell.iterate()
     hemocell.iterate();
-    
-    
+
+
     if (hemocell.iter % tmeas == 0) {
       hemocell.writeOutput();
 
@@ -158,11 +162,11 @@ int main(int argc, char* argv[])
       hemo::Array<double,6> bbox = CellInformationFunctionals::info_per_cell[0].bbox/(1e-6/param::dx);
       double largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch)/(1e-6/param::dx);
 
-      pcout << "\t Cell center at: {" <<position[0]<<","<<position[1]<<","<<position[2] << "} µm" <<endl;  
+      pcout << "\t Cell center at: {" <<position[0]<<","<<position[1]<<","<<position[2] << "} µm" <<endl;
       pcout << "\t Diameters: {" << bbox[1]-bbox[0] <<", " << bbox[3]-bbox[2] <<", " << bbox[5]-bbox[4] <<"}  µm" << endl;
       pcout << "\t Surface: " << surface << " µm^2" << " (" << surface / surface_eq * 100.0 << "%)" << "  Volume: " << volume << " µm^3" << " (" << volume / volume_eq * 100.0 << "%)"<<endl;
       pcout << "\t Largest diameter: " << largest_diam << " µm." << endl;
-      
+
       fOut << hemocell.iter << " " << bbox[1]-bbox[0] << " " << bbox[3]-bbox[2] << " " << bbox[5]-bbox[4] << " " << volume / volume_eq * 100.0 << " " << surface / surface_eq * 100.0 << " " << largest_diam << endl;
 
       CellInformationFunctionals::clear_list();
@@ -171,8 +175,8 @@ int main(int argc, char* argv[])
     if (hemocell.iter % tcheckpoint == 0) {
       hemocell.saveCheckPoint();
     }
-    
-    
+
+
   }
 
   fOut.close();

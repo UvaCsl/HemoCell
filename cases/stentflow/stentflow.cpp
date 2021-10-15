@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -28,6 +28,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "fluidInfo.h"
 #include "particleInfo.h"
 #include <fenv.h>
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+using namespace hemo;
 
 
 /// A functional, used to instantiate bounce-back nodes at the locations of the sphere
@@ -39,12 +43,12 @@ public:
 		 Vycirc(Vycirc_),
 		 VradiusCyl(VradiusCyl_),
 		 VradiusSqr(VradiusCyl*VradiusCyl),
-		 H2xcirc(H2xcirc_), 
+		 H2xcirc(H2xcirc_),
 		 H2zcirc(H2zcirc_),
 		 H2radiusCyl(H2radiusCyl_),
 		 H2radiusSqr(H2radiusCyl*H2radiusCyl)
 	{}
-	
+
 	virtual bool operator() (plint iX, plint iY, plint iZ) const {
 		return ((iX-Vxcirc)*(iX-Vxcirc) + (iY-Vycirc)*(iY-Vycirc) <= VradiusSqr) ||
 			((iX-H2xcirc)*(iX-H2xcirc) + (iZ-H2zcirc)*(iZ-H2zcirc) <= H2radiusSqr);
@@ -53,7 +57,7 @@ public:
 	virtual CylinderShapeDomain3D<T>* clone() const{
 		return new CylinderShapeDomain3D<T>(*this);
 	}
-	
+
 private:
 	plint Vxcirc;
 	plint Vycirc;
@@ -77,7 +81,7 @@ int main(int argc, char *argv[]) {
   Config * cfg = hemocell.cfg;
 
   pcout << "(stentflow) (Parameters) calculating flow parameters" << endl;
-  param::lbm_pipe_parameters((*cfg), (*cfg)["domain"]["refDirN"].read<int>()); 
+  param::lbm_pipe_parameters((*cfg), (*cfg)["domain"]["refDirN"].read<int>());
   param::printParameters();
 
 // ---------------------------- Create geometry ------------------------------------------------
@@ -85,7 +89,7 @@ int main(int argc, char *argv[]) {
 
   pcout << "(stentflow) setting dimensions ..." << std::endl;
 
-  plint ny = (*cfg)["domain"]["refDirN"].read<int>(); 
+  plint ny = (*cfg)["domain"]["refDirN"].read<int>();
   plint nz = ny;
   plint nx = 2 * ny;
 
@@ -93,14 +97,14 @@ int main(int argc, char *argv[]) {
   plint Vxcirc = ny/2;
   plint Vycirc = ny/2;
 
-  plint HradiusCyl = 20; 
+  plint HradiusCyl = 20;
   plint Hxcirc = ny/2;
   plint Hzcirc = ny/2;
 
 
 // ---------------------------------------------------------------------------------------------
   plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
-  
+
   pcout << "(stentflow) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
             defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
@@ -112,18 +116,18 @@ int main(int argc, char *argv[]) {
 
   defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
 	      new CylinderShapeDomain3D<T>(Vxcirc, Vycirc, VradiusCyl, Hxcirc, Hzcirc, HradiusCyl),
-	      new BounceBack<T, DESCRIPTOR> );  
+	      new BounceBack<T, DESCRIPTOR> );
 
 
   hemocell.lattice->toggleInternalStatistics(false);
   hemocell.lattice->periodicity().toggleAll(true);
- 
+
 
   hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
 
   //Driving Force
-  pcout << "(stentflow) (Fluid) Setting up driving Force" << endl; 
+  pcout << "(stentflow) (Fluid) Setting up driving Force" << endl;
   double poiseuilleForce = param::u_lbm_max * 8 * param::nu_lbm / (nx*ny); //8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                     DESCRIPTOR<double>::ExternalField::forceBeginsAt,
@@ -131,7 +135,7 @@ int main(int argc, char *argv[]) {
 
   pcout << "poiseuilleForce = " << poiseuilleForce << endl;
 
-  hemocell.lattice->initialize();   
+  hemocell.lattice->initialize();
 
   //Adding all the cells
   hemocell.initializeCellfield();
@@ -142,11 +146,11 @@ int main(int argc, char *argv[]) {
 
   hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  
+
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
 
-  vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC,OUTPUT_VERTEX_ID,OUTPUT_CELL_ID};
+  vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
   hemocell.setOutputs("RBC", outputs);
   hemocell.setOutputs("PLT", outputs);
 
@@ -172,8 +176,8 @@ int main(int argc, char *argv[]) {
                 plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
 
     pcout << "(stentflow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) { 
-      hemocell.lattice->collideAndStream(); 
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
+      hemocell.lattice->collideAndStream();
     }
     FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell); double toMpS = param::dx / param::dt;
     cellFreeVel = finfo.avg;
@@ -189,19 +193,19 @@ int main(int argc, char *argv[]) {
 
   while (hemocell.iter < tmax ) {
     hemocell.iterate();
-    
+
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
                 DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                 plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
-    
+
     // Only enable if PARMETIS build is available
     // if (hemocell.iter % tbalance == 0) {
     //   if(hemocell.calculateFractionalLoadImbalance() > 3) {
     //    // hemocell.doLoadBalance();
     //   }
     // }
-   
+
     if (hemocell.iter % tmeas == 0) {
       pcout << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
       pcout << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);

@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -29,6 +29,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "fluidInfo.h"
 #include "particleInfo.h"
 #include <fenv.h>
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+using namespace hemo;
 
 int main(int argc, char *argv[]) {
   if(argc < 2) {
@@ -41,17 +45,17 @@ int main(int argc, char *argv[]) {
 
   int nx, ny, nz;
   nx = ny = nz =(*cfg)["domain"]["refDirN"].read<int>() ;
-//  ny = nz = (*cfg)["domain"]["refDirN"].read<int>() ; 
+//  ny = nz = (*cfg)["domain"]["refDirN"].read<int>() ;
   hlog << "(unbounded) (Parameters) calculating flow parameters" << endl;
   param::lbm_pipe_parameters((*cfg),nx);
   param::printParameters();
-  
+
   //TODO calculate either here or from diffusion config in Parameters
 //  double Dp = 0; //0.25e-4;
 //  double D  = Dp * param::dt / (param::dx * param::dx);
-//  param::tau_CEPAC = ( 3. * D ) + 0.5; //param::tau; 
+//  param::tau_CEPAC = ( 3. * D ) + 0.5; //param::tau;
 //  param::tau_CEPAC = param::tau;
-  
+
   hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
             defaultMultiBlockPolicy3D().getMultiBlockManagement(nx,ny,nz, (*cfg)["domain"]["fluidEnvelope"].read<int>()),
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
@@ -112,22 +116,22 @@ int main(int argc, char *argv[]) {
 
   defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR>(1.));
 
-//  ADboundaryCondition->addTemperatureBoundary2P(bottomChannel, *hemocell.cellfields->CEPACfield); 
+//  ADboundaryCondition->addTemperatureBoundary2P(bottomChannel, *hemocell.cellfields->CEPACfield);
 //  setBoundaryDensity(*hemocell.cellfields->CEPACfield,bottomChannel,0.0);
 
-//  ADboundaryCondition->addTemperatureBoundary2P(topChannel, *hemocell.cellfields->CEPACfield); 
+//  ADboundaryCondition->addTemperatureBoundary2P(topChannel, *hemocell.cellfields->CEPACfield);
 //  setBoundaryDensity(*hemocell.cellfields->CEPACfield,topChannel,0.0);
 
   //3 by 3 source on bottom of channel
   Box3D CEPACsource(1, 4, (ny/2-2), (ny/2)-2, 4, 8); //((nx/2)-1,(nx/2)+1,(ny/2)-2,(ny/2)+2, 2, 2);
-  ADboundaryCondition->addTemperatureBoundary2N(CEPACsource,*hemocell.cellfields->CEPACfield); 
+  ADboundaryCondition->addTemperatureBoundary2N(CEPACsource,*hemocell.cellfields->CEPACfield);
   setBoundaryDensity(*hemocell.cellfields->CEPACfield,CEPACsource,0.05);
-  
-  hemocell.lattice->initialize();   
-  hemocell.cellfields->CEPACfield->initialize();   
+
+  hemocell.lattice->initialize();
+  hemocell.cellfields->CEPACfield->initialize();
 
   hemocell.enableBoundaryParticles((*cfg)["domain"]["kRep"].read<T>(), (*cfg)["domain"]["BRepCutoff"].read<T>(),(*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  
+
   //loading the cellfield
   if (not cfg->checkpointed) {
     hemocell.loadParticles();
@@ -144,7 +148,7 @@ int main(int argc, char *argv[]) {
 
   while (hemocell.iter < tmax ) {
     hemocell.iterate();
-    
+
     if (hemocell.iter % tmeas == 0) {
         hlog << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
         hlog << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);

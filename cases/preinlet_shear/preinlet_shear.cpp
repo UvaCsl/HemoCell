@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -29,6 +29,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "particleInfo.h"
 #include "preInlet.h"
 #include <fenv.h>
+
+#include "palabos3D.h"
+#include "palabos3D.hh"
+
+using namespace hemo;
 
 int main(int argc, char *argv[]) {
   if(argc < 2) {
@@ -66,7 +71,7 @@ int main(int argc, char *argv[]) {
           defaultMultiBlockPolicy3D().getMultiCellAccess<double, DESCRIPTOR>(),
           new GuoExternalForceBGKdynamics<double, DESCRIPTOR>(1.0/param::tau));
   hemocell.lattice = temporary_lattice;
-  
+
   //Set up boundaries (to help preinlet creation)
   //Outlet
   Box3D bb = hemocell.lattice->getBoundingBox();
@@ -84,9 +89,9 @@ int main(int argc, char *argv[]) {
   //TODO
   //Bottom
   //TODO
-  
 
-  
+
+
   hlog << "(PreInlets) creating preInlet" << endl;
   hemocell.preInlet = new hemo::PreInlet(&hemocell,management);
 
@@ -94,15 +99,15 @@ int main(int argc, char *argv[]) {
   Box3D slice = hemocell.lattice->getBoundingBox();
   slice.x1 = slice.x0 = slice.x0+2;
   hemocell.preInlet->preInletFromSlice(Direction::Xneg,slice);
-    
+
   delete temporary_lattice;
   hemocell.lattice = 0;
-  
+
   hlog << "(Stl preinlet) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.initializeLattice(management);
-  
 
-  
+
+
   // Boundaries for the domain
   if (!hemocell.partOfpreInlet) {
   OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = new BoundaryConditionInstantiator3D
@@ -113,13 +118,13 @@ int main(int argc, char *argv[]) {
   boundaryCondition->setVelocityConditionOnBlockBoundaries (*hemocell.lattice, topChannel );
   setBoundaryVelocity(*hemocell.lattice, topChannel, plb::Array<T,3>(0.75*velocity_max_lbm,0,0));
   }
- 
+
   hemocell.preInlet->initializePreInlet();
 
   hemocell.lattice->periodicity().toggle(1,true);
 
-  hlog << "(Stl preinlet) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl; 
-  
+  hlog << "(Stl preinlet) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl;
+
   hemocell.preInlet->createBoundary();
   if (hemocell.partOfpreInlet) {
     Box3D bb = hemocell.lattice->getBoundingBox();
@@ -135,13 +140,13 @@ int main(int argc, char *argv[]) {
     boundaryCondition->setVelocityConditionOnBlockBoundaries (*hemocell.lattice, domain );
     setBoundaryVelocity(*hemocell.lattice, topChannel, plb::Array<T,3>(0.75*velocity_max_lbm,0,0));
   }
-  
-  
+
+
   hemocell.lattice->toggleInternalStatistics(false);
 
   hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
 
-  hemocell.lattice->initialize();   
+  hemocell.lattice->initialize();
 
   // Adding all the cells
   hemocell.initializeCellfield();
@@ -152,7 +157,7 @@ int main(int argc, char *argv[]) {
 
   hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  
+
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
   vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
@@ -166,12 +171,12 @@ int main(int argc, char *argv[]) {
   if (!hemocell.partOfpreInlet) {
     Box3D bb = hemocell.lattice->getBoundingBox();
     Box3D outlet(bb.x1-2,bb.x1,bb.y0,bb.y1,bb.z0,bb.z1);
-    OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = new BoundaryConditionInstantiator3D 
+    OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = new BoundaryConditionInstantiator3D
           < T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T,DESCRIPTOR> > ();
     boundary->addPressureBoundary0P(outlet,*hemocell.lattice,boundary::density);
     setBoundaryDensity(*hemocell.lattice,outlet, 1.0);
   }
-  
+
   //loading the cellfield
   if (not cfg->checkpointed) {
     hemocell.loadParticles();
@@ -179,14 +184,14 @@ int main(int argc, char *argv[]) {
   } else {
     hemocell.loadCheckPoint();
   }
- 
+
   //Restructure atomic blocks on processors when possible
   //hemocell.doRestructure(false); // cause errors(?)
-  
+
   if (hemocell.iter == 0) {
     pcout << "(Stl preinlet) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) { 
-      hemocell.lattice->collideAndStream(); 
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
+      hemocell.lattice->collideAndStream();
     }
   }
 
@@ -196,18 +201,18 @@ int main(int argc, char *argv[]) {
   unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
 
-  
+
   pcout << "(Stl preinlet) Starting simulation..." << endl;
 
   while (hemocell.iter < tmax ) {
     //preinlet.update();
     hemocell.iterate();
-    
+
     if (hemocell.partOfpreInlet) {
       //Set driving force as required after each iteration
       //hemocell.preInlet->setDrivingForce();
     }
-    
+
     hemocell.preInlet->applyPreInlet();
 
     // Load-balancing! Only enable if PARMETIS build is available

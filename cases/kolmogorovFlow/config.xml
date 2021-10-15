@@ -10,7 +10,7 @@
     <radius> 3.91e-6 </radius> <!-- Radius of the particle in [m] (dx) [3.3e-6, 3.91e-6, XX and 4.284 for shapes [0,1,2,3] respectively -->
     <minNumOfTriangles> 600 </minNumOfTriangles> <!--Minimun numbers of triangles per cell. Not always exact.-->
     <stepMaterialEvery> 20 </stepMaterialEvery> <!-- Update particle material model after this many fluid time steps. -->
-    <stepParticleEvery> 5 </stepParticleEvery> <!-- Update particles position after this many fluid time steps. -->
+    <stepParticleEvery> 1 </stepParticleEvery> <!-- Update particles position after this many fluid time steps. -->
 </ibm>
 
 <domain>
@@ -28,7 +28,7 @@
 
 <sim>
     <tmax> 500000 </tmax> <!-- total number of iterations -->
-    <tmeas> 5000 </tmeas> <!-- interval after which data is written --> 
+    <tmeas> 5000 </tmeas> <!-- interval after which data is written -->
     <tcheckpoint>1000000</tcheckpoint>
 </sim>
 
