@@ -57,7 +57,7 @@ set(SRC_DIR_LIST
         ${CMAKE_CURRENT_SOURCE_DIR}/config
         ${CMAKE_CURRENT_SOURCE_DIR}/core
         ${CMAKE_CURRENT_SOURCE_DIR}/helper
-        ${CMAKE_CURRENT_SOURCE_DIR}/IO
+        ${CMAKE_CURRENT_SOURCE_DIR}/io
         ${CMAKE_CURRENT_SOURCE_DIR}/mechanics
         ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyxml2
         ${CMAKE_CURRENT_SOURCE_DIR}/${PALABOS_DIR}/src
