@@ -6,6 +6,14 @@ In this changelog, we consider the following classes of changes:
 * Structure: any changes to the structure of HemoCell that may break existing cases.
 * Fixes: (small) changes that do not fall in the other categories.
 
+Unreleased
+----------
+
+* Features
+  * Added ``tools/pos_to_vtk`` for simple cell visualisation.
+* Structure
+* Fixes
+
 2.4 (Sep 23 2021)
 -----------------
 * Features
