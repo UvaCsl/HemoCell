@@ -22,7 +22,6 @@ Paraview provides a large set of tools for the post-processing, visualization,
 and investigation of the generated output files. All different fields, e.g.
 fluid, RBC, PLT, etc., can be shown independently with great range of detail.
 
-
 Blender
 -------
 
@@ -76,3 +75,10 @@ Afterwards, the resulting PNG renders are place in ``examples/tmp/renders/``.
 
    An example rendering of a single red blood cell as generated from the
    ``oneCellShear`` example.
+
+``pos_to_vtk``
+--------------
+
+The ``pos_to_vtk`` provides basic visualisation of initial ``*.pos`` cell packings/positions
+files, as described in its documentation under :ref:`pos_to_vtk`.
+

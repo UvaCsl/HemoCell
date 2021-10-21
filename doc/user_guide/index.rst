@@ -90,6 +90,7 @@ User Guide
    helper_scripts
    advanced_cases
    visualization
+   utilities
 
 .. toctree::
    :maxdepth: 1
