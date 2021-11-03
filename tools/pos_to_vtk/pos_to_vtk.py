@@ -87,8 +87,8 @@ cannot be combined. Please provide only one."""
         rbcs = rbcs.clip(wireframe, bounding_box)
         plts = plts.clip(wireframe, bounding_box)
 
-    if (plt and len(plt) == 0) and len(rbcs) == 0:
-        raise click.UsageError("No cells remain after clipping with ...")
+    if len(rbcs) == 0 and len(plts) == 0:
+        raise click.UsageError("No cells remain after clipping.")
 
     if output:
         rbcs = create_glyphs(rbcs, CellType.RBC)
