@@ -45,6 +45,13 @@ version 2.0.x, older or newer versions generally seem to be ok. We have tried to
 track down the issue with heaptrack and only found memory leaks within the MCA
 part of OpenMPI.
 
+Q: Including custom example code raises: ``undefined reference``
+----------------------------------------------------------------
+
+This error might be encountered when linking external ``*.h,*.cpp`` files in
+addition to your example's main ``cpp``-file without referencing these
+files in the example's ``CMakeLists.txt`` file. Please refer to section
+:ref:`linking_external_code` for a brief description how to link these files.
 
 
 Do you have a problem that is not listed here? please mail: info@hemocell.eu or create an issue at the github repository, you might help someone else as well!

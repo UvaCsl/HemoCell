@@ -196,6 +196,28 @@ cases:
 
 You can download this file from :download:`here <downloads/newCase.cpp>`
 
+.. _linking_external_code:
+
+Including external code in your example
+---------------------------------------
+
+To link external code, make sure to register your custom ``*.h, *.cpp`` files
+within the example's ``CMakeLists.txt``. For example, if you wish to include
+code from ``mycell.h`` and ``mycell.cpp``, make sure to update the executable
+definition in ``CMakeLists.txt`` accordingly, i.e. change the
+``add_executable`` definition from the default:
+
+.. code-block::
+
+   add_executable(${EXEC_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${MAIN}.cpp"
+
+to include a reference to your code, in this case add ``mycell``:
+
+.. code-block::
+
+   add_executable(${EXEC_NAME} "mycell" "${CMAKE_CURRENT_SOURCE_DIR}/${MAIN}.cpp"
+
+
 Creating a bare config.xml
 --------------------------
 
