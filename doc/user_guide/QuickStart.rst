@@ -78,7 +78,7 @@ Compiling HemoCell from source
 
 HemoCell can be compiled from source using ``CMake``. In the root directory
 ``./hemocell/``, execute the following instructions to configure and compile
-HemoCell::
+the HemoCell library::
 
   # within ./hemocell/
   mkdir build
@@ -86,26 +86,33 @@ HemoCell::
   cmake ..
   cmake --build .
 
-By default all examples in ``hemocell/examples/`` are compiled and linked with
-the HemoCell library. To speed up the compilation process, ``CMake`` can exploit
-parallelism when building the library and executable by providing the
-``--parallel`` flag. For instance to use all available cores on your machine
-during compilation::
+By default only the standard ``hemocell`` library is compiled. To compile
+specific examples, you should specify their corresponding compile targets.
+These targets are defined for each example and match the example's directory
+name. Thus, to compile the example given in ``hemocell/examples/pipeflow/pipeflow.cpp``
+you would compile the target ``pipeflow``. After compilation, the executable
+``pipeflow`` is placed under ``hemocell/examples/pipeflow/``. You can indicate
+the desired compilation target to ``CMake`` through its ``--target`` flag::
 
-  cmake --build . --parallel $(nproc)
+  cmake --build . --target pipeflow
 
-Afterwards, all examples should be compiled and the resulting executables are
-placed in the corresponding directories, i.e. the example
-``hemocell/examples/cube`` will generate an executable
-``hemocell/examples/cube/cube``.
+If you intend to compile multiple targets, you can repeat the previous command for
+each individual target. Alternatively, if you have ``CMake`` version ``>=3.15``,
+you can specify a space-separated list of all targets directly, e.g. to compile both
+the ``pipeflow`` and ``parachuting`` examples::
 
-To only compile a specific example, the ``--target`` option can be provided to
-``CMake``. For each example directory a matching compilation target is defined
-with the same name as the example's directory. Thus, for the example
-``hemocell/examplles/cube`` the target ``cube`` is defined. To only compile that
-specific example, evaluate::
+  cmake --build . --target pipeflow parachuting
 
-  cmake --build . --parallel $(nproc) --target cube
+To speed up the compilation process, ``CMake`` can exploit parallelism by
+providing the ``--parallel`` flag. For instance, to use all available cores on
+your machine::
+
+  cmake --build . --target pipeflow parachuting --parallel $(nproc)
+
+Afterwards, the ``pipeflow`` and ``parachuting`` executables are placed within
+the corresponding example's directories, i.e. ``examples/pipeflow`` and
+``examples/parachuting``.
+
 
 To test if the library is successfully compiled, you can evaluate the defined
 tests::

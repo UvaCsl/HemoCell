@@ -141,17 +141,17 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
 endif()
 
 # compile examples
-add_subdirectory(examples)
+add_subdirectory(examples EXCLUDE_FROM_ALL)
 
 # Add `hemocell/cases/` to compiled targets only if the `cases` dir exists to
 # avoid CMake errors when the directory does not exist, which applies to the
 # hemocell versions released through Github.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cases")
-        add_subdirectory(cases)
+        add_subdirectory(cases EXCLUDE_FROM_ALL)
 endif()
 
 # compile tests
 if(BUILD_TESTING)
         # to disable compilation provide `-DBUILD_TESTING=OFF` to CMake
-        add_subdirectory(tests)
+        add_subdirectory(tests EXCLUDE_FROM_ALL)
 endif()

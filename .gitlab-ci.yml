@@ -59,7 +59,11 @@ stages:
 .build-template: &build-template
   stage: build
   script:
-    - cmake --build .
+    # Ensure all example binaries successfully compile.
+    - >
+      while read target; do
+        cmake --build . --target ${target}
+      done < <(cut -d '"' -f2 < ../examples/CMakeLists.txt)
     - ccache --show-stats
 
 # Excludes validation tests
