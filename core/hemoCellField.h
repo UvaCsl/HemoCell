@@ -65,11 +65,11 @@ class HemoCellField{
   bool outputTriangles = false;
   vector<hemo::Array<plint,3>> triangle_list;
   void(*kernelMethod)(plb::BlockLattice3D<T,DESCRIPTOR> &,HemoCellParticle&);
-  plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleField3D();
+  plb::MultiParticleField3D<HemoCellParticleField> * getParticleField3D();
   plb::MultiBlockLattice3D<T,DESCRIPTOR> * getFluidField3D();
   int getNumberOfCells_Global();
   std::string getIdentifier();
-  plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * getParticleArg();
+  plb::MultiParticleField3D<HemoCellParticleField> * getParticleArg();
   void setOutputVariables(const vector<int> &);
   CellMechanics * mechanics = 0;
   void statistics();

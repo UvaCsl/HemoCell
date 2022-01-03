@@ -117,7 +117,7 @@ inline void meshRotation (TriangularSurfaceMesh<T> * mesh, hemo::Array<T,3> rota
     mesh->translate(meshCenter);
 }
 
-inline void positionCellInParticleField(HEMOCELL_PARTICLE_FIELD& particleField, BlockLattice3D<T,DESCRIPTOR>& fluid,
+inline void positionCellInParticleField(HemoCellParticleField& particleField, BlockLattice3D<T,DESCRIPTOR>& fluid,
                                             TriangularSurfaceMesh<T> * mesh, hemo::Array<T,3> startingPoint, plint cellId, pluint celltype) {
     plint nVertices=mesh->getNumVertices();
     Box3D fluidbb = fluid.getBoundingBox();
@@ -294,7 +294,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
     //T ratio;
     BlockLattice3D<T,DESCRIPTOR>& fluid =
             *dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[0]);
-    std::vector<HEMOCELL_PARTICLE_FIELD* > particleFields(numberOfCellFields);
+    std::vector<HemoCellParticleField* > particleFields(numberOfCellFields);
     std::vector<T> volumes(numberOfCellFields);
     std::vector<TriangularSurfaceMesh<T>* > meshes(numberOfCellFields);
     std::vector<ElementsOfTriangularSurfaceMesh<T> > emptyEoTSM(numberOfCellFields);
@@ -320,7 +320,7 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
         volumes[iCF] = MeshMetrics<T>(*mesh).getVolume();
 
         totalVolumeFraction += volumes[iCF];
-        particleFields[iCF] = ( dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[iCF+1]) );
+        particleFields[iCF] = ( dynamic_cast<HemoCellParticleField*>(blocks[iCF+1]) );
         particleFields[iCF]->removeParticles(particleFields[iCF]->getBoundingBox());
     }
    

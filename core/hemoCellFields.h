@@ -94,7 +94,7 @@ public:
   void save(plb::XMLreader * documentXML, unsigned int iter, Config * cfg = NULL);
     
   ///Legacy Helper function to get the particle field, mostly unused as direct access is available
-  plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> & getParticleField3D();
+  plb::MultiParticleField3D<HemoCellParticleField> & getParticleField3D();
   ///Legacy reads in only RBC an PLT from a single pos file
   void readPositionsCellFields(std::string particlePosFile);
 
@@ -171,9 +171,9 @@ public:
   ///The envelopeSize for the particles
   pluint envelopeSize;
   /// palabos field storing the particles
-  plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * immersedParticles = 0;
+  plb::MultiParticleField3D<HemoCellParticleField> * immersedParticles = 0;
   /// seperate preinlet and domain pointers whenever necessary
-  plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * preinlet_immersedParticles = 0, * domain_immersedParticles = 0;
+  plb::MultiParticleField3D<HemoCellParticleField> * preinlet_immersedParticles = 0, * domain_immersedParticles = 0;
 
   /// palabos field for storing the CPAC scalar field if used
   plb::MultiBlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPACfield = 0; 

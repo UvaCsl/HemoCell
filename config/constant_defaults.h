@@ -74,10 +74,6 @@ FORCE_LIMIT sets the allowed maximal force coming from the constitutive model (i
 #define FORCE_LIMIT 50.0 
 #endif
 
-#ifndef HEMOCELL_PARTICLE_FIELD
-#define HEMOCELL_PARTICLE_FIELD class HemoCellParticleField
-#endif
-
 /*
  * Used for defining the shape of the cells through constructMeshElement function
  */

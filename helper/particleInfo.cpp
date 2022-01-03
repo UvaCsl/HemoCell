@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace hemo {
   
 void GatherParticleVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-    HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
+    HemoCellParticleField* pf = dynamic_cast<HemoCellParticleField*>(blocks[0]);
     vector<HemoCellParticle *> localParticles;
     pf->findParticles(pf->localDomain,localParticles);
     
@@ -55,7 +55,7 @@ void GatherParticleVelocity::processGenericBlocks(Box3D domain, std::vector<Atom
     }
 }
 void GatherParticleForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-    HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
+    HemoCellParticleField* pf = dynamic_cast<HemoCellParticleField*>(blocks[0]);
     vector<HemoCellParticle *> localParticles;
     pf->findParticles(pf->localDomain,localParticles);
     

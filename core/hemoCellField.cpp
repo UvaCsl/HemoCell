@@ -178,10 +178,10 @@ void HemoCellField::statistics() {
 
 }
 
-plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * HemoCellField::getParticleArg() { return cellFields.immersedParticles; }
+plb::MultiParticleField3D<HemoCellParticleField> * HemoCellField::getParticleArg() { return cellFields.immersedParticles; }
 int HemoCellField::getNumberOfCells_Global() {return 0;}
 std::string HemoCellField::getIdentifier() {return name;}
 vector<int> HemoCellField::default_output ({OUTPUT_POSITION});
-plb::MultiParticleField3D<HEMOCELL_PARTICLE_FIELD> * HemoCellField::getParticleField3D() {return cellFields.immersedParticles;}
+plb::MultiParticleField3D<HemoCellParticleField> * HemoCellField::getParticleField3D() {return cellFields.immersedParticles;}
 plb::MultiBlockLattice3D<T,DESCRIPTOR> * HemoCellField::getFluidField3D() {return cellFields.lattice;}
 plb::TriangularSurfaceMesh<T> & HemoCellField::getMesh() { return *meshElement;}

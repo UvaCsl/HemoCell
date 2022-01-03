@@ -48,7 +48,7 @@ void LoadBalancer::reloadCheckpoint() {
 }
 
 void LoadBalancer::GatherTimeOfAtomicBlocks::processGenericBlocks(Box3D domain, vector<AtomicBlock3D*> blocks) {
-  HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
+  HemoCellParticleField* pf = dynamic_cast<HemoCellParticleField*>(blocks[0]);
   BlockLattice3D<T,DESCRIPTOR> * ff = dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[1]);
 
   gatherValues[pf->atomicBlockId].particle_time = pf->timer.getTime();

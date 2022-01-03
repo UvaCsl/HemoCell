@@ -32,7 +32,7 @@ namespace hemo {
 
 void GatherFluidVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     BlockLattice3D<T,DESCRIPTOR>* ff = dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[0]);
-    HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[1]);
+    HemoCellParticleField* pf = dynamic_cast<HemoCellParticleField*>(blocks[1]);
     plb::Array<T,3> vel_vec;
     T vel;
     T min=0,max=0,avg=0.;
@@ -65,7 +65,7 @@ void GatherFluidVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicB
 }
 void GatherFluidForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
     BlockLattice3D<T,DESCRIPTOR>* ff = dynamic_cast<BlockLattice3D<T,DESCRIPTOR>*>(blocks[0]);
-    HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[1]);
+    HemoCellParticleField* pf = dynamic_cast<HemoCellParticleField*>(blocks[1]);
     hemo::Array<T,3> vel_vec;
     T vel;
     T min=0,max=0,avg=0.;

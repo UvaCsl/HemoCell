@@ -29,7 +29,7 @@ HemoCellStretch::FindForcedLsps * HemoCellStretch::FindForcedLsps::clone() const
 
 void HemoCellStretch::FindForcedLsps::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   vector<HemoCellParticle*> found;
-  HEMOCELL_PARTICLE_FIELD* pf = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0]);
+  HemoCellParticleField* pf = dynamic_cast<HemoCellParticleField*>(blocks[0]);
   const map<int,vector<int>> & ppc = pf->get_particles_per_cell();
   
   const vector<int> & p_indices = ppc.at(0);
@@ -61,8 +61,8 @@ void HemoCellStretch::FindForcedLsps::processGenericBlocks(Box3D domain, std::ve
 HemoCellStretch::ForceForcedLsps * HemoCellStretch::ForceForcedLsps::clone() const { return new HemoCellStretch::ForceForcedLsps(*this);}
 
 void HemoCellStretch::ForceForcedLsps::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-  const map<int,std::vector<int>> & ppc = dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->get_particles_per_cell();
-  vector<HemoCellParticle> * particles = &dynamic_cast<HEMOCELL_PARTICLE_FIELD*>(blocks[0])->particles;
+  const map<int,std::vector<int>> & ppc = dynamic_cast<HemoCellParticleField*>(blocks[0])->get_particles_per_cell();
+  vector<HemoCellParticle> * particles = &dynamic_cast<HemoCellParticleField*>(blocks[0])->particles;
 
   hemo::Array<T,3> ex_force = {external_force*scale,0.,0.};
   for (unsigned int vi : lower_lsps) {
