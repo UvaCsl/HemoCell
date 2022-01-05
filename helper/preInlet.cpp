@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -22,6 +22,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "core/geometry3D.h"
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include "preInlet.h"
@@ -53,119 +54,250 @@ namespace hemo {
 
 namespace hemo {
 
+
+/*
+ * Initialise the communication structure between ranks near the inlets of the
+ * pre-inlet and main domain. These ranks are responsible to transmit (copy)
+ * the cells (RBC, PLT, etc.) from the periodic pre-inlet into the main domain.
+ * To minimise communication, send/receive pairs are only defined for ranks for
+ * which their (bulk) domains overlaps, i.e. their bounding boxes intersect.
+ */
 void PreInlet::initializePreInletParticleBoundary() {
   MPI_Barrier(MPI_COMM_WORLD);
-  Box3D domain = fluidInlet;
+
+  Box3D preinlet_boundary = fluidInlet;
+
   if (hemocell->partOfpreInlet) {
-    if (direction == Direction::Xneg) {
-      domain.x0 = location.x0;
+    switch (direction) {
+      case Direction::Xneg:
+        preinlet_boundary.x0 = location.x0;
+        break;
+      case Direction::Yneg:
+        preinlet_boundary.y0 = location.y0;
+        break;
+      case Direction::Zneg:
+        preinlet_boundary.z0 = location.z0;
+        break;
+      case Direction::Xpos:
+        preinlet_boundary.x1 = location.x1;
+        break;
+      case Direction::Ypos:
+        preinlet_boundary.y1 = location.y1;
+        break;
+      case Direction::Zpos:
+        preinlet_boundary.z1 = location.z1;
+        break;
     }
-    if (direction == Direction::Yneg) {
-      domain.y0 = location.y0;
-    }
-    if (direction == Direction::Zneg) {
-      domain.z0 = location.z0;
-    }
-    if (direction == Direction::Xpos) {
-      domain.x1 = location.x1;
-    }
-    if (direction == Direction::Ypos) {
-      domain.y1 = location.y1;
-    }
-    if (direction == Direction::Zpos) {
-      domain.z1 = location.z1;
-    }
   }
-  if (direction == Direction::Xneg) {
-    domain.x0 += 1;
-    domain.x1 = domain.x0 + inflow_length;
+
+  switch (direction) {
+    case Direction::Xneg:
+      preinlet_boundary.x0 += 1;
+      preinlet_boundary.x1 = preinlet_boundary.x0 + inflow_length;
+      break;
+    case Direction::Yneg:
+      preinlet_boundary.y0 += 1;
+      preinlet_boundary.y1 = preinlet_boundary.y0 + inflow_length;
+      break;
+    case Direction::Zneg:
+      preinlet_boundary.z0 += 1;
+      preinlet_boundary.z1 = preinlet_boundary.z0 + inflow_length;
+      break;
+    case Direction::Xpos:
+      preinlet_boundary.x1 -= 1;
+      preinlet_boundary.x0 = preinlet_boundary.x1 - inflow_length;
+      break;
+    case Direction::Ypos:
+      preinlet_boundary.y1 -= 1;
+      preinlet_boundary.y0 = preinlet_boundary.y1 - inflow_length;
+      break;
+    case Direction::Zpos:
+      preinlet_boundary.z1 -= 1;
+      preinlet_boundary.z0 = preinlet_boundary.z1 - inflow_length;
+      break;
   }
-  if (direction == Direction::Yneg) {
-    domain.y0 += 1;
-    domain.y1 = domain.y0 + inflow_length;
-  }
-  if (direction == Direction::Zneg) {
-    domain.z0 += 1;
-    domain.z1 = domain.z0 + inflow_length;
-  }
-  if (direction == Direction::Xpos) {
-    domain.x1 -= 1;
-    domain.x0 = domain.x1 - inflow_length;
-  }
-  if (direction == Direction::Ypos) {
-    domain.y1 -= 1;
-    domain.y0 = domain.y1 - inflow_length;
-  }
-  if (direction == Direction::Zpos) {
-    domain.z1 -= 1;
-    domain.z0 = domain.z1 - inflow_length;
-  }
-  
- 
-  
-  for (int bId : hemocell->lattice->getLocalInfo().getBlocks()) {
-    Box3D bulk = hemocell->lattice->getMultiBlockManagement().getBulk(bId);
-    Box3D result;
-    if (!intersect(domain,bulk,result)) { continue; }
-    if (hemocell->partOfpreInlet) {
-      particleSendMpi[global::mpi().getRank()] += 1;
+
+  auto rank = global::mpi().getRank();
+
+  // Extract all ranks and their domains that intersect the pre-inlet interface.
+  for (int block_id : hemocell->lattice->getLocalInfo().getBlocks()) {
+    Box3D bulk = hemocell->lattice->getMultiBlockManagement().getBulk(block_id);
+
+    domain_at_rank[rank] = bulk;
+
+    /*
+    FIXME: This assumes only a single bulk per rank is considered, which
+    seems to be the cases most of the time. An improviement would be to
+    implementt the subsequent if-statement: if the bulk is already set for
+    the current rank -> merge the bulks, otherwise inser the current bulk.
+    If situations do exists where such merges would fail, we might need to
+    opt to store an vector of bulks and loop over all present entries.
+
+    if (domain_at_rank.find(rank) == domain_at_rank.end()) {
+      domain_at_rank[rank] = bulk;
     } else {
-      particleReceiveMpi[global::mpi().getRank()] = true;
+      auto merged = merge(domain_at_rank[rank], bulk);
+      if (not merged) {
+        hlog << "Pre-inlet cannot handle not-aligned bulks efficiently." << endl;
+        exit(1);
+      }
     }
-    communicationBlocks.push_back(bId);
+    */
+
+    if (!doesIntersect(preinlet_boundary, bulk)) {
+      continue;
+    }
+
+    if (hemocell->partOfpreInlet) {
+      particleSendMpi[rank] += 1;
+    } else {
+      particleReceiveMpi[rank] = true;
+    }
+
+    communicating_blocks.push_back(block_id);
   }
-  
+
+  // Exchange the maps: make them available on all other ranks.
   HemoCellGatheringFunctional<plint>::gather(particleSendMpi);
   HemoCellGatheringFunctional<bool>::gather(particleReceiveMpi);
-  for ( auto & pair : particleSendMpi) {
-    sendingBlocks += pair.second;
+  HemoCellGatheringFunctional<Box3D>::gather(domain_at_rank);
+
+  // FIXME: The implementation is currently separated between the "preinlet"
+  // and "!preinlet" sides of the domain. It is, most-likely, possible to
+  // collapse this if-statement, as both operations are identical except for
+  // which maps they considered. Alternatively only the maps are swapped, while
+  // the remainder of the routine is kept the same.
+  if (hemocell->partOfpreInlet) {
+    if (particleSendMpi[rank] > 0) {
+      Box3D domain = domain_at_rank[rank];
+
+      for (auto & pair : particleReceiveMpi) {
+        auto other = domain_at_rank[pair.first];
+        bool intersects = false;
+
+        // As the considered bulks are already adjacent with the interface of the
+        // pre-inlet, only intersection in the plane orthogonal to its
+        // configuration need to be tested for.
+        switch (direction) {
+          case Direction::Xneg:
+          case Direction::Xpos:
+            intersects = doesIntersect(
+              Box2D(domain.y0, domain.y1, domain.z0, domain.z1),
+              Box2D(other.y0, other.y1, other.z0, other.z1));
+            break;
+          case Direction::Yneg:
+          case Direction::Ypos:
+            intersects = doesIntersect(
+              Box2D(domain.x0, domain.x1, domain.z0, domain.z1),
+              Box2D(other.x0, other.x1, other.z0, other.z1));
+            break;
+          case Direction::Zneg:
+          case Direction::Zpos:
+            intersects = doesIntersect(
+              Box2D(domain.x0, domain.x1, domain.y0, domain.y1),
+              Box2D(other.x0, other.x1, other.y0, other.y1));
+            break;
+        }
+
+        if (pair.second && intersects) {
+          my_send_blocks.push_back(pair.first);
+        }
+      }
+    }
+  } else {
+    if (particleReceiveMpi[rank] == true) {
+      auto domain = domain_at_rank[rank];
+
+      for (auto & pair : particleSendMpi) {
+        auto other = domain_at_rank[pair.first];
+        bool intersects = false;
+
+        switch (direction) {
+          case Direction::Xneg:
+          case Direction::Xpos:
+            intersects = doesIntersect(
+              Box2D(domain.y0, domain.y1, domain.z0, domain.z1),
+              Box2D(other.y0, other.y1, other.z0, other.z1));
+            break;
+          case Direction::Yneg:
+          case Direction::Ypos:
+            intersects = doesIntersect(
+              Box2D(domain.x0, domain.x1, domain.z0, domain.z1),
+              Box2D(other.x0, other.x1, other.z0, other.z1));
+            break;
+          case Direction::Zneg:
+          case Direction::Zpos:
+            intersects = doesIntersect(
+              Box2D(domain.x0, domain.x1, domain.y0, domain.y1),
+              Box2D(other.x0, other.x1, other.y0, other.y1));
+            break;
+        }
+
+        if (pair.second && intersects) {
+          my_recv_blocks.push_back(pair.first);
+        }
+      }
+    }
   }
 }
 
+
+/*
+ * Transmit cells (RBC, PLT, ...) located within the periodic pre-inlet to
+ * their corresponding location in the main simulation lattice. Cells are only
+ * transmitted between ranks of which their domains overlap near the interface
+ * between the pre-inlet and the main domain. All other ranks return early.
+ *
+ * The communication only happens in a single direction, where cells are only
+ * send from the pre-inlet towards the main simulation domain.
+ */
 void PreInlet::applyPreInletParticleBoundary() {
   global.statistics.getCurrent()["applyPreInletParticleBoundary"].start();
   if (!partOfpreInlet) {
     hemocell->cellfields->syncEnvelopes();
-    hemocell->cellfields->deleteIncompleteCells(false);   
+    hemocell->cellfields->deleteIncompleteCells(false);
   }
   vector<MPI_Request> requests;
   vector<vector<char>> buffers;
   MPI_Barrier(MPI_COMM_WORLD);
   if (partOfpreInlet) {
-    if(particleSendMpi.find(global::mpi().getRank()) != particleSendMpi.end()) {
-      for (plint bid : communicationBlocks) {
+    if (particleSendMpi.find(global::mpi().getRank()) != particleSendMpi.end()) {
+      for (plint bid : communicating_blocks) {
         buffers.push_back(vector<char>());
         Box3D domain = fluidInlet;
-        if (direction == Direction::Xneg) {
-          domain.x0 = domain.x0 - preinlet_length;
-          domain.x1 = domain.x0 + inflow_length;
-        }
-        if (direction == Direction::Yneg) {
-          domain.y0 = domain.y0 - preinlet_length;
-          domain.y1 = domain.y0 + inflow_length;       
-        }
-        if (direction == Direction::Zneg) {
-          domain.z0 = domain.z0 - preinlet_length;
-          domain.z1 = domain.z0 + inflow_length;
-        }
-        if (direction == Direction::Xpos) {
-          domain.x1 = domain.x1 + preinlet_length;
-          domain.x0 = domain.x1 - inflow_length;       
-        }
-        if (direction == Direction::Ypos) {
-          domain.y1 = domain.y1 + preinlet_length;
-          domain.y0 = domain.y1 - inflow_length;        
-        }
-        if (direction == Direction::Zpos) {
-          domain.z1 = domain.z1 + preinlet_length;
-          domain.z0 = domain.z1 - inflow_length;       
+
+        switch (direction) {
+          case Direction::Xneg:
+            domain.x0 = domain.x0 - preinlet_length;
+            domain.x1 = domain.x0 + inflow_length;
+            break;
+          case Direction::Yneg:
+            domain.y0 = domain.y0 - preinlet_length;
+            domain.y1 = domain.y0 + inflow_length;
+            break;
+          case Direction::Zneg:
+            domain.z0 = domain.z0 - preinlet_length;
+            domain.z1 = domain.z0 + inflow_length;
+            break;
+          case Direction::Xpos:
+            domain.x1 = domain.x1 + preinlet_length;
+            domain.x0 = domain.x1 - inflow_length;
+            break;
+          case Direction::Ypos:
+            domain.y1 = domain.y1 + preinlet_length;
+            domain.y0 = domain.y1 - inflow_length;
+            break;
+          case Direction::Zpos:
+            domain.z1 = domain.z1 + preinlet_length;
+            domain.z0 = domain.z1 - inflow_length;
+            break;
         }
 
         Dot3D shift = hemocell->cellfields->immersedParticles->getComponent(bid).getLocation();
         domain = domain.shift(-shift.x,-shift.y,-shift.z);
         hemocell->cellfields->immersedParticles->getComponent(bid).particleDataTransfer.send_preinlet(domain,buffers.back(),modif::hemocell);
-        for (auto & pair : particleReceiveMpi) {
-          const int & pid = pair.first;
+
+        for (auto & pid : my_send_blocks) {
           requests.push_back(MPI_Request());
           MPI_Isend(&buffers.back()[0],buffers.back().size(),MPI_CHAR,pid,0,MPI_COMM_WORLD,&requests.back());
         }
@@ -173,40 +305,44 @@ void PreInlet::applyPreInletParticleBoundary() {
     }
     MPI_Waitall(requests.size(),&requests[0],MPI_STATUSES_IGNORE);
   } else {
-    if(particleReceiveMpi.find(global::mpi().getRank()) != particleReceiveMpi.end()) {
-      for (int counter = 0 ; counter < sendingBlocks ; counter++) {
-        MPI_Status status;
-        int count;
-        MPI_Probe(MPI_ANY_SOURCE,0,MPI_COMM_WORLD,&status);
-        MPI_Get_count(&status,MPI_CHAR,&count);
-        buffers.push_back(vector<char>(count));
-        MPI_Recv(&buffers.back()[0],count,MPI_CHAR,status.MPI_SOURCE,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-        Dot3D offset(0,0,0);
-        if (direction == Direction::Xneg) {
+    for (size_t i = 0 ; i < my_recv_blocks.size() ; i++) {
+      MPI_Status status;
+      int count;
+      MPI_Probe(MPI_ANY_SOURCE,0,MPI_COMM_WORLD,&status);
+      MPI_Get_count(&status,MPI_CHAR,&count);
+      buffers.push_back(vector<char>(count));
+      MPI_Recv(&buffers.back()[0],count,MPI_CHAR,status.MPI_SOURCE,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+      Dot3D offset(0,0,0);
+
+      switch (direction) {
+        case Direction::Xneg:
           offset.x = preinlet_length;
-        }
-        if (direction == Direction::Yneg) {
+          break;
+        case Direction::Yneg:
           offset.y = preinlet_length;
-        }
-        if (direction == Direction::Zneg) {
+          break;
+        case Direction::Zneg:
           offset.z = preinlet_length;
-        }
-        if (direction == Direction::Xpos) {
+          break;
+        case Direction::Xpos:
           offset.x = -preinlet_length;
-        }
-        if (direction == Direction::Ypos) {
+          break;
+        case Direction::Ypos:
           offset.y = -preinlet_length;
-        }
-        if (direction == Direction::Zpos) {
+          break;
+        case Direction::Zpos:
           offset.z = -preinlet_length;
-        }
-        for (int bId : hemocell->cellfields->immersedParticles->getLocalInfo().getBlocks()) {
-  
-          hemocell->cellfields->immersedParticles->getComponent(bId).particleDataTransfer.receivePreInlet(&buffers.back()[0],buffers.back().size(),modif::hemocell,offset);
-          hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_ppc();
-          hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_lpc();
-          hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_pg();
-        }
+          break;
+      }
+      // NOTE: Reading into all blocks should be OK as long as a single block
+      // or adjacent blocks are considered. For blocks that are sparse and/or
+      // spatially "far away", additional checks should be added to avoid
+      // excess extracting of cells that are not present in the current block.
+      for (int bId : hemocell->cellfields->immersedParticles->getLocalInfo().getBlocks()) {
+        hemocell->cellfields->immersedParticles->getComponent(bId).particleDataTransfer.receivePreInlet(&buffers.back()[0],buffers.back().size(),modif::hemocell,offset);
+        hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_ppc();
+        hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_lpc();
+        hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_pg();
       }
     }
   }
@@ -272,7 +408,7 @@ void PreInlet::initializePreInletVelocityBoundary() {
     domain.y0 = domain.y1;
   }
   if (direction == Direction::Zneg) {
-    domain.z0 = domain.z1; 
+    domain.z0 = domain.z1;
   }
   if (direction == Direction::Xpos) {
     domain.x1 = domain.x0;
@@ -281,7 +417,7 @@ void PreInlet::initializePreInletVelocityBoundary() {
     domain.y1 = domain.y0;
   }
   if (direction == Direction::Zpos) {
-    domain.z1 = domain.z0; 
+    domain.z1 = domain.z0;
   }
   fluidInlet = domain;
   for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
@@ -347,21 +483,21 @@ void PreInlet::preInletFromSlice(Direction direction_, Box3D boundary) {
       exit(1);
       break;
   }
-  
+
   inflow_length = (*hemocell->cfg)["domain"]["particleEnvelope"].read<int>();
   Box3D preInletDomain;
   bool foundPreInlet = false;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(flagMatrix);
-  
+
   applyProcessingFunctional(new CreatePreInletBoundingBox(preInletDomain,foundPreInlet),boundary,wrapper);
-  
+
   map<int,Box3D_simple> values;
   if (foundPreInlet) {
     values[global::mpi().getRank()] = preInletDomain;
   }
   HemoCellGatheringFunctional<Box3D_simple>::gather(values);
-  
+
   if (values.size() == 0) {
     hlog << "(PreInlet) no preinlet found, is it in the correct location?" << endl;
     exit(1);
@@ -375,25 +511,25 @@ void PreInlet::preInletFromSlice(Direction direction_, Box3D boundary) {
     if (value.y1 > preInletDomain.y1) { preInletDomain.y1 = value.y1; }
     if (value.z0 < preInletDomain.z0) { preInletDomain.z0 = value.z0; }
     if (value.z1 > preInletDomain.z1) { preInletDomain.z1 = value.z1; }
-  }  
-  
+  }
+
   location = preInletDomain.enlarge(1);
-  
+
   if (direction == Direction::Xneg) {
     location.x0 -= preinlet_length;
-  } 
+  }
   if (direction == Direction::Yneg) {
     location.y0 -= preinlet_length;
-  } 
+  }
   if (direction == Direction::Zneg) {
     location.z0 -= preinlet_length;
   }
   if (direction == Direction::Xpos) {
     location.x1 += preinlet_length;
-  } 
+  }
   if (direction == Direction::Ypos) {
     location.y1 += preinlet_length;
-  } 
+  }
   if (direction == Direction::Zpos) {
     location.z1 += preinlet_length;
   }
@@ -424,7 +560,7 @@ void PreInlet::preInletFromSlice(Direction direction_, Box3D boundary) {
 
 void PreInlet::CreatePreInletBoundingBox::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
   ScalarField3D<int> * sf = dynamic_cast<ScalarField3D<int>*>(blocks[0]);
-  
+
   for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
     for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
       for (int z  = domain.z0 ; z <= domain.z1 ; z++) {
@@ -456,15 +592,15 @@ void PreInlet::autoPreinletFromBoundary(Direction dir_) {
   direction = dir_;
   initialized = true;
   Box3D fluidDomain = flagMatrix->getMultiBlockManagement().getBoundingBox();
- 
+
   if (direction == Direction::Xneg) {
     fluidDomain.x1 = fluidDomain.x0+1;
     fluidDomain.x0 = fluidDomain.x1;
-  } 
+  }
   if (direction == Direction::Yneg) {
     fluidDomain.y1 = fluidDomain.y0+1;
     fluidDomain.y0 = fluidDomain.y1;
-  } 
+  }
   if (direction == Direction::Zneg) {
     fluidDomain.z1 = fluidDomain.z0+1;
     fluidDomain.z0 = fluidDomain.z1;
@@ -472,30 +608,30 @@ void PreInlet::autoPreinletFromBoundary(Direction dir_) {
   if (direction == Direction::Xpos) {
     fluidDomain.x0 = fluidDomain.x1-1;
     fluidDomain.x1 = fluidDomain.x0;
-  } 
+  }
   if (direction == Direction::Ypos) {
     fluidDomain.y0 = fluidDomain.y1-1;
     fluidDomain.y1 = fluidDomain.y0;
-  } 
+  }
   if (direction == Direction::Zpos) {
     fluidDomain.z0 = fluidDomain.z1-1;
     fluidDomain.z1 = fluidDomain.z0;
   }
-  
+
   inflow_length = (*hemocell->cfg)["domain"]["particleEnvelope"].read<int>();
   Box3D preInletDomain;
   bool foundPreInlet = false;
   vector<MultiBlock3D*> wrapper;
   wrapper.push_back(flagMatrix);
-  
+
   applyProcessingFunctional(new CreatePreInletBoundingBox(preInletDomain,foundPreInlet),fluidDomain,wrapper);
-  
+
   map<int,Box3D_simple> values;
   if (foundPreInlet) {
     values[global::mpi().getRank()] = preInletDomain;
   }
   HemoCellGatheringFunctional<Box3D_simple>::gather(values);
-  
+
   if (values.size() == 0) {
     hlog << "(PreInlet) no preinlet found, does fluid domain extend to the wall?" << endl;
     exit(1);
@@ -509,25 +645,25 @@ void PreInlet::autoPreinletFromBoundary(Direction dir_) {
     if (value.y1 > preInletDomain.y1) { preInletDomain.y1 = value.y1; }
     if (value.z0 < preInletDomain.z0) { preInletDomain.z0 = value.z0; }
     if (value.z1 > preInletDomain.z1) { preInletDomain.z1 = value.z1; }
-  }  
-  
+  }
+
   location = preInletDomain.enlarge(1);
-  
+
   if (direction == Direction::Xneg) {
     location.x0 -= preinlet_length;
-  } 
+  }
   if (direction == Direction::Yneg) {
     location.y0 -= preinlet_length;
-  } 
+  }
   if (direction == Direction::Zneg) {
     location.z0 -= preinlet_length;
   }
   if (direction == Direction::Xpos) {
     location.x1 += preinlet_length;
-  } 
+  }
   if (direction == Direction::Ypos) {
     location.y1 += preinlet_length;
-  } 
+  }
   if (direction == Direction::Zpos) {
     location.z1 += preinlet_length;
   }
@@ -610,42 +746,42 @@ void PreInlet::calculateDrivingForce() {
   double re = (*hemocell->cfg)["preInlet"]["parameters"]["Re"].read<T>();
 
   if (partOfpreInlet) {
-    
+
     plb::Box3D domain = hemocell->lattice->getBoundingBox();
     if (direction == Direction::Xneg) {
       domain.x1 = domain.x0 = domain.x0 + 2;
-    } 
+    }
     if (direction == Direction::Yneg) {
       domain.y1 = domain.y0 = domain.y0 + 2;
-    } 
+    }
     if (direction == Direction::Zneg) {
       domain.z1 = domain.z0 = domain.z0 + 2;
     }
     if (direction == Direction::Xpos) {
       domain.x0 = domain.x1 = domain.x1 - 2;
-    } 
+    }
     if (direction == Direction::Ypos) {
       domain.y0 = domain.y1 = domain.y1 - 2;
-    } 
+    }
     if (direction == Direction::Zpos) {
       domain.z0 = domain.z1 = domain.z1 - 2;
-    } 
+    }
     vector<MultiBlock3D*> wrapper;
     wrapper.push_back(hemocell->lattice);
     applyProcessingFunctional(new CreateDrivingForceFunctional(fluidArea),domain,wrapper);
     areas[global::mpi().getRank()] = fluidArea;
   }
-  
+
   HemoCellGatheringFunctional<plint>::gather(areas);
-  
+
     fluidArea = 0;
     for (auto & pair: areas) {
       fluidArea += pair.second;
     }
-    
+
     T pipe_radius = sqrt(fluidArea/PI);
     hlog << "(Parameters) Your preInlet pipe has a calculated radius of " << pipe_radius << " LU, assuming a perfect circle" << std::endl;
-  if(partOfpreInlet) {     
+  if(partOfpreInlet) {
     T u_lbm_max = re * param::nu_lbm / (pipe_radius*2);
     drivingForce =  8 * param::nu_lbm * (u_lbm_max * 0.5) / pipe_radius / pipe_radius;
   }
@@ -682,7 +818,7 @@ bool PreInlet::readNormalizedVelocities() {
       std::string DELIM = " ";
       std::string t = line.substr(0, line.find(DELIM));
       std::string v = line.substr(line.find(DELIM), line.size());
-      
+
       normalizedVelocityTimes .push_back(stod(t));
       normalizedVelocityValues.push_back(stod(v));
   }
@@ -730,7 +866,7 @@ double PreInlet::interpolate(vector<double> &xData, vector<double> &yData, doubl
    double dydx = ( yR - yL ) / ( xR - xL );
 
    // linear interpolation
-   return yL + dydx * ( x - xL ); 
+   return yL + dydx * ( x - xL );
 }
 
 // JON: this function is similar to setDrivingForce() but it reads in a value
@@ -744,7 +880,7 @@ void PreInlet::setDrivingForceTimeDependent(double t) {
     // Time value must wrap around normalized velocity data in order to generate periodic heart beat
     t = fmod(t, pulseEndTime);
 
-    // JON: Compute current driving force based on ratio of data-derived "current velocity" 
+    // JON: Compute current driving force based on ratio of data-derived "current velocity"
     // and average velocity
     double current_vel = PreInlet::interpolate(normalizedVelocityTimes, normalizedVelocityValues, t, false);
     double currentDrivingForce = (current_vel / average_vel) * drivingForce;
@@ -752,19 +888,19 @@ void PreInlet::setDrivingForceTimeDependent(double t) {
     plb::Array<T,3> force(0.,0.,0.);
     if (direction == Direction::Xneg) {
       force[0] = currentDrivingForce;
-    } 
+    }
     if (direction == Direction::Yneg) {
       force[1] = currentDrivingForce;
-    } 
+    }
     if (direction == Direction::Zneg) {
       force[2] = currentDrivingForce;
     }
     if (direction == Direction::Xpos) {
       force[0] = -currentDrivingForce;
-    } 
+    }
     if (direction == Direction::Ypos) {
       force[1] = -currentDrivingForce;
-    } 
+    }
     if (direction == Direction::Zpos) {
       force[2] = -currentDrivingForce;
     }
@@ -779,19 +915,19 @@ void PreInlet::setDrivingForce() {
     plb::Array<T,3> force(0.,0.,0.);
     if (direction == Direction::Xneg) {
       force[0] = drivingForce;
-    } 
+    }
     if (direction == Direction::Yneg) {
       force[1] = drivingForce;
-    } 
+    }
     if (direction == Direction::Zneg) {
       force[2] = drivingForce;
     }
     if (direction == Direction::Xpos) {
       force[0] = -drivingForce;
-    } 
+    }
     if (direction == Direction::Ypos) {
       force[1] = -drivingForce;
-    } 
+    }
     if (direction == Direction::Zpos) {
       force[2] = -drivingForce;
     }
@@ -802,7 +938,7 @@ void PreInlet::setDrivingForce() {
 }
 
 void PreInlet::createBoundary() {
-  plb::Box3D domain = location; 
+  plb::Box3D domain = location;
 
   for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
     for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
@@ -835,16 +971,16 @@ void PreInlet::createBoundary() {
       }
     }
   }
-     
+
   if (partOfpreInlet) {
     if (direction == Direction::Xneg || direction == Direction::Xpos) {
-      hemocell->lattice->periodicity().toggle(0,true);  
+      hemocell->lattice->periodicity().toggle(0,true);
     }
     if (direction == Direction::Yneg || direction == Direction::Ypos) {
-      hemocell->lattice->periodicity().toggle(1,true);  
+      hemocell->lattice->periodicity().toggle(1,true);
     }
     if (direction == Direction::Zneg || direction == Direction::Zpos) {
-      hemocell->lattice->periodicity().toggle(2,true);  
+      hemocell->lattice->periodicity().toggle(2,true);
     }
   }
 }

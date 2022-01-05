@@ -1,8 +1,8 @@
 /*
 This file is part of the HemoCell library
 
-HemoCell is developed and maintained by the Computational Science Lab 
-in the University of Amsterdam. Any questions or remarks regarding this library 
+HemoCell is developed and maintained by the Computational Science Lab
+in the University of Amsterdam. Any questions or remarks regarding this library
 can be sent to: info@hemocell.eu
 
 When using the HemoCell library in scientific work please cite the
@@ -42,7 +42,7 @@ namespace hemo {
 enum Direction : int {
   Xpos, Xneg, Ypos, Yneg, Zpos, Zneg
 };
-  
+
 
 #define DSET_SLICE 1000
 
@@ -73,12 +73,12 @@ public:
       CreatePreInletBoundingBox(plb::Box3D & b_, bool & fp_) :
                                 boundingBox(b_), foundPreInlet(fp_) {}
   };
-  
+
   class FillFlagMatrix: public HemoCellFunctional {
     void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     FillFlagMatrix * clone() const;
   };
-  
+
   PreInlet(hemo::HemoCell * hemocell_, plb::MultiScalarField3D<int> * flagMatrix_);
   PreInlet(hemo::HemoCell * hemocell_, plb::MultiBlockManagement3D & management);
   inline plint getNumberOfNodes() { return cellsInBoundingBox(location);}
@@ -96,10 +96,10 @@ public:
   void initializePreInletParticleBoundary();
   void initializePreInletVelocityBoundary();
   void initializePreInlet() { initializePreInletVelocityBoundary(); initializePreInletParticleBoundary(); };
-  
+
   void autoPreinletFromBoundary(Direction);
   void preInletFromSlice(Direction direction_, Box3D boundary);
-  
+
   Direction direction = Direction::Zneg;
   plb::Box3D location;
   plb::Box3D fluidInlet;
@@ -112,9 +112,12 @@ public:
   std::vector<double> normalizedVelocityTimes;
   std::vector<double> normalizedVelocityValues;
   std::map<plint,plint> BlockToMpi;
-  std::map<int,plint> particleSendMpi; // the value equals the number of atomic blocks that are sent.
+  std::map<int,plint> particleSendMpi;
   std::map<int,bool> particleReceiveMpi;
-  std::vector<plint> communicationBlocks;
+  std::vector<plint> communicating_blocks;
+  std::map<int, Box3D> domain_at_rank;
+  std::vector<int> my_send_blocks;
+  std::vector<int> my_recv_blocks;
   int sendingBlocks = 0;
   bool partOfpreInlet = false;
   int inflow_length = 0;
@@ -123,7 +126,7 @@ public:
   std::vector<int> particle_receivers;
   std::vector<int> particle_senders;
   HemoCell * hemocell;
-  MultiScalarField3D<int> *flagMatrix = 0; 
+  MultiScalarField3D<int> *flagMatrix = 0;
 };
 
 }
