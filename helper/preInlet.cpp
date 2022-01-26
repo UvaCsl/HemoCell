@@ -359,7 +359,12 @@ void PreInlet::applyPreInletVelocityBoundary() {
   int z_o = domain.getNz();
   int y_o = domain.getNy();
   int tag;
+
+  plb::Array<T,3> receiver;
   plb::Array<T,3> vel;
+  std::vector<plb::Array<T,3>> buffer;
+  std::vector<MPI_Request> requests;
+
   for (int bId : hemocell->lattice->getLocalInfo().getBlocks()) {
     Box3D bulk = hemocell->lattice->getMultiBlockManagement().getBulk(bId);
     if (!intersect(domain,bulk,result)) { continue; }
@@ -377,22 +382,25 @@ void PreInlet::applyPreInletVelocityBoundary() {
             int dest = hemocell->domain_lattice_management->getThreadAttribution().getMpiProcess(hemocell->domain_lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
 
             // send velocity from preInlet boundary
-            MPI_Send(&vel[0],3*sizeof(T),MPI_CHAR,dest,tag,MPI_COMM_WORLD);
+            buffer.push_back(vel);
+            requests.push_back(MPI_Request());
+            MPI_Isend(&buffer.back()[0],3*sizeof(T),MPI_CHAR,dest,tag,MPI_COMM_WORLD,&requests.back());
           } else {
             Box3D point(x,x,y,y,z,z);
             int source = hemocell->preinlet_lattice_management->getThreadAttribution().getMpiProcess(hemocell->preinlet_lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
 
             // receive velocity from preInlet
-            MPI_Recv(&vel[0],3*sizeof(T),MPI_CHAR,source,tag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            MPI_Recv(&receiver,3*sizeof(T),MPI_CHAR,source,tag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
             // update velocity lattice main domain
-            setBoundaryVelocity(hemocell->lattice->getComponent(bId),point,vel);
+            setBoundaryVelocity(hemocell->lattice->getComponent(bId),point,receiver);
           }
         }
       }
      }
     }
   }
+  MPI_Waitall(requests.size(), &requests[0], MPI_STATUS_IGNORE);
   global.statistics.getCurrent().stop();
 }
 
