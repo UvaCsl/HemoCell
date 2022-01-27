@@ -697,6 +697,15 @@ void HemoCellFields::solidifyCells() {
   applyProcessingFunctional(new HemoSolidifyCells(),immersedParticles->getBoundingBox(),wrapper);
 }
 
+void HemoCellFields::HemoPrepareSolidification::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
+  HemoCellParticleField * pf = dynamic_cast<HemoCellParticleField*>(blocks[0]);
+  pf->prepareSolidification();
+}
+void HemoCellFields::prepareSolidification() {
+  vector<MultiBlock3D*> wrapper;
+  wrapper.push_back(immersedParticles);
+  applyProcessingFunctional(new HemoPrepareSolidification(),immersedParticles->getBoundingBox(),wrapper);
+}
 
 HemoCellFields::HemoInternalGridPointsMembrane *  HemoCellFields::HemoInternalGridPointsMembrane::clone() const { return new HemoCellFields::HemoInternalGridPointsMembrane(*this);}
 HemoCellFields::HemoFindInternalParticleGridPoints *  HemoCellFields::HemoFindInternalParticleGridPoints::clone() const { return new HemoCellFields::HemoFindInternalParticleGridPoints(*this);}
@@ -715,6 +724,7 @@ HemoCellFields::HemoSetParticles *        HemoCellFields::HemoSetParticles::clon
 HemoCellFields::HemoPopulateBoundaryParticles *        HemoCellFields::HemoPopulateBoundaryParticles::clone() const { return new HemoCellFields::HemoPopulateBoundaryParticles(*this);}
 HemoCellFields::HemoDeleteNonLocalParticles *        HemoCellFields::HemoDeleteNonLocalParticles::clone() const { return new HemoCellFields::HemoDeleteNonLocalParticles(*this);}
 HemoCellFields::HemoSolidifyCells *        HemoCellFields::HemoSolidifyCells::clone() const { return new HemoCellFields::HemoSolidifyCells(*this);}
+HemoCellFields::HemoPrepareSolidification *        HemoCellFields::HemoPrepareSolidification::clone() const { return new HemoCellFields::HemoPrepareSolidification(*this);}
 HemoCellFields::HemoPopulateBindingSites * HemoCellFields::HemoPopulateBindingSites::clone() const { return new HemoCellFields::HemoPopulateBindingSites(*this);}
 HemoCellFields::HemoupdateResidenceTime * HemoCellFields::HemoupdateResidenceTime::clone() const { return new HemoCellFields::HemoupdateResidenceTime(*this);}
 

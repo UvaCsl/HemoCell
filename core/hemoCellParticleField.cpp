@@ -1003,36 +1003,65 @@ T HemoCellParticleField::eigenValueFromCell(plb::Cell<T,DESCRIPTOR> & cell) {
     return tresca;
 }
 
-void HemoCellParticleField::solidifyCells() {
+void HemoCellParticleField::prepareSolidification() {
 #ifdef SOLIDIFY_MECHANICS
   for (HemoCellField * type : cellFields->cellFields) {
     ppc_up_to_date = false;
     if(type->doSolidifyMechanics) {
-      type->mechanics->solidifyMechanics(get_particles_per_cell(),particles, this->atomicLattice, this->CEPAClattice, type->ctype, *this);
+
+      // Invoke cell-type specific solidification mechanics implementation.
+      type->mechanics->solidifyMechanics(get_particles_per_cell(), particles, this->atomicLattice, this->CEPAClattice, type->ctype, *this);
     }
   }
+#else
+  hlog << "(HemoCellParticleField) prepareSolidification called but SOLIDIFY_MECHANICS not enabled" << endl;
+  exit(1);
+#endif
+}
+
+void HemoCellParticleField::solidifyCells() {
+#ifdef SOLIDIFY_MECHANICS
+
+  // Remove any to be removed particles (tagged with `tag == 1`).
   removeParticles(1);
   if(!pg_up_to_date) {
     update_pg();
   }
 
+  // Detect particles to be solidified by looping over a block of 3x3 LBM cells
+  // around each binding site. When a cell statisfies both:
+  // - close enough in space to a binding site,
+  // - shows a minimum tresca stress,
+  // the particle is labelled to be solified.
   for (const Dot3D & b_particle : bindingSites) {
     for (int x = b_particle.x-1; x <= b_particle.x+1; x++) {
-      if (x < 0 || x > this->atomicLattice->getNx()-1) {continue;}
+      if (x < 0 || x > this->atomicLattice->getNx()-1) {
+        continue;
+      }
+
       for (int y = b_particle.y-1; y <= b_particle.y+1; y++) {
-        if (y < 0 || y > this->atomicLattice->getNy()-1) {continue;}
-	for (int z = b_particle.z-1; z <= b_particle.z+1; z++) {
-	  if (z < 0 || z > this->atomicLattice->getNz()-1) {continue;}
+        if (y < 0 || y > this->atomicLattice->getNy()-1) {
+          continue;
+        }
+
+        for (int z = b_particle.z-1; z <= b_particle.z+1; z++) {
+          if (z < 0 || z > this->atomicLattice->getNz()-1) {
+            continue;
+          }
+
           const int & index = grid_index(x,y,z);
-          for (unsigned int i = 0 ; i < particle_grid_size[index] ; i++ ) {
+
+          for (unsigned int i = 0; i < particle_grid_size[index]; i++) {
             HemoCellParticle & lParticle = particles[particle_grid[index][i]];
-            const hemo::Array<T,3> dv = lParticle.sv.position - (b_particle + this->atomicLattice->getLocation()); 
-            const T distance = sqrt(dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2]); 
+            const hemo::Array<T,3> dv = lParticle.sv.position - (b_particle + this->atomicLattice->getLocation());
+            const T distance = sqrt(dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2]);
             T tresca = eigenValueFromCell(this->atomicLattice->get(x,y,z));
- 	    if ((distance <= (*cellFields)[lParticle.sv.celltype]->mechanics->cfg["MaterialModel"]["distanceThreshold"].read<T>())  
-                    && (abs(tresca/1e-7) > (*cellFields)[lParticle.sv.celltype]->mechanics->cfg["MaterialModel"]["shearThreshold"].read<T>()) ) { 
-	      lParticle.sv.solidify = true;
-            } 
+
+            // FIXME: both user-defined constants could be extracted outside the loop.
+            if ((distance <= (*cellFields)[lParticle.sv.celltype]->mechanics->cfg["MaterialModel"]["distanceThreshold"].read<T>())
+                    && (abs(tresca/1e-7) > (*cellFields)[lParticle.sv.celltype]->mechanics->cfg["MaterialModel"]["shearThreshold"].read<T>()) ) {
+              lParticle.sv.solidify = true;
+            }
           }
         }
       }

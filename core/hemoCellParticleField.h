@@ -81,7 +81,8 @@ public:
     T eigenValueFromCell(plb::Cell<T,DESCRIPTOR> & cell);
     
     void solidifyCells();
-    
+    void prepareSolidification();
+
     void setlocalDomain(plb::Box3D & localDomain_);
 
     void computeGridPosition ( hemo::Array<T,3> const& position,

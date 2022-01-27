@@ -334,6 +334,8 @@ void HemoCell::iterate() {
 
   if(global.enableSolidifyMechanics && !(iter%cellfields->solidifyTimescale)) {
     global.statistics.getCurrent()["solidifyCells"].start();
+    cellfields->prepareSolidification();
+    cellfields->syncEnvelopes();
     cellfields->solidifyCells();
     global.statistics.getCurrent().stop();
   }

@@ -152,8 +152,9 @@ public:
   
   /// Conditionally solidify cells if requested
   void solidifyCells();
-  
-  /// increment cell residence time 
+  void prepareSolidification();
+
+  /// increment cell residence time
   void updateResidenceTime(unsigned int rtime);
   
   //Class Variables
@@ -316,6 +317,10 @@ public:
   class HemoSolidifyCells: public HemoCellFunctional {
     void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
     HemoSolidifyCells * clone() const;
+  };
+  class HemoPrepareSolidification: public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+    HemoPrepareSolidification * clone() const;
   };
   class HemoupdateResidenceTime: public HemoCellFunctional {
     void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
