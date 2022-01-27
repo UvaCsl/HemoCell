@@ -2,7 +2,7 @@
 
 * in no particular order for now *
 
-## Team leader 
+## Team leader
 - Alfons Hoekstra
 
 ## Core development
@@ -12,7 +12,8 @@
 - Gabor Zavodszky
 - Victor Azizi
 - Ben Czaja
-- Britt van Rooij 
+- Britt van Rooij
+- Max van der Kolk
 
 ## Contributed development
 - Mike de Haan

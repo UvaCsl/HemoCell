@@ -129,11 +129,11 @@ questions can be directed towards: info@hemocell.eu.
   * - Christian Spieker
     - Developer
     - C.J.Spieker at uva.nl
-  * - Max van der Kolk
-    - Developer and package maintainer
-    - M.vanderkolk at uva.nl
   * - Mark Wijzenbroek
     - Package maintainer
+    -
+  * - Max van der Kolk
+    - Former developer
     -
   * - Lampros Mountrakis
     - Former developer
