@@ -9,10 +9,26 @@ In this changelog, we consider the following classes of changes:
 Unreleased
 ----------
 
+2.5 (Jan 27 2022)
+-----------------
+
 * Features
   * Added ``tools/pos_to_vtk`` for simple cell visualisation.
+  * Included section `Common mistakes` in documentation.
 * Structure
+  * Changed default `make` target to HemoCell library only.
+  * Replaces the macro `#HEMOCELL_PARTICLE_FIELD` with the class directly.
+  * Moved to Palabos library version `v2.3.0`.
+  * Reduced Palabos patch size.
 * Fixes
+  * Removed packing Palabos source, now pulled from their remote by `setup.sh`.
+  * Updated preinlet communication to use a local buffer as temporary storage to
+    avoid velocity artefacts due to reuse of the same velocity buffer for
+    communication.
+  * Updated preinlet communication structure to reduce the number of messages
+    send by only considering overlapping and neighbouring atomic blocks as
+    targets to send messages.
+  * Preliminary fix for solidification mechanics on multi-core machines.
 
 2.4 (Sep 23 2021)
 -----------------
