@@ -164,7 +164,7 @@ hemo::Array<T,6> HemoCellField::getOriginalBoundingBox() {
   return bb;
 }
 
-/* position is in micrometers, so we still have to convert it*/
+// position is in micrometers, so we still have to convert it
 void HemoCellField::addSingleCell(hemo::Array<T,3> position, plint cellId) {
   pcerr << "(HemoCell) (ParticleType) addSingleCell not implemented, but might definitely be nice to have" << endl;
   exit(1);  

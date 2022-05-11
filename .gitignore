@@ -28,6 +28,7 @@ output*/
 *sconsign.dblite
 *.DS_Store
 *.plist
+settings.json
 
 # Common other ignore files (fuzzy searchers etc.)
 .ignore

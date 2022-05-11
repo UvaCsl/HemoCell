@@ -135,7 +135,7 @@ void HemoCellParticleField::update_ppc() {
 }
 
 void HemoCellParticleField::update_pg() {
-  //Check if map exists, otherwise create
+  // Check if map exists, otherwise create it
   if (!particle_grid) {
     particle_grid = new hemo::Array<unsigned int, 10>[this->atomicLattice->getNx()*this->atomicLattice->getNy()*this->atomicLattice->getNz()];
   }
@@ -817,20 +817,19 @@ void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
 #endif
 
 void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
-  //Prealloc is nice
+  // Preallocating
   hemo::Array<T,3> velocity;
   plb::Array<T,3> velocity_comp;
 
   for (HemoCellParticle &particle:particles) {
 
-    //Clever trick to allow for different kernels for different particle types.
-    //(*cellFields)[particle.sv.celltype]->kernelMethod(*atomicLattice,particle);
+    // Trick to allow for different kernels for different particle types.
+    // (*cellFields)[particle.sv.celltype]->kernelMethod(*atomicLattice,particle);
 
-    //We have the kernels, now calculate the velocity of the particles.
-    //Palabos developers, sorry for not using a functional...
+    // We have the kernels, now calculate the velocity of the particles.
     velocity = {0.0,0.0,0.0};
     for (pluint j = 0; j < particle.kernelLocations.size(); j++) {
-      //Yay for direct access
+      // Direct access
       particle.kernelLocations[j]->computeVelocity(velocity_comp);
       velocity += (velocity_comp * particle.kernelWeights[j]);
     }
@@ -842,20 +841,19 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
 void HemoCellParticleField::spreadParticleForce(Box3D domain) {
   for( HemoCellParticle &particle:particles) {
 
-    //Clever trick to allow for different kernels for different particle types.
+    //Trick to allow for different kernels for different particle types.
     (*cellFields)[particle.sv.celltype]->kernelMethod(*atomicLattice,particle);
 
-    // Capping force to ensure stability -> NOTE: this introduces error!
+    // Capping force to ensure stability -> NOTE: this can introduce an error if forces are large!
 #ifdef FORCE_LIMIT
     const T force_mag = norm(particle.sv.force);
     if(force_mag > param::f_limit)
       particle.sv.force *= param::f_limit/force_mag;
 #endif
 
-    //Directly change the force on a node , Palabos developers hate this one
-    //quick non-functional trick.
+    // Directly change the force on a node, quick-and-dirty solution.
     for (pluint j = 0; j < particle.kernelLocations.size(); j++) {
-      //Yay for direct access
+      // Direct access
       particle.kernelLocations[j]->external.data[0] += ((particle.sv.force_repulsion[0] + particle.sv.force[0]) * particle.kernelWeights[j]);
       particle.kernelLocations[j]->external.data[1] += ((particle.sv.force_repulsion[1] + particle.sv.force[1]) * particle.kernelWeights[j]);
       particle.kernelLocations[j]->external.data[2] += ((particle.sv.force_repulsion[2] + particle.sv.force[2]) * particle.kernelWeights[j]);
@@ -865,7 +863,6 @@ void HemoCellParticleField::spreadParticleForce(Box3D domain) {
 }
 
 void HemoCellParticleField::populateBoundaryParticles() {
-  //qqw2qswws32 <- Greatly appreciated input of Gábor
 
   for (int x = 0; x < this->atomicLattice->getNx()-1; x++) {
     for (int y = 0; y < this->atomicLattice->getNy()-1; y++) {
@@ -921,9 +918,8 @@ void HemoCellParticleField::applyBoundaryRepulsionForce() {
 }
 
 void HemoCellParticleField::populateBindingSites(plb::Box3D & domain_) {
-  //qqw2qswws32 <- Greatly appreciated input of Gábor
   
-  //Translate domain to make sense in the lattice domain.
+  // Translate domain to make sense in the lattice domain.
   Dot3D shift = this->getLocation() - this->atomicLattice->getLocation();
   Box3D domain = domain_.shift(shift.x,shift.y,shift.z);
   

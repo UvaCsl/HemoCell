@@ -32,7 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * Which version are we at
  */
 #define VERSION_MAJOR 2
-#define VERSION_MINOR "3"
+#define VERSION_MINOR "6"
 
 // Use for solidifying, performance impact so only enable when using
 #ifndef SOLIDIFY_MECHANICS

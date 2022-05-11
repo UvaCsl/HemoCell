@@ -142,7 +142,7 @@ void HemoCell::initializeCellfield() {
   lattice->getMultiBlockManagement().changeEnvelopeWidth(1);
   lattice->signalPeriodicity();
   
-  //Correct place for init
+  // Correct place for init
   loadBalancer = new LoadBalancer(*this);
 }
 
@@ -238,7 +238,7 @@ void HemoCell::writeOutput() {
     cellfields->applyBoundaryRepulsionForce();
   }
 
-  //update larger lattice envelopes
+  // update larger lattice envelopes
   lattice->getMultiBlockManagement().changeEnvelopeWidth(2);
   lattice->signalPeriodicity();
   lattice->getBlockCommunicator().duplicateOverlaps(*lattice,modif::staticVariables);
@@ -251,10 +251,10 @@ void HemoCell::writeOutput() {
     cellfields->deleteIncompleteCells(false);   
   }
 
-  //Repoint surfaceparticle forces for output
+  // Repoint surfaceparticle forces for output
   cellfields->separate_force_vectors();
 
-  //Recalculate the forces
+  // Recalculate the forces
   cellfields->applyConstitutiveModel(true);
 
   // Creating a new directory per save
@@ -269,7 +269,7 @@ void HemoCell::writeOutput() {
 
 
   
-  //Write Output
+  // Write Output
   global.statistics.getCurrent()["writeOutput"].start();
   writeCellField3D_HDF5(*cellfields,param::dx,param::dt,iter);
   writeFluidField_HDF5(*cellfields,param::dx,param::dt,iter);
@@ -279,7 +279,7 @@ void HemoCell::writeOutput() {
   writeCellInfo_CSV(*this);
   global.statistics.getCurrent().stop();
 
-  //Repoint surfaceparticle forces for speed
+  // Repoint surfaceparticle forces for speed
   cellfields->unify_force_vectors();
   cellfields->syncEnvelopes();
   // Continue with performance measurement
@@ -357,7 +357,7 @@ void HemoCell::iterate() {
     global.statistics.getCurrent().stop();
   }
   
-  //We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
+  // We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
   if(iter % cellfields->particleVelocityUpdateTimescale == 0) {
     if (global.cellsDeletedInfo) {
       cellfields->deleteIncompleteCells(true);
@@ -548,7 +548,7 @@ void HemoCell::sanityCheck() {
 
   }
   
-  //Material sanity
+  // Material sanity
   if (boundaryRepulsionEnabled) {
     if (cellfields->boundaryRepulsionTimescale%cellfields->particleVelocityUpdateTimescale!=0) {
      hlog << "(HemoCell) Error, Particle velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
@@ -578,8 +578,8 @@ void HemoCell::sanityCheck() {
     }
   }
   
-  //Cellfields Sanity
-  //Check number of neighbours
+  // Cellfields Sanity
+  // Check number of neighbours
   if (cellfields->max_neighbours > 30) {
     hlog << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << cellfields->max_neighbours << " Usually it should be < 30 ! Check the atomic block structure!" << endl;
   }
@@ -629,9 +629,9 @@ void HemoCell::sanityCheck() {
   bool printed = false;
   plint nx,ny,nz,numBlocks,numAllocatedCells;
   Box3D smallest,largest;
-  //Check if atomic block sizes are in an acceptable range, not as fancy as the check in voxelizeDomain, maybe for later
+  // Check if atomic block sizes are in an acceptable range, not as fancy as the check in voxelizeDomain, maybe for later
   getMultiBlockInfo(*lattice, nx, ny, nz, numBlocks, smallest, largest, numAllocatedCells);
-  //check largest
+  // check largest
   if (largest.getNx() > 25 || largest.getNy() > 25 || largest.getNz() > 25) {
     hlog << getMultiBlockInfo(*lattice);
     hlog << "(SanityCheck) one of the dimensions of the largest atomic block is more than 25.\n  This is inefficient, The best performance is with 16x16x16 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure accordingly." << endl;
