@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
 # hemocell project definition
 set(PROJECT_NAME hemocell)
-project(${PROJECT_NAME} VERSION 2.2 LANGUAGES CXX C)
+project(${PROJECT_NAME} VERSION 2.6 LANGUAGES CXX C)
 
 # keep track of base directories for source of hemocell and palabos
 set(HEMOCELL_BASE_DIR ".")
