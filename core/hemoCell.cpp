@@ -442,12 +442,34 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   }
 
   if (!preInlet) {
-    hlog << "(HemoCell) No preinlet specified, running with all cores on domain with given management" << endl;
-    lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(management,
+  
+    try {
+      SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(),
+                                                             (*cfg)["domain"]["mABx"].read<int>(),
+                                                             (*cfg)["domain"]["mABy"].read<int>(),
+                                                             (*cfg)["domain"]["mABz"].read<int>());
+
+      hlog << "(HemoCell) Domain management overwritten from config file." << endl;
+      ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
+      domain_lattice_management = new MultiBlockManagement3D(sb,eta,management.getEnvelopeWidth(),management.getRefinementLevel());      
+
+      lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(*domain_lattice_management,
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
             defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
             new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+
+    }
+    catch (const std::invalid_argument& e) {
+      hlog << "(HemoCell) Using default domain management." << endl;
+ 
+      lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(management,
+            defaultMultiBlockPolicy3D().getBlockCommunicator(),
+            defaultMultiBlockPolicy3D().getCombinedStatistics(),
+            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+    }
+
     domain_lattice = lattice;
     return;
   }
@@ -465,7 +487,8 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
     preInlet->nProcs = 1;
   }
 
-  // JON addition: Try to read in number of processors allocated to preinlet from config file. 
+  // JON addition: Try to read in number of processors allocated to preinlet from config file.
+  // TODO: Do we still need this? 
   // Just continue with value computed above if reading it from XML throws an exception because it does not exist
   try  { preInlet->nProcs = (*cfg)["preInlet"]["parameters"]["nProcs"].read<int>(); }
   catch (const std::invalid_argument& e)  {}
@@ -495,14 +518,38 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
     }
   }
   
-  SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet->location,preInlet->nProcs);
-  ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet->BlockToMpi);
-  preinlet_lattice_management = new MultiBlockManagement3D(sb_preinlet,eta_preinlet,management.getEnvelopeWidth(),management.getRefinementLevel());
+  try {  // Look for block management info in the config file    
+    SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet->location,
+                                                                     (*cfg)["preInlet"]["parameters"]["pABx"].read<int>(),
+                                                                     (*cfg)["preInlet"]["parameters"]["pABy"].read<int>(),
+                                                                     (*cfg)["preInlet"]["parameters"]["pABz"].read<int>());
+    hlog << "(HemoCell) (PreInlet) Domain management overwritten from config file." << endl;
+    ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet->BlockToMpi);
+    preinlet_lattice_management = new MultiBlockManagement3D(sb_preinlet,eta_preinlet,management.getEnvelopeWidth(),management.getRefinementLevel());
+  }
+  catch (const std::invalid_argument& e) { // If nonexistent, fall back to the default distribution
+    hlog << "(HemoCell) (PreInlet) Using default domain management." << endl;
+    SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet->location,preInlet->nProcs);
+    ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet->BlockToMpi);
+    preinlet_lattice_management = new MultiBlockManagement3D(sb_preinlet,eta_preinlet,management.getEnvelopeWidth(),management.getRefinementLevel());
+  }
 
-  SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(),nProcs);
-  ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
-  domain_lattice_management = new MultiBlockManagement3D(sb,eta,management.getEnvelopeWidth(),management.getRefinementLevel());
-  
+  try { // Look for block management info in the config file
+    SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(),
+                                                           (*cfg)["domain"]["mABx"].read<int>(),
+                                                           (*cfg)["domain"]["mABy"].read<int>(),
+                                                           (*cfg)["domain"]["mABz"].read<int>());
+    hlog << "(HemoCell) Domain management overwritten from config file." << endl;
+    ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
+    domain_lattice_management = new MultiBlockManagement3D(sb,eta,management.getEnvelopeWidth(),management.getRefinementLevel());
+  }
+  catch (const std::invalid_argument& e) { // If nonexistent, fall back to the default distribution
+    hlog << "(HemoCell) Using default sparse domain management." << endl;
+    SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(),nProcs);
+    ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
+    domain_lattice_management = new MultiBlockManagement3D(sb,eta,management.getEnvelopeWidth(),management.getRefinementLevel());
+  }
+
   preinlet_lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(*preinlet_lattice_management,
             defaultMultiBlockPolicy3D().getBlockCommunicator(),
             defaultMultiBlockPolicy3D().getCombinedStatistics(),
