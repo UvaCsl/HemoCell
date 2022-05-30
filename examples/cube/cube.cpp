@@ -56,12 +56,7 @@ int main(int argc, char *argv[]) {
   param::printParameters();
 
   hlog << "(unbounded) (Fluid) Initializing Palabos Fluid Field" << endl;
-  hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
-      defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, (*cfg)["domain"]["fluidEnvelope"].read<int>()),
-      defaultMultiBlockPolicy3D().getBlockCommunicator(),
-      defaultMultiBlockPolicy3D().getCombinedStatistics(),
-      defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-      new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
+  hemocell.initializeLattice(defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, (*cfg)["domain"]["fluidEnvelope"].read<int>()));
 
   OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
                 = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
