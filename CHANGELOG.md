@@ -6,8 +6,15 @@ In this changelog, we consider the following classes of changes:
 * Structure: any changes to the structure of HemoCell that may break existing cases.
 * Fixes: (small) changes that do not fall in the other categories.
 
-Unreleased
-----------
+2.6 (Unreleased)
+-----------------
+* Features
+  * Added functionality ti hemocell.initializeLattice() to define domain decomposition from the config xml.
+  * Added weak-scaling test configs for the case ``cube``.
+* Fixes
+  * Various comment fixes in the code.
+  * Better error messages.
+  * Improved sanity-check function.
 
 2.5 (Jan 27 2022)
 -----------------
