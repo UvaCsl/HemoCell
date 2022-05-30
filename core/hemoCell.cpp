@@ -628,7 +628,7 @@ void HemoCell::sanityCheck() {
   // Cellfields Sanity
   // Check number of neighbours
   if (cellfields->max_neighbours > 30) {
-    hlog << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << cellfields->max_neighbours << " Usually it should be < 30 ! Check the atomic block structure!" << endl;
+    hlog << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << cellfields->max_neighbours << " Usually it should be < 30 ! Please check the domain decomposition structure!" << endl;
   }
   
   if (global.enableInteriorViscosity) {
@@ -681,12 +681,12 @@ void HemoCell::sanityCheck() {
   // check largest
   if (largest.getNx() > 25 || largest.getNy() > 25 || largest.getNz() > 25) {
     hlog << getMultiBlockInfo(*lattice);
-    hlog << "(SanityCheck) one of the dimensions of the largest atomic block is more than 25.\n  This is inefficient, The best performance is with 16x16x16 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure accordingly." << endl;
+    hlog << "(SanityCheck) one of the dimensions of the largest atomic block is more than 25.\n  This can be inefficient. The best performance is below 26x26x26 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure accordingly." << endl;
     printed = true;
   } 
   if (smallest.getNx() < 16 || smallest.getNy() < 16 || smallest.getNz() < 16) {
     if(!printed) { hlog << getMultiBlockInfo(*lattice); }
-    hlog << "(SanityCheck) one of the dimensions of the smallest atomic block is less than 16.\n  This is inefficient, The best performance is with 16x16x16 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure accordingly." << endl;
+    hlog << "(SanityCheck) one of the dimensions of the smallest atomic block is less than 16.\n  This can be inefficient. For the best performance we recommend between 20^3 to 25^3 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure, and making sure that the particleEnvelope is smaller than the block size." << endl;
     printed = true;
   }
   
