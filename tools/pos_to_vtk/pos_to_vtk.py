@@ -178,3 +178,6 @@ def create_glyphs(cell_files, cell_type):
         progress_bar=draw_progress_bar)
 
     return glyphs
+
+if __name__ == '__main__':
+    cli()

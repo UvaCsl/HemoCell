@@ -11,10 +11,14 @@ In this changelog, we consider the following classes of changes:
 * Features
   * Added functionality ti hemocell.initializeLattice() to define domain decomposition from the config xml.
   * Added weak-scaling test configs for the case ``cube``.
+  * The cell packing tool has been improved with better automatic resolution to avoid cell overlapping.
+  * Added mouse blood cell types to the cell packing tool.
 * Fixes
   * Various comment fixes in the code.
   * Better error messages.
   * Improved sanity-check function.
+  * ``tools/pos_to_vtk`` can now be used without installation.
+  * Changes to the cellPacking default values and messages to make it easier to use.
 
 2.5 (Jan 27 2022)
 -----------------

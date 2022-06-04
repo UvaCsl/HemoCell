@@ -1,9 +1,26 @@
-/* 
- * File:   packCells.h
- * Author: vikko
- *
- * Created on 11 December 2017, 10:06
- */
+/*
+This file is part of the HemoCell library
+
+HemoCell is developed and maintained by the Computational Science Lab 
+in the University of Amsterdam. Any questions or remarks regarding this library 
+can be sent to: info@hemocell.eu
+
+When using the HemoCell library in scientific work please cite the
+corresponding paper: https://doi.org/10.3389/fphys.2017.00563
+
+The HemoCell library is free software: you can redistribute it and/or
+modify it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+The library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #ifndef PACKCELLS_H
 #define PACKCELLS_H
@@ -25,8 +42,6 @@
 #include "ellipsoid.h"
 #include "rnd_utils.h"
 
-// Oversize ellipsoids by 10% (only for init suspension)
-const double OVERSIZE = 1.1;	// This helps to avoid too close membranes -> problematic overlaps for IBM
 
 using namespace std;
 
@@ -58,11 +73,6 @@ class Packing {
   int printEveryNSteps;
   int Nrot_step;
 
-  // Standard diameters for bounDinnerg ellipsoids of RBCs and platelets in um [= 1e-6 m]
-  //double rbcA = 8.0, rbcB = 2.5, rbcC = 8.0;
-  //double plateletA = 2.5 , plateletB = 0.75, plateletC = 2.5;
-
-  //double rbcA = 9.0, rbcB = 4.4, rbcC = 9.0; // Inreased to cover biconcave shape of RBCs
 
   double Sizing = 1.0;
 
@@ -86,7 +96,7 @@ public:
 
   // Initialise blood suspension with RBCs and platelets
   void initBlood(float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing, vector<CellType> & ctypes);
-  void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps, double sizing);
+  // void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps, double sizing);
   void savePov(const char * fileName, int wbcNumber);
   void saveBloodCellPositions();
   void getOutput(vector<vector<vector3> > &positions, vector<vector<vector3> > &angles);
@@ -209,7 +219,8 @@ void Packing::initBlood(float sizeX, float sizeY, float sizeZ, int maxSteps, dou
   No_cells_y = ceil(sizeY);
   No_cells_z = ceil(sizeZ);
 
-  cout << endl << "Number of bins: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
+  cout << endl << "Sizing parameter: " << Sizing << endl;
+  cout << "Resolution of collision check: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
 
   Ntau = 102400;
 
@@ -238,7 +249,7 @@ void Packing::initBlood(float sizeX, float sizeY, float sizeZ, int maxSteps, dou
   if (nomPackDens > 0.7){
       cout << "*** WARNING ***" << endl;
       cout << "For the requested hematocrit the enclosing ellipsoids yield a nominal volume ratio of: " << nomPackDens << endl;
-      cout << "Highest achieved packing (lots of iterations) is around 0.77!!! You might want to reconsider..." << endl;
+      cout << "Highest possible dense packing is around 0.77!!! You might want to reconsider..." << endl;
   }
 
   if(rndRotation)
@@ -250,51 +261,6 @@ void Packing::initBlood(float sizeX, float sizeY, float sizeZ, int maxSteps, dou
   printEveryNSteps = 10;
 }
 
-void Packing::initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps = 25000, double sizing = 1.0)
-{
-    NumParts = 0;
-    for(unsigned int i = 0; i < nPartsPerComponent.size(); i++)
-        NumParts += nPartsPerComponent[i];
-
-    NumSpecies = nPartsPerComponent.size();
-    Epsilon = 0.1;//0.1;
-    Epsilon_rot = 3.0;
-
-    Sizing = sizing;
-
-    No_cells_x = ceil(domainSize[0] * Sizing); // in the same quantity as cell diameters
-    No_cells_y = ceil(domainSize[1] * Sizing);
-    No_cells_z = ceil(domainSize[2] * Sizing);
-    
-    Ntau = 102400;
-
-    if(rndRotation)
-    	Nrot_step = 1;	// Execute rotation every n-th step
-    else
-    	Nrot_step = maxSteps+1; // a.k.a. never
-
-    Max_steps = maxSteps; // if force-free configuration is not possible, still stop calculation at some point
-
-    // Set up species
-    species = new Species*[NumSpecies];
-    for(int i = 0; i < NumSpecies; i++)
-        species[i] = new Species(nPartsPerComponent[i],
-                                 diametersPerComponent[i] * OVERSIZE * Sizing); // Inflate by 10%
-
-    // Get nominal volume ratio
-    nomPackDens = nominalPackingDensity * OVERSIZE;
-
-    // Output properties
-    printEveryNSteps = 250;
-
-    cout << "Number of maximal iterations: " << Max_steps << endl;
-    cout << "Rotation happens every nth step: " << Nrot_step << endl;
-    cout << "Number of bins for neighbour cutoff: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
-    cout << "Number of cells to pack:  " << endl;
-    for(int i = 0; i < NumSpecies; i++)
-        cout << "    Type: " << i << " - number: " << nPartsPerComponent[i] << " - diameters: " << 	diametersPerComponent[i][0] << "x" << diametersPerComponent[i][1] << "x" << diametersPerComponent[i][2] << endl;    
-
-}
 
 void Packing::init() {
 	int imult;

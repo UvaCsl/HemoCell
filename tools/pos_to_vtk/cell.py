@@ -24,7 +24,8 @@ class CellType(enum.Enum):
         Paraview based on their given scaling value.
         """
         return pv.ParametricEllipsoid(
-            2.2, 4.2, 4.2,
+            2.2, 4.2, 4.2,      # Human blood
+            # 1.7, 2.9, 2.9,    # Mouse blood
             u_res=CELL_RESOLUTION,
             v_res=CELL_RESOLUTION,
             w_res=CELL_RESOLUTION)
