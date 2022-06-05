@@ -43,8 +43,8 @@ void PrintHelp() {
           "  --wbc <n>                               Number of White Blood Cells\n"
           "  --vrbc <n>                              Number of Stage V gametocytes\n"
           "  --cell <name> <n> <e1, e2, diameter>    Custom Celltype described by ellipsoid\n"
-          "  --noRotate                           -r Disallow rotation of ellipsoids\n"
-          "  --scale <ratio>                         Scales the neighbourhood grid (only change this if you know what you are doing!)\n"
+          "  --noRotate                              Disallow rotation of ellipsoids\n"
+          "  --scale <ratio>                      -s Scales the neighbourhood grid (only change this if you know what you are doing!)\n"
           "  --maxiter <n>                           Maximum number of iterations\n"
           "  --help                                  Print this"
           "\n"
@@ -64,7 +64,7 @@ void PrintHelp() {
           
 }
 
-const char* const short_opts = "h:r";
+const char* const short_opts = "h:s";
 
 const option long_opts[] = {
             {"hematocrit", 1, nullptr, 0},
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
   
   while ((val = getopt_long_only(argc,argv,short_opts,long_opts,nullptr)) > -1) {
     if (val == 'h') { val = 0; }
-    if (val == 'r') { val = 6; }
+    if (val == 's') { val = 7; }
     
     switch(val){
       case(0):
