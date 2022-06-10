@@ -388,7 +388,7 @@ void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separati
 
 void HemoCell::setParticleVelocityUpdateTimeScaleSeparation(unsigned int separation) {
   hlog << "(HemoCell) (Timescale separation) Setting update separation of all particles to " << separation << " timesteps" << endl;
-  hlogfile << "(HemoCell) WARNING this introduces great errors" << endl;
+  hlogfile << "(HemoCell) WARNING time-scale separation can introduce numerical error! " << endl;
   cellfields->particleVelocityUpdateTimescale = separation;
 }
 
@@ -413,14 +413,14 @@ void HemoCell::setInteriorViscosityTimeScaleSeperation(unsigned int separation, 
 void HemoCell::setInitialMinimumDistanceFromSolid(string name, T distance) {
   hlog << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << " micrometer for " << name << endl; 
   if (loadParticlesIsCalled) {
-    pcout << "(HemoCell) (Set Distance) WARNING: this function is called after the particles are loaded, so it probably has no effect" << endl;
+    pcout << "(HemoCell) (Set Distance) WARNING: this function is called after the particles are loaded, so it has no effect!" << endl;
   }
   (*cellfields)[name]->minimumDistanceFromSolid = distance;
 }
 
 void HemoCell::setRepulsion(T repulsionConstant, T repulsionCutoff) {
-  hlog << "(HemoCell) (Repulsion) Setting repulsion constant to " << repulsionConstant << ". repulsionCutoff to" << repulsionCutoff << " Âµm" << endl;
-  hlogfile << "(HemoCell) (Repulsion) Enabling repulsion" << endl;
+  hlog << "(HemoCell) (Repulsion) Setting repulsion constant to " << repulsionConstant << ". repulsionCutoff to" << repulsionCutoff << " µm" << endl;
+  hlogfile << "(HemoCell) (Repulsion) Enabling repulsion." << endl;
   cellfields->repulsionConstant = repulsionConstant;
   cellfields->repulsionCutoff = repulsionCutoff*(1e-6/param::dx);
   repulsionEnabled = true;
@@ -428,7 +428,7 @@ void HemoCell::setRepulsion(T repulsionConstant, T repulsionCutoff) {
 
 void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRepulsionCutoff, unsigned int timestep) {
   cellfields->populateBoundaryParticles();
-  hlog << "(HemoCell) (Repulsion) Setting boundary repulsion constant to " << boundaryRepulsionConstant << ". boundary repulsionCutoff to" << boundaryRepulsionCutoff << " Âµm" << endl;
+  hlog << "(HemoCell) (Repulsion) Setting boundary repulsion constant to " << boundaryRepulsionConstant << ". boundary repulsionCutoff to" << boundaryRepulsionCutoff << " µm" << endl;
   hlogfile << "(HemoCell) (Repulsion) Enabling boundary repulsion" << endl;
   cellfields->boundaryRepulsionConstant = boundaryRepulsionConstant;
   cellfields->boundaryRepulsionCutoff = boundaryRepulsionCutoff*(1e-6/param::dx);
