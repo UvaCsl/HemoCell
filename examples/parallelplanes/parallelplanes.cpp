@@ -21,6 +21,7 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 #include "hemocell.h"
 #include "rbcHighOrderModel.h"
 #include "pltSimpleModel.h"
@@ -61,7 +62,7 @@ int main(int argc, char *argv[]) {
   hlog << "shear_rate = " << shear_rate << endl;
 
   // Plane Pouisseuille
-  double velocity_max = (shear_rate*(nz/1e6))/2;
+  double velocity_max = (shear_rate*(nz/2e6))/2;
   hlog << "velocity_max = " << velocity_max << endl;
 
   double velocity_max_lbm = velocity_max * ( (*cfg)["domain"]["dt"].read<double>() /(*cfg)["domain"]["dx"].read<double>() );
@@ -101,7 +102,7 @@ int main(int argc, char *argv[]) {
   //Driving Force
   hlog << "(Parallel planes) (Fluid) Setting up driving Force" << endl;
   double rPipe = (*cfg)["domain"]["Nz"].read<int>()/2.0;
-  double poiseuilleForce = 4 * param::nu_lbm * (velocity_max_lbm * 0.5) / (rPipe * rPipe); // 8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
+  double poiseuilleForce = 2 * param::nu_lbm * (velocity_max_lbm * (2./3.)) / (rPipe * rPipe); // 8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                      DESCRIPTOR<double>::ExternalField::forceBeginsAt,
                      plb::Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
