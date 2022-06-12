@@ -68,7 +68,7 @@ void Parameters::lbm_pipe_parameters(Config & cfg, plb::MultiScalarField3D<int> 
     
     plb::pcout << fluidArea << std::endl;
     pipe_radius = sqrt(fluidArea/PI);
-    hlog << "(Parameters) Your pipe has a calculated radius of " << pipe_radius << " LU, assuming a perfect circle" << std::endl;
+    hlog << "(Parameters) The channel has a calculated radius of " << pipe_radius << " LU, assuming a perfect circle cross-section." << std::endl;
     u_lbm_max = re * nu_lbm / (pipe_radius*2);
 };
 
@@ -77,7 +77,7 @@ void Parameters::lbm_pipe_parameters(Config & cfg, int nY) {
     re = cfg["domain"]["Re"].read<T>();
     
     pipe_radius = nY;
-    hlog << "(Parameters) Your pipe has a given radius of " << pipe_radius << " LU, given means it might be wrong" << std::endl;
+    hlog << "(Parameters) The channel has a predefined radius of " << pipe_radius << " LU." << std::endl;
     u_lbm_max = re * nu_lbm / (pipe_radius*2);
 };
 

@@ -1,0 +1,44 @@
+<?xml version="1.0" ?>
+<hemocell>
+
+<verbose>
+	<cellsDeletedInfo>0</cellsDeletedInfo> <!-- Give information about the location of deleted cells, this option impacts performance -->
+</verbose>
+
+<parameters>
+    <warmup> 10 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <outputDirectory>output</outputDirectory> <!-- This is the base directory, appended with _x when it already exists -->
+    <checkpointDirectory>checkpoint</checkpointDirectory> <!-- relative to outputDirectory -->
+    <logDirectory>log</logDirectory> <!-- relative to outputDirectory -->
+    <logFile>logfile</logFile> <!-- relative to logDirectory, if it exists (possible with ../log as logDirectory), add .x for a new version -->
+</parameters>
+
+<ibm>
+    <stepMaterialEvery> 20 </stepMaterialEvery> <!-- Update particle material model after this many fluid time steps. -->
+    <stepParticleEvery> 5 </stepParticleEvery> <!-- Update particles position after this many fluid time steps. -->
+</ibm>
+
+<domain>
+    <fluidEnvelope> 2 </fluidEnvelope>
+    <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
+    <nuP> 1.1e-6 </nuP>   <!-- Kinematic viscosity of blood plasma, physical units [m^2/s]-->
+    <dx> 5e-7 </dx> <!--Physical length of 1 Lattice Unit -->
+    <dt> 1e-8 </dt> <!-- Time step for the LBM system. A negative value will set Tau=1 and calc. the corresponding time-step. -->
+    <Nx> 100 </Nx> <!-- [LU] Base size in flow direction  -->
+    <Ny> 100 </Ny> <!-- [LU] Base size perp. to flow direction -->
+    <Nz> 200 </Nz> <!-- [LU] Height of the channel -->
+    <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
+    <WSR> 3000 </WSR>   <!-- Wall shear-rate [s^-1]-->
+    <particleEnvelope> 20 </particleEnvelope>
+    <kRep> 2e-22 </kRep> <!-- Repulsion Constant -->
+    <RepCutoff> 0.7 </RepCutoff> <!-- RepulsionCutoff -->
+</domain>
+
+<sim>
+    <tmax> 100000 </tmax> <!-- total number of iterations -->
+    <tmeas>  1000 </tmeas> <!-- interval after which data is written --> 
+    <tcsv>  100 </tcsv> <!-- interval after which simple mean cell values are written to a CSV file --> 
+    <tcheckpoint> 10000 </tcheckpoint> 
+</sim>
+
+</hemocell>
