@@ -49,8 +49,8 @@ class CellMechanics {
   
   T calculate_kLink(Config & cfg, plb::MeshMetrics<T> & meshmetric){
     T kLink = cfg["MaterialModel"]["kLink"].read<T>();
-    T persistenceLengthFine = 7.5e-9; // In meters -> this is a biological value
-    T plc = persistenceLengthFine/param::dx; //* sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); //Kaniadakis magic
+    T persistenceLengthFine = 7.5e-9; // In [m] -> this is the biological value.
+    T plc = persistenceLengthFine/param::dx; //* sqrt((meshmetric.getNumVertices()-2.0) / (23867-2.0)); // <- Constant from the Karniadakis group. We don't use this.
     return  kLink * param::kBT_lbm/plc;
   };
   
