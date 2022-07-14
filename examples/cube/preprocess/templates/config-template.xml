@@ -24,7 +24,7 @@
     <ny> {{ny}} </ny>  <!-- Number of numerical cell in the reference direction -->
     <nz> {{nz}} </nz>  <!-- Number of numerical cell in the reference direction -->
     <blockSize> -1 </blockSize>
-    <!-- Size of atomic blocks along the given axis. Uncomment to use. -->
+    <!-- Number of atomic blocks along the given axis. Uncomment to use. Automatic if not given. -->
     <!-- 
     <mABx>64</mABx> 
     <mABy>64</mABy> 
