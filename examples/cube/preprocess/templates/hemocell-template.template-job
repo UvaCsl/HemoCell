@@ -1,0 +1,97 @@
+#!/bin/bash
+#SBATCH --partition {{partition}}
+#SBATCH --exclusive
+##SBATCH --ntasks {{ncpu}}
+#SBATCH --nodes {{nnodes}}
+#SBATCH --ntasks-per-node {{ncpupernode}}
+#SBATCH --time {{cpu-hour-estimate}}
+#SBATCH --job-name {{jobname}}
+#SBATCH --output {{slurm-file}}
+#SBATCH --account e723-hemocell
+#SBATCH --qos {{quality-of-service}}
+
+echo Init: "$(date)"
+
+echo user:              "$USER"
+echo hostname:          "$HOSTNAME"
+echo jobid:             "$SLURM_JOB_ID"
+echo jobname:           "$SLURM_JOB_NAME"
+echo nodelist:          "$SLURM_JOB_NODELIST"
+echo tasks for job:     "$SLURM_NTASKS"
+echo tasks per node:    "$SLURM_NTASKS_PER_NODE"
+
+INITIAL_WD=`pwd`
+
+# set HOME and TMPDIR if needed
+export HOME='/home/user'
+export TMPDIR='/scratch/user'
+
+# set the folder where HemoCell is located 
+hemocell="$HOME/work/HemoCell/"
+
+# load modules for hemocell
+source "$hemocell/scripts/{{environment-script}}"
+
+# load additional modules
+module list
+
+# fill in example name
+example=cube
+example_path="$hemocell/examples/$example"
+
+# batch directory contain all scaling job directories
+batch_path="$HOME/{{batch-directory}}/${SLURM_JOB_NAME}"
+
+output_dir="$HOME/collect/${SLURM_JOB_NAME}-${SLURM_JOB_ID}"
+srun mkdir -p "${output_dir}"
+wait
+
+# working directory in local scratch
+work_dir="$TMPDIR/scratch-${SLURM_JOB_ID}"
+srun mkdir -p "${work_dir}"
+wait
+
+# copy the executable and configuration files
+cp -v "${example_path}/${example}" "${work_dir}"
+cp -v "${example_path}/RBC.xml" "${work_dir}"
+cp -v "${batch_path}/RBC.pos" "${work_dir}"
+cp -v "${batch_path}/config.xml" "${work_dir}"
+
+# move into the scratch
+cd "$work_dir" || exit 1
+
+# start the current job
+echo "Start:" "$(date)"
+srun "$example" config.xml
+wait
+echo "Done:" "$(date)"
+
+# collect energy information if supported by the cluster
+{{energy-collection}}
+
+# copy back output
+cd "$work_dir" || exit 1
+ls -la .
+
+# gather local storage from all nodes
+
+# Define a selection of required output files to reduce storage requirement,
+# as the performance measurements (currently) only require the logs. Uncomment
+# the subsequent line to include the HDF and CSV outputs.
+files=( "RBC.pos" "RBC.xml" "config.xml" "tmp_1/log_1" )
+#files+=( "tmp_1/hdf5" "tmp_1/csv" )
+
+for file in "${files[@]}"; do
+    # when copying dir trees: ensure the tree is present on the destination
+    if [ -d "$file" ]; then mkdir -p "$output_dir/$file"; fi
+    cp -vr "$file" "$output_dir/$file"
+done
+
+# copy the submitted script to the output directory for future reference
+cp "${BASH_SOURCE[0]}" "$output_dir/slurm.job"
+
+# copy the slurm logs into the current output directory too
+#cp "$HOME/{{slurm-file}}" "$output_dir/slurm.out"
+cp "$INITIAL_WD/{{slurm-file}}" "$output_dir/slurm.out"
+
+echo "Complete:" "$(date)"
