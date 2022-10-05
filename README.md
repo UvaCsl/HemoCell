@@ -31,7 +31,8 @@ Please see the file `LICENSE` in the root directory.
 Contributions
 =====================
 
-If you would like to make a contribution to this project, please create a new branch from the develop branch using a name relative to the issue you are working on, and merge back to the develop branch.
+Please read our contribution guidelines on HemoCell documentation.
+
 
 
 
