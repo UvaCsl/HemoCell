@@ -17,3 +17,10 @@ export LDFLAGS="-L${CRAYLIBS_X86_64} $(CC --cray-print-opts=libs) -lmpi"
 
 # compile by first running: cmake ../ -DMPI_CXX_COMPILER=$(which CC) -DMPI_C_COMPILER=$(which cc) -DMPI_COMPILER_FLAGS="--cray-print-opts=all"
 # from hemocell/build directory
+
+# NOTE:
+# Improve the performnce of HemoCell by adding the following options to srun:
+#
+# srun --distribution=block:block --hint=nomultithread "$example" config.xml
+#
+# These options ensure you get the correct pinning of processes to cores on a compute node, without these options the default process placement may lead to a drop in performance for your jobs on ARCHER1.
