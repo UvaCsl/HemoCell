@@ -193,3 +193,27 @@ HemoCell related publications
    :all:
 
 .. _Palabos: https://palabos.unige.ch/
+
+Contributions
+=============
+
+Before you contribute
+---------------------
+
+* Please make sure that your contribution falls under HemoCell license.
+* If you want to resolve a bug : make sure that it still exists. 
+  You can build the latest master branch and verify that the error is reproducable.
+* Make sure that the bug you want to report is not already reported in our Github issues
+  and that no one is working on it.
+* If you have any questions about the software or if you are facing any issues using it
+  feel free to open a Github issue or email at info@hemocell.eu.
+
+Code contribution
+-----------------
+
+* Create a fork of HemoCell repository.
+* Create a new branch from the develop branch for the issue you want to work on. 
+  Please give a name to your branch that is relevant to the issue.
+* Modify/add code to your branch.
+* Before pushing make sure you have not included unrelated changes and that the project builds properly.
+* After you are done, push your changes and create a pull request from your branch to the develop branch.
