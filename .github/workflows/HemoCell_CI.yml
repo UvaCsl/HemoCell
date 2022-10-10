@@ -21,6 +21,8 @@ jobs:
       run: |
         sudo apt-get update --yes -qq
         sudo apt-get install --yes -qq git g++ cmake make libopenmpi-dev libhdf5-mpi-dev libhdf5-dev patch wget ccache
-        
+        ./setup.sh > /dev/null
+        mkdir -p build && cd build
+        cmake ..
 
   
