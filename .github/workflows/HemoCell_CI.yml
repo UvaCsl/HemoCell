@@ -1,0 +1,25 @@
+name: HemoCell_CI
+
+on:
+  push:
+    branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
+
+jobs:
+  before_script:
+
+    runs-on: self-hosted
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install hemocell dependencies and build hemocell
+      run: |
+        apt-get update --yes -qq
+        apt-get install --yes -qq git g++ cmake make libopenmpi-dev libhdf5-mpi-dev libhdf5-dev patch wget ccache
+        ./setup.sh > /dev/null
+        mkdir -p build && cd build
+        cmake ..
+        
+
+  
