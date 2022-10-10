@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 set(PROJECT_NAME hemocell)
 project(${PROJECT_NAME} VERSION 2.6 LANGUAGES CXX C)
 
-# keep track of base directories for source of hemocell and palabos
+# keep track of base directories for source of hemocell and Palabos
 set(HEMOCELL_BASE_DIR ".")
 set(PALABOS_DIR "${HEMOCELL_BASE_DIR}/palabos")
 
