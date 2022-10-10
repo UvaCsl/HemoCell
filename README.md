@@ -31,7 +31,7 @@ Please see the file `LICENSE` in the root directory.
 Contributions
 =====================
 
-Please read our contribution guidelines on HemoCell documentation.
+For contributions please read our contribution guidelines on HemoCell documentation.
 
 
 
