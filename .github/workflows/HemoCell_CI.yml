@@ -11,6 +11,7 @@ on:
       - setup_cicd
 
 jobs:
+
   before_script:
 
     runs-on: self-hosted
@@ -25,4 +26,17 @@ jobs:
         mkdir -p build && cd build
         cmake ..
 
+  build:
+
+    runs-on: self-hosted
+
+    needs : before_script
+    
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build HemoCell examples
+      run: |
+        while read target; do
+          cmake --build . --target ${target}
+        done < <(cut -d '"' -f2 < ../examples/CMakeLists.txt)
   
