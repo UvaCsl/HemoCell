@@ -32,6 +32,12 @@ jobs:
         while read target; do
           cmake --build . --target ${target}
         done < <(cut -d '"' -f2 < ../examples/CMakeLists.txt)
-        
+    
+    - name : run validation tests
+      run : |
+        cd build
+        cmake --build . --target hemocell_test
+        GTEST_FILTER="Validation.*"
+        ctest -V
       
   
