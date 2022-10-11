@@ -36,7 +36,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build HemoCell examples
       run: |
+        cd build
         while read target; do
           cmake --build . --target ${target}
-        done < <(cut -d '"' -f2 < ./examples/CMakeLists.txt)
+        done < <(cut -d '"' -f2 < ../examples/CMakeLists.txt)
   
