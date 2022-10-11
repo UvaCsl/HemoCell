@@ -25,6 +25,7 @@ jobs:
         ./setup.sh > /dev/null
         mkdir -p build && cd build
         cmake ..
+        pwd
     - name : build hemocell and examples
       run : |
         while read target; do
