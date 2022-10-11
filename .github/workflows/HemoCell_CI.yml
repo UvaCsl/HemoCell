@@ -25,10 +25,10 @@ jobs:
         ./setup.sh > /dev/null
         mkdir -p build && cd build
         cmake ..
-        pwd
+      
     - name : build hemocell and examples
       run : |
-        pwd
+        cd build
         while read target; do
           cmake --build . --target ${target}
         done < <(cut -d '"' -f2 < ../examples/CMakeLists.txt)
