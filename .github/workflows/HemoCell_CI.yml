@@ -25,6 +25,7 @@ jobs:
         ./setup.sh > /dev/null
         mkdir -p build && cd build
         cmake ..
+      run : |
         while read target; do
           cmake --build . --target ${target}
         done < <(cut -d '"' -f2 < ../examples/CMakeLists.txt)
