@@ -38,5 +38,5 @@ jobs:
       run: |
         while read target; do
           cmake --build . --target ${target}
-        done < <(cut -d '"' -f2 < ../examples/CMakeLists.txt)
+        done < <(cut -d '"' -f2 < ./examples/CMakeLists.txt)
   
