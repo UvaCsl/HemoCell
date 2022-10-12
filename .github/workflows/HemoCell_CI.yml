@@ -41,7 +41,7 @@ jobs:
       run : |
         cd build
         cmake --build . --target hemocell_test
-        export GTEST_FILTER="Validation.*"
+        export GTEST_FILTER="Validation*"
         ctest -V
       
   
