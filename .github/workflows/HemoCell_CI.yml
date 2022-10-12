@@ -36,13 +36,13 @@ jobs:
         while read target; do
           cmake --build . --target ${target}
         done < <(cut -d '"' -f2 < ../examples/CMakeLists.txt)
-      working-directory: ${HEMOCELL_BUILD_DIR}
+      working-directory: build
     
     - name : run validation tests
       run : |
         cmake --build . --target hemocell_test
         export GTEST_FILTER="Validation*"
         ctest -V
-      working-directory: ${HEMOCELL_BUILD_DIR}
+      working-directory: build
       
   
