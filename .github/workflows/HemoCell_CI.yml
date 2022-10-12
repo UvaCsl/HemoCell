@@ -21,7 +21,8 @@ jobs:
     - name: Install hemocell dependencies and create artifacts
       run: |
         sudo apt-get update --yes -qq
-        sudo apt-get install --yes -qq git g++ cmake make libopenmpi-dev libhdf5-mpi-dev libhdf5-dev patch wget ccache
+        sudo apt-get install --yes -qq git g++ cmake make libopenmpi-dev libhdf5-mpi-dev \
+                             libhdf5-dev patch wget ccache
         ./setup.sh > /dev/null
         mkdir -p build && cd build
         cmake ..
@@ -37,7 +38,7 @@ jobs:
       run : |
         cd build
         cmake --build . --target hemocell_test
-        GTEST_FILTER="Validation.*"
+        export GTEST_FILTER="Validation.*"
         ctest -V
       
   
