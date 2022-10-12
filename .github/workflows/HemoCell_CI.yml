@@ -28,20 +28,21 @@ jobs:
                              libhdf5-dev patch wget ccache
         ./setup.sh > /dev/null
         mkdir -p build && cd build
+        export HEMOCELL_BUILD_DIR="$(pwd)"
         cmake ..
       
     - name : build hemocell and examples
       run : |
-        cd build
         while read target; do
           cmake --build . --target ${target}
         done < <(cut -d '"' -f2 < ../examples/CMakeLists.txt)
+      working-directory: ${HEMOCELL_BUILD_DIR}
     
     - name : run validation tests
       run : |
-        cd build
         cmake --build . --target hemocell_test
         export GTEST_FILTER="Validation*"
         ctest -V
+      working-directory: ${HEMOCELL_BUILD_DIR}
       
   
