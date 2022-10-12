@@ -1,8 +1,11 @@
 name: HemoCell_CI
 
 on:
+# there is no way trigger the workflow when a pull request is merged.
+# however, since a merged pull always results in a push, we use the push event here.
   push:
     branches: 
+      - master
       - develop
       - setup_cicd
   pull_request:
