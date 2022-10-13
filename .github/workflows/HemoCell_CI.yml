@@ -8,11 +8,10 @@ on:
       - master
       - develop
       - setup_cicd
+# enable github workflow to run whenever a PR is created on any branch
+# that will be afterwards merged on develop 
   pull_request:
     types: [opened, reopened, review_requested]
-    branches: 
-      - develop
-      - setup_cicd
 
 jobs:
 
@@ -49,8 +48,8 @@ jobs:
 
     - name : build documentation
       run : |
-        sudo apt-get update
-        sudo apt-get install make doxygen graphviz fonts-freefont-ttf
+        sudo apt-get -y update
+        sudo apt-get install -y make doxygen graphviz fonts-freefont-ttf
         pip install -r requirements.txt
         cd user_guide
         make clean
