@@ -9,6 +9,7 @@ on:
       - develop
       - setup_cicd
   pull_request:
+    types: [opened, reopened, review_requested]
     branches: 
       - develop
       - setup_cicd
@@ -21,6 +22,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
     - name: Install hemocell dependencies and create artifacts
       run: |
         sudo apt-get update --yes -qq
@@ -29,7 +31,7 @@ jobs:
         ./setup.sh > /dev/null
         mkdir -p build && cd build
         export HEMOCELL_BUILD_DIR="$(pwd)"
-        cmake ..
+        cmake .. 
       
     - name : build hemocell and examples
       run : |
@@ -44,5 +46,15 @@ jobs:
         export GTEST_FILTER="Validation*"
         ctest -V
       working-directory: build
+
+    -name : build documentation
+      run : |
+        sudo apt-get update
+        sudo apt-get install make doxygen graphviz fonts-freefont-ttf
+        pip install -r requirements.txt
+        cd user_guide
+        make clean
+        make html
+      working-directory: doc
       
   
