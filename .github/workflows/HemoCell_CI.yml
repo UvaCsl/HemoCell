@@ -47,7 +47,7 @@ jobs:
         ctest -V
       working-directory: build
 
-    -name : build documentation
+    - name : build documentation
       run : |
         sudo apt-get update
         sudo apt-get install make doxygen graphviz fonts-freefont-ttf
