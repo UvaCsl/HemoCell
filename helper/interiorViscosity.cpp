@@ -31,23 +31,23 @@ namespace hemo {
     //Create bindingfield with same properties as fluid field underlying the particleField.
     multiInteriorViscosityField = new plb::MultiScalarField3D<T>(
             MultiBlockManagement3D (
-                *cellFields.hemocell.lattice->getSparseBlockStructure().clone(),
-                cellFields.hemocell.lattice->getMultiBlockManagement().getThreadAttribution().clone(),
-                cellFields.hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth(),
-                cellFields.hemocell.lattice->getMultiBlockManagement().getRefinementLevel()),
+                *cellFields.hemocell.domain_lattice->getSparseBlockStructure().clone(),
+                cellFields.hemocell.domain_lattice->getMultiBlockManagement().getThreadAttribution().clone(),
+                cellFields.hemocell.domain_lattice->getMultiBlockManagement().getEnvelopeWidth(),
+                cellFields.hemocell.domain_lattice->getMultiBlockManagement().getRefinementLevel()),
                 defaultMultiBlockPolicy3D().getBlockCommunicator(),                
                 defaultMultiBlockPolicy3D().getCombinedStatistics(),
                 defaultMultiBlockPolicy3D().getMultiScalarAccess<T>(),
                 0);
-    multiInteriorViscosityField->periodicity().toggle(0,cellFields.hemocell.lattice->periodicity().get(0));
-    multiInteriorViscosityField->periodicity().toggle(1,cellFields.hemocell.lattice->periodicity().get(1));
-    multiInteriorViscosityField->periodicity().toggle(2,cellFields.hemocell.lattice->periodicity().get(2));
+    multiInteriorViscosityField->periodicity().toggle(0,cellFields.hemocell.domain_lattice->periodicity().get(0));
+    multiInteriorViscosityField->periodicity().toggle(1,cellFields.hemocell.domain_lattice->periodicity().get(1));
+    multiInteriorViscosityField->periodicity().toggle(2,cellFields.hemocell.domain_lattice->periodicity().get(2));
 
     multiInteriorViscosityField->initialize();
     
     //Make sure each particleField has access to its local scalarField
     for (const plint & bId : multiInteriorViscosityField->getLocalInfo().getBlocks()) {
-      HemoCellParticleField & pf = cellFields.immersedParticles->getComponent(bId);
+      HemoCellParticleField & pf = cellFields.domain_immersedParticles->getComponent(bId);
       pf.interiorViscosityField = &multiInteriorViscosityField->getComponent(bId);
     }
   }
@@ -119,8 +119,8 @@ namespace hemo {
   }
   
   void InteriorViscosityHelper::refillBindingSites() {
-    for (const plint & bId : cellFields.immersedParticles->getLocalInfo().getBlocks()) {
-      HemoCellParticleField & pf = cellFields.immersedParticles->getComponent(bId);
+    for (const plint & bId : cellFields.domain_immersedParticles->getLocalInfo().getBlocks()) {
+      HemoCellParticleField & pf = cellFields.domain_immersedParticles->getComponent(bId);
       ScalarField3D<T> & bf = *pf.interiorViscosityField;
       Box3D domain = bf.getBoundingBox();
       for (int x = domain.x0; x <= domain.x1 ; x++) {
