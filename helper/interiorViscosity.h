@@ -30,7 +30,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace hemo {
   class InteriorViscosityHelper {
   public:
-    static InteriorViscosityHelper& get(HemoCellFields & cellFields) {
+     static InteriorViscosityHelper& get(HemoCellFields & cellFields) {
+
       static InteriorViscosityHelper instance(cellFields);
       return instance;
     }
@@ -47,7 +48,9 @@ namespace hemo {
     
   private:
     HemoCellFields & cellFields;
-    plb::MultiScalarField3D<T> * multiInteriorViscosityField = 0;
+
+    plb::MultiScalarField3D<T> *multiInteriorViscosityField = nullptr,
+     *preinlet_multiInteriorViscosityField = nullptr, *domain_multiInteriorViscosityField = nullptr;
     
     InteriorViscosityHelper(HemoCellFields & cellFields);
     ~InteriorViscosityHelper();

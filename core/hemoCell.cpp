@@ -327,7 +327,6 @@ void HemoCell::iterate() {
   if(iter %cellfields->particleVelocityUpdateTimescale == 0) {
     // #### 3 #### IBM interpolation
     cellfields->interpolateFluidVelocity();
-
     // ### 4 ### sync the particles
     cellfields->syncEnvelopes();
   }
@@ -482,18 +481,20 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   totalNodes += preInlet->getNumberOfNodes();
   totalNodes += cellsInBoundingBox(management.getBoundingBox());
   
-  preInlet->nProcs = global::mpi().getSize()*(preInlet->getNumberOfNodes()/(T)totalNodes);
-  if (preInlet->nProcs == 0) {
-    preInlet->nProcs = 1;
+  try  { // Look for block management info in the config file
+        plint preInlet_pABx = (*cfg)["preInlet"]["parameters"]["pABx"].read<plint>();
+        plint preInlet_pABy = (*cfg)["preInlet"]["parameters"]["pABy"].read<plint>();
+        plint preInlet_pABz = (*cfg)["preInlet"]["parameters"]["pABz"].read<plint>();
+        preInlet->nProcs = preInlet_pABx*preInlet_pABy*preInlet_pABz;
+      }
+  catch (const std::invalid_argument& e)  {
+    preInlet->nProcs = global::mpi().getSize()*(preInlet->getNumberOfNodes()/(T)totalNodes);
+    if (preInlet->nProcs == 0) {
+      preInlet->nProcs = 1;
+    }
   }
-
-  // JON addition: Try to read in number of processors allocated to preinlet from config file.
-  // TODO: Do we still need this? 
-  // Just continue with value computed above if reading it from XML throws an exception because it does not exist
-  try  { preInlet->nProcs = (*cfg)["preInlet"]["parameters"]["nProcs"].read<int>(); }
-  catch (const std::invalid_argument& e)  {}
   
-  int nProcs = global::mpi().getSize()-preInlet->nProcs;
+  int nProcs = global::mpi().getSize() - preInlet->nProcs;
   
   //Assign processors to PreInlet or Domain
   unsigned int currentPreInlet = 0;
