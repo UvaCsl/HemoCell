@@ -5,15 +5,15 @@ if [[ "$0" == "$BASH_SOURCE" ]]; then
 fi
 
 
-module load cmake/3.21.3
-module load cray-hdf5/1.12.0.7
-module load cray-mpich/8.1.9
-module load cray-python/3.9.4.1
+module load cmake
+module load cray-hdf5
+module load cray-python
 module list
 
-export CC=$(which clang)
-export CXX=$(which clang++)
-export LDFLAGS="-L${CRAYLIBS_X86_64} $(CC --cray-print-opts=libs) -lmpi"
+export CC=cc
+export CXX=CC
 
-# compile by first running: cmake ../ -DMPI_CXX_COMPILER=$(which CC) -DMPI_C_COMPILER=$(which cc) -DMPI_COMPILER_FLAGS="--cray-print-opts=all"
+# Comment out line 130 in CMakeLists.txt to avoid messy unused parameter warnings.
+
+# compile by first running: cmake ..
 # from hemocell/build directory
