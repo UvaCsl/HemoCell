@@ -81,7 +81,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         vector<vector<T>> * output = new vector<vector<T>>();
         std::string vectorname = "";
         particleField.passthroughpass(cellField3D.desiredOutputVariables[i],domain,*output,cellField3D.ctype,vectorname);
-        if (vectorname == "") { continue; }
+        if (vectorname == "") { delete output; continue; }
         dimVertices[0] = (*output).size();
         dimVertices[1] = dimVertices[0] == 0 ? 0 :(*output)[0].size();
         chunk[0] = 1000 < (*output).size() ? 1000 : (*output).size();
@@ -105,6 +105,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         hid_t did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
         H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output_formatted);
         H5Dclose(did);
+        H5Pclose(plist_id);
         H5Sclose(sid);
             
         if (cellField3D.desiredOutputVariables[i] == OUTPUT_POSITION) {
@@ -145,8 +146,9 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
         hid_t did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
         H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output_formatted);
         H5Dclose(did);
+        H5Pclose(plist_id);
         H5Sclose(sid);
-        
+
         long int nT = output->size();
         H5LTset_attribute_long (file_id, "/", "numberOfTriangles", &nT, 1);
         delete output;
@@ -182,6 +184,7 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks (
           hid_t did = H5Dcreate2(file_id,vectorname.c_str(),H5T_NATIVE_INT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
           H5Dwrite(did,H5T_NATIVE_INT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output_formatted);
           H5Dclose(did);
+          H5Pclose(plist_id);
           H5Sclose(sid);
 
           long int nT = output->size();

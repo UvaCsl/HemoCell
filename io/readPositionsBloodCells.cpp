@@ -127,7 +127,30 @@ inline void positionCellInParticleField(HemoCellParticleField& particleField, Bl
 
     for (plint iVertex=0; iVertex < nVertices; ++iVertex) {
         hemo::Array<T,3> vertex = startingPoint + mesh->getVertex(iVertex);
-        
+
+        // Wrap vertices that fall outside periodic dimensions back into the domain.
+        // This handles cells packed near the periodic boundary edges (e.g. x≈50 µm)
+        // whose vertices would otherwise be silently dropped, causing false deletion.
+        {
+          plb::MultiBlockLattice3D<T,DESCRIPTOR> * latt = particleField.cellFields->lattice;
+          Box3D gbb = latt->getBoundingBox();
+          if (latt->periodicity().get(0)) {
+            T Nx = (T)gbb.getNx();
+            if (vertex[0] < 0.0)    vertex[0] += Nx;
+            else if (vertex[0] >= Nx) vertex[0] -= Nx;
+          }
+          if (latt->periodicity().get(1)) {
+            T Ny = (T)gbb.getNy();
+            if (vertex[1] < 0.0)    vertex[1] += Ny;
+            else if (vertex[1] >= Ny) vertex[1] -= Ny;
+          }
+          if (latt->periodicity().get(2)) {
+            T Nz = (T)gbb.getNz();
+            if (vertex[2] < 0.0)    vertex[2] += Nz;
+            else if (vertex[2] >= Nz) vertex[2] -= Nz;
+          }
+        }
+
         //If we cannot place it in the particle field continue
         if (!particleField.isContainedABS(vertex,particleField.getBoundingBox())) { continue; }
         
@@ -350,7 +373,6 @@ void ReadPositionsBloodCellField3D::processGenericBlocks (
 			delete meshCopy;
         }
 
-        particleFields[iCF]->deleteIncompleteCells(iCF,false);
         std::vector<HemoCellParticle*> particles;
         particleFields[iCF]->findParticles(particleFields[iCF]->getBoundingBox(), particles, iCF);
         

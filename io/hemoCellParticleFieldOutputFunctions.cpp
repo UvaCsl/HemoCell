@@ -152,7 +152,7 @@ void HemoCellParticleField::outputForceArea(Box3D domain,vector<vector<T>>& outp
     if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
     for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
       sparticle = &particles[particles_per_cell.at(cellid)[i]];
- 
+
       vector<T> tf;
       tf.push_back((*sparticle->force_area)[0]);
       tf.push_back((*sparticle->force_area)[1]);
@@ -181,7 +181,7 @@ void HemoCellParticleField::outputForceLink(Box3D domain,vector<vector<T>>& outp
     if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
     for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
       sparticle = &particles[particles_per_cell.at(cellid)[i]];
- 
+
       vector<T> tf;
       tf.push_back((*sparticle->force_link)[0]);
       tf.push_back((*sparticle->force_link)[1]);
@@ -210,7 +210,7 @@ void HemoCellParticleField::outputForceInnerLink(Box3D domain,vector<vector<T>>&
     if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
     for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
       sparticle = &particles[particles_per_cell.at(cellid)[i]];
- 
+
       vector<T> tf;
       tf.push_back((*sparticle->force_inner_link)[0]);
       tf.push_back((*sparticle->force_inner_link)[1]);
@@ -326,7 +326,7 @@ void HemoCellParticleField::outputForces(Box3D domain,vector<vector<T>>& output,
     if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
     for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
       sparticle = &particles[particles_per_cell.at(cellid)[i]];
- 
+
       vector<T> tf;
       tf.push_back(sparticle->force_total[0]);
       tf.push_back(sparticle->force_total[1]);
