@@ -194,6 +194,34 @@ void HemoCell::loadParticles() {
   readPositionsBloodCellField3D(*cellfields, param::dx, *cfg);
   cellfields->syncEnvelopes();
   cellfields->deleteIncompleteCells(false);
+
+  // Print stable post-initialization cell counts (after init deletions).
+  // Count vertex-0 of each cell when it falls in the block's primary domain (localDomain).
+  // Vertex 0 lands in exactly one block's localDomain per cell, so the MPI sum is exact.
+  // (lpc-based counting overcounts: a cell with vertices in N blocks' domains gets counted N times.)
+  {
+    int n_types = (int)cellfields->size();
+    std::vector<int> local_counts(n_types, 0);
+    for (plint lbid : cellfields->immersedParticles->getLocalInfo().getBlocks()) {
+      HemoCellParticleField & pf = cellfields->immersedParticles->getComponent(lbid);
+      for (const HemoCellParticle & p : pf.particles) {
+        if (p.sv.vertexId == 0 && pf.isContainedABS(p.sv.position, pf.localDomain)) {
+          int ctype = p.sv.celltype;
+          if (ctype >= 0 && ctype < n_types) local_counts[ctype]++;
+        }
+      }
+    }
+    MPI_Allreduce(MPI_IN_PLACE, local_counts.data(), n_types, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    if (global::mpi().isMainProcessor()) {
+      int total = 0;
+      for (int c : local_counts) total += c;
+      hlog << "(HemoCell) (Init) Stable post-init cell count: " << total;
+      for (int t = 0; t < n_types; t++) {
+        hlog << " | " << (*cellfields)[t]->name << ": " << local_counts[t];
+      }
+      hlog << endl;
+    }
+  }
 }
 
 void HemoCell::loadCheckPoint() {
@@ -245,11 +273,6 @@ void HemoCell::writeOutput() {
   lattice->getMultiBlockManagement().changeEnvelopeWidth(1);
   
   cellfields->syncEnvelopes();
-  if (global.cellsDeletedInfo) {
-    cellfields->deleteIncompleteCells(true);
-  } else {
-    cellfields->deleteIncompleteCells(false);   
-  }
 
   // Repoint surfaceparticle forces for output
   cellfields->separate_force_vectors();
@@ -345,6 +368,7 @@ void HemoCell::iterate() {
   cellfields->applyConstitutiveModel();    // Calculate Force on Vertices 
 
   if (global.enableInteriorViscosity && iter % cellfields->interiorViscosityEntireGridTimescale == 0) {
+    cellfields->syncEnvelopes();
     cellfields->deleteIncompleteCells(); // Must be done, next function expects whole cells
     global.statistics.getCurrent()["internalParticleGridPoints"].start();
     cellfields->findInternalParticleGridPoints();
@@ -358,10 +382,12 @@ void HemoCell::iterate() {
   
   // We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
   if(iter % cellfields->particleVelocityUpdateTimescale == 0) {
+    cellfields->syncEnvelopes();
+    cellfields->syncEnvelopesTargetedRepair();
     if (global.cellsDeletedInfo) {
       cellfields->deleteIncompleteCells(true);
     }
-    cellfields->deleteNonLocalParticles(3);
+    cellfields->deleteNonLocalParticles(8);
   }
 
   global.statistics.getCurrent()["setExternalVector"].start();

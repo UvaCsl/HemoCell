@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mollerTrumbore.h"
 #include "bindingField.h"
 #include "interiorViscosity.h"
+#include <sstream>
 #pragma GCC diagnostic push 
 #pragma GCC diagnostic ignored "-Wint-in-bool-context"
 #include <Eigen3/Eigenvalues>
@@ -461,9 +462,45 @@ void HemoCellParticleField::computeGridPosition (
 }
 
 void HemoCellParticleField::issueWarning(HemoCellParticle & p){
-	cout << "(HemoCell) (Delete Cells) WARNING! Particle deleted from local domain. This means the whole cell will be deleted!" << endl;
-        cout << "\t Particle ID:" << p.sv.cellId << endl;
-    cout << "\t Position: " << p.sv.position[0] << ", " << p.sv.position[1] << ", " << p.sv.position[2] << "; vel.: " << p.sv.v[0] << ", " <<  p.sv.v[1] << ", " << p.sv.v[2] << "; force: " << p.sv.force[0] << ", " << p.sv.force[1] << ", " << p.sv.force[2] << endl;
+    const map<int,vector<int>> & ppc = get_particles_per_cell();
+    int total = (int)ppc.at(p.sv.cellId).size();
+    int missing = 0;
+    for (int idx : ppc.at(p.sv.cellId)) { if (idx == -1) missing++; }
+    Dot3D loc = this->getLocation();
+
+    // TODO: wall proximity diagnostic — block-local BounceBack scan + radial fallback.
+    // Disabled: block scan misses wall nodes outside the local block extent, giving false
+    // "not near wall" for cells geometrically close to the tube wall. Needs a global
+    // wall-distance field or STL-based lookup to be reliable. See issueWarning history.
+    //
+    // double cx_pos = 0, cy_pos = 0, cz_pos = 0; int n_pv = 0;
+    // for (int pid : ppc.at(p.sv.cellId)) {
+    //     if (pid >= 0 && pid < (int)particles.size()) {
+    //         cx_pos += particles[pid].sv.position[0]; cy_pos += particles[pid].sv.position[1];
+    //         cz_pos += particles[pid].sv.position[2]; n_pv++;
+    //     }
+    // }
+    // if (n_pv == 0) { cx_pos=p.sv.position[0]; cy_pos=p.sv.position[1]; cz_pos=p.sv.position[2]; }
+    // else { cx_pos /= n_pv; cy_pos /= n_pv; cz_pos /= n_pv; }
+    // ... (BounceBack scan + radial_margin check + wall_proximity string)
+
+    std::ostringstream msg;
+    msg << "(HemoCell) (Delete Cells) WARNING! Incomplete cell deleted.\n"
+        << "\t iter: " << cellFields->hemocell.iter
+        << "  rank: " << global::mpi().getRank()
+        << "  block: " << this->atomicBlockId << "\n"
+        << "\t cell ID: " << p.sv.cellId
+        << " (base: " << cellFields->base_cell_id(p.sv.cellId) << ")"
+        << "  type: " << (*cellFields)[p.sv.celltype]->name
+        << "  missing: " << missing << "/" << total << "\n"
+        << "\t pos: " << p.sv.position[0] << ", " << p.sv.position[1] << ", " << p.sv.position[2]
+        << "  vel: " << p.sv.v[0] << ", " << p.sv.v[1] << ", " << p.sv.v[2]
+        << "  force: " << p.sv.force[0] << ", " << p.sv.force[1] << ", " << p.sv.force[2] << "\n"
+        << "\t block domain: ["
+        << localDomain.x0+loc.x << "," << localDomain.x1+loc.x << "] x ["
+        << localDomain.y0+loc.y << "," << localDomain.y1+loc.y << "] x ["
+        << localDomain.z0+loc.z << "," << localDomain.z1+loc.z << "]\n";
+    cout << msg.str();
 }
 
 int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {

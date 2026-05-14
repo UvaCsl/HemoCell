@@ -151,29 +151,27 @@ void HemoCellParticleDataTransfer::receive(Box3D domain, std::vector<NoInitChar>
   hemo::Array<T, 3> realAbsoluteOffset({(T)absoluteOffset.x, (T)absoluteOffset.y, (T)absoluteOffset.z});
   unsigned int posInBuffer = 0;
   unsigned int size = buffer.size();
-  HemoCellParticle::serializeValues_t *newParticle;
-  ;
   while (posInBuffer < size)
   {
     // 1. Generate dynamics object, and unserialize dynamic data.
-    newParticle = (HemoCellParticle::serializeValues_t *)&buffer[posInBuffer];
+    HemoCellParticle::serializeValues_t sv =
+        *(const HemoCellParticle::serializeValues_t *)&buffer[posInBuffer];
     posInBuffer += sizeof(HemoCellParticle::serializeValues_t);
-    //Edit in buffer, but it is not used again anyway
-    newParticle->position += realAbsoluteOffset;
+    sv.position += realAbsoluteOffset;
 
     //Check for overflows
-    if (((offset < 0) && (newParticle->cellId < INT_MIN - offset)) ||
-        ((offset > 0) && (newParticle->cellId > INT_MAX - offset)))
+    if (((offset < 0) && (sv.cellId < INT_MIN - offset)) ||
+        ((offset > 0) && (sv.cellId > INT_MAX - offset)))
     {
       cout << "(HemoCellParticleDataTransfer) Almost invoking overflow in periodic particle communication, resetting ID to base ID instead, this will most likely delete the particle" << endl;
-      newParticle->cellId = particleField->cellFields->base_cell_id(newParticle->cellId);
+      sv.cellId = particleField->cellFields->base_cell_id(sv.cellId);
     }
     else
     {
-      newParticle->cellId += offset;
+      sv.cellId += offset;
     }
 
-    particleField->addParticle(*newParticle);
+    particleField->addParticle(sv);
   }
 
   global.statistics.getCurrent().stop();

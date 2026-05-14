@@ -135,6 +135,10 @@ public:
   /// Sync the particle envelopes between domains
   void syncEnvelopes();
 
+  /// Targeted completeness repair: after syncEnvelopes, fill any remaining -1 ppc slots
+  /// using a 2x-envelope communicator and temporarily relaxed bounding box
+  void syncEnvelopesTargetedRepair();
+
   /// Get particles in a given domain
   void getParticles(vector<HemoCellParticle*> & particles, plb::Box3D & domain);
   

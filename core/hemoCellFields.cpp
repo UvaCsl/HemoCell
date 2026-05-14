@@ -22,6 +22,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <mpi.h>
+#include <algorithm>
 
 #include "hemoCellFields.h"
 #include "hemocell.h"
@@ -64,7 +65,7 @@ HemoCellFields::~HemoCellFields() {
   }
   if (large_communicator) {
     delete large_communicator;
-  }  
+  }
 }
 
 void HemoCellFields::createParticleField(SparseBlockStructure3D* sbStructure, ThreadAttribution * tAttribution) {
@@ -365,6 +366,7 @@ void HemoCellFields::calculateCommunicationStructure() {
   ParallelBlockCommunicator3D * communicator = dynamic_cast<ParallelBlockCommunicator3D const *>(&immersedParticles->getBlockCommunicator())->clone();
   communicator->duplicateOverlaps(management_temp,immersedParticles->periodicity());
   large_communicator = new CommunicationStructure3D(*communicator->communication);
+
   immersedParticles->getMultiBlockManagement().changeEnvelopeWidth(3);
   immersedParticles->signalPeriodicity();
   immersedParticles->getBlockCommunicator().duplicateOverlaps(*immersedParticles,modif::hemocell_no_comm);
@@ -381,7 +383,10 @@ void HemoCellFields::syncEnvelopes() {
   wrapper.push_back(immersedParticles);
   for (plint lbid : immersedParticles->getLocalInfo().getBlocks() ) {
     HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
-    pf.removeParticles_inverse(pf.localDomain);
+    // enlarge(3) keeps Palabos 3-LU envelope copies alive through removeParticles_inverse.
+    // Without this, the dead-zone: vertex at x∈(202.0,202.5] maps to B0 copy at x∈(-1,-0.5],
+    // which localDomain threshold (> -0.5) removes. Fix 2 then finds the copy via cid±N lookup.
+    pf.removeParticles_inverse(pf.localDomain.enlarge(3));
   }
   immersedParticles->getBlockCommunicator().duplicateOverlaps(*immersedParticles,modif::hemocell);
   
@@ -399,89 +404,243 @@ void HemoCellFields::syncEnvelopes() {
       recv_infos[info.fromProcessId].push_back(&info);
     }
 
-    set<int> locals;
-    for (plint lbid : immersedParticles->getLocalInfo().getBlocks() ) {
-      HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
-      for(HemoCellParticle & particle: pf.particles) {
-        locals.insert(particle.sv.cellId);
-      }
-    }
-    vector<int> locals_v;
-    locals_v.insert(locals_v.end(),locals.begin(),locals.end());
-         
-    vector<int> recv_procs_v;
-    recv_procs_v.insert(recv_procs_v.end(),recv_procs.begin(),recv_procs.end());
-    vector<MPI_Request> reqs(recv_procs.size());
+    // Fixed pull protocol: targeted, race-free particle sync.
+    // Phase 1: exchange needs (incomplete cellIds) with neighbors using specific-source
+    //          MPI_Probe — eliminates the ANY_SOURCE race of the original pull protocol.
+    // Phase 2: each rank sends only the particles that were explicitly requested.
 
-    for (unsigned int i = 0 ; i < recv_procs_v.size() ; i ++) {
-      MPI_Isend(&locals_v[0],locals_v.size(),MPI_INT,recv_procs_v[i],24,MPI_COMM_WORLD,&reqs[i]);
-    }
-    sendBuffers.resize(send_procs.size());
-    for (unsigned int i = 0 ; i < send_procs.size() ; i ++) {
-      MPI_Status status;
-      MPI_Probe(MPI_ANY_SOURCE,24,MPI_COMM_WORLD,&status);
-      int count;
-      MPI_Get_count(&status,MPI_INT,&count);
-      vector<int> requested_ids(count);
-      vector<NoInitChar> & sendBuffer = sendBuffers[i];
-      sendBuffer.clear();
-      int offset = 0 ;
-      MPI_Recv(&requested_ids[0],count,MPI_INT,status.MPI_SOURCE,24,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-      for (CommunicationInfo3D const * info : send_infos[status.MPI_SOURCE] ) {
-        HemoCellParticleField & pf = immersedParticles->getComponent(info->fromBlockId);
-        int offset_p = pf.getDataTransfer().getOffset(info->absoluteOffset);
-        const map<int,vector<int>> & ppc = pf.get_particles_per_cell();
-        
-        for (int id : requested_ids) {
-          if (((offset_p < 0) && (id > INT_MAX+offset_p)) ||
-              ((offset_p > 0) && (id < INT_MIN+offset_p))) {
-            cout << "(HemoCellFields syncEnvelopes) Almost invoking overflow in periodic particle communication, resetting ID to base ID instead, this will most likely delete the particle" << endl;
-            id = base_cell_id(id);
-          } else {
-            id = id - offset_p;
+    vector<int> send_procs_v(send_procs.begin(), send_procs.end());
+    vector<int> recv_procs_v(recv_procs.begin(), recv_procs.end());
+
+    // Phase 1a: scan local ppc for incomplete cells (after the 3-LU Palabos sync above).
+    set<int> local_incomplete;
+    map<plint, set<int>> block_incomplete;  // lbid -> set of incomplete cids on that block
+    for (plint lbid : immersedParticles->getLocalInfo().getBlocks()) {
+      HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
+      const map<int,vector<int>> & ppc = pf.get_particles_per_cell();
+      for (const auto & kv : ppc) {
+        for (int idx : kv.second) {
+          if (idx == -1) {
+            local_incomplete.insert(kv.first);
+            block_incomplete[lbid].insert(kv.first);
+            break;
           }
-          if (ppc.find(id) == ppc.end()) { continue; }
-          for (int pid : ppc.at(id)) {
-            if (pid <= -1) { continue; }
-            if (pid >= (int) pf.particles.size()) { continue; }
-            sendBuffer.resize(sendBuffer.size()+sizeof(HemoCellParticle::serializeValues_t));
-            *((HemoCellParticle::serializeValues_t*)&sendBuffer[offset]) = pf.particles[pid].sv;
-            offset += sizeof(HemoCellParticle::serializeValues_t);
-          }         
         }
       }
-      reqs.emplace_back();
-      MPI_Isend(sendBuffer.data(),sendBuffer.size(),MPI_CHAR,status.MPI_SOURCE,42,MPI_COMM_WORLD,&reqs.back());
     }
+    // base_to_needed_cids: maps base_cell_id(cid) -> set of cids that need supply.
+    // Enables matching periodic cellIds: sender packs sv.cellId=base_cid; receiver
+    // remaps to the requested periodic cid before insertion (no absoluteOffset applied).
+    map<int, set<int>> base_to_needed_cids;
+    for (int cid : local_incomplete)
+      base_to_needed_cids[base_cell_id(cid)].insert(cid);
+    // Domain-wide BB expansion for targeted delivery — accepts any stretch or periodic offset.
+    Box3D domain_bb = immersedParticles->getBoundingBox();
+    plint expand = std::max({domain_bb.x1 - domain_bb.x0 + 1,
+                             domain_bb.y1 - domain_bb.y0 + 1,
+                             domain_bb.z1 - domain_bb.z0 + 1});
+    // Domain lengths and period_crosses table used in Fix 2 (cid±shift lookup).
+    // getOffset() encodes crossing direction as: ±1*N for x, ±limit_y*N for y, ±limit_z*N for z.
+    // For each k_shift, the position correction undoes the absoluteOffset Palabos applied.
+    // k=+1 (x>0 crossing): absoluteOffset.x=+domain_x was added → correction=-domain_x, etc.
+    plint domain_x = domain_bb.x1 - domain_bb.x0 + 1;
+    plint domain_y = domain_bb.y1 - domain_bb.y0 + 1;
+    plint domain_z = domain_bb.z1 - domain_bb.z0 + 1;
+    struct PeriodCross { int k; T dx, dy, dz; };
+    vector<PeriodCross> period_crosses;
+    period_crosses.push_back({ +1, -(T)domain_x,       0,           0       });
+    period_crosses.push_back({ -1, +(T)domain_x,       0,           0       });
+    if (periodicity_limit_offset_y != 0) {
+      period_crosses.push_back({ +periodicity_limit_offset_y,  0, -(T)domain_y,  0 });
+      period_crosses.push_back({ -periodicity_limit_offset_y,  0, +(T)domain_y,  0 });
+    }
+    if (periodicity_limit_offset_z != 0) {
+      period_crosses.push_back({ +periodicity_limit_offset_z,  0,  0, -(T)domain_z });
+      period_crosses.push_back({ -periodicity_limit_offset_z,  0,  0, +(T)domain_z });
+    }
+    // Combined-axis crossings: a vertex that simultaneously crosses two or three
+    // periodic boundaries in one step gets a k_net that is the SUM of single-axis
+    // k values.  Palabos applies the combined absoluteOffset to the position and
+    // getOffset() encodes both axes into one integer, so Fix 2 must look for
+    // cid ± k_combined×N.  Position correction undoes BOTH shifts at once.
+    // Example (xy-diagonal, k=-101 = k_x=-1+k_y=-100): vertex at global (103,103)
+    // in block 31 is pruned by removeParticles_inverse, sent by Palabos to block 0
+    // as cid=-122463 at position (3,3). Without k=-101 in the table Fix 2 cannot
+    // recover it, and deleteIncompleteCells fires.  With it, block 0's ppc[-122463]
+    // is found, position corrected to (103,103), and delivered to block 31.
+    if (periodicity_limit_offset_y != 0) {
+      // xy combined (4 sign combinations)
+      const int ky = periodicity_limit_offset_y;
+      period_crosses.push_back({ +1+ky, -(T)domain_x, -(T)domain_y,  0 });
+      period_crosses.push_back({ -1+ky, +(T)domain_x, -(T)domain_y,  0 });
+      period_crosses.push_back({ +1-ky, -(T)domain_x, +(T)domain_y,  0 });
+      period_crosses.push_back({ -1-ky, +(T)domain_x, +(T)domain_y,  0 });
+    }
+    if (periodicity_limit_offset_z != 0) {
+      // xz combined (4 sign combinations)
+      const int kz = periodicity_limit_offset_z;
+      period_crosses.push_back({ +1+kz, -(T)domain_x,  0, -(T)domain_z });
+      period_crosses.push_back({ -1+kz, +(T)domain_x,  0, -(T)domain_z });
+      period_crosses.push_back({ +1-kz, -(T)domain_x,  0, +(T)domain_z });
+      period_crosses.push_back({ -1-kz, +(T)domain_x,  0, +(T)domain_z });
+    }
+    if (periodicity_limit_offset_y != 0 && periodicity_limit_offset_z != 0) {
+      const int ky = periodicity_limit_offset_y;
+      const int kz = periodicity_limit_offset_z;
+      // yz combined (4 sign combinations)
+      period_crosses.push_back({ +ky+kz,  0, -(T)domain_y, -(T)domain_z });
+      period_crosses.push_back({ -ky+kz,  0, +(T)domain_y, -(T)domain_z });
+      period_crosses.push_back({ +ky-kz,  0, -(T)domain_y, +(T)domain_z });
+      period_crosses.push_back({ -ky-kz,  0, +(T)domain_y, +(T)domain_z });
+      // xyz combined (8 sign combinations)
+      period_crosses.push_back({ +1+ky+kz, -(T)domain_x, -(T)domain_y, -(T)domain_z });
+      period_crosses.push_back({ -1+ky+kz, +(T)domain_x, -(T)domain_y, -(T)domain_z });
+      period_crosses.push_back({ +1-ky+kz, -(T)domain_x, +(T)domain_y, -(T)domain_z });
+      period_crosses.push_back({ -1-ky+kz, +(T)domain_x, +(T)domain_y, -(T)domain_z });
+      period_crosses.push_back({ +1+ky-kz, -(T)domain_x, -(T)domain_y, +(T)domain_z });
+      period_crosses.push_back({ -1+ky-kz, +(T)domain_x, -(T)domain_y, +(T)domain_z });
+      period_crosses.push_back({ +1-ky-kz, -(T)domain_x, +(T)domain_y, +(T)domain_z });
+      period_crosses.push_back({ -1-ky-kz, +(T)domain_x, +(T)domain_y, +(T)domain_z });
+    }
+    vector<int> needs_v(local_incomplete.begin(), local_incomplete.end());
 
-    vector<MPI_Request> recv_reqs(recv_procs.size());
-    recvBuffers.resize(recv_procs.size());
-    for (unsigned int i = 0 ; i < recv_procs.size() ; i ++) {
+    // Phase 1b: send my needs to suppliers (recv_procs); receive needs from requesters
+    // (send_procs). MPI_Probe uses specific source on both sides — no ANY_SOURCE, no race.
+    vector<MPI_Request> needs_reqs(recv_procs_v.size());
+    for (unsigned int i = 0; i < recv_procs_v.size(); i++) {
+      MPI_Isend(needs_v.data(), (int)needs_v.size(), MPI_INT,
+                recv_procs_v[i], 24, MPI_COMM_WORLD, &needs_reqs[i]);
+    }
+    map<int, vector<int>> requested_by;
+    for (int r : send_procs_v) {
       MPI_Status status;
-      MPI_Probe(MPI_ANY_SOURCE,42,MPI_COMM_WORLD,&status);
-      int count;
-      MPI_Get_count(&status,MPI_CHAR,&count);
-      vector<NoInitChar> & recv_buffer = recvBuffers[i];
-      recv_buffer.resize(count);
-      MPI_Irecv(recv_buffer.data(),count,MPI_CHAR,status.MPI_SOURCE,42,MPI_COMM_WORLD,&recv_reqs[i]);
+      MPI_Probe(r, 24, MPI_COMM_WORLD, &status);  // specific source: safe, no race
+      int cnt;
+      MPI_Get_count(&status, MPI_INT, &cnt);
+      requested_by[r].resize(cnt);
+      MPI_Recv(requested_by[r].data(), cnt, MPI_INT,
+               r, 24, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+    MPI_Waitall((int)needs_reqs.size(), needs_reqs.data(), MPI_STATUSES_IGNORE);
+
+    // Phase 2a: build targeted supply buffers and send to requesters (send_procs).
+    // Periodic fallback: cid outside [0, number_of_cells) means a periodic re-entry;
+    // look up base_cell_id and remap sv.cellId so the receiver's ppc inserts under the
+    // correct (offset) key.
+    sendBuffers.resize(send_procs_v.size());
+    vector<MPI_Request> supply_reqs(send_procs_v.size());
+    for (unsigned int i = 0; i < send_procs_v.size(); i++) {
+      int r = send_procs_v[i];
+      vector<NoInitChar> & buf = sendBuffers[i];
+      buf.clear();
+      for (int cid : requested_by[r]) {
+        for (plint lbid : immersedParticles->getLocalInfo().getBlocks()) {
+          HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
+          const map<int,vector<int>> & ppc = pf.get_particles_per_cell();
+          auto it = ppc.find(cid);
+          if (it != ppc.end()) {
+            for (int pid : it->second) {
+              if (pid < 0 || pid >= (int)pf.particles.size()) continue;
+              size_t off = buf.size();
+              buf.resize(off + sizeof(HemoCellParticle::serializeValues_t));
+              *((HemoCellParticle::serializeValues_t*)&buf[off]) = pf.particles[pid].sv;
+            }
+          }
+          if (cid < 0 || cid >= number_of_cells) {
+            int base_cid = base_cell_id(cid);
+            auto it2 = ppc.find(base_cid);
+            if (it2 != ppc.end()) {
+              for (int pid : it2->second) {
+                if (pid < 0 || pid >= (int)pf.particles.size()) continue;
+                // Send with original sv.cellId (= base_cid) and unmodified position.
+                // Phase 2b targeted delivery remaps sv.cellId to the requested periodic
+                // cid on the receiver side using base_to_needed_cids, without applying
+                // any absoluteOffset to position. Full-domain BB expansion accepts the
+                // absolute position regardless of stretch or periodic configuration.
+                size_t off = buf.size();
+                buf.resize(off + sizeof(HemoCellParticle::serializeValues_t));
+                *((HemoCellParticle::serializeValues_t*)&buf[off]) = pf.particles[pid].sv;
+              }
+            }
+          }
+          // Fix 2: periodic-offset copy lookup (cid ± shift) kept alive by enlarge(3).
+          // A neighbor block may hold the vertex under cid±shift*N after Palabos applied
+          // absoluteOffset to position and ±shift*N to cellId. Remap cellId to the
+          // requested cid and undo the position offset (per period_crosses table).
+          for (const PeriodCross & pc : period_crosses) {
+            int cid_shifted = cid + pc.k * number_of_cells;
+            auto it_sh = ppc.find(cid_shifted);
+            if (it_sh != ppc.end()) {
+              for (int pid : it_sh->second) {
+                if (pid < 0 || pid >= (int)pf.particles.size()) continue;
+                HemoCellParticle::serializeValues_t sv2 = pf.particles[pid].sv;
+                sv2.cellId = cid;
+                sv2.position[0] += pc.dx;
+                sv2.position[1] += pc.dy;
+                sv2.position[2] += pc.dz;
+                size_t off = buf.size();
+                buf.resize(off + sizeof(HemoCellParticle::serializeValues_t));
+                *((HemoCellParticle::serializeValues_t*)&buf[off]) = sv2;
+              }
+            }
+          }
+        }
+      }
+      MPI_Isend(buf.data(), (int)buf.size(), MPI_CHAR,
+                r, 42, MPI_COMM_WORLD, &supply_reqs[i]);
     }
 
-    for (unsigned int i = 0 ; i < recv_procs.size() ; i ++) {
-      int index;
+    // Phase 2b: receive supply from suppliers (recv_procs) and deliver to local blocks.
+    // Targeted delivery: parse buffer directly, deliver only to blocks that need each
+    // cellId. sv.cellId from sender is base_cid (never pre-offset by Phase 2a). For
+    // periodic cids, remap using base_to_needed_cids. Position stays at original absolute
+    // coords — full-domain BB expansion accepts any stretch without position shifting.
+    // MPI_Probe uses specific source — no ANY_SOURCE, no race.
+    recvBuffers.resize(recv_procs_v.size());
+    for (unsigned int i = 0; i < recv_procs_v.size(); i++) {
+      int r = recv_procs_v[i];
       MPI_Status status;
-      if (MPI_SUCCESS != MPI_Waitany(recv_reqs.size(),&recv_reqs[0],&index,&status)) {
-        hlog << "(HemoCellFields) (syncenvelopes) error returned in WaitAny " << status.MPI_ERROR << endl;
-        exit(1);
-      }
-      recv_reqs[index] = MPI_REQUEST_NULL;
-      //Get Offsets and Destinations
-      for (CommunicationInfo3D const * info : recv_infos[status.MPI_SOURCE]) {
-        HemoCellParticleField& toBlock = immersedParticles->getComponent(info->toBlockId);
-        toBlock.getDataTransfer().receive (info->toDomain, recvBuffers[index], info->absoluteOffset );
+      MPI_Probe(r, 42, MPI_COMM_WORLD, &status);  // specific source: safe, no race
+      int cnt;
+      MPI_Get_count(&status, MPI_CHAR, &cnt);
+      recvBuffers[i].resize(cnt);
+      MPI_Recv(recvBuffers[i].data(), cnt, MPI_CHAR,
+               r, 42, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      int n_sv = cnt / (int)sizeof(HemoCellParticle::serializeValues_t);
+      for (int pi = 0; pi < n_sv; pi++) {
+        HemoCellParticle::serializeValues_t sv;
+        memcpy(&sv, &recvBuffers[i][pi * sizeof(HemoCellParticle::serializeValues_t)], sizeof(sv));
+        // Non-periodic: sv.cellId is directly the needed cid.
+        if (local_incomplete.count(sv.cellId)) {
+          for (auto & blk_kv : block_incomplete) {
+            if (!blk_kv.second.count(sv.cellId)) continue;
+            HemoCellParticleField & pf = immersedParticles->getComponent(blk_kv.first);
+            Box3D saved = pf.getBoundingBox();
+            pf.getBoundingBox() = saved.enlarge(expand);
+            pf.addParticle(sv);
+            pf.getBoundingBox() = saved;
+          }
+        }
+        // Periodic fallback: sv.cellId is base_cid; remap to each requesting periodic cid.
+        auto bt = base_to_needed_cids.find(sv.cellId);
+        if (bt != base_to_needed_cids.end()) {
+          for (int target_cid : bt->second) {
+            if (target_cid == sv.cellId) continue;  // non-periodic already handled above
+            HemoCellParticle::serializeValues_t sv2 = sv;
+            sv2.cellId = target_cid;
+            for (auto & blk_kv : block_incomplete) {
+              if (!blk_kv.second.count(target_cid)) continue;
+              HemoCellParticleField & pf = immersedParticles->getComponent(blk_kv.first);
+              Box3D saved = pf.getBoundingBox();
+              pf.getBoundingBox() = saved.enlarge(expand);
+              pf.addParticle(sv2);
+              pf.getBoundingBox() = saved;
+            }
+          }
+        }
       }
     }
-
-    MPI_Waitall(reqs.size(),reqs.data(),MPI_STATUSES_IGNORE);
+    MPI_Waitall((int)supply_reqs.size(), supply_reqs.data(), MPI_STATUSES_IGNORE);
     
     // 3. Local copies which require no communication.
     for (unsigned iSendRecv=0; iSendRecv<comms->sendRecvPackage.size(); ++iSendRecv) {
@@ -493,9 +652,335 @@ void HemoCellFields::syncEnvelopes() {
                 info.toDomain, 0, 0, 0 , fromBlock,
                 modif::hemocell, info.absoluteOffset );
     }
-    
+
+    // Same-rank targeted supply: fill remaining incomplete cells from other local blocks.
+    // Mirrors Phase 2b targeted delivery but for same-rank block pairs — handles stretched
+    // cells and periodic crossings that attribute() misses due to its 3-LU BB limit.
+    if (!block_incomplete.empty()) {
+      for (auto & blk_kv : block_incomplete) {
+        HemoCellParticleField & dst = immersedParticles->getComponent(blk_kv.first);
+        for (plint src_lbid : immersedParticles->getLocalInfo().getBlocks()) {
+          if (src_lbid == blk_kv.first) continue;
+          HemoCellParticleField & src = immersedParticles->getComponent(src_lbid);
+          const map<int,vector<int>> & src_ppc = src.get_particles_per_cell();
+          for (int cid : blk_kv.second) {
+            // Direct match: src has this cid (non-periodic or already-offset periodic copy)
+            auto it = src_ppc.find(cid);
+            if (it != src_ppc.end()) {
+              for (int pid : it->second) {
+                if (pid < 0 || pid >= (int)src.particles.size()) continue;
+                Box3D saved = dst.getBoundingBox();
+                dst.getBoundingBox() = saved.enlarge(expand);
+                dst.addParticle(src.particles[pid].sv);
+                dst.getBoundingBox() = saved;
+              }
+            }
+            // Periodic fallback: cid is a periodic re-entry; src may have base_cid instead
+            if (cid < 0 || cid >= number_of_cells) {
+              int base = base_cell_id(cid);
+              auto it2 = src_ppc.find(base);
+              if (it2 != src_ppc.end()) {
+                for (int pid : it2->second) {
+                  if (pid < 0 || pid >= (int)src.particles.size()) continue;
+                  HemoCellParticle::serializeValues_t sv2 = src.particles[pid].sv;
+                  sv2.cellId = cid;  // remap base_cid to requested periodic cid
+                  Box3D saved = dst.getBoundingBox();
+                  dst.getBoundingBox() = saved.enlarge(expand);
+                  dst.addParticle(sv2);
+                  dst.getBoundingBox() = saved;
+                }
+              }
+            }
+            // Fix 2 (same-rank): periodic-offset copy lookup using period_crosses table.
+            // Mirrors Phase 2a Fix 2: src block holds vertex under cid±shift*N (Palabos
+            // envelope copy). Remap cellId and undo position offset before delivering.
+            for (const PeriodCross & pc : period_crosses) {
+              int cid_shifted = cid + pc.k * number_of_cells;
+              auto it_sh = src_ppc.find(cid_shifted);
+              if (it_sh != src_ppc.end()) {
+                for (int pid : it_sh->second) {
+                  if (pid < 0 || pid >= (int)src.particles.size()) continue;
+                  HemoCellParticle::serializeValues_t sv2 = src.particles[pid].sv;
+                  sv2.cellId = cid;
+                  sv2.position[0] += pc.dx;
+                  sv2.position[1] += pc.dy;
+                  sv2.position[2] += pc.dz;
+                  Box3D saved = dst.getBoundingBox();
+                  dst.getBoundingBox() = saved.enlarge(expand);
+                  dst.addParticle(sv2);
+                  dst.getBoundingBox() = saved;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+  // Diagnostic: re-scan for cells still incomplete after ALL Phase 1/2 delivery.
+  // If any remain, Phase 1/2 failed to supply them — either no neighbor rank has the
+  // vertex in its ppc, or addParticle rejected it. TCR will attempt next; if TCR also
+  // fails (no rank has the vertex anywhere), cascade deletion follows.
+  {
+    int still_count = 0;
+    int me_rank = global::mpi().getRank();
+    for (const auto& blk_kv : block_incomplete) {
+      HemoCellParticleField & pf2 = immersedParticles->getComponent(blk_kv.first);
+      const auto & ppc2 = pf2.get_particles_per_cell();
+      for (int cid : blk_kv.second) {
+        auto it2 = ppc2.find(cid);
+        if (it2 == ppc2.end()) { still_count++; continue; }
+        for (int idx : it2->second) {
+          if (idx == -1) { still_count++; break; }
+        }
+      }
+    }
+    if (still_count > 0) {
+      hlog << "(Phase1/2-diag) iter=" << hemocell.iter << " rank=" << me_rank
+           << ": " << still_count << " cid(s) still incomplete after Phase 1/2 supply\n";
+    }
+  }
+
   }
   global.statistics.getCurrent().stop();
+}
+
+void HemoCellFields::syncEnvelopesTargetedRepair() {
+  // Step 1: scan local blocks for incomplete cells (-1 in ppc)
+  map<plint, set<int>> block_incomplete;
+  set<int> local_incomplete;
+  for (plint lbid : immersedParticles->getLocalInfo().getBlocks()) {
+    HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
+    const map<int,vector<int>> & ppc = pf.get_particles_per_cell();
+    for (const auto & kv : ppc) {
+      for (int idx : kv.second) {
+        if (idx == -1) {
+          block_incomplete[lbid].insert(kv.first);
+          local_incomplete.insert(kv.first);
+          break;
+        }
+      }
+    }
+  }
+
+  // Fast-exit: one Allreduce to check if any rank has incomplete cells.
+  // Use SUM so global_count = total incomplete cells across all ranks (useful for logging).
+  int local_count = (int)local_incomplete.size();
+  int global_count = 0;
+  MPI_Allreduce(&local_count, &global_count, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  if (global_count == 0) return;
+
+  // Log: rank 0 only, first occurrence and every 10000 iters. Uses global count so
+  // it fires even when rank 0 itself has no incomplete cells.
+  if (global::mpi().isMainProcessor()) {
+    static bool tcr_first = true;
+    static unsigned int tcr_last_log = 0;
+    if (tcr_first || hemocell.iter - tcr_last_log >= 10000) {
+      tcr_first = false;
+      tcr_last_log = hemocell.iter;
+      hlog << "(HemoCell) (TCR) iter=" << hemocell.iter
+           << ": " << global_count << " incomplete cell(s) across all ranks, firing repair\n";
+    }
+  }
+
+  int nranks = global::mpi().getSize();
+  int me = global::mpi().getRank();
+
+  // Allgather 1: share each rank's incomplete cellId needs globally
+  vector<int> local_inc_v(local_incomplete.begin(), local_incomplete.end());
+  int my_need_count = (int)local_inc_v.size();
+  vector<int> all_need_counts(nranks);
+  MPI_Allgather(&my_need_count, 1, MPI_INT,
+                all_need_counts.data(), 1, MPI_INT, MPI_COMM_WORLD);
+  vector<int> need_displs(nranks + 1, 0);
+  for (int r = 0; r < nranks; r++) need_displs[r+1] = need_displs[r] + all_need_counts[r];
+  vector<int> all_needs(need_displs[nranks]);
+  MPI_Allgatherv(local_inc_v.data(), my_need_count, MPI_INT,
+                 all_needs.data(), all_need_counts.data(), need_displs.data(),
+                 MPI_INT, MPI_COMM_WORLD);
+
+  // Build per-rank need sets and global incomplete set
+  set<int> global_incomplete_set;
+  map<int, set<int>> needed_by_rank;
+  for (int r = 0; r < nranks; r++) {
+    for (int i = need_displs[r]; i < need_displs[r+1]; i++) {
+      needed_by_rank[r].insert(all_needs[i]);
+      global_incomplete_set.insert(all_needs[i]);
+    }
+  }
+
+  // Supply scan: collect serialized particles for globally-incomplete cellIds.
+  // For periodic re-entries (cid outside [0, number_of_cells)), also check the
+  // base (non-offset) cellId and remap sv.cellId before sending so the receiver
+  // inserts the particle under the correct ppc key.
+  map<int, vector<HemoCellParticle::serializeValues_t>> my_supply;
+  for (plint lbid : immersedParticles->getLocalInfo().getBlocks()) {
+    HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
+    const map<int,vector<int>> & ppc = pf.get_particles_per_cell();
+    for (int cid : global_incomplete_set) {
+      // Direct lookup: handles non-periodic cids and already-offset periodic copies
+      auto it = ppc.find(cid);
+      if (it != ppc.end()) {
+        for (int pid : it->second) {
+          if (pid == -1 || pid >= (int)pf.particles.size()) continue;
+          my_supply[cid].push_back(pf.particles[pid].sv);
+        }
+      }
+      // Periodic fallback: cid outside [0, number_of_cells) means this is a
+      // periodic re-entry. The original owning block stores the cell under
+      // base_cell_id(cid). Find those particles and remap cellId so the
+      // receiver's update_ppc inserts under ppc[cid].
+      if (cid < 0 || cid >= number_of_cells) {
+        int base_cid = base_cell_id(cid);
+        auto it2 = ppc.find(base_cid);
+        if (it2 != ppc.end()) {
+          for (int pid : it2->second) {
+            if (pid == -1 || pid >= (int)pf.particles.size()) continue;
+            HemoCellParticle::serializeValues_t sv = pf.particles[pid].sv;
+            sv.cellId = cid;
+            my_supply[cid].push_back(sv);
+          }
+        }
+      }
+    }
+  }
+
+  vector<int> my_supply_cids;
+  for (const auto & kv : my_supply) my_supply_cids.push_back(kv.first);
+
+  // Allgather 2: share supply (which cellIds each rank can provide) globally
+  int my_supply_count = (int)my_supply_cids.size();
+  vector<int> all_supply_counts(nranks);
+  MPI_Allgather(&my_supply_count, 1, MPI_INT,
+                all_supply_counts.data(), 1, MPI_INT, MPI_COMM_WORLD);
+  vector<int> supply_displs(nranks + 1, 0);
+  for (int r = 0; r < nranks; r++) supply_displs[r+1] = supply_displs[r] + all_supply_counts[r];
+  vector<int> all_supply(supply_displs[nranks]);
+  MPI_Allgatherv(my_supply_cids.data(), my_supply_count, MPI_INT,
+                 all_supply.data(), all_supply_counts.data(), supply_displs.data(),
+                 MPI_INT, MPI_COMM_WORLD);
+
+  // Build supply_by_rank[r] = set of cellIds rank r can provide
+  map<int, set<int>> supply_by_rank;
+  for (int r = 0; r < nranks; r++) {
+    for (int i = supply_displs[r]; i < supply_displs[r+1]; i++) {
+      supply_by_rank[r].insert(all_supply[i]);
+    }
+  }
+
+  // Diagnostic: identify globally-incomplete cids with NO supplier on any rank.
+  // If any exist, those vertices were deleted from all blocks (cascade deletion scenario).
+  // Phase 1/2 and TCR cannot repair them — deleteIncompleteCells will follow.
+  if (global::mpi().isMainProcessor()) {
+    for (int cid : global_incomplete_set) {
+      bool any_supplier = false;
+      for (int r = 0; r < nranks; r++) {
+        if (supply_by_rank[r].count(cid)) { any_supplier = true; break; }
+      }
+      if (!any_supplier) {
+        hlog << "(TCR-diag) iter=" << hemocell.iter << " cid=" << cid
+             << " (base=" << base_cell_id(cid) << ")"
+             << " has NO supply on ANY rank — vertex permanently lost (cascade deletion)\n";
+      }
+    }
+  }
+
+  // Expand bounding box on all local blocks to accept particles from any domain position.
+  // addParticle gates on getBoundingBox(); particle_grid update inside has its own
+  // bounds guard so no crash risk from the expanded box.
+  Box3D domain_bb = immersedParticles->getBoundingBox();
+  plint expand = std::max({domain_bb.x1 - domain_bb.x0 + 1,
+                           domain_bb.y1 - domain_bb.y0 + 1,
+                           domain_bb.z1 - domain_bb.z0 + 1});
+  map<plint, Box3D> saved_bb;
+  for (plint lbid : immersedParticles->getLocalInfo().getBlocks()) {
+    HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
+    saved_bb[lbid] = pf.getBoundingBox();
+    Box3D & bb = pf.getBoundingBox();
+    bb = Box3D(bb.x0 - expand, bb.x1 + expand,
+               bb.y0 - expand, bb.y1 + expand,
+               bb.z0 - expand, bb.z1 + expand);
+  }
+
+  // Send: for each rank that needs something I supply, send those particles.
+  // Send/receive sets are symmetric by construction (Allgather 1 and 2 agree),
+  // so there is no MPI_Probe race and no deadlock.
+  vector<vector<char>> send_bufs;
+  vector<MPI_Request> send_reqs;
+  for (int r = 0; r < nranks; r++) {
+    if (r == me) continue;
+    vector<int> to_send;
+    for (const auto & kv : my_supply) {
+      if (needed_by_rank[r].count(kv.first)) to_send.push_back(kv.first);
+    }
+    if (to_send.empty()) continue;
+    vector<char> buf;
+    for (int cid : to_send) {
+      for (const auto & sv : my_supply[cid]) {
+        size_t off = buf.size();
+        buf.resize(off + sizeof(HemoCellParticle::serializeValues_t));
+        memcpy(&buf[off], &sv, sizeof(HemoCellParticle::serializeValues_t));
+      }
+    }
+    send_bufs.push_back(std::move(buf));
+    send_reqs.push_back(MPI_REQUEST_NULL);
+    MPI_Isend(send_bufs.back().data(), (int)send_bufs.back().size(), MPI_CHAR,
+              r, 46, MPI_COMM_WORLD, &send_reqs.back());
+  }
+
+  // Determine which ranks will send to me (their supply intersects my needs)
+  vector<int> supplier_ranks;
+  if (!local_incomplete.empty()) {
+    for (int r = 0; r < nranks; r++) {
+      if (r == me) continue;
+      for (int cid : local_incomplete) {
+        if (supply_by_rank[r].count(cid)) { supplier_ranks.push_back(r); break; }
+      }
+    }
+  }
+
+  // Receive from each supplier and deliver to incomplete blocks
+  for (int r : supplier_ranks) {
+    MPI_Status status;
+    MPI_Probe(r, 46, MPI_COMM_WORLD, &status);
+    int count;
+    MPI_Get_count(&status, MPI_CHAR, &count);
+    vector<char> rbuf(count);
+    MPI_Recv(rbuf.data(), count, MPI_CHAR, r, 46, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    int n_particles = count / (int)sizeof(HemoCellParticle::serializeValues_t);
+    for (int pi = 0; pi < n_particles; pi++) {
+      HemoCellParticle::serializeValues_t sv;
+      memcpy(&sv, &rbuf[pi * sizeof(HemoCellParticle::serializeValues_t)], sizeof(sv));
+      HemoCellParticle p(sv);
+      for (const auto & kv : block_incomplete) {
+        if (!kv.second.count(sv.cellId)) continue;
+        HemoCellParticleField & pf = immersedParticles->getComponent(kv.first);
+        pf.addParticle(&p);
+      }
+    }
+  }
+
+  // Same-rank self-supply: fill local incomplete blocks from local particle supply
+  for (const auto & supply_kv : my_supply) {
+    int cid = supply_kv.first;
+    for (const auto & blk_kv : block_incomplete) {
+      if (!blk_kv.second.count(cid)) continue;
+      HemoCellParticleField & pf = immersedParticles->getComponent(blk_kv.first);
+      for (const auto & sv : supply_kv.second) {
+        HemoCellParticle p(sv);
+        pf.addParticle(&p);
+      }
+    }
+  }
+
+  // Wait for all sends to complete
+  if (!send_reqs.empty())
+    MPI_Waitall((int)send_reqs.size(), send_reqs.data(), MPI_STATUSES_IGNORE);
+
+  // Restore bounding boxes
+  for (plint lbid : immersedParticles->getLocalInfo().getBlocks()) {
+    immersedParticles->getComponent(lbid).getBoundingBox() = saved_bb[lbid];
+  }
 }
 
 void HemoCellFields::HemoAdvanceParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
