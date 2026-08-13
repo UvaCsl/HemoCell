@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<hemocell>
+<MaterialModel>
+    <comment>Parameters for the Fedosov RBC constitutive model.</comment>
+    <name>RBC</name>
+    <eta_m> 0.0 </eta_m> <!-- Membrane viscosity. [5e-10 Ns/m]-->
+    <viscosityRatio>1.0</viscosityRatio> <!-- ratio between interior and exterior viscosity -->
+    <enableInteriorViscosity>0</enableInteriorViscosity>
+    <minNumTriangles> 640 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact. [642]-->
+    <radius> 3.91e-6 </radius> <!-- Radius of the RBC in [ 3.96 um] -->
+    <Volume> 81 </Volume> <!-- Volume of the RBC in µm³ -->
+    <x0> 0.4545 </x0> <!-- Ratio of l_0 / l_max -->
+    <m> 2 </m> <!-- POW function exp coefficient -->
+    <mu0> 6.3e-6 </mu0> <!-- Shear modulus [N/m] -->
+    <ka> 0.29 </ka>  <!-- Global Area Constraint [N/m] -->
+    <kd> 0.01 </kd>  <!-- Local Area Constraint [N/m] -->
+    <kv> 1000.0 </kv>  <!-- Volume constraint [N/m^2] -->
+    <kb> 67.0 </kb>  <!-- * KbT, Bending coefficient [J] -->
+</MaterialModel>
+</hemocell>

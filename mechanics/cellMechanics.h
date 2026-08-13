@@ -76,6 +76,36 @@ class CellMechanics {
   T calculate_etaM(Config & cfg ){
     return cfg["MaterialModel"]["eta_m"].read<T>() * param::dx / param::dt / param::df;
   };
+
+  T calculate_kd(Config & cfg, plb::MeshMetrics<T> & meshmetric){
+    T kd =  cfg["MaterialModel"]["kd"].read<T>();
+    return kd * param::dx / param::df;    // converting to LBM units
+  };
+
+  T calculate_ka(Config & cfg, plb::MeshMetrics<T> & meshmetric){
+    T ka =  cfg["MaterialModel"]["ka"].read<T>();
+    return ka * param::dx / param::df;    // converting to LBM units
+  };
+
+  T calculate_kv(Config & cfg, plb::MeshMetrics<T> & meshmetric){
+    T kv =  cfg["MaterialModel"]["kv"].read<T>();
+    return kv * param::dx * param::dx / param::df;  // converting to LBM units
+  };
+
+  T calculate_kb(Config & cfg, plb::MeshMetrics<T> & meshmetric){
+    T kb =  cfg["MaterialModel"]["kb"].read<T>();
+    return kb * param::kBT_lbm;  // converting to LBM units
+  };
+
+  T calculate_x0(Config & cfg, plb::MeshMetrics<T> & meshmetric){
+    T x0 =  cfg["MaterialModel"]["x0"].read<T>();
+    return x0;
+  };
+
+  T calculate_m(Config & cfg, plb::MeshMetrics<T> & meshmetric){
+    T m =  cfg["MaterialModel"]["m"].read<T>();
+    return m;
+  };
 };
 }
 #endif

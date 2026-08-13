@@ -40,10 +40,15 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
                       vector<unsigned int> vertex_n_vertexes_,
                       vector<hemo::Array<hemo::Array<plint,2>,6>> vertex_outer_edges_per_vertex_,
                       vector<hemo::Array<hemo::Array<signed int,2>,6>> vertex_outer_edges_per_vertex_sign_,
-                      T volume_eq_, T area_mean_eq_, 
+                      T volume_eq_, T surface_eq_, T area_mean_eq_, 
                       T edge_mean_eq_, T angle_mean_eq_,
                       vector<hemo::Array<plint,2>> inner_edge_list_,
-                      vector<T> inner_edge_length_eq_list_) :
+                      vector<T> inner_edge_length_eq_list_,
+                      vector<T> edge_length_max_list_,
+                      vector<T> edge_kp_list_,
+                      vector<T> edge_kLinkWLC_list_,
+                      vector<T> edge_sin_angle_eq_list_,
+                      vector<T> edge_cos_angle_eq_list_) :
     cellField(cellField_),
     triangle_list(triangle_list_),
     edge_list(edge_list_),
@@ -60,12 +65,17 @@ CommonCellConstants::CommonCellConstants(HemoCellField & cellField_,
     vertex_outer_edges_per_vertex(vertex_outer_edges_per_vertex_),
     vertex_outer_edges_per_vertex_sign(vertex_outer_edges_per_vertex_sign_),
     volume_eq(volume_eq_),
+    surface_eq(surface_eq_),
     area_mean_eq(area_mean_eq_),
     edge_mean_eq(edge_mean_eq_),
     angle_mean_eq(angle_mean_eq_),
     inner_edge_list(inner_edge_list_),
-    inner_edge_length_eq_list(inner_edge_length_eq_list_)
-  {};
+    inner_edge_length_eq_list(inner_edge_length_eq_list_),
+    edge_length_max_list(edge_length_max_list_),
+    edge_kp_list(edge_kp_list_),
+    edge_kLinkWLC_list(edge_kLinkWLC_list_),
+    edge_sin_angle_eq_list(edge_sin_angle_eq_list_),
+    edge_cos_angle_eq_list(edge_cos_angle_eq_list_) {};
 
 CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCellField & cellField_, Config & modelCfg_) {
     HemoCellField & cellField = cellField_;
@@ -77,7 +87,6 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     //TODO, every edge is in here twice, clean that?
     vector<hemo::Array<plint,2>> edge_list_;
 
-    
     for (const hemo::Array<plint,3> & triangle : triangle_list_) {
  
     //FIX by allowing only incremental edges
@@ -97,6 +106,41 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     for (const hemo::Array<plint,2> & edge : edge_list_) {
       edge_length_eq_list_.push_back(cellField.meshElement->computeEdgeLength(edge[0],edge[1]));
     }
+
+    //Calculate max edges lengths
+    T x0;
+    vector<T> edge_length_max_list_;
+    try {
+      x0 =  modelCfg_["MaterialModel"]["x0"].read<T>();
+      for (pluint iEdge = 0 ; iEdge < edge_list_.size(); iEdge++) {
+        edge_length_max_list_.push_back(edge_length_eq_list_[iEdge] / x0);
+      }
+    } catch (std::invalid_argument & exeption) {}
+
+    //Calculate kp and k_link_WLC for each edge
+    T m;
+    T mu0;
+    vector<T> edge_kp_list_;
+    vector<T> edge_kLinkWLC_list_;
+    try {
+      m =  modelCfg_["MaterialModel"]["m"].read<T>();
+      mu0 =  modelCfg_["MaterialModel"]["mu0"].read<T>();
+      for (pluint i = 0 ; i < edge_list_.size(); i++) {
+        T A = std::sqrt(3) * (m + 1) / 4.0 / std::pow(edge_length_eq_list_[i] * param::dx, m + 1);
+        T B = std::sqrt(3) * param::kBT_p * (x0 / 2.0 / std::pow(1 - x0, 3) - 1.0 / 4.0 / std::pow(1 - x0, 2) + 0.25) / 4.0 / (edge_length_max_list_[i] * param::dx) / x0;
+        T C = param::kBT_p * (1 / (4.0 * std::pow(1 - x0, 2)) - 0.25 + x0) * std::pow(edge_length_eq_list_[i] * param::dx, m);
+        T persistenceLengthCoarse = (B + A * C) / mu0;
+        
+        T kp = C / persistenceLengthCoarse;     // in pyhical units
+        T kLinkWLC = param::kBT_p / persistenceLengthCoarse;   // in pyhical units
+  
+        kp *= (1/param::df) * (1/param::dx) * (1/param::dx);    // Converting to LBM units
+        kLinkWLC *= (1/param::df);    // Converting to LBM units
+  
+        edge_kp_list_.push_back(kp);
+        edge_kLinkWLC_list_.push_back(kLinkWLC);
+      }
+    } catch (std::invalid_argument & exeption) {}
 
     //Calculate eq edges angles
     vector<T> edge_angle_eq_list_;
@@ -139,6 +183,15 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
       edge_angle_eq_list_.push_back(angle);
     }
 
+    //Calculate eq edges angles sin and cos
+    std::vector<T> edge_sin_angle_eq_list_;
+    std::vector<T> edge_cos_angle_eq_list_;
+    for (size_t i = 0; i < edge_angle_eq_list_.size(); ++i) {
+      T angle = edge_angle_eq_list_[i];
+      edge_sin_angle_eq_list_.push_back(std::sin(angle));
+      edge_cos_angle_eq_list_.push_back(std::cos(angle));
+    }
+
     // Define opposite points TODO: make it automatic / or add the 33 links version ;) 
     vector<hemo::Array<plint,2>> inner_edge_list_; 
     try {
@@ -168,6 +221,7 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
 
     
     T volume_eq_ = MeshMetrics<T>(*cellField.meshElement).getVolume();
+    T surface_eq_ = MeshMetrics<T>(*cellField.meshElement).getSurface();
 
 
     //store important points for bending calculation
@@ -400,11 +454,17 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
             vertex_outer_edges_per_vertex,
             vertex_outer_edges_per_vertex_sign,
             volume_eq_,
+            surface_eq_,
             mean_area_eq_, 
             mean_edge_eq_, 
             mean_angle_eq_,
             inner_edge_list_,
-            inner_edge_length_eq_list_);
+            inner_edge_length_eq_list_,
+            edge_length_max_list_,
+            edge_kp_list_,
+            edge_kLinkWLC_list_,
+            edge_sin_angle_eq_list_,
+            edge_cos_angle_eq_list_);
     return CCC;
 };
 

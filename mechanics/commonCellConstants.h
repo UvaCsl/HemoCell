@@ -53,10 +53,15 @@ class CommonCellConstants {
                       std::vector<unsigned int> vertex_n_vertexes_,
                       std::vector<hemo::Array<hemo::Array<plint,2>,6>> vertex_outer_edges_per_vertex_,
                       std::vector<hemo::Array<hemo::Array<signed int,2>,6>> vertex_outer_edges_per_vertex_sign_,
-                      T volume_eq_, T area_mean_eq_,
+                      T volume_eq_, T surface_eq_, T area_mean_eq_,
                       T edge_mean_eq_, T angle_mean_eq_,
                       std::vector<hemo::Array<plint,2>> inner_edge_list_,
-                      std::vector<T> inner_edge_length_eq_list_);
+                      std::vector<T> inner_edge_length_eq_list_,
+                      std::vector<T> edge_length_max_list_,
+                      std::vector<T> edge_kp_list_,
+                      std::vector<T> edge_kLinkWLC_list_,
+                      std::vector<T> edge_sin_angle_eq_list_,
+                      std::vector<T> edge_cos_angle_eq_list_);
   public: 
   static CommonCellConstants CommonCellConstantsConstructor(HemoCellField &, hemo::Config & modelCfg_);
 
@@ -78,12 +83,18 @@ class CommonCellConstants {
   const std::vector<hemo::Array<hemo::Array<signed int,2>,6>> vertex_outer_edges_per_vertex_sign;
 
   const T volume_eq;
+  const T surface_eq;
   const T area_mean_eq;
   const T edge_mean_eq;
   const T angle_mean_eq;
   const std::vector<hemo::Array<plint,2>> inner_edge_list;
   const std::vector<T> inner_edge_length_eq_list;
 
+  const std::vector<T> edge_length_max_list;
+  const std::vector<T> edge_kp_list;
+  const std::vector<T> edge_kLinkWLC_list;
+  const std::vector<T> edge_sin_angle_eq_list;
+  const std::vector<T> edge_cos_angle_eq_list;
 };
 }
 #endif

@@ -91,4 +91,25 @@ void iniLatticeSquareCouette(plb::MultiBlockLattice3D<T,Descriptor>& lattice,
     lattice.initialize();
 }
 
+template<typename T, template<class U> class Descriptor>
+void iniLatticeSquareCouette_Y(plb::MultiBlockLattice3D<T,Descriptor>& lattice,
+                 plint nx, plint ny, plint nz,
+                 plb::OnLatticeBoundaryCondition3D<T,Descriptor>& boundaryCondition, T shearRate)
+{
+    plb::Box3D top = plb::Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
+    plb::Box3D bottom = plb::Box3D(0, nx-1, 0, 0, 0, nz-1);
+
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, top );
+    boundaryCondition.setVelocityConditionOnBlockBoundaries ( lattice, bottom );
+
+    T vHalf = (ny-1)*shearRate*0.5;
+    setBoundaryVelocity(lattice, top, plb::Array<T,3>(vHalf,0.0,0.0));
+    setBoundaryVelocity(lattice, bottom, plb::Array<T,3>(-vHalf,0.0,0.0));
+
+    setExternalVector( lattice, lattice.getBoundingBox(),
+            Descriptor<T>::ExternalField::forceBeginsAt, plb::Array<T,Descriptor<T>::d>(0.0,0.0,0.0));
+
+    lattice.initialize();
+}
+
 #endif  // HEMOCELLINIT_HH
