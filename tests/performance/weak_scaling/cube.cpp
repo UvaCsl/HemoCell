@@ -67,7 +67,8 @@ TEST(Performance, cube)
   Config * cfg = hemocell.cfg;
 
   // Get the time reference for the number of MPI procs
-  int num_procs = MPI::COMM_WORLD.Get_size();
+  int num_procs;
+  MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
   float ref_time = 0.0f;
   float time_per_iter = 0.0f;
   

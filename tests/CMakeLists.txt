@@ -16,3 +16,6 @@ set_tests_properties(${BINARY} PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOUR
 # link with static `hemocell` library, test framework
 target_link_libraries(${BINARY} "${PROJECT_NAME}" gtest)
 target_link_libraries(${BINARY} ${HDF5_C_HL_LIBRARIES} ${HDF5_LIBRARIES})
+
+# GoogleTest >= 1.17 requires C++17; the rest of the project is built as C++11.
+set_target_properties(${BINARY} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
