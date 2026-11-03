@@ -1,7 +1,8 @@
-doxygen/*/
-_build/
-user_guide/_build/
+# Generated Doxygen and Sphinx output
+/doxygen/html/
+/doxygen/xml/
+/doxygen/latex/
+/_build/
+/user_guide/_build/
 
-# Local Python virtual environments used to build the docs
-.venv/
-.venv*/
+# Python environments and caches are ignored by the repository-root .gitignore.

@@ -1,36 +1,131 @@
-# Build artefacts and test executables
+# CMake build trees and generated metadata
 build/
+build-*/
 cmake-build*/
-hemocell_test
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+DartConfiguration.tcl
+Testing/
+_deps/
+compile_commands.json
+CMakeUserPresets.json
+install_manifest.txt
+build.ninja
+rules.ninja
+.ninja_deps
+.ninja_log
 
-# External dependencies
-palabos/
-parmetis*/
+# CMake writes these extensionless executables into the source tree.
+# Add the binary path here when introducing a new example/case target.
+/hemocell_test
+/examples/capillary/capillary
+/examples/cellCollision_interior_viscosity/cellCollision_interior_viscosity
+/examples/cell_shapes/cell_shapes
+/examples/cube/cube
+/examples/curvedflow_with_preinlet/curvedflow_with_preinlet
+/examples/flowaroundsphere/flowaroundsphere
+/examples/microcontraction/microcontraction
+/examples/oneCellShear/oneCellShear
+/examples/parachuting/parachuting
+/examples/parallelplanes/parallelplanes
+/examples/pipeflow/pipeflow
+/examples/pipeflow_with_preinlet/pipeflow_with_preinlet
+/examples/simple/simple
+/examples/stretchCell/stretchCell
+/examples/template/template
+/cases/AR2/AR2
+/cases/AR2_pulsatile/AR2_pulsatile
+/cases/AR2_stiff/AR2_stiff
+/cases/CEPAC/CEPAC
+/cases/atherosclerosis/atherosclerosis
+/cases/cellCollision/cellCollision
+/cases/cellCollision_sphere/cellCollision_sphere
+/cases/fc_solidified_stenosis/fc_solidified_stenosis
+/cases/flowchamber_stenosis/flowchamber_stenosis
+/cases/injured_vessel/injured_vessel
+/cases/kolmogorovFlow/kolmogorovFlow
+/cases/leesEdwards/leesEdwards
+/cases/microvessel_bended/microvessel_bended
+/cases/performance_testing/performance_testing
+/cases/pipeflowMalaria/pipeflowMalaria
+/cases/pipeflow_interior_viscosity/pipeflow_interior_viscosity
+/cases/preinlet_shear/preinlet_shear
+/cases/solidify_example/solidify_example
+/cases/stenosis/stenosis
+/cases/stent_strut/stent_strut
+/cases/stentflow/stentflow
+/cases/stl_preinlet/stl_preinlet
+/cases/stretchCell_interior_viscosity/stretchCell_interior_viscosity
+/cases/stretchMalaria/stretchMalaria
+/cases/unbounded/unbounded
+/cases/vasoconstriction_pipe/vasoconstriction_pipe
+# packCells binary and generated positions: see tools/packCells/.gitignore.
 
-# Typical output directories generated under examples/
-log*/
-tmp*/
-output*/
+# Downloaded dependencies and setup archives
+/palabos/
+/palabos.tar.gz
+/parmetis*/
+/parmetis*.tar.gz
+/external/parmetis*/
+/external/parmetis*.tar.gz
 
-# Object files, log files, archives
-*.o
-*.so
-*.a
-*.exe
+# Simulation output directories, including automatic numeric suffixes
+log/
+log_[0-9]*/
+tmp/
+tmp_[0-9]*/
+output/
+output_[0-9]*/
 *.log
-*.tar
-*.xz
-*.gz
+*.statistics
+*.statistics.[0-9]*
+# Keep XML, POS, STL, DAT, CSV and HDF5 extensions visible outside run directories:
+# these can be case inputs or reference data. Add custom run directories explicitly.
 
-# IDE or OS related files
+# Compiler, linker and profiling artifacts
+*.o
+*.obj
+*.so
+*.so.*
+*.a
+*.dylib
+*.dll
+*.exe
+*.pdb
+*.dSYM/
+*.gcda
+*.gcno
+*.gcov
+*.profraw
+*.profdata
+
+# Python environments, bytecode and caches for docs and helper tools
+.venv/
+.venv*/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Local CI caches
+/ccache/
+/apt-cache/
+
+# Editor, OS and local tool state; shared editor configuration remains visible
 .idea/
 .cache/
 *sconsign.dblite
-*.DS_Store
-*.plist
-settings.json
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
 .claude/
-
-# Common other ignore files (fuzzy searchers etc.)
 .ignore
 .rgignore
