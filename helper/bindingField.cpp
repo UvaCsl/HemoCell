@@ -28,114 +28,108 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "preInlet.h"
 
 namespace hemo {
-  bindingFieldHelper::bindingFieldHelper(HemoCellFields * cellFields_) : cellFields(*cellFields_) {
-    //Check if function is not called too early
-    if (!cellFields_) {
-      hlog << "(BindingField) ERROR: Bindingfield is requested while cellfields is not initialized. Perhaps populateBindingSites is called before hemocell.initializeCellFields?" << endl;
-      exit(1);
-    }
-    
-    //Create bindingfield with same properties as fluid field underlying the particleField.
-    multiBindingField = new plb::MultiScalarField3D<bool>(
-              MultiBlockManagement3D (
-                *cellFields.hemocell.domain_lattice->getSparseBlockStructure().clone(),
-                cellFields.hemocell.domain_lattice->getMultiBlockManagement().getThreadAttribution().clone(),
-                cellFields.hemocell.domain_lattice->getMultiBlockManagement().getEnvelopeWidth(),
-                cellFields.hemocell.domain_lattice->getMultiBlockManagement().getRefinementLevel()),
-                defaultMultiBlockPolicy3D().getBlockCommunicator(),                
-                defaultMultiBlockPolicy3D().getCombinedStatistics(),
-                defaultMultiBlockPolicy3D().getMultiScalarAccess<bool>(),
-                0);
-    multiBindingField->periodicity().toggle(0,cellFields.hemocell.domain_lattice->periodicity().get(0));
-    multiBindingField->periodicity().toggle(1,cellFields.hemocell.domain_lattice->periodicity().get(1));
-    multiBindingField->periodicity().toggle(2,cellFields.hemocell.domain_lattice->periodicity().get(2));
+bindingFieldHelper::bindingFieldHelper(HemoCellFields * cellFields_) : cellFields(*cellFields_) {
+  //Check if function is not called too early
+  if (!cellFields_) {
+    hlog
+        << "(BindingField) ERROR: Bindingfield is requested while cellfields is not initialized. Perhaps populateBindingSites is called before hemocell.initializeCellFields?"
+        << endl;
+    exit(1);
+  }
 
-    multiBindingField->initialize();
-    //Make sure each particleField has access to its local scalarField
-    for (const plint & bId : multiBindingField->getLocalInfo().getBlocks()) {
-      HemoCellParticleField & pf = cellFields.domain_immersedParticles->getComponent(bId);
-      pf.bindingField = &multiBindingField->getComponent(bId);
-    }
-    
-  }
-  
-  bindingFieldHelper::~bindingFieldHelper() {
-    delete multiBindingField;
-  }
-    
-  void bindingFieldHelper::checkpoint() {
-    if (!global.enableSolidifyMechanics) { 
-      hlog << "(BindingField) Checkpoint called while global.enableSolidifyMechanics is not enabled, still checkpointing but this should not happen" << endl;
-      return;
-    }
-  
-    std::string & outDir = hemo::global.checkpointDirectory;
-    mkpath(outDir.c_str(), 0777);
-  
-    if (global::mpi().isMainProcessor()) {
-        renameFileToDotOld(outDir + "bindingSites.dat");
-        renameFileToDotOld(outDir + "bindingSites.plb");
-    }
-  
-    plb::parallelIO::save(*multiBindingField, outDir + "bindingSites", true);
-  
-  }
-  
-  void bindingFieldHelper::restore(HemoCellFields & cellFields) {
-    if (!global.enableSolidifyMechanics) { 
-      hlog << "(BindingField) Restore called while global.enableSolidifyMechanics is not enabled, not restoring" << endl;
-      return;
-    }
+  //Create bindingfield with same properties as fluid field underlying the particleField.
+  multiBindingField = new plb::MultiScalarField3D<bool>(
+      MultiBlockManagement3D(
+          *cellFields.hemocell.domain_lattice->getSparseBlockStructure().clone(),
+          cellFields.hemocell.domain_lattice->getMultiBlockManagement().getThreadAttribution().clone(),
+          cellFields.hemocell.domain_lattice->getMultiBlockManagement().getEnvelopeWidth(),
+          cellFields.hemocell.domain_lattice->getMultiBlockManagement().getRefinementLevel()),
+      defaultMultiBlockPolicy3D().getBlockCommunicator(), defaultMultiBlockPolicy3D().getCombinedStatistics(),
+      defaultMultiBlockPolicy3D().getMultiScalarAccess<bool>(), 0);
+  multiBindingField->periodicity().toggle(0, cellFields.hemocell.domain_lattice->periodicity().get(0));
+  multiBindingField->periodicity().toggle(1, cellFields.hemocell.domain_lattice->periodicity().get(1));
+  multiBindingField->periodicity().toggle(2, cellFields.hemocell.domain_lattice->periodicity().get(2));
 
-    std::string & outDir = hemo::global.checkpointDirectory;
-    std::string file_dat = outDir + "bindingSites.dat";
-    std::string file_plb = outDir + "bindingSites.plb";
-    if(!(file_exists(file_dat) && file_exists(file_plb))) {
-      hlog << "(BindingField) Error restoring bindingSites fields from checkpoint, they do not seem to exist" << endl;
-      exit(1);
-    }
-    
-    plb::parallelIO::load(outDir + "bindingSites",*get(cellFields).multiBindingField,true);
-    get(cellFields).refillBindingSites();
-  }  
-  
-  void bindingFieldHelper::add(HemoCellParticleField & pf, const Dot3D & bindingSite) {
-      pf.bindingSites.insert(bindingSite);
-      pf.bindingField->get(bindingSite.x,bindingSite.y,bindingSite.z) = true;
+  multiBindingField->initialize();
+  //Make sure each particleField has access to its local scalarField
+  for (const plint & bId : multiBindingField->getLocalInfo().getBlocks()) {
+    HemoCellParticleField & pf = cellFields.domain_immersedParticles->getComponent(bId);
+    pf.bindingField = &multiBindingField->getComponent(bId);
   }
-  
-  void bindingFieldHelper::add(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites) {
-    for (const Dot3D & bindingSite : bindingSites) {
-      add(pf,bindingSite);
-    }
+}
+
+bindingFieldHelper::~bindingFieldHelper() {
+  delete multiBindingField;
+}
+
+void bindingFieldHelper::checkpoint() {
+  if (!global.enableSolidifyMechanics) {
+    hlog
+        << "(BindingField) Checkpoint called while global.enableSolidifyMechanics is not enabled, still checkpointing but this should not happen"
+        << endl;
+    return;
   }
-  
-  void bindingFieldHelper::remove(HemoCellParticleField & pf, const Dot3D & bindingSite) {
-    pf.bindingSites.erase(bindingSite);
-    pf.bindingField->get(bindingSite.x,bindingSite.y,bindingSite.z) = false;
+
+  std::string & outDir = hemo::global.checkpointDirectory;
+  mkpath(outDir.c_str(), 0777);
+
+  if (global::mpi().isMainProcessor()) {
+    renameFileToDotOld(outDir + "bindingSites.dat");
+    renameFileToDotOld(outDir + "bindingSites.plb");
   }
-  
-  void bindingFieldHelper::remove(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites) {
-    for (const Dot3D & bindingSite: bindingSites) {
-      remove(pf,bindingSite);
-    }
-  } 
-  
-  void bindingFieldHelper::refillBindingSites() {
-    for (const plint & bId : cellFields.domain_immersedParticles->getLocalInfo().getBlocks()) {
-      HemoCellParticleField & pf = cellFields.domain_immersedParticles->getComponent(bId);
-      ScalarField3D<bool> & bf = *pf.bindingField;
-      Box3D domain = bf.getBoundingBox();
-      for (int x = domain.x0; x <= domain.x1 ; x++) {
-        for (int y = domain.y0; y <= domain.y1; y++) {
-          for (int z = domain.z0; z <= domain.z1; z++) {
-            if(bf.get(x,y,z)) {
-              pf.bindingSites.insert({x,y,z});
-            }
-          }
+
+  plb::parallelIO::save(*multiBindingField, outDir + "bindingSites", true);
+}
+
+void bindingFieldHelper::restore(HemoCellFields & cellFields) {
+  if (!global.enableSolidifyMechanics) {
+    hlog << "(BindingField) Restore called while global.enableSolidifyMechanics is not enabled, not restoring" << endl;
+    return;
+  }
+
+  std::string & outDir = hemo::global.checkpointDirectory;
+  std::string file_dat = outDir + "bindingSites.dat";
+  std::string file_plb = outDir + "bindingSites.plb";
+  if (!(file_exists(file_dat) && file_exists(file_plb))) {
+    hlog << "(BindingField) Error restoring bindingSites fields from checkpoint, they do not seem to exist" << endl;
+    exit(1);
+  }
+
+  plb::parallelIO::load(outDir + "bindingSites", *get(cellFields).multiBindingField, true);
+  get(cellFields).refillBindingSites();
+}
+
+void bindingFieldHelper::add(HemoCellParticleField & pf, const Dot3D & bindingSite) {
+  pf.bindingSites.insert(bindingSite);
+  pf.bindingField->get(bindingSite.x, bindingSite.y, bindingSite.z) = true;
+}
+
+void bindingFieldHelper::add(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites) {
+  for (const Dot3D & bindingSite : bindingSites) { add(pf, bindingSite); }
+}
+
+void bindingFieldHelper::remove(HemoCellParticleField & pf, const Dot3D & bindingSite) {
+  pf.bindingSites.erase(bindingSite);
+  pf.bindingField->get(bindingSite.x, bindingSite.y, bindingSite.z) = false;
+}
+
+void bindingFieldHelper::remove(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites) {
+  for (const Dot3D & bindingSite : bindingSites) { remove(pf, bindingSite); }
+}
+
+void bindingFieldHelper::refillBindingSites() {
+  for (const plint & bId : cellFields.domain_immersedParticles->getLocalInfo().getBlocks()) {
+    HemoCellParticleField & pf = cellFields.domain_immersedParticles->getComponent(bId);
+    ScalarField3D<bool> & bf = *pf.bindingField;
+    Box3D domain = bf.getBoundingBox();
+    for (int x = domain.x0; x <= domain.x1; x++) {
+      for (int y = domain.y0; y <= domain.y1; y++) {
+        for (int z = domain.z0; z <= domain.z1; z++) {
+          if (bf.get(x, y, z)) { pf.bindingSites.insert({x, y, z}); }
         }
       }
     }
   }
+}
 
 }

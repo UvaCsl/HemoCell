@@ -27,7 +27,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemocell.h"
 
 namespace hemo {
-  void writeCellInfo_CSV(HemoCell &);
+void writeCellInfo_CSV(HemoCell &);
 }
 #endif /* WRITECELLINFOCSV_H */
-

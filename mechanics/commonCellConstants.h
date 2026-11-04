@@ -37,53 +37,47 @@ class CommonCellConstants;
 namespace hemo {
 
 class CommonCellConstants {
-  private:
-  CommonCellConstants(HemoCellField & cellField_,
-                      std::vector<hemo::Array<plint,3>> triangle_list_,
-                      std::vector<hemo::Array<plint,2>> edge_list_,
-                      std::vector<T> edge_length_eq_list_,
-                      std::vector<T> edge_angle_eq_list_,
-                      std::vector<T> surface_patch_center_dist_eq_list,
-                      std::vector<hemo::Array<plint,2>> edge_bending_triangles_list_,
-                      std::vector<hemo::Array<plint,2>> edge_bending_triangles_outer_points_,
-                      std::vector<T> triangle_area_eq_list_,
-                      std::vector<hemo::Array<plint,6>> vertex_vertexes_,
-                      std::vector<hemo::Array<plint,6>> vertex_edges_,
-                      std::vector<hemo::Array<signed int,6>> vertex_edges_sign_,
+private:
+  CommonCellConstants(HemoCellField & cellField_, std::vector<hemo::Array<plint, 3>> triangle_list_,
+                      std::vector<hemo::Array<plint, 2>> edge_list_, std::vector<T> edge_length_eq_list_,
+                      std::vector<T> edge_angle_eq_list_, std::vector<T> surface_patch_center_dist_eq_list,
+                      std::vector<hemo::Array<plint, 2>> edge_bending_triangles_list_,
+                      std::vector<hemo::Array<plint, 2>> edge_bending_triangles_outer_points_,
+                      std::vector<T> triangle_area_eq_list_, std::vector<hemo::Array<plint, 6>> vertex_vertexes_,
+                      std::vector<hemo::Array<plint, 6>> vertex_edges_,
+                      std::vector<hemo::Array<signed int, 6>> vertex_edges_sign_,
                       std::vector<unsigned int> vertex_n_vertexes_,
-                      std::vector<hemo::Array<hemo::Array<plint,2>,6>> vertex_outer_edges_per_vertex_,
-                      std::vector<hemo::Array<hemo::Array<signed int,2>,6>> vertex_outer_edges_per_vertex_sign_,
-                      T volume_eq_, T area_mean_eq_,
-                      T edge_mean_eq_, T angle_mean_eq_,
-                      std::vector<hemo::Array<plint,2>> inner_edge_list_,
-                      std::vector<T> inner_edge_length_eq_list_);
-  public: 
+                      std::vector<hemo::Array<hemo::Array<plint, 2>, 6>> vertex_outer_edges_per_vertex_,
+                      std::vector<hemo::Array<hemo::Array<signed int, 2>, 6>> vertex_outer_edges_per_vertex_sign_,
+                      T volume_eq_, T area_mean_eq_, T edge_mean_eq_, T angle_mean_eq_,
+                      std::vector<hemo::Array<plint, 2>> inner_edge_list_, std::vector<T> inner_edge_length_eq_list_);
+
+public:
   static CommonCellConstants CommonCellConstantsConstructor(HemoCellField &, hemo::Config & modelCfg_);
 
   HemoCellField & cellField;
-  const std::vector<hemo::Array<plint,3>> triangle_list;
-  const std::vector<hemo::Array<plint,2>> edge_list;
+  const std::vector<hemo::Array<plint, 3>> triangle_list;
+  const std::vector<hemo::Array<plint, 2>> edge_list;
 
   const std::vector<T> edge_length_eq_list;
   const std::vector<T> edge_angle_eq_list;
   const std::vector<T> surface_patch_center_dist_eq_list;
-  const std::vector<hemo::Array<plint,2>> edge_bending_triangles_list;
-  const std::vector<hemo::Array<plint,2>> edge_bending_triangles_outer_points;
+  const std::vector<hemo::Array<plint, 2>> edge_bending_triangles_list;
+  const std::vector<hemo::Array<plint, 2>> edge_bending_triangles_outer_points;
   const std::vector<T> triangle_area_eq_list;
-  const std::vector<hemo::Array<plint,6>> vertex_vertexes;
-  const std::vector<hemo::Array<plint,6>> vertex_edges;
-  const std::vector<hemo::Array<signed int,6>> vertex_edges_sign;
+  const std::vector<hemo::Array<plint, 6>> vertex_vertexes;
+  const std::vector<hemo::Array<plint, 6>> vertex_edges;
+  const std::vector<hemo::Array<signed int, 6>> vertex_edges_sign;
   const std::vector<unsigned int> vertex_n_vertexes;
-  const std::vector<hemo::Array<hemo::Array<plint,2>,6>> vertex_outer_edges_per_vertex;
-  const std::vector<hemo::Array<hemo::Array<signed int,2>,6>> vertex_outer_edges_per_vertex_sign;
+  const std::vector<hemo::Array<hemo::Array<plint, 2>, 6>> vertex_outer_edges_per_vertex;
+  const std::vector<hemo::Array<hemo::Array<signed int, 2>, 6>> vertex_outer_edges_per_vertex_sign;
 
   const T volume_eq;
   const T area_mean_eq;
   const T edge_mean_eq;
   const T angle_mean_eq;
-  const std::vector<hemo::Array<plint,2>> inner_edge_list;
+  const std::vector<hemo::Array<plint, 2>> inner_edge_list;
   const std::vector<T> inner_edge_length_eq_list;
-
 };
 }
 #endif

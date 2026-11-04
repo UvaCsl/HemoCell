@@ -16,8 +16,8 @@ T maxRepulsionForce(hemo::HemoCell & hemocell) {
   for (plint blockId : hemocell.cellfields->immersedParticles->getLocalInfo().getBlocks()) {
     for (const hemo::HemoCellParticle & particle :
          hemocell.cellfields->immersedParticles->getComponent(blockId).particles) {
-      const hemo::Array<T,3> & f = particle.sv.force_repulsion;
-      localMax = std::max(localMax, std::sqrt(f[0]*f[0] + f[1]*f[1] + f[2]*f[2]));
+      const hemo::Array<T, 3> & f = particle.sv.force_repulsion;
+      localMax = std::max(localMax, std::sqrt(f[0] * f[0] + f[1] * f[1] + f[2] * f[2]));
     }
   }
   T globalMax = 0;
@@ -32,7 +32,7 @@ T maxRepulsionForce(hemo::HemoCell & hemocell) {
 // stayed applied after a vertex moved away from the wall).
 TEST(Repulsion, WallRepulsionAloneDoesNotAccumulate) {
   static_assert(sizeof(T) == sizeof(double), "MPI_DOUBLE below assumes T == double");
-  char *args[] = {(char *)"test", NULL};
+  char * args[] = {(char *)"test", NULL};
   hemo::HemoCell hemocell((char *)pipeflow_config, 0, args, hemo::HemoCell::MPIHandle::External);
   PipeflowSetup setup;
   setupPipeflow(hemocell, setup, 0.0); // allow vertices next to the wall
@@ -42,9 +42,9 @@ TEST(Repulsion, WallRepulsionAloneDoesNotAccumulate) {
   hemocell.enableBoundaryParticles(1e-6, 1.0, interval); // k [lattice force], cutoff 1 um
   ASSERT_FALSE(hemocell.repulsionEnabled);
 
-  setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
-                    DESCRIPTOR<T>::ExternalField::forceBeginsAt, setup.drivingForce);
-  iterate(hemocell, setup, 2*interval); // includes wall-repulsion updates
+  setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(), DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+                    setup.drivingForce);
+  iterate(hemocell, setup, 2 * interval); // includes wall-repulsion updates
 
   // The update iterate() performs, applied twice at the same positions: the
   // result must not depend on how often it was applied.

@@ -52,7 +52,7 @@ bool interrupt_handler_set = false;
 // Signals that request a graceful stop (checkpoint + exit). SIGABRT is
 // deliberately not caught: abort() must terminate the process.
 const int exit_signals[] = {SIGINT, SIGTERM, SIGHUP, SIGQUIT, SIGUSR1, SIGUSR2};
-const int n_exit_signals = sizeof(exit_signals)/sizeof(exit_signals[0]);
+const int n_exit_signals = sizeof(exit_signals) / sizeof(exit_signals[0]);
 struct sigaction previous_actions[n_exit_signals];
 
 void set_interrupt(int signum) {
@@ -65,27 +65,20 @@ void set_interrupt_handler() {
   sa.sa_handler = set_interrupt;
   sa.sa_flags = SA_RESTART; // do not interrupt system calls (e.g. inside MPI)
   sigemptyset(&sa.sa_mask);
-  for (int i = 0; i < n_exit_signals; i++) {
-    sigaction(exit_signals[i], &sa, &previous_actions[i]);
-  }
+  for (int i = 0; i < n_exit_signals; i++) { sigaction(exit_signals[i], &sa, &previous_actions[i]); }
   interrupt_handler_set = true;
 }
 
 void restore_interrupt_handler() {
   if (!interrupt_handler_set) { return; }
-  for (int i = 0; i < n_exit_signals; i++) {
-    sigaction(exit_signals[i], &previous_actions[i], 0);
-  }
+  for (int i = 0; i < n_exit_signals; i++) { sigaction(exit_signals[i], &previous_actions[i], 0); }
   interrupt_handler_set = false;
   interrupted = 0;
 }
 } // namespace
 
-HemoCell::HemoCell(char * configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handler)
-{
-  if (mpi_handler == HemoCell::MPIHandle::Internal) {
-    plb::plbInit(&(argc),&(argv));
-  }
+HemoCell::HemoCell(char * configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handler) {
+  if (mpi_handler == HemoCell::MPIHandle::Internal) { plb::plbInit(&(argc), &(argv)); }
 
   if (global.hemoCellInitialized) {
     pcout << "(HemoCell) (Error) Hemocell object already created, refusing to construct another one" << endl;
@@ -94,49 +87,36 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[], HemoCell::MPI
   global.hemoCellInitialized = true;
   // Log (and buffer until the log file is opened) on the main process only.
   hlog.mainProcess = global::mpi().isMainProcessor();
-  
+
   pcout << "(HemoCell) (Config) reading " << configFileName << endl;
   cfg = new Config(configFileName);
   documentXML = new XMLreader(configFileName);
   if (cfg->checkpointed) {
-    pcout << "(HemoCell) (Config) Checkpointed config, deferring the loading of the directories (out,log,checkpoint) until loadCheckpoint is called" << endl;
+    pcout
+        << "(HemoCell) (Config) Checkpointed config, deferring the loading of the directories (out,log,checkpoint) until loadCheckpoint is called"
+        << endl;
   } else {
     loadDirectories(cfg);
   }
   loadGlobalConfigValues(cfg);
   printHeader();
-  
+
   //Start statistics
   global.statistics.start();
-  
 }
 
 HemoCell::~HemoCell() {
-  if (cellfields) {
-    delete cellfields;
-  }
-  if (cfg) {
-    delete cfg;
-  }
-  if (documentXML){
+  if (cellfields) { delete cellfields; }
+  if (cfg) { delete cfg; }
+  if (documentXML) {
     delete documentXML;
     documentXML = 0;
   }
-  if (lattice) {
-    delete lattice;
-  }
-  if (domain_lattice_management) {
-    delete domain_lattice_management;
-  }
-  if (loadBalancer) {
-    delete loadBalancer;
-  }
-  if (preInlet) { 
-    delete preInlet;
-  }
-  if (preinlet_lattice_management) {
-    delete preinlet_lattice_management;
-  }
+  if (lattice) { delete lattice; }
+  if (domain_lattice_management) { delete domain_lattice_management; }
+  if (loadBalancer) { delete loadBalancer; }
+  if (preInlet) { delete preInlet; }
+  if (preinlet_lattice_management) { delete preinlet_lattice_management; }
   // Give the process its original signal behaviour back.
   restore_interrupt_handler();
   // Close this simulation's log file, so that a next HemoCell instance (e.g.
@@ -150,20 +130,18 @@ HemoCell::~HemoCell() {
 
 void HemoCell::latticeEquilibrium(T rho, hemo::Array<T, 3> vel) {
   hlog << "(HemoCell) (Fluid) Setting Fluid Equilibrium" << endl;
-  plb::Array<T,3> vel_plb = {vel[0],vel[1],vel[2]};
+  plb::Array<T, 3> vel_plb = {vel[0], vel[1], vel[2]};
   plb::initializeAtEquilibrium(*lattice, (*lattice).getBoundingBox(), rho, vel_plb);
 }
 
 void HemoCell::initializeCellfield() {
-  if (!domain_lattice) {
-    domain_lattice = lattice;
-  }
-  cellfields = new HemoCellFields(*lattice,(*cfg)["domain"]["particleEnvelope"].read<int>(),*this);
+  if (!domain_lattice) { domain_lattice = lattice; }
+  cellfields = new HemoCellFields(*lattice, (*cfg)["domain"]["particleEnvelope"].read<int>(), *this);
 
   //Set envelope of fluid to 1 again, while maintaining outer one for correct force distribution
   lattice->getMultiBlockManagement().changeEnvelopeWidth(1);
   lattice->signalPeriodicity();
-  
+
   // Correct place for init
   loadBalancer = new LoadBalancer(*this);
 }
@@ -190,13 +168,15 @@ void HemoCell::setCEPACOutputs(vector<int> outputs) {
 void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
   if (lattice == 0) {
     pcerr << "(HemoCell) (Periodicity) please create a lattice before trying to set the periodicity" << endl;
-    exit(1);    
+    exit(1);
   }
   if (cellfields->immersedParticles == 0) {
-    pcerr << "(HemoCell) (Periodicity) please create a particlefield (hemocell.initializeCellfields()) before trying to set the periodicity" << endl;
-    exit(1);   
+    pcerr
+        << "(HemoCell) (Periodicity) please create a particlefield (hemocell.initializeCellfields()) before trying to set the periodicity"
+        << endl;
+    exit(1);
   }
-  lattice->periodicity().toggle(axis,bePeriodic);
+  lattice->periodicity().toggle(axis, bePeriodic);
   cellfields->immersedParticles->periodicity().toggle(axis, bePeriodic);
   cellfields->InitAfterLoadCheckpoint();
 }
@@ -204,14 +184,14 @@ void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
 void HemoCell::setSystemPeriodicityLimit(unsigned int axis, int limit) {
   hlog << "(HemoCell) (Periodicity) Setting periodicity limit of axis " << axis << " to " << limit << endl;
   cellfields->periodicity_limit[axis] = limit;
-  
+
   //recalculate offsets :
   cellfields->periodicity_limit_offset_y = cellfields->periodicity_limit[0];
-  cellfields->periodicity_limit_offset_z = cellfields->periodicity_limit[0]*cellfields->periodicity_limit[1];
+  cellfields->periodicity_limit_offset_z = cellfields->periodicity_limit[0] * cellfields->periodicity_limit[1];
 }
 
 void HemoCell::loadParticles() {
-  hlog << "(HemoCell) (CellField) Loading particle positions "  << endl;
+  hlog << "(HemoCell) (CellField) Loading particle positions " << endl;
   loadParticlesIsCalled = true;
   readPositionsBloodCellField3D(*cellfields, param::dx, *cfg);
   cellfields->syncEnvelopes();
@@ -219,40 +199,35 @@ void HemoCell::loadParticles() {
 }
 
 void HemoCell::loadCheckPoint() {
-  hlog << "(HemoCell) (Saving Functions) Loading Checkpoint"  << endl;
+  hlog << "(HemoCell) (Saving Functions) Loading Checkpoint" << endl;
   cellfields->load(documentXML, iter, cfg);
-  if (global.enableSolidifyMechanics) {
-    bindingFieldHelper::restore(*cellfields);
-  }
-  if (global.enableInteriorViscosity) {
-    InteriorViscosityHelper::restore(*cellfields);
-  }
+  if (global.enableSolidifyMechanics) { bindingFieldHelper::restore(*cellfields); }
+  if (global.enableInteriorViscosity) { InteriorViscosityHelper::restore(*cellfields); }
 }
 
 void HemoCell::saveCheckPoint() {
   hlog << "(HemoCell) (Saving Functions) Saving Checkpoint at timestep " << iter << endl;
   cellfields->save(documentXML, iter, cfg);
-  if (global.enableSolidifyMechanics) {
-    bindingFieldHelper::get(*cellfields).checkpoint();
-  }
-  if (global.enableInteriorViscosity) {
-    InteriorViscosityHelper::get(*cellfields).checkpoint();
-  }
+  if (global.enableSolidifyMechanics) { bindingFieldHelper::get(*cellfields).checkpoint(); }
+  if (global.enableInteriorViscosity) { InteriorViscosityHelper::get(*cellfields).checkpoint(); }
 }
 
 void HemoCell::writeOutput() {
   global.statistics["output"].start();
-  std::string tpi = ((iter != lastOutputAt) ? Profiler::toString((global.statistics.elapsed()-lastOutput)/(iter-lastOutputAt)):"0.00");
+  std::string tpi =
+      ((iter != lastOutputAt) ? Profiler::toString((global.statistics.elapsed() - lastOutput) / (iter - lastOutputAt))
+                              : "0.00");
 
   //save Residence time
   //Needs to be used before LastOutputAT is updated
   cellfields->updateResidenceTime((iter - lastOutputAt));
 
-  
+
   lastOutput = global.statistics.elapsed();
-  lastOutputAt  = iter;
+  lastOutputAt = iter;
   // Very naive performance approximation
-  pcout << "(HemoCell) (Output) writing output at timestep " << iter << " (" << param::dt * iter<< " s). Approx. performance: " << tpi << " s / iteration." << endl;
+  pcout << "(HemoCell) (Output) writing output at timestep " << iter << " (" << param::dt * iter
+        << " s). Approx. performance: " << tpi << " s / iteration." << endl;
   // Note: output must not change the forces used by the next iterate(),
   // otherwise the output interval would alter the trajectory. Repulsion is
   // therefore not recomputed here; the output shows the repulsion force that
@@ -261,14 +236,14 @@ void HemoCell::writeOutput() {
   // update larger lattice envelopes
   lattice->getMultiBlockManagement().changeEnvelopeWidth(2);
   lattice->signalPeriodicity();
-  lattice->getBlockCommunicator().duplicateOverlaps(*lattice,modif::staticVariables);
+  lattice->getBlockCommunicator().duplicateOverlaps(*lattice, modif::staticVariables);
   lattice->getMultiBlockManagement().changeEnvelopeWidth(1);
-  
+
   cellfields->syncEnvelopes();
   if (global.cellsDeletedInfo) {
     cellfields->deleteIncompleteCells(true);
   } else {
-    cellfields->deleteIncompleteCells(false);   
+    cellfields->deleteIncompleteCells(false);
   }
 
   // Store the total force that will be spread next (force_total) and repoint
@@ -284,23 +259,19 @@ void HemoCell::writeOutput() {
 
   // Creating a new directory per save
   if (global::mpi().isMainProcessor()) {
-    string folder = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) ;
+    string folder = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter);
     mkpath(folder.c_str(), 0777);
-    folder = global::directories().getOutputDir() + "/csv" ;
+    folder = global::directories().getOutputDir() + "/csv";
     mkpath(folder.c_str(), 0777);
   }
   global::mpi().barrier();
 
 
-
-  
   // Write Output
   global.statistics.getCurrent()["writeOutput"].start();
-  writeCellField3D_HDF5(*cellfields,param::dx,param::dt,iter);
-  writeFluidField_HDF5(*cellfields,param::dx,param::dt,iter);
-  if (global.enableCEPACfield) {
-    writeCEPACField_HDF5(*cellfields,param::dx,param::dt,iter);
-  }
+  writeCellField3D_HDF5(*cellfields, param::dx, param::dt, iter);
+  writeFluidField_HDF5(*cellfields, param::dx, param::dt, iter);
+  if (global.enableCEPACfield) { writeCEPACField_HDF5(*cellfields, param::dx, param::dt, iter); }
   writeCellInfo_CSV(*this);
   global.statistics.getCurrent().stop();
 
@@ -312,9 +283,7 @@ void HemoCell::writeOutput() {
 }
 
 void HemoCell::checkExitSignals() {
-  if (!interrupt_handler_set) {
-    set_interrupt_handler();
-  }
+  if (!interrupt_handler_set) { set_interrupt_handler(); }
   // A signal may reach only some ranks, at different moments. Agree on all
   // ranks before acting, otherwise some ranks would leave while the others
   // block in the next collective operation.
@@ -334,28 +303,18 @@ void HemoCell::checkExitSignals() {
 }
 
 void HemoCell::iterate() {
-  if (!interrupt_handler_set) {
-    set_interrupt_handler();
-  }
+  if (!interrupt_handler_set) { set_interrupt_handler(); }
   // Collective, so only every exitSignalCheckInterval iterations (same
   // decision on all ranks, since iter is identical everywhere).
-  if (exitSignalCheckInterval > 0 && iter % exitSignalCheckInterval == 0) {
-    checkExitSignals();
-  }
-  if (!sanityCheckDone) {
-    sanityCheck();
-  }
+  if (exitSignalCheckInterval > 0 && iter % exitSignalCheckInterval == 0) { checkExitSignals(); }
+  if (!sanityCheckDone) { sanityCheck(); }
   // (Re)build the large-envelope particle communication structure on the first
   // step and after the particle field has been re-created (load balancing).
-  if (!cellfields->large_communicator) {
-    cellfields->calculateCommunicationStructure();
-  }
+  if (!cellfields->large_communicator) { cellfields->calculateCommunicationStructure(); }
   global.statistics.getCurrent()["iterate"].start();
   // ### 1 ### Particle Force to Fluid
-  if(repulsionEnabled && iter % cellfields->repulsionTimescale == 0) {
-    cellfields->applyRepulsionForce();
-  }
-  if(boundaryRepulsionEnabled && iter % cellfields->boundaryRepulsionTimescale == 0) {
+  if (repulsionEnabled && iter % cellfields->repulsionTimescale == 0) { cellfields->applyRepulsionForce(); }
+  if (boundaryRepulsionEnabled && iter % cellfields->boundaryRepulsionTimescale == 0) {
     // Particle-particle repulsion resets force_repulsion; without it the wall
     // contribution must reset it itself, or it would accumulate every update.
     cellfields->applyBoundaryRepulsionForce(!repulsionEnabled);
@@ -367,21 +326,20 @@ void HemoCell::iterate() {
   lattice->collideAndStream();
   global.statistics.getCurrent().stop();
 
-  if (global.enableCEPACfield)
-    {
-      global.statistics.getCurrent()["CEPACcollideAndStream"].start();
-      cellfields->CEPACfield->collideAndStream();
-      global.statistics.getCurrent().stop();
+  if (global.enableCEPACfield) {
+    global.statistics.getCurrent()["CEPACcollideAndStream"].start();
+    cellfields->CEPACfield->collideAndStream();
+    global.statistics.getCurrent().stop();
   }
 
-  if(iter %cellfields->particleVelocityUpdateTimescale == 0) {
+  if (iter % cellfields->particleVelocityUpdateTimescale == 0) {
     // #### 3 #### IBM interpolation
     cellfields->interpolateFluidVelocity();
     // ### 4 ### sync the particles
     cellfields->syncEnvelopes();
   }
 
-  if(global.enableSolidifyMechanics && !(iter%cellfields->solidifyTimescale)) {
+  if (global.enableSolidifyMechanics && !(iter % cellfields->solidifyTimescale)) {
     global.statistics.getCurrent()["solidifyCells"].start();
     cellfields->prepareSolidification();
     cellfields->syncEnvelopes();
@@ -392,7 +350,7 @@ void HemoCell::iterate() {
   cellfields->advanceParticles();
 
   // ### 6 ###
-  cellfields->applyConstitutiveModel();    // Calculate Force on Vertices 
+  cellfields->applyConstitutiveModel(); // Calculate Force on Vertices
 
   if (global.enableInteriorViscosity && iter % cellfields->interiorViscosityEntireGridTimescale == 0) {
     cellfields->deleteIncompleteCells(); // Must be done, next function expects whole cells
@@ -405,22 +363,19 @@ void HemoCell::iterate() {
     cellfields->internalGridPointsMembrane();
     global.statistics.getCurrent().stop();
   }
-  
+
   // We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
-  if(iter % cellfields->particleVelocityUpdateTimescale == 0) {
-    if (global.cellsDeletedInfo) {
-      cellfields->deleteIncompleteCells(true);
-    }
+  if (iter % cellfields->particleVelocityUpdateTimescale == 0) {
+    if (global.cellsDeletedInfo) { cellfields->deleteIncompleteCells(true); }
     cellfields->deleteNonLocalParticles(3);
   }
 
   global.statistics.getCurrent()["setExternalVector"].start();
   // Reset Forces on the lattice, TODO do own efficient implementation
-  setExternalVector(*lattice, (*lattice).getBoundingBox(),
-          DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-          plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
+  setExternalVector(*lattice, (*lattice).getBoundingBox(), DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+                    plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
   global.statistics.getCurrent().stop();
-  
+
   iter++;
   global.statistics.getCurrent().stop();
 }
@@ -430,188 +385,188 @@ T HemoCell::calculateFractionalLoadImbalance() {
   return loadBalancer->calculateFractionalLoadImbalance();
 }
 
-void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separation){
-  hlog << "(HemoCell) (Timescale Seperation) Setting seperation of " << name << " to " << separation << " timesteps"<<endl;
+void HemoCell::setMaterialTimeScaleSeparation(string name, unsigned int separation) {
+  hlog << "(HemoCell) (Timescale Seperation) Setting seperation of " << name << " to " << separation << " timesteps"
+       << endl;
   (*cellfields)[name]->timescale = separation;
 }
 
 void HemoCell::setParticleVelocityUpdateTimeScaleSeparation(unsigned int separation) {
-  hlog << "(HemoCell) (Timescale separation) Setting update separation of all particles to " << separation << " timesteps" << endl;
+  hlog << "(HemoCell) (Timescale separation) Setting update separation of all particles to " << separation
+       << " timesteps" << endl;
   hlogfile << "(HemoCell) WARNING time-scale separation can introduce numerical error! " << endl;
   cellfields->particleVelocityUpdateTimescale = separation;
 }
 
-void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation){
-  hlog << "(HemoCell) (Repulsion Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
+void HemoCell::setRepulsionTimeScaleSeperation(unsigned int separation) {
+  hlog << "(HemoCell) (Repulsion Timescale Seperation) Setting seperation to " << separation << " timesteps" << endl;
   cellfields->repulsionTimescale = separation;
 }
 
-void HemoCell::setSolidifyTimeScaleSeperation(unsigned int separation){
-  hlog << "(HemoCell) (Solidify Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
+void HemoCell::setSolidifyTimeScaleSeperation(unsigned int separation) {
+  hlog << "(HemoCell) (Solidify Timescale Seperation) Setting seperation to " << separation << " timesteps" << endl;
   cellfields->solidifyTimescale = separation;
 }
 
-void HemoCell::setInteriorViscosityTimeScaleSeperation(unsigned int separation, unsigned int separation_entire_grid){
-  hlog << "(HemoCell) (Interior Viscosity Timescale Seperation) Setting seperation to " << separation << " timesteps"<<endl;
-  hlog << "(HemoCell) (Interior Viscosity Timescale Seperation) Setting entire grid refresh to " << separation_entire_grid << " timesteps"<<endl;
+void HemoCell::setInteriorViscosityTimeScaleSeperation(unsigned int separation, unsigned int separation_entire_grid) {
+  hlog << "(HemoCell) (Interior Viscosity Timescale Seperation) Setting seperation to " << separation << " timesteps"
+       << endl;
+  hlog << "(HemoCell) (Interior Viscosity Timescale Seperation) Setting entire grid refresh to "
+       << separation_entire_grid << " timesteps" << endl;
 
   cellfields->interiorViscosityTimescale = separation;
   cellfields->interiorViscosityEntireGridTimescale = separation_entire_grid;
 }
 
 void HemoCell::setInitialMinimumDistanceFromSolid(string name, T distance) {
-  hlog << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << " micrometer for " << name << endl; 
+  hlog << "(HemoCell) (Set Distance) Setting minimum distance from solid to " << distance << " micrometer for " << name
+       << endl;
   if (loadParticlesIsCalled) {
-    pcout << "(HemoCell) (Set Distance) WARNING: this function is called after the particles are loaded, so it has no effect!" << endl;
+    pcout
+        << "(HemoCell) (Set Distance) WARNING: this function is called after the particles are loaded, so it has no effect!"
+        << endl;
   }
   (*cellfields)[name]->minimumDistanceFromSolid = distance;
 }
 
 void HemoCell::setRepulsion(T repulsionConstant, T repulsionCutoff) {
-  hlog << "(HemoCell) (Repulsion) Setting repulsion constant to " << repulsionConstant << ". repulsionCutoff to" << repulsionCutoff << " µm" << endl;
+  hlog << "(HemoCell) (Repulsion) Setting repulsion constant to " << repulsionConstant << ". repulsionCutoff to"
+       << repulsionCutoff << " µm" << endl;
   hlogfile << "(HemoCell) (Repulsion) Enabling repulsion." << endl;
   cellfields->repulsionConstant = repulsionConstant;
-  cellfields->repulsionCutoff = repulsionCutoff*(1e-6/param::dx);
+  cellfields->repulsionCutoff = repulsionCutoff * (1e-6 / param::dx);
   repulsionEnabled = true;
 }
 
 void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRepulsionCutoff, unsigned int timestep) {
   cellfields->populateBoundaryParticles();
-  hlog << "(HemoCell) (Repulsion) Setting boundary repulsion constant to " << boundaryRepulsionConstant << ". boundary repulsionCutoff to" << boundaryRepulsionCutoff << " µm" << endl;
+  hlog << "(HemoCell) (Repulsion) Setting boundary repulsion constant to " << boundaryRepulsionConstant
+       << ". boundary repulsionCutoff to" << boundaryRepulsionCutoff << " µm" << endl;
   hlogfile << "(HemoCell) (Repulsion) Enabling boundary repulsion" << endl;
   cellfields->boundaryRepulsionConstant = boundaryRepulsionConstant;
-  cellfields->boundaryRepulsionCutoff = boundaryRepulsionCutoff*(1e-6/param::dx);
+  cellfields->boundaryRepulsionCutoff = boundaryRepulsionCutoff * (1e-6 / param::dx);
   cellfields->boundaryRepulsionTimescale = timestep;
   boundaryRepulsionEnabled = true;
 }
 
 void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
-  if (lattice) {
-    delete lattice;
-  }
+  if (lattice) { delete lattice; }
 
   if (!preInlet) {
-  
     try {
-      SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(),
-                                                             (*cfg)["domain"]["mABx"].read<int>(),
-                                                             (*cfg)["domain"]["mABy"].read<int>(),
-                                                             (*cfg)["domain"]["mABz"].read<int>());
+      SparseBlockStructure3D sb =
+          createRegularDistribution3D(management.getBoundingBox(), (*cfg)["domain"]["mABx"].read<int>(),
+                                      (*cfg)["domain"]["mABy"].read<int>(), (*cfg)["domain"]["mABz"].read<int>());
 
       hlog << "(HemoCell) Domain management overwritten from config file." << endl;
       ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
-      domain_lattice_management = new MultiBlockManagement3D(sb,eta,management.getEnvelopeWidth(),management.getRefinementLevel());      
+      domain_lattice_management =
+          new MultiBlockManagement3D(sb, eta, management.getEnvelopeWidth(), management.getRefinementLevel());
 
-      lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(*domain_lattice_management,
-            defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+      lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
+          *domain_lattice_management, defaultMultiBlockPolicy3D().getBlockCommunicator(),
+          defaultMultiBlockPolicy3D().getCombinedStatistics(),
+          defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+          new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
 
-    }
-    catch (const std::invalid_argument& e) {
+    } catch (const std::invalid_argument & e) {
       hlog << "(HemoCell) Using default domain management." << endl;
- 
-      lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(management,
-            defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+
+      lattice =
+          new MultiBlockLattice3D<T, DESCRIPTOR>(management, defaultMultiBlockPolicy3D().getBlockCommunicator(),
+                                                 defaultMultiBlockPolicy3D().getCombinedStatistics(),
+                                                 defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+                                                 new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
     }
 
     domain_lattice = lattice;
     return;
   }
   if (global::mpi().getSize() <= 1) {
-    hlog << "(HemoCell) (PreInlet) Trying to run with preInlet with less than 2 processors, specify at least 2, exiting ..." << endl;
+    hlog
+        << "(HemoCell) (PreInlet) Trying to run with preInlet with less than 2 processors, specify at least 2, exiting ..."
+        << endl;
     exit(1);
   }
-  
+
   plint totalNodes = 0;
   totalNodes += preInlet->getNumberOfNodes();
   totalNodes += cellsInBoundingBox(management.getBoundingBox());
-  
-  try  { // Look for block management info in the config file
-        plint preInlet_pABx = (*cfg)["preInlet"]["parameters"]["pABx"].read<plint>();
-        plint preInlet_pABy = (*cfg)["preInlet"]["parameters"]["pABy"].read<plint>();
-        plint preInlet_pABz = (*cfg)["preInlet"]["parameters"]["pABz"].read<plint>();
-        preInlet->nProcs = preInlet_pABx*preInlet_pABy*preInlet_pABz;
-      }
-  catch (const std::invalid_argument& e)  {
-    preInlet->nProcs = global::mpi().getSize()*(preInlet->getNumberOfNodes()/(T)totalNodes);
-    if (preInlet->nProcs == 0) {
-      preInlet->nProcs = 1;
-    }
+
+  try { // Look for block management info in the config file
+    plint preInlet_pABx = (*cfg)["preInlet"]["parameters"]["pABx"].read<plint>();
+    plint preInlet_pABy = (*cfg)["preInlet"]["parameters"]["pABy"].read<plint>();
+    plint preInlet_pABz = (*cfg)["preInlet"]["parameters"]["pABz"].read<plint>();
+    preInlet->nProcs = preInlet_pABx * preInlet_pABy * preInlet_pABz;
+  } catch (const std::invalid_argument & e) {
+    preInlet->nProcs = global::mpi().getSize() * (preInlet->getNumberOfNodes() / (T)totalNodes);
+    if (preInlet->nProcs == 0) { preInlet->nProcs = 1; }
   }
-  
+
   int nProcs = global::mpi().getSize() - preInlet->nProcs;
-  
+
   //Assign processors to PreInlet or Domain
   unsigned int currentPreInlet = 0;
   int currentNode = 0;
-  for (int i = 0 ; i < global::mpi().getSize() ; i++) {
+  for (int i = 0; i < global::mpi().getSize(); i++) {
     if (currentPreInlet >= 1) {
-      if (i == global::mpi().getRank()) {
-        partOfpreInlet = false;
-      }
+      if (i == global::mpi().getRank()) { partOfpreInlet = false; }
       BlockToMpi[currentNode] = i;
-      currentNode ++;
+      currentNode++;
     } else {
-      if (i == global::mpi().getRank()) {
-        partOfpreInlet = true;
-      }
+      if (i == global::mpi().getRank()) { partOfpreInlet = true; }
       preInlet->BlockToMpi[currentNode] = i;
-      currentNode ++;
+      currentNode++;
       if (preInlet->nProcs <= currentNode) {
         currentNode = 0;
         currentPreInlet++;
       }
     }
   }
-  
-  try {  // Look for block management info in the config file    
-    SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet->location,
-                                                                     (*cfg)["preInlet"]["parameters"]["pABx"].read<int>(),
-                                                                     (*cfg)["preInlet"]["parameters"]["pABy"].read<int>(),
-                                                                     (*cfg)["preInlet"]["parameters"]["pABz"].read<int>());
+
+  try { // Look for block management info in the config file
+    SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(
+        preInlet->location, (*cfg)["preInlet"]["parameters"]["pABx"].read<int>(),
+        (*cfg)["preInlet"]["parameters"]["pABy"].read<int>(), (*cfg)["preInlet"]["parameters"]["pABz"].read<int>());
     hlog << "(HemoCell) (PreInlet) Domain management overwritten from config file." << endl;
     ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet->BlockToMpi);
-    preinlet_lattice_management = new MultiBlockManagement3D(sb_preinlet,eta_preinlet,management.getEnvelopeWidth(),management.getRefinementLevel());
-  }
-  catch (const std::invalid_argument& e) { // If nonexistent, fall back to the default distribution
+    preinlet_lattice_management = new MultiBlockManagement3D(sb_preinlet, eta_preinlet, management.getEnvelopeWidth(),
+                                                             management.getRefinementLevel());
+  } catch (const std::invalid_argument & e) { // If nonexistent, fall back to the default distribution
     hlog << "(HemoCell) (PreInlet) Using default domain management." << endl;
-    SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet->location,preInlet->nProcs);
+    SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet->location, preInlet->nProcs);
     ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet->BlockToMpi);
-    preinlet_lattice_management = new MultiBlockManagement3D(sb_preinlet,eta_preinlet,management.getEnvelopeWidth(),management.getRefinementLevel());
+    preinlet_lattice_management = new MultiBlockManagement3D(sb_preinlet, eta_preinlet, management.getEnvelopeWidth(),
+                                                             management.getRefinementLevel());
   }
 
   try { // Look for block management info in the config file
-    SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(),
-                                                           (*cfg)["domain"]["mABx"].read<int>(),
-                                                           (*cfg)["domain"]["mABy"].read<int>(),
-                                                           (*cfg)["domain"]["mABz"].read<int>());
+    SparseBlockStructure3D sb =
+        createRegularDistribution3D(management.getBoundingBox(), (*cfg)["domain"]["mABx"].read<int>(),
+                                    (*cfg)["domain"]["mABy"].read<int>(), (*cfg)["domain"]["mABz"].read<int>());
     hlog << "(HemoCell) Domain management overwritten from config file." << endl;
     ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
-    domain_lattice_management = new MultiBlockManagement3D(sb,eta,management.getEnvelopeWidth(),management.getRefinementLevel());
-  }
-  catch (const std::invalid_argument& e) { // If nonexistent, fall back to the default distribution
+    domain_lattice_management =
+        new MultiBlockManagement3D(sb, eta, management.getEnvelopeWidth(), management.getRefinementLevel());
+  } catch (const std::invalid_argument & e) { // If nonexistent, fall back to the default distribution
     hlog << "(HemoCell) Using default sparse domain management." << endl;
-    SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(),nProcs);
+    SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(), nProcs);
     ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
-    domain_lattice_management = new MultiBlockManagement3D(sb,eta,management.getEnvelopeWidth(),management.getRefinementLevel());
+    domain_lattice_management =
+        new MultiBlockManagement3D(sb, eta, management.getEnvelopeWidth(), management.getRefinementLevel());
   }
 
-  preinlet_lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(*preinlet_lattice_management,
-            defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
-  domain_lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(*domain_lattice_management,
-            defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-            new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
-  
+  preinlet_lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
+      *preinlet_lattice_management, defaultMultiBlockPolicy3D().getBlockCommunicator(),
+      defaultMultiBlockPolicy3D().getCombinedStatistics(),
+      defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+      new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
+  domain_lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
+      *domain_lattice_management, defaultMultiBlockPolicy3D().getBlockCommunicator(),
+      defaultMultiBlockPolicy3D().getCombinedStatistics(),
+      defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+      new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
+
   if (!partOfpreInlet) {
     lattice = domain_lattice;
   } else {
@@ -622,7 +577,7 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
 
 #ifdef HEMO_PARMETIS
 void HemoCell::doLoadBalance() {
-	pcout << "(HemoCell) (LoadBalancer) Balancing Atomic Block over mpi processes" << endl;
+  pcout << "(HemoCell) (LoadBalancer) Balancing Atomic Block over mpi processes" << endl;
   loadBalancer->doLoadBalance();
 }
 #endif
@@ -636,28 +591,33 @@ void HemoCell::sanityCheck() {
   hlog << "(HemoCell) (SanityCheck) Performing Sanity check on simulation parameters and setup" << endl;
   //Lattice sanity
   if (param::dx != 5e-7) {
-    hlog << "(HemoCell) (SanityCheck) WARNING: Fluid dx is not 5e-7 but " << param::dx << " This is unvalidated!" << endl;
+    hlog << "(HemoCell) (SanityCheck) WARNING: Fluid dx is not 5e-7 but " << param::dx << " This is unvalidated!"
+         << endl;
   }
 
-  int env_min_width = (12e-6 /param::dx)+1;
+  int env_min_width = (12e-6 / param::dx) + 1;
   int env_width = cellfields->immersedParticles->getMultiBlockManagement().getEnvelopeWidth();
   if (env_width < env_min_width) {
-    hlog << "(HemoCell) (SanityCheck) WARNING: Envelope width is very small: " << env_width << " (" << env_width*param::dx << "µm) Instead of "  << env_min_width << "!" << endl;
-
+    hlog << "(HemoCell) (SanityCheck) WARNING: Envelope width is very small: " << env_width << " ("
+         << env_width * param::dx << "µm) Instead of " << env_min_width << "!" << endl;
   }
-  
+
   // Material sanity
   if (boundaryRepulsionEnabled) {
-    if (cellfields->boundaryRepulsionTimescale%cellfields->particleVelocityUpdateTimescale!=0) {
-     hlog << "(HemoCell) Error, Particle velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
-     exit(1);
+    if (cellfields->boundaryRepulsionTimescale % cellfields->particleVelocityUpdateTimescale != 0) {
+      hlog
+          << "(HemoCell) Error, Particle velocity timescale separation cannot divide this repulsion timescale separation, exiting ..."
+          << endl;
+      exit(1);
     }
   }
-  
+
   if (repulsionEnabled) {
-    if (cellfields->repulsionTimescale%cellfields->particleVelocityUpdateTimescale!=0) {
-       hlog << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
-       exit(1);
+    if (cellfields->repulsionTimescale % cellfields->particleVelocityUpdateTimescale != 0) {
+      hlog
+          << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..."
+          << endl;
+      exit(1);
     }
   }
 
@@ -667,7 +627,8 @@ void HemoCell::sanityCheck() {
   if (repulsionEnabled && boundaryRepulsionEnabled &&
       cellfields->repulsionTimescale != cellfields->boundaryRepulsionTimescale) {
     hlog << "(HemoCell) Error, particle and boundary repulsion must use the same timescale separation ("
-         << cellfields->repulsionTimescale << " vs " << cellfields->boundaryRepulsionTimescale << "), exiting ..." << endl;
+         << cellfields->repulsionTimescale << " vs " << cellfields->boundaryRepulsionTimescale << "), exiting ..."
+         << endl;
     exit(1);
   }
 
@@ -675,94 +636,118 @@ void HemoCell::sanityCheck() {
   // computePairRepulsion and applyBoundaryRepulsionForce), so pairs further
   // apart than about one lattice spacing are only partially detected.
   if (repulsionEnabled && cellfields->repulsionCutoff > 1.0) {
-    hlog << "(HemoCell) (SanityCheck) WARNING: repulsion cutoff (" << cellfields->repulsionCutoff
-         << " lu) exceeds one lattice spacing; the neighbour search only covers adjacent lattice nodes, so pairs further apart are partially missed." << endl;
+    hlog
+        << "(HemoCell) (SanityCheck) WARNING: repulsion cutoff (" << cellfields->repulsionCutoff
+        << " lu) exceeds one lattice spacing; the neighbour search only covers adjacent lattice nodes, so pairs further apart are partially missed."
+        << endl;
   }
   if (boundaryRepulsionEnabled && cellfields->boundaryRepulsionCutoff > 1.0) {
     hlog << "(HemoCell) (SanityCheck) WARNING: boundary repulsion cutoff (" << cellfields->boundaryRepulsionCutoff
-         << " lu) exceeds one lattice spacing; only particles in lattice nodes adjacent to a wall node are checked." << endl;
+         << " lu) exceeds one lattice spacing; only particles in lattice nodes adjacent to a wall node are checked."
+         << endl;
   }
-  
+
   if (global.enableInteriorViscosity) {
-    if (cellfields->interiorViscosityEntireGridTimescale%cellfields->particleVelocityUpdateTimescale!=0 || 
-        cellfields->interiorViscosityTimescale%cellfields->particleVelocityUpdateTimescale!=0) {
-       hlog << "(HemoCell) Error, Velocity timescale separation cannot divide this interior viscosity timescale separation, exiting ..." <<endl;
-       exit(1);
-    }
-  }
-  
-  for (unsigned int i = 0; i < cellfields->size() ; i++) {
-    if ((*cellfields)[i]->timescale%cellfields->particleVelocityUpdateTimescale !=0) {
-      hlog << "(HemoCell) Error, Velocity timescale separation cannot divide all material timescale separations, exiting ..." <<endl;
+    if (cellfields->interiorViscosityEntireGridTimescale % cellfields->particleVelocityUpdateTimescale != 0 ||
+        cellfields->interiorViscosityTimescale % cellfields->particleVelocityUpdateTimescale != 0) {
+      hlog
+          << "(HemoCell) Error, Velocity timescale separation cannot divide this interior viscosity timescale separation, exiting ..."
+          << endl;
       exit(1);
     }
   }
-  
+
+  for (unsigned int i = 0; i < cellfields->size(); i++) {
+    if ((*cellfields)[i]->timescale % cellfields->particleVelocityUpdateTimescale != 0) {
+      hlog
+          << "(HemoCell) Error, Velocity timescale separation cannot divide all material timescale separations, exiting ..."
+          << endl;
+      exit(1);
+    }
+  }
+
   // Cellfields Sanity
   // Check number of neighbours
   if (cellfields->max_neighbours > 30) {
-    hlog << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << cellfields->max_neighbours << " Usually it should be < 30 ! Please check the domain decomposition structure!" << endl;
+    hlog << "(HemoCell) WARNING: The number of atomic neighbours is suspiciously high: " << cellfields->max_neighbours
+         << " Usually it should be < 30 ! Please check the domain decomposition structure!" << endl;
   }
-  
+
   if (global.enableInteriorViscosity) {
     if (cellfields->interiorViscosityEntireGridTimescale == 1) {
-      hlog << "(HemoCell) WARNING: Interior viscosity (entire grid) timescale is 1, did you forget to call hemocell->setInteriorViscosityTimescaleSeparation()?" << endl;
-
+      hlog
+          << "(HemoCell) WARNING: Interior viscosity (entire grid) timescale is 1, did you forget to call hemocell->setInteriorViscosityTimescaleSeparation()?"
+          << endl;
     }
     if (cellfields->interiorViscosityTimescale == 1) {
-      hlog << "(HemoCell) WARNING: Interior viscosity timescale is 1, did you forget to call hemocell->setInteriorViscosityTimescaleSeparation()?" << endl;
+      hlog
+          << "(HemoCell) WARNING: Interior viscosity timescale is 1, did you forget to call hemocell->setInteriorViscosityTimescaleSeparation()?"
+          << endl;
     }
   }
-    
+
   //Parameter Sanity
 #ifdef FORCE_LIMIT
-  hlog << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT << " pN. Results can be inaccurate due to force capping." << endl;
+  hlog << "(HemoCell) WARNING: Force limit active at " << FORCE_LIMIT
+       << " pN. Results can be inaccurate due to force capping." << endl;
 #endif
   if (sizeof(T) == sizeof(float)) {
     hlog << "(HemoCell) WARNING: Running with single precision, you might want to switch to double precision" << endl;
   }
 
   // Check lattice viscosity [0.01, 0.45]
-  if(param::nu_lbm < 0.01 || param::nu_lbm > 0.45) {
-        hlog << "(WARNING!!!) lattice viscosity [" << param::nu_lbm << "] is not in the stable range for LBM [0.01, 0.45]!" << std::endl;
+  if (param::nu_lbm < 0.01 || param::nu_lbm > 0.45) {
+    hlog << "(WARNING!!!) lattice viscosity [" << param::nu_lbm << "] is not in the stable range for LBM [0.01, 0.45]!"
+         << std::endl;
   }
 
   // Check for lattice velocity to ensure low Courant number (LBM is explicit afterall...)
-  if(param::u_lbm_max > 0.1) {
+  if (param::u_lbm_max > 0.1) {
     hlog << "(WARNING!!!) lattice velocity [" << param::u_lbm_max << "] is too high [>0.1]!" << std::endl;
   }
-     
-  
-  if ((*cfg)["sim"]["tmax"].read<long int>() > 100000000000 ) {
-    hlog << "(HemoCell) (SanityChecking) More than 100000000000 iterations requested, this means that the zero padding will not be consistent, therefore string sorting output will not work!" << endl;
+
+
+  if ((*cfg)["sim"]["tmax"].read<long int>() > 100000000000) {
+    hlog
+        << "(HemoCell) (SanityChecking) More than 100000000000 iterations requested, this means that the zero padding will not be consistent, therefore string sorting output will not work!"
+        << endl;
   };
-  
+
   // Check for possible overflows in calculating new cellIds
   if (cellfields->number_of_cells) { // running with cells
-    if (cellfields->periodicity_limit_offset_y + cellfields->periodicity_limit_offset_z > INT_MAX/cellfields->number_of_cells) { //can HemoCellParticleDataTransfer::getOffset overflow?
-          cerr << "(SanityCheck) (HemoCellParticleDataTransfer) Integer overflow detected when calculating offset, refusing to invoke undefined behaviour later in the program" << endl;
-          cerr << "(SanityCheck) (HemoCellParticleDataTransfer) Either setSystemPeriodicityLimit is used wrongly or there are too many cells in the simulation" << endl;
-          exit(1);
+    if (cellfields->periodicity_limit_offset_y + cellfields->periodicity_limit_offset_z >
+        INT_MAX / cellfields->number_of_cells) { //can HemoCellParticleDataTransfer::getOffset overflow?
+      cerr
+          << "(SanityCheck) (HemoCellParticleDataTransfer) Integer overflow detected when calculating offset, refusing to invoke undefined behaviour later in the program"
+          << endl;
+      cerr
+          << "(SanityCheck) (HemoCellParticleDataTransfer) Either setSystemPeriodicityLimit is used wrongly or there are too many cells in the simulation"
+          << endl;
+      exit(1);
     }
   }
-  
+
   bool printed = false;
-  plint nx,ny,nz,numBlocks,numAllocatedCells;
-  Box3D smallest,largest;
+  plint nx, ny, nz, numBlocks, numAllocatedCells;
+  Box3D smallest, largest;
   // Check if atomic block sizes are in an acceptable range, not as fancy as the check in voxelizeDomain, maybe for later
   getMultiBlockInfo(*lattice, nx, ny, nz, numBlocks, smallest, largest, numAllocatedCells);
   // check largest
   if (largest.getNx() > 25 || largest.getNy() > 25 || largest.getNz() > 25) {
     hlog << getMultiBlockInfo(*lattice);
-    hlog << "(SanityCheck) one of the dimensions of the largest atomic block is more than 25.\n  This can be inefficient. The best performance is below 26x26x26 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure accordingly." << endl;
-    printed = true;
-  } 
-  if (smallest.getNx() < 16 || smallest.getNy() < 16 || smallest.getNz() < 16) {
-    if(!printed) { hlog << getMultiBlockInfo(*lattice); }
-    hlog << "(SanityCheck) one of the dimensions of the smallest atomic block is less than 16.\n  This can be inefficient. For the best performance we recommend between 20^3 to 25^3 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure, and making sure that the particleEnvelope is smaller than the block size." << endl;
+    hlog
+        << "(SanityCheck) one of the dimensions of the largest atomic block is more than 25.\n  This can be inefficient. The best performance is below 26x26x26 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure accordingly."
+        << endl;
     printed = true;
   }
-  
-  
+  if (smallest.getNx() < 16 || smallest.getNy() < 16 || smallest.getNz() < 16) {
+    if (!printed) { hlog << getMultiBlockInfo(*lattice); }
+    hlog
+        << "(SanityCheck) one of the dimensions of the smallest atomic block is less than 16.\n  This can be inefficient. For the best performance we recommend between 20^3 to 25^3 blocks.\n  It is recommended to adjust the number of processors or the sparseBlockStructure, and making sure that the particleEnvelope is smaller than the block size."
+        << endl;
+    printed = true;
+  }
+
+
   sanityCheckDone = true;
 }

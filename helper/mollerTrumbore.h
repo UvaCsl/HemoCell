@@ -27,51 +27,43 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "array.h" // Need to make pointers to particle object
 
 namespace hemo {
-  inline int MollerTrumbore(const hemo::Array<T,3> & v0, const hemo::Array<T,3> & v1,
-	  const hemo::Array<T,3> & v2, hemo::Array<plint, 3> & rayPoint) {
-    const T EPSILON = 0.0000001;
-    T det,invDet,u,v; // Some floats
-    hemo::Array<T, 3> edge1, edge2, pvec, svec, qvec;
-    hemo::Array<T, 3> rayVector = {(T)-40,(T)-40,(T)-40};
-    hemo::Array<plint,3> & rayOrigin = rayPoint;
+inline int MollerTrumbore(const hemo::Array<T, 3> & v0, const hemo::Array<T, 3> & v1, const hemo::Array<T, 3> & v2,
+                          hemo::Array<plint, 3> & rayPoint) {
+  const T EPSILON = 0.0000001;
+  T det, invDet, u, v; // Some floats
+  hemo::Array<T, 3> edge1, edge2, pvec, svec, qvec;
+  hemo::Array<T, 3> rayVector = {(T)-40, (T)-40, (T)-40};
+  hemo::Array<plint, 3> & rayOrigin = rayPoint;
 
-    // Define edges
-    edge1 = v1 - v0;  
-    edge2 = v2 - v0; 
+  // Define edges
+  edge1 = v1 - v0;
+  edge2 = v2 - v0;
 
-    pvec = hemo::crossProduct(rayVector, edge2);
-    det = hemo::dot(edge1, pvec);
+  pvec = hemo::crossProduct(rayVector, edge2);
+  det = hemo::dot(edge1, pvec);
 
-    if (det > -EPSILON && det < EPSILON) {
-      return 0;
-    }
+  if (det > -EPSILON && det < EPSILON) { return 0; }
 
-    invDet = 1/det;
+  invDet = 1 / det;
 
-    // Construct s
-    svec = rayOrigin - v0;
-    u = invDet*hemo::dot(svec, pvec);
+  // Construct s
+  svec = rayOrigin - v0;
+  u = invDet * hemo::dot(svec, pvec);
 
-    if (u < 0.0 || u > 1.0) {
-      return 0;
-    }
+  if (u < 0.0 || u > 1.0) { return 0; }
 
-    qvec = hemo::crossProduct(svec, edge1);
-    v = invDet * hemo::dot(rayVector, qvec);
+  qvec = hemo::crossProduct(svec, edge1);
+  v = invDet * hemo::dot(rayVector, qvec);
 
-    if (v < 0.0 || u + v > 1.0) {
-      return 0;
-    }
+  if (v < 0.0 || u + v > 1.0) { return 0; }
 
-    // Check where the intersection point is
-    float t = invDet*hemo::dot(edge2, qvec);
+  // Check where the intersection point is
+  float t = invDet * hemo::dot(edge2, qvec);
 
-    if (t > EPSILON) {
-      return 1;
-    }
+  if (t > EPSILON) { return 1; }
 
-    return 0;
-  }
+  return 0;
+}
 }
 
 #endif

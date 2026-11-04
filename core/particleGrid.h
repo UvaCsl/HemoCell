@@ -63,34 +63,26 @@ public:
    *
    * Cost: O(nx*ny*nz + particles.size()). Buffers are reused between builds.
    */
-  void build(const std::vector<HemoCellParticle> & particles, const plb::Dot3D & location,
-             plint nx, plint ny, plint nz);
+  void build(const std::vector<HemoCellParticle> & particles, const plb::Dot3D & location, plint nx, plint ny,
+             plint nz);
 
   /// Linear index of block-local node (x,y,z); the caller guarantees it is inside the grid.
-  inline unsigned int index(plint x, plint y, plint z) const {
-    return z + nz*(y + ny*x);
-  }
+  inline unsigned int index(plint x, plint y, plint z) const { return z + nz * (y + ny * x); }
   /// First particle index of node @p node (see class description).
-  inline const unsigned int * begin(unsigned int node) const {
-    return particleIndices.data() + nodeStart[node];
-  }
+  inline const unsigned int * begin(unsigned int node) const { return particleIndices.data() + nodeStart[node]; }
   /// One past the last particle index of node @p node.
-  inline const unsigned int * end(unsigned int node) const {
-    return particleIndices.data() + nodeStart[node+1];
-  }
+  inline const unsigned int * end(unsigned int node) const { return particleIndices.data() + nodeStart[node + 1]; }
   /// Number of particles binned in node @p node.
-  inline unsigned int count(unsigned int node) const {
-    return nodeStart[node+1] - nodeStart[node];
-  }
+  inline unsigned int count(unsigned int node) const { return nodeStart[node + 1] - nodeStart[node]; }
   inline plint getNx() const { return nx; }
   inline plint getNy() const { return ny; }
   inline plint getNz() const { return nz; }
 
 private:
   plint nx = 0, ny = 0, nz = 0;
-  std::vector<unsigned int> nodeStart;        ///< nx*ny*nz+1 offsets into particleIndices
-  std::vector<unsigned int> particleIndices;  ///< particle indices, grouped per node
-  std::vector<unsigned int> nodeOfParticle;   ///< scratch: node of each particle (or sentinel)
+  std::vector<unsigned int> nodeStart;       ///< nx*ny*nz+1 offsets into particleIndices
+  std::vector<unsigned int> particleIndices; ///< particle indices, grouped per node
+  std::vector<unsigned int> nodeOfParticle;  ///< scratch: node of each particle (or sentinel)
 };
 
 /**
@@ -116,8 +108,7 @@ private:
  * @param[in] r_const        Force constant [lattice force units].
  * @param[in] r_cutoff       Cut-off distance [lattice units].
  */
-void computePairRepulsion(std::vector<HemoCellParticle> & particles, const ParticleGrid & grid,
-                          T r_const, T r_cutoff);
+void computePairRepulsion(std::vector<HemoCellParticle> & particles, const ParticleGrid & grid, T r_const, T r_cutoff);
 
 }
 #endif // HEMO_PARTICLEGRID_H

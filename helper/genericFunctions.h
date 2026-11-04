@@ -35,7 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif /* HAVE_UNISTD_H */
 
 namespace hemo {
-  
+
 typedef struct stat Stat;
 
 
@@ -51,15 +51,14 @@ using namespace std;
  */
 void weakScaling(int Nx, int Ny, int Nz, int numberOfProcesses, vector<int> & newNxNyNz);
 
-inline bool file_exists (const std::string& name) {
-    /* Checks if a file exists */
-// http://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exist-using-standard-c-c11-c
+inline bool file_exists(const std::string & name) {
+  /* Checks if a file exists */
+  // http://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exist-using-standard-c-c11-c
   struct stat buffer;
-  return (stat (name.c_str(), &buffer) == 0);
+  return (stat(name.c_str(), &buffer) == 0);
 }
 
 int renameFileToDotOld(std::string fName);
-
 
 
 /*
@@ -72,7 +71,7 @@ int renameFileToDotOld(std::string fName);
 */
 // http://stackoverflow.com/questions/675039/how-can-i-create-directory-tree-in-c-linux
 
-int do_mkdir(const char *path, mode_t mode);
+int do_mkdir(const char * path, mode_t mode);
 
 /**
 ** mkpath - ensure all directories in path exist
@@ -81,9 +80,9 @@ int do_mkdir(const char *path, mode_t mode);
 ** the last element and working backwards.
 */
 // mkpath(argv[i], 0777);
-int mkpath(const char *path, mode_t mode);
+int mkpath(const char * path, mode_t mode);
 
-std::string zeroPadNumber(int num,int w = 12);
+std::string zeroPadNumber(int num, int w = 12);
 
 void printHeader();
 
@@ -92,12 +91,14 @@ void printHeader();
 #include "multiBlock/multiDataField3D.h"
 #include "constant_defaults.h"
 namespace hemo {
-void boundaryFromFlagMatrix(plb::MultiBlockLattice3D<T,DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagMatrix, bool); 
-inline std::ostream& operator<<(std::ostream& stream, const plb::Box3D& box) {
-    return stream << "Box3D: " << box.x0 << " "<<box.x1<<" "<<box.y0<<" "<<box.y1<< " "<<box.z0<<" "<<box.z1<<endl;
+void boundaryFromFlagMatrix(plb::MultiBlockLattice3D<T, DESCRIPTOR> * fluid, plb::MultiScalarField3D<int> * flagMatrix,
+                            bool);
+inline std::ostream & operator<<(std::ostream & stream, const plb::Box3D & box) {
+  return stream << "Box3D: " << box.x0 << " " << box.x1 << " " << box.y0 << " " << box.y1 << " " << box.z0 << " "
+                << box.z1 << endl;
 }
-inline std::ostream& operator<<(std::ostream& stream, const plb::Dot3D& dot) {
-    return stream << "Dot3D: " << dot.x << " "<<dot.y<<" "<<dot.z<<endl;
+inline std::ostream & operator<<(std::ostream & stream, const plb::Dot3D & dot) {
+  return stream << "Dot3D: " << dot.x << " " << dot.y << " " << dot.z << endl;
 }
 }
 #endif // FCN_GENERIC_FUNCTIONS_HH

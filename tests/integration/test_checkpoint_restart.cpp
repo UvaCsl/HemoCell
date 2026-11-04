@@ -13,7 +13,7 @@
 using namespace pipeflow_test;
 
 TEST(Checkpoint, RestartRestoresState) {
-  char *args[] = {(char *)"test", NULL};
+  char * args[] = {(char *)"test", NULL};
 
   unsigned int savedIteration = 0;
   unsigned int savedLastOutput = 0;

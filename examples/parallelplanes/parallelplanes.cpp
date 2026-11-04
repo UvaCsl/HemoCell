@@ -37,15 +37,15 @@ using namespace hemo;
 
 // ----------------------------------------------------------------------------------------------
 
-int main(int argc, char *argv[]) {
-  if(argc < 2) {
+int main(int argc, char * argv[]) {
+  if (argc < 2) {
     cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
     return -1;
   }
 
   HemoCell hemocell(argv[1], argc, argv);
 
-// ---------------------------- Reading parameters ------------------------------------------------
+  // ---------------------------- Reading parameters ------------------------------------------------
 
   hlog << "(main) Reading config parameters ..." << std::endl;
 
@@ -62,50 +62,51 @@ int main(int argc, char *argv[]) {
   hlog << "shear_rate = " << shear_rate << endl;
 
   // Plane Pouisseuille
-  double velocity_max = (shear_rate*(nz/2e6))/2;
+  double velocity_max = (shear_rate * (nz / 2e6)) / 2;
   hlog << "velocity_max = " << velocity_max << endl;
 
-  double velocity_max_lbm = velocity_max * ( (*cfg)["domain"]["dt"].read<double>() /(*cfg)["domain"]["dx"].read<double>() );
+  double velocity_max_lbm =
+      velocity_max * ((*cfg)["domain"]["dt"].read<double>() / (*cfg)["domain"]["dx"].read<double>());
   hlog << "velocity_max_lbm = " << velocity_max_lbm << endl;
 
-// ---------------------------------------------------------------------------------------------
-  plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
+  // ---------------------------------------------------------------------------------------------
+  plint extendedEnvelopeWidth = 2; // Because we might use ibmKernel with with 2.
 
   hlog << "(Parallel planes) (Fluid) Initializing fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
-            defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
-            defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<double, DESCRIPTOR>(),
-            new GuoExternalForceBGKdynamics<double, DESCRIPTOR>(1.0/param::tau));
+      defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
+      defaultMultiBlockPolicy3D().getBlockCommunicator(), defaultMultiBlockPolicy3D().getCombinedStatistics(),
+      defaultMultiBlockPolicy3D().getMultiCellAccess<double, DESCRIPTOR>(),
+      new GuoExternalForceBGKdynamics<double, DESCRIPTOR>(1.0 / param::tau));
 
-//--------------------------------- boundary conditions ---------------------------------------------------
+  //--------------------------------- boundary conditions ---------------------------------------------------
 
   hlog << "Domain structure:" << std::endl;
   hlog << getMultiBlockInfo(*hemocell.lattice) << std::endl;
 
-  Box3D topChannel(0, nx-1, 0, ny-1, nz-1, nz-1 );
-  Box3D bottomChannel( 0, nx-1, 0, ny-1, 0, 0);
+  Box3D topChannel(0, nx - 1, 0, ny - 1, nz - 1, nz - 1);
+  Box3D bottomChannel(0, nx - 1, 0, ny - 1, 0, 0);
 
-  defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR> );
-  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
+  defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR>);
+  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR>);
 
-// -----------------------------------
+  // -----------------------------------
 
   hemocell.lattice->toggleInternalStatistics(false);
   hemocell.lattice->periodicity().toggleAll(false);
-  hemocell.lattice->periodicity().toggle(0,true); // X-periodicity
-  hemocell.lattice->periodicity().toggle(1,true); // Y-periodicity
+  hemocell.lattice->periodicity().toggle(0, true); // X-periodicity
+  hemocell.lattice->periodicity().toggle(1, true); // Y-periodicity
 
-  hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
+  hemocell.latticeEquilibrium(1., plb::Array<double, 3>(0., 0., 0.));
 
   //Driving Force
   hlog << "(Parallel planes) (Fluid) Setting up driving Force" << endl;
-  double rPipe = (*cfg)["domain"]["Nz"].read<int>()/2.0;
-  double poiseuilleForce = 2 * param::nu_lbm * (velocity_max_lbm * (2./3.)) / (rPipe * rPipe); // 8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
+  double rPipe = (*cfg)["domain"]["Nz"].read<int>() / 2.0;
+  double poiseuilleForce = 2 * param::nu_lbm * (velocity_max_lbm * (2. / 3.)) /
+                           (rPipe * rPipe); // 8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-                     DESCRIPTOR<double>::ExternalField::forceBeginsAt,
-                     plb::Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
+                    DESCRIPTOR<double>::ExternalField::forceBeginsAt,
+                    plb::Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
 
   hemocell.lattice->initialize();
 
@@ -125,11 +126,12 @@ int main(int argc, char *argv[]) {
   // hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<double>(), (*cfg)["domain"]["RepCutoff"].read<double>());
   // hemocell.setRepulsionTimeScaleSeperation((*cfg)["ibm"]["stepMaterialEvery"].read<int>());
 
-  vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
+  vector<int> outputs = {OUTPUT_POSITION,      OUTPUT_TRIANGLES,  OUTPUT_FORCE,      OUTPUT_FORCE_VOLUME,
+                         OUTPUT_FORCE_BENDING, OUTPUT_FORCE_LINK, OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC};
   hemocell.setOutputs("RBC", outputs);
   hemocell.setOutputs("PLT", outputs);
 
-  outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE};
+  outputs = {OUTPUT_VELOCITY, OUTPUT_DENSITY, OUTPUT_FORCE};
   hemocell.setFluidOutputs(outputs);
 
   //loading the cellfield
@@ -141,7 +143,8 @@ int main(int argc, char *argv[]) {
   }
 
   if (hemocell.iter == 0) {
-    hlog << "(Parallel planes) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
+    hlog << "(Parallel planes) fresh start: warming up cell-free fluid domain for "
+         << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
     for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
       hemocell.lattice->collideAndStream();
     }
@@ -153,8 +156,7 @@ int main(int argc, char *argv[]) {
 
   hlog << "(Parallel planes) Starting simulation..." << endl;
 
-  while (hemocell.iter < tmax ) {
-
+  while (hemocell.iter < tmax) {
     hemocell.iterate();
 
     //Set driving force as required after each iteration
@@ -170,14 +172,18 @@ int main(int argc, char *argv[]) {
     // }
 
     if (hemocell.iter % tmeas == 0) {
-      hlog << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
+      hlog << "(main) Stats. @ " << hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
       hlog << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
       hlog << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC");
       hlog << ", PLT: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "PLT") << endl;
-      FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell); double toMpS = param::dx / param::dt;
-      hlog << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg * toMpS<< " m/s, rel. app. viscosity: " << (param::u_lbm_max*0.5) / finfo.avg << endl;
-      ParticleStatistics pinfo = ParticleInfo::calculateForceStatistics(&hemocell); double topN = param::df * 1.0e12;
-      hlog << "\t Force  -  min.: " << pinfo.min * topN << " pN, max.: " << pinfo.max * topN << " pN (" << pinfo.max << " lf), mean: " << pinfo.avg * topN << " pN" << endl;
+      FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell);
+      double toMpS = param::dx / param::dt;
+      hlog << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg * toMpS
+           << " m/s, rel. app. viscosity: " << (param::u_lbm_max * 0.5) / finfo.avg << endl;
+      ParticleStatistics pinfo = ParticleInfo::calculateForceStatistics(&hemocell);
+      double topN = param::df * 1.0e12;
+      hlog << "\t Force  -  min.: " << pinfo.min * topN << " pN, max.: " << pinfo.max * topN << " pN (" << pinfo.max
+           << " lf), mean: " << pinfo.avg * topN << " pN" << endl;
 
       // Additional useful stats, if needed
       //finfo = FluidInfo::calculateForceStatistics(&hemocell);
@@ -191,9 +197,7 @@ int main(int argc, char *argv[]) {
 
       hemocell.writeOutput();
     }
-    if (hemocell.iter % tcheckpoint == 0) {
-      hemocell.saveCheckPoint();
-    }
+    if (hemocell.iter % tcheckpoint == 0) { hemocell.saveCheckPoint(); }
   }
 
   hlog << "(main) Simulation finished :) " << endl;

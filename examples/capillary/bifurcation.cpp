@@ -1,7 +1,6 @@
 #include "bifurcation.h"
 
-std::tuple<unsigned, unsigned, unsigned>
-Bifurcation::domain_size(unsigned resolution) {
+std::tuple<unsigned, unsigned, unsigned> Bifurcation::domain_size(unsigned resolution) {
   return std::make_tuple(8 * resolution, resolution, resolution);
 }
 
@@ -9,8 +8,8 @@ Bifurcation::domain_size(unsigned resolution) {
 /// The geometry is defined as a single channel with periodicity along the
 /// x-direction. The channel splits into two branches, where an inner dividing
 /// solid region is defined.
-int Bifurcation::geometry(plb::MultiBlockLattice3D<double, DESCRIPTOR> *&lattice,
-                    unsigned resolution, double capillary_diameter) {
+int Bifurcation::geometry(plb::MultiBlockLattice3D<double, DESCRIPTOR> *& lattice, unsigned resolution,
+                          double capillary_diameter) {
   auto nx = 0;
   auto ny = 0;
   auto nz = 0;
@@ -25,10 +24,8 @@ int Bifurcation::geometry(plb::MultiBlockLattice3D<double, DESCRIPTOR> *&lattice
   auto inner_rx = outer_rx * inner_ry / outer_ry;
 
   if (inner_ry < 1 || inner_rx < 1) {
-    plb::pcout << "Error generating geometry Bifurcation capillary: "
-               << "zero radii encountered for inner ellipse."
-               << "Found major, minor axis: " << inner_rx << ", " << inner_ry
-               << std::endl;
+    plb::pcout << "Error generating geometry Bifurcation capillary: " << "zero radii encountered for inner ellipse."
+               << "Found major, minor axis: " << inner_rx << ", " << inner_ry << std::endl;
     return -1;
   }
 
@@ -42,15 +39,11 @@ int Bifurcation::geometry(plb::MultiBlockLattice3D<double, DESCRIPTOR> *&lattice
   // a*x**2 + b*x + c = 0, where a = 1.0 (and is therefore left out).
   auto ellipse_start = cx - outer_rx + capillary_diameter;
   auto b = -2.0 * cy;
-  auto c = cy * cy - outer_ry * outer_ry *
-                         (1 - (ellipse_start - cx) * (ellipse_start - cx) /
-                                  (outer_rx * outer_rx));
+  auto c = cy * cy - outer_ry * outer_ry * (1 - (ellipse_start - cx) * (ellipse_start - cx) / (outer_rx * outer_rx));
   auto d = b * b - 4.0 * c;
 
   if (d < 0.0) {
-    plb::pcout
-        << "(Capillary) Negative  discriminant: Check the geometry setup!"
-        << std::endl;
+    plb::pcout << "(Capillary) Negative  discriminant: Check the geometry setup!" << std::endl;
     return -1;
   }
 
@@ -75,26 +68,22 @@ int Bifurcation::geometry(plb::MultiBlockLattice3D<double, DESCRIPTOR> *&lattice
   auto center = geom::BoxDomain(plb::Box3D(cx, nx - cx, wall, ny - wall - 2, 0, nz));
 
   defineDynamics(*lattice, lattice->getBoundingBox(),
-                 new geom::Difference({bounding_box, inlet, left_outer_ellipse,
-                                       right_outer_ellipse, center}),
+                 new geom::Difference({bounding_box, inlet, left_outer_ellipse, right_outer_ellipse, center}),
                  new plb::BounceBack<T, DESCRIPTOR>());
 
   // This includes the left and right inner ellipsoids together with a
   // rectangular block to connect both ellipsoids.
-  auto middle = geom::BoxDomain(plb::Box3D(cx, nx - cx, 
-                                           wall + capillary_diameter - 1,
-                                           ny - wall - capillary_diameter - 1, 0, nz));
+  auto middle = geom::BoxDomain(
+      plb::Box3D(cx, nx - cx, wall + capillary_diameter - 1, ny - wall - capillary_diameter - 1, 0, nz));
   auto left_ellipse = geom::EllipseDomain(cx, cy, inner_rx, inner_ry);
   auto right_ellipse = geom::EllipseDomain(nx - cx, cy, inner_rx, inner_ry);
 
-  defineDynamics(*lattice, lattice->getBoundingBox(),
-                 new geom::Union({left_ellipse, middle, right_ellipse}),
+  defineDynamics(*lattice, lattice->getBoundingBox(), new geom::Union({left_ellipse, middle, right_ellipse}),
                  new plb::BounceBack<T, DESCRIPTOR>());
   return 0;
 }
 
 plb::Array<double, 3> Bifurcation::driving_force(double force) {
-  auto scaling = hemo::param::dx * hemo::param::dx * hemo::param::dt *
-                 hemo::param::dt / hemo::param::dm;
+  auto scaling = hemo::param::dx * hemo::param::dx * hemo::param::dt * hemo::param::dt / hemo::param::dm;
   return {force * scaling, 0, 0};
 }

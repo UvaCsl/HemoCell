@@ -12,38 +12,38 @@
 
 using namespace hemo;
 
-int main (int argc, char * argv[]) {
-  if(argc < 2) {
+int main(int argc, char * argv[]) {
+  if (argc < 2) {
     cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
     return -1;
   }
 
-  HemoCell hemocell(argv[1],argc,argv);
+  HemoCell hemocell(argv[1], argc, argv);
   Config * cfg = hemocell.cfg;
 
   param::lbm_pipe_parameters((*cfg), 50);
   param::printParameters();
 
-  T poiseuilleForce =  8 * param::nu_lbm * (param::u_lbm_max * 0.5) / param::pipe_radius / param::pipe_radius;
+  T poiseuilleForce = 8 * param::nu_lbm * (param::u_lbm_max * 0.5) / param::pipe_radius / param::pipe_radius;
 
   MultiBlockManagement3D management = defaultMultiBlockPolicy3D().getMultiBlockManagement(50, 50, 50, 2);
 
   hemocell.initializeLattice(management);
   hemocell.lattice->periodicity().toggleAll(false);
-  hemocell.lattice->periodicity().toggle(0,true);
+  hemocell.lattice->periodicity().toggle(0, true);
 
   Box3D topChannel(0, 49, 0, 49, 49, 49);
-  Box3D bottomChannel( 0, 49, 0, 49, 0, 0);
-  Box3D backChannel( 0, 49, 49, 49, 0, 49);
-  Box3D frontChannel( 0, 49, 0, 0, 0, 49);
+  Box3D bottomChannel(0, 49, 0, 49, 0, 0);
+  Box3D backChannel(0, 49, 49, 49, 0, 49);
+  Box3D frontChannel(0, 49, 0, 0, 0, 49);
 
-  defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR> );
-  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
-  defineDynamics(*hemocell.lattice, backChannel, new BounceBack<T, DESCRIPTOR> );
-  defineDynamics(*hemocell.lattice, frontChannel, new BounceBack<T, DESCRIPTOR> );
+  defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR>);
+  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR>);
+  defineDynamics(*hemocell.lattice, backChannel, new BounceBack<T, DESCRIPTOR>);
+  defineDynamics(*hemocell.lattice, frontChannel, new BounceBack<T, DESCRIPTOR>);
 
   hemocell.lattice->toggleInternalStatistics(false);
-  hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
+  hemocell.latticeEquilibrium(1., plb::Array<double, 3>(0., 0., 0.));
   hemocell.lattice->initialize();
 
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
@@ -68,10 +68,8 @@ int main (int argc, char * argv[]) {
   // every X timesteps.
   hemocell.setParticleVelocityUpdateTimeScaleSeparation(5);
 
-  hemocell.setFluidOutputs( { OUTPUT_VELOCITY, OUTPUT_DENSITY, OUTPUT_FORCE,
-                              OUTPUT_SHEAR_RATE, OUTPUT_STRAIN_RATE,
-                              OUTPUT_SHEAR_STRESS, OUTPUT_BOUNDARY, OUTPUT_OMEGA,
-                              OUTPUT_CELL_DENSITY } );
+  hemocell.setFluidOutputs({OUTPUT_VELOCITY, OUTPUT_DENSITY, OUTPUT_FORCE, OUTPUT_SHEAR_RATE, OUTPUT_STRAIN_RATE,
+                            OUTPUT_SHEAR_STRESS, OUTPUT_BOUNDARY, OUTPUT_OMEGA, OUTPUT_CELL_DENSITY});
 
   // Turn on periodicity in the X direction
   hemocell.setSystemPeriodicity(0, true);
@@ -79,19 +77,17 @@ int main (int argc, char * argv[]) {
   //Load the particles from all the *.pos files
   // hemocell.loadParticles();
 
-  while (hemocell.iter < tmax ) {
+  while (hemocell.iter < tmax) {
     //Advance the fluid field and cellfields one tick.
     hemocell.iterate();
 
     //Set driving force as required after each iteration
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
-                DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-                plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+                      DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+                      plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
 
     // When we want to save
-    if (hemocell.iter % tmeas == 0) {
-      hemocell.writeOutput();
-    }
+    if (hemocell.iter % tmeas == 0) { hemocell.writeOutput(); }
   }
   return 0;
 }

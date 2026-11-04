@@ -13,23 +13,21 @@
 
 using namespace hemo;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char * argv[]) {
   if (argc < 2) {
     cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
     return -1;
   }
 
   HemoCell hemocell(argv[1], argc, argv);
-  Config *cfg = hemocell.cfg;
+  Config * cfg = hemocell.cfg;
 
   param::lbm_pipe_parameters((*cfg), 50);
   param::printParameters();
 
-  T poiseuilleForce = 8 * param::nu_lbm * (param::u_lbm_max * 0.5) /
-                      param::pipe_radius / param::pipe_radius;
+  T poiseuilleForce = 8 * param::nu_lbm * (param::u_lbm_max * 0.5) / param::pipe_radius / param::pipe_radius;
 
-  auto management =
-      defaultMultiBlockPolicy3D().getMultiBlockManagement(50, 50, 50, 2);
+  auto management = defaultMultiBlockPolicy3D().getMultiBlockManagement(50, 50, 50, 2);
 
   hemocell.initializeLattice(management);
   hemocell.lattice->periodicity().toggleAll(false);
@@ -41,11 +39,9 @@ int main(int argc, char *argv[]) {
   Box3D frontChannel(0, 49, 0, 0, 0, 49);
 
   defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR>);
-  defineDynamics(*hemocell.lattice, bottomChannel,
-                 new BounceBack<T, DESCRIPTOR>);
+  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR>);
   defineDynamics(*hemocell.lattice, backChannel, new BounceBack<T, DESCRIPTOR>);
-  defineDynamics(*hemocell.lattice, frontChannel,
-                 new BounceBack<T, DESCRIPTOR>);
+  defineDynamics(*hemocell.lattice, frontChannel, new BounceBack<T, DESCRIPTOR>);
 
   hemocell.lattice->toggleInternalStatistics(false);
   hemocell.latticeEquilibrium(1., plb::Array<double, 3>(0., 0., 0.));
@@ -98,15 +94,13 @@ int main(int argc, char *argv[]) {
     hemocell.iterate();
 
     // Set driving force as required after each iteration
-    setExternalVector(
-        *hemocell.lattice, hemocell.lattice->getBoundingBox(),
-        DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-        plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+    setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
+                      DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+                      plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
 
     if (hemocell.iter % tmeas == 0) {
-      hlog << "Iteration : " << hemocell.iter << " # of cells: "
-           << CellInformationFunctionals::getTotalNumberOfCells(&hemocell)
-           << std::endl;
+      hlog << "Iteration : " << hemocell.iter
+           << " # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell) << std::endl;
       hemocell.writeOutput();
     }
   }

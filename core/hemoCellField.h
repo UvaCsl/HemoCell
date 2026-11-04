@@ -39,11 +39,11 @@ class HemoCellField;
 
 namespace hemo {
 /*contains information about one particular cellfield, structlike*/
-class HemoCellField{
+class HemoCellField {
   static vector<int> default_output;
-  public:
 
-  HemoCellField(HemoCellFields& cellFields_, string & name_, unsigned int ctype_, int contructType);
+public:
+  HemoCellField(HemoCellFields & cellFields_, string & name_, unsigned int ctype_, int contructType);
   ~HemoCellField();
   T getVolumeFraction();
   //ShellModel3D<T> * model;
@@ -52,10 +52,10 @@ class HemoCellField{
   HemoCellFields & cellFields;
   vector<int> desiredOutputVariables;
   plb::TriangularSurfaceMesh<T> * meshElement = 0;
-  plb::TriangleBoundary3D<T> * boundaryElement = 0 ;
-  Config *materialCfg = 0;
+  plb::TriangleBoundary3D<T> * boundaryElement = 0;
+  Config * materialCfg = 0;
   unsigned char ctype;
-  
+
   int numVertex = 0;
   T volume = 0;
   T volumeFractionOfLspPerNode = 0;
@@ -64,10 +64,10 @@ class HemoCellField{
   /// Minimum initial distance of cell vertices from solid nodes [micrometre], see HemoCell::setInitialMinimumDistanceFromSolid()
   T minimumDistanceFromSolid = 0;
   bool outputTriangles = false;
-  vector<hemo::Array<plint,3>> triangle_list;
-  void(*kernelMethod)(plb::BlockLattice3D<T,DESCRIPTOR> &,HemoCellParticle&);
+  vector<hemo::Array<plint, 3>> triangle_list;
+  void (*kernelMethod)(plb::BlockLattice3D<T, DESCRIPTOR> &, HemoCellParticle &);
   plb::MultiParticleField3D<HemoCellParticleField> * getParticleField3D();
-  plb::MultiBlockLattice3D<T,DESCRIPTOR> * getFluidField3D();
+  plb::MultiBlockLattice3D<T, DESCRIPTOR> * getFluidField3D();
   /// Total number of cells of this type in the simulation. Collective: all
   /// ranks must call it (it synchronises the particle envelopes).
   int getNumberOfCells_Global();
@@ -77,15 +77,14 @@ class HemoCellField{
   CellMechanics * mechanics = 0;
   void statistics();
   /* position is in micrometers, so we still have to convert it*/
-  void addSingleCell(hemo::Array<T,3> position, plint cellId);
-  hemo::Array<T,6> getOriginalBoundingBox();
+  void addSingleCell(hemo::Array<T, 3> position, plint cellId);
+  hemo::Array<T, 6> getOriginalBoundingBox();
   plb::MeshMetrics<T> * meshmetric = 0;
   bool doSolidifyMechanics = false;
   bool doInteriorViscosity = false;
   T interiorViscosityTau = 1.0;
-  plb::Dynamics<T,DESCRIPTOR> * innerViscosityDynamics = 0;
+  plb::Dynamics<T, DESCRIPTOR> * innerViscosityDynamics = 0;
 };
 }
 
 #endif /* HEMOCELLFIELD_H */
-

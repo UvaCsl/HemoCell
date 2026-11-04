@@ -34,59 +34,60 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace hemo {
 void Parameters::lbm_base_parameters(Config & cfg) {
-    dt = cfg["domain"]["dt"].read<T>();
-    dx = cfg["domain"]["dx"].read<T>();
-    nu_p = cfg["domain"]["nuP"].read<T>();
-    rho_p = cfg["domain"]["rhoP"].read<T>();
-    kBT_p = cfg["domain"]["kBT"].read<T>();
+  dt = cfg["domain"]["dt"].read<T>();
+  dx = cfg["domain"]["dx"].read<T>();
+  nu_p = cfg["domain"]["nuP"].read<T>();
+  rho_p = cfg["domain"]["rhoP"].read<T>();
+  kBT_p = cfg["domain"]["kBT"].read<T>();
 
-    if (dt < 0.0 ) { //dt is not set, calculate it from nu_p and dx, tau is set to 1
-      tau = 1.0;
-      nu_lbm = 1.0/3.0 * (tau - 0.5);
-      dt = nu_lbm /nu_p * (dx*dx);
-      hlog << "(HemoCell) dt is set to *auto*. Tau will be set to 1!" << std::endl;
-    } else { //dt is set, this means we must set tau
-      nu_lbm = nu_p * dt/ (dx*dx);
-      tau = 3.0 * nu_lbm + 0.5;
-    }
+  if (dt < 0.0) { //dt is not set, calculate it from nu_p and dx, tau is set to 1
+    tau = 1.0;
+    nu_lbm = 1.0 / 3.0 * (tau - 0.5);
+    dt = nu_lbm / nu_p * (dx * dx);
+    hlog << "(HemoCell) dt is set to *auto*. Tau will be set to 1!" << std::endl;
+  } else { //dt is set, this means we must set tau
+    nu_lbm = nu_p * dt / (dx * dx);
+    tau = 3.0 * nu_lbm + 0.5;
+  }
 
-    dm = rho_p * (dx * dx *dx);
-    df = dm * dx / (dt * dt);
+  dm = rho_p * (dx * dx * dx);
+  df = dm * dx / (dt * dt);
 #ifdef FORCE_LIMIT
-    f_limit = FORCE_LIMIT / 1.0e12 / df; // Changing pN to lbm force
+  f_limit = FORCE_LIMIT / 1.0e12 / df; // Changing pN to lbm force
 #endif
-    kBT_lbm = kBT_p/(df*dx);
+  kBT_lbm = kBT_p / (df * dx);
 };
 
 void Parameters::lbm_pipe_parameters(Config & cfg, plb::MultiScalarField3D<int> * sf) {
-    Parameters::lbm_base_parameters(cfg);
-    re = cfg["domain"]["Re"].read<T>();
-    
-    plb::Box3D domain = sf->getBoundingBox();
-    domain.x1 = domain.x0;
-    T fluidArea = plb::computeSum<int>(*sf,domain);
-    
-    plb::pcout << fluidArea << std::endl;
-    pipe_radius = sqrt(fluidArea/PI);
-    hlog << "(Parameters) The channel has a calculated radius of " << pipe_radius << " LU, assuming a perfect circle cross-section." << std::endl;
-    u_lbm_max = re * nu_lbm / (pipe_radius*2);
+  Parameters::lbm_base_parameters(cfg);
+  re = cfg["domain"]["Re"].read<T>();
+
+  plb::Box3D domain = sf->getBoundingBox();
+  domain.x1 = domain.x0;
+  T fluidArea = plb::computeSum<int>(*sf, domain);
+
+  plb::pcout << fluidArea << std::endl;
+  pipe_radius = sqrt(fluidArea / PI);
+  hlog << "(Parameters) The channel has a calculated radius of " << pipe_radius
+       << " LU, assuming a perfect circle cross-section." << std::endl;
+  u_lbm_max = re * nu_lbm / (pipe_radius * 2);
 };
 
 void Parameters::lbm_pipe_parameters(Config & cfg, int nY) {
-    Parameters::lbm_base_parameters(cfg);
-    re = cfg["domain"]["Re"].read<T>();
-    
-    pipe_radius = nY;
-    hlog << "(Parameters) The channel has a predefined radius of " << pipe_radius << " LU." << std::endl;
-    u_lbm_max = re * nu_lbm / (pipe_radius*2);
+  Parameters::lbm_base_parameters(cfg);
+  re = cfg["domain"]["Re"].read<T>();
+
+  pipe_radius = nY;
+  hlog << "(Parameters) The channel has a predefined radius of " << pipe_radius << " LU." << std::endl;
+  u_lbm_max = re * nu_lbm / (pipe_radius * 2);
 };
 
-void Parameters::lbm_shear_parameters(Config & cfg,T nx) {
+void Parameters::lbm_shear_parameters(Config & cfg, T nx) {
   Parameters::lbm_base_parameters(cfg);
   T shearrate_p = cfg["domain"]["shearrate"].read<T>();
-  re = (nx* (shearrate_p * (nx*0.5))) / nu_p;
-  shearrate_lbm = shearrate_p*dt;
-  u_lbm_max = shearrate_lbm;  
+  re = (nx * (shearrate_p * (nx * 0.5))) / nu_p;
+  shearrate_lbm = shearrate_p * dt;
+  u_lbm_max = shearrate_lbm;
 }
 
 void Parameters::lbm_LE_parameters(Config & cfg, T nz) {
@@ -96,8 +97,7 @@ void Parameters::lbm_LE_parameters(Config & cfg, T nz) {
   // plb::pcout << shearrate_p << std::endl;
   shearrate_lbm = shearrate_p * dt;
   T Vmax = shearrate_lbm * nz * 0.5;
-  LE_force = 8 * nu_lbm * Vmax * 0.5 / pow(nz/4, 2);
-
+  LE_force = 8 * nu_lbm * Vmax * 0.5 / pow(nz / 4, 2);
 }
 
 void Parameters::printParameters() {

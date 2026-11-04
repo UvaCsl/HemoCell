@@ -45,23 +45,17 @@ constexpr float offset = 0.01f;
 typedef double T;
 
 // hardcoded execution times for weak scaling
-std::map<int, float> exec_times = {
-  {1 , exec_time_1_proc},
-  {2 , exec_time_2_procs},
-  {6 , exec_time_6_procs}
-};
+std::map<int, float> exec_times = {{1, exec_time_1_proc}, {2, exec_time_2_procs}, {6, exec_time_6_procs}};
 
 // Making argψ and arv global to access within the test
-extern int argc; 
-extern char** argv;
+extern int argc;
+extern char ** argv;
 
 using namespace hemo;
 
-TEST(Performance, cube)
-{   
-
-  char *args[] = {(char *)"test", (char *)"path", NULL};
-  char *inp = argv[1];
+TEST(Performance, cube) {
+  char * args[] = {(char *)"test", (char *)"path", NULL};
+  char * inp = argv[1];
 
   hemo::HemoCell hemocell(inp, 0, args, hemo::HemoCell::MPIHandle::External);
   Config * cfg = hemocell.cfg;
@@ -71,15 +65,14 @@ TEST(Performance, cube)
   MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
   float ref_time = 0.0f;
   float time_per_iter = 0.0f;
-  
+
   // get the refernce value for the assertions
-  if(exec_times.find(num_procs) != exec_times.end()){
+  if (exec_times.find(num_procs) != exec_times.end()) {
     ref_time = exec_times.at(num_procs) * (1 + offset);
-  }
-  else{
+  } else {
     FAIL() << " ************************ " << std::endl
-     << "The number of proccesses specified do not match to our weak scaling" << std::endl
-     << " ************************" << std::endl;
+           << "The number of proccesses specified do not match to our weak scaling" << std::endl
+           << " ************************" << std::endl;
   }
 
   // number of cells along each axis
@@ -93,36 +86,36 @@ TEST(Performance, cube)
   param::printParameters();
 
   hlog << "(unbounded) (Fluid) Initializing Palabos Fluid Field" << endl;
-  hemocell.initializeLattice(defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, (*cfg)["domain"]["fluidEnvelope"].read<int>()));
+  hemocell.initializeLattice(
+      defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, (*cfg)["domain"]["fluidEnvelope"].read<int>()));
 
-  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
-                = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
+  OnLatticeBoundaryCondition3D<T, DESCRIPTOR> * boundaryCondition = createLocalBoundaryCondition3D<T, DESCRIPTOR>();
 
   hemocell.lattice->toggleInternalStatistics(false);
 
   // extract sides of the rectangular domain for assignment of boundary
   // conditions along the outer planes of the domain
-  Box3D top = Box3D(0, nx-1, 0, ny-1, nz-1, nz-1);
-  Box3D bottom = Box3D(0, nx-1, 0, ny-1, 0, 0);
-  Box3D front = Box3D(0, nx-1, 0, 0, 0, nz-1);
-  Box3D back  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
+  Box3D top = Box3D(0, nx - 1, 0, ny - 1, nz - 1, nz - 1);
+  Box3D bottom = Box3D(0, nx - 1, 0, ny - 1, 0, 0);
+  Box3D front = Box3D(0, nx - 1, 0, 0, 0, nz - 1);
+  Box3D back = Box3D(0, nx - 1, ny - 1, ny - 1, 0, nz - 1);
 
   // all directions have periodicity
   hemocell.lattice->periodicity().toggleAll(false);
 
   // bounce back conditions along the front and back of the domain
-  defineDynamics(*hemocell.lattice, front, new BounceBack<T, DESCRIPTOR> );
-  defineDynamics(*hemocell.lattice, back, new BounceBack<T, DESCRIPTOR> );
+  defineDynamics(*hemocell.lattice, front, new BounceBack<T, DESCRIPTOR>);
+  defineDynamics(*hemocell.lattice, back, new BounceBack<T, DESCRIPTOR>);
 
   // assign velocity at top/bottom
-  (*boundaryCondition).setVelocityConditionOnBlockBoundaries ( *hemocell.lattice, top );
-  (*boundaryCondition).setVelocityConditionOnBlockBoundaries ( *hemocell.lattice, bottom );
+  (*boundaryCondition).setVelocityConditionOnBlockBoundaries(*hemocell.lattice, top);
+  (*boundaryCondition).setVelocityConditionOnBlockBoundaries(*hemocell.lattice, bottom);
 
   // define shear velocity along top/bottom planes (z axis)
   // shear velocity given by `height * shear rate / 2`
-  T vHalf = (nz-1)*param::shearrate_lbm*0.5;
-  setBoundaryVelocity(*hemocell.lattice, top, plb::Array<T,3>(-vHalf,0.0,0.0));
-  setBoundaryVelocity(*hemocell.lattice, bottom, plb::Array<T,3>(vHalf,0.0,0.0));
+  T vHalf = (nz - 1) * param::shearrate_lbm * 0.5;
+  setBoundaryVelocity(*hemocell.lattice, top, plb::Array<T, 3>(-vHalf, 0.0, 0.0));
+  setBoundaryVelocity(*hemocell.lattice, bottom, plb::Array<T, 3>(vHalf, 0.0, 0.0));
 
   hemocell.latticeEquilibrium(1., plb::Array<T, 3>(0.0, 0.0, 0.0));
 
@@ -131,9 +124,7 @@ TEST(Performance, cube)
 
   // assign force vector equal in x, y, z directions
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-                    DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-                    plb::Array<T, DESCRIPTOR<T>::d>(
-                        0.0, 0.0, 0.0));
+                    DESCRIPTOR<T>::ExternalField::forceBeginsAt, plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
 
   // initialise the lattic
   hemocell.lattice->initialize();
@@ -144,25 +135,22 @@ TEST(Performance, cube)
   hemocell.addCellType<RbcHighOrderModel>("tests/performance/weak_scaling/RBC", RBC_FROM_SPHERE);
 
   // define update increments
-  hemocell.setMaterialTimeScaleSeparation(
-      "tests/performance/weak_scaling/RBC", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  hemocell.setMaterialTimeScaleSeparation("tests/performance/weak_scaling/RBC",
+                                          (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
 
-  hemocell.setParticleVelocityUpdateTimeScaleSeparation(
-      (*cfg)["ibm"]["stepParticleEvery"].read<int>());
+  hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
   // Turn on periodicity in the `x`-direction: along shear
   hemocell.setSystemPeriodicity(0, true);
 
   // loading the cellfield
-  
+
   hemocell.loadParticles();
 
   if (hemocell.iter == 0) {
     hlog << "(unbounded) fresh start: warming up cell-free fluid domain for "
-         << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..."
-         << endl;
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>();
-         ++itrt) {
+         << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
       hemocell.lattice->collideAndStream();
     }
   }
@@ -171,39 +159,32 @@ TEST(Performance, cube)
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
 
   hlog << "(unbounded) Starting simulation..." << endl;
-  int ncells =
-      CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "tests/performance/weak_scaling/RBC");
-  hlog << " | RBC Volume ratio [x100%]: "
-       << ncells * 77.0 * 100 / (nx * ny * nz) << endl;
+  int ncells = CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "tests/performance/weak_scaling/RBC");
+  hlog << " | RBC Volume ratio [x100%]: " << ncells * 77.0 * 100 / (nx * ny * nz) << endl;
   hlog << "(main)   nCells (global) = " << ncells << endl;
 
   auto start = std::chrono::high_resolution_clock::now();
-  
+
   while (hemocell.iter < tmax) {
-    
     hemocell.iterate();
 
-    
+
     if (hemocell.iter % tmeas == 0) {
       // measure time and perform assertions
-      
+
       auto stop = std::chrono::high_resolution_clock::now();
       auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-  
+
       time_per_iter = (duration.count() / tmeas) * milli_to_secs;
 
       EXPECT_LE(time_per_iter, ref_time);
 
       start = stop;
-  
     }
-  
   }
 
   hemo::global.statistics.printStatistics();
   hemo::global.statistics.outputStatistics();
 
   hlog << "(main) Simulation finished :) " << endl;
-  
-  
 }

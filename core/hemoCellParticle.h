@@ -24,12 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SURFACE_PARTICLE_3D_H
 #define SURFACE_PARTICLE_3D_H
 namespace hemo {
-  class HemoCellParticle;
+class HemoCellParticle;
 }
 #include "helper/array.h"
 #include "core/cell.hh"
 
-#include <cstdint> 
+#include <cstdint>
 #include <utility>
 
 #ifndef PARTICLE_ID
@@ -40,48 +40,48 @@ namespace hemo {
 
 class HemoCellParticle {
 public:
-
   //VARIABLES
   //Store variables in struct for fast serialization
   struct serializeValues_t {
-    hemo::Array<T,3> v;
-    hemo::Array<T,3> position;
-    hemo::Array<T,3> force;
-    hemo::Array<T,3> force_repulsion;
+    hemo::Array<T, 3> v;
+    hemo::Array<T, 3> position;
+    hemo::Array<T, 3> force;
+    hemo::Array<T, 3> force_repulsion;
 #if HEMOCELL_MATERIAL_INTEGRATION == 2
-    hemo::Array<T,3> vPrevious;
+    hemo::Array<T, 3> vPrevious;
 #endif
     plint cellId;
-    
+
     uint16_t vertexId;
     unsigned int restime;
-    
+
     unsigned char celltype;
 
 #ifdef SOLIDIFY_MECHANICS
     bool solidify;
 #endif
   };
-  
+
   serializeValues_t sv;
 
-  hemo::Array<T,3> force_total;
+  hemo::Array<T, 3> force_total;
   plint tag;
-  #ifdef INTERIOR_VISCOSITY
-  hemo::Array<T,3> normalDirection;
+#ifdef INTERIOR_VISCOSITY
+  hemo::Array<T, 3> normalDirection;
   //Is vector, optimize with hemo::Array possible
   std::vector<hemo::Array<plint, 3>> kernelCoordinates;
-  #endif
+#endif
 
-  std::vector<plb::Cell<T,DESCRIPTOR>*> kernelLocations;
-  std::vector<T>         kernelWeights;
+  std::vector<plb::Cell<T, DESCRIPTOR> *> kernelLocations;
+  std::vector<T> kernelWeights;
 
-  hemo::Array<T,3> *force_volume = &sv.force;
-  hemo::Array<T,3> *force_bending = &sv.force;
-  hemo::Array<T,3> *force_link = &sv.force;
-  hemo::Array<T,3> *force_area = &sv.force; //Default to pointing to force, if output is desired, it can be stored seperately
-  hemo::Array<T,3> *force_visc = &sv.force;
-  hemo::Array<T,3> *force_inner_link = &sv.force;
+  hemo::Array<T, 3> * force_volume = &sv.force;
+  hemo::Array<T, 3> * force_bending = &sv.force;
+  hemo::Array<T, 3> * force_link = &sv.force;
+  hemo::Array<T, 3> * force_area =
+      &sv.force; //Default to pointing to force, if output is desired, it can be stored seperately
+  hemo::Array<T, 3> * force_visc = &sv.force;
+  hemo::Array<T, 3> * force_inner_link = &sv.force;
 
 
 private:
@@ -105,130 +105,127 @@ private:
 
 public:
   ~HemoCellParticle(){};
-  HemoCellParticle(const HemoCellParticle & copy) :
-    sv(copy.sv), force_total(copy.force_total), tag(copy.tag),
+  HemoCellParticle(const HemoCellParticle & copy)
+      : sv(copy.sv), force_total(copy.force_total), tag(copy.tag),
 #ifdef INTERIOR_VISCOSITY
-    normalDirection(copy.normalDirection), kernelCoordinates(copy.kernelCoordinates),
+        normalDirection(copy.normalDirection), kernelCoordinates(copy.kernelCoordinates),
 #endif
-    kernelLocations(copy.kernelLocations), kernelWeights(copy.kernelWeights)
-  {
+        kernelLocations(copy.kernelLocations), kernelWeights(copy.kernelWeights) {
     adoptForcePointers(copy);
   }
 
   /// Move: steals the kernel vectors instead of copying them (used by
   /// std::vector reallocation and swap-removal of particles).
-  HemoCellParticle(HemoCellParticle && other) noexcept :
-    sv(other.sv), force_total(other.force_total), tag(other.tag),
+  HemoCellParticle(HemoCellParticle && other) noexcept
+      : sv(other.sv), force_total(other.force_total), tag(other.tag),
 #ifdef INTERIOR_VISCOSITY
-    normalDirection(other.normalDirection), kernelCoordinates(std::move(other.kernelCoordinates)),
+        normalDirection(other.normalDirection), kernelCoordinates(std::move(other.kernelCoordinates)),
 #endif
-    kernelLocations(std::move(other.kernelLocations)), kernelWeights(std::move(other.kernelWeights))
-  {
+        kernelLocations(std::move(other.kernelLocations)), kernelWeights(std::move(other.kernelWeights)) {
     adoptForcePointers(other);
   }
-  
-  HemoCellParticle (hemo::Array<T,3> position_, plint cellId_, plint vertexId_,pluint celltype_) {
-    sv.v = {0.,0.,0.};
+
+  HemoCellParticle(hemo::Array<T, 3> position_, plint cellId_, plint vertexId_, pluint celltype_) {
+    sv.v = {0., 0., 0.};
     sv.position = position_;
-    sv.force = {0.,0.,0.};
-    sv.force_repulsion = {0.,0.,0.};
+    sv.force = {0., 0., 0.};
+    sv.force_repulsion = {0., 0., 0.};
     sv.cellId = cellId_;
     sv.vertexId = vertexId_;
-    sv.celltype=celltype_;
-    sv.restime= 0;
+    sv.celltype = celltype_;
+    sv.restime = 0;
 #if HEMOCELL_MATERIAL_INTEGRATION == 2
-    sv.vPrevious = {0.,0.,0.};
+    sv.vPrevious = {0., 0., 0.};
 #endif
 #ifdef SOLIDIFY_MECHANICS
     sv.solidify = false;
 #endif
-    force_total = {0.,0.,0.};
+    force_total = {0., 0., 0.};
 #ifdef INTERIOR_VISCOSITY
-    normalDirection = {0.,0.,0.};
+    normalDirection = {0., 0., 0.};
 #endif
     tag = -1;
-    
+
     if (vertexId_ > UINT16_MAX) {
-      std::cerr << "(HemoCellParticle) Trying to add more vertexes to a single cell than UINT16_MAX, consider converting vertexid to a long int" << std::endl;
+      std::cerr
+          << "(HemoCellParticle) Trying to add more vertexes to a single cell than UINT16_MAX, consider converting vertexid to a long int"
+          << std::endl;
       exit(1);
     }
   }
-  
-  HemoCellParticle (const serializeValues_t & sv_) {
+
+  HemoCellParticle(const serializeValues_t & sv_) {
     sv = sv_;
-    force_total = {0.,0.,0.};
+    force_total = {0., 0., 0.};
     tag = -1;
   }
 
-  HemoCellParticle & operator =(const HemoCellParticle & copy) {
+  HemoCellParticle & operator=(const HemoCellParticle & copy) {
     if (this == &copy) { return *this; }
     sv = copy.sv;
     force_total = copy.force_total;
     tag = copy.tag;
     kernelLocations = copy.kernelLocations;
     kernelWeights = copy.kernelWeights;
-    #ifdef INTERIOR_VISCOSITY
+#ifdef INTERIOR_VISCOSITY
     normalDirection = copy.normalDirection;
     kernelCoordinates = copy.kernelCoordinates;
-    #endif
+#endif
     adoptForcePointers(copy);
     return *this;
   }
 
-  HemoCellParticle & operator =(HemoCellParticle && other) noexcept {
+  HemoCellParticle & operator=(HemoCellParticle && other) noexcept {
     if (this == &other) { return *this; }
     sv = other.sv;
     force_total = other.force_total;
     tag = other.tag;
     kernelLocations = std::move(other.kernelLocations);
     kernelWeights = std::move(other.kernelWeights);
-    #ifdef INTERIOR_VISCOSITY
+#ifdef INTERIOR_VISCOSITY
     normalDirection = other.normalDirection;
     kernelCoordinates = std::move(other.kernelCoordinates);
-    #endif
+#endif
     adoptForcePointers(other);
     return *this;
   }
-  
-  HemoCellParticle* clone() const {
-    HemoCellParticle* sparticle = new HemoCellParticle(*this);
+
+  HemoCellParticle * clone() const {
+    HemoCellParticle * sparticle = new HemoCellParticle(*this);
     return sparticle;
   }
 
-    inline void repoint_force_vectors() {
-      force_volume = &sv.force;
-      force_bending = &sv.force;
-      force_link = &sv.force;
-      force_area = &sv.force;
-      force_visc = &sv.force;
-      force_inner_link = &sv.force;
-    }
+  inline void repoint_force_vectors() {
+    force_volume = &sv.force;
+    force_bending = &sv.force;
+    force_link = &sv.force;
+    force_area = &sv.force;
+    force_visc = &sv.force;
+    force_inner_link = &sv.force;
+  }
 
-    /// Implements Euler integration with velocity alone.
-    void advance() {
-
-        /* scheme:
+  /// Implements Euler integration with velocity alone.
+  void advance() {
+/* scheme:
          *  1: Euler 
          *  2: Adams-Bashforth
          */
-        #if HEMOCELL_MATERIAL_INTEGRATION == 1
-              sv.position += sv.v;
+#if HEMOCELL_MATERIAL_INTEGRATION == 1
+    sv.position += sv.v;
 
-        #elif HEMOCELL_MATERIAL_INTEGRATION == 2
-              // vPrevious starts at zero, so the first step uses 1.5*v.
-              const hemo::Array<T,3> dxyz = (1.5*sv.v - 0.5*sv.vPrevious);
-              sv.position += dxyz;
-              sv.vPrevious = sv.v;  // Store velocity
-        #endif
-        //v = {0.0,0.0,0.0};
-    }
-    
-    inline int getId() const {return PARTICLE_ID;}
-    inline plint getTag() { return tag; } //TODO remove for direct access
-    inline void setTag(plint tag_) { tag = tag_; }
+#elif HEMOCELL_MATERIAL_INTEGRATION == 2
+    // vPrevious starts at zero, so the first step uses 1.5*v.
+    const hemo::Array<T, 3> dxyz = (1.5 * sv.v - 0.5 * sv.vPrevious);
+    sv.position += dxyz;
+    sv.vPrevious = sv.v; // Store velocity
+#endif
+    //v = {0.0,0.0,0.0};
+  }
 
+  inline int getId() const { return PARTICLE_ID; }
+  inline plint getTag() { return tag; } //TODO remove for direct access
+  inline void setTag(plint tag_) { tag = tag_; }
 };
 
 }
-#endif  // SURFACE_PARTICLE_3D_H
-
+#endif // SURFACE_PARTICLE_3D_H

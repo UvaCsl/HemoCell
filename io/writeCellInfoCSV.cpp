@@ -30,24 +30,24 @@ namespace hemo {
 void writeCellInfo_CSV(HemoCell & hemocell) {
   global.statistics.getCurrent()["writeCellCSVInfo"].start();
 
-  map<int,CellInformation> info_per_cell;
-  CellInformationFunctionals::calculateCellInformation(&hemocell,info_per_cell);
-  for (auto it = info_per_cell.cbegin(); it != info_per_cell.cend() ;) 
-  {
+  map<int, CellInformation> info_per_cell;
+  CellInformationFunctionals::calculateCellInformation(&hemocell, info_per_cell);
+  for (auto it = info_per_cell.cbegin(); it != info_per_cell.cend();) {
     if (!it->second.centerLocal) {
       it = info_per_cell.erase(it);
     } else {
       ++it;
     }
   }
-  
+
   HemoCellGatheringFunctional<CellInformation>::gather(info_per_cell);
- 
+
   if (!global::mpi().getRank()) {
     vector<std::string> fileNames = vector<std::string>(hemocell.cellfields->size());
     vector<ofstream> csvFiles = vector<ofstream>(fileNames.size());
-    for (unsigned int i = 0 ; i < fileNames.size(); i++ ) {
-      fileNames[i] = global::directories().getOutputDir() + "/csv/" +  (*hemocell.cellfields)[i]->name + "." + zeroPadNumber(hemocell.iter) + ".csv";
+    for (unsigned int i = 0; i < fileNames.size(); i++) {
+      fileNames[i] = global::directories().getOutputDir() + "/csv/" + (*hemocell.cellfields)[i]->name + "." +
+                     zeroPadNumber(hemocell.iter) + ".csv";
       csvFiles[i].open(fileNames[i], ofstream::trunc);
       csvFiles[i] << "X,Y,Z,area,volume,atomic_block,cellId,baseCellId,velocity_x,velocity_y,velocity_z" << endl;
     }
@@ -58,21 +58,20 @@ void writeCellInfo_CSV(HemoCell & hemocell) {
 
       if (hemocell.outputInSiUnits) {
         cinfo.position *= param::dx;
-        cinfo.area *= param::dx*param::dx;
-        cinfo.velocity *= param::dx/param::dt;
-        cinfo.volume *= param::dx*param::dx*param::dx;
+        cinfo.area *= param::dx * param::dx;
+        cinfo.velocity *= param::dx / param::dt;
+        cinfo.volume *= param::dx * param::dx * param::dx;
       }
 
       if (cinfo.centerLocal) {
         csvFiles[cinfo.cellType] << cinfo.position[0] << "," << cinfo.position[1] << "," << cinfo.position[2] << ",";
-        csvFiles[cinfo.cellType] << cinfo.area << "," << cinfo.volume << "," << cinfo.blockId << "," << cid  << "," << cinfo.base_cell_id << ",";
+        csvFiles[cinfo.cellType] << cinfo.area << "," << cinfo.volume << "," << cinfo.blockId << "," << cid << ","
+                                 << cinfo.base_cell_id << ",";
         csvFiles[cinfo.cellType] << cinfo.velocity[0] << "," << cinfo.velocity[1] << "," << cinfo.velocity[2] << endl;
       }
     }
 
-    for (ofstream & file : csvFiles) {
-      file.close();
-    }
+    for (ofstream & file : csvFiles) { file.close(); }
   }
   global.statistics.getCurrent().stop();
 }

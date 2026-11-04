@@ -32,85 +32,78 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <hdf5_hl.h>
 
 namespace hemo {
-  
-void outputHDF5(hsize_t* dim, hsize_t* chunk, hid_t& file_id, string& name, float* output) {
-    //We can calulate nvalues through the dims
-    chunk[3] = dim[3];
-    //unsigned int nvalues = dim[0]*dim[1]*dim[2]*dim[3];
 
-    hid_t sid = H5Screate_simple(4,dim,NULL);
-      hid_t plist_id = H5Pcreate (H5P_DATASET_CREATE);
-        H5Pset_chunk(plist_id, 4, chunk); 
-        H5Pset_deflate(plist_id, 7);
-        hid_t did = H5Dcreate2(file_id,name.c_str(),H5T_NATIVE_FLOAT,sid,H5P_DEFAULT,plist_id,H5P_DEFAULT);
-        H5Dwrite(did,H5T_NATIVE_FLOAT,H5S_ALL,H5S_ALL,H5P_DEFAULT,output);
-      H5Dclose(did);
-    H5Sclose(sid);
+void outputHDF5(hsize_t * dim, hsize_t * chunk, hid_t & file_id, string & name, float * output) {
+  //We can calulate nvalues through the dims
+  chunk[3] = dim[3];
+  //unsigned int nvalues = dim[0]*dim[1]*dim[2]*dim[3];
+
+  hid_t sid = H5Screate_simple(4, dim, NULL);
+  hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
+  H5Pset_chunk(plist_id, 4, chunk);
+  H5Pset_deflate(plist_id, 7);
+  hid_t did = H5Dcreate2(file_id, name.c_str(), H5T_NATIVE_FLOAT, sid, H5P_DEFAULT, plist_id, H5P_DEFAULT);
+  H5Dwrite(did, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, output);
+  H5Dclose(did);
+  H5Sclose(sid);
 }
 
-template<template<class U> class DD>
-class WriteFluidField : public BoxProcessingFunctional3D
-{
+template <template <class U> class DD>
+class WriteFluidField : public BoxProcessingFunctional3D {
 public:
- WriteFluidField(HemoCellFields& cellfields_, MultiBlock3D & fluid_, plint iter_, string identifier_, T dx_, T dt_, vector<int> & outputVariables_) :
-    cellfields(cellfields_), fluid(fluid_), iter(iter_), identifier(identifier_), dx(dx_), dt(dt_),outputVariables(outputVariables_) { }
- 
- ~WriteFluidField(){};
+  WriteFluidField(HemoCellFields & cellfields_, MultiBlock3D & fluid_, plint iter_, string identifier_, T dx_, T dt_,
+                  vector<int> & outputVariables_)
+      : cellfields(cellfields_), fluid(fluid_), iter(iter_), identifier(identifier_), dx(dx_), dt(dt_),
+        outputVariables(outputVariables_) {}
 
-  BlockDomain::DomainT appliesTo () const {
-    return BlockDomain::bulk;
+  ~WriteFluidField(){};
+
+  BlockDomain::DomainT appliesTo() const { return BlockDomain::bulk; }
+
+  WriteFluidField * clone() const { return new WriteFluidField(*this); }
+
+  void getTypeOfModification(vector<modif::ModifT> & modified) const {
+    for (pluint i = 0; i < modified.size(); i++) { modified[i] = modif::nothing; }
   }
 
-  WriteFluidField* clone() const {
-    return new WriteFluidField(*this);
-  }
-
-  void getTypeOfModification ( vector<modif::ModifT>& modified ) const {
-    for (pluint i = 0; i < modified.size(); i++) {
-      modified[i] = modif::nothing;
-    }
-  }
-
-  void processGenericBlocks( Box3D domain, vector<AtomicBlock3D*> blocks ) {
-
+  void processGenericBlocks(Box3D domain, vector<AtomicBlock3D *> blocks) {
     int id = global::mpi().getRank();
-    ablock = dynamic_cast<BlockLattice3D<T,DD>*>(blocks[0]);
-    particlefield = dynamic_cast<HemoCellParticleField*>(blocks[1]);
-    blockid = particlefield->atomicBlockId; //Nasty trick to prevent us from having to overload the fluid field ( palabos domain)
+    ablock = dynamic_cast<BlockLattice3D<T, DD> *>(blocks[0]);
+    particlefield = dynamic_cast<HemoCellParticleField *>(blocks[1]);
+    blockid = particlefield
+                  ->atomicBlockId; //Nasty trick to prevent us from having to overload the fluid field ( palabos domain)
 
     // Output functions access the domain and size through these pointers; they
     // point to members, not to this function's locals, so they stay valid.
     this->odomainStorage = domain;
     this->odomain = &this->odomainStorage;
-    if (outputVariables.size() == 0 ) {
+    if (outputVariables.size() == 0) {
       return; //No output needed? ok
     }
-    
-    if (cellfields.hemocell.partOfpreInlet) {
-      identifier += "_PRE";
-    }
-    std::string fileName = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) + '/' + identifier + "."  + zeroPadNumber(iter) + ".p." + to_string(blockid) + ".h5";
+
+    if (cellfields.hemocell.partOfpreInlet) { identifier += "_PRE"; }
+    std::string fileName = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) + '/' + identifier +
+                           "." + zeroPadNumber(iter) + ".p." + to_string(blockid) + ".h5";
     hid_t file_id;
     file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-          H5LTset_attribute_double (file_id, "/", "dx", &dx, 1);
-          H5LTset_attribute_double (file_id, "/", "dt", &dt, 1);
-          long int iterHDF5=iter;
-          H5LTset_attribute_long (file_id, "/", "iteration", &iterHDF5, 1);
-          H5LTset_attribute_int (file_id, "/", "processorId", &id, 1);
+    H5LTset_attribute_double(file_id, "/", "dx", &dx, 1);
+    H5LTset_attribute_double(file_id, "/", "dt", &dt, 1);
+    long int iterHDF5 = iter;
+    H5LTset_attribute_long(file_id, "/", "iteration", &iterHDF5, 1);
+    H5LTset_attribute_int(file_id, "/", "processorId", &id, 1);
 
-    hsize_t Nx = domain.x1 - domain.x0+1 +2;//+1 for = and <=, +2 for an envelope of 1 on each side for paraview
-    hsize_t Ny = domain.y1 - domain.y0+1 +2;
-    hsize_t Nz = domain.z1 - domain.z0+1 +2;
-    hsize_t nCells = Nx*Ny*Nz;
+    hsize_t Nx = domain.x1 - domain.x0 + 1 + 2; //+1 for = and <=, +2 for an envelope of 1 on each side for paraview
+    hsize_t Ny = domain.y1 - domain.y0 + 1 + 2;
+    hsize_t Nz = domain.z1 - domain.z0 + 1 + 2;
+    hsize_t nCells = Nx * Ny * Nz;
     this->nCellsStorage = nCells;
     this->nCells = &this->nCellsStorage;
-    int ncells = Nx*Ny*Nz;
+    int ncells = Nx * Ny * Nz;
     Dot3D rp_temp = blocks[0]->getLocation();
-    int subdomainSize[]  = {int(Nz), int(Ny), int(Nx)}; //Reverse for paraview
-    float dxdydz[3] = {1.,1.,1.};
-    float relativePosition[3] = {float(rp_temp.z+domain.z0-1.5),
-                                 float(rp_temp.y+domain.y0-1.5),
-                                 float(rp_temp.x+domain.x0-1.5)}; //Reverse for paraview
+    int subdomainSize[] = {int(Nz), int(Ny), int(Nx)}; //Reverse for paraview
+    float dxdydz[3] = {1., 1., 1.};
+    float relativePosition[3] = {float(rp_temp.z + domain.z0 - 1.5), float(rp_temp.y + domain.y0 - 1.5),
+                                 float(rp_temp.x + domain.x0 - 1.5)}; //Reverse for paraview
 
     if (cellfields.hemocell.outputInSiUnits) {
       relativePosition[0] *= param::dx;
@@ -121,10 +114,10 @@ public:
       dxdydz[2] = param::dx;
     }
 
-    H5LTset_attribute_int (file_id, "/", "numberOfCells", &ncells, 1);
-    H5LTset_attribute_int (file_id, "/", "subdomainSize", subdomainSize, 3);
+    H5LTset_attribute_int(file_id, "/", "numberOfCells", &ncells, 1);
+    H5LTset_attribute_int(file_id, "/", "subdomainSize", subdomainSize, 3);
     H5LTset_attribute_float(file_id, "/", "relativePosition", relativePosition, 3);
-    H5LTset_attribute_float(file_id,"/","dxdydz",dxdydz,3);
+    H5LTset_attribute_float(file_id, "/", "dxdydz", dxdydz, 3);
 
     //Also compute chunking here
     hsize_t chunk[4];
@@ -137,10 +130,10 @@ public:
     for (int outputVariable : outputVariables) {
       //These variables should be set by the functions:
       float * output = 0;
-      hsize_t dim[4] = {Nz,Ny,Nx,0};
+      hsize_t dim[4] = {Nz, Ny, Nx, 0};
       string name;
 
-      switch(outputVariable) {
+      switch (outputVariable) {
         case OUTPUT_VELOCITY:
           output = outputVelocity();
           name = "Velocity";
@@ -160,28 +153,28 @@ public:
           output = outputBoundary();
           name = "Boundary";
           dim[3] = 1;
-        break;
+          break;
         case OUTPUT_BINDING_SITES:
           output = outputBindingSites();
           name = "BindingSites";
           dim[3] = 1;
-        break;
+          break;
         case OUTPUT_INTERIOR_POINTS:
           output = outputInteriorPoints();
           name = "InteriorPoints";
           dim[3] = 1;
-        break;
+          break;
         case OUTPUT_OMEGA:
           output = outputOmega();
           name = "Omega";
           dim[3] = 1;
           break;
         case OUTPUT_CELL_DENSITY:
-          for (unsigned int i = 0 ; i < cellfields.size() ; i++) {
+          for (unsigned int i = 0; i < cellfields.size(); i++) {
             output = outputCellDensity(cellfields[i]->name);
             name = "CellDensity_" + cellfields[i]->name;
             dim[3] = 1;
-            outputHDF5(dim,chunk,file_id,name,output);
+            outputHDF5(dim, chunk, file_id, name, output);
             delete[] output;
           }
           continue;
@@ -200,103 +193,91 @@ public:
           name = "StrainRate";
           dim[3] = 6;
           break;
-              
+
         default:
-            
-        continue;
+
+          continue;
       }
 
 
-      outputHDF5(dim,chunk,file_id,name,output);
+      outputHDF5(dim, chunk, file_id, name, output);
       delete[] output;
-
     }
     H5Fclose(file_id);
   }
 
 private:
-
   float * outputVelocity() {
-    float * output = new float [(*nCells)*3];
+    float * output = new float[(*nCells) * 3];
     unsigned int n = 0;
-    plb::Array<T,3> vel;
-    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
-      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
-        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
-
-          ablock->get(iX,iY,iZ).computeVelocity(vel);
+    plb::Array<T, 3> vel;
+    for (plint iZ = odomain->z0 - 1; iZ <= odomain->z1 + 1; ++iZ) {
+      for (plint iY = odomain->y0 - 1; iY <= odomain->y1 + 1; ++iY) {
+        for (plint iX = odomain->x0 - 1; iX <= odomain->x1 + 1; ++iX) {
+          ablock->get(iX, iY, iZ).computeVelocity(vel);
           output[n] = vel[0];
-          output[n+1] = vel[1];
-          output[n+2] = vel[2];
+          output[n + 1] = vel[1];
+          output[n + 2] = vel[2];
           n += 3;
         }
       }
     }
 
     if (cellfields.hemocell.outputInSiUnits) {
-      for (unsigned int i = 0 ; i < (*nCells)*3 ; i++) {
-        output[i] = output[i]*param::dx/param::dt;
-      }
+      for (unsigned int i = 0; i < (*nCells) * 3; i++) { output[i] = output[i] * param::dx / param::dt; }
     }
 
     return output;
   }
 
   float * outputForce() {
-    float * output = new float [(*nCells)*3];
+    float * output = new float[(*nCells) * 3];
     unsigned int n = 0;
-    hemo::Array<T,3> vel;
-    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
-      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
-        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
-
-          output[n] = ablock->get(iX,iY,iZ).external.data[0];
-          output[n+1] = ablock->get(iX,iY,iZ).external.data[1];
-          output[n+2] = ablock->get(iX,iY,iZ).external.data[2];
+    hemo::Array<T, 3> vel;
+    for (plint iZ = odomain->z0 - 1; iZ <= odomain->z1 + 1; ++iZ) {
+      for (plint iY = odomain->y0 - 1; iY <= odomain->y1 + 1; ++iY) {
+        for (plint iX = odomain->x0 - 1; iX <= odomain->x1 + 1; ++iX) {
+          output[n] = ablock->get(iX, iY, iZ).external.data[0];
+          output[n + 1] = ablock->get(iX, iY, iZ).external.data[1];
+          output[n + 2] = ablock->get(iX, iY, iZ).external.data[2];
           n += 3;
         }
       }
     }
 
     if (cellfields.hemocell.outputInSiUnits) {
-      for (unsigned int i = 0 ; i < (*nCells)*3 ; i++) {
-        output[i] = output[i]*param::df;
-      }
+      for (unsigned int i = 0; i < (*nCells) * 3; i++) { output[i] = output[i] * param::df; }
     }
 
     return output;
   }
 
   float * outputDensity() {
-    float * output = new float [(*nCells)];
+    float * output = new float[(*nCells)];
     unsigned int n = 0;
-    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
-      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
-        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
-
-          output[n] = ablock->get(iX,iY,iZ).computeDensity();
+    for (plint iZ = odomain->z0 - 1; iZ <= odomain->z1 + 1; ++iZ) {
+      for (plint iY = odomain->y0 - 1; iY <= odomain->y1 + 1; ++iY) {
+        for (plint iX = odomain->x0 - 1; iX <= odomain->x1 + 1; ++iX) {
+          output[n] = ablock->get(iX, iY, iZ).computeDensity();
           n++;
         }
       }
     }
 
     if (cellfields.hemocell.outputInSiUnits) {
-      for (unsigned int i = 0 ; i < (*nCells) ; i++) {
-        output[i] = output[i]*(param::df/(param::dx*param::dx));
-      }
+      for (unsigned int i = 0; i < (*nCells); i++) { output[i] = output[i] * (param::df / (param::dx * param::dx)); }
     }
 
     return output;
   }
-  
-  float * outputBoundary() {
-    float * output = new float [(*nCells)];
-    unsigned int n = 0;
-    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
-      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
-        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
 
-          if (ablock->get(iX,iY,iZ).getDynamics().isBoundary()) {
+  float * outputBoundary() {
+    float * output = new float[(*nCells)];
+    unsigned int n = 0;
+    for (plint iZ = odomain->z0 - 1; iZ <= odomain->z1 + 1; ++iZ) {
+      for (plint iY = odomain->y0 - 1; iY <= odomain->y1 + 1; ++iY) {
+        for (plint iX = odomain->x0 - 1; iX <= odomain->x1 + 1; ++iX) {
+          if (ablock->get(iX, iY, iZ).getDynamics().isBoundary()) {
             output[n] = 1;
           } else {
             output[n] = 0;
@@ -307,22 +288,20 @@ private:
     }
     return output;
   }
-  
+
   float * outputBindingSites() {
-    float * output = new float [(*nCells)];
+    float * output = new float[(*nCells)];
     if (!particlefield->bindingField) {
-      pcout << "(FluidHdf5) (Error) OUTPUT_BINDING_SITES requested, but binding sites not used, outputting a zero field" << endl;
-      for (hsize_t i = 0 ; i < *nCells ; i++) {
-        output[i] = 0;
-      }
+      pcout << "(FluidHdf5) (Error) OUTPUT_BINDING_SITES requested, but binding sites not used, outputting a zero field"
+            << endl;
+      for (hsize_t i = 0; i < *nCells; i++) { output[i] = 0; }
       return output;
     }
     unsigned int n = 0;
-    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
-      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
-        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
-
-          if (particlefield->bindingField->get(iX,iY,iZ)) {
+    for (plint iZ = odomain->z0 - 1; iZ <= odomain->z1 + 1; ++iZ) {
+      for (plint iY = odomain->y0 - 1; iY <= odomain->y1 + 1; ++iY) {
+        for (plint iX = odomain->x0 - 1; iX <= odomain->x1 + 1; ++iX) {
+          if (particlefield->bindingField->get(iX, iY, iZ)) {
             output[n] = 1;
           } else {
             output[n] = 0;
@@ -335,233 +314,218 @@ private:
   }
 
   float * outputInteriorPoints() {
-    float * output = new float [(*nCells)];
+    float * output = new float[(*nCells)];
     if (!particlefield->interiorViscosityField) {
-      pcout << "(FluidHdf5) (Error) OUTPUT_INTERIOR_POINTS requested, but interior viscosity not used, outputting a zero field" << endl;
-      for (hsize_t i = 0 ; i < *nCells ; i++) {
-        output[i] = 0;
-      }
+      pcout
+          << "(FluidHdf5) (Error) OUTPUT_INTERIOR_POINTS requested, but interior viscosity not used, outputting a zero field"
+          << endl;
+      for (hsize_t i = 0; i < *nCells; i++) { output[i] = 0; }
       return output;
     }
     unsigned int n = 0;
-    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
-      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
-        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
-          output[n] = (particlefield->interiorViscosityField->get(iX,iY,iZ));
+    for (plint iZ = odomain->z0 - 1; iZ <= odomain->z1 + 1; ++iZ) {
+      for (plint iY = odomain->y0 - 1; iY <= odomain->y1 + 1; ++iY) {
+        for (plint iX = odomain->x0 - 1; iX <= odomain->x1 + 1; ++iX) {
+          output[n] = (particlefield->interiorViscosityField->get(iX, iY, iZ));
           n++;
         }
       }
     }
     return output;
   }
-   
-  float * outputOmega() {
-    float * output = new float [(*nCells)];
-    unsigned int n = 0;
-    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
-      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
-        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
 
-          output[n] = ablock->get(iX,iY,iZ).getDynamics().getOmega();
+  float * outputOmega() {
+    float * output = new float[(*nCells)];
+    unsigned int n = 0;
+    for (plint iZ = odomain->z0 - 1; iZ <= odomain->z1 + 1; ++iZ) {
+      for (plint iY = odomain->y0 - 1; iY <= odomain->y1 + 1; ++iY) {
+        for (plint iX = odomain->x0 - 1; iX <= odomain->x1 + 1; ++iX) {
+          output[n] = ablock->get(iX, iY, iZ).getDynamics().getOmega();
           n++;
         }
       }
     }
 
     if (cellfields.hemocell.outputInSiUnits) {
-      for (unsigned int i = 0 ; i < (*nCells) ; i++) {
-        output[i] = output[i]*(param::df/(param::dx*param::dx));
-      }
+      for (unsigned int i = 0; i < (*nCells); i++) { output[i] = output[i] * (param::df / (param::dx * param::dx)); }
     }
 
     return output;
   }
-    
+
   float * outputCellDensity(string name) {
-    float * output = new float [(*nCells)];
-    memset(output, 0, sizeof(float)*(*nCells));
+    float * output = new float[(*nCells)];
+    memset(output, 0, sizeof(float) * (*nCells));
 
-    vector<HemoCellParticle*> found;
-    particlefield->findParticles(particlefield->localDomain,found,cellfields[name]->ctype);
+    vector<HemoCellParticle *> found;
+    particlefield->findParticles(particlefield->localDomain, found, cellfields[name]->ctype);
 
-    int Ystride = ((odomain->x1-odomain->x0)+3);
-    int Zstride = Ystride*((odomain->y1-odomain->y0)+3);
+    int Ystride = ((odomain->x1 - odomain->x0) + 3);
+    int Zstride = Ystride * ((odomain->y1 - odomain->y0) + 3);
 
     for (HemoCellParticle * particle : found) {
-      plint iX,iY,iZ;
+      plint iX, iY, iZ;
       //Coordinates are relative
-      const Dot3D tmpDot = ablock->getLocation(); 
-      iX = plint((particle->sv.position[0]-tmpDot.x)+0.5);
-      iY = plint((particle->sv.position[1]-tmpDot.y)+0.5);
-      iZ = plint((particle->sv.position[2]-tmpDot.z)+0.5);
+      const Dot3D tmpDot = ablock->getLocation();
+      iX = plint((particle->sv.position[0] - tmpDot.x) + 0.5);
+      iY = plint((particle->sv.position[1] - tmpDot.y) + 0.5);
+      iZ = plint((particle->sv.position[2] - tmpDot.z) + 0.5);
 
-      output[(iX)+(iY)*Ystride+(iZ)*Zstride] += 1;
+      output[(iX) + (iY)*Ystride + (iZ)*Zstride] += 1;
     }
 
     if (cellfields.hemocell.outputInSiUnits) {
-      for (unsigned int i = 0 ; i < (*nCells) ; i++) {
-        output[i] *= cellfields[name]->volumeFractionOfLspPerNode;
-      }
+      for (unsigned int i = 0; i < (*nCells); i++) { output[i] *= cellfields[name]->volumeFractionOfLspPerNode; }
     }
 
     return output;
   }
 
   float * outputShearStress() {
-    float * output = new float [(*nCells)*6];
+    float * output = new float[(*nCells) * 6];
     unsigned int n = 0;
-    plb::Array<T,6> stress;
+    plb::Array<T, 6> stress;
 
-    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
-      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
-        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
-
-          ablock->get(iX,iY,iZ).computeShearStress(stress);
+    for (plint iZ = odomain->z0 - 1; iZ <= odomain->z1 + 1; ++iZ) {
+      for (plint iY = odomain->y0 - 1; iY <= odomain->y1 + 1; ++iY) {
+        for (plint iX = odomain->x0 - 1; iX <= odomain->x1 + 1; ++iX) {
+          ablock->get(iX, iY, iZ).computeShearStress(stress);
           //Array<T,6> stress_vec = stress.get(iX,iY,iZ);
           output[n] = stress[0];
-          output[n+1] = stress[1];
-          output[n+2] = stress[2];
-          output[n+3] = stress[3];
-          output[n+4] = stress[4];
-          output[n+5] = stress[5];
+          output[n + 1] = stress[1];
+          output[n + 2] = stress[2];
+          output[n + 3] = stress[3];
+          output[n + 4] = stress[4];
+          output[n + 5] = stress[5];
           n += 6;
         }
       }
     }
-        
+
     if (cellfields.hemocell.outputInSiUnits) {
-      for (unsigned int i = 0 ; i < (*nCells)*6 ; i++) {
-        output[i] = output[i]*(param::df/(param::dx*param::dx));
+      for (unsigned int i = 0; i < (*nCells) * 6; i++) {
+        output[i] = output[i] * (param::df / (param::dx * param::dx));
       }
     }
 
     return output;
   }
-     
+
   float * outputShearRate() {
-    float * output = new float [(*nCells)*9];
+    float * output = new float[(*nCells) * 9];
     unsigned int n = 0;
-    plb::Array<T,9> shearrate;
-    plb::Array<T,3> velp1;
-    plb::Array<T,3> veln1;
-    plb::Array<T,3> velp2;
-    plb::Array<T,3> veln2;
-    plb::Array<T,3> velp3;
-    plb::Array<T,3> veln3;
+    plb::Array<T, 9> shearrate;
+    plb::Array<T, 3> velp1;
+    plb::Array<T, 3> veln1;
+    plb::Array<T, 3> velp2;
+    plb::Array<T, 3> veln2;
+    plb::Array<T, 3> velp3;
+    plb::Array<T, 3> veln3;
 
-    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
-      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
-        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
+    for (plint iZ = odomain->z0 - 1; iZ <= odomain->z1 + 1; ++iZ) {
+      for (plint iY = odomain->y0 - 1; iY <= odomain->y1 + 1; ++iY) {
+        for (plint iX = odomain->x0 - 1; iX <= odomain->x1 + 1; ++iX) {
+          // velocity gradients in y-direction
+          ablock->get(iX + 1, iY, iZ).computeVelocity(velp1); //vel at cell+1
+          ablock->get(iX - 1, iY, iZ).computeVelocity(veln1); //vel at cell+1
 
           // velocity gradients in y-direction
-          ablock->get(iX+1,iY,iZ).computeVelocity(velp1); //vel at cell+1
-          ablock->get(iX-1,iY,iZ).computeVelocity(veln1); //vel at cell+1
-
-          // velocity gradients in y-direction
-          ablock->get(iX,iY+1,iZ).computeVelocity(velp2); //vel at cell+1
-          ablock->get(iX,iY-1,iZ).computeVelocity(veln2); //vel at cell+1
+          ablock->get(iX, iY + 1, iZ).computeVelocity(velp2); //vel at cell+1
+          ablock->get(iX, iY - 1, iZ).computeVelocity(veln2); //vel at cell+1
 
           // velocity gradients in z-direction
-          ablock->get(iX,iY,iZ+1).computeVelocity(velp3); //vel at cell+1
-          ablock->get(iX,iY,iZ-1).computeVelocity(veln3); //vel at cell+1
+          ablock->get(iX, iY, iZ + 1).computeVelocity(velp3); //vel at cell+1
+          ablock->get(iX, iY, iZ - 1).computeVelocity(veln3); //vel at cell+1
 
-          shearrate[0] = (velp1[0]-veln1[0])/2; // dv_x /2*dx
-          shearrate[3] = (velp1[1]-veln1[1])/2; // dv_y/ 2*dx
-          shearrate[6] = (velp1[2]-veln1[2])/2; // dv_z /2*dx
-          shearrate[1] = (velp2[0]-veln2[0])/2; // dv_x / 2*dy
-          shearrate[4] = (velp2[1]-veln2[1])/2; // dv_y / 2*dy
-          shearrate[7] = (velp2[2]-veln2[2])/2; // dv_z / 2*dy
-          shearrate[2] = (velp3[0]-veln3[0])/2; // dv_x / 2*dz
-          shearrate[5] = (velp3[1]-veln3[1])/2; // dv_y / 2*dz
-          shearrate[8] = (velp3[2]-veln3[2])/2; // dv_z / 2*dz
+          shearrate[0] = (velp1[0] - veln1[0]) / 2; // dv_x /2*dx
+          shearrate[3] = (velp1[1] - veln1[1]) / 2; // dv_y/ 2*dx
+          shearrate[6] = (velp1[2] - veln1[2]) / 2; // dv_z /2*dx
+          shearrate[1] = (velp2[0] - veln2[0]) / 2; // dv_x / 2*dy
+          shearrate[4] = (velp2[1] - veln2[1]) / 2; // dv_y / 2*dy
+          shearrate[7] = (velp2[2] - veln2[2]) / 2; // dv_z / 2*dy
+          shearrate[2] = (velp3[0] - veln3[0]) / 2; // dv_x / 2*dz
+          shearrate[5] = (velp3[1] - veln3[1]) / 2; // dv_y / 2*dz
+          shearrate[8] = (velp3[2] - veln3[2]) / 2; // dv_z / 2*dz
 
           output[n] = shearrate[0];
-          output[n+1] = shearrate[1];
-          output[n+2] = shearrate[2];
-          output[n+3] = shearrate[3];
-          output[n+4] = shearrate[4];
-          output[n+5] = shearrate[5];
-          output[n+6] = shearrate[6];
-          output[n+7] = shearrate[7];
-          output[n+8] = shearrate[8];
+          output[n + 1] = shearrate[1];
+          output[n + 2] = shearrate[2];
+          output[n + 3] = shearrate[3];
+          output[n + 4] = shearrate[4];
+          output[n + 5] = shearrate[5];
+          output[n + 6] = shearrate[6];
+          output[n + 7] = shearrate[7];
+          output[n + 8] = shearrate[8];
           n += 9;
         }
       }
     }
-     
+
     if (cellfields.hemocell.outputInSiUnits) {
-      for (unsigned int i = 0 ; i < (*nCells)*9 ; i++) {
-        output[i] = output[i]*(1/(param::dt));
-      }
+      for (unsigned int i = 0; i < (*nCells) * 9; i++) { output[i] = output[i] * (1 / (param::dt)); }
     }
 
     return output;
   }
-  
+
   float * outputStrainRate() {
-    float * output = new float [(*nCells)*6];
+    float * output = new float[(*nCells) * 6];
     unsigned int n = 0;
     // calculate tensorfield strain rate
-    std::unique_ptr<TensorField3D<T,6> > strainrate (computeStrainRateFromStress(*ablock));
+    std::unique_ptr<TensorField3D<T, 6>> strainrate(computeStrainRateFromStress(*ablock));
     // calculate norm of tensorfield
-    std::unique_ptr<ScalarField3D<T> > shearrate (computeSymmetricTensorNorm(*strainrate));
-    
+    std::unique_ptr<ScalarField3D<T>> shearrate(computeSymmetricTensorNorm(*strainrate));
+
     //strainrate.get()
-    
-    for (plint iZ=odomain->z0-1; iZ<=odomain->z1+1; ++iZ) {
-      for (plint iY=odomain->y0-1; iY<=odomain->y1+1; ++iY) {
-        for (plint iX=odomain->x0-1; iX<=odomain->x1+1; ++iX) {
-            
-            
-            if ((iX < fluid.getBoundingBox().x0-2) || (iX > fluid.getBoundingBox().x1+2) ||
-	    (iY < fluid.getBoundingBox().y0-2) || (iY > fluid.getBoundingBox().y1+2) ||
-	    (iZ < fluid.getBoundingBox().z0-2) || (iZ > fluid.getBoundingBox().z1+2) )
-            {   output[n] = 0;
-                output[n+1] = 0;
-                output[n+2] = 0;
-                output[n+3] = 0;
-                output[n+4] = 0;
-                output[n+5] = 0;
-                n += 6;
-           }
-            else {
-    
-            output[n] = strainrate->get(iX,iY,iZ)[0];
-            output[n+1] = strainrate->get(iX,iY,iZ)[1];
-            output[n+2] = strainrate->get(iX,iY,iZ)[2];
-            output[n+3] = strainrate->get(iX,iY,iZ)[3];
-            output[n+4] = strainrate->get(iX,iY,iZ)[4];
-            output[n+5] = strainrate->get(iX,iY,iZ)[5];
+
+    for (plint iZ = odomain->z0 - 1; iZ <= odomain->z1 + 1; ++iZ) {
+      for (plint iY = odomain->y0 - 1; iY <= odomain->y1 + 1; ++iY) {
+        for (plint iX = odomain->x0 - 1; iX <= odomain->x1 + 1; ++iX) {
+          if ((iX < fluid.getBoundingBox().x0 - 2) || (iX > fluid.getBoundingBox().x1 + 2) ||
+              (iY < fluid.getBoundingBox().y0 - 2) || (iY > fluid.getBoundingBox().y1 + 2) ||
+              (iZ < fluid.getBoundingBox().z0 - 2) || (iZ > fluid.getBoundingBox().z1 + 2)) {
+            output[n] = 0;
+            output[n + 1] = 0;
+            output[n + 2] = 0;
+            output[n + 3] = 0;
+            output[n + 4] = 0;
+            output[n + 5] = 0;
             n += 6;
-            }
+          } else {
+            output[n] = strainrate->get(iX, iY, iZ)[0];
+            output[n + 1] = strainrate->get(iX, iY, iZ)[1];
+            output[n + 2] = strainrate->get(iX, iY, iZ)[2];
+            output[n + 3] = strainrate->get(iX, iY, iZ)[3];
+            output[n + 4] = strainrate->get(iX, iY, iZ)[4];
+            output[n + 5] = strainrate->get(iX, iY, iZ)[5];
+            n += 6;
+          }
         }
       }
-    }   
-     
+    }
+
     if (cellfields.hemocell.outputInSiUnits) {
-      for (unsigned int i = 0 ; i < (*nCells)*6 ; i++) {
-        output[i] = output[i]*(1/(param::dt));
-      }
+      for (unsigned int i = 0; i < (*nCells) * 6; i++) { output[i] = output[i] * (1 / (param::dt)); }
     }
 
     return output;
   }
-   
- 
-    HemoCellFields& cellfields;
-    MultiBlock3D& fluid;
-    plint iter;
-    string identifier;
-    double dx;
-    double dt;
-    Box3D * odomain;
-    Box3D odomainStorage;
-    BlockLattice3D<T,DD> * ablock;
-    HemoCellParticleField * particlefield;
-    int blockid;
-    hsize_t * nCells;
-    hsize_t nCellsStorage = 0;
-    vector<int> & outputVariables;
+
+
+  HemoCellFields & cellfields;
+  MultiBlock3D & fluid;
+  plint iter;
+  string identifier;
+  double dx;
+  double dt;
+  Box3D * odomain;
+  Box3D odomainStorage;
+  BlockLattice3D<T, DD> * ablock;
+  HemoCellParticleField * particlefield;
+  int blockid;
+  hsize_t * nCells;
+  hsize_t nCellsStorage = 0;
+  vector<int> & outputVariables;
 };
 }
 #endif

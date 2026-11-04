@@ -31,25 +31,23 @@ using namespace std;
 
 
 OctreeStructCell::OctreeStructCell(plint divis, plint l, unsigned int lim, hemo::Array<double, 6> bbox,
-			vector<hemo::Array<plint,3>> triangle_list_,
-			vector<HemoCellParticle> & part, const vector<int>  cell) {
+                                   vector<hemo::Array<plint, 3>> triangle_list_, vector<HemoCellParticle> & part,
+                                   const vector<int> cell) {
   bBox = bbox;
 
-  sharedConstructor(divis,l,lim,triangle_list_,part,cell);
+  sharedConstructor(divis, l, lim, triangle_list_, part, cell);
 }
 
-OctreeStructCell::OctreeStructCell(plint divis, plint l, unsigned int lim,
-			vector<hemo::Array<plint,3>> triangle_list_,
-			vector<HemoCellParticle> & particles, const vector<int>  cell) {
+OctreeStructCell::OctreeStructCell(plint divis, plint l, unsigned int lim, vector<hemo::Array<plint, 3>> triangle_list_,
+                                   vector<HemoCellParticle> & particles, const vector<int> cell) {
   //The same, but construct bounding box first
-  hemo::Array<T,3> * position = &particles[0].sv.position;
-  
+  hemo::Array<T, 3> * position = &particles[0].sv.position;
+
   bBox[0] = bBox[1] = (*position)[0];
   bBox[2] = bBox[3] = (*position)[1];
   bBox[4] = bBox[5] = (*position)[2];
 
-  for (const int pid : cell ) {
-
+  for (const int pid : cell) {
     position = &particles[pid].sv.position;
 
     bBox[0] = bBox[0] > (*position)[0] ? (*position)[0] : bBox[0];
@@ -59,14 +57,13 @@ OctreeStructCell::OctreeStructCell(plint divis, plint l, unsigned int lim,
     bBox[4] = bBox[4] > (*position)[2] ? (*position)[2] : bBox[4];
     bBox[5] = bBox[5] < (*position)[2] ? (*position)[2] : bBox[5];
   }
-  
-  sharedConstructor(divis,l,lim,triangle_list_,particles,cell);
+
+  sharedConstructor(divis, l, lim, triangle_list_, particles, cell);
 }
 
 void OctreeStructCell::sharedConstructor(plint divis, plint l, unsigned int lim,
-			vector<hemo::Array<plint,3>> triangle_list_,
-			vector<HemoCellParticle> & part, const vector<int>  cell) {
-  
+                                         vector<hemo::Array<plint, 3>> triangle_list_, vector<HemoCellParticle> & part,
+                                         const vector<int> cell) {
   maxDivisions = divis;
   level = l;
   limit = lim;
@@ -74,28 +71,26 @@ void OctreeStructCell::sharedConstructor(plint divis, plint l, unsigned int lim,
   // Check if subdividing limit is reached?
   if (triangle_list_.size() < lim || level > maxDivisions) {
     finalNode = true;
-    triangle_list=triangle_list_;
+    triangle_list = triangle_list_;
     return;
   }
-  constructTree(part, cell,triangle_list_);
+  constructTree(part, cell, triangle_list_);
 }
 
 OctreeStructCell::~OctreeStructCell() {
   // Check if we need to go over all the children
-  if (! finalNode) {
-    for (int i = 0; i < 8; i++) {
-      delete nodes[i];
-    }
+  if (!finalNode) {
+    for (int i = 0; i < 8; i++) { delete nodes[i]; }
   }
 }
 
 int OctreeStructCell::returnTrianglesAmount() {
   if (finalNode) {
     return triangle_list.size(); // Will not go deeper
-  }     
+  }
   int tempSize = triangle_list.size();
 
-  for (int i = 0; i < 8; i++) {     
+  for (int i = 0; i < 8; i++) {
     int temp = nodes[i]->returnTrianglesAmount();
     tempSize += temp;
   }
@@ -103,12 +98,13 @@ int OctreeStructCell::returnTrianglesAmount() {
   return tempSize;
 }
 
-void OctreeStructCell::constructTree(vector<HemoCellParticle> & part, const vector<int> cell,vector<hemo::Array<plint,3>> triangle_list_) {
+void OctreeStructCell::constructTree(vector<HemoCellParticle> & part, const vector<int> cell,
+                                     vector<hemo::Array<plint, 3>> triangle_list_) {
   // Find the octants of the current bounding box.
   vector<hemo::Array<double, 6>> bBoxes;
-  T xHalf = bBox[0] + (bBox[1] - bBox[0])/2;
-  T yHalf = bBox[2] + (bBox[3] - bBox[2])/2;
-  T zHalf = bBox[4] + (bBox[5] - bBox[4])/2;
+  T xHalf = bBox[0] + (bBox[1] - bBox[0]) / 2;
+  T yHalf = bBox[2] + (bBox[3] - bBox[2]) / 2;
+  T zHalf = bBox[4] + (bBox[5] - bBox[4]) / 2;
 
   // Not gonna do complicated stuff..
   bBoxes.push_back({bBox[0], xHalf, bBox[2], yHalf, bBox[4], zHalf});
@@ -118,66 +114,51 @@ void OctreeStructCell::constructTree(vector<HemoCellParticle> & part, const vect
   bBoxes.push_back({bBox[0], xHalf, bBox[2], yHalf, zHalf, bBox[5]});
   bBoxes.push_back({xHalf, bBox[1], bBox[2], yHalf, zHalf, bBox[5]});
   bBoxes.push_back({xHalf, bBox[1], yHalf, bBox[3], zHalf, bBox[5]});
-  bBoxes.push_back({bBox[0], xHalf, yHalf, bBox[3], zHalf, bBox[5]}); 
+  bBoxes.push_back({bBox[0], xHalf, yHalf, bBox[3], zHalf, bBox[5]});
   // Create vectors to store corresponding triangles
-  vector<vector<hemo::Array<plint,3>>> list_triangle_list;
+  vector<vector<hemo::Array<plint, 3>>> list_triangle_list;
 
   // Fill triangle lists
-  for (unsigned int i = 0; i < bBoxes.size(); i++) {
-    list_triangle_list.push_back({});
-  }
-  
-  for (hemo::Array<plint,3> & triangle : triangle_list_) {  
-    hemo::Array<double,3> & v0 = part[cell[triangle[0]]].sv.position;
-    hemo::Array<double,3> & v1 = part[cell[triangle[1]]].sv.position;
-    hemo::Array<double,3> & v2 = part[cell[triangle[2]]].sv.position;
+  for (unsigned int i = 0; i < bBoxes.size(); i++) { list_triangle_list.push_back({}); }
+
+  for (hemo::Array<plint, 3> & triangle : triangle_list_) {
+    hemo::Array<double, 3> & v0 = part[cell[triangle[0]]].sv.position;
+    hemo::Array<double, 3> & v1 = part[cell[triangle[1]]].sv.position;
+    hemo::Array<double, 3> & v2 = part[cell[triangle[2]]].sv.position;
 
 
     bool broken = false;
-    for (unsigned int i = 0; i < bBoxes.size() ; i++) { 
-      if ( ( (bBoxes[i][0] <= v0[0] && bBoxes[i][1] >= v0[0]) && 
-             (bBoxes[i][2] <= v0[1] && bBoxes[i][3] >= v0[1]) &&
-             (bBoxes[i][4] <= v0[2] && bBoxes[i][5] >= v0[2]) ) &&
-           ( (bBoxes[i][0] <= v1[0] && bBoxes[i][1] >= v1[0]) && 
-             (bBoxes[i][2] <= v1[1] && bBoxes[i][3] >= v1[1]) &&
-             (bBoxes[i][4] <= v1[2] && bBoxes[i][5] >= v1[2]) ) &&
-           ( (bBoxes[i][0] <= v2[0] && bBoxes[i][1] >= v2[0]) && 
-             (bBoxes[i][2] <= v2[1] && bBoxes[i][3] >= v2[1]) &&
-             (bBoxes[i][4] <= v2[2] && bBoxes[i][5] >= v2[2]) ) ) {
-         list_triangle_list[i].push_back(triangle);
-         broken = true;
-         break;
+    for (unsigned int i = 0; i < bBoxes.size(); i++) {
+      if (((bBoxes[i][0] <= v0[0] && bBoxes[i][1] >= v0[0]) && (bBoxes[i][2] <= v0[1] && bBoxes[i][3] >= v0[1]) &&
+           (bBoxes[i][4] <= v0[2] && bBoxes[i][5] >= v0[2])) &&
+          ((bBoxes[i][0] <= v1[0] && bBoxes[i][1] >= v1[0]) && (bBoxes[i][2] <= v1[1] && bBoxes[i][3] >= v1[1]) &&
+           (bBoxes[i][4] <= v1[2] && bBoxes[i][5] >= v1[2])) &&
+          ((bBoxes[i][0] <= v2[0] && bBoxes[i][1] >= v2[0]) && (bBoxes[i][2] <= v2[1] && bBoxes[i][3] >= v2[1]) &&
+           (bBoxes[i][4] <= v2[2] && bBoxes[i][5] >= v2[2]))) {
+        list_triangle_list[i].push_back(triangle);
+        broken = true;
+        break;
       }
     }
-    if (!broken) {
-      triangle_list.push_back(triangle);
-    }  
+    if (!broken) { triangle_list.push_back(triangle); }
   }
- 
-  for (unsigned int i = 0; i < 8 ; i++) {
-    nodes[i] = new OctreeStructCell(maxDivisions, level+1, limit, bBoxes[i],
-                                    list_triangle_list[i], part, cell);                         
+
+  for (unsigned int i = 0; i < 8; i++) {
+    nodes[i] = new OctreeStructCell(maxDivisions, level + 1, limit, bBoxes[i], list_triangle_list[i], part, cell);
   }
 }
 
-void OctreeStructCell::findCrossings(hemo::Array<plint, 3> latticeSite, std::vector<hemo::Array<plint,3>>& output) {
-
+void OctreeStructCell::findCrossings(hemo::Array<plint, 3> latticeSite, std::vector<hemo::Array<plint, 3>> & output) {
   // The ray passes from (-x,-y,-z) so following check is fast and okay-ish
-  if ( (int)bBox[0]-1 <= latticeSite[0] &&
-       (int)bBox[2]-1 <= latticeSite[1] &&
-       (int)bBox[4]-1 <= latticeSite[2]) {
-    output.insert(output.end(),triangle_list.begin(),triangle_list.end());
+  if ((int)bBox[0] - 1 <= latticeSite[0] && (int)bBox[2] - 1 <= latticeSite[1] && (int)bBox[4] - 1 <= latticeSite[2]) {
+    output.insert(output.end(), triangle_list.begin(), triangle_list.end());
   } else {
     return;
   }
 
-  if (finalNode) {
-    return;
-  }
-  
-  for (int i = 0; i < 8; i++) {  
-    nodes[i]->findCrossings(latticeSite,output);
-  }
+  if (finalNode) { return; }
+
+  for (int i = 0; i < 8; i++) { nodes[i]->findCrossings(latticeSite, output); }
   return;
 }
 }

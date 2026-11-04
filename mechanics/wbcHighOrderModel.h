@@ -31,8 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace hemo {
 class WbcHighOrderModel : public CellMechanics {
-
-  public:
+public:
   //Variables
   HemoCellField & cellField;
   const T k_volume;
@@ -45,17 +44,18 @@ class WbcHighOrderModel : public CellMechanics {
   const T core_radius;
   const T radius;
 
-  public:
-  WbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) ;
+public:
+  WbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_);
 
-  void ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> &lpc, size_t ctype) ;
+  void ParticleMechanics(map<int, vector<HemoCellParticle *>> & particles_per_cell, const map<int, bool> & lpc,
+                         size_t ctype);
 
   void statistics();
 
-  static T calculate_coreRadius(Config & cfg );
-  static T calculate_radius(Config & cfg );
-  static T calculate_kInnerRigid(Config & cfg );
-  static T calculate_kCytoskeleton(Config & cfg );
+  static T calculate_coreRadius(Config & cfg);
+  static T calculate_radius(Config & cfg);
+  static T calculate_kInnerRigid(Config & cfg);
+  static T calculate_kCytoskeleton(Config & cfg);
 };
 }
 #endif

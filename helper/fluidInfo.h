@@ -38,16 +38,16 @@ struct FluidStatistics {
 };
 
 class GatherFluidVelocity : public HemoCellGatheringFunctional<FluidStatistics> {
-  public:  
-    using HemoCellGatheringFunctional<FluidStatistics>::HemoCellGatheringFunctional; //Inherit Constructor
-    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-    GatherFluidVelocity * clone() const;
+public:
+  using HemoCellGatheringFunctional<FluidStatistics>::HemoCellGatheringFunctional; //Inherit Constructor
+  void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+  GatherFluidVelocity * clone() const;
 };
 class GatherFluidForce : public HemoCellGatheringFunctional<FluidStatistics> {
-  public:  
-    using HemoCellGatheringFunctional<FluidStatistics>::HemoCellGatheringFunctional; //Inherit Constructor
-    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-    GatherFluidForce * clone() const;
+public:
+  using HemoCellGatheringFunctional<FluidStatistics>::HemoCellGatheringFunctional; //Inherit Constructor
+  void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+  GatherFluidForce * clone() const;
 };
 class FluidInfo {
 public:
@@ -57,4 +57,3 @@ public:
 
 }
 #endif /* FLUIDINFO_H */
-

@@ -35,29 +35,27 @@ namespace hemo {
 void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & cfg);
 int getTotalNumberOfCells(HemoCellFields & cellFields);
 
-void getReadPositionsBloodCellsVector(plb::Box3D realDomain,
-                                           std::vector<plb::TriangularSurfaceMesh<T>* > & meshes,
-                                           std::vector<plint> & Np,
-                                           std::vector<std::vector<hemo::Array<T,3> > > & positions,
-                                           std::vector<std::vector<plint> > & cellIds,
-                                           std::vector<std::vector<hemo::Array<T,3> > > & randomAngles,
-                                           Config & cfg, HemoCellFields & cellFields,
-                                           HemoCellParticleField & particleField);
+void getReadPositionsBloodCellsVector(plb::Box3D realDomain, std::vector<plb::TriangularSurfaceMesh<T> *> & meshes,
+                                      std::vector<plint> & Np, std::vector<std::vector<hemo::Array<T, 3>>> & positions,
+                                      std::vector<std::vector<plint>> & cellIds,
+                                      std::vector<std::vector<hemo::Array<T, 3>>> & randomAngles, Config & cfg,
+                                      HemoCellFields & cellFields, HemoCellParticleField & particleField);
 
-class ReadPositionsBloodCellField3D : public plb::BoxProcessingFunctional3D
-{
+class ReadPositionsBloodCellField3D : public plb::BoxProcessingFunctional3D {
 public:
-    ReadPositionsBloodCellField3D (HemoCellFields & cellFields_, T dx_, Config & cfg_)
-            : cellFields(cellFields_), cfg(cfg_) {dx = dx_;}
-    /// Arguments: [0] Particle-field.
-    virtual void processGenericBlocks(plb::Box3D domain, std::vector<plb::AtomicBlock3D*> fields);
-    virtual ReadPositionsBloodCellField3D* clone() const;
-    virtual void getTypeOfModification(std::vector<plb::modif::ModifT>& modified) const;
-    void getModificationPattern(std::vector<bool>& isWritten) const;
-    virtual plb::BlockDomain::DomainT appliesTo() const;
-    T dx;
-    HemoCellFields & cellFields;
-    Config & cfg;
+  ReadPositionsBloodCellField3D(HemoCellFields & cellFields_, T dx_, Config & cfg_)
+      : cellFields(cellFields_), cfg(cfg_) {
+    dx = dx_;
+  }
+  /// Arguments: [0] Particle-field.
+  virtual void processGenericBlocks(plb::Box3D domain, std::vector<plb::AtomicBlock3D *> fields);
+  virtual ReadPositionsBloodCellField3D * clone() const;
+  virtual void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const;
+  void getModificationPattern(std::vector<bool> & isWritten) const;
+  virtual plb::BlockDomain::DomainT appliesTo() const;
+  T dx;
+  HemoCellFields & cellFields;
+  Config & cfg;
 };
 }
 #endif

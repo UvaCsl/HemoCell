@@ -40,6 +40,9 @@ SpacesBeforeTrailingComments: 1
 SortIncludes: Never
 IncludeBlocks: Preserve
 
+# Keep log/error messages as single, greppable string literals.
+BreakStringLiterals: false
+
 # Leave comments (ASCII art, aligned explanations) and namespace ends alone.
 ReflowComments: false
 FixNamespaceComments: false

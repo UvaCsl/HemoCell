@@ -10,17 +10,15 @@ namespace {
 using hemo::HemoCellParticle;
 
 HemoCellParticle makeParticle(T x, T y, T z, plint cellId) {
-  return HemoCellParticle(hemo::Array<T,3>({x, y, z}), cellId, 0, 0);
+  return HemoCellParticle(hemo::Array<T, 3>({x, y, z}), cellId, 0, 0);
 }
 
-T norm3(const hemo::Array<T,3> & v) {
-  return std::sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+T norm3(const hemo::Array<T, 3> & v) {
+  return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 }
 
 std::vector<HemoCellParticle> & resetRepulsion(std::vector<HemoCellParticle> & particles) {
-  for (HemoCellParticle & particle : particles) {
-    particle.sv.force_repulsion = {0., 0., 0.};
-  }
+  for (HemoCellParticle & particle : particles) { particle.sv.force_repulsion = {0., 0., 0.}; }
   return particles;
 }
 
@@ -31,7 +29,7 @@ std::vector<HemoCellParticle> & resetRepulsion(std::vector<HemoCellParticle> & p
 TEST(ParticleGrid, HoldsMoreThanTenParticlesPerNode) {
   std::vector<HemoCellParticle> particles;
   for (int i = 0; i < 25; i++) {
-    particles.push_back(makeParticle(2.0 + 0.01*i, 3.0, 4.0, i)); // all nearest to node (2,3,4)
+    particles.push_back(makeParticle(2.0 + 0.01 * i, 3.0, 4.0, i)); // all nearest to node (2,3,4)
   }
   particles.push_back(makeParticle(0.0, 0.0, 0.0, 100));  // node (0,0,0)
   particles.push_back(makeParticle(-3.0, 0.0, 0.0, 101)); // outside the block: not binned
@@ -50,9 +48,7 @@ TEST(ParticleGrid, HoldsMoreThanTenParticlesPerNode) {
   EXPECT_EQ(*grid.begin(grid.index(0, 0, 0)), 25u);
 
   unsigned int total = 0;
-  for (unsigned int n = 0; n < 6*6*6; n++) {
-    total += grid.count(n);
-  }
+  for (unsigned int n = 0; n < 6 * 6 * 6; n++) { total += grid.count(n); }
   EXPECT_EQ(total, 26u);
 }
 
@@ -114,7 +110,5 @@ TEST(ParticleGrid, NoRepulsionWithinACellOrBeyondCutoff) {
   grid.build(particles, plb::Dot3D(0, 0, 0), 8, 8, 8);
   hemo::computePairRepulsion(resetRepulsion(particles), grid, 1.0, 0.9);
 
-  for (const HemoCellParticle & particle : particles) {
-    EXPECT_EQ(norm3(particle.sv.force_repulsion), 0.0);
-  }
+  for (const HemoCellParticle & particle : particles) { EXPECT_EQ(norm3(particle.sv.force_repulsion), 0.0); }
 }

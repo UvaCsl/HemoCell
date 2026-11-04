@@ -34,121 +34,125 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "genericFunctions.h"
 
 namespace hemo {
-  using namespace std;
-  using namespace plb;
+using namespace std;
+using namespace plb;
 // ----------------------- Copy from neighbour ------------------------------------
-void CopyFromNeighbor::process(
-        Box3D domain, ScalarField3D<int> &field1) {
-    for (plint iX = domain.x0; iX <= domain.x1; ++iX) {
-        for (plint iY = domain.y0; iY <= domain.y1; ++iY) {
-            for (plint iZ = domain.z0; iZ <= domain.z1; ++iZ) {
-                field1.get(iX, iY, iZ) = field1.get(iX + offset[0], iY + offset[1], iZ + offset[2]);
-            }
-        }
+void CopyFromNeighbor::process(Box3D domain, ScalarField3D<int> & field1) {
+  for (plint iX = domain.x0; iX <= domain.x1; ++iX) {
+    for (plint iY = domain.y0; iY <= domain.y1; ++iY) {
+      for (plint iZ = domain.z0; iZ <= domain.z1; ++iZ) {
+        field1.get(iX, iY, iZ) = field1.get(iX + offset[0], iY + offset[1], iZ + offset[2]);
+      }
     }
+  }
 }
 
-CopyFromNeighbor *CopyFromNeighbor::clone() const {
-    return new CopyFromNeighbor(*this);
+CopyFromNeighbor * CopyFromNeighbor::clone() const {
+  return new CopyFromNeighbor(*this);
 }
 
-void CopyFromNeighbor::getTypeOfModification(std::vector<modif::ModifT> &modified) const {
-    modified[0] = modif::allVariables;
+void CopyFromNeighbor::getTypeOfModification(std::vector<modif::ModifT> & modified) const {
+  modified[0] = modif::allVariables;
 }
 
 BlockDomain::DomainT CopyFromNeighbor::appliesTo() const {
-    return BlockDomain::bulk;
+  return BlockDomain::bulk;
 }
 
 
 // ---------------------- Read in STL geometry ---------------------------------
 
-void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeWidth, plb::plint refDirLength, plb::plint refDir,
-                          std::auto_ptr<plb::VoxelizedDomain3D<T>> & voxelizedDomain, std::auto_ptr<plb::MultiScalarField3D<int>> & flagMatrix, plint blockSize, int particleEnvelope) {
+void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeWidth, plb::plint refDirLength,
+                          plb::plint refDir, std::auto_ptr<plb::VoxelizedDomain3D<T>> & voxelizedDomain,
+                          std::auto_ptr<plb::MultiScalarField3D<int>> & flagMatrix, plint blockSize,
+                          int particleEnvelope) {
   VoxelizedDomain3D<T> * voxelizedDomain_t;
   plb::MultiScalarField3D<int> * flagMatrix_t;
-  getFlagMatrixFromSTL(meshFileName, extendedEnvelopeWidth, refDirLength, refDir,
-                          voxelizedDomain_t, flagMatrix_t, blockSize, particleEnvelope);
+  getFlagMatrixFromSTL(meshFileName, extendedEnvelopeWidth, refDirLength, refDir, voxelizedDomain_t, flagMatrix_t,
+                       blockSize, particleEnvelope);
   voxelizedDomain = std::auto_ptr<plb::VoxelizedDomain3D<T>>(voxelizedDomain_t);
   flagMatrix = std::auto_ptr<plb::MultiScalarField3D<int>>(flagMatrix_t);
 }
 
 void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint refDirLength, plint refDir,
-                          VoxelizedDomain3D<T> *&voxelizedDomain, MultiScalarField3D<int> *&flagMatrix, plint blockSize, int particleEnvelope) {
-    plint extraLayer = 0;   // Make the bounding box larger; for visualization purposes
-                            //   only. For the simulation, it is OK to have extraLayer=0.
-    plint borderWidth = 1;  // Because the Guo boundary condition acts in a one-cell layer.
-    
-    // Requirement: margin>=borderWidth.
-    plint margin = 1;  // Extra margin of allocated cells around the obstacle.
+                          VoxelizedDomain3D<T> *& voxelizedDomain, MultiScalarField3D<int> *& flagMatrix,
+                          plint blockSize, int particleEnvelope) {
+  plint extraLayer = 0;  // Make the bounding box larger; for visualization purposes
+                         //   only. For the simulation, it is OK to have extraLayer=0.
+  plint borderWidth = 1; // Because the Guo boundary condition acts in a one-cell layer.
 
-    if(!file_exists(meshFileName)) {
-      hlog << "(Voxelizer) Error: " << meshFileName << " is not an existing stl file." << endl;
-      exit(1);
+  // Requirement: margin>=borderWidth.
+  plint margin = 1; // Extra margin of allocated cells around the obstacle.
+
+  if (!file_exists(meshFileName)) {
+    hlog << "(Voxelizer) Error: " << meshFileName << " is not an existing stl file." << endl;
+    exit(1);
+  }
+
+  TriangleSet<T> * triangleSet = new TriangleSet<T>(meshFileName, DBL);
+
+  DEFscaledMesh<T> * defMesh = new DEFscaledMesh<T>(*triangleSet, refDirLength, refDir, margin, extraLayer);
+  TriangleBoundary3D<T> boundary(*defMesh, false);
+  delete defMesh;
+  delete triangleSet;
+  boundary.getMesh().inflate();
+
+  voxelizedDomain =
+      new VoxelizedDomain3D<T>(boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, blockSize);
+
+  // Print out some info
+  hlog << "(main) Voxelisation is done. Resulting domain parameters are: " << endl;
+  hlog << getMultiBlockInfo(voxelizedDomain->getVoxelMatrix()) << std::endl;
+
+  // Use particle envelope size if available
+  if (!particleEnvelope) {
+    hlog << "(Voxelizer) (Warning) particleEnvelopeSize not given, setting to 25" << endl;
+    particleEnvelope = 25;
+  }
+  // Print out if parameters where optimal.
+  if (blockSize > 0) {
+    if (blockSize < particleEnvelope / 2 || blockSize > particleEnvelope * 1.25) {
+      hlog << "(Voxelizer) (Warning) BlockSize is non optimal (" << blockSize << "), consider setting it to ["
+           << to_string(particleEnvelope + 1) << "," << to_string(particleEnvelope * 1.25) << "]" << endl;
     }
-    
-    TriangleSet<T> *triangleSet = new TriangleSet<T>(meshFileName, DBL);
-
-    DEFscaledMesh<T> *defMesh =
-            new DEFscaledMesh<T>(*triangleSet, refDirLength, refDir, margin, extraLayer);
-    TriangleBoundary3D<T> boundary(*defMesh,false);
-    delete defMesh;
-    delete triangleSet;
-    boundary.getMesh().inflate();
-
-    voxelizedDomain = new VoxelizedDomain3D<T>(
-            boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, blockSize);
-    
-    // Print out some info
-    hlog << "(main) Voxelisation is done. Resulting domain parameters are: " << endl;
-    hlog << getMultiBlockInfo(voxelizedDomain->getVoxelMatrix()) << std::endl;
-	
-    // Use particle envelope size if available
-    if(!particleEnvelope) {
-      hlog << "(Voxelizer) (Warning) particleEnvelopeSize not given, setting to 25" << endl;
-      particleEnvelope = 25;
+    plint numBlocks =
+        voxelizedDomain->getVoxelMatrix().getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
+    if (numBlocks < global::mpi().getSize()) {
+      hlog << "(Voxelizer) (Warning) There are fewer blocks (" << numBlocks << ") than processors ("
+           << global::mpi().getSize() << "), you are wasting CPUs!" << endl;
+    } else if (numBlocks > global::mpi().getSize()) {
+      hlog << "(Voxelizer) (Warning) There are more blocks (" << numBlocks << ") than processors ("
+           << global::mpi().getSize() << "), you might want to consider running with " << numBlocks << " CPUs" << endl;
     }
-    // Print out if parameters where optimal.
-    if (blockSize > 0) {
-      if (blockSize < particleEnvelope/2 || blockSize > particleEnvelope*1.25) {
-        hlog << "(Voxelizer) (Warning) BlockSize is non optimal (" << blockSize << "), consider setting it to [" << to_string(particleEnvelope+1) << "," << to_string(particleEnvelope*1.25) << "]" << endl;
-      }
-      plint numBlocks = voxelizedDomain->getVoxelMatrix().getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
-      if (numBlocks < global::mpi().getSize()) {
-        hlog << "(Voxelizer) (Warning) There are fewer blocks ("<< numBlocks <<") than processors ("<<global::mpi().getSize() <<"), you are wasting CPUs!" << endl;
-      } else if (numBlocks > global::mpi().getSize()) {
-        hlog << "(Voxelizer) (Warning) There are more blocks (" << numBlocks <<") than processors ("<<global::mpi().getSize() <<"), you might want to consider running with " << numBlocks << " CPUs" << endl;
-      }
-    } else {
-      VoxelizedDomain3D<T> * temp = new VoxelizedDomain3D<T>(
-            boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, 16);
-      plint numBlocks = temp->getVoxelMatrix().getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
-      if (numBlocks != global::mpi().getSize()) {
-        hlog << "(Voxelizer) (Warning) Running with " << global::mpi().getSize() << " CPU's, consider running with " << numBlocks << " CPU's for optimal efficiency" << endl;
-      }
-      delete temp;
+  } else {
+    VoxelizedDomain3D<T> * temp =
+        new VoxelizedDomain3D<T>(boundary, voxelFlag::inside, extraLayer, borderWidth, extendedEnvelopeWidth, 16);
+    plint numBlocks = temp->getVoxelMatrix().getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
+    if (numBlocks != global::mpi().getSize()) {
+      hlog << "(Voxelizer) (Warning) Running with " << global::mpi().getSize() << " CPU's, consider running with "
+           << numBlocks << " CPU's for optimal efficiency" << endl;
     }
-    
-    flagMatrix = new MultiScalarField3D<int>((MultiBlock3D &) voxelizedDomain->getVoxelMatrix());
+    delete temp;
+  }
 
-    setToConstant(*flagMatrix, voxelizedDomain->getVoxelMatrix(),
-                  voxelFlag::inside, flagMatrix->getBoundingBox(), 1);
-    setToConstant(*flagMatrix, voxelizedDomain->getVoxelMatrix(),
-                  voxelFlag::innerBorder, flagMatrix->getBoundingBox(), 1);
+  flagMatrix = new MultiScalarField3D<int>((MultiBlock3D &)voxelizedDomain->getVoxelMatrix());
+
+  setToConstant(*flagMatrix, voxelizedDomain->getVoxelMatrix(), voxelFlag::inside, flagMatrix->getBoundingBox(), 1);
+  setToConstant(*flagMatrix, voxelizedDomain->getVoxelMatrix(), voxelFlag::innerBorder, flagMatrix->getBoundingBox(),
+                1);
 
 
-	// Since the domain is closed, open up the two ends by copying the slice before it.
-    Box3D domainBox = flagMatrix->getBoundingBox();
-    plint nx = domainBox.getNx();
-    plint ny = domainBox.getNy();
-    plint nz = domainBox.getNz();
+  // Since the domain is closed, open up the two ends by copying the slice before it.
+  Box3D domainBox = flagMatrix->getBoundingBox();
+  plint nx = domainBox.getNx();
+  plint ny = domainBox.getNy();
+  plint nz = domainBox.getNz();
 
-    Box3D domain(0, 1, 0, ny - 1, 0, nz - 1);
-    applyProcessingFunctional(new CopyFromNeighbor(hemo::Array<plint, 3>({1, 0, 0})), domain, *flagMatrix);
+  Box3D domain(0, 1, 0, ny - 1, 0, nz - 1);
+  applyProcessingFunctional(new CopyFromNeighbor(hemo::Array<plint, 3>({1, 0, 0})), domain, *flagMatrix);
 
-    domain = Box3D(nx - 2, nx - 1, 0, ny - 1, 0, nz - 1);
-    applyProcessingFunctional(new CopyFromNeighbor(hemo::Array<plint, 3>({-1, 0, 0})), domain, *flagMatrix);
-
+  domain = Box3D(nx - 2, nx - 1, 0, ny - 1, 0, nz - 1);
+  applyProcessingFunctional(new CopyFromNeighbor(hemo::Array<plint, 3>({-1, 0, 0})), domain, *flagMatrix);
 }
 
 }

@@ -36,105 +36,94 @@ namespace hemo {
 
 class HemoCellFunctional : public plb::BoxProcessingFunctional3D {
 public:
-    HemoCellFunctional(){}
-    void getModificationPattern(std::vector<bool>& isWritten) const {
-        for (pluint i = 0; i < isWritten.size(); i++) {
-            isWritten[i] = false;       
-        }
-    }
-    plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
-    void getTypeOfModification(std::vector<plb::modif::ModifT>& modified) const {
-        for (pluint i = 0; i < modified.size(); i++) {
-            modified[i] = plb::modif::nothing;       
-        }
-        
-    }
+  HemoCellFunctional() {}
+  void getModificationPattern(std::vector<bool> & isWritten) const {
+    for (pluint i = 0; i < isWritten.size(); i++) { isWritten[i] = false; }
+  }
+  plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
+  void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const {
+    for (pluint i = 0; i < modified.size(); i++) { modified[i] = plb::modif::nothing; }
+  }
 };
 
-template<class GatherType>
+template <class GatherType>
 class HemoCellGatheringFunctional : public plb::BoxProcessingFunctional3D {
-    //Make the structures byte accessible for easy mpi serialization
-    union byteint {
-        unsigned char b[sizeof(int)];
-        int i;
-    };
-    struct IDandGatherType {
-        int ID;
-        GatherType g;
-    };
-public:
-    //Numblocks should be larger than the maximum number of blocks per process
-    //The total can be retrieved from Multiblock.getManagment.getsparseblock.getnumblocks
-    HemoCellGatheringFunctional(std::map<int,GatherType> & gatherValues_) : 
-      gatherValues(gatherValues_) {}
-    void getModificationPattern(std::vector<bool>& isWritten) const {
-        for (pluint i = 0; i < isWritten.size(); i++) {
-            isWritten[i] = false;       
-        }
-    }
-    plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
-    void getTypeOfModification(std::vector<plb::modif::ModifT>& modified) const {
-        for (pluint i = 0; i < modified.size(); i++) {
-            modified[i] = plb::modif::nothing;       
-        }
-        
-    }
-    static void gather(std::map<int,GatherType> & gatherValues) {
-        int be = 0;
-        int sendsize = sizeof(int) + sizeof(IDandGatherType)*gatherValues.size();
-        std::vector<unsigned char> sendbuffer(sendsize);
+  //Make the structures byte accessible for easy mpi serialization
+  union byteint {
+    unsigned char b[sizeof(int)];
+    int i;
+  };
+  struct IDandGatherType {
+    int ID;
+    GatherType g;
+  };
 
-        byteint local_number;
-        local_number.i = gatherValues.size();
-        for (unsigned int i = 0; i < sizeof(int) ; i++) {
-            sendbuffer[be] = local_number.b[i];
-            be++;
-        }
-        for (auto const & entry : gatherValues) {
-            IDandGatherType bg;
-            bg.ID = entry.first;
-            bg.g = entry.second;
-            // The records follow a 4-byte count, so they are not aligned:
-            // copy bytes instead of dereferencing a cast pointer.
-            std::memcpy(&sendbuffer[be], &bg, sizeof(IDandGatherType));
-            be+=sizeof(IDandGatherType);
-        }
-        
-        std::vector<int> sendcounts(plb::global::mpi().getSize());
-        MPI_Allgather(&sendsize,sizeof(int),MPI_BYTE,&sendcounts[0],sizeof(int),MPI_BYTE,MPI_COMM_WORLD);
-              
-        int receivesize = 0;
-        std::vector<int> displacements(1,0);
-        for (int & size : sendcounts) {
-          receivesize += size;
-          displacements.push_back(displacements.back() + size);
-        }
-        displacements.pop_back();
-        std::vector<unsigned char> receivebuffer(receivesize);        
-        
-        MPI_Allgatherv(&sendbuffer[0],sendsize,MPI_BYTE,&receivebuffer[0],&sendcounts[0],&displacements[0],MPI_BYTE,MPI_COMM_WORLD);
-        be = 0;
-        
-        for (int j = 0 ; j < plb::global::mpi().getSize() ; j++) {
-            be = displacements[j];
-            for (unsigned int i = 0; i < sizeof(int) ; i++) {
-                local_number.b[i] = receivebuffer[be];
-                be++;
-            }
-            for (int i = 0 ; i < local_number.i ; i++) {
-                IDandGatherType bg;
-                std::memcpy(&bg, &receivebuffer[be], sizeof(IDandGatherType));
-                be += sizeof(IDandGatherType);
-                gatherValues[bg.ID] = bg.g;
-            }
-        }
-        
+public:
+  //Numblocks should be larger than the maximum number of blocks per process
+  //The total can be retrieved from Multiblock.getManagment.getsparseblock.getnumblocks
+  HemoCellGatheringFunctional(std::map<int, GatherType> & gatherValues_) : gatherValues(gatherValues_) {}
+  void getModificationPattern(std::vector<bool> & isWritten) const {
+    for (pluint i = 0; i < isWritten.size(); i++) { isWritten[i] = false; }
+  }
+  plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
+  void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const {
+    for (pluint i = 0; i < modified.size(); i++) { modified[i] = plb::modif::nothing; }
+  }
+  static void gather(std::map<int, GatherType> & gatherValues) {
+    int be = 0;
+    int sendsize = sizeof(int) + sizeof(IDandGatherType) * gatherValues.size();
+    std::vector<unsigned char> sendbuffer(sendsize);
+
+    byteint local_number;
+    local_number.i = gatherValues.size();
+    for (unsigned int i = 0; i < sizeof(int); i++) {
+      sendbuffer[be] = local_number.b[i];
+      be++;
     }
-        
-    //This map should be set in the processingGenericBlocks function and is local to the mpi processor;
-    std::map<int,GatherType> & gatherValues; 
+    for (auto const & entry : gatherValues) {
+      IDandGatherType bg;
+      bg.ID = entry.first;
+      bg.g = entry.second;
+      // The records follow a 4-byte count, so they are not aligned:
+      // copy bytes instead of dereferencing a cast pointer.
+      std::memcpy(&sendbuffer[be], &bg, sizeof(IDandGatherType));
+      be += sizeof(IDandGatherType);
+    }
+
+    std::vector<int> sendcounts(plb::global::mpi().getSize());
+    MPI_Allgather(&sendsize, sizeof(int), MPI_BYTE, &sendcounts[0], sizeof(int), MPI_BYTE, MPI_COMM_WORLD);
+
+    int receivesize = 0;
+    std::vector<int> displacements(1, 0);
+    for (int & size : sendcounts) {
+      receivesize += size;
+      displacements.push_back(displacements.back() + size);
+    }
+    displacements.pop_back();
+    std::vector<unsigned char> receivebuffer(receivesize);
+
+    MPI_Allgatherv(&sendbuffer[0], sendsize, MPI_BYTE, &receivebuffer[0], &sendcounts[0], &displacements[0], MPI_BYTE,
+                   MPI_COMM_WORLD);
+    be = 0;
+
+    for (int j = 0; j < plb::global::mpi().getSize(); j++) {
+      be = displacements[j];
+      for (unsigned int i = 0; i < sizeof(int); i++) {
+        local_number.b[i] = receivebuffer[be];
+        be++;
+      }
+      for (int i = 0; i < local_number.i; i++) {
+        IDandGatherType bg;
+        std::memcpy(&bg, &receivebuffer[be], sizeof(IDandGatherType));
+        be += sizeof(IDandGatherType);
+        gatherValues[bg.ID] = bg.g;
+      }
+    }
+  }
+
+  //This map should be set in the processingGenericBlocks function and is local to the mpi processor;
+  std::map<int, GatherType> & gatherValues;
 };
 
 }
 #endif /* HEMOCELLFUNCTIONAL_H */
-

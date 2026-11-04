@@ -11,7 +11,7 @@
 #include <vector>
 
 TEST(Array, InitializerListIsBounded) {
-  hemo::Array<double,3> a = {1.0, 2.0, 3.0, 4.0}; // extra value used to overflow
+  hemo::Array<double, 3> a = {1.0, 2.0, 3.0, 4.0}; // extra value used to overflow
   EXPECT_EQ(a[0], 1.0);
   EXPECT_EQ(a[1], 2.0);
   EXPECT_EQ(a[2], 3.0);
@@ -23,7 +23,7 @@ TEST(Array, InitializerListIsBounded) {
 }
 
 TEST(Array, AddingADot3DAddsOnce) {
-  hemo::Array<double,3> a = {1.0, 2.0, 3.0};
+  hemo::Array<double, 3> a = {1.0, 2.0, 3.0};
   a += plb::Dot3D(10, 20, 30); // used to add the offset three times
   EXPECT_EQ(a[0], 11.0);
   EXPECT_EQ(a[1], 22.0);
@@ -32,7 +32,7 @@ TEST(Array, AddingADot3DAddsOnce) {
 
 namespace {
 hemo::HemoCellParticle makeParticle() {
-  hemo::HemoCellParticle p(hemo::Array<T,3>({1.0, 2.0, 3.0}), 7, 5, 0);
+  hemo::HemoCellParticle p(hemo::Array<T, 3>({1.0, 2.0, 3.0}), 7, 5, 0);
   p.sv.force = {0.5, 0.0, 0.0};
   p.force_total = {9.0, 9.0, 9.0};
   p.kernelWeights = {0.25, 0.75};
@@ -52,13 +52,13 @@ TEST(HemoCellParticle, CopiesAndMovesKeepForcePointersOnOwnForce) {
   EXPECT_EQ(moved.force_volume, &moved.sv.force);
   EXPECT_EQ(moved.kernelWeights.size(), 2u);
 
-  hemo::HemoCellParticle assigned(hemo::Array<T,3>({0.0, 0.0, 0.0}), 1, 1, 0);
+  hemo::HemoCellParticle assigned(hemo::Array<T, 3>({0.0, 0.0, 0.0}), 1, 1, 0);
   assigned = a;
   EXPECT_EQ(assigned.force_link, &assigned.sv.force);
   EXPECT_EQ(assigned.force_total[0], 9.0); // was not copied by operator=
   EXPECT_EQ(assigned.sv.cellId, 7);
 
-  hemo::HemoCellParticle moveAssigned(hemo::Array<T,3>({0.0, 0.0, 0.0}), 1, 1, 0);
+  hemo::HemoCellParticle moveAssigned(hemo::Array<T, 3>({0.0, 0.0, 0.0}), 1, 1, 0);
   moveAssigned = std::move(assigned);
   EXPECT_EQ(moveAssigned.force_bending, &moveAssigned.sv.force);
   EXPECT_EQ(moveAssigned.sv.force[0], 0.5);
@@ -66,7 +66,7 @@ TEST(HemoCellParticle, CopiesAndMovesKeepForcePointersOnOwnForce) {
 
 TEST(HemoCellParticle, CopiesShareSeparatedOutputForces) {
   hemo::HemoCellParticle a = makeParticle();
-  hemo::Array<T,3> separate = {0.0, 0.0, 0.0};
+  hemo::Array<T, 3> separate = {0.0, 0.0, 0.0};
   a.force_area = &separate; // as during output (separateForceVectors)
   a.force_volume = &separate;
 
@@ -86,8 +86,8 @@ TEST(Logfile, MessagesBeforeOpenAreWrittenToTheFile) {
   log.mainProcess = true;
   log << "early message " << 42 << std::endl;
 
-  const std::string path = testing::TempDir() + "hemocell_logfile_test_r"
-                         + std::to_string(plb::global::mpi().getRank());
+  const std::string path =
+      testing::TempDir() + "hemocell_logfile_test_r" + std::to_string(plb::global::mpi().getRank());
   ASSERT_TRUE(log.open(path));
   log << "late message" << std::endl;
   log.close();

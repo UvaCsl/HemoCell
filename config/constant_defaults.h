@@ -74,7 +74,7 @@ membrane-viscosity force per edge. Define FORCE_LIMIT differently (or remove
 this default) at compile time to change or disable the cap.
 */
 #ifndef FORCE_LIMIT
-#define FORCE_LIMIT 50.0 
+#define FORCE_LIMIT 50.0
 #endif
 
 /*
@@ -179,16 +179,15 @@ constexpr T MaxCellPersistenceLength = 9.0;
 
 namespace hemo {
 ///Used to circumvent buffer initialization of characters
-struct NoInitChar
-{
-    char value;
-    NoInitChar() {
-        // do nothing
-        static_assert(sizeof *this == sizeof value, "invalid size");
-        static_assert(__alignof *this == __alignof value, "invalid alignment");
-    }
-    ~NoInitChar() {};
+struct NoInitChar {
+  char value;
+  NoInitChar() {
+    // do nothing
+    static_assert(sizeof *this == sizeof value, "invalid size");
+    static_assert(__alignof * this == __alignof value, "invalid alignment");
+  }
+  ~NoInitChar(){};
 };
-} 
+}
 
 #endif

@@ -31,8 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace hemo {
 class PltSimpleModel : public CellMechanics {
-
-  public:
+public:
   //Variables
   HemoCellField & cellField;
   const T k_volume;
@@ -40,17 +39,19 @@ class PltSimpleModel : public CellMechanics {
   const T k_link;
   const T k_bend;
   const T eta_m;
-  
+
   //Constructor
-  public:
+public:
   PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_);
 
-  void ParticleMechanics(map<int,vector<HemoCellParticle *>> &particles_per_cell, const map<int,bool> &lpc, pluint ctype);
+  void ParticleMechanics(map<int, vector<HemoCellParticle *>> & particles_per_cell, const map<int, bool> & lpc,
+                         pluint ctype);
 #ifdef SOLIDIFY_MECHANICS
-  void solidifyMechanics(const std::map<int,std::vector<int>>&,std::vector<HemoCellParticle>&,plb::BlockLattice3D<T,DESCRIPTOR> *,plb::BlockLattice3D<T,CEPAC_DESCRIPTOR> *, pluint ctype, HemoCellParticleField&);
+  void solidifyMechanics(const std::map<int, std::vector<int>> &, std::vector<HemoCellParticle> &,
+                         plb::BlockLattice3D<T, DESCRIPTOR> *, plb::BlockLattice3D<T, CEPAC_DESCRIPTOR> *, pluint ctype,
+                         HemoCellParticleField &);
 #endif
   void statistics();
-
 };
 }
 #endif

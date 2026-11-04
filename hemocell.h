@@ -52,7 +52,7 @@ using namespace hemo;
 using namespace plb;
 #endif
 
-namespace hemo { 
+namespace hemo {
 
 /*!
  * The HemoCell class contains all the information, data and methods to set up a
@@ -66,14 +66,14 @@ namespace hemo {
  * simulation.
  */
 class HemoCell {
-  public:
+public:
   /** \brief Switch to indicate if the MPI instance is managed externally.
    * The MPI instance is typically invoked when initialising the HemoCell class
    * through the `plb::plbInit` routine. However, in some scenarios we might want
    * to manually control the MPI environment and do not want HemoCell to setup
    * MPI environment.
    */
-  enum class MPIHandle {Internal, External};
+  enum class MPIHandle { Internal, External };
 
   /**
    * Creates an hemocell object
@@ -83,19 +83,20 @@ class HemoCell {
    * Unfortunately, due to palabos regulations, it is required to pass the
    * commandline arguments
    */
-  HemoCell(char * configFileName, int argc, char* argv[]) : HemoCell{ configFileName, argc, argv, HemoCell::MPIHandle::Internal } {};
+  HemoCell(char * configFileName, int argc, char * argv[])
+      : HemoCell{configFileName, argc, argv, HemoCell::MPIHandle::Internal} {};
 
   /// Creates an HemoCell object and allows to indicate the MPI environment
   /// is managed externally. If so, this constructor avoids plb::plbInit().
   ///
   /// @param mpi_handle the MPIHanndle indicator.
-  HemoCell(char * configFileName, int argc, char* argv[], HemoCell::MPIHandle mpi_handle);
+  HemoCell(char * configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handle);
 
   /*
    * Clean up hemocell
    */
   ~HemoCell();
-  
+
   /**
    * @brief Initialise every fluid node at equilibrium.
    * @param rho density [lattice units, typically 1]
@@ -122,9 +123,9 @@ class HemoCell {
    *        ELLIPSOID_FROM_SPHERE (platelet), WBC_SPHERE or MESH_FROM_STL
    *        (constants in constant_defaults.h).
    */
-  template<class Mechanics>
+  template <class Mechanics>
   void addCellType(string name, int constructType) {
-    HemoCellField * cellfield = cellfields->addCellType(name,constructType);
+    HemoCellField * cellfield = cellfields->addCellType(name, constructType);
     Mechanics * mechanics = new Mechanics(*cellfield->materialCfg, *cellfield);
     cellfield->mechanics = mechanics;
     cellfield->statistics();
@@ -161,13 +162,13 @@ class HemoCell {
    * (setParticleVelocityUpdateTimeScaleSeparation()).
    */
   void setMaterialTimeScaleSeparation(string name, unsigned int separation);
-  
+
   //Enable solidify mechanics of a celltype
   void enableSolidifyMechanics(string name) {
     hlog << "(HemoCell) Enabling Solidify Mechanics for " << name << " mechanical model" << endl;
     (*cellfields)[name]->doSolidifyMechanics = true;
   }
-  
+
   /**
    * @brief Interpolate the fluid velocity to the vertices (and synchronise the
    * particle envelopes) every `separation` iterations (default 1). It must
@@ -230,10 +231,11 @@ class HemoCell {
    * with more than about 200,000 cells.
    */
   void setSystemPeriodicityLimit(unsigned int axis, int limit);
-  
+
   //Load the particles
 private:
   bool loadParticlesIsCalled = false;
+
 public:
   /**
    * @brief Place the cells listed in the `<name>.pos` files (positions in
@@ -281,35 +283,35 @@ public:
   bool checkpointOnExitSignal = true;
 
   //Load balancing library functions
-  /// Calculate and return the fractional load imbalance 
+  /// Calculate and return the fractional load imbalance
   T calculateFractionalLoadImbalance();
-  
+
   ///Load balance the domain (only necessary with nAtomic blocks > nMpi processors, also checkpoints
   void doLoadBalance();
-  
+
   ///Restructure the grid, has an optional argument to specify whether a checkpoint from this iteration is available, default is YES!
   void doRestructure(bool checkpoint_avail = true);
-  
+
   ///Initialize the fluid field with the given management, should be done after specifing the pre inlets and before initializing the cellfields
   void initializeLattice(MultiBlockManagement3D const & management);
- 
+
   PreInlet * preInlet = 0;
-  
+
   bool partOfpreInlet = false;
-  
-  map<plint,plint> BlockToMpi;
-  
+
+  map<plint, plint> BlockToMpi;
+
   LoadBalancer * loadBalancer = 0;
   ///The fluid lattice
-  MultiBlockLattice3D<T, DESCRIPTOR> * lattice = 0, *preinlet_lattice = 0, * domain_lattice = 0;
-  
-  MultiBlockManagement3D * preinlet_lattice_management = 0, * domain_lattice_management = 0;
-  
+  MultiBlockLattice3D<T, DESCRIPTOR> *lattice = 0, *preinlet_lattice = 0, *domain_lattice = 0;
+
+  MultiBlockManagement3D *preinlet_lattice_management = 0, *domain_lattice_management = 0;
+
   Config * cfg = 0;
   ///The cellfields contains the particle field and all celltypes
   HemoCellFields * cellfields = 0;
   unsigned int iter = 0;
-  
+
   XMLreader * documentXML = 0; //Needed for legacy checkpoint reading TODO fix
 
   /// Iteration of the last writeOutput() call. Residence times are advanced by
@@ -317,11 +319,12 @@ public:
   unsigned int getLastOutputIteration() const { return lastOutputAt; }
   /// Restore the last output iteration (used when loading a checkpoint).
   void setLastOutputIteration(unsigned int iteration) { lastOutputAt = iteration; }
-  private:
+
+private:
   /// Store the last time (iteration) output occured
   unsigned int lastOutputAt = 0;
   std::chrono::high_resolution_clock::duration lastOutput = std::chrono::high_resolution_clock::duration::zero();
-  
+
   /// To be run right before the first iteration, all checking should move here
   void sanityCheck();
   /// Checked in iteration, do sanity check when not yet done

@@ -28,43 +28,43 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "multiBlock/multiDataField3D.h"
 
 namespace hemo {
-  class InteriorViscosityHelper {
-  public:
-    /// The helper of @p cellFields, created on first use. It is owned by
-    /// HemoCellFields (not a process-wide singleton), so it is destroyed with
-    /// its simulation and never refers to a destroyed HemoCellFields.
-    static InteriorViscosityHelper& get(HemoCellFields & cellFields) {
-      if (!cellFields.interiorViscosityHelper) {
-        cellFields.interiorViscosityHelper = new InteriorViscosityHelper(cellFields);
-      }
-      return *cellFields.interiorViscosityHelper;
+class InteriorViscosityHelper {
+public:
+  /// The helper of @p cellFields, created on first use. It is owned by
+  /// HemoCellFields (not a process-wide singleton), so it is destroyed with
+  /// its simulation and never refers to a destroyed HemoCellFields.
+  static InteriorViscosityHelper & get(HemoCellFields & cellFields) {
+    if (!cellFields.interiorViscosityHelper) {
+      cellFields.interiorViscosityHelper = new InteriorViscosityHelper(cellFields);
     }
-    ~InteriorViscosityHelper();
-      
-    void checkpoint();
-    static void restore(HemoCellFields & cellFields);
-    
-    //Called within functional, from particlefield
-    void add(HemoCellParticleField & pf, const Dot3D & bindingSite, T tau);
-    void add(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites, T tau);
-    void remove(HemoCellParticleField & pf, const Dot3D & bindingSite);
-    void remove(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites);
-    void empty(HemoCellParticleField & pf);
-    
-  private:
-    HemoCellFields & cellFields;
+    return *cellFields.interiorViscosityHelper;
+  }
+  ~InteriorViscosityHelper();
 
-    plb::MultiScalarField3D<T> *multiInteriorViscosityField = nullptr,
-     *preinlet_multiInteriorViscosityField = nullptr, *domain_multiInteriorViscosityField = nullptr;
-    
-    InteriorViscosityHelper(HemoCellFields & cellFields);
-    
-    void refillBindingSites();
-    
-    //Singleton Behaviour
-  public:
-    InteriorViscosityHelper(InteriorViscosityHelper const&) = delete;
-    void operator=(InteriorViscosityHelper const&) = delete;  
-  };
+  void checkpoint();
+  static void restore(HemoCellFields & cellFields);
+
+  //Called within functional, from particlefield
+  void add(HemoCellParticleField & pf, const Dot3D & bindingSite, T tau);
+  void add(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites, T tau);
+  void remove(HemoCellParticleField & pf, const Dot3D & bindingSite);
+  void remove(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites);
+  void empty(HemoCellParticleField & pf);
+
+private:
+  HemoCellFields & cellFields;
+
+  plb::MultiScalarField3D<T> *multiInteriorViscosityField = nullptr, *preinlet_multiInteriorViscosityField = nullptr,
+                             *domain_multiInteriorViscosityField = nullptr;
+
+  InteriorViscosityHelper(HemoCellFields & cellFields);
+
+  void refillBindingSites();
+
+  //Singleton Behaviour
+public:
+  InteriorViscosityHelper(InteriorViscosityHelper const &) = delete;
+  void operator=(InteriorViscosityHelper const &) = delete;
+};
 }
 #endif

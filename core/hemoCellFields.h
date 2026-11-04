@@ -51,54 +51,54 @@ class HemoCell;
  * of all types. The option exists to get exclusive access to a single
  * cellType if necessary. all the particles are stored in a single particlefield
  */
-class HemoCellFields
-{
+class HemoCellFields {
 public:
-  
   ///Default constructor, needs an palabos lattice, envelope width (lbm units), and hemocell reference
-  HemoCellFields(plb::MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth,HemoCell &);
- 
+  HemoCellFields(plb::MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth, HemoCell &);
+
   /*
    * Create the particle field seperately, takes the arguments set in the constructor
    * Is called in the constructor as well
    */
-  void createParticleField(plb::SparseBlockStructure3D* sbStructure_ = 0, plb::ThreadAttribution * tAttribution_ = 0);
-  
+  void createParticleField(plb::SparseBlockStructure3D * sbStructure_ = 0, plb::ThreadAttribution * tAttribution_ = 0);
+
   void createCEPACfield();
-  
+
   ///Used to set variables inside the celltypes for correct access, called through createParticleField
   void InitAfterLoadCheckpoint();
 
 public:
   ///Generic Destructor
   ~HemoCellFields();
-  
+
   ///Add an celltype with a certain mesh, the name also specifies <name_>.xml and <name_>.pos
   HemoCellField * addCellType(std::string name_, int constructType);
-  
+
   ///Easy access to contained celltypes
   HemoCellField * operator[](unsigned int index);
-  
+
   ///Easy access to contained celltypes
   HemoCellField * operator[](string name);
-  
+
   ///Get the number of celltypes
   unsigned int size();
-  
+
   /*Checkpoint functions*/
 private:
-  void copyXMLreader2XMLwriter(plb::XMLreader const& reader, plb::XMLwriter & writer);
+  void copyXMLreader2XMLwriter(plb::XMLreader const & reader, plb::XMLwriter & writer);
   void copyXMLreader2XMLwriter(plb::XMLreaderProxy readerProxy, plb::XMLwriter & writer);
+
 public:
   ///Load a checkpoint, store the current iteration in &iter
   void load(plb::XMLreader * documentXML, unsigned int & iter, Config * cfg = NULL);
   ///Save a checkpoint
   void save(plb::XMLreader * documentXML, unsigned int iter, Config * cfg = NULL);
+
 private:
   /// Load the CEPAC field from a checkpoint directory if it is enabled and present.
   void loadCEPACfield(const std::string & checkpointDirectory);
+
 public:
-    
   ///Legacy Helper function to get the particle field, mostly unused as direct access is available
   plb::MultiParticleField3D<HemoCellParticleField> & getParticleField3D();
   ///Legacy reads in only RBC an PLT from a single pos file
@@ -107,25 +107,25 @@ public:
   //Class functionals
   ///Advance the particles in an iteration
   void advanceParticles();
-  
+
   // Find interior lattice points and set omega
   void findInternalParticleGridPoints();
-  
+
   // Look for lattice nodes near the membrane and update those
   void internalGridPointsMembrane();
-  
+
   ///Interpolate the velocity of the fluid to the individual particles
   void interpolateFluidVelocity();
-  
+
   ///Spread the force of all particles over the fluid in this iteration
   void spreadParticleForce();
-  
+
   /// Separate the force vectors of particles so it becomes clear what the vector for each separate force is
   void separate_force_vectors();
-  
+
   /// Unify the force vectors of particles to point to a single force
   void unify_force_vectors();
-  
+
   /// Apply (and calculate) the repulsion force between particles
   void applyRepulsionForce();
 
@@ -134,19 +134,19 @@ public:
   /// zeroed first (needed when particle-particle repulsion, which normally
   /// resets it, is not enabled).
   void applyBoundaryRepulsionForce(bool resetFirst = false);
-  
+
   /// Delete any incomplete cells on a block
   void deleteIncompleteCells(bool verbose = true);
-  
+
   /// Apply the material model of the cells to the particles, updating their force
   void applyConstitutiveModel(bool forced = false);
-  
+
   /// Sync the particle envelopes between domains
   void syncEnvelopes();
 
   /// Get particles in a given domain
-  void getParticles(vector<HemoCellParticle*> & particles, plb::Box3D & domain);
-  
+  void getParticles(vector<HemoCellParticle *> & particles, plb::Box3D & domain);
+
   /// Add particles to local processors
   void addParticles(vector<HemoCellParticle> & particles);
 
@@ -155,24 +155,24 @@ public:
 
   /// Add bindingSites
   void populateBindingSites(plb::Box3D * box = 0);
-  
+
   /// Delete non local particles (do not delete in envelopesize)
   void deleteNonLocalParticles(int envelope);
-  
+
   /// Conditionally solidify cells if requested
   void solidifyCells();
   void prepareSolidification();
 
   /// increment cell residence time
   void updateResidenceTime(unsigned int rtime);
-  
+
   //Class Variables
-  
+
   ///the fluid lattice
   plb::MultiBlockLattice3D<T, DESCRIPTOR> * lattice;
   ///A vector specifying the output variables (from const_defaults.h)
   vector<int> desiredFluidOutputVariables;
-  
+
   vector<int> desiredCEPACfieldOutputVariables;
   ///Reference to parent
   HemoCell & hemocell;
@@ -183,10 +183,10 @@ public:
   /// palabos field storing the particles
   plb::MultiParticleField3D<HemoCellParticleField> * immersedParticles = 0;
   /// seperate preinlet and domain pointers whenever necessary
-  plb::MultiParticleField3D<HemoCellParticleField> * preinlet_immersedParticles = 0, * domain_immersedParticles = 0;
+  plb::MultiParticleField3D<HemoCellParticleField> *preinlet_immersedParticles = 0, *domain_immersedParticles = 0;
 
   /// palabos field for storing the CPAC scalar field if used
-  plb::MultiBlockLattice3D<T,CEPAC_DESCRIPTOR> * CEPACfield = 0; 
+  plb::MultiBlockLattice3D<T, CEPAC_DESCRIPTOR> * CEPACfield = 0;
 
   ///Repulsion variable set through hemocell.h
   T repulsionCutoff = 0.0;
@@ -201,21 +201,21 @@ public:
   T boundaryRepulsionConstant = 0.0;
   ///Timescale seperation for boundary repulsion, set through hemocell.h
   pluint boundaryRepulsionTimescale = 1;
-  
+
   ///Timescale seperation for the velocity interpolation from the fluid to the particle
   pluint particleVelocityUpdateTimescale = 1;
-  
+
   pluint solidifyTimescale = 1;
-  
+
   pluint interiorViscosityTimescale = 1;
   pluint interiorViscosityEntireGridTimescale = 1;
-  
+
   ///Limit of cycles in a direction (xyz); offsets below must match these defaults
   int periodicity_limit[3] = {100, 100, 100};
   //Internal calculation of offset created by flattening limits
   int periodicity_limit_offset_y = 100;
   int periodicity_limit_offset_z = 10000;
-  
+
 private:
   vector<vector<NoInitChar>> sendBuffers, recvBuffers;
   /// Private duplicate of MPI_COMM_WORLD for the particle exchange in
@@ -223,132 +223,137 @@ private:
   /// HemoCell traffic. Created in the constructor (collective over all ranks),
   /// freed in the destructor.
   MPI_Comm particleComm = MPI_COMM_NULL;
+
 public:
-  
   /**
    * Total number of cells in the simulation, should be constant
    * Is set through hemocell::loadParticles() is added (TODO: also when removed)
    */
-   int number_of_cells = 0;
-   /// True once number_of_cells was restored from a checkpoint; it is then no
-   /// longer re-derived from the .pos files (which may have changed since).
-   bool number_of_cells_from_checkpoint = false;
-   inline int base_cell_id(int wrapped) {
-     return ((wrapped%number_of_cells)+number_of_cells)%number_of_cells;
-   }
-   unsigned int max_neighbours = 0;
+  int number_of_cells = 0;
+  /// True once number_of_cells was restored from a checkpoint; it is then no
+  /// longer re-derived from the .pos files (which may have changed since).
+  bool number_of_cells_from_checkpoint = false;
+  inline int base_cell_id(int wrapped) { return ((wrapped % number_of_cells) + number_of_cells) % number_of_cells; }
+  unsigned int max_neighbours = 0;
 
-   /// Helpers created on first use through bindingFieldHelper::get() and
-   /// InteriorViscosityHelper::get(); owned (and deleted) by this object.
-   bindingFieldHelper * bindingHelper = 0;
-   InteriorViscosityHelper * interiorViscosityHelper = 0;
-   
-   plb::CommunicationStructure3D * large_communicator = 0;
-   plb::ParallelBlockCommunicator3D envelope_communicator;
-   
-   void calculateCommunicationStructure();
-   
-   /*
+  /// Helpers created on first use through bindingFieldHelper::get() and
+  /// InteriorViscosityHelper::get(); owned (and deleted) by this object.
+  bindingFieldHelper * bindingHelper = 0;
+  InteriorViscosityHelper * interiorViscosityHelper = 0;
+
+  plb::CommunicationStructure3D * large_communicator = 0;
+  plb::ParallelBlockCommunicator3D envelope_communicator;
+
+  void calculateCommunicationStructure();
+
+  /*
    * Functionals needed for access of the cellfields
    */
-  class HemoSeperateForceVectors: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoSeperateForceVectors * clone() const;
+  class HemoSeperateForceVectors : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoSeperateForceVectors * clone() const;
   };
-  class HemoUnifyForceVectors: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoUnifyForceVectors * clone() const;
+  class HemoUnifyForceVectors : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoUnifyForceVectors * clone() const;
   };
-  class HemoSpreadParticleForce: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoSpreadParticleForce * clone() const;
-  }; 
-  class HemoFindInternalParticleGridPoints: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoFindInternalParticleGridPoints * clone() const;
+  class HemoSpreadParticleForce : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoSpreadParticleForce * clone() const;
   };
-  
-  class HemoInternalGridPointsMembrane: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoInternalGridPointsMembrane * clone() const;
+  class HemoFindInternalParticleGridPoints : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoFindInternalParticleGridPoints * clone() const;
   };
-  
-  
-  class HemoInterpolateFluidVelocity: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoInterpolateFluidVelocity * clone() const;
+
+  class HemoInternalGridPointsMembrane : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoInternalGridPointsMembrane * clone() const;
   };
-  class HemoAdvanceParticles: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoAdvanceParticles * clone() const;
+
+
+  class HemoInterpolateFluidVelocity : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoInterpolateFluidVelocity * clone() const;
   };
-  class HemoApplyConstitutiveModel: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoApplyConstitutiveModel * clone() const;
+  class HemoAdvanceParticles : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoAdvanceParticles * clone() const;
+  };
+  class HemoApplyConstitutiveModel : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoApplyConstitutiveModel * clone() const;
+
   public:
-   bool forced = false;
+    bool forced = false;
   };
-  class HemoRepulsionForce: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoRepulsionForce * clone() const;
+  class HemoRepulsionForce : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoRepulsionForce * clone() const;
   };
-  class HemoBoundaryRepulsionForce: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoBoundaryRepulsionForce * clone() const;
+  class HemoBoundaryRepulsionForce : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoBoundaryRepulsionForce * clone() const;
+
   public:
-   bool resetFirst = false;
+    bool resetFirst = false;
   };
-  class HemoDeleteIncompleteCells: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoDeleteIncompleteCells * clone() const;
+  class HemoDeleteIncompleteCells : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoDeleteIncompleteCells * clone() const;
+
   public:
     bool verbose;
   };
-  class HemoSyncEnvelopes: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoSyncEnvelopes * clone() const;
-   void getTypeOfModification(std::vector<plb::modif::ModifT>& modified) const;
+  class HemoSyncEnvelopes : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoSyncEnvelopes * clone() const;
+    void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const;
   };
-  class HemoGetParticles: public HemoCellFunctional {
+  class HemoGetParticles : public HemoCellFunctional {
     vector<HemoCellParticle *> & particles;
-    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
     HemoGetParticles * clone() const;
+
   public:
     HemoGetParticles(vector<HemoCellParticle *> & particles_) : particles(particles_) {}
   };
-  class HemoSetParticles: public HemoCellFunctional {
+  class HemoSetParticles : public HemoCellFunctional {
     vector<HemoCellParticle> & particles;
-    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
     HemoSetParticles * clone() const;
+
   public:
     HemoSetParticles(vector<HemoCellParticle> & particles_) : particles(particles_) {}
   };
-  class HemoPopulateBoundaryParticles: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoPopulateBoundaryParticles * clone() const;
+  class HemoPopulateBoundaryParticles : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoPopulateBoundaryParticles * clone() const;
   };
-  class HemoPopulateBindingSites: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoPopulateBindingSites * clone() const;
+  class HemoPopulateBindingSites : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoPopulateBindingSites * clone() const;
   };
-  class HemoDeleteNonLocalParticles: public HemoCellFunctional {
-   void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
-   HemoDeleteNonLocalParticles * clone() const;
-   public:
+  class HemoDeleteNonLocalParticles : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
+    HemoDeleteNonLocalParticles * clone() const;
+
+  public:
     int envelopeSize;
     HemoDeleteNonLocalParticles(int envelope_) : envelopeSize(envelope_) {}
   };
-  class HemoSolidifyCells: public HemoCellFunctional {
-    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+  class HemoSolidifyCells : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
     HemoSolidifyCells * clone() const;
   };
-  class HemoPrepareSolidification: public HemoCellFunctional {
-    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+  class HemoPrepareSolidification : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
     HemoPrepareSolidification * clone() const;
   };
-  class HemoupdateResidenceTime: public HemoCellFunctional {
-    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
+  class HemoupdateResidenceTime : public HemoCellFunctional {
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
     HemoupdateResidenceTime * clone() const;
+
   public:
     unsigned int rtime;
   };

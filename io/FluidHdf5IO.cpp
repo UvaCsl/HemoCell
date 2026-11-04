@@ -38,42 +38,38 @@ namespace {
 // copy only costs memory and time while output is written.
 typedef std::vector<std::vector<T>> ExternalForceBackup;
 
-void saveExternalForce(plb::MultiBlockLattice3D<T,DESCRIPTOR> & lattice, ExternalForceBackup & backup) {
+void saveExternalForce(plb::MultiBlockLattice3D<T, DESCRIPTOR> & lattice, ExternalForceBackup & backup) {
   const int nScalars = DESCRIPTOR<T>::ExternalField::numScalars;
   const std::vector<plint> & blocks = lattice.getLocalInfo().getBlocks();
   backup.resize(blocks.size());
   for (pluint iBlock = 0; iBlock < blocks.size(); iBlock++) {
-    plb::BlockLattice3D<T,DESCRIPTOR> & block = lattice.getComponent(blocks[iBlock]);
+    plb::BlockLattice3D<T, DESCRIPTOR> & block = lattice.getComponent(blocks[iBlock]);
     std::vector<T> & saved = backup[iBlock];
-    saved.resize(block.getNx()*block.getNy()*block.getNz()*nScalars);
+    saved.resize(block.getNx() * block.getNy() * block.getNz() * nScalars);
     pluint i = 0;
     for (plint x = 0; x < block.getNx(); x++) {
       for (plint y = 0; y < block.getNy(); y++) {
         for (plint z = 0; z < block.getNz(); z++) {
-          const T * external = block.get(x,y,z).getExternal(0);
-          for (int s = 0; s < nScalars; s++) {
-            saved[i++] = external[s];
-          }
+          const T * external = block.get(x, y, z).getExternal(0);
+          for (int s = 0; s < nScalars; s++) { saved[i++] = external[s]; }
         }
       }
     }
   }
 }
 
-void restoreExternalForce(plb::MultiBlockLattice3D<T,DESCRIPTOR> & lattice, const ExternalForceBackup & backup) {
+void restoreExternalForce(plb::MultiBlockLattice3D<T, DESCRIPTOR> & lattice, const ExternalForceBackup & backup) {
   const int nScalars = DESCRIPTOR<T>::ExternalField::numScalars;
   const std::vector<plint> & blocks = lattice.getLocalInfo().getBlocks();
   for (pluint iBlock = 0; iBlock < blocks.size(); iBlock++) {
-    plb::BlockLattice3D<T,DESCRIPTOR> & block = lattice.getComponent(blocks[iBlock]);
+    plb::BlockLattice3D<T, DESCRIPTOR> & block = lattice.getComponent(blocks[iBlock]);
     const std::vector<T> & saved = backup[iBlock];
     pluint i = 0;
     for (plint x = 0; x < block.getNx(); x++) {
       for (plint y = 0; y < block.getNy(); y++) {
         for (plint z = 0; z < block.getNz(); z++) {
-          T * external = block.get(x,y,z).getExternal(0);
-          for (int s = 0; s < nScalars; s++) {
-            external[s] = saved[i++];
-          }
+          T * external = block.get(x, y, z).getExternal(0);
+          for (int s = 0; s < nScalars; s++) { external[s] = saved[i++]; }
         }
       }
     }
@@ -81,21 +77,25 @@ void restoreExternalForce(plb::MultiBlockLattice3D<T,DESCRIPTOR> & lattice, cons
 }
 } // namespace
 
-void writeCEPACField_HDF5(HemoCellFields& cellfields, T dx, T dt, plint iter, string preString) {
+void writeCEPACField_HDF5(HemoCellFields & cellfields, T dx, T dt, plint iter, string preString) {
   global.statistics.getCurrent()["writeCEPACField"].start();
 
-  WriteFluidField<plb::descriptors::AdvectionDiffusionD3Q19Descriptor> * wff = new WriteFluidField<plb::descriptors::AdvectionDiffusionD3Q19Descriptor>(cellfields, *cellfields.CEPACfield,iter,"CEPAC",dx,dt,cellfields.desiredCEPACfieldOutputVariables);
-  vector<MultiBlock3D*> wrapper;
+  WriteFluidField<plb::descriptors::AdvectionDiffusionD3Q19Descriptor> * wff =
+      new WriteFluidField<plb::descriptors::AdvectionDiffusionD3Q19Descriptor>(
+          cellfields, *cellfields.CEPACfield, iter, "CEPAC", dx, dt, cellfields.desiredCEPACfieldOutputVariables);
+  vector<MultiBlock3D *> wrapper;
   wrapper.push_back(cellfields.CEPACfield);
   wrapper.push_back(cellfields.immersedParticles); //Needed for the atomicblock id, nothing else
-  applyProcessingFunctional(wff,cellfields.CEPACfield->getBoundingBox(),wrapper);
-  
+  applyProcessingFunctional(wff, cellfields.CEPACfield->getBoundingBox(), wrapper);
+
   global.statistics.getCurrent().stop();
 }
-void writeFluidField_HDF5(HemoCellFields& cellfields, T dx, T dt, plint iter, string preString) {
+void writeFluidField_HDF5(HemoCellFields & cellfields, T dx, T dt, plint iter, string preString) {
   global.statistics.getCurrent()["writeFluidField"].start();
 
-  const bool outputForce = std::find(cellfields.desiredFluidOutputVariables.begin(), cellfields.desiredFluidOutputVariables.end(), OUTPUT_FORCE) != cellfields.desiredFluidOutputVariables.end();
+  const bool outputForce =
+      std::find(cellfields.desiredFluidOutputVariables.begin(), cellfields.desiredFluidOutputVariables.end(),
+                OUTPUT_FORCE) != cellfields.desiredFluidOutputVariables.end();
   ExternalForceBackup externalForce;
   if (outputForce) {
     // Show the total force (external/body force + particle forces). The
@@ -104,15 +104,14 @@ void writeFluidField_HDF5(HemoCellFields& cellfields, T dx, T dt, plint iter, st
     saveExternalForce(*cellfields.lattice, externalForce);
     cellfields.spreadParticleForce();
   }
-  WriteFluidField<DESCRIPTOR> * wff = new WriteFluidField<DESCRIPTOR>(cellfields, *cellfields.lattice,iter,"Fluid",dx,dt,cellfields.desiredFluidOutputVariables);
-  vector<MultiBlock3D*> wrapper;
+  WriteFluidField<DESCRIPTOR> * wff = new WriteFluidField<DESCRIPTOR>(cellfields, *cellfields.lattice, iter, "Fluid",
+                                                                      dx, dt, cellfields.desiredFluidOutputVariables);
+  vector<MultiBlock3D *> wrapper;
   wrapper.push_back(cellfields.lattice);
   wrapper.push_back(cellfields.immersedParticles); //Needed for the atomicblock id, nothing else
-  applyProcessingFunctional(wff,cellfields.lattice->getBoundingBox(),wrapper);
-  if (outputForce) {
-    restoreExternalForce(*cellfields.lattice, externalForce);
-  }
-  
+  applyProcessingFunctional(wff, cellfields.lattice->getBoundingBox(), wrapper);
+  if (outputForce) { restoreExternalForce(*cellfields.lattice, externalForce); }
+
   global.statistics.getCurrent().stop();
 }
 

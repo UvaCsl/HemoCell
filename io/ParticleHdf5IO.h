@@ -28,30 +28,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellFields.h"
 #include "hemoCellField.h"
 namespace hemo {
-void writeCellField3D_HDF5(HemoCellFields& cellFields, T dx, T dt, plint iter, std::string preString="");
+void writeCellField3D_HDF5(HemoCellFields & cellFields, T dx, T dt, plint iter, std::string preString = "");
 
 
-class WriteCellField3DInMultipleHDF5Files : public BoxProcessingFunctional3D
-{
+class WriteCellField3DInMultipleHDF5Files : public BoxProcessingFunctional3D {
 public:
-    WriteCellField3DInMultipleHDF5Files (
-            HemoCellField & cellField3D_,
-            plint iter_, std::string identifier_,
-            T dx_, T dt_, int i);
-    /// Arguments: [0] Particle-field. [1] Lattice.
-    ~WriteCellField3DInMultipleHDF5Files(){}; //Fuck C c++
-    virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> fields);
-    virtual WriteCellField3DInMultipleHDF5Files* clone() const;
-    virtual void getTypeOfModification(std::vector<modif::ModifT>& modified) const;
-    virtual BlockDomain::DomainT appliesTo() const;
+  WriteCellField3DInMultipleHDF5Files(HemoCellField & cellField3D_, plint iter_, std::string identifier_, T dx_, T dt_,
+                                      int i);
+  /// Arguments: [0] Particle-field. [1] Lattice.
+  ~WriteCellField3DInMultipleHDF5Files(){}; //Fuck C c++
+  virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D *> fields);
+  virtual WriteCellField3DInMultipleHDF5Files * clone() const;
+  virtual void getTypeOfModification(std::vector<modif::ModifT> & modified) const;
+  virtual BlockDomain::DomainT appliesTo() const;
+
 private:
-    HemoCellField& cellField3D;
-    plint iter;
-    std::string identifier;
-    double dx;
-    double dt;
-    int ctype;
+  HemoCellField & cellField3D;
+  plint iter;
+  std::string identifier;
+  double dx;
+  double dt;
+  int ctype;
 };
 }
-#endif  // FICSION_PARTICLE_HDF5IO_H
-
+#endif // FICSION_PARTICLE_HDF5IO_H

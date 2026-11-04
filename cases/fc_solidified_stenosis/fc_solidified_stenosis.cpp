@@ -37,61 +37,48 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace hemo;
 
 /// A functional, used to instantiate bounce-back nodes at the locations of the sphere
-template<typename T>
+template <typename T>
 class StenosisShapeDomain3D : public plb::DomainFunctional3D {
 public:
-    StenosisShapeDomain3D( plint xtopL_, plint xtopR_, plint xcircL_, plint xcircR_, plint ycirc_, plint ytop_, plint radiusCyl_,double a_, double bL_, double bR_, double y_)
-            : //xbottomL(xbottomL_),
-    //xbottomR(xbottomR_),
-            xtopL(xtopL_),
-            xtopR(xtopR_),
-            xcircL(xcircL_),
-            xcircR(xcircR_),
-            ycirc(ycirc_),
-            //ybottom(ybottom_),
-            ytop(ytop_),
-            radiusCyl(radiusCyl_),
-            radiusSqr(radiusCyl*radiusCyl),
-            a(a_),
-            bL(bL_),
-            bR(bR_),
-            y(y_)
+  StenosisShapeDomain3D(plint xtopL_, plint xtopR_, plint xcircL_, plint xcircR_, plint ycirc_, plint ytop_,
+                        plint radiusCyl_, double a_, double bL_, double bR_, double y_)
+      : //xbottomL(xbottomL_),
+        //xbottomR(xbottomR_),
+        xtopL(xtopL_), xtopR(xtopR_), xcircL(xcircL_), xcircR(xcircR_), ycirc(ycirc_),
+        //ybottom(ybottom_),
+        ytop(ytop_), radiusCyl(radiusCyl_), radiusSqr(radiusCyl * radiusCyl), a(a_), bL(bL_), bR(bR_), y(y_)
 
-    {}
-    virtual bool operator() (plint iX, plint iY, plint iZ) const {
-        return ((iX-xcircL)*(iX-xcircL) + (iY-ycirc)*(iY-ycirc) <= radiusSqr) ||
-               ((iX-xcircR)*(iX-xcircR) + (iY-ycirc)*(iY-ycirc) <= radiusSqr) ||
-               (iX <= xcircR && iX >= xcircL && iY <= ytop ) ||
-               (iX >= (iY-bL)/a && iX <= xcircL && iY <= y) ||
-               (iX <= (iY-bR)/(-a) && iX >= xcircR && iY <= y );
+  {}
+  virtual bool operator()(plint iX, plint iY, plint iZ) const {
+    return ((iX - xcircL) * (iX - xcircL) + (iY - ycirc) * (iY - ycirc) <= radiusSqr) ||
+           ((iX - xcircR) * (iX - xcircR) + (iY - ycirc) * (iY - ycirc) <= radiusSqr) ||
+           (iX <= xcircR && iX >= xcircL && iY <= ytop) || (iX >= (iY - bL) / a && iX <= xcircL && iY <= y) ||
+           (iX <= (iY - bR) / (-a) && iX >= xcircR && iY <= y);
+  }
+  virtual StenosisShapeDomain3D<T> * clone() const { return new StenosisShapeDomain3D<T>(*this); }
 
-    }
-    virtual StenosisShapeDomain3D<T>* clone() const {
-        return new StenosisShapeDomain3D<T>(*this);
-    }
 private:
-    //plint xbottomL;
-    //plint xbottomR;
-    plint xtopL;
-    plint xtopR;
-    plint xcircL;
-    plint xcircR;
-    plint ycirc;
-    //plint ybottom;
-    plint ytop;
-    plint radiusCyl;
-    plint radiusSqr;
-    double a;
-    double bL;
-    double bR;
-    double y;
-
+  //plint xbottomL;
+  //plint xbottomR;
+  plint xtopL;
+  plint xtopR;
+  plint xcircL;
+  plint xcircR;
+  plint ycirc;
+  //plint ybottom;
+  plint ytop;
+  plint radiusCyl;
+  plint radiusSqr;
+  double a;
+  double bL;
+  double bR;
+  double y;
 };
 
 //-------------------------------------------------------------------------------------
 
-int main(int argc, char *argv[]) {
-  if(argc < 2) {
+int main(int argc, char * argv[]) {
+  if (argc < 2) {
     cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
     return -1;
   }
@@ -99,37 +86,40 @@ int main(int argc, char *argv[]) {
   HemoCell hemocell(argv[1], argc, argv);
   Config * cfg = hemocell.cfg;
 
-//-------------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------------------
 
   hlogfile << "(main) setting dimensions .." << endl;
 
-  plint widthSt = 2*(*cfg)["parameters"]["widthStenosis"].read<int>();; //length of stenosis
-  plint radiusCyl = 2*5; // rounding stenosis
+  plint widthSt = 2 * (*cfg)["parameters"]["widthStenosis"].read<int>();
+  ;                        //length of stenosis
+  plint radiusCyl = 2 * 5; // rounding stenosis
   double pi = std::acos(-1);
-  plint c_angle_degrees = (*cfg)["parameters"]["angleStenosis"].read<int>(); //60; //angle of stenosis
+  plint c_angle_degrees = (*cfg)["parameters"]["angleStenosis"].read<int>();       //60; //angle of stenosis
   double percentageSt = (*cfg)["parameters"]["percentageStenosis"].read<double>(); //0.8;
-  double angle = (90-c_angle_degrees) * pi/180; //in degrees
-  double c_angle = c_angle_degrees *pi/180;
+  double angle = (90 - c_angle_degrees) * pi / 180;                                //in degrees
+  double c_angle = c_angle_degrees * pi / 180;
   //calculate raakpunten and b from y =ax+b
-  double h = std::sin(angle)*radiusCyl;
-  double w = std::cos(angle)*radiusCyl;
+  double h = std::sin(angle) * radiusCyl;
+  double w = std::cos(angle) * radiusCyl;
   double a = std::tan(c_angle);
-  plint widthChannel = 2*(*cfg)["parameters"]["widthChannel"].read<int>(); //4*(*cfg)["domain"]["refDirN"].read<int>()+60;
-  plint heightChannel = 2*(*cfg)["parameters"]["heightChannel"].read<int>(); //4*(*cfg)["domain"]["refDirN"].read<int>();
+  plint widthChannel =
+      2 * (*cfg)["parameters"]["widthChannel"].read<int>(); //4*(*cfg)["domain"]["refDirN"].read<int>()+60;
+  plint heightChannel =
+      2 * (*cfg)["parameters"]["heightChannel"].read<int>(); //4*(*cfg)["domain"]["refDirN"].read<int>();
   //  cout << "HeightChannel = " << heightChannel << endl;
   //  cout << "percentageSt = " << percentageSt << endl;
   //  cout << "som = " << heightChannel*percentageSt << endl;
   //  cout << " widthCons = " << (heightChannel*percentageSt)/a << endl;
-  plint widthConst =  (heightChannel*percentageSt)/a;
-  plint lengthChannel = 4*(*cfg)["domain"]["refDirN"].read<int>()+widthSt+(2*widthConst);
+  plint widthConst = (heightChannel * percentageSt) / a;
+  plint lengthChannel = 4 * (*cfg)["domain"]["refDirN"].read<int>() + widthSt + (2 * widthConst);
 
   plint nx = lengthChannel;
   plint ny = heightChannel;
   plint nz = widthChannel;
 
-  plint ytop = heightChannel*percentageSt; //percentage of stenosis
-  plint xtopL = nx/2 - widthSt/2;
-  plint xtopR = nx/2 + widthSt/2;
+  plint ytop = heightChannel * percentageSt; //percentage of stenosis
+  plint xtopL = nx / 2 - widthSt / 2;
+  plint xtopR = nx / 2 + widthSt / 2;
   //  plint xbottomL = xtopL-2*46;
   //  plint xbottomR = xtopR+2*46;
   plint xcircL = xtopL + radiusCyl;
@@ -138,30 +128,20 @@ int main(int argc, char *argv[]) {
   //plint ytop = top - radiusCyl;
   //  plint ybottom = 0;
 
-  double xL = xcircL-w;
-  double y = ycirc+h;
-  double xR = xcircR+w;
+  double xL = xcircL - w;
+  double y = ycirc + h;
+  double xR = xcircR + w;
 
-  double bL = y - a*xL;
-  double bR = y + a*xR;
+  double bL = y - a * xL;
+  double bR = y + a * xR;
 
-  pcout << "parameters Stenosis: " <<
-      "pi = " << pi << "," <<
-      "angle = " << angle << "," <<
-      "a = " << a << "," <<
-      "bL = " << bL << "," <<
-      "bR = " << bR << "," <<
-      "y = " << y << "," <<
-      "ytopR = " << xtopR << ", " <<
+  pcout << "parameters Stenosis: " << "pi = " << pi << "," << "angle = " << angle << "," << "a = " << a << ","
+        << "bL = " << bL << "," << "bR = " << bR << "," << "y = " << y << "," << "ytopR = " << xtopR << ", " <<
       //  "xbottomR = " << xbottomR << ", " <<
-      "ytopL = " << xtopL << ", " <<
-      "radiuscyl = " << radiusCyl << ", " <<
-      "w = " << w << "," <<
-      "h = " << h << "," <<
-      "widthConst = " << widthConst << "," <<
-      "ytop = " << ytop << ", " << endl;
+      "ytopL = " << xtopL << ", " << "radiuscyl = " << radiusCyl << ", " << "w = " << w << "," << "h = " << h << ","
+        << "widthConst = " << widthConst << "," << "ytop = " << ytop << ", " << endl;
 
-//-------------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------------------
 
   hlog << "(Parameters) setting lbm parameters" << endl;
   param::lbm_base_parameters((*cfg));
@@ -169,38 +149,38 @@ int main(int argc, char *argv[]) {
 
 
   hlog << "(fc_solidified_stenosis) (Fluid) Initializing Palabos Fluid Field" << endl;
-  MultiBlockManagement3D management = defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, (*cfg)["domain"]["fluidEnvelope"].read<int>());
-    hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
-          management,
-          defaultMultiBlockPolicy3D().getBlockCommunicator(),
-          defaultMultiBlockPolicy3D().getCombinedStatistics(),
-          defaultMultiBlockPolicy3D().getMultiCellAccess<double, DESCRIPTOR>(),
-          new GuoExternalForceBGKdynamics<double, DESCRIPTOR>(1.0/param::tau));
+  MultiBlockManagement3D management =
+      defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, (*cfg)["domain"]["fluidEnvelope"].read<int>());
+  hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
+      management, defaultMultiBlockPolicy3D().getBlockCommunicator(),
+      defaultMultiBlockPolicy3D().getCombinedStatistics(),
+      defaultMultiBlockPolicy3D().getMultiCellAccess<double, DESCRIPTOR>(),
+      new GuoExternalForceBGKdynamics<double, DESCRIPTOR>(1.0 / param::tau));
 
   //Set up boundaries (to help preinlet creation)
-  Box3D topChannel( 0, nx-1, ny-1, ny-1, 0, nz-1);
-  Box3D bottomChannel( 0, nx-1, 0, 0, 0, nz-1);
+  Box3D topChannel(0, nx - 1, ny - 1, ny - 1, 0, nz - 1);
+  Box3D bottomChannel(0, nx - 1, 0, 0, 0, nz - 1);
 
-  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
-  defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR> );
+  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR>);
+  defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR>);
   defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
                  new StenosisShapeDomain3D<T>(xtopL, xtopR, xcircL, xcircR, ycirc, ytop, radiusCyl, a, bL, bR, y),
-                 new BounceBack<T, DESCRIPTOR>(1.) );
+                 new BounceBack<T, DESCRIPTOR>(1.));
 
   hlog << "(PreInlets) creating preInlet" << endl;
-  hemocell.preInlet = new hemo::PreInlet(&hemocell,management);
+  hemocell.preInlet = new hemo::PreInlet(&hemocell, management);
 
-   // Setting Preinlet slice
+  // Setting Preinlet slice
   Box3D slice = hemocell.lattice->getBoundingBox();
-  slice.x1 = slice.x0 = slice.x0+1;
-  hemocell.preInlet->preInletFromSlice(Direction::Xneg,slice);
+  slice.x1 = slice.x0 = slice.x0 + 1;
+  hemocell.preInlet->preInletFromSlice(Direction::Xneg, slice);
 
   hlog << "(Stl preinlet) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.initializeLattice(management);
 
   hemocell.preInlet->initializePreInlet();
 
-  hemocell.lattice->periodicity().toggle(2,true);
+  hemocell.lattice->periodicity().toggle(2, true);
 
   hlog << "(Stl preinlet) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl;
 
@@ -208,7 +188,7 @@ int main(int argc, char *argv[]) {
 
   hemocell.lattice->toggleInternalStatistics(false);
 
-  hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
+  hemocell.latticeEquilibrium(1., plb::Array<double, 3>(0., 0., 0.));
 
   hemocell.preInlet->calculateDrivingForce();
 
@@ -227,20 +207,22 @@ int main(int argc, char *argv[]) {
 
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
-  vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
+  vector<int> outputs = {OUTPUT_POSITION,      OUTPUT_TRIANGLES,  OUTPUT_FORCE,      OUTPUT_FORCE_VOLUME,
+                         OUTPUT_FORCE_BENDING, OUTPUT_FORCE_LINK, OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC};
   hemocell.setOutputs("RBC", outputs);
   hemocell.setOutputs("PLT", outputs);
 
-  outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE,OUTPUT_SHEAR_RATE,OUTPUT_STRAIN_RATE,OUTPUT_SHEAR_STRESS,OUTPUT_BOUNDARY,OUTPUT_BINDING_SITES};
+  outputs = {OUTPUT_VELOCITY,    OUTPUT_DENSITY,      OUTPUT_FORCE,    OUTPUT_SHEAR_RATE,
+             OUTPUT_STRAIN_RATE, OUTPUT_SHEAR_STRESS, OUTPUT_BOUNDARY, OUTPUT_BINDING_SITES};
   hemocell.setFluidOutputs(outputs);
 
   //Define binding sites
-  if(!hemocell.partOfpreInlet){
+  if (!hemocell.partOfpreInlet) {
     Box3D bb = hemocell.lattice->getBoundingBox();
-    Box3D outlet(bb.x1-2,bb.x1,bb.y0,bb.y1,bb.z0,bb.z1);
-    OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = new BoundaryConditionInstantiator3D
-            < T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T,DESCRIPTOR> > ();
-    boundary->addPressureBoundary0P(outlet,*hemocell.lattice,boundary::density);
+    Box3D outlet(bb.x1 - 2, bb.x1, bb.y0, bb.y1, bb.z0, bb.z1);
+    OnLatticeBoundaryCondition3D<T, DESCRIPTOR> * boundary =
+        new BoundaryConditionInstantiator3D<T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T, DESCRIPTOR>>();
+    boundary->addPressureBoundary0P(outlet, *hemocell.lattice, boundary::density);
     Box3D bindingbox = hemocell.lattice->getBoundingBox();
     hemocell.cellfields->populateBindingSites(&bindingbox);
   }
@@ -258,7 +240,8 @@ int main(int argc, char *argv[]) {
   //hemocell.doRestructure(false); // cause errors(?)
 
   if (hemocell.iter == 0) {
-    pcout << "(Stl preinlet) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
+    pcout << "(Stl preinlet) fresh start: warming up cell-free fluid domain for "
+          << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
     for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
       hemocell.lattice->collideAndStream();
     }
@@ -270,10 +253,9 @@ int main(int argc, char *argv[]) {
   unsigned int tbalance = (*cfg)["sim"]["tbalance"].read<unsigned int>();
 
 
-
   pcout << "(Stl preinlet) Starting simulation..." << endl;
 
-  while (hemocell.iter < tmax ) {
+  while (hemocell.iter < tmax) {
     //preinlet.update();
     hemocell.iterate();
 
@@ -284,25 +266,29 @@ int main(int argc, char *argv[]) {
 
     hemocell.preInlet->applyPreInlet();
 
-    // Load-balancing! Only enable if PARMETIS build is available
-    #ifdef HEMO_PARMETIS
-     if (hemocell.iter % tbalance == 0) {
-       if(hemocell.calculateFractionalLoadImbalance() > (*cfg)["parameters"]["maxFlin"].read<double>()) {
-         hemocell.doLoadBalance();
-         hemocell.doRestructure();
-       }
-     }
-   #endif
-   
+// Load-balancing! Only enable if PARMETIS build is available
+#ifdef HEMO_PARMETIS
+    if (hemocell.iter % tbalance == 0) {
+      if (hemocell.calculateFractionalLoadImbalance() > (*cfg)["parameters"]["maxFlin"].read<double>()) {
+        hemocell.doLoadBalance();
+        hemocell.doRestructure();
+      }
+    }
+#endif
+
     if (hemocell.iter % tmeas == 0) {
-      pcout << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
+      pcout << "(main) Stats. @ " << hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
       pcout << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
       pcout << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC");
       pcout << ", PLT: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "PLT") << endl;
-      FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell); double toMpS = param::dx / param::dt;
-      pcout << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg * toMpS<< " m/s, rel. app. viscosity: " << (param::u_lbm_max*0.5) / finfo.avg << endl;
-      ParticleStatistics pinfo = ParticleInfo::calculateForceStatistics(&hemocell); double topN = param::df * 1.0e12;
-      pcout << "\t Force  -  min.: " << pinfo.min * topN << " pN, max.: " << pinfo.max * topN << " pN (" << pinfo.max << " lf), mean: " << pinfo.avg * topN << " pN" << endl;
+      FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell);
+      double toMpS = param::dx / param::dt;
+      pcout << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg * toMpS
+            << " m/s, rel. app. viscosity: " << (param::u_lbm_max * 0.5) / finfo.avg << endl;
+      ParticleStatistics pinfo = ParticleInfo::calculateForceStatistics(&hemocell);
+      double topN = param::df * 1.0e12;
+      pcout << "\t Force  -  min.: " << pinfo.min * topN << " pN, max.: " << pinfo.max * topN << " pN (" << pinfo.max
+            << " lf), mean: " << pinfo.avg * topN << " pN" << endl;
 
       // Additional useful stats, if needed
       //finfo = FluidInfo::calculateForceStatistics(&hemocell);
@@ -316,9 +302,7 @@ int main(int argc, char *argv[]) {
 
       hemocell.writeOutput();
     }
-    if (hemocell.iter % tcheckpoint == 0) {
-      hemocell.saveCheckPoint();
-    }
+    if (hemocell.iter % tcheckpoint == 0) { hemocell.saveCheckPoint(); }
   }
 
   pcout << "(main) Simulation finished :) " << endl;
