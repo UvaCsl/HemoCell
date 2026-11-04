@@ -44,9 +44,75 @@ Unreleased (refactor)
   * `FORCE_LIMIT` can be undefined again without breaking compilation.
   * A warning is printed when a repulsion cutoff exceeds one lattice spacing
     (the neighbour search only covers adjacent nodes).
+  * Exit signals (SIGINT, SIGTERM, SIGHUP, SIGQUIT, SIGUSR1/2) are handled
+    collectively every `exitSignalCheckInterval` (100) iterations: all ranks
+    save a checkpoint and exit, instead of one rank exiting and the others
+    hanging. SIGABRT is no longer intercepted.
+  * Log messages written before the log file is opened (e.g. all setup output
+    of a restarted run) are printed and kept, instead of being dropped.
+  * Pre-inlet: velocities are exchanged with one message per rank pair per
+    step from a plan built once (previously one blocking message per inlet
+    node, tagged with the node index, which can exceed MPI's tag range), the
+    inlet nodes are selected by their fluid flag (previously `isBoundary()` was
+    evaluated at unrelated nodes), particles are sent as one message per rank
+    pair (several blocks per rank were mismatched), received blocks no longer
+    shift a shared buffer twice, and the three global barriers per step are
+    gone. Results of the examples are bit-identical.
+  * `hemo::Array` no longer uses libstdc++ internals (portability) or writes
+    past its end for long initialiser lists; `+= Dot3D` adds the offset once.
+  * Particles have move semantics (no deep copies on reallocation/removal);
+    copy assignment copies `force_total`; `HemoCellParticleField::operator=`
+    copies particles instead of deleting itself (Palabos uses it when copying a
+    MultiParticleField3D). The Adams-Bashforth integration option compiles.
+  * Debug (`PLB_DEBUG`) builds compile again; non-standard VLAs removed.
+  * `deleteIncompleteCells(ctype)` only deletes cells of that type;
+    `getNumberOfCells_Global()` returns the actual count (was 0).
+  * The binding-field and interior-viscosity helpers are owned by
+    `HemoCellFields` instead of being process-wide singletons that outlived it.
+* Build system and CI
+  * Palabos is compiled once (object library) instead of once per HemoCell
+    library variant; the patched `parallelBlockCommunicator3D.cpp`, which calls
+    HemoCell code, is compiled with the HemoCell sources.
+  * The build type is honoured (default Release); new options
+    `HEMOCELL_NATIVE_ARCH`, `HEMOCELL_DEBUG_INFO`, `HEMOCELL_PALABOS_DEBUG`,
+    `HEMOCELL_SANITIZERS`, `HEMOCELL_WERROR`; `CMakePresets.json` with release,
+    portable, debug and sanitize configurations.
+  * MPI and HDF5 via imported/interface targets, with MPI's include directories
+    before HDF5's (an HDF5 prefix may contain another MPI's `mpi.h`); the
+    ineffective switch to the MPI compiler wrapper was removed.
+  * Warnings only for HemoCell code; Palabos and tinyxml2 are compiled quietly.
+  * CTest: `unit`, `validation`, `unit_mpi`, `validation_mpi` run in the
+    repository root (the old entry ran in `tests/` and could not find its
+    inputs); `hemocell_test` is written to the build directory.
+  * Aggregate targets `hemocell_examples` and `hemocell_cases`.
+  * GoogleTest pinned by commit, an installed GoogleTest >= 1.17 is used when
+    found; requires CMake >= 3.16 (presets: 3.21).
+  * GitHub Actions: GCC (`-Werror`) and Clang builds of everything, unit and
+    validation tests on 1 and 2 ranks, unit tests under ASan/UBSan, and the
+    user guide. Performance tests moved to a manual self-hosted workflow.
+  * Debug builds work: fixed a const-correctness error that only appeared with
+    Palabos assertions, and platelet inner-link lengths no longer use Palabos'
+    edge-length function (which asserts that the vertices share an edge).
+  * UBSan findings fixed: unaligned record access in the gathering functional,
+    indexing an empty receive buffer.
+* Formatting and documentation
+  * `.clang-format` (derived from the prevailing style), `.editorconfig`,
+    `scripts/format.sh`; CI checks the formatting of the lines a pull request
+    changes. No code has been reformatted yet.
+  * New Developer Guide in the user guide: architecture and internals, coding
+    conventions (including performance rules), extending HemoCell, known
+    limitations. `CONTRIBUTING.md`; contribution workflow targets `dev`.
+  * Units, preconditions and collectiveness documented for the public
+    `HemoCell` setters; the repulsion page states the actual units.
+* Fixes found while documenting
+  * Wall repulsion without cell-cell repulsion accumulated in
+    `force_repulsion` at every update (it was never reset); it now resets the
+    field itself. Cell-cell and wall repulsion must use the same update
+    interval (checked at start-up).
 * Tests
-  * Unit tests for the particle grid/repulsion and the configuration reader; an
-    integration test for checkpoint/restart.
+  * Unit tests for the particle grid/repulsion, the configuration reader,
+    `hemo::Array`, particle copy/move and log buffering; an integration test
+    for checkpoint/restart.
 
 2.6 (July 15 2022)
 -----------------

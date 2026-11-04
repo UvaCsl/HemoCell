@@ -45,26 +45,41 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace hemo;
 
+namespace {
 volatile sig_atomic_t interrupted = 0;
 bool interrupt_handler_set = false;
+
+// Signals that request a graceful stop (checkpoint + exit). SIGABRT is
+// deliberately not caught: abort() must terminate the process.
+const int exit_signals[] = {SIGINT, SIGTERM, SIGHUP, SIGQUIT, SIGUSR1, SIGUSR2};
+const int n_exit_signals = sizeof(exit_signals)/sizeof(exit_signals[0]);
+struct sigaction previous_actions[n_exit_signals];
+
 void set_interrupt(int signum) {
   interrupted = 1;
 }
 
 void set_interrupt_handler() {
-  ///Set signal handlers to exit gracefully on many signals
   struct sigaction sa;
   memset(&sa, 0, sizeof(struct sigaction));
   sa.sa_handler = set_interrupt;
-  sigaction(SIGINT,&sa,0);
-  sigaction(SIGTERM,&sa,0);
-  sigaction(SIGHUP,&sa,0);
-  sigaction(SIGQUIT,&sa,0);
-  sigaction(SIGABRT,&sa,0);
-  sigaction(SIGUSR1,&sa,0);
-  sigaction(SIGUSR2,&sa,0);
+  sa.sa_flags = SA_RESTART; // do not interrupt system calls (e.g. inside MPI)
+  sigemptyset(&sa.sa_mask);
+  for (int i = 0; i < n_exit_signals; i++) {
+    sigaction(exit_signals[i], &sa, &previous_actions[i]);
+  }
   interrupt_handler_set = true;
 }
+
+void restore_interrupt_handler() {
+  if (!interrupt_handler_set) { return; }
+  for (int i = 0; i < n_exit_signals; i++) {
+    sigaction(exit_signals[i], &previous_actions[i], 0);
+  }
+  interrupt_handler_set = false;
+  interrupted = 0;
+}
+} // namespace
 
 HemoCell::HemoCell(char * configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handler)
 {
@@ -77,6 +92,8 @@ HemoCell::HemoCell(char * configFileName, int argc, char * argv[], HemoCell::MPI
     exit(1);
   }
   global.hemoCellInitialized = true;
+  // Log (and buffer until the log file is opened) on the main process only.
+  hlog.mainProcess = global::mpi().isMainProcessor();
   
   pcout << "(HemoCell) (Config) reading " << configFileName << endl;
   cfg = new Config(configFileName);
@@ -120,6 +137,11 @@ HemoCell::~HemoCell() {
   if (preinlet_lattice_management) {
     delete preinlet_lattice_management;
   }
+  // Give the process its original signal behaviour back.
+  restore_interrupt_handler();
+  // Close this simulation's log file, so that a next HemoCell instance (e.g.
+  // in the test suite) logs to its own file.
+  hlog.close();
   // After cleaning up, signal that there is no hemocell instance initialised
   // anymore, allowing to recreated another one if needed, for instance when
   // running multiple test instances.
@@ -293,14 +315,33 @@ void HemoCell::checkExitSignals() {
   if (!interrupt_handler_set) {
     set_interrupt_handler();
   }
-  if (interrupted == 1) {
-    cout << endl << "Caught Signal, saving work and quitting!" << endl << std::flush;
+  // A signal may reach only some ranks, at different moments. Agree on all
+  // ranks before acting, otherwise some ranks would leave while the others
+  // block in the next collective operation.
+  int local_interrupt = interrupted ? 1 : 0;
+  int any_interrupt = 0;
+  MPI_Allreduce(&local_interrupt, &any_interrupt, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+  if (any_interrupt) {
+    pcout << endl << "(HemoCell) Caught exit signal at iteration " << iter;
+    if (checkpointOnExitSignal) {
+      pcout << ", saving a checkpoint and quitting." << endl << std::flush;
+      saveCheckPoint();
+    } else {
+      pcout << ", quitting without checkpoint." << endl << std::flush;
+    }
     exit(1);
   }
 }
 
 void HemoCell::iterate() {
-  checkExitSignals();
+  if (!interrupt_handler_set) {
+    set_interrupt_handler();
+  }
+  // Collective, so only every exitSignalCheckInterval iterations (same
+  // decision on all ranks, since iter is identical everywhere).
+  if (exitSignalCheckInterval > 0 && iter % exitSignalCheckInterval == 0) {
+    checkExitSignals();
+  }
   if (!sanityCheckDone) {
     sanityCheck();
   }
@@ -315,7 +356,9 @@ void HemoCell::iterate() {
     cellfields->applyRepulsionForce();
   }
   if(boundaryRepulsionEnabled && iter % cellfields->boundaryRepulsionTimescale == 0) {
-    cellfields->applyBoundaryRepulsionForce();
+    // Particle-particle repulsion resets force_repulsion; without it the wall
+    // contribution must reset it itself, or it would accumulate every update.
+    cellfields->applyBoundaryRepulsionForce(!repulsionEnabled);
   }
   cellfields->spreadParticleForce();
 
@@ -616,6 +659,16 @@ void HemoCell::sanityCheck() {
        hlog << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
        exit(1);
     }
+  }
+
+  // Both repulsion kinds share sv.force_repulsion, which particle-particle
+  // repulsion resets at its updates; with different intervals the wall term
+  // would accumulate between those resets.
+  if (repulsionEnabled && boundaryRepulsionEnabled &&
+      cellfields->repulsionTimescale != cellfields->boundaryRepulsionTimescale) {
+    hlog << "(HemoCell) Error, particle and boundary repulsion must use the same timescale separation ("
+         << cellfields->repulsionTimescale << " vs " << cellfields->boundaryRepulsionTimescale << "), exiting ..." << endl;
+    exit(1);
   }
 
   // The repulsion neighbour searches only visit adjacent lattice nodes (see

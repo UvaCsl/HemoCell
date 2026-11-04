@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "readPositionsBloodCells.h"
 #include "meshMetrics.h"
 #include "meshGeneratingFunctions.h"
+#include "cellInfo.h"
 
 #include <climits>
 
@@ -179,7 +180,10 @@ void HemoCellField::statistics() {
 }
 
 plb::MultiParticleField3D<HemoCellParticleField> * HemoCellField::getParticleArg() { return cellFields.immersedParticles; }
-int HemoCellField::getNumberOfCells_Global() {return 0;}
+int HemoCellField::getNumberOfCells_Global() {
+  // Collective: counts cells of this type whose centre lies on each rank.
+  return CellInformationFunctionals::getNumberOfCellsFromType(&cellFields.hemocell, name);
+}
 std::string HemoCellField::getIdentifier() {return name;}
 vector<int> HemoCellField::default_output ({OUTPUT_POSITION});
 plb::MultiParticleField3D<HemoCellParticleField> * HemoCellField::getParticleField3D() {return cellFields.immersedParticles;}

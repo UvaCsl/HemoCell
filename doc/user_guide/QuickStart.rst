@@ -89,9 +89,21 @@ the HemoCell library::
   cmake ..
   cmake --build .
 
-By default only the standard ``hemocell`` library is compiled. 
-This operation can take a while, we suggest a coffee. Note: there might be a set of warning depending
-on the versions of the dependencies you are using.
+By default only the standard ``hemocell`` library is compiled, as a ``Release``
+build optimised for the CPU of the build machine (``-march=native``). Use
+``-DHEMOCELL_NATIVE_ARCH=OFF`` for binaries that must run on other CPUs (e.g.
+other nodes of a cluster), and ``-DCMAKE_BUILD_TYPE=Debug`` for a debug build.
+This operation can take a while, we suggest a coffee.
+
+With ``CMake >= 3.21`` the predefined presets are a convenient alternative; each
+builds into its own ``build-<preset>`` directory::
+
+  cmake --list-presets              # release, portable, debug, sanitize
+  cmake --preset release
+  cmake --build --preset release
+
+Machine-specific settings (for example ``-DHDF5_ROOT=...``) can be kept in a
+``CMakeUserPresets.json`` that inherits from these presets.
 
 To compile specific examples (that link to the library), you should specify their corresponding compile targets.
 These targets are defined for each example and match the example's directory
@@ -117,13 +129,17 @@ your machine::
 
 Afterwards, the ``pipeflow`` and ``parachuting`` executables are placed within
 the corresponding example's directories, i.e. ``examples/pipeflow`` and
-``examples/parachuting``.
+``examples/parachuting``. The targets ``hemocell_examples`` and
+``hemocell_cases`` build all examples and all research cases.
 
 
-To test if the library is successfully compiled, you can evaluate the defined
-tests::
+To test if the library is successfully compiled, build the test runner and run
+the tests (``unit`` takes seconds, ``validation`` a few minutes; both also run
+on two MPI ranks)::
 
-  make test
+  cmake --build . --target hemocell_test
+  ctest -L unit --output-on-failure
+  ctest -L validation --output-on-failure
 
 .. _packcells:
 

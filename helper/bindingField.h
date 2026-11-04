@@ -30,10 +30,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace hemo {
   class bindingFieldHelper {
   public:
+    /// The helper of @p cellFields, created on first use. It is owned by
+    /// HemoCellFields (not a process-wide singleton), so it is destroyed with
+    /// its simulation and never refers to a destroyed HemoCellFields.
     static bindingFieldHelper& get(HemoCellFields & cellFields) {
-      static bindingFieldHelper instance(&cellFields);
-      return instance;
+      if (!cellFields.bindingHelper) {
+        cellFields.bindingHelper = new bindingFieldHelper(&cellFields);
+      }
+      return *cellFields.bindingHelper;
     }
+    ~bindingFieldHelper();
       
     void checkpoint();
     static void restore(HemoCellFields & cellFields);
@@ -49,7 +55,6 @@ namespace hemo {
     plb::MultiScalarField3D<bool> * multiBindingField = 0;
     
     bindingFieldHelper(HemoCellFields * cellFields);
-    ~bindingFieldHelper();
     
     void refillBindingSites();
     

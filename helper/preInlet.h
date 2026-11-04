@@ -127,6 +127,32 @@ public:
   std::vector<int> particle_senders;
   HemoCell * hemocell;
   MultiScalarField3D<int> *flagMatrix = 0;
+
+  ~PreInlet();
+
+private:
+  /// Private duplicate of MPI_COMM_WORLD for the pre-inlet <-> domain
+  /// exchanges, so their messages never match Palabos or other HemoCell
+  /// traffic. Created in initializePreInletParticleBoundary() (collective).
+  MPI_Comm comm = MPI_COMM_NULL;
+
+  /// A lattice node of a local atomic block (block-local coordinates).
+  struct BlockNode { plint blockId, x, y, z; };
+  /// Velocity coupling plan, built once by buildVelocityExchange(): for each
+  /// partner rank the nodes whose velocity is sent (pre-inlet side) or
+  /// received (domain side), in the same order on both sides.
+  bool velocityExchangeReady = false;
+  std::map<int, std::vector<BlockNode>> velocitySendNodes;
+  std::map<int, std::vector<BlockNode>> velocityRecvNodes;
+  std::vector<std::vector<T>> velocityBuffers;
+  /// Fluid flag of each node of fluidInlet (see initializePreInletVelocityBoundary()).
+  std::vector<char> inletFluidMask;
+  inline pluint inletMaskIndex(plint x, plint y, plint z) const {
+    return ((x - fluidInlet.x0)*fluidInlet.getNy() + (y - fluidInlet.y0))*fluidInlet.getNz() + (z - fluidInlet.z0);
+  }
+  std::vector<char> particleSendBuffer;
+  std::vector<char> particleRecvBuffer;
+  void buildVelocityExchange();
 };
 
 }

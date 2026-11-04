@@ -78,7 +78,10 @@ public:
     particlefield = dynamic_cast<HemoCellParticleField*>(blocks[1]);
     blockid = particlefield->atomicBlockId; //Nasty trick to prevent us from having to overload the fluid field ( palabos domain)
 
-    this->odomain = &domain; //Access for output functions
+    // Output functions access the domain and size through these pointers; they
+    // point to members, not to this function's locals, so they stay valid.
+    this->odomainStorage = domain;
+    this->odomain = &this->odomainStorage;
     if (outputVariables.size() == 0 ) {
       return; //No output needed? ok
     }
@@ -99,7 +102,8 @@ public:
     hsize_t Ny = domain.y1 - domain.y0+1 +2;
     hsize_t Nz = domain.z1 - domain.z0+1 +2;
     hsize_t nCells = Nx*Ny*Nz;
-    this->nCells = &nCells;
+    this->nCellsStorage = nCells;
+    this->nCells = &this->nCellsStorage;
     int ncells = Nx*Ny*Nz;
     Dot3D rp_temp = blocks[0]->getLocation();
     int subdomainSize[]  = {int(Nz), int(Ny), int(Nx)}; //Reverse for paraview
@@ -551,10 +555,12 @@ private:
     double dx;
     double dt;
     Box3D * odomain;
+    Box3D odomainStorage;
     BlockLattice3D<T,DD> * ablock;
     HemoCellParticleField * particlefield;
     int blockid;
     hsize_t * nCells;
+    hsize_t nCellsStorage = 0;
     vector<int> & outputVariables;
 };
 }

@@ -25,13 +25,20 @@ Contributing code
 -----------------
 
 #. Create a fork of the HemoCell repository.
-#. Create a new branch from the ``develop`` branch for the issue you want to
+#. Create a new branch from the ``dev`` branch for the issue you want to
    work on. Please give the branch a name that is relevant to the issue.
-#. Modify or add code on your branch.
-#. Before pushing, make sure you have not included unrelated changes and that
-   the project builds properly.
-#. When you are done, push your changes and open a pull request from your branch
-   to the ``develop`` branch.
+#. Modify or add code on your branch, following the
+   :ref:`coding conventions <developer/conventions:Coding conventions>`, and
+   add tests for new behaviour (:ref:`developer/extending:Adding tests`).
+#. Format your changes (``git clang-format``), and run the unit tests
+   (``ctest -L unit``) and, for changes to physics, mechanics or
+   communication, the validation tests (``ctest -L validation``).
+#. Make sure you have not included unrelated changes, and describe
+   behaviour changes in ``CHANGELOG.md`` and the user guide.
+#. Push your changes and open a pull request from your branch to the ``dev``
+   branch. Continuous integration builds HemoCell with GCC and Clang, runs the
+   tests on one and two MPI ranks and under sanitizers, and checks the
+   formatting of the changed lines.
 
 .. tip::
 

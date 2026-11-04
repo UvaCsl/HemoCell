@@ -48,28 +48,43 @@ cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build --target hemocell --parallel 2
 cmake --build build --target pipeflow stretchCell --parallel 2
 cmake --build build --target hemocell_test --parallel 2
+# or with presets (CMake >= 3.21), building into build-<preset>/:
+cmake --preset release            # also: portable, debug, sanitize
+cmake --build --preset release    # builds hemocell_test (and the library)
 ```
 
-Choose parallelism to fit available memory: each library includes Palabos sources
-and compilation can be expensive. Initial configuration with `BUILD_TESTING=ON`
-fetches GoogleTest if it is not already populated. `-DBUILD_TESTING=OFF` skips
-that dependency and the tests; it is useful for a library-only build, not a
-substitute for testing a code change.
+Machine-specific settings (e.g. `HDF5_ROOT`, MPI header paths) belong in a
+`CMakeUserPresets.json` (ignored by git) that inherits from these presets.
+Choose parallelism to fit available memory: Palabos is compiled once (as an
+object library archived into every HemoCell library variant), but it is large.
+Initial configuration with `BUILD_TESTING=ON` fetches GoogleTest (pinned
+v1.17.0) unless an installed GoogleTest >= 1.17 is found. `-DBUILD_TESTING=OFF`
+skips that dependency and the tests; it is useful for a library-only build, not
+a substitute for testing a code change.
 
 Build details that matter:
 
 - The default build compiles `hemocell` only. Examples, cases, tests and optional
-  library variants are excluded from `all`; request their targets explicitly.
-- Example/case targets normally match their directory names and put executables
-  into those source directories. `hemocell_test` is written to the repository
-  root, not `build/`.
+  library variants are excluded from `all`; request their targets explicitly
+  (`hemocell_examples` and `hemocell_cases` build all examples/cases).
+- Example/case targets match their directory names and put executables into
+  those source directories (so the last build tree built wins). `hemocell_test`
+  is written to the build directory.
 - Library `.cpp` files and test sources are discovered recursively with CMake
-  globs. Reconfigure after adding/removing files. Additional source files for an
-  example must be registered explicitly in its `add_executable` call.
-- Root CMake currently forces `Release` and adds `-O3 -march=native -ggdb` and
-  warning flags. Passing `-DCMAKE_BUILD_TYPE=Debug` alone does not produce a debug
-  build. Inspect the actual compile command when enabling debugging/sanitizers.
-  Binaries built with `-march=native` may not be portable to other cluster nodes.
+  globs (`CONFIGURE_DEPENDS`). Additional source files for an example must be
+  registered explicitly in its `add_executable` call, and the directory added
+  to the list in `examples/CMakeLists.txt` or `cases/CMakeLists.txt`.
+- The build type is honoured (default `Release`: `-O3 -DNDEBUG`). Options:
+  `HEMOCELL_NATIVE_ARCH` (default ON, `-march=native`; binaries may not run on
+  other CPUs, use the `portable` preset for those), `HEMOCELL_DEBUG_INFO`
+  (`-ggdb`, default ON), `HEMOCELL_PALABOS_DEBUG` (`PLB_DEBUG` run-time checks),
+  `HEMOCELL_SANITIZERS` (e.g. `address;undefined`) and `HEMOCELL_WERROR`
+  (library and tests only). These flags apply to all targets; warnings are
+  only enabled for HemoCell code, not for Palabos or vendored tinyxml2.
+- MPI and HDF5 are linked through `MPI::MPI_CXX` and an interface target that
+  keeps MPI's include directories before HDF5's: an HDF5 prefix such as a conda
+  environment may ship another MPI's `mpi.h`, which must not shadow the MPI the
+  code is built with.
 
 ### Compile-time variants
 
@@ -276,17 +291,25 @@ which initializes MPI once. Construct simulations in tests with
 `HemoCell::MPIHandle::External`; do not initialize/finalize MPI for each test.
 Use meaningful assertions on behavior, not just successful execution.
 
-Run the test binary **from the repository root** with this checkout:
+Run the tests with CTest, or run the binary **from the repository root** (the
+tests read their inputs relative to it):
 
 ```bash
 cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build --target hemocell_test --parallel 2
-./hemocell_test --gtest_list_tests
-./hemocell_test --gtest_filter='-*Validation*:Performance.*'
-./hemocell_test --gtest_filter='*Validation*'
+ctest --test-dir build -L unit --output-on-failure        # unit, 1 and 2 ranks
+ctest --test-dir build -L validation --output-on-failure  # validation, 1 and 2 ranks
+# or directly:
+build/hemocell_test --gtest_list_tests
+build/hemocell_test --gtest_filter='-*Validation*:Performance.*'
+build/hemocell_test --gtest_filter='*Validation*'
 # For changes to communication, ownership, periodicity or decomposition:
-mpirun -n 2 ./hemocell_test --gtest_filter='*Validation*'
+mpirun -n 2 build/hemocell_test --gtest_filter='*Validation*'
 ```
+
+CTest registers `unit`, `validation`, `unit_mpi` and `validation_mpi` (labels
+`unit`, `validation`, `mpi`; rank count `HEMOCELL_TEST_MPI_RANKS`, default 2),
+all running in the repository root.
 
 The broad `*Validation*` pattern includes parameterized stretch tests named
 `Validation/ValidationForceDisplacement...` as well as the `Validation` suite.
@@ -294,16 +317,17 @@ The documented `Validation.*` pattern misses those parameterized tests.
 Exclude `Performance.*` from ordinary test runs: `Performance.cube` expects a
 configuration as its first positional argument and asserts hardware-dependent
 timings. Run it deliberately with a matching rank count and configuration, e.g.
-`mpirun -n 2 ./hemocell_test tests/performance/configs/config-2.xml --gtest_filter='Performance.*'`.
-Currently the remaining non-validation/non-performance coverage is only a dummy
-test; passing it is not sufficient verification for solver changes.
+`mpirun -n 2 build/hemocell_test tests/performance/configs/config-2.xml --gtest_filter='Performance.*'`
+(GitHub workflow `performance.yml`, manual, self-hosted runner).
+The unit tests cover selected components (particle grid and repulsion, config
+reader, arrays, particle copies, logging, checkpoint restart); passing them is
+not sufficient verification for solver changes.
 
-CTest is registered, but `tests/CMakeLists.txt` sets its working directory to
-`tests/` while existing validation code loads `tests/validation/...` and
-`examples/...` paths relative to the repository root. Thus the documented
-`ctest` invocation has a path mismatch; use the direct commands above until the
-runner/fixtures are corrected. If changing the test infrastructure, make CTest
-and direct runs agree rather than duplicating test assets.
+Before submitting larger changes, also build and run the unit tests with the
+`sanitize` (AddressSanitizer + UBSan; set `ASAN_OPTIONS=detect_leaks=0`) and
+`debug` (Palabos assertions) presets. CI (`.github/workflows/ci.yml`) builds
+everything with GCC (`-Werror`) and Clang and runs unit and validation tests
+on 1 and 2 ranks, plus the unit tests under the sanitizers.
 
 Match verification to the change:
 
@@ -323,9 +347,15 @@ validation. Do not claim a simulation or build was verified from inspection alon
 
 ## C++ style and code documentation
 
-Follow the surrounding file's formatting and naming; there is no checked-in
-project-wide clang-format configuration. Keep edits focused and avoid whole-file
-reformatting, broad modernization or unsolicited dependency/toolchain changes.
+Formatting is defined by `.clang-format` (clang-format >= 14; `.editorconfig`
+for editors). Format the lines you change with `git clang-format`; CI checks
+the changed lines of pull requests. `scripts/format.sh` formats whole files,
+but do not reformat unrelated files in a functional change. Vendored and
+historical code (`external/`, `legacy/`, generated `palabos/`) is excluded.
+Follow the surrounding file's naming. Keep edits focused and avoid broad
+modernization or unsolicited dependency/toolchain changes. Internals,
+conventions, extension recipes and known limitations are documented in
+`doc/user_guide/developer/`.
 
 - Keep library symbols in `namespace hemo`; qualify `hemo::`/`plb::` where it
   prevents ambiguity. Do not add new global `using namespace` directives to

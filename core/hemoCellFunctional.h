@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "constant_defaults.h"
 #include "mpi.h"
+#include <cstring>
 
 #include "atomicBlock/dataProcessingFunctional3D.hh"
 #include "core/globalDefs.h"
@@ -93,7 +94,9 @@ public:
             IDandGatherType bg;
             bg.ID = entry.first;
             bg.g = entry.second;
-            *((IDandGatherType*)&sendbuffer[be]) = bg;
+            // The records follow a 4-byte count, so they are not aligned:
+            // copy bytes instead of dereferencing a cast pointer.
+            std::memcpy(&sendbuffer[be], &bg, sizeof(IDandGatherType));
             be+=sizeof(IDandGatherType);
         }
         
@@ -120,7 +123,7 @@ public:
             }
             for (int i = 0 ; i < local_number.i ; i++) {
                 IDandGatherType bg;
-                bg = *((IDandGatherType*)&receivebuffer[be]);
+                std::memcpy(&bg, &receivebuffer[be], sizeof(IDandGatherType));
                 be += sizeof(IDandGatherType);
                 gatherValues[bg.ID] = bg.g;
             }

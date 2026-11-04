@@ -38,8 +38,9 @@ namespace hemo {
 /// the surface mesh, however, that routine is defined in ZYX order.
 template<typename T>
 void rotateTriangularMeshXYZ(plb::TriangularSurfaceMesh<T>* mesh, T alpha, T beta, T gamma) {
-  PLB_ASSERT((theta > T() || util::fpequal(theta, T(), eps0)) &&
-             (theta < PI  || util::fpequal(theta, PI, eps0)));
+  // alpha, beta, gamma are arbitrary angles in radians (any sign). The range
+  // assertion copied from Palabos' rotate() referred to undefined variables
+  // and broke debug (PLB_DEBUG) builds; it does not apply here.
 
   // Rotation matrix around x axis (column-first)
   T a[3][3];
@@ -196,9 +197,9 @@ void getReadPositionsBloodCellsVector(Box3D realDomain,
     
 
 
-    vector<vector3> packPositions[cellFields.size()];
-    vector<vector3> packAngles[cellFields.size()];
-    vector<plint> cellIdss[cellFields.size()];
+    vector<vector<vector3>> packPositions(cellFields.size());
+    vector<vector<vector3>> packAngles(cellFields.size());
+    vector<vector<plint>> cellIdss(cellFields.size());
 
     Np.resize(cellFields.size());
 

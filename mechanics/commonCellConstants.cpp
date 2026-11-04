@@ -157,7 +157,11 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
     //Calculate eq edges lengths
     vector<T> inner_edge_length_eq_list_;
     for (const hemo::Array<plint,2> & edge : inner_edge_list_) {
-      inner_edge_length_eq_list_.push_back(cellField.meshElement->computeEdgeLength(edge[0],edge[1]));
+      // Inner links join vertices that do not share a surface edge, so the
+      // distance is computed directly; Palabos' computeEdgeLength() asserts
+      // (in PLB_DEBUG builds) that its vertices are neighbours. This is the
+      // same expression computeEdgeLength() evaluates.
+      inner_edge_length_eq_list_.push_back(norm(cellField.meshElement->getVertex(edge[0]) - cellField.meshElement->getVertex(edge[1])));
     }
 
     //Calculate triangle eq

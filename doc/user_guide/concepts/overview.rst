@@ -33,7 +33,9 @@ one fluid time step. Conceptually each step does the following:
 
 Several of these steps are expensive, so HemoCell does not necessarily run all
 of them every fluid time step — see :ref:`time-scale separation
-<concepts/units_and_scaling:Time-scale separation>`.
+<concepts/units_and_scaling:Time-scale separation>`. The order above is
+conceptual; the exact sequence of operations in the code is described in
+:ref:`developer/architecture:One time step`.
 
 The two central data structures
 -------------------------------

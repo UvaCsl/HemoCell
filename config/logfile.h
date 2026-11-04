@@ -26,7 +26,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
+#include <string>
 namespace hemo {
+/**
+ * Log stream of HemoCell (`hlog`): writes to stdout and to the log file, on
+ * the main MPI process only.
+ *
+ * The log file is opened by loadDirectories(), which for checkpointed runs
+ * happens only in loadCheckPoint(). Messages logged before that (setup
+ * parameters, warnings, errors before an exit) are printed immediately and
+ * kept in `pending`, which open() writes to the top of the file.
+ */
 class Logfile
 {
 public:
@@ -38,12 +49,41 @@ public:
     {}
     std::fstream & logfile;
     std::string filename = "";
+    /// True on the process that writes the log (MPI rank 0); set by HemoCell.
+    bool mainProcess = false;
+    /// Messages logged on the main process before the log file was opened.
+    std::ostringstream pending;
+
+    /// Open the log file (if not open yet) and write the pending messages.
+    /// @return whether the log file is open afterwards.
+    bool open(const std::string & filename_) {
+        if (!logfile.is_open()) {
+            filename = filename_;
+            logfile.open(filename_, std::fstream::out);
+            if (logfile.is_open()) {
+                logfile << pending.str();
+                pending.str("");
+            }
+        }
+        return logfile.is_open();
+    }
+    /// Close the log file and stop logging (called when HemoCell is destroyed).
+    void close() {
+        if (logfile.is_open()) {
+            logfile.close();
+        }
+        pending.str("");
+        mainProcess = false;
+    }
 };
 template<typename Val>
 Logfile & operator << (Logfile & lf, Val const & rhs) {
     if (lf.logfile.is_open()) {
         std::cout << rhs;
         lf.logfile << rhs;
+    } else if (lf.mainProcess) {
+        std::cout << rhs;
+        lf.pending << rhs;
     }
     return lf;
 }
@@ -51,23 +91,31 @@ inline Logfile & operator<< (Logfile & lf, std::ostream & (*op) (std::ostream&))
     if (lf.logfile.is_open()){
         std::cout << op << std::flush;
         lf.logfile << op;
+    } else if (lf.mainProcess) {
+        std::cout << op << std::flush;
+        lf.pending << op;
     }
     return lf;
 }
 extern Logfile hlog;
 
+/// Like hlog, but only to the log file (not stdout).
 class Logfile_only
 {};
 template<typename Val>
 Logfile_only & operator << (Logfile_only & lf, Val const & rhs) {
     if (hlog.logfile.is_open()) {
         hlog.logfile << rhs;
+    } else if (hlog.mainProcess) {
+        hlog.pending << rhs;
     }
     return lf;
 }
 inline Logfile_only & operator<< (Logfile_only & lf, std::ostream & (*op) (std::ostream&)) {
     if (hlog.logfile.is_open()){
         hlog.logfile << op;
+    } else if (hlog.mainProcess) {
+        hlog.pending << op;
     }
     return lf;
 }

@@ -49,6 +49,7 @@ HemoCellParticleField::HemoCellParticleField(HemoCellParticleField const& rhs)
     : AtomicBlock3D(rhs), particleDataTransfer(*(new HemoCellParticleDataTransfer()))
 {
     boundingBox = Box3D(0,this->getNx()-1, 0, this->getNy()-1, 0, this->getNz()-1);
+    delete dataTransfer; // clone made by AtomicBlock3D(rhs); replaced by our own (owned and deleted by AtomicBlock3D)
     dataTransfer = &particleDataTransfer;
     particleDataTransfer.setBlock(*this);
     for (const HemoCellParticle & particle : rhs.particles) {
@@ -73,10 +74,18 @@ HemoCellParticleField::~HemoCellParticleField()
   }
 }
 
-HemoCellParticleField& HemoCellParticleField::operator=(HemoCellParticleField const& rhs){
- HemoCellParticleField *copy = new HemoCellParticleField(rhs);
- delete this;
-  return *copy;
+HemoCellParticleField& HemoCellParticleField::operator=(HemoCellParticleField const& rhs) {
+  if (this == &rhs) { return *this; }
+  particles.clear();
+  lpc_up_to_date = false;
+  ppt_up_to_date = false;
+  ppc_up_to_date = false;
+  preinlet_ppc_up_to_date = false;
+  pg_up_to_date = false;
+  for (const HemoCellParticle & particle : rhs.particles) {
+    addParticle(particle.sv);
+  }
+  return *this;
 }
 
 HemoCellParticleField* HemoCellParticleField::clone() const
@@ -190,7 +199,7 @@ outer_else:
 }
 
 void HemoCellParticleField::addParticlePreinlet(const HemoCellParticle::serializeValues_t & sv) {
-  HemoCellParticle * local_sparticle, * particle;
+  HemoCellParticle * particle;
   const hemo::Array<T,3> & pos = sv.position;
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
 
@@ -248,7 +257,7 @@ void HemoCellParticleField::removeParticles(plint tag) {
   const unsigned int old_size = particles.size();
   for (unsigned int i = 0 ; i < particles.size() ; i++) {
     if (particles[i].getTag() == tag) {
-      particles[i] = particles.back();
+      particles[i] = std::move(particles.back());
       particles.pop_back();
       i--;
     }
@@ -270,7 +279,7 @@ void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
   const unsigned int old_size = particles.size();
   for (unsigned int i = 0 ; i < particles.size() ; i++) {
     if (particles[i].getTag() == tag && this->isContainedABS(particles[i].sv.position,finalDomain)) {
-      particles[i] = particles.back();
+      particles[i] = std::move(particles.back());
       particles.pop_back();
       i--;
     }
@@ -293,7 +302,7 @@ void HemoCellParticleField::removeParticles(Box3D domain) {
   const unsigned int old_size = particles.size();
   for (unsigned int i = 0 ; i < particles.size() ; i++) {
     if (this->isContainedABS(particles[i].sv.position,finalDomain)) {
-      particles[i] = particles.back();
+      particles[i] = std::move(particles.back());
       particles.pop_back();
       i--;
     }
@@ -317,7 +326,7 @@ void HemoCellParticleField::removeParticles_inverse(Box3D domain) {
   const unsigned int old_size = particles.size();
   for (unsigned int i = 0 ; i < particles.size() ; i++) {
     if (!this->isContainedABS(particles[i].sv.position,finalDomain)) {
-      particles[i] = particles.back();
+      particles[i] = std::move(particles.back());
       particles.pop_back();
       i--;
     }
@@ -408,86 +417,54 @@ void HemoCellParticleField::issueWarning(HemoCellParticle & p){
 }
 
 int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
-  int deleted = 0;
-
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  //Warning, TODO, high complexity, should be rewritten 
-  //For now abuse tagging and the remove function
-  for ( const auto &lpc_it : particles_per_cell ) {
-    int cellid = lpc_it.first;
-    bool broken = false;
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
-      if (particles_per_cell.at(cellid)[i] == -1) {
-        broken = true;
-        break;
-      }
-    }
-    if (!broken) {continue;}
-
-    bool warningIssued = false;
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
-      if (particles_per_cell.at(cellid)[i] == -1) {continue;}
-
-      //issue warning
-      if (verbose) {
-        if (!warningIssued) {
-          if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].sv.position,localDomain)) {
-                  issueWarning(particles[particles_per_cell.at(cellid)[i]]);
-            warningIssued = true;
-          }
-        }
-      }
-      
-      //actually add to tobedeleted list
-      particles[particles_per_cell.at(cellid)[i]].setTag(1);
-      deleted++;
-    }
-  } 
-
-  //We have our list, now abuse the removeall function
-  removeParticles(1);
-
-  return deleted; 
+  return deleteIncompleteCellsImpl(true, ctype, verbose);
 }
 
 int HemoCellParticleField::deleteIncompleteCells(const bool verbose) {
+  return deleteIncompleteCellsImpl(false, 0, verbose);
+}
+
+int HemoCellParticleField::deleteIncompleteCellsImpl(const bool onlyType, const pluint ctype, const bool verbose) {
   int deleted = 0;
   const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
   //Warning, TODO, high complexity, should be rewritten 
   //For now abuse tagging and the remove function
   for ( const auto &lpc_it : particles_per_cell ) {
-    int cellid = lpc_it.first;
+    const vector<int> & cell = lpc_it.second;
     bool broken = false;
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
-      if (particles_per_cell.at(cellid)[i] == -1) {
+    int present = -1; // index of any particle of this cell that is present
+    for (pluint i = 0; i < cell.size() ; i++) {
+      if (cell[i] == -1) {
         broken = true;
-        break;
+      } else if (present < 0) {
+        present = cell[i];
       }
+      if (broken && present >= 0) { break; }
     }
-    if (!broken) {continue;}
+    if (!broken || present < 0) {continue;}
+    if (onlyType && particles[present].sv.celltype != ctype) {continue;}
 
     bool warningIssued = false;
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size() ; i++) {
-      if (particles_per_cell.at(cellid)[i] == -1) {continue;}
+    for (pluint i = 0; i < cell.size() ; i++) {
+      if (cell[i] == -1) {continue;}
 
       //issue warning
       if (verbose) {
         if (!warningIssued) {
-          if (isContainedABS(particles[particles_per_cell.at(cellid)[i]].sv.position,localDomain)) {
-                  issueWarning(particles[particles_per_cell.at(cellid)[i]]);
+          if (isContainedABS(particles[cell[i]].sv.position,localDomain)) {
+                  issueWarning(particles[cell[i]]);
             warningIssued = true;
           }
         }
       }
       
       //actually add to tobedeleted list
-      particles[particles_per_cell.at(cellid)[i]].setTag(1);
+      particles[cell[i]].setTag(1);
       deleted++;
     }
   } 
 
   //We have our list, now abuse the removeall function
-
   removeParticles(1);
 
   return deleted; 
@@ -776,9 +753,14 @@ end_inner_loop:;
   }
 }
 
-void HemoCellParticleField::applyBoundaryRepulsionForce() {
-    if(!pg_up_to_date) {
+void HemoCellParticleField::applyBoundaryRepulsionForce(bool resetFirst) {
+  if(!pg_up_to_date) {
     update_pg();
+  }
+  if (resetFirst) {
+    for (HemoCellParticle & particle : particles) {
+      particle.sv.force_repulsion = {0.,0.,0.};
+    }
   }
   const T & br_cutoff = cellFields->boundaryRepulsionCutoff;
   const T & br_const = cellFields->boundaryRepulsionConstant;

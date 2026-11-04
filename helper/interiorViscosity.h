@@ -30,11 +30,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace hemo {
   class InteriorViscosityHelper {
   public:
-     static InteriorViscosityHelper& get(HemoCellFields & cellFields) {
-
-      static InteriorViscosityHelper instance(cellFields);
-      return instance;
+    /// The helper of @p cellFields, created on first use. It is owned by
+    /// HemoCellFields (not a process-wide singleton), so it is destroyed with
+    /// its simulation and never refers to a destroyed HemoCellFields.
+    static InteriorViscosityHelper& get(HemoCellFields & cellFields) {
+      if (!cellFields.interiorViscosityHelper) {
+        cellFields.interiorViscosityHelper = new InteriorViscosityHelper(cellFields);
+      }
+      return *cellFields.interiorViscosityHelper;
     }
+    ~InteriorViscosityHelper();
       
     void checkpoint();
     static void restore(HemoCellFields & cellFields);
@@ -53,7 +58,6 @@ namespace hemo {
      *preinlet_multiInteriorViscosityField = nullptr, *domain_multiInteriorViscosityField = nullptr;
     
     InteriorViscosityHelper(HemoCellFields & cellFields);
-    ~InteriorViscosityHelper();
     
     void refillBindingSites();
     

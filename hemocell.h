@@ -97,28 +97,31 @@ class HemoCell {
   ~HemoCell();
   
   /**
-   *  Set all the fluid nodes to these values
-   * 
-   *  @param rho the desired density in lbm units
-   *  @param vel the desired macroscopic velocity of each node
+   * @brief Initialise every fluid node at equilibrium.
+   * @param rho density [lattice units, typically 1]
+   * @param vel velocity [lattice units]
    */
   void latticeEquilibrium(T rho, hemo::Array<T, 3> vel);
 
   /**
-   * Initialice the cellfields structure (and thus also the particlefield)
+   * @brief Create the cell fields and the particle field on the current
+   * lattice. Collective. Call after the lattice is created and initialised,
+   * before adding cell types.
    */
   void initializeCellfield();
 
- /**
-  * Add a celltype
-  * valid options for constructType are:
-  * RBC_FROM_SPHERE <- RBC
-  * ELLIPSOID_FROM_SPHERE <- platelet
-  * STRING_FROM_VERTEXES ->von willibrand factor
-  * use as addCelltype<RbcHO>("RBC", RBC_FROM_SPHERE) for example
-  * Since it is a template, it must be in the header class, maybe move to .hh
-  * file for readability ...
-  */
+  /**
+   * @brief Add a cell type with constitutive model `Mechanics`.
+   *
+   * Example: `addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE)`.
+   * @param name identifier of the type; its material is read from
+   *        `<name>.xml` and its initial positions from `<name>.pos`
+   *        (relative to the working directory). Use the same name in the
+   *        per-type setters below.
+   * @param constructType shape of the reference mesh: RBC_FROM_SPHERE,
+   *        ELLIPSOID_FROM_SPHERE (platelet), WBC_SPHERE or MESH_FROM_STL
+   *        (constants in constant_defaults.h).
+   */
   template<class Mechanics>
   void addCellType(string name, int constructType) {
     HemoCellField * cellfield = cellfields->addCellType(name,constructType);
@@ -128,25 +131,35 @@ class HemoCell {
   }
 
   /**
-   * Set the output of a celltype
-   * the outputs string should contain constants like VELOCITY_OUTPUT defined
-   * in the constants_defaults file
-   * 
-   * @param outputs a vector of constants that define the desired output
-   * @param name the name of the CellType ("RBC", "PLT")
+   * @brief Select the cell fields written by writeOutput() for a cell type.
+   * @param name cell type name (as given to addCellType())
+   * @param outputs OUTPUT_* constants from constant_defaults.h, e.g.
+   *        {OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE}
    */
   void setOutputs(string name, vector<int> outputs);
-  
-  //Sets the repulsion constant and cutoff distance, also enables repulsion
+
   bool repulsionEnabled = false;
   bool boundaryRepulsionEnabled = false;
+  /**
+   * @brief Enable repulsion between vertices of different cells.
+   *
+   * Force `k * r_c / d` along the connecting line for `d < r_c`. The
+   * neighbour search covers adjacent lattice nodes only (cutoffs above one
+   * lattice spacing are partially effective).
+   * @param repulsionConstant k [lattice force units, used as given]
+   * @param repulsionCutoff r_c [micrometre]
+   */
   void setRepulsion(T repulsionConstant, T repulsionCutoff);
 
   // Lees-Edwards boundary condition
   bool leesEdwardsBC = false;
   double * LEcurrentDisplacement;
 
-  //Set the timescale separation of the particles of a particle type
+  /**
+   * @brief Evaluate the constitutive model of a cell type every `separation`
+   * iterations (default 1). Must be a multiple of the velocity update interval
+   * (setParticleVelocityUpdateTimeScaleSeparation()).
+   */
   void setMaterialTimeScaleSeparation(string name, unsigned int separation);
   
   //Enable solidify mechanics of a celltype
@@ -155,60 +168,117 @@ class HemoCell {
     (*cellfields)[name]->doSolidifyMechanics = true;
   }
   
-  //Set the separation of when velocity is interpolated to the particle
+  /**
+   * @brief Interpolate the fluid velocity to the vertices (and synchronise the
+   * particle envelopes) every `separation` iterations (default 1). It must
+   * divide the material, repulsion and interior-viscosity intervals.
+   * Separations > 1 introduce a numerical error.
+   */
   void setParticleVelocityUpdateTimeScaleSeparation(unsigned int separation);
 
-  //Set the timescale separation of the repulsion force for all particles
+  /// Recompute repulsion every `separation` iterations (default 1); a multiple
+  /// of the velocity update interval and, if wall repulsion is enabled too,
+  /// equal to its interval.
   void setRepulsionTimeScaleSeperation(unsigned int separation);
 
+  /// Run the solidification step every `separation` iterations (default 1).
   void setSolidifyTimeScaleSeperation(unsigned int separation);
 
-  //Set the timescale separation of the interior viscosity, in between update and raytracing (expensive) update
+  /// Interior viscosity: update the nodes near membranes every `separation`
+  /// iterations and redetect all interior nodes (expensive) every
+  /// `separation_entire_grid` iterations; both multiples of the velocity
+  /// update interval.
   void setInteriorViscosityTimeScaleSeperation(unsigned int separation, unsigned int separation_entire_grid);
-  
-  //Enable Boundary particles and set the boundary particle constants
+
+  /**
+   * @brief Enable repulsion between vertices and wall (solid) nodes.
+   * Collective (detects the wall nodes next to fluid).
+   * @param boundaryRepulsionConstant k [lattice force units, used as given]
+   * @param boundaryRepulsionCutoff r_c [micrometre]
+   * @param timestep update interval [iterations]; equal to the particle
+   *        repulsion interval if that is enabled too
+   */
   void enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRepulsionCutoff, unsigned int timestep = 1);
-  
-  //Set the minimum distance of the particles of a type to the solid, must be called BEFORE loadparticles
+
+  /**
+   * @brief Reject initial vertices of a cell type closer than `distance` to a
+   * solid node: vertices within floor(distance / dx) lattice nodes of a wall
+   * are not placed and their cells are removed. Call before loadParticles().
+   * @param distance [micrometre]
+   */
   void setInitialMinimumDistanceFromSolid(string name, T distance);
-  
-  //Set the output of the fluid field
+
+  /// Select the fluid fields written by writeOutput() (OUTPUT_* constants).
   void setFluidOutputs(vector<int> outputs);
-  
-  //Set the output of the CEPAC field
+
+  /// Select the CEPAC fields written by writeOutput() (OUTPUT_* constants).
   void setCEPACOutputs(vector<int> outputs);
-  
-  //Explicitly set the periodicity of the domain along the different axes
+
+  /**
+   * @brief Set periodicity of the fluid and the particle field together.
+   * Call after initializeCellfield() and before loadParticles().
+   * @param axis 0 (x), 1 (y) or 2 (z)
+   */
   void setSystemPeriodicity(unsigned int axis, bool bePeriodic);
 
-  //Set the number or times a particle should be able to wrap around in a certain direction (both negative and positive (default: 100)
+  /**
+   * @brief Number of periodic images of a cell distinguishable along `axis`
+   * (default 100 for each axis). Periodic copies of a cell get IDs shifted by
+   * multiples of the cell count; the shifts per axis are 1, limit[0] and
+   * limit[0]*limit[1], and the largest shift times the number of cells must
+   * fit in an int (checked before the first step). Lower the limits for runs
+   * with more than about 200,000 cells.
+   */
   void setSystemPeriodicityLimit(unsigned int axis, int limit);
   
   //Load the particles
 private:
   bool loadParticlesIsCalled = false;
 public:
-  ///Load the particles from their .pos files
+  /**
+   * @brief Place the cells listed in the `<name>.pos` files (positions in
+   * micrometre, rotations in degrees, applied in X, Y, Z order). Collective.
+   * Cells that do not fit the domain are removed.
+   */
   void loadParticles();
 
-  ///Load a checkpoint
+  /// Load the checkpoint given as configuration (see the case's
+  /// `cfg->checkpointed` branch). Collective.
   void loadCheckPoint();
-  
-  ///Save a checkpoint
+
+  /// Save a checkpoint to `<outputDirectory>/<checkpointDirectory>/`. Collective.
   void saveCheckPoint();
 
-  ///Specify whether the output is in SI or LBM units
+  /// Write output in SI units (default) or in lattice units.
   bool outputInSiUnits = true;
-  
-  ///Write the specified output to hdf5 files
+
+  /// Write the selected cell, fluid and CEPAC fields (HDF5) and the cell CSV
+  /// summary for the current iteration. Collective; does not change the
+  /// simulation state.
   void writeOutput();
-  
-  /// Do an iteration, If the system is driven by an external vector, you must set 
-  /// it again after calling iterate
+
+  /**
+   * @brief Advance the coupled fluid and cells by one time step. Collective.
+   * The lattice force is reset at the end: a case driven by a body force must
+   * set it again after every call.
+   */
   void iterate();
 
-  /// Check if any exis signal was caught
+  /**
+   * @brief Act on a caught exit signal (SIGINT, SIGTERM, SIGHUP, SIGQUIT,
+   * SIGUSR1, SIGUSR2).
+   *
+   * Collective: must be called by all ranks. The ranks agree whether any of
+   * them caught a signal; if so a checkpoint is saved (unless
+   * checkpointOnExitSignal is false) and the program exits with code 1.
+   * iterate() calls this every exitSignalCheckInterval iterations.
+   */
   void checkExitSignals();
+
+  /// Iterations between collective exit-signal checks in iterate() (0 disables them).
+  unsigned int exitSignalCheckInterval = 100;
+  /// Save a checkpoint before exiting on a caught signal.
+  bool checkpointOnExitSignal = true;
 
   //Load balancing library functions
   /// Calculate and return the fractional load imbalance 

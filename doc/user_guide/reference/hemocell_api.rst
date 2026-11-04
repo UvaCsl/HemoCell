@@ -65,7 +65,9 @@ Setting up the fluid
    * - ``setSystemPeriodicity(axis, bool)``
      - Make the whole system periodic along an axis.
    * - ``setSystemPeriodicityLimit(axis, limit)``
-     - Limit how many times a particle may wrap around a periodic axis.
+     - Number of periodic images of a cell distinguishable along an axis
+       (default 100). Lower it for runs with more than about 200,000 cells;
+       see :ref:`developer/architecture:Cell IDs and periodicity`.
 
 Setting up the cells
 --------------------
@@ -124,10 +126,13 @@ Optional physics
    * - Member
      - Purpose
    * - ``setRepulsion(constant, cutoff)``
-     - Enable and parameterise short-range cell–cell repulsion. See
+     - Enable and parameterise short-range cell–cell repulsion (constant in
+       lattice force units, cutoff in micrometres). See
        :ref:`advanced_cases/repulsion:Repulsive forces`.
    * - ``enableBoundaryParticles(constant, cutoff, timestep)``
-     - Enable repulsion between cells and solid boundaries.
+     - Enable repulsion between cells and solid boundaries (same units;
+       ``timestep`` in iterations, equal to the cell–cell repulsion interval if
+       both are enabled).
    * - ``enableSolidifyMechanics(name)``
      - Enable solidification (clotting) for a cell type. Requires the
        ``SOLIDIFY_MECHANICS`` build (see :ref:`constants`).
@@ -152,7 +157,8 @@ Output and checkpointing
      - ``true`` (default) writes output in SI units; ``false`` writes lattice
        units.
    * - ``writeOutput()``
-     - Write the requested HDF5/CSV output for the current iteration.
+     - Write the requested HDF5/CSV output for the current iteration. It does
+       not change the simulation state (a body force set before it is kept).
    * - ``saveCheckPoint()`` / ``loadCheckPoint()``
      - Write / restore a full checkpoint (see :ref:`QuickStart:Resuming from a
        checkpoint`).
@@ -171,7 +177,12 @@ Running and load balancing
        the flow with an external force vector, re-apply it after every
        ``iterate()``.
    * - ``checkExitSignals()``
-     - Check whether an exit signal (e.g. from the scheduler) was caught.
+     - Collective. If any rank caught SIGINT, SIGTERM, SIGHUP, SIGQUIT,
+       SIGUSR1 or SIGUSR2, all ranks save a checkpoint (unless
+       ``checkpointOnExitSignal`` is ``false``) and exit with code 1.
+       ``iterate()`` calls it every ``exitSignalCheckInterval`` (default 100)
+       iterations, so a scheduler signal such as ``--signal=USR1@300`` leads
+       to a final checkpoint.
    * - ``calculateFractionalLoadImbalance()``
      - Return the current fractional load imbalance across processes.
    * - ``doLoadBalance()`` / ``doRestructure()``

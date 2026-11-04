@@ -354,14 +354,14 @@ void HemoCellParticleDataTransfer::receive(
     Box3D domain, std::vector<char> const &buffer, modif::ModifT kind)
 {
   //cast to char* because we ARE going to edit
-  receive(domain, (char *)&buffer[0], buffer.size(), kind);
+  receive(domain, const_cast<char *>(buffer.data()), buffer.size(), kind);
 }
 
 void HemoCellParticleDataTransfer::receive(
     Box3D domain, std::vector<char> const &buffer, modif::ModifT kind, Dot3D absoluteOffset)
 {
   //cast to char* because we ARE going to edit
-  receive(domain, (char *)&buffer[0], buffer.size(), kind, absoluteOffset);
+  receive(domain, const_cast<char *>(buffer.data()), buffer.size(), kind, absoluteOffset);
 }
 
 void HemoCellParticleDataTransfer::setBlock(AtomicBlock3D &block)

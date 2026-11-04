@@ -189,8 +189,7 @@ outdir_done:
   hemo::hlog.filename = filename;
   plb::global::mpi().barrier();
   if (plb::global::mpi().getRank() == 0) {
-    hemo::hlog.logfile.open(filename , std::fstream::out);
-    if (!hemo::hlog.logfile.is_open()) {
+    if (!hemo::hlog.open(filename)) {
       plb::pcerr << "(HemoCell) (LogFile) Error opening logfile, exiting" << std::endl;
       exit(1);
     }

@@ -42,9 +42,12 @@ public:
     HemoCellParticleField(plint nx, plint ny, plint nz);
     virtual ~HemoCellParticleField();
     HemoCellParticleField(HemoCellParticleField const& rhs);
+    /// Copy the particles of @p rhs into this block (used by Palabos when a
+    /// MultiParticleField3D is copied). The geometry, data transfer and
+    /// lattice links of this block are kept. (The former implementation
+    /// deleted `this` and returned a new object.)
     HemoCellParticleField& operator=(HemoCellParticleField const& rhs);
     HemoCellParticleField* clone() const;
-    void swap(HemoCellParticleField& rhs);
     virtual void applyConstitutiveModel(bool forced = false);
     virtual void addParticle(HemoCellParticle* particle);
     void addParticle(const HemoCellParticle::serializeValues_t & sv);
@@ -72,11 +75,13 @@ public:
     virtual void findInternalParticleGridPoints(plb::Box3D domain);
     virtual void internalGridPointsMembrane(plb::Box3D domain);
     
+    /// Delete the particles of cells of type @p ctype that are not complete in this block.
     int deleteIncompleteCells(pluint ctype, bool verbose=true);
+    /// Delete the particles of all cells that are not complete in this block.
     int deleteIncompleteCells(bool verbose=true);
     void syncEnvelopes();
     void populateBoundaryParticles();
-    void applyBoundaryRepulsionForce();
+    void applyBoundaryRepulsionForce(bool resetFirst = false);
     void populateBindingSites(plb::Box3D & domain);
 
     T eigenValueFromCell(plb::Cell<T,DESCRIPTOR> & cell);
@@ -105,6 +110,9 @@ public:
     plb::Box3D & getBoundingBox() {
       return boundingBox;
     }
+    // Keep AtomicBlock3D's const version visible (same box), e.g. for the
+    // PLB_ASSERTs in const member functions.
+    using plb::AtomicBlock3D::getBoundingBox;
     //Ugly output functions:
     void outputPositions(plb::Box3D,vector<vector<T>>&, pluint, std::string&); 
     void outputVelocities(plb::Box3D,vector<vector<T>>&, pluint, std::string&); 
@@ -174,6 +182,7 @@ private:
   void update_ppt();
   void update_pg();
   void issueWarning(HemoCellParticle & p);
+  int deleteIncompleteCellsImpl(bool onlyType, pluint ctype, bool verbose);
   
   /// Particles binned per lattice node; valid only while pg_up_to_date is
   /// true (any change to `particles` invalidates it, see update_pg()).

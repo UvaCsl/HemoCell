@@ -1,0 +1,3 @@
+# Vendored/historical code: keep its original formatting.
+DisableFormat: true
+SortIncludes: Never

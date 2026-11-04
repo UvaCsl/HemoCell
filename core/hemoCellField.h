@@ -68,6 +68,8 @@ class HemoCellField{
   void(*kernelMethod)(plb::BlockLattice3D<T,DESCRIPTOR> &,HemoCellParticle&);
   plb::MultiParticleField3D<HemoCellParticleField> * getParticleField3D();
   plb::MultiBlockLattice3D<T,DESCRIPTOR> * getFluidField3D();
+  /// Total number of cells of this type in the simulation. Collective: all
+  /// ranks must call it (it synchronises the particle envelopes).
   int getNumberOfCells_Global();
   std::string getIdentifier();
   plb::MultiParticleField3D<HemoCellParticleField> * getParticleArg();

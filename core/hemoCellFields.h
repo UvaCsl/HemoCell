@@ -25,6 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define HEMOCELLFIELDS_H
 namespace hemo {
 class HemoCellFields;
+class bindingFieldHelper;
+class InteriorViscosityHelper;
 }
 #include "hemoCellParticleField.h"
 #include "genericFunctions.h"
@@ -127,8 +129,11 @@ public:
   /// Apply (and calculate) the repulsion force between particles
   void applyRepulsionForce();
 
-  /// Apply (and calculate) the repulsion force between particles and the boundary
-  void applyBoundaryRepulsionForce();
+  /// Apply (and calculate) the repulsion force between particles and the boundary.
+  /// It is added to sv.force_repulsion; with @p resetFirst that field is
+  /// zeroed first (needed when particle-particle repulsion, which normally
+  /// resets it, is not enabled).
+  void applyBoundaryRepulsionForce(bool resetFirst = false);
   
   /// Delete any incomplete cells on a block
   void deleteIncompleteCells(bool verbose = true);
@@ -232,6 +237,11 @@ public:
      return ((wrapped%number_of_cells)+number_of_cells)%number_of_cells;
    }
    unsigned int max_neighbours = 0;
+
+   /// Helpers created on first use through bindingFieldHelper::get() and
+   /// InteriorViscosityHelper::get(); owned (and deleted) by this object.
+   bindingFieldHelper * bindingHelper = 0;
+   InteriorViscosityHelper * interiorViscosityHelper = 0;
    
    plb::CommunicationStructure3D * large_communicator = 0;
    plb::ParallelBlockCommunicator3D envelope_communicator;
@@ -285,6 +295,8 @@ public:
   class HemoBoundaryRepulsionForce: public HemoCellFunctional {
    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);
    HemoBoundaryRepulsionForce * clone() const;
+  public:
+   bool resetFirst = false;
   };
   class HemoDeleteIncompleteCells: public HemoCellFunctional {
    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D*>);

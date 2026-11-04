@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "readPositionsBloodCells.h"
 #include "constantConversion.h"
 #include "bindingField.h"
+#include "interiorViscosity.h"
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
@@ -66,6 +67,9 @@ HemoCellFields::~HemoCellFields() {
   if (large_communicator) {
     delete large_communicator;
   }
+  // After the particle fields, whose destructors may still use them.
+  delete bindingHelper;
+  delete interiorViscosityHelper;
   int mpiFinalized = 0;
   MPI_Finalized(&mpiFinalized);
   if (particleComm != MPI_COMM_NULL && !mpiFinalized) {
@@ -541,7 +545,7 @@ void HemoCellFields::syncEnvelopes() {
     for (unsigned int i = 0 ; i < recv_procs.size() ; i ++) {
       int index;
       MPI_Status status;
-      if (MPI_SUCCESS != MPI_Waitany(recv_reqs.size(),&recv_reqs[0],&index,&status)) {
+      if (MPI_SUCCESS != MPI_Waitany(recv_reqs.size(),recv_reqs.data(),&index,&status)) {
         hlog << "(HemoCellFields) (syncenvelopes) error returned in WaitAny " << status.MPI_ERROR << endl;
         exit(1);
       }
@@ -639,14 +643,15 @@ void HemoCellFields::applyRepulsionForce() {
 }
 
 void HemoCellFields::HemoBoundaryRepulsionForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-    dynamic_cast<HemoCellParticleField*>(blocks[0])->applyBoundaryRepulsionForce();
+    dynamic_cast<HemoCellParticleField*>(blocks[0])->applyBoundaryRepulsionForce(resetFirst);
 }
-void HemoCellFields::applyBoundaryRepulsionForce() {
+void HemoCellFields::applyBoundaryRepulsionForce(bool resetFirst) {
   global.statistics.getCurrent()["boundaryRepulsionForce"].start();
 
   vector<MultiBlock3D*>wrapper;
   wrapper.push_back(immersedParticles);
   HemoBoundaryRepulsionForce * fnct = new HemoBoundaryRepulsionForce();
+  fnct->resetFirst = resetFirst;
   applyProcessingFunctional(fnct,immersedParticles->getBoundingBox(),wrapper);
 
   global.statistics.getCurrent().stop();

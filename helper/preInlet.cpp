@@ -49,6 +49,8 @@ namespace hemo {
 }
 
 #include <hdf5.h>
+#include <iterator>
+#include <set>
 #include <hdf5_hl.h>
 
 
@@ -64,6 +66,9 @@ namespace hemo {
  */
 void PreInlet::initializePreInletParticleBoundary() {
   MPI_Barrier(MPI_COMM_WORLD);
+  if (comm == MPI_COMM_NULL) {
+    MPI_Comm_dup(MPI_COMM_WORLD, &comm); // collective: all ranks initialise the pre-inlet
+  }
 
   Box3D preinlet_boundary = fluidInlet;
 
@@ -251,19 +256,38 @@ void PreInlet::initializePreInletParticleBoundary() {
  * The communication only happens in a single direction, where cells are only
  * send from the pre-inlet towards the main simulation domain.
  */
+namespace {
+// Message tags on PreInlet::comm.
+const int TAG_PARTICLES = 1;
+const int TAG_VELOCITY = 2;
+const int TAG_VELOCITY_REQUEST = 3;
+}
+
+PreInlet::~PreInlet() {
+  int mpiFinalized = 0;
+  MPI_Finalized(&mpiFinalized);
+  if (comm != MPI_COMM_NULL && !mpiFinalized) {
+    MPI_Comm_free(&comm);
+  }
+}
+
 void PreInlet::applyPreInletParticleBoundary() {
   global.statistics.getCurrent()["applyPreInletParticleBoundary"].start();
   if (!partOfpreInlet) {
     hemocell->cellfields->syncEnvelopes();
     hemocell->cellfields->deleteIncompleteCells(false);
   }
-  vector<MPI_Request> requests;
-  vector<vector<char>> buffers;
-  MPI_Barrier(MPI_COMM_WORLD);
+  // Each sending pre-inlet rank sends exactly one message (the particles of
+  // all its communicating blocks) to each of its receivers (my_send_blocks),
+  // and each receiving rank receives one message from each of its senders
+  // (my_recv_blocks). Receiving from specific sources on a private
+  // communicator makes the matching exact, so no barriers are needed.
   if (partOfpreInlet) {
+    std::vector<MPI_Request> requests;
     if (particleSendMpi.find(global::mpi().getRank()) != particleSendMpi.end()) {
+      particleSendBuffer.clear();
+      std::vector<char> blockBuffer;
       for (plint bid : communicating_blocks) {
-        buffers.push_back(vector<char>());
         Box3D domain = fluidInlet;
 
         switch (direction) {
@@ -295,102 +319,191 @@ void PreInlet::applyPreInletParticleBoundary() {
 
         Dot3D shift = hemocell->cellfields->immersedParticles->getComponent(bid).getLocation();
         domain = domain.shift(-shift.x,-shift.y,-shift.z);
-        hemocell->cellfields->immersedParticles->getComponent(bid).particleDataTransfer.send_preinlet(domain,buffers.back(),modif::hemocell);
+        hemocell->cellfields->immersedParticles->getComponent(bid).particleDataTransfer.send_preinlet(domain,blockBuffer,modif::hemocell);
+        particleSendBuffer.insert(particleSendBuffer.end(), blockBuffer.begin(), blockBuffer.end());
+      }
 
-        for (auto & pid : my_send_blocks) {
-          requests.push_back(MPI_Request());
-          MPI_Isend(&buffers.back()[0],buffers.back().size(),MPI_CHAR,pid,0,MPI_COMM_WORLD,&requests.back());
-        }
+      requests.resize(my_send_blocks.size());
+      for (pluint i = 0; i < my_send_blocks.size(); i++) {
+        MPI_Isend(particleSendBuffer.data(), particleSendBuffer.size(), MPI_CHAR, my_send_blocks[i],
+                  TAG_PARTICLES, comm, &requests[i]);
       }
     }
-    MPI_Waitall(requests.size(),&requests[0],MPI_STATUSES_IGNORE);
+    MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
   } else {
-    for (size_t i = 0 ; i < my_recv_blocks.size() ; i++) {
+    Dot3D offset(0,0,0);
+    switch (direction) {
+      case Direction::Xneg:
+        offset.x = preinlet_length;
+        break;
+      case Direction::Yneg:
+        offset.y = preinlet_length;
+        break;
+      case Direction::Zneg:
+        offset.z = preinlet_length;
+        break;
+      case Direction::Xpos:
+        offset.x = -preinlet_length;
+        break;
+      case Direction::Ypos:
+        offset.y = -preinlet_length;
+        break;
+      case Direction::Zpos:
+        offset.z = -preinlet_length;
+        break;
+    }
+
+    for (const int source : my_recv_blocks) {
       MPI_Status status;
       int count;
-      MPI_Probe(MPI_ANY_SOURCE,0,MPI_COMM_WORLD,&status);
-      MPI_Get_count(&status,MPI_CHAR,&count);
-      buffers.push_back(vector<char>(count));
-      MPI_Recv(&buffers.back()[0],count,MPI_CHAR,status.MPI_SOURCE,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-      Dot3D offset(0,0,0);
+      MPI_Probe(source, TAG_PARTICLES, comm, &status);
+      MPI_Get_count(&status, MPI_CHAR, &count);
+      particleRecvBuffer.resize(count);
+      MPI_Recv(particleRecvBuffer.data(), count, MPI_CHAR, source, TAG_PARTICLES, comm, MPI_STATUS_IGNORE);
 
-      switch (direction) {
-        case Direction::Xneg:
-          offset.x = preinlet_length;
-          break;
-        case Direction::Yneg:
-          offset.y = preinlet_length;
-          break;
-        case Direction::Zneg:
-          offset.z = preinlet_length;
-          break;
-        case Direction::Xpos:
-          offset.x = -preinlet_length;
-          break;
-        case Direction::Ypos:
-          offset.y = -preinlet_length;
-          break;
-        case Direction::Zpos:
-          offset.z = -preinlet_length;
-          break;
-      }
       // NOTE: Reading into all blocks should be OK as long as a single block
       // or adjacent blocks are considered. For blocks that are sparse and/or
       // spatially "far away", additional checks should be added to avoid
       // excess extracting of cells that are not present in the current block.
       for (int bId : hemocell->cellfields->immersedParticles->getLocalInfo().getBlocks()) {
-        hemocell->cellfields->immersedParticles->getComponent(bId).particleDataTransfer.receivePreInlet(&buffers.back()[0],buffers.back().size(),modif::hemocell,offset);
+        // receivePreInlet shifts the positions in the buffer it is given, so
+        // every block gets its own copy of the received data.
+        std::vector<char> blockBuffer(particleRecvBuffer);
+        hemocell->cellfields->immersedParticles->getComponent(bId).particleDataTransfer.receivePreInlet(blockBuffer.data(),blockBuffer.size(),modif::hemocell,offset);
         hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_ppc();
         hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_lpc();
         hemocell->cellfields->immersedParticles->getComponent(bId).invalidate_pg();
       }
     }
   }
-  MPI_Barrier(MPI_COMM_WORLD);
   global.statistics.getCurrent().stop();
+}
+
+/*
+ * Build the velocity coupling plan once. The pre-inlet and the domain lattice
+ * share coordinates on the inlet slab `fluidInlet`; each node there is owned
+ * by one pre-inlet rank (sender) and one domain rank (receiver). The partner
+ * ranks follow from the geometry alone, so both sides agree on them. Each
+ * receiver then tells each of its senders which nodes it needs (its non-wall
+ * nodes, in a fixed order); senders reply with exactly those velocities.
+ */
+void PreInlet::buildVelocityExchange() {
+  std::set<int> partners;
+  std::map<int, std::vector<plint>> requestedNodes; // receiver: global node coordinates per sender
+  MultiBlockManagement3D & domainManagement = *hemocell->domain_lattice_management;
+  MultiBlockManagement3D & preinletManagement = *hemocell->preinlet_lattice_management;
+
+  for (plint bId : hemocell->lattice->getLocalInfo().getBlocks()) {
+    Box3D bulk = hemocell->lattice->getMultiBlockManagement().getBulk(bId);
+    Box3D result;
+    if (!intersect(fluidInlet, bulk, result)) { continue; }
+    BlockLattice3D<T,DESCRIPTOR> & block = hemocell->lattice->getComponent(bId);
+    const Dot3D & loc = block.getLocation();
+
+    for (plint x = result.x0; x <= result.x1; x++) {
+     for (plint y = result.y0; y <= result.y1; y++) {
+      for (plint z = result.z0; z <= result.z1; z++) {
+        MultiBlockManagement3D & other = partOfpreInlet ? domainManagement : preinletManagement;
+        const plint otherBlock = other.getSparseBlockStructure().locate(x,y,z);
+        if (otherBlock < 0) { continue; } // no partner block holds this node
+        const int partner = other.getThreadAttribution().getMpiProcess(otherBlock);
+        partners.insert(partner);
+        if (!partOfpreInlet) {
+          // The receiving (domain) side decides which nodes get a velocity:
+          // exactly those that received a velocity boundary condition in
+          // initializePreInletVelocityBoundary() (fluid nodes of the inlet
+          // slab). Note that isBoundary() cannot be used: it is also true for
+          // the velocity-boundary nodes themselves. (The previous code tested
+          // isBoundary() at block-local coordinates on the multi-block
+          // lattice, i.e. at unrelated nodes.)
+          if (!inletFluidMask[inletMaskIndex(x,y,z)]) { continue; }
+          velocityRecvNodes[partner].push_back({bId, x-loc.x, y-loc.y, z-loc.z});
+          requestedNodes[partner].push_back(x);
+          requestedNodes[partner].push_back(y);
+          requestedNodes[partner].push_back(z);
+        }
+      }
+     }
+    }
+  }
+
+  if (partOfpreInlet) {
+    for (const int receiver : partners) {
+      MPI_Status status;
+      int count;
+      MPI_Probe(receiver, TAG_VELOCITY_REQUEST, comm, &status);
+      MPI_Get_count(&status, MPI_BYTE, &count);
+      std::vector<plint> nodes(count/sizeof(plint));
+      MPI_Recv(nodes.data(), count, MPI_BYTE, receiver, TAG_VELOCITY_REQUEST, comm, MPI_STATUS_IGNORE);
+      for (pluint i = 0; i + 2 < nodes.size(); i += 3) {
+        const plint bId = preinletManagement.getSparseBlockStructure().locate(nodes[i], nodes[i+1], nodes[i+2]);
+        const Dot3D & loc = hemocell->lattice->getComponent(bId).getLocation();
+        velocitySendNodes[receiver].push_back({bId, nodes[i]-loc.x, nodes[i+1]-loc.y, nodes[i+2]-loc.z});
+      }
+    }
+  } else {
+    // Send a (possibly empty) request to every sender; it waits for one from each receiver.
+    std::vector<MPI_Request> requests(partners.size());
+    pluint i = 0;
+    for (const int sender : partners) {
+      std::vector<plint> & nodes = requestedNodes[sender];
+      MPI_Isend(nodes.data(), nodes.size()*sizeof(plint), MPI_BYTE, sender, TAG_VELOCITY_REQUEST, comm, &requests[i++]);
+    }
+    MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+  }
+  // Partners without any node exchange nothing per step (both sides know).
+  for (auto it = velocitySendNodes.begin(); it != velocitySendNodes.end();) {
+    it = it->second.empty() ? velocitySendNodes.erase(it) : std::next(it);
+  }
+  for (auto it = velocityRecvNodes.begin(); it != velocityRecvNodes.end();) {
+    it = it->second.empty() ? velocityRecvNodes.erase(it) : std::next(it);
+  }
+  velocityExchangeReady = true;
 }
 
 void PreInlet::applyPreInletVelocityBoundary() {
   global.statistics.getCurrent()["applyPreInletVelocityBoundary"].start();
-  MPI_Barrier(MPI_COMM_WORLD);
+  if (!velocityExchangeReady) {
+    buildVelocityExchange();
+  }
 
-  Box3D & domain = fluidInlet;
-  Box3D result;
-  int z_o = domain.getNz();
-  int y_o = domain.getNy();
-  int tag;
+  // One message per partner rank per step, of a size known on both sides.
+  std::map<int, std::vector<BlockNode>> & plan = partOfpreInlet ? velocitySendNodes : velocityRecvNodes;
+  velocityBuffers.resize(plan.size());
+  std::vector<MPI_Request> requests(plan.size());
   plb::Array<T,3> vel;
-  for (int bId : hemocell->lattice->getLocalInfo().getBlocks()) {
-    Box3D bulk = hemocell->lattice->getMultiBlockManagement().getBulk(bId);
-    if (!intersect(domain,bulk,result)) { continue; }
-
-    const Dot3D & loc = hemocell->lattice->getComponent(bId).getLocation();
-    result = result.shift(-loc.x,-loc.y,-loc.z);
-
-    for (int x  = result.x0 ; x <= result.x1 ; x++) {
-     for (int y  = result.y0 ; y <= result.y1 ; y++) {
-      for (int z  = result.z0 ; z <= result.z1 ; z++) {
-        tag = ((z_o * ((z + loc.z) - domain.z0)) + ( y + loc.y ) - domain.y0) * y_o + x + loc.x - domain.x0;
-        if (!hemocell->lattice->get(x,y,z).getDynamics().isBoundary()) {
-          if (hemocell->partOfpreInlet) {
-            hemocell->lattice->getComponent(bId).get(x,y,z).computeVelocity(vel);
-            int dest = hemocell->domain_lattice_management->getThreadAttribution().getMpiProcess(hemocell->domain_lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
-
-            // send velocity from preInlet boundary
-            MPI_Send(&vel[0],3*sizeof(T),MPI_CHAR,dest,tag,MPI_COMM_WORLD);
-          } else {
-            Box3D point(x,x,y,y,z,z);
-            int source = hemocell->preinlet_lattice_management->getThreadAttribution().getMpiProcess(hemocell->preinlet_lattice_management->getSparseBlockStructure().locate(x+loc.x,y+loc.y,z+loc.z));
-
-            // receive velocity from preInlet
-            MPI_Recv(&vel[0],3*sizeof(T),MPI_CHAR,source,tag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-
-            // update velocity lattice main domain
-            setBoundaryVelocity(hemocell->lattice->getComponent(bId),point,vel);
-          }
-        }
+  pluint i = 0;
+  for (const auto & pair : plan) {
+    std::vector<T> & buffer = velocityBuffers[i];
+    buffer.resize(3*pair.second.size());
+    if (partOfpreInlet) {
+      pluint j = 0;
+      for (const BlockNode & node : pair.second) {
+        hemocell->lattice->getComponent(node.blockId).get(node.x,node.y,node.z).computeVelocity(vel);
+        buffer[j++] = vel[0];
+        buffer[j++] = vel[1];
+        buffer[j++] = vel[2];
       }
-     }
+      MPI_Isend(buffer.data(), buffer.size()*sizeof(T), MPI_BYTE, pair.first, TAG_VELOCITY, comm, &requests[i]);
+    } else {
+      MPI_Irecv(buffer.data(), buffer.size()*sizeof(T), MPI_BYTE, pair.first, TAG_VELOCITY, comm, &requests[i]);
+    }
+    i++;
+  }
+  MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+
+  if (!partOfpreInlet) {
+    // Update the velocity boundary of the main domain inlet.
+    i = 0;
+    for (const auto & pair : plan) {
+      const std::vector<T> & buffer = velocityBuffers[i++];
+      pluint j = 0;
+      for (const BlockNode & node : pair.second) {
+        vel[0] = buffer[j++];
+        vel[1] = buffer[j++];
+        vel[2] = buffer[j++];
+        setBoundaryVelocity(hemocell->lattice->getComponent(node.blockId), Box3D(node.x,node.x,node.y,node.y,node.z,node.z), vel);
+      }
     }
   }
   global.statistics.getCurrent().stop();
@@ -420,10 +533,17 @@ void PreInlet::initializePreInletVelocityBoundary() {
     domain.z1 = domain.z0;
   }
   fluidInlet = domain;
+  // Remember which inlet nodes are fluid (and thus get a velocity boundary).
+  // flagMatrix->get() is collective in parallel Palabos (it broadcasts from
+  // the owner), so it is evaluated here, where all ranks visit all nodes, and
+  // reused by buildVelocityExchange().
+  inletFluidMask.assign(domain.getNx()*domain.getNy()*domain.getNz(), 0);
   for (int x  = domain.x0 ; x <= domain.x1 ; x++) {
    for (int y  = domain.y0 ; y <= domain.y1 ; y++) {
     for (int z  = domain.z0 ; z <= domain.z1 ; z++) {
-      if (flagMatrix->get(x,y,z) == 1 && !hemocell->partOfpreInlet) {
+      const bool fluid = (flagMatrix->get(x,y,z) == 1);
+      inletFluidMask[inletMaskIndex(x,y,z)] = fluid;
+      if (fluid && !hemocell->partOfpreInlet) {
         Box3D point(x,x,y,y,z,z);
         if (direction == Direction::Xneg) {
           bc->addVelocityBoundary0N(point,*hemocell->lattice);
@@ -448,11 +568,10 @@ void PreInlet::initializePreInletVelocityBoundary() {
     }
    }
   }
+  delete bc;
 }
 
 void PreInlet::preInletFromSlice(Direction direction_, Box3D boundary) {
-  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* bc =
-        createZouHeBoundaryCondition3D<T,DESCRIPTOR>();
   direction = direction_;
   initialized = true;
 
