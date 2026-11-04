@@ -22,7 +22,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "readPositionsBloodCells.h"
-#include "tools/packCells/geometry.h"
+#include <fstream>
+#include <string>
 #include <sstream>
 #include "logfile.h"
 #include "hemocell.h"
@@ -119,8 +120,9 @@ inline void positionCellInParticleField(HemoCellParticleField & particleField, B
   plint nVertices = mesh->getNumVertices();
   Box3D fluidbb = fluid.getBoundingBox();
   Dot3D rrelfluidloc;                                  // used later;
-  int denyLayerSize;                                   // used later;
   HemoCellParticle::serializeValues_t to_add_particle; // used_later
+  // Deny particles that are in the outer most layer, aka. the "shear layer"
+  const int denyLayerSize = ((*particleField.cellFields)[celltype]->minimumDistanceFromSolid * 1e-6) / param::dx;
 
   for (plint iVertex = 0; iVertex < nVertices; ++iVertex) {
     hemo::Array<T, 3> vertex = startingPoint + mesh->getVertex(iVertex);
@@ -139,9 +141,6 @@ inline void positionCellInParticleField(HemoCellParticleField & particleField, B
       if (fluid.get(relfluidloc.x, relfluidloc.y, relfluidloc.z).getDynamics().isBoundary()) { goto no_add; }
     }
 
-    //bool neighboringBoundariesAnywhere = false;
-    // Deny particles that are in the outer most layer, aka. the "shear layer"
-    denyLayerSize = ((*particleField.cellFields)[celltype]->minimumDistanceFromSolid * 1e-6) / param::dx;
     for (int px = -denyLayerSize; px <= denyLayerSize; ++px) {
       for (int py = -denyLayerSize; py <= denyLayerSize; ++py) {
         for (int pz = -denyLayerSize; pz <= denyLayerSize; ++pz) {
@@ -172,114 +171,57 @@ int getTotalNumberOfCells(HemoCellFields & cellFields) {
   return totalCells;
 }
 
-bool first_time = true;
-void getReadPositionsBloodCellsVector(Box3D realDomain, std::vector<TriangularSurfaceMesh<T> *> & meshes,
-                                      std::vector<plint> & Np, std::vector<std::vector<hemo::Array<T, 3>>> & positions,
-                                      std::vector<std::vector<plint>> & cellIds,
-                                      std::vector<std::vector<hemo::Array<T, 3>>> & randomAngles, T dx, Config & cfg,
-                                      HemoCellFields & cellFields, HemoCellParticleField & particleField) {
-  vector<vector<vector3>> packPositions(cellFields.size());
-  vector<vector<vector3>> packAngles(cellFields.size());
-  vector<vector<plint>> cellIdss(cellFields.size());
+namespace {
 
-  Np.resize(cellFields.size());
+/// Parse the text of one .pos file: the cell count, then one row per cell with
+/// the centre (x y z, micrometres) and the rotation about X, Y and Z (degrees).
+/// Angles are converted to radians with the sign flipped (right- to
+/// left-handed frame), positions are shifted to the pre-inlet origin when one
+/// is active, and cell ids continue from nextCellId.
+std::vector<InitialCellPlacement> parsePositions(const std::string & text, const std::string & name,
+                                                 HemoCellFields & cellFields, T posRatio, plint & nextCellId) {
+  std::istringstream in(text);
+  plint declared = 0;
+  in >> declared;
+  hlog << "(readPositionsBloodCells) Particle count in file (" << name << "): " << declared << "." << endl;
 
-  int cellid = 0;
-  // TODO: proper try-catch
-  for (pluint j = 0; j < Np.size(); j++) {
-    // Reading data from file
-    fstream fIn;
-    fIn.open(cellFields[j]->name + ".pos", fstream::in);
-
-    if (!fIn.is_open()) {
-      cout << "*** WARNING! particle positions input file " << cellFields[j]->name << ".pos does not exist!" << endl;
+  const bool shiftToPreInlet = cellFields.hemocell.preInlet && cellFields.hemocell.preInlet->initialized;
+  std::vector<InitialCellPlacement> cells;
+  if (declared > 0) { cells.reserve(declared); }
+  for (plint i = 0; i < declared; i++) {
+    InitialCellPlacement cell;
+    in >> cell.position[0] >> cell.position[1] >> cell.position[2] >> cell.angles[0] >> cell.angles[1] >>
+        cell.angles[2];
+    if (!in) {
+      hlog << "(readPositionsBloodCells) WARNING: " << name << ".pos declares " << declared << " cells but only " << i
+           << " complete rows could be read; using those." << endl;
+      break;
     }
-
-    fIn >> Np[j];
-    if (first_time) {
-      hlog << "(readPositionsBloodCells) Particle count in file (" << cellFields[j]->name << "): " << Np[j] << "."
-           << endl;
+    for (int d = 0; d < 3; d++) {
+      cell.angles[d] *= PI / 180.0; // Deg to Rad
+      cell.angles[d] *= -1.0;       // Right- to left-handed coordinate system
     }
-    packPositions[j].resize(Np[j]);
-    packAngles[j].resize(Np[j]);
-    cellIdss[j].resize(Np[j]);
-    int less = 0;
-    for (plint i = 0; i < Np[j]; i++) {
-      fIn >> packPositions[j][i - less][0] >> packPositions[j][i - less][1] >> packPositions[j][i - less][2] >>
-          packAngles[j][i - less][0] >> packAngles[j][i - less][1] >> packAngles[j][i - less][2];
-      packAngles[j][i - less] *= PI / 180.0; // Deg to Rad
-      packAngles[j][i - less] *= -1.0;       // Right- to left-handed coordinate system
-      cellIdss[j][i - less] = cellid;
-
-      if (cellFields.hemocell.preInlet && cellFields.hemocell.preInlet->initialized) {
-        //Translate system to preInlet Location (set 0,0,0 point)
-        packPositions[j][i - less][0] += cellFields.hemocell.preInlet->location.x0 / dx;
-        packPositions[j][i - less][1] += cellFields.hemocell.preInlet->location.y0 / dx;
-        packPositions[j][i - less][2] += cellFields.hemocell.preInlet->location.z0 / dx;
-      }
-
-      //Check if it actually fits (mostly) in this atomic block
-      if (packPositions[j][i - less][0] * dx < realDomain.x0 - cfg["domain"]["particleEnvelope"].read<int>() ||
-          packPositions[j][i - less][0] * dx > realDomain.x1 + cfg["domain"]["particleEnvelope"].read<int>() ||
-          packPositions[j][i - less][1] * dx < realDomain.y0 - cfg["domain"]["particleEnvelope"].read<int>() ||
-          packPositions[j][i - less][1] * dx > realDomain.y1 + cfg["domain"]["particleEnvelope"].read<int>() ||
-          packPositions[j][i - less][2] * dx < realDomain.z0 - cfg["domain"]["particleEnvelope"].read<int>() ||
-          packPositions[j][i - less][2] * dx > realDomain.z1 + cfg["domain"]["particleEnvelope"].read<int>()) {
-        less++;
-      }
-      cellid++;
+    if (shiftToPreInlet) { // Translate system to preInlet Location (set 0,0,0 point)
+      cell.position[0] += cellFields.hemocell.preInlet->location.x0 / posRatio;
+      cell.position[1] += cellFields.hemocell.preInlet->location.y0 / posRatio;
+      cell.position[2] += cellFields.hemocell.preInlet->location.z0 / posRatio;
     }
-    //Destroy unwanted particles and adjust list size;
-    Np[j] -= less;
-    packPositions[j].resize(Np[j]);
-    packAngles[j].resize(Np[j]);
-    cellIdss[j].resize(Np[j]);
-
-    fIn.close();
+    cell.cellId = nextCellId++;
+    cells.push_back(cell);
   }
-
-  cellFields.number_of_cells = getTotalNumberOfCells(cellFields);
-
-  // Copy results of packing to appropriate hemo::Arrays for ficsion
-  positions.clear();
-  positions.resize(Np.size());
-  randomAngles.clear();
-  randomAngles.resize(Np.size());
-  cellIds.clear();
-  cellIds.resize(Np.size());
-
-
-  for (pluint i = 0; i < Np.size(); ++i) {
-    positions[i].resize(Np[i]);
-    cellIds[i].resize(Np[i]);
-    randomAngles[i].resize(Np[i]);
-
-    for (plint j = 0; j < Np[i]; ++j) {
-      // Store mesh positions and rotations
-      //randomAngles[i][j] = hemo::Array<T, 3>(1.0,0.0,0.0);
-      randomAngles[i][j] = hemo::Array<T, 3>({packAngles[i][j][0], packAngles[i][j][1], packAngles[i][j][2]});
-      positions[i][j] = hemo::Array<T, 3>({packPositions[i][j][0], packPositions[i][j][1], packPositions[i][j][2]});
-      cellIds[i][j] = cellIdss[i][j];
-    }
-  }
-  first_time = false;
+  return cells;
 }
+
+} // namespace
 
 
 /* ******** ReadPositionMultipleCellField3D *********************************** */
 void ReadPositionsBloodCellField3D::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D *> blocks) {
   int numberOfCellFields = blocks.size() - 1;
-  //T ratio;
   BlockLattice3D<T, DESCRIPTOR> & fluid = *dynamic_cast<BlockLattice3D<T, DESCRIPTOR> *>(blocks[0]);
   std::vector<HemoCellParticleField *> particleFields(numberOfCellFields);
-  std::vector<T> volumes(numberOfCellFields);
   std::vector<TriangularSurfaceMesh<T> *> meshes(numberOfCellFields);
   std::vector<ElementsOfTriangularSurfaceMesh<T>> emptyEoTSM(numberOfCellFields);
-  std::vector<plint> Np(numberOfCellFields);
-
-  T totalVolumeFraction = 0;
-
-  //T Vdomain = domain.getNx() * domain.getNy() * domain.getNz();
 
   Dot3D fLocation(fluid.getLocation());
   Box3D realDomain(domain.x0 + fLocation.x, domain.x1 + fLocation.x, domain.y0 + fLocation.y, domain.y1 + fLocation.y,
@@ -292,36 +234,38 @@ void ReadPositionsBloodCellField3D::processGenericBlocks(Box3D domain, std::vect
     mesh->translate(plb::Array<T, 3>(-(xRange[0] + xRange[1]) / 2.0, -(yRange[0] + yRange[1]) / 2.0,
                                      -(zRange[0] + zRange[1]) / 2.0));
     meshes[iCF] = mesh;
-    volumes[iCF] = MeshMetrics<T>(*mesh).getVolume();
 
-    totalVolumeFraction += volumes[iCF];
     particleFields[iCF] = (dynamic_cast<HemoCellParticleField *>(blocks[iCF + 1]));
     particleFields[iCF]->removeParticles(particleFields[iCF]->getBoundingBox());
   }
 
-
-  std::vector<std::vector<hemo::Array<T, 3>>> positions;
-  std::vector<std::vector<plint>> cellIds;
-  std::vector<std::vector<hemo::Array<T, 3>>> randomAngles;
-
+  // Positions are in micrometres; this converts them to lattice units.
   // Note: this method uses the center of the particles for location
-  T posRatio = 1e-6 / dx;
-  getReadPositionsBloodCellsVector(realDomain, meshes, Np, positions, cellIds, randomAngles, posRatio, cfg, cellFields,
-                                   *particleFields[0]);
-
+  const T posRatio = 1e-6 / dx;
   // Change positions to match dx (it is in um originally)
   T wallWidth =
       0; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
 
-  for (pluint iCF = 0; iCF < positions.size(); ++iCF) {
-    for (pluint c = 0; c < positions[iCF].size(); ++c) {
+  for (pluint iCF = 0; iCF < cellFields.size(); ++iCF) {
+    for (const InitialCellPlacement & cell : cells[iCF]) {
+      //Check if it actually fits (mostly) in this atomic block
+      const hemo::Array<T, 3> & position = cell.position;
+      if (position[0] * posRatio < realDomain.x0 - particleEnvelope ||
+          position[0] * posRatio > realDomain.x1 + particleEnvelope ||
+          position[1] * posRatio < realDomain.y0 - particleEnvelope ||
+          position[1] * posRatio > realDomain.y1 + particleEnvelope ||
+          position[2] * posRatio < realDomain.z0 - particleEnvelope ||
+          position[2] * posRatio > realDomain.z1 + particleEnvelope) {
+        continue;
+      }
+
       ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;
       TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
 
-      meshRotation(meshCopy, randomAngles[iCF][c]);
+      meshRotation(meshCopy, cell.angles);
 
-      positionCellInParticleField(*(particleFields[iCF]), fluid, meshCopy, positions[iCF][c] * posRatio + wallWidth,
-                                  cellIds[iCF][c], iCF);
+      positionCellInParticleField(*(particleFields[iCF]), fluid, meshCopy, position * posRatio + wallWidth, cell.cellId,
+                                  iCF);
       delete meshCopy;
     }
 
@@ -331,8 +275,6 @@ void ReadPositionsBloodCellField3D::processGenericBlocks(Box3D domain, std::vect
 
     delete meshes[iCF];
   }
-  //cout << "Atomic Block ID: " << particleFields[0]->atomicBlockId;
-  //cout    << " Total complete cells (with periodicity): " << particleFields[0]->get_lpc().size() << std::endl;
 }
 
 
@@ -370,14 +312,45 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & c
   }
   hlog << "(readPositionsBloodCells) Reading particle positions..." << std::endl;
 
+  // Rank 0 reads each .pos file and broadcasts its text; every rank parses it
+  // once and the functional reuses the result for all of its atomic blocks
+  // (it used to re-read and re-parse every file for each block).
+  const T posRatio = 1e-6 / dx;
+  std::vector<std::vector<InitialCellPlacement>> cells(cellFields.size());
+  plint nextCellId = 0;
+  for (pluint j = 0; j < cellFields.size(); j++) {
+    const std::string name = cellFields[j]->name;
+    std::string text;
+    int opened = 0;
+    if (global::mpi().isMainProcessor()) {
+      std::ifstream fIn(name + ".pos");
+      if (fIn.is_open()) {
+        opened = 1;
+        std::ostringstream contents;
+        contents << fIn.rdbuf();
+        text = contents.str();
+      }
+    }
+    global::mpi().bCast(&opened, 1);
+    if (!opened) {
+      hlog << "*** WARNING! particle positions input file " << name << ".pos does not exist!" << endl;
+      continue;
+    }
+    global::mpi().bCast(text);
+    cells[j] = parsePositions(text, name, cellFields, posRatio, nextCellId);
+  }
+  // Cell ids run over all types, so this is the total over all files. Set
+  // before placing cells: the periodic cell-id mapping depends on it.
+  cellFields.number_of_cells = nextCellId;
+
   if (cellFields.hemocell.preInlet && cellFields.hemocell.preInlet->initialized &&
       !cellFields.hemocell.partOfpreInlet) {
   } else {
-    applyProcessingFunctional(new ReadPositionsBloodCellField3D(cellFields, dx, cfg),
+    const plint particleEnvelope = cfg["domain"]["particleEnvelope"].read<int>();
+    applyProcessingFunctional(new ReadPositionsBloodCellField3D(cellFields, dx, cells, particleEnvelope),
                               cellFields.lattice->getBoundingBox(), fluidAndParticleFieldsArg);
     hlogfile << "Mpi Process: " << global::mpi().getRank() << " Completed loading particles" << std::endl;
   }
-  cellFields.number_of_cells = getTotalNumberOfCells(cellFields);
 }
 
 }

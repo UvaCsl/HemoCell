@@ -69,7 +69,27 @@ public:
   void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const {
     for (pluint i = 0; i < modified.size(); i++) { modified[i] = plb::modif::nothing; }
   }
-  static void gather(std::map<int, GatherType> & gatherValues) {
+  /**
+   * @brief Combine the maps of all ranks on every rank. Collective.
+   *
+   * Afterwards every rank holds the entries of all ranks; for a key present on
+   * several ranks the value of the highest rank wins. The data volume is the
+   * total map size on every rank, so use gatherToRoot() when only one rank
+   * needs the result (e.g. for writing output).
+   */
+  static void gather(std::map<int, GatherType> & gatherValues) { exchange(gatherValues, -1); }
+
+  /**
+   * @brief Combine the maps of all ranks on rank `root` only. Collective.
+   *
+   * On `root` the result equals that of gather(); the other ranks keep their
+   * own entries unchanged.
+   */
+  static void gatherToRoot(std::map<int, GatherType> & gatherValues, int root = 0) { exchange(gatherValues, root); }
+
+private:
+  // root < 0: all ranks receive (Allgatherv); otherwise only `root` (Gatherv).
+  static void exchange(std::map<int, GatherType> & gatherValues, int root) {
     int be = 0;
     int sendsize = sizeof(int) + sizeof(IDandGatherType) * gatherValues.size();
     std::vector<unsigned char> sendbuffer(sendsize);
@@ -90,23 +110,36 @@ public:
       be += sizeof(IDandGatherType);
     }
 
-    std::vector<int> sendcounts(plb::global::mpi().getSize());
-    MPI_Allgather(&sendsize, sizeof(int), MPI_BYTE, &sendcounts[0], sizeof(int), MPI_BYTE, MPI_COMM_WORLD);
+    const int nRanks = plb::global::mpi().getSize();
+    const bool allReceive = root < 0;
+    const bool receiving = allReceive || plb::global::mpi().getRank() == root;
+    std::vector<int> sendcounts(nRanks);
+    if (allReceive) {
+      MPI_Allgather(&sendsize, 1, MPI_INT, sendcounts.data(), 1, MPI_INT, MPI_COMM_WORLD);
+    } else {
+      MPI_Gather(&sendsize, 1, MPI_INT, sendcounts.data(), 1, MPI_INT, root, MPI_COMM_WORLD);
+    }
 
     int receivesize = 0;
-    std::vector<int> displacements(1, 0);
-    for (int & size : sendcounts) {
-      receivesize += size;
-      displacements.push_back(displacements.back() + size);
+    std::vector<int> displacements(nRanks, 0);
+    if (receiving) {
+      for (int j = 0; j < nRanks; j++) {
+        displacements[j] = receivesize;
+        receivesize += sendcounts[j];
+      }
     }
-    displacements.pop_back();
     std::vector<unsigned char> receivebuffer(receivesize);
 
-    MPI_Allgatherv(&sendbuffer[0], sendsize, MPI_BYTE, &receivebuffer[0], &sendcounts[0], &displacements[0], MPI_BYTE,
-                   MPI_COMM_WORLD);
-    be = 0;
+    if (allReceive) {
+      MPI_Allgatherv(sendbuffer.data(), sendsize, MPI_BYTE, receivebuffer.data(), sendcounts.data(),
+                     displacements.data(), MPI_BYTE, MPI_COMM_WORLD);
+    } else {
+      MPI_Gatherv(sendbuffer.data(), sendsize, MPI_BYTE, receivebuffer.data(), sendcounts.data(), displacements.data(),
+                  MPI_BYTE, root, MPI_COMM_WORLD);
+    }
+    if (!receiving) { return; }
 
-    for (int j = 0; j < plb::global::mpi().getSize(); j++) {
+    for (int j = 0; j < nRanks; j++) {
       be = displacements[j];
       for (unsigned int i = 0; i < sizeof(int); i++) {
         local_number.b[i] = receivebuffer[be];
@@ -121,6 +154,7 @@ public:
     }
   }
 
+public:
   //This map should be set in the processingGenericBlocks function and is local to the mpi processor;
   std::map<int, GatherType> & gatherValues;
 };

@@ -161,7 +161,11 @@ Communication
    envelope: each rank sends the IDs of the cells it holds to its large-envelope
    neighbours (tag 24) and receives all their particles of those cells (tag
    42), on a private communicator, receiving requests per known source rank.
-   Copies between blocks on the same rank use ``attribute()``.
+   Replies are unpacked in ascending source rank, not in arrival order: the
+   unpack order sets the order of particles in a block, and with it the
+   floating-point summation order of force spreading, so this keeps multi-rank
+   runs reproducible. Copies between blocks on the same rank use
+   ``attribute()``.
 
 HemoCell's processing functionals (``HemoCellFunctional``) declare that they
 modify nothing (``modif::nothing``), so Palabos never triggers envelope updates

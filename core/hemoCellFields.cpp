@@ -22,6 +22,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <mpi.h>
+#include <algorithm>
 
 #include "hemoCellFields.h"
 #include "hemocell.h"
@@ -491,6 +492,12 @@ void HemoCellFields::syncEnvelopes() {
       MPI_Isend(sendBuffer.data(), sendBuffer.size(), MPI_CHAR, requesting_proc, 42, particleComm, &reqs.back());
     }
 
+    // Receives are posted in arrival order (each source sends exactly one
+    // reply), but unpacked in ascending source rank (recv_procs_v is sorted):
+    // the unpack order decides the order of particles in the receiving blocks
+    // and with it the floating-point summation order of force spreading and
+    // repulsion. Arrival order made multi-rank runs differ from run to run at
+    // round-off level.
     vector<MPI_Request> recv_reqs(recv_procs.size());
     recvBuffers.resize(recv_procs.size());
     for (unsigned int i = 0; i < recv_procs.size(); i++) {
@@ -498,23 +505,23 @@ void HemoCellFields::syncEnvelopes() {
       MPI_Probe(MPI_ANY_SOURCE, 42, particleComm, &status);
       int count;
       MPI_Get_count(&status, MPI_CHAR, &count);
-      vector<NoInitChar> & recv_buffer = recvBuffers[i];
+      const unsigned int slot =
+          std::lower_bound(recv_procs_v.begin(), recv_procs_v.end(), status.MPI_SOURCE) - recv_procs_v.begin();
+      vector<NoInitChar> & recv_buffer = recvBuffers[slot];
       recv_buffer.resize(count);
-      MPI_Irecv(recv_buffer.data(), count, MPI_CHAR, status.MPI_SOURCE, 42, particleComm, &recv_reqs[i]);
+      MPI_Irecv(recv_buffer.data(), count, MPI_CHAR, status.MPI_SOURCE, 42, particleComm, &recv_reqs[slot]);
     }
 
-    for (unsigned int i = 0; i < recv_procs.size(); i++) {
-      int index;
+    for (unsigned int i = 0; i < recv_procs_v.size(); i++) {
       MPI_Status status;
-      if (MPI_SUCCESS != MPI_Waitany(recv_reqs.size(), recv_reqs.data(), &index, &status)) {
-        hlog << "(HemoCellFields) (syncenvelopes) error returned in WaitAny " << status.MPI_ERROR << endl;
+      if (MPI_SUCCESS != MPI_Wait(&recv_reqs[i], &status)) {
+        hlog << "(HemoCellFields) (syncenvelopes) error returned in MPI_Wait " << status.MPI_ERROR << endl;
         exit(1);
       }
-      recv_reqs[index] = MPI_REQUEST_NULL;
       //Get Offsets and Destinations
-      for (CommunicationInfo3D const * info : recv_infos[status.MPI_SOURCE]) {
+      for (CommunicationInfo3D const * info : recv_infos[recv_procs_v[i]]) {
         HemoCellParticleField & toBlock = immersedParticles->getComponent(info->toBlockId);
-        toBlock.getDataTransfer().receive(info->toDomain, recvBuffers[index], info->absoluteOffset);
+        toBlock.getDataTransfer().receive(info->toDomain, recvBuffers[i], info->absoluteOffset);
       }
     }
 

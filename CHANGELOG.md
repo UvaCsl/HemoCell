@@ -112,6 +112,29 @@ Unreleased (refactor)
     `force_repulsion` at every update (it was never reset); it now resets the
     field itself. Cell-cell and wall repulsion must use the same update
     interval (checked at start-up).
+* Performance (results bit-identical; cube benchmark on 4 ranks: `iterate`
+  -5 %, `spreadParticleForce` -22 %, `advanceParticles` -35 %)
+  * IBM kernel (`phi2`): only the 2x2x2 nodes with non-zero weight are visited
+    instead of 27 candidates, with the same products and summation order.
+  * Force spreading skips particle copies whose kernel lies outside the bulk
+    and the collided envelope layer; the force sum is formed once per particle.
+  * Velocity interpolation skips particle copies (the following
+    `syncEnvelopes()` replaces their velocity anyway).
+  * `advanceParticles()` only runs the removal pass when a particle entered a
+    boundary node.
+  * Cell-information CSV output gathers to rank 0 instead of to all ranks.
+  * `.pos` files are read by rank 0 and broadcast, and parsed once per rank
+    instead of once per atomic block (with several XML reads per cell). A
+    missing file is reported once, not by every rank for every block; a file
+    with fewer complete rows than its declared count uses those rows with a
+    warning (previously the missing cells were placed at the origin).
+* Reproducibility
+  * Multi-rank runs are bit-for-bit reproducible: `syncEnvelopes()` unpacks
+    the received particles in ascending source rank instead of MPI arrival
+    order. The arrival order decided the order of particles in a block, and
+    with it the summation order of force spreading and repulsion, so
+    identical runs differed at round-off level (relative 1e-8 in forces after
+    100 steps of pipeflow on 4 ranks), growing over time. No measurable cost.
 * Tests
   * Unit tests for the particle grid/repulsion, the configuration reader,
     `hemo::Array`, particle copy/move and log buffering; an integration test

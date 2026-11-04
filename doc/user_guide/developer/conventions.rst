@@ -69,6 +69,11 @@ Parallel correctness
   if only rank 0 writes.
 * Point-to-point exchanges use a private communicator and receive from known
   source ranks (see :ref:`developer/architecture:Communication`).
+* Runs are bit-for-bit reproducible for a given rank count and decomposition.
+  Keep it that way: when the order of processing received data affects the
+  order of particles or of floating-point sums, process it in a fixed order
+  (e.g. by source rank), never in MPI arrival order. Reproducibility is what
+  makes exact before/after comparisons possible.
 * A single-rank run does not test communication. Changes to particle transfer,
   ownership, periodicity or decomposition need runs on several ranks, including
   block and periodic crossings, and a restart from a checkpoint.

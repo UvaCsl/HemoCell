@@ -444,20 +444,26 @@ void HemoCellParticleField::setlocalDomain(Box3D & localDomain_) {
 
 
 void HemoCellParticleField::advanceParticles() {
+  plb::Box3D const box = atomicLattice->getBoundingBox();
+  plb::Dot3D const location = atomicLattice->getLocation();
+  bool anyOnBoundary = false;
   for (HemoCellParticle & particle : particles) {
     particle.advance();
     //By lack of better place, check if it is on a boundary, if so, delete it
-    plb::Box3D const box = atomicLattice->getBoundingBox();
-    plb::Dot3D const & location = atomicLattice->getLocation();
     plint x = (particle.sv.position[0] - location.x) + 0.5;
     plint y = (particle.sv.position[1] - location.y) + 0.5;
     plint z = (particle.sv.position[2] - location.z) + 0.5;
 
     if ((x >= box.x0) && (x <= box.x1) && (y >= box.y0) && (y <= box.y1) && (z >= box.z0) && (z <= box.z1)) {
-      if (atomicLattice->get(x, y, z).getDynamics().isBoundary()) { particle.tag = 1; }
+      if (atomicLattice->get(x, y, z).getDynamics().isBoundary()) {
+        particle.tag = 1;
+        anyOnBoundary = true;
+      }
     }
   }
-  removeParticles(1);
+  // Tag 1 is only set above at this point (other users remove their tagged
+  // particles immediately), so the removal pass can be skipped if none hit a wall.
+  if (anyOnBoundary) { removeParticles(1); }
 
   lpc_up_to_date = false;
   pg_up_to_date = false;
@@ -640,10 +646,13 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
   plb::Array<T, 3> velocity_comp;
 
   for (HemoCellParticle & particle : particles) {
-    // Trick to allow for different kernels for different particle types.
-    // (*cellFields)[particle.sv.celltype]->kernelMethod(*atomicLattice,particle);
+    // Only particles owned by this block: interpolation is always followed by
+    // syncEnvelopes(), which drops the envelope copies and receives them again
+    // with the velocity their owner interpolated.
+    if (!isContainedABS(particle.sv.position, localDomain)) { continue; }
 
-    // We have the kernels, now calculate the velocity of the particles.
+    // We have the kernels (computed in spreadParticleForce()), now calculate
+    // the velocity of the particle.
     velocity = {0.0, 0.0, 0.0};
     for (pluint j = 0; j < particle.kernelLocations.size(); j++) {
       // Direct access
@@ -655,25 +664,45 @@ void HemoCellParticleField::interpolateFluidVelocity(Box3D domain) {
 }
 
 void HemoCellParticleField::spreadParticleForce(Box3D domain) {
+#ifndef INTERIOR_VISCOSITY
+  // Envelope copies more than two nodes outside the bulk only reach envelope
+  // nodes from the second layer on. Those forces are never used: Palabos
+  // collides the bulk plus the active fluid envelope, which HemoCell keeps at
+  // one layer (initializeCellfield()), envelope populations are overwritten by
+  // communication, and interpolation and output read at most the first
+  // envelope layer. So their kernels and spreading are skipped. (Interior
+  // viscosity uses the kernels of all particles, so it keeps computing them.)
+  const plb::Box3D spreadDomain = localDomain.enlarge(2);
+#endif
   for (HemoCellParticle & particle : particles) {
-    //Trick to allow for different kernels for different particle types.
-    (*cellFields)[particle.sv.celltype]->kernelMethod(*atomicLattice, particle);
-
     // Capping force to ensure stability -> NOTE: this can introduce an error if forces are large!
 #ifdef FORCE_LIMIT
     const T force_mag = norm(particle.sv.force);
     if (force_mag > param::f_limit) particle.sv.force *= param::f_limit / force_mag;
 #endif
 
+#ifndef INTERIOR_VISCOSITY
+    if (!isContainedABS(particle.sv.position, spreadDomain)) {
+      particle.kernelLocations.clear();
+      particle.kernelWeights.clear();
+      continue;
+    }
+#endif
+
+    //Trick to allow for different kernels for different particle types.
+    (*cellFields)[particle.sv.celltype]->kernelMethod(*atomicLattice, particle);
+
     // Directly change the force on a node, quick-and-dirty solution.
+    const T force[3] = {particle.sv.force_repulsion[0] + particle.sv.force[0],
+                        particle.sv.force_repulsion[1] + particle.sv.force[1],
+                        particle.sv.force_repulsion[2] + particle.sv.force[2]};
     for (pluint j = 0; j < particle.kernelLocations.size(); j++) {
       // Direct access
-      particle.kernelLocations[j]->external.data[0] +=
-          ((particle.sv.force_repulsion[0] + particle.sv.force[0]) * particle.kernelWeights[j]);
-      particle.kernelLocations[j]->external.data[1] +=
-          ((particle.sv.force_repulsion[1] + particle.sv.force[1]) * particle.kernelWeights[j]);
-      particle.kernelLocations[j]->external.data[2] +=
-          ((particle.sv.force_repulsion[2] + particle.sv.force[2]) * particle.kernelWeights[j]);
+      T * const external = particle.kernelLocations[j]->external.data;
+      const T weight = particle.kernelWeights[j];
+      external[0] += force[0] * weight;
+      external[1] += force[1] * weight;
+      external[2] += force[2] * weight;
     }
   }
 }

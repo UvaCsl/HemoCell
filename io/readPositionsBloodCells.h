@@ -32,22 +32,39 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "offLattice/triangularSurfaceMesh.hh"
 
 namespace hemo {
-void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & cfg);
-int getTotalNumberOfCells(HemoCellFields & cellFields);
+/// One cell read from a .pos file.
+struct InitialCellPlacement {
+  hemo::Array<T, 3> position; ///< Cell centre in micrometres (shifted to the pre-inlet origin if one is active).
+  hemo::Array<T, 3> angles;   ///< Rotation about X, Y, Z in radians, negated for the left-handed frame.
+  plint cellId;               ///< Global cell id, sequential over all types in registration order.
+};
 
-void getReadPositionsBloodCellsVector(plb::Box3D realDomain, std::vector<plb::TriangularSurfaceMesh<T> *> & meshes,
-                                      std::vector<plint> & Np, std::vector<std::vector<hemo::Array<T, 3>>> & positions,
-                                      std::vector<std::vector<plint>> & cellIds,
-                                      std::vector<std::vector<hemo::Array<T, 3>>> & randomAngles, Config & cfg,
-                                      HemoCellFields & cellFields, HemoCellParticleField & particleField);
+/**
+ * @brief Place the cells listed in `<type name>.pos` of every cell type into the particle fields.
+ *
+ * Rank 0 reads the files and broadcasts their text; every rank parses them once and places the
+ * cells whose centre lies within `particleEnvelope` of each of its atomic blocks. Sets
+ * `cellFields.number_of_cells`. Collective: every rank must call it.
+ *
+ * @param[in,out] cellFields All cell types; their particle fields receive the cells.
+ * @param[in] dx Lattice spacing in metres (`param::dx`).
+ * @param[in] cfg Configuration, `domain/particleEnvelope` is read.
+ */
+void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & cfg);
+
+/// Sum of the cell counts in the first line of every `<type name>.pos` file (read on each rank).
+int getTotalNumberOfCells(HemoCellFields & cellFields);
 
 class ReadPositionsBloodCellField3D : public plb::BoxProcessingFunctional3D {
 public:
-  ReadPositionsBloodCellField3D(HemoCellFields & cellFields_, T dx_, Config & cfg_)
-      : cellFields(cellFields_), cfg(cfg_) {
-    dx = dx_;
-  }
-  /// Arguments: [0] Particle-field.
+  /// @param cellFields_ All cell types (their meshes and particle fields).
+  /// @param dx_ Lattice spacing in metres.
+  /// @param cells_ Parsed cells per cell type; must outlive the functional (owned by the caller).
+  /// @param particleEnvelope_ Cells are placed in a block if their centre is within this many lattice units of it.
+  ReadPositionsBloodCellField3D(HemoCellFields & cellFields_, T dx_,
+                                const std::vector<std::vector<InitialCellPlacement>> & cells_, plint particleEnvelope_)
+      : dx(dx_), cellFields(cellFields_), cells(cells_), particleEnvelope(particleEnvelope_) {}
+  /// Arguments: [0] fluid lattice, [1..] particle field of each cell type.
   virtual void processGenericBlocks(plb::Box3D domain, std::vector<plb::AtomicBlock3D *> fields);
   virtual ReadPositionsBloodCellField3D * clone() const;
   virtual void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const;
@@ -55,7 +72,8 @@ public:
   virtual plb::BlockDomain::DomainT appliesTo() const;
   T dx;
   HemoCellFields & cellFields;
-  Config & cfg;
+  const std::vector<std::vector<InitialCellPlacement>> & cells;
+  plint particleEnvelope;
 };
 }
 #endif

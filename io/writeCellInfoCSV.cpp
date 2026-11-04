@@ -40,7 +40,8 @@ void writeCellInfo_CSV(HemoCell & hemocell) {
     }
   }
 
-  HemoCellGatheringFunctional<CellInformation>::gather(info_per_cell);
+  // Only rank 0 writes, so only rank 0 needs all cells.
+  HemoCellGatheringFunctional<CellInformation>::gatherToRoot(info_per_cell);
 
   if (!global::mpi().getRank()) {
     vector<std::string> fileNames = vector<std::string>(hemocell.cellfields->size());

@@ -249,6 +249,10 @@ Configuration conventions:
   that gathers data or writes coordinated output may need to be called by every
   rank even if only rank zero writes. Use `pcout`/`hlog` and existing profiler
   conventions; avoid per-particle logging and extra barriers in hot loops.
+- Runs with the same rank count and decomposition are bit-for-bit
+  reproducible (received particles are unpacked by source rank, not arrival
+  order). Keep received data processed in a fixed order, and compare outputs
+  exactly when a change should not alter numerics.
 - Global/static simulation state means only one `HemoCell` instance may exist
   at a time. Do not assume reentrancy or thread safety. Tests that construct
   multiple simulations sequentially must reset any static helper state they use.
