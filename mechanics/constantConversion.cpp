@@ -132,9 +132,9 @@ T Parameters::kBT_p = 0.0;
 T Parameters::ef_lbm = 0.0;
 #ifdef FORCE_LIMIT
 T Parameters::f_limit = 0.0;
+#endif
 T Parameters::pipe_radius = 0.0;
 
 T Parameters::tau_CEPAC = 0.0;
 
 }
-#endif

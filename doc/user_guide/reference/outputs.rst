@@ -34,7 +34,11 @@ Pass these to ``setOutputs(name, {...})``.
    * - ``OUTPUT_VELOCITY``
      - Velocity of each membrane vertex.
    * - ``OUTPUT_FORCE``
-     - Total force on each vertex (sum of all force terms below).
+     - Total force on each vertex: the membrane force plus the repulsion force
+       that will be applied to the fluid in the next iteration. For cell types
+       with a material time-scale separation > 1 this is the force from the
+       last material update, while the individual components below are
+       evaluated for the current shape, so they need not add up exactly.
    * - ``OUTPUT_FORCE_VOLUME``
      - Volume-conservation force contribution.
    * - ``OUTPUT_FORCE_AREA``
@@ -48,7 +52,8 @@ Pass these to ``setOutputs(name, {...})``.
    * - ``OUTPUT_FORCE_INNER_LINK``
      - Inner-link force contribution (models with internal structure).
    * - ``OUTPUT_FORCE_REPULSION``
-     - Repulsion force contribution (requires repulsion enabled).
+     - Repulsion force contribution (requires repulsion enabled), as computed
+       at the last repulsion update.
    * - ``OUTPUT_INNER_LINKS``
      - The inner-edge connectivity of the cell.
    * - ``OUTPUT_CELL_ID``
@@ -81,7 +86,10 @@ Pass these to ``setFluidOutputs({...})``.
    * - ``OUTPUT_DENSITY``
      - Fluid density field.
    * - ``OUTPUT_FORCE``
-     - Force field acting on the fluid (e.g. from the immersed cells).
+     - Total force field acting on the fluid: the external (body) force plus
+       the force spread from the immersed cells. Writing it leaves the
+       lattice force unchanged, so a body force set before ``writeOutput()``
+       does not need to be re-applied.
    * - ``OUTPUT_SHEAR_STRESS``
      - Shear stress field.
    * - ``OUTPUT_SHEAR_RATE``

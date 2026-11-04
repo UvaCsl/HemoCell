@@ -41,7 +41,10 @@ class LoadBalancer {
 #else
   LoadBalancer(HemoCell & hemocell_):hemocell(hemocell_){};
   double calculateFractionalLoadImbalance() {return 0.0;}
-  void restructureBlocks(bool checkpoint_available=true) {}
+  /// Without ParMETIS restructuring is unavailable; say so instead of silently doing nothing.
+  void restructureBlocks(bool checkpoint_available=true) {
+    hlog << "(LoadBalancer) WARNING: doRestructure() has no effect, HemoCell was built without ParMETIS (HEMO_PARMETIS)." << std::endl;
+  }
 #endif
 
   void doLoadBalance();

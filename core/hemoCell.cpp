@@ -231,12 +231,10 @@ void HemoCell::writeOutput() {
   lastOutputAt  = iter;
   // Very naive performance approximation
   pcout << "(HemoCell) (Output) writing output at timestep " << iter << " (" << param::dt * iter<< " s). Approx. performance: " << tpi << " s / iteration." << endl;
-  if(repulsionEnabled) {
-    cellfields->applyRepulsionForce();
-  }
-  if(boundaryRepulsionEnabled) {
-    cellfields->applyBoundaryRepulsionForce();
-  }
+  // Note: output must not change the forces used by the next iterate(),
+  // otherwise the output interval would alter the trajectory. Repulsion is
+  // therefore not recomputed here; the output shows the repulsion force that
+  // is currently applied (computed at its last update step).
 
   // update larger lattice envelopes
   lattice->getMultiBlockManagement().changeEnvelopeWidth(2);
@@ -251,10 +249,15 @@ void HemoCell::writeOutput() {
     cellfields->deleteIncompleteCells(false);   
   }
 
-  // Repoint surfaceparticle forces for output
+  // Store the total force that will be spread next (force_total) and repoint
+  // the per-component force pointers to separate output arrays.
   cellfields->separate_force_vectors();
 
-  // Recalculate the forces
+  // Recompute the force components into the separate arrays only. sv.force
+  // (the force applied to the fluid) is left untouched, so writing output does
+  // not change the simulation. For cell types with a material timescale
+  // separation > 1 the components reflect the current shape, while the total
+  // force is the one computed at the last material update.
   cellfields->applyConstitutiveModel(true);
 
   // Creating a new directory per save
@@ -300,6 +303,10 @@ void HemoCell::iterate() {
   checkExitSignals();
   if (!sanityCheckDone) {
     sanityCheck();
+  }
+  // (Re)build the large-envelope particle communication structure on the first
+  // step and after the particle field has been re-created (load balancing).
+  if (!cellfields->large_communicator) {
     cellfields->calculateCommunicationStructure();
   }
   global.statistics.getCurrent()["iterate"].start();
@@ -609,6 +616,18 @@ void HemoCell::sanityCheck() {
        hlog << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..." <<endl;
        exit(1);
     }
+  }
+
+  // The repulsion neighbour searches only visit adjacent lattice nodes (see
+  // computePairRepulsion and applyBoundaryRepulsionForce), so pairs further
+  // apart than about one lattice spacing are only partially detected.
+  if (repulsionEnabled && cellfields->repulsionCutoff > 1.0) {
+    hlog << "(HemoCell) (SanityCheck) WARNING: repulsion cutoff (" << cellfields->repulsionCutoff
+         << " lu) exceeds one lattice spacing; the neighbour search only covers adjacent lattice nodes, so pairs further apart are partially missed." << endl;
+  }
+  if (boundaryRepulsionEnabled && cellfields->boundaryRepulsionCutoff > 1.0) {
+    hlog << "(HemoCell) (SanityCheck) WARNING: boundary repulsion cutoff (" << cellfields->boundaryRepulsionCutoff
+         << " lu) exceeds one lattice spacing; only particles in lattice nodes adjacent to a wall node are checked." << endl;
   }
   
   if (global.enableInteriorViscosity) {

@@ -92,6 +92,10 @@ public:
   void load(plb::XMLreader * documentXML, unsigned int & iter, Config * cfg = NULL);
   ///Save a checkpoint
   void save(plb::XMLreader * documentXML, unsigned int iter, Config * cfg = NULL);
+private:
+  /// Load the CEPAC field from a checkpoint directory if it is enabled and present.
+  void loadCEPACfield(const std::string & checkpointDirectory);
+public:
     
   ///Legacy Helper function to get the particle field, mostly unused as direct access is available
   plb::MultiParticleField3D<HemoCellParticleField> & getParticleField3D();
@@ -201,14 +205,19 @@ public:
   pluint interiorViscosityTimescale = 1;
   pluint interiorViscosityEntireGridTimescale = 1;
   
-  ///Limit of cycles in a direction (xyz)
-  int periodicity_limit[3] = {100};
+  ///Limit of cycles in a direction (xyz); offsets below must match these defaults
+  int periodicity_limit[3] = {100, 100, 100};
   //Internal calculation of offset created by flattening limits
   int periodicity_limit_offset_y = 100;
   int periodicity_limit_offset_z = 10000;
   
 private:
   vector<vector<NoInitChar>> sendBuffers, recvBuffers;
+  /// Private duplicate of MPI_COMM_WORLD for the particle exchange in
+  /// syncEnvelopes(), so its messages cannot be matched by Palabos or other
+  /// HemoCell traffic. Created in the constructor (collective over all ranks),
+  /// freed in the destructor.
+  MPI_Comm particleComm = MPI_COMM_NULL;
 public:
   
   /**
@@ -216,6 +225,9 @@ public:
    * Is set through hemocell::loadParticles() is added (TODO: also when removed)
    */
    int number_of_cells = 0;
+   /// True once number_of_cells was restored from a checkpoint; it is then no
+   /// longer re-derived from the .pos files (which may have changed since).
+   bool number_of_cells_from_checkpoint = false;
    inline int base_cell_id(int wrapped) {
      return ((wrapped%number_of_cells)+number_of_cells)%number_of_cells;
    }

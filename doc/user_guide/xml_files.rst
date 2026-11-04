@@ -9,7 +9,13 @@ should be valid XML. The first tag should always be ``<hemocell>``. Within the
 HemoCell you can specify any tag that can be used in your simulation after you 
 initialized the config file like this:: 
    
-  (*hemocell.cfg)["domain"]["<your attribute>"].read<type>() 
+  (*hemocell.cfg)["domain"]["<your attribute>"].read<type>()
+
+``read<type>()`` throws ``std::invalid_argument`` if the tag is missing, empty,
+or its text cannot be converted in full: for example ``1e6`` is rejected for an
+integer setting instead of being read as ``1``. Booleans accept ``0``, ``1``,
+``true`` and ``false``; strings are returned without surrounding whitespace.
+Optional settings catch this exception and fall back to their default.
 
 Most tags are used within the HemoCell framework to configure options. However
 some are used from the **case.cpp** file and thus are not present in all cases.
@@ -75,6 +81,9 @@ These options are denoted with a bold **case.cpp**.
       Uncomment line in pipeflow.cpp if you want to use this.
     * ``<RepCutoff>`` **case.cpp** Cutoff distance in **micrometer!** for the
       repulsion force. Uncomment line in pipeflow.cpp if you want to use this.
+      The neighbour search only covers adjacent lattice nodes, so a cutoff
+      larger than one ``<dx>`` is only partially effective (a warning is
+      printed at the first iteration).
 
   * ``<sim>``
 

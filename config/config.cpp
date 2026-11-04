@@ -48,13 +48,23 @@ namespace hemo {
       exit(1);
     }
     orig = new tinyxml2::XMLDocument();
-    orig->LoadFile(paramXmlFileName.c_str());
-   // Check if it is a fresh start or a checkpointed run 
-    tinyxml2::XMLNode * first =orig->FirstChild()->NextSibling();
-    if (first) {
-      string firstField = first->Value(); 
-      if (firstField == "Checkpoint") { checkpointed = 1; } //If the first field is not checkpoint but hemocell
-      else { checkpointed = 0; }
+    if (orig->LoadFile(paramXmlFileName.c_str()) != tinyxml2::XML_SUCCESS) {
+      plb::pcout << "(HemoCell) (Config) Error parsing " << paramXmlFileName << ": " << orig->ErrorName();
+      if (orig->GetErrorStr1()) { plb::pcout << " " << orig->GetErrorStr1(); }
+      plb::pcout << " (line " << orig->GetErrorLineNum() << "), exiting ..." << std::endl;
+      exit(1);
+    }
+    // Check if it is a fresh start (root <hemocell>) or a checkpoint (root
+    // <Checkpoint> containing <hemocell>). The root is validated once here so
+    // that operator[] does not need to check it on every access.
+    tinyxml2::XMLElement * root = orig->RootElement();
+    checkpointed = root && (string(root->Name()) == "Checkpoint");
+    tinyxml2::XMLElement * hemocellRoot = checkpointed ? root->FirstChildElement("hemocell")
+                                                       : orig->FirstChildElement("hemocell");
+    if (!hemocellRoot) {
+      plb::pcout << "(HemoCell) (Config) Error: " << paramXmlFileName << " has no <hemocell> root element"
+                 << (checkpointed ? " inside <Checkpoint>" : "") << ", exiting ..." << std::endl;
+      exit(1);
     }
   }
   
@@ -77,6 +87,27 @@ namespace hemo {
    }
   }
   
+  bool XMLElement::parseValue(const std::string & text, bool & value) {
+    std::string word;
+    if (!parseValue(text, word)) {
+      return false;
+    }
+    if (word == "1" || word == "true") { value = true; return true; }
+    if (word == "0" || word == "false") { value = false; return true; }
+    return false;
+  }
+
+  bool XMLElement::parseValue(const std::string & text, std::string & value) {
+    const std::string whitespace = " \t\n\r\f\v";
+    const std::string::size_type first = text.find_first_not_of(whitespace);
+    if (first == std::string::npos) {
+      return false;
+    }
+    const std::string::size_type last = text.find_last_not_of(whitespace);
+    value = text.substr(first, last - first + 1);
+    return true;
+  }
+
   XMLElement XMLElement::operator[] (string name) const {
     tinyxml2::XMLElement * child = orig->FirstChildElement(name.c_str());
     if (child) {
@@ -96,7 +127,7 @@ void loadDirectories(hemo::Config * cfg, bool edit_out_dir)  {
   if (edit_out_dir) {
     try {
       std::string outDir = (*cfg)["parameters"]["outputDirectory"].read<string>();
-      while (outDir[outDir.size()-1] == '/') {
+      while (outDir.size() > 1 && outDir[outDir.size()-1] == '/') {
         outDir.pop_back();
       }
       if (outDir[0] != '/') {

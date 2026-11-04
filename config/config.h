@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 namespace hemo {
 
@@ -39,26 +40,54 @@ namespace hemo {
   public:
     XMLElement(tinyxml2::XMLElement * orig_) : orig(orig_){}
     XMLElement operator[] (std::string name) const;
-    
+
+    /**
+     * @brief Read the text of this element as a value of type T.
+     *
+     * Numbers are parsed with stream extraction and must make up the whole
+     * text (surrounding whitespace is ignored), e.g. "1e6" is rejected for an
+     * integer instead of silently becoming 1. Booleans accept 0/1/true/false.
+     * Strings return the whole text with surrounding whitespace removed.
+     *
+     * @throws std::invalid_argument if the element is empty or its text cannot
+     * be converted. Callers that treat a value as optional catch this exception
+     * (the same one that is thrown for a missing element) and use a default.
+     */
     template<typename T>
     T read() {
-      std::stringstream value(orig->GetText());
+      const char * text = orig->GetText();
+      if (!text) {
+        throw std::invalid_argument(std::string("XML element <") + orig->Name() + "> is empty.");
+      }
       T ret = T();
-      if (!(value>>ret)) {
-        std::cout << "Cannot convert value from XML element" << std::endl;
+      if (!parseValue(text, ret)) {
+        throw std::invalid_argument(std::string("Cannot convert value \"") + text + "\" of XML element <" + orig->Name() + ">.");
       }
       return ret;
     }
     
     tinyxml2::XMLElement * getOrig() { return orig;}
-    
+
+  private:
+    template<typename V>
+    static bool parseValue(const std::string & text, V & value) {
+      std::istringstream stream(text);
+      if (!(stream >> value)) {
+        return false;
+      }
+      stream >> std::ws;
+      return stream.eof(); // nothing but whitespace may follow the value
+    }
+    static bool parseValue(const std::string & text, bool & value);
+    static bool parseValue(const std::string & text, std::string & value);
   };
   
   
   class Config {
     tinyxml2::XMLDocument * orig;
   public:
-    bool checkpointed;
+    /// True if the root element is <Checkpoint> (a checkpoint.xml written by HemoCell).
+    bool checkpointed = false;
 
     Config(std::string paramXmlFilename); 
     ~Config();

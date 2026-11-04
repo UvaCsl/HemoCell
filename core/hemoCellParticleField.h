@@ -31,6 +31,7 @@ namespace hemo {
 #include "hemoCellFields.h"
 #include "hemoCellParticleDataTransfer.h"
 #include "hemoCellParticle.h"
+#include "particleGrid.h"
 
 #include "atomicBlock/blockLattice3D.hh"
 
@@ -174,12 +175,10 @@ private:
   void update_pg();
   void issueWarning(HemoCellParticle & p);
   
-  hemo::Array<unsigned int,10> * particle_grid = 0;
-  unsigned int * particle_grid_size = 0;
-  unsigned int grid_index(int & nx,int & ny,int & nz) {
-    return nz+this->atomicLattice->getNz()*(ny+(this->atomicLattice->getNy()*nx));
-  }
-  
+  /// Particles binned per lattice node; valid only while pg_up_to_date is
+  /// true (any change to `particles` invalidates it, see update_pg()).
+  ParticleGrid particleGrid;
+
   vector<hemo::Array<T,3>*> allocated_for_output;
   
 public:

@@ -42,6 +42,11 @@ PltSimpleModel::PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_) :
   { };
 
 void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> & lpc, pluint ctype) {
+#ifdef FORCE_LIMIT
+  // Per-edge membrane-viscosity cap: a quarter of FORCE_LIMIT, which is given
+  // in pN per surface point; param::f_limit is the same limit in lattice units.
+  const T viscForceLimit = param::f_limit / 4.0;
+#endif
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
     const int & cid = pair.first;
     vector<HemoCellParticle*> & cell = particles_per_cell[cid];
@@ -143,11 +148,13 @@ void PltSimpleModel::ParticleMechanics(map<int,vector<HemoCellParticle *>> & par
       const hemo::Array<T,3> rel_vel_projection = dot(rel_vel, edge_uv) * edge_uv;
       hemo::Array<T,3> Fvisc_memb = eta_m * rel_vel_projection;
 
-      // Limit membrane viscosity
+      // Limit membrane viscosity (cap in lattice force units, see viscForceLimit)
+#ifdef FORCE_LIMIT
       const T Fvisc_memb_mag = norm(Fvisc_memb);
-      if (Fvisc_memb_mag > FORCE_LIMIT / 4.0) {
-        Fvisc_memb *= (FORCE_LIMIT / 4.0) / Fvisc_memb_mag;
+      if (Fvisc_memb_mag > viscForceLimit) {
+        Fvisc_memb *= viscForceLimit / Fvisc_memb_mag;
       }
+#endif
 
       *cell[edge[0]]->force_visc += Fvisc_memb;
       *cell[edge[1]]->force_visc -= Fvisc_memb; 

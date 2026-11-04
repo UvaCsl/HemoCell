@@ -26,22 +26,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef HEMO_PARMETIS
 #include <parmetis.h>
 
+namespace hemo {
+
 LoadBalancer::LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_), original_block_structure(hemocell_.lattice->getSparseBlockStructure().clone()),original_thread_attribution(hemocell_.lattice->getMultiBlockManagement().getThreadAttribution().clone()) { 
 
+}
+
+namespace {
+// Load balancing re-creates the fluid lattice and the particle field. Fields
+// coupled to the old lattice (the pre-inlet lattices, the CEPAC field and its
+// coupling processor) are not migrated, so those combinations are refused.
+bool loadBalancingSupported(HemoCell & hemocell, const char * what) {
+  if (hemocell.preInlet || hemo::global.enableCEPACfield) {
+    pcerr << "(LoadBalancer) WARNING: " << what << " is not supported together with a pre-inlet or the CEPAC field; skipping." << endl;
+    return false;
+  }
+  return true;
+}
 }
 
 void LoadBalancer::reloadCheckpoint() {
   //Firstly reload the config
   delete hemocell.documentXML;
-  string outDir = global::directories().getOutputDir();
-  try {  
-    outDir = (*hemocell.cfg)["parameters"]["checkpointDirectory"].read<string>() + "/";
-    if (outDir[0] != '/') {
-          outDir = "./" + outDir;
-    }
-  } catch (std::invalid_argument & exeption) {}
-  hemocell.documentXML = new XMLreader(outDir + "checkpoint.xml");
-  hemocell.cfg->reload(outDir + "checkpoint.xml");
+  // HemoCellFields::save() writes to global.checkpointDirectory
+  // (<outputDirectory>/<checkpointDirectory>/), so read it back from there.
+  const string checkpointFile = hemo::global.checkpointDirectory + "checkpoint.xml";
+  hemocell.documentXML = new XMLreader(checkpointFile);
+  hemocell.cfg->reload(checkpointFile);
 
   hemocell.cellfields->syncEnvelopes();
   hemocell.loadCheckPoint();
@@ -127,6 +138,7 @@ T LoadBalancer::calculateFractionalLoadImbalance() {
 }
 
 void LoadBalancer::doLoadBalance() {
+  if (!loadBalancingSupported(hemocell, "doLoadBalance()")) { return; }
   if(!FLI_iscalled) {
     pcerr << "Warning, You did not calculate the fractional load imbalance before trying to balance, this means gatherValues will be unavailable in this function";
   }
@@ -162,6 +174,7 @@ void LoadBalancer::doLoadBalance() {
   newlattice->toggleInternalStatistics(internalStat);
 
   hemocell.lattice = newlattice;
+  hemocell.domain_lattice = newlattice; // checkpointing and createParticleField() use domain_lattice
   hemocell.cellfields->lattice = newlattice;
   
   delete hemocell.cellfields->immersedParticles;
@@ -300,6 +313,7 @@ void LoadBalancer::doLoadBalance() {
   newlattice->toggleInternalStatistics(internalStat);
  
   hemocell.lattice = newlattice;
+  hemocell.domain_lattice = newlattice; // checkpointing and createParticleField() use domain_lattice
   hemocell.cellfields->lattice = newlattice;
   
   delete hemocell.cellfields->immersedParticles;
@@ -317,6 +331,7 @@ void LoadBalancer::doLoadBalance() {
 LoadBalancer::GatherTimeOfAtomicBlocks * LoadBalancer::GatherTimeOfAtomicBlocks::clone() const { return new LoadBalancer::GatherTimeOfAtomicBlocks(*this); }
 
 void LoadBalancer::restructureBlocks(bool checkpoint_available) {
+  if (!loadBalancingSupported(hemocell, "doRestructure()")) { return; }
   if (!checkpoint_available) {
     hemocell.saveCheckPoint();
   }
@@ -430,6 +445,7 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
   newlattice->toggleInternalStatistics(internalStat);
   
   hemocell.lattice = newlattice;
+  hemocell.domain_lattice = newlattice; // checkpointing and createParticleField() use domain_lattice
   hemocell.cellfields->lattice = newlattice;
   
   delete hemocell.cellfields->immersedParticles;
@@ -443,4 +459,5 @@ void LoadBalancer::restructureBlocks(bool checkpoint_available) {
   
   return;
 }
+} // namespace hemo
 #endif

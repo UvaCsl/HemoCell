@@ -67,9 +67,12 @@ Select BGK dynamics with Guo's forcing method.
 
 /*
 Force unconditional stability on the material model. Note: it will not make the model magically correct, only stable!
-FORCE_LIMIT sets the allowed maximal force coming from the constitutive model (in LBM units).
+FORCE_LIMIT sets the allowed maximal force per surface particle, in [pN]. It is
+converted to lattice units in Parameters (param::f_limit) and applied to the
+total membrane force when spreading it to the fluid; a quarter of it caps the
+membrane-viscosity force per edge. Define FORCE_LIMIT differently (or remove
+this default) at compile time to change or disable the cap.
 */
-// in [pN / surface particle].
 #ifndef FORCE_LIMIT
 #define FORCE_LIMIT 50.0 
 #endif

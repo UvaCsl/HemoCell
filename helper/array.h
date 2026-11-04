@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstddef>
 #include <array>
+#include <algorithm>
 
 #include "constant_defaults.h"
 
@@ -37,9 +38,12 @@ namespace hemo {
   
   template<typename _Tp, std::size_t _Nm>
   struct Array : public std::array<_Tp,_Nm> {
+    /// Elements are left uninitialised (deliberately, for speed).
     Array() {}
+    /// Copies min(il.size(), _Nm) elements; any remaining elements stay
+    /// uninitialised. Extra initialisers are ignored instead of overflowing.
     Array(const std::initializer_list<_Tp> & il){
-      std::copy(il.begin(),il.end(), this->_M_elems);
+      std::copy_n(il.begin(), il.size() < _Nm ? il.size() : _Nm, this->begin());
     }
     Array(const plb::Array<_Tp,_Nm> & ext) {
       for (std::size_t i = 0 ; i < _Nm ; i++) {
@@ -71,16 +75,14 @@ namespace hemo {
       return *this;
     }
     
-    inline Array<_Tp, 3> &
+    inline Array<_Tp, _Nm> &
     operator+=(const plb::Dot3D & __two) {
-      for(std::size_t i = 0 ; i < _Nm ; i++ ) {
-        (*this)[0] += __two.x;
-        (*this)[1] += __two.y;
-        (*this)[2] += __two.z;
-
-      }
+      static_assert(_Nm == 3, "Adding a plb::Dot3D requires a 3-element array");
+      (*this)[0] += __two.x;
+      (*this)[1] += __two.y;
+      (*this)[2] += __two.z;
       return *this;
-    }    
+    }
     inline Array<_Tp, _Nm> &
     operator*=(const _Tp & mul) {
       for(std::size_t i = 0 ; i < _Nm ; i++ ) {
@@ -100,7 +102,8 @@ namespace hemo {
     
     inline Array<_Tp, _Nm> &
     operator=(const std::initializer_list<_Tp> & c) {
-      std::copy(c.begin(),c.end(), this->_M_elems);
+      // Assigns min(c.size(), _Nm) elements; the others keep their value.
+      std::copy_n(c.begin(), c.size() < _Nm ? c.size() : _Nm, this->begin());
       return *this;
     } 
     inline void resetToZero() {

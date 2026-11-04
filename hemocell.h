@@ -241,6 +241,12 @@ public:
   unsigned int iter = 0;
   
   XMLreader * documentXML = 0; //Needed for legacy checkpoint reading TODO fix
+
+  /// Iteration of the last writeOutput() call. Residence times are advanced by
+  /// the number of iterations since then, so it is stored in checkpoints.
+  unsigned int getLastOutputIteration() const { return lastOutputAt; }
+  /// Restore the last output iteration (used when loading a checkpoint).
+  void setLastOutputIteration(unsigned int iteration) { lastOutputAt = iteration; }
   private:
   /// Store the last time (iteration) output occured
   unsigned int lastOutputAt = 0;

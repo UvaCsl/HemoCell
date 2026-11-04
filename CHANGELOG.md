@@ -6,6 +6,48 @@ In this changelog, we consider the following classes of changes:
 * Structure: any changes to the structure of HemoCell that may break existing cases.
 * Fixes: (small) changes that do not fall in the other categories.
 
+Unreleased (refactor)
+---------------------
+* Fixes that change simulation results
+  * Repulsion: particle pairs within the same lattice node received twice the
+    force of pairs in neighbouring nodes; every pair is now counted once.
+  * Membrane viscosity cap: the per-edge cap compared a lattice-unit force to
+    `FORCE_LIMIT` in pN and therefore never acted; it now uses
+    `param::f_limit / 4` (12.5 pN with the default limit). Only material files
+    with non-zero `eta_m` (the WBC templates) are affected.
+  * `setInitialMinimumDistanceFromSolid()` stored the distance in an integer, so
+    fractional micrometres (e.g. the 0.5 used by pipeflow) were truncated to 0.
+    The distance is now honoured, which removes more cells near walls at
+    initialisation.
+  * Writing output no longer alters the simulation: the fluid `OUTPUT_FORCE`
+    reset the lattice force (removing a body force set before `writeOutput()`),
+    and output recomputed repulsion and constitutive forces. Results are now
+    independent of the output interval.
+* Fixes
+  * Particle neighbour grid: replaced the fixed 10-particles-per-node grid
+    (unchecked heap overflow) by a compact cell list without a capacity limit.
+  * `syncEnvelopes()` uses a private MPI communicator and receives requests per
+    known source rank, so messages of consecutive calls cannot be mismatched.
+  * Default periodicity limits are `{100,100,100}` (the y and z limits were 0).
+  * Checkpoints additionally store the number of cells, the last output
+    iteration (residence time) and the CEPAC field; restarts no longer depend on
+    unchanged `.pos` files. Older checkpoints still load.
+  * Load balancing (ParMETIS build): keep `domain_lattice` valid after the
+    lattice is replaced, rebuild the particle communication structure, read
+    the checkpoint from the directory it is written to, and refuse
+    combinations with a pre-inlet or the CEPAC field. `doRestructure()` warns
+    instead of silently doing nothing without ParMETIS.
+  * Configuration: invalid, empty or partially numeric values (e.g. `1e6` for
+    an integer) raise `std::invalid_argument` instead of silently becoming 0
+    (or 1); malformed XML is reported; XML without a `<?xml?>` prolog is read
+    correctly; booleans accept `true`/`false`; strings keep inner spaces.
+  * `FORCE_LIMIT` can be undefined again without breaking compilation.
+  * A warning is printed when a repulsion cutoff exceeds one lattice spacing
+    (the neighbour search only covers adjacent nodes).
+* Tests
+  * Unit tests for the particle grid/repulsion and the configuration reader; an
+    integration test for checkpoint/restart.
+
 2.6 (July 15 2022)
 -----------------
 * Features

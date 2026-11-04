@@ -45,6 +45,7 @@ HemoCellFields::HemoCellFields( MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, u
     hlog << "(Hemocell) (ERROR) fluid envelope is less than 2, this will cause incorrect forces over the block boundaries" <<endl;
     exit(1);
   }
+  MPI_Comm_dup(MPI_COMM_WORLD, &particleComm);
   createParticleField();
   if (global.enableCEPACfield) {
     createCEPACfield();
@@ -64,10 +65,22 @@ HemoCellFields::~HemoCellFields() {
   }
   if (large_communicator) {
     delete large_communicator;
-  }  
+  }
+  int mpiFinalized = 0;
+  MPI_Finalized(&mpiFinalized);
+  if (particleComm != MPI_COMM_NULL && !mpiFinalized) {
+    MPI_Comm_free(&particleComm);
+  }
 }
 
 void HemoCellFields::createParticleField(SparseBlockStructure3D* sbStructure, ThreadAttribution * tAttribution) {
+  // A new particle field invalidates the cached large-envelope communication
+  // structure (it refers to block IDs and ranks of the old field).
+  // HemoCell::iterate() rebuilds it before the next step.
+  if (large_communicator) {
+    delete large_communicator;
+    large_communicator = 0;
+  }
   bool del_sbStruct = false;
   if (!sbStructure) {
     sbStructure = hemocell.domain_lattice->getSparseBlockStructure().clone();
@@ -201,7 +214,9 @@ void HemoCellFields::copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwrit
  */
 void HemoCellFields::InitAfterLoadCheckpoint()
 {
-  number_of_cells = getTotalNumberOfCells(*this);
+  if (!number_of_cells_from_checkpoint) {
+    number_of_cells = getTotalNumberOfCells(*this);
+  }
   std::vector<plint> const& blocks = immersedParticles->getLocalInfo().getBlocks();
   for (pluint iBlock=0; iBlock<blocks.size(); ++iBlock) {
     SmartBulk3D bulk(immersedParticles->getMultiBlockManagement(),blocks[iBlock]);
@@ -249,6 +264,25 @@ void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter, Config *
       plb::global::directories().setOutputDir(outDir);
       loadDirectories(cfg,false);
 
+      // Restore state that cannot be re-derived from the input files. Older
+      // checkpoints lack these entries (Palabos then throws); fall back to the
+      // previous behaviour for those.
+      try {
+        int checkpointNumberOfCells = 0;
+        (*documentXML)["Checkpoint"]["General"]["NumberOfCells"].read(checkpointNumberOfCells);
+        number_of_cells = checkpointNumberOfCells;
+        number_of_cells_from_checkpoint = true;
+      } catch (plb::PlbIOException & e) {
+        hlog << "(HemoCell) (CellFields) WARNING: checkpoint does not store NumberOfCells, deriving it from the .pos files; they must be unchanged since the original run." << endl;
+      }
+      try {
+        unsigned int lastOutputIteration = 0;
+        (*documentXML)["Checkpoint"]["General"]["LastOutputIteration"].read(lastOutputIteration);
+        hemocell.setLastOutputIteration(lastOutputIteration);
+      } catch (plb::PlbIOException & e) {
+        hemocell.setLastOutputIteration(iter);
+      }
+
       std::string & chkDir = hemo::global.checkpointDirectory;
 
       if (hemocell.preInlet) {
@@ -257,6 +291,7 @@ void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter, Config *
       }
       plb::parallelIO::load(chkDir + "lattice", *hemocell.domain_lattice, true);
       plb::parallelIO::load(chkDir + "particleField", *domain_immersedParticles, true);
+      loadCEPACfield(chkDir);
     } else {
       pcout << "(HemoCell) (CellFields) loading checkpoint from non-checkpoint Config" << endl;
       std::string & chkDir = hemo::global.checkpointDirectory;
@@ -266,7 +301,7 @@ void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter, Config *
       }
       plb::parallelIO::load(chkDir + "lattice", *hemocell.domain_lattice, true);
       plb::parallelIO::load(chkDir + "particleField", *domain_immersedParticles, true);
-    
+      loadCEPACfield(chkDir);
     }
     
     InitAfterLoadCheckpoint();
@@ -294,6 +329,10 @@ void HemoCellFields::save(XMLreader *xmlr, unsigned int iter, Config * cfg)
         renameFileToDotOld(outDir + "particleField.dat");
         renameFileToDotOld(outDir + "particleField.plb");
         renameFileToDotOld(outDir + "checkpoint.xml");
+        if (global.enableCEPACfield && CEPACfield) {
+          renameFileToDotOld(outDir + "CEPAC.dat");
+          renameFileToDotOld(outDir + "CEPAC.plb");
+        }
         if (hemocell.preInlet) {
           renameFileToDotOld(outDir + "PRE_lattice.dat");
           renameFileToDotOld(outDir + "PRE_lattice.plb");
@@ -307,6 +346,9 @@ void HemoCellFields::save(XMLreader *xmlr, unsigned int iter, Config * cfg)
     /* Save XML & Data */
     xmlw["Checkpoint"]["General"]["Iteration"].set(iter);
     xmlw["Checkpoint"]["General"]["OutDirectory"].set(plb::global::directories().getOutputDir());
+    // State that cannot be re-derived from the input files at restart.
+    xmlw["Checkpoint"]["General"]["NumberOfCells"].set(number_of_cells);
+    xmlw["Checkpoint"]["General"]["LastOutputIteration"].set(hemocell.getLastOutputIteration());
     xmlw.print(outDir + "checkpoint.xml");
 
     if (hemocell.preInlet) {
@@ -316,6 +358,22 @@ void HemoCellFields::save(XMLreader *xmlr, unsigned int iter, Config * cfg)
 
     plb::parallelIO::save(*hemocell.domain_lattice, outDir + "lattice", true);
     plb::parallelIO::save(*domain_immersedParticles, outDir + "particleField", true);
+    if (global.enableCEPACfield && CEPACfield) {
+      plb::parallelIO::save(*CEPACfield, outDir + "CEPAC", true);
+    }
+}
+
+void HemoCellFields::loadCEPACfield(const std::string & checkpointDirectory)
+{
+  if (!(global.enableCEPACfield && CEPACfield)) {
+    return;
+  }
+  // Checkpoints written before the CEPAC field was saved do not contain it.
+  if (file_exists(checkpointDirectory + "CEPAC.plb")) {
+    plb::parallelIO::load(checkpointDirectory + "CEPAC", *CEPACfield, true);
+  } else {
+    hlog << "(HemoCell) (CellFields) WARNING: checkpoint contains no CEPAC field, it keeps its initial state." << endl;
+  }
 }
 
 void readPositionsCellFields(std::string particlePosFile) {
@@ -364,6 +422,9 @@ void HemoCellFields::calculateCommunicationStructure() {
   MultiBlockManagement3D management_temp(immersedParticles->getMultiBlockManagement());
   ParallelBlockCommunicator3D * communicator = dynamic_cast<ParallelBlockCommunicator3D const *>(&immersedParticles->getBlockCommunicator())->clone();
   communicator->duplicateOverlaps(management_temp,immersedParticles->periodicity());
+  if (large_communicator) {
+    delete large_communicator;
+  }
   large_communicator = new CommunicationStructure3D(*communicator->communication);
   immersedParticles->getMultiBlockManagement().changeEnvelopeWidth(3);
   immersedParticles->signalPeriodicity();
@@ -413,21 +474,32 @@ void HemoCellFields::syncEnvelopes() {
     recv_procs_v.insert(recv_procs_v.end(),recv_procs.begin(),recv_procs.end());
     vector<MPI_Request> reqs(recv_procs.size());
 
+    // Message protocol on the private communicator `particleComm`:
+    //  tag 24: list of cell IDs present on the requesting rank,
+    //  tag 42: reply with all particles of those cells found in our blocks.
+    // Requests are received per *known* source rank (not MPI_ANY_SOURCE): a
+    // rank that finished this exchange early may already have sent its request
+    // for the next call, and MPI's non-overtaking rule only orders messages
+    // from the same source. Probing a specific source therefore guarantees we
+    // consume the request belonging to this call. A reply (tag 42) can only be
+    // sent in response to our own request, so replies cannot cross calls and
+    // are received in arrival order.
     for (unsigned int i = 0 ; i < recv_procs_v.size() ; i ++) {
-      MPI_Isend(&locals_v[0],locals_v.size(),MPI_INT,recv_procs_v[i],24,MPI_COMM_WORLD,&reqs[i]);
+      MPI_Isend(locals_v.data(),locals_v.size(),MPI_INT,recv_procs_v[i],24,particleComm,&reqs[i]);
     }
     sendBuffers.resize(send_procs.size());
-    for (unsigned int i = 0 ; i < send_procs.size() ; i ++) {
+    unsigned int send_index = 0;
+    for (const int requesting_proc : send_procs) {
       MPI_Status status;
-      MPI_Probe(MPI_ANY_SOURCE,24,MPI_COMM_WORLD,&status);
+      MPI_Probe(requesting_proc,24,particleComm,&status);
       int count;
       MPI_Get_count(&status,MPI_INT,&count);
       vector<int> requested_ids(count);
-      vector<NoInitChar> & sendBuffer = sendBuffers[i];
+      vector<NoInitChar> & sendBuffer = sendBuffers[send_index++];
       sendBuffer.clear();
       int offset = 0 ;
-      MPI_Recv(&requested_ids[0],count,MPI_INT,status.MPI_SOURCE,24,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-      for (CommunicationInfo3D const * info : send_infos[status.MPI_SOURCE] ) {
+      MPI_Recv(requested_ids.data(),count,MPI_INT,requesting_proc,24,particleComm,MPI_STATUS_IGNORE);
+      for (CommunicationInfo3D const * info : send_infos[requesting_proc] ) {
         HemoCellParticleField & pf = immersedParticles->getComponent(info->fromBlockId);
         int offset_p = pf.getDataTransfer().getOffset(info->absoluteOffset);
         const map<int,vector<int>> & ppc = pf.get_particles_per_cell();
@@ -451,19 +523,19 @@ void HemoCellFields::syncEnvelopes() {
         }
       }
       reqs.emplace_back();
-      MPI_Isend(sendBuffer.data(),sendBuffer.size(),MPI_CHAR,status.MPI_SOURCE,42,MPI_COMM_WORLD,&reqs.back());
+      MPI_Isend(sendBuffer.data(),sendBuffer.size(),MPI_CHAR,requesting_proc,42,particleComm,&reqs.back());
     }
 
     vector<MPI_Request> recv_reqs(recv_procs.size());
     recvBuffers.resize(recv_procs.size());
     for (unsigned int i = 0 ; i < recv_procs.size() ; i ++) {
       MPI_Status status;
-      MPI_Probe(MPI_ANY_SOURCE,42,MPI_COMM_WORLD,&status);
+      MPI_Probe(MPI_ANY_SOURCE,42,particleComm,&status);
       int count;
       MPI_Get_count(&status,MPI_CHAR,&count);
       vector<NoInitChar> & recv_buffer = recvBuffers[i];
       recv_buffer.resize(count);
-      MPI_Irecv(recv_buffer.data(),count,MPI_CHAR,status.MPI_SOURCE,42,MPI_COMM_WORLD,&recv_reqs[i]);
+      MPI_Irecv(recv_buffer.data(),count,MPI_CHAR,status.MPI_SOURCE,42,particleComm,&recv_reqs[i]);
     }
 
     for (unsigned int i = 0 ; i < recv_procs.size() ; i ++) {

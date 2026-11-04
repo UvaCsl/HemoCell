@@ -58,7 +58,11 @@ TEST(Validation, Pipeflow) {
 
   hemocell.addCellType<hemo::RbcHighOrderModel>("tests/validation/pipeflow/RBC", RBC_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("tests/validation/pipeflow/RBC", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  hemocell.setInitialMinimumDistanceFromSolid("tests/validation/pipeflow/RBC", 0.5);
+  // The expected cell count and viscosity bounds below were established while
+  // a requested 0.5 um minimum distance was truncated to 0 (integer member).
+  // Keep that effective setting explicitly so the validated configuration is
+  // unchanged; 0.5 um now excludes the first wall node and leaves 36 cells.
+  hemocell.setInitialMinimumDistanceFromSolid("tests/validation/pipeflow/RBC", 0.0);
 
   hemocell.addCellType<hemo::PltSimpleModel>("tests/validation/pipeflow/PLT", ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("tests/validation/pipeflow/PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());

@@ -88,8 +88,10 @@ Setting up the cells
      - Load the initial cell positions from the ``*.pos`` files. Call after all
        cell types, outputs, and periodicity are configured.
    * - ``setInitialMinimumDistanceFromSolid(name, d)``
-     - Keep cells at least ``d`` away from solids at initialisation. Must be
-       called **before** ``loadParticles()``.
+     - Keep cells at least ``d`` (in **micrometres**) away from solids at
+       initialisation: vertices within ``floor(d / dx)`` lattice nodes of a
+       solid node are rejected, and cells with rejected vertices are removed.
+       Must be called **before** ``loadParticles()``.
 
 Controlling cost (time-scale separation)
 ----------------------------------------
@@ -174,4 +176,7 @@ Running and load balancing
      - Return the current fractional load imbalance across processes.
    * - ``doLoadBalance()`` / ``doRestructure()``
      - Rebalance / restructure the domain across processes. See
-       :ref:`concepts/parallelism:Load balancing`.
+       :ref:`concepts/parallelism:Load balancing`. Requires a build with
+       ParMETIS (``hemocell_parmetis``); without it ``doRestructure()`` only
+       prints a warning. Not supported together with a pre-inlet or the
+       CEPAC field.
