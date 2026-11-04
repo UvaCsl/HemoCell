@@ -348,9 +348,12 @@ validation. Do not claim a simulation or build was verified from inspection alon
 ## C++ style and code documentation
 
 Formatting is defined by `.clang-format` (clang-format >= 14; `.editorconfig`
-for editors). Format the lines you change with `git clang-format`; CI checks
-the changed lines of pull requests. `scripts/format.sh` formats whole files,
-but do not reformat unrelated files in a functional change. Vendored and
+for editors); all HemoCell sources follow it. Format the lines you change with
+`git clang-format`; CI checks the changed lines of pull requests.
+`scripts/format.sh [--check]` formats or checks whole files, but do not
+reformat unrelated files in a functional change. Pure reformatting commits are
+listed in `.git-blame-ignore-revs` (enable locally with
+`git config blame.ignoreRevsFile .git-blame-ignore-revs`). Vendored and
 historical code (`external/`, `legacy/`, generated `palabos/`) is excluded.
 Follow the surrounding file's naming. Keep edits focused and avoid broad
 modernization or unsolicited dependency/toolchain changes. Internals,

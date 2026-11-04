@@ -76,20 +76,22 @@ public:
   enum class MPIHandle { Internal, External };
 
   /**
-   * Creates an hemocell object
+   * @brief Create the simulation object and initialise MPI (through Palabos).
    *
-   * @param configFileName the location of the main config file
-   *
-   * Unfortunately, due to palabos regulations, it is required to pass the
-   * commandline arguments
+   * @param configFileName main configuration file (or a checkpoint.xml to
+   *        restart), relative to the working directory
+   * @param argc,argv command-line arguments, passed on to plb::plbInit()
    */
   HemoCell(char * configFileName, int argc, char * argv[])
       : HemoCell{configFileName, argc, argv, HemoCell::MPIHandle::Internal} {};
 
-  /// Creates an HemoCell object and allows to indicate the MPI environment
-  /// is managed externally. If so, this constructor avoids plb::plbInit().
-  ///
-  /// @param mpi_handle the MPIHanndle indicator.
+  /**
+   * @brief Create the simulation object.
+   * @param configFileName main configuration file (or a checkpoint.xml)
+   * @param argc,argv command-line arguments for plb::plbInit()
+   * @param mpi_handle MPIHandle::External if MPI is already initialised (e.g.
+   *        by the test runner); plb::plbInit() is then not called.
+   */
   HemoCell(char * configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handle);
 
   /*
@@ -205,6 +207,7 @@ public:
    * @brief Reject initial vertices of a cell type closer than `distance` to a
    * solid node: vertices within floor(distance / dx) lattice nodes of a wall
    * are not placed and their cells are removed. Call before loadParticles().
+   * @param name cell type name (as given to addCellType())
    * @param distance [micrometre]
    */
   void setInitialMinimumDistanceFromSolid(string name, T distance);
@@ -219,6 +222,7 @@ public:
    * @brief Set periodicity of the fluid and the particle field together.
    * Call after initializeCellfield() and before loadParticles().
    * @param axis 0 (x), 1 (y) or 2 (z)
+   * @param bePeriodic whether the domain is periodic along `axis`
    */
   void setSystemPeriodicity(unsigned int axis, bool bePeriodic);
 

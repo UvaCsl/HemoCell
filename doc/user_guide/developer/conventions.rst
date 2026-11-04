@@ -9,10 +9,15 @@ C++ code follows ``.clang-format`` in the repository root (clang-format >= 14):
 120 columns, and includes are never reordered. ``.editorconfig`` carries the
 basics (spaces, LF, final newline) to editors without clang-format support.
 
-* Format what you change before committing: ``git clang-format`` (staged
-  changes) or ``git clang-format <base commit>``.
+* All HemoCell sources follow this style. Format what you change before
+  committing: ``git clang-format`` (staged changes) or
+  ``git clang-format <base commit>``.
 * ``scripts/format.sh [--check] [paths]`` formats (or checks) whole files.
-* Pull requests are checked by CI on the changed lines only.
+* Pull requests are checked by CI on the changed lines only (this keeps the
+  check independent of small differences between clang-format versions).
+* Commits that only reformat are listed in ``.git-blame-ignore-revs``; enable
+  it locally with ``git config blame.ignoreRevsFile .git-blame-ignore-revs``
+  (GitHub uses it automatically).
 * Vendored and historical code (``external/``, ``legacy/``, the generated
   ``palabos/``) keeps its own formatting. Changes to Palabos belong in
   ``patch/palabos.patch``.

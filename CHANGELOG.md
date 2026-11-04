@@ -98,7 +98,10 @@ Unreleased (refactor)
 * Formatting and documentation
   * `.clang-format` (derived from the prevailing style), `.editorconfig`,
     `scripts/format.sh`; CI checks the formatting of the lines a pull request
-    changes. No code has been reformatted yet.
+    changes.
+  * All HemoCell sources reformatted (Palabos, `external/` and `legacy/`
+    untouched); the library, variants, examples and cases compile to
+    identical code. The commit is listed in `.git-blame-ignore-revs`.
   * New Developer Guide in the user guide: architecture and internals, coding
     conventions (including performance rules), extending HemoCell, known
     limitations. `CONTRIBUTING.md`; contribution workflow targets `dev`.

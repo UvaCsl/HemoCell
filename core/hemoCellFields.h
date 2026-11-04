@@ -71,7 +71,7 @@ public:
   ///Generic Destructor
   ~HemoCellFields();
 
-  ///Add an celltype with a certain mesh, the name also specifies <name_>.xml and <name_>.pos
+  ///Add a cell type with a certain mesh; its name also selects `name_.xml` and `name_.pos`
   HemoCellField * addCellType(std::string name_, int constructType);
 
   ///Easy access to contained celltypes

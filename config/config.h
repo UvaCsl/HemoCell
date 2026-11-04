@@ -85,7 +85,7 @@ class Config {
   tinyxml2::XMLDocument * orig;
 
 public:
-  /// True if the root element is <Checkpoint> (a checkpoint.xml written by HemoCell).
+  /// True if the root element is `Checkpoint` (a checkpoint.xml written by HemoCell).
   bool checkpointed = false;
 
   Config(std::string paramXmlFilename);
