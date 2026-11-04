@@ -31,15 +31,16 @@ using namespace std;
 
 
 OctreeStructCell::OctreeStructCell(plint divis, plint l, unsigned int lim, hemo::Array<double, 6> bbox,
-                                   vector<hemo::Array<plint, 3>> triangle_list_, vector<HemoCellParticle> & part,
-                                   const vector<int> cell) {
+                                   std::vector<hemo::Array<plint, 3>> triangle_list_,
+                                   std::vector<HemoCellParticle> & part, const std::vector<int> cell) {
   bBox = bbox;
 
   sharedConstructor(divis, l, lim, triangle_list_, part, cell);
 }
 
-OctreeStructCell::OctreeStructCell(plint divis, plint l, unsigned int lim, vector<hemo::Array<plint, 3>> triangle_list_,
-                                   vector<HemoCellParticle> & particles, const vector<int> cell) {
+OctreeStructCell::OctreeStructCell(plint divis, plint l, unsigned int lim,
+                                   std::vector<hemo::Array<plint, 3>> triangle_list_,
+                                   std::vector<HemoCellParticle> & particles, const std::vector<int> cell) {
   //The same, but construct bounding box first
   hemo::Array<T, 3> * position = &particles[0].sv.position;
 

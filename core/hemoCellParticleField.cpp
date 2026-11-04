@@ -246,7 +246,7 @@ void HemoCellParticleField::removeParticles(plint tag) {
   }
 }
 
-void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
+void HemoCellParticleField::removeParticles(plb::Box3D domain, plint tag) {
   //Almost the same, but we save a lot of branching by making a seperate function
   Box3D finalDomain;
 
@@ -268,7 +268,7 @@ void HemoCellParticleField::removeParticles(Box3D domain, plint tag) {
   }
 }
 
-void HemoCellParticleField::removeParticles(Box3D domain) {
+void HemoCellParticleField::removeParticles(plb::Box3D domain) {
   //Almost the same, but we save a lot of branching by making a seperate function
 
   Box3D finalDomain;
@@ -319,7 +319,7 @@ void HemoCellParticleField::syncEnvelopes() {
   removeParticles_inverse(localDomain);
 }
 
-void HemoCellParticleField::findParticles(Box3D domain, std::vector<HemoCellParticle *> & found) {
+void HemoCellParticleField::findParticles(plb::Box3D domain, std::vector<HemoCellParticle *> & found) {
   found.clear();
   PLB_ASSERT(contained(domain, this->getBoundingBox()));
   for (HemoCellParticle & particle : particles) {
@@ -327,14 +327,14 @@ void HemoCellParticleField::findParticles(Box3D domain, std::vector<HemoCellPart
   }
 }
 
-void HemoCellParticleField::findParticles(Box3D domain, std::vector<const HemoCellParticle *> & found) const {
+void HemoCellParticleField::findParticles(plb::Box3D domain, std::vector<const HemoCellParticle *> & found) const {
   found.clear();
   PLB_ASSERT(contained(domain, this->getBoundingBox()));
   for (const HemoCellParticle & particle : particles) {
     if (this->isContainedABS(particle.sv.position, domain)) { found.push_back(&particle); }
   }
 }
-void HemoCellParticleField::findParticles(Box3D domain, std::vector<HemoCellParticle *> & found, pluint type) {
+void HemoCellParticleField::findParticles(plb::Box3D domain, std::vector<HemoCellParticle *> & found, pluint type) {
   found.clear();
   PLB_ASSERT(contained(domain, this->getBoundingBox()));
   //hemo::Array<T,3> pos;

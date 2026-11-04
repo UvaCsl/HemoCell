@@ -166,7 +166,7 @@ HemoCellField * HemoCellFields::operator[](string name) {
 
 //SAVING FUNCTIONS
 /* ******************* copyXMLreader2XMLwriter ***************************************** */
-void HemoCellFields::copyXMLreader2XMLwriter(XMLreader const & reader, XMLwriter & writer) {
+void HemoCellFields::copyXMLreader2XMLwriter(plb::XMLreader const & reader, plb::XMLwriter & writer) {
   std::string text = reader.getFirstText();
   if (!text.empty()) { writer[reader.getName()].setString(text); }
   std::vector<XMLreader *> const & children = reader.getChildren(reader.getFirstId());
@@ -175,7 +175,7 @@ void HemoCellFields::copyXMLreader2XMLwriter(XMLreader const & reader, XMLwriter
   }
 }
 
-void HemoCellFields::copyXMLreader2XMLwriter(XMLreaderProxy readerProxy, XMLwriter & writer) {
+void HemoCellFields::copyXMLreader2XMLwriter(plb::XMLreaderProxy readerProxy, plb::XMLwriter & writer) {
   std::string text;
   readerProxy.read(text);
   if (!text.empty()) { writer[readerProxy.getName()].setString(text); }

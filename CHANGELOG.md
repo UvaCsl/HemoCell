@@ -261,7 +261,7 @@ to be added
 
 0.5
 ---
-* Inner links are specified in the <CellType>.xml file through "CellMechanics"->"InnerEdges"->"Edge"
+* Inner links are specified in the `<CellType>.xml` file through "CellMechanics"->"InnerEdges"->"Edge"
 * Added MESH_FROM_STL for addCellType. Takes a triangulized STL file from xml-file->"MaterialModel"->"StlFile".
 * Added "Volume" option for Celltype xml files
 * Added Celdensity output for fluid field
