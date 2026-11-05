@@ -28,3 +28,136 @@ simple case, such as described in `cases/solidify_example`, more extensive tests
 are required for large(r) scale problems. In preliminary tests, issues were
 still observed if regions were marked as binding site that were already
 overlapping with cells, creating broken or torn cells in the simulation domain.
+
+## Hardening before merging `refactor`
+
+Findings of a review of the `refactor` branch (November 2026). Items marked
+*(verified)* were reproduced by a run or a compile; the others follow from
+reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
+before others write drivers against the API.
+
+### A. Silent wrong results or lost runs
+
+1. **Fatal errors lose their message and may not end the job.** There are 45
+   `exit(1)` calls in library code, most logging through `hlog`, which writes on
+   rank 0 only: an error detected on another rank leaves no reason, and
+   launchers other than `mpirun` may leave the other ranks hanging. Add one
+   `hemo::fatal(msg)` that prints with the rank to stderr and calls `MPI_Abort`
+   (or throws in tests, so error paths can be tested).
+2. **NaN/infinity pass into the fluid.** No `isfinite` check exists; the force
+   cap (`core/hemoCellParticleField.cpp`, `spreadParticleForce()`) uses
+   `force_mag > f_limit`, which is false for NaN. Link and bending terms divide
+   by edge and normal lengths without a guard, and collapsed RBC triangles occur
+   at high shear. One bad vertex corrupts the whole lattice silently. Test
+   `!(force_mag <= f_limit)` in the existing branch (no cost in the normal path)
+   and report and remove the cell.
+3. **Checkpoints are not crash-safe or self-describing.** `checkpoint.xml` is
+   written before the data files (`HemoCellFields::save()`): a job killed during
+   writing leaves new metadata next to partial `.dat` files. Nothing records
+   `sizeof(serializeValues_t)`, the compile-time variant, the cell-type names and
+   order, or dx/dt, so a restart with another variant or registration order
+   misreads the raw particle bytes. Write the XML last (or write to a temporary
+   directory and rename it), and validate a fingerprint on load.
+4. **Inner-edge indices are not validated.** `InnerEdges` are read without a
+   check against the vertex count (`mechanics/commonCellConstants.cpp`); the WBC
+   template's pairs belong to the 642-vertex mesh and index out of bounds with
+   another `minNumTriangles`. Check once at setup.
+5. **The cell loader drops cells silently** *(verified)*. A missing `.pos` file
+   is only a warning (`microcontraction`, `stentflow`, `stent_strut` ran without
+   cells); the number of cells actually placed is never reported (86 of 100 RBCs
+   were dropped without notice in `cases/pipeflow_wbc` before its positions were
+   regenerated); cells crossing a periodic boundary are never placed. Make a
+   missing file an error, log placed versus requested cells per type with the
+   reason, and consider placing periodic images.
+6. **Output and statistics change the trajectory** *(verified)*. Two identical
+   2-rank pipeflow runs diverge (round-off, about 3e-10 relative, then growing)
+   when one takes statistics or writes output every 100 steps. `writeOutput()`
+   and the `CellInformationFunctionals` helpers call `syncEnvelopes()`, which
+   rebuilds the envelopes in a different particle order, and several helpers
+   also call `deleteIncompleteCells()`. The CHANGELOG statement "results are now
+   independent of the output interval" holds physically, not bit for bit. Put
+   envelope particles in a canonical order after a sync, or let output and
+   statistics read without re-syncing; statistics must not modify state.
+7. **Cell IDs grow with every periodic lap.** A crossing adds `N` (x),
+   `100 N` (y) or `10000 N` (z) and nothing folds the ID back, while
+   `sanityCheck()` and `developer/architecture.rst` assume a bounded shift. With
+   200,000 cells the ID overflows `int` after about 640 laps in x; the cell is
+   then reset to its base ID and most likely deleted. Use 64-bit IDs throughout
+   (`sv.cellId` is already `plint`; the lookup maps and `base_cell_id()` use
+   `int`); checkpoints are unaffected.
+8. **The pre-inlet is wrong with more than one block per rank.**
+   `helper/preInlet.cpp` keeps only the last bulk per rank (FIXME there). Fail
+   clearly in that case, or support it.
+9. **Repulsion is a no-op in all shipped configurations.** `kRep` is used as a
+   lattice-unit force (`HemoCell::setRepulsion()`, `core/particleGrid.cpp`), so
+   `2e-22` is about 1e-18 pN; repulsion is also added after the `FORCE_LIMIT`
+   cap, so a meaningful value would be uncapped. Give `kRep` units (pN), convert
+   it, and cap the repulsion force.
+
+### B. A robust base for other developers
+
+10. **The ParMETIS variant does not compile** *(verified)*.
+    `helper/loadBalancer.cpp` uses block timers (`pf->timer`, `ff->timer`) that
+    do not exist. CI cannot see it (no ParMETIS); build it against a stub
+    header in CI, or drop the variant until it is finished.
+11. **Global state survives a simulation.** `~HemoCell` does not reset
+    `param::*`, the `global` flags, or the static pointers and data of
+    `HemoCellParticleField`, `CellInformationFunctionals`, `HemoCellStretch`
+    and the Lees-Edwards helper. Reset them in one place and test two
+    sequential simulations.
+12. **Public API.** `std::auto_ptr` in `getFlagMatrixFromSTL()` (and 10
+    drivers) was removed in C++17 and only compiles with libstdc++; the
+    constructor takes `char *`; public headers contain
+    `using namespace std/plb/hemo` (`hemocell.h` makes `Array` ambiguous);
+    generic macros (`DESCRIPTOR`, `OUTPUT_*`, `WBC_SPHERE`) pollute user code.
+    Use `std::unique_ptr`, `const std::string &`, and namespaced constants with
+    the old macros as aliases.
+13. **Configuration friction.** `sanityCheck()` requires `<sim><tmax>` even in
+    drivers that do not use it; "XML child X does not exist" names neither the
+    parent path nor the file.
+14. **Compile-time configuration hidden in a header.** `SOLIDIFY_MECHANICS` is
+    always defined in `config/constant_defaults.h`, so
+    `hemocell_solidify_mechanics` equals the base library; `FORCE_LIMIT` can only
+    be changed by recompiling; the version is defined both in CMake and in the
+    header. Use CMake options and a generated configuration header.
+15. **Driver boilerplate.** Seventeen drivers copy the STL voxelisation and
+    lattice setup (including `auto_ptr`); move it into a library helper.
+16. **Dead code.** `HemoCellFields::HemoSyncEnvelopes` (declares
+    `modif::hemocell`; applying it would bring back arrival-order
+    communication), `HemoCellFields::envelope_communicator`,
+    `tests/test_example.cpp` (`Dummy.foobar`).
+
+### C. Tests, CI and tooling
+
+17. **No unit tests of the mechanics.** Per model (RBC, PLT, WBC, malaria):
+    zero force at the rest shape, zero net force and torque of the internal
+    forces, symmetry. Also missing: conservation of cells crossing periodic and
+    block boundaries, the pre-inlet, and a determinism test (run twice, compare
+    the checkpoints with `cmp`).
+18. **CI never runs a driver.** A 20-step smoke run of every example and case
+    (with output and a checkpoint) would have caught A5 and B13; 31 of 36 pass
+    today on 2 ranks, the five large ones (`AR2*`, `stent_strut`, `unbounded`)
+    need reduced configurations.
+19. **Scripts and tools.** Eight of 42 Python scripts are Python 2 only
+    (including `scripts/hemocell_h5utils.py` and
+    `scripts/ParticleField3D_HDF5toXMF.py`); add `python3 -m py_compile` to CI.
+    `tools/packCells` requires CMake 2.8 and packs periodically (cells cross
+    the box faces), which is not documented.
+20. **Rounding of negative coordinates.** `plint(x + 0.5)` truncates towards
+    zero, mapping (-1, -0.5) to node 0, in `advanceParticles()` (wall removal),
+    `nearestCell()`, the particle grid and the position loader. Low impact; use
+    one `nearestNode()` helper.
+
+### D. Model limits to document
+
+21. The singular area, volume and bending limits (`MaxCell*` in
+    `config/constant_defaults.h`) are shared by all cell types, so lowering
+    `kArea` does not let a WBC stretch beyond 30 % local area change; reference
+    lengths (7.5 nm persistence length, 0.5 um, 1280 faces) are hard-coded in
+    `CellMechanics`; the WBC template's inner-link strengths are 1e-3 and 1e-6
+    lattice force units at dx = 0.5 um, dt = 0.1 us (6.4 pN, 0.0064 pN).
+22. RBC meshes drift at high shear: beyond a wall strain of about 2 at
+    >= 2000 1/s, RBC triangles pass the 30 % local area limit and the fraction
+    grows (`cases/pipeflow_wbc`; the same on `master` with the stock pipeflow
+    example). Neither updating every step nor a larger `kArea` prevents it.
+    Document in `developer/known_limitations.rst`.
