@@ -75,18 +75,26 @@ void restoreExternalForce(plb::MultiBlockLattice3D<T, DESCRIPTOR> & lattice, con
     }
   }
 }
+// Time of an output step in the XDMF files: seconds, or iterations for lattice-unit output.
+double outputTime(HemoCellFields & cellfields, plint iter, T dt) {
+  return cellfields.hemocell.outputInSiUnits ? iter * dt : double(iter);
+}
 } // namespace
 
 void writeCEPACField_HDF5(HemoCellFields & cellfields, T dx, T dt, plint iter, string preString) {
   global.statistics.getCurrent()["writeCEPACField"].start();
 
+  // The CEPAC "density" is a concentration, written as it is.
+  std::vector<XdmfBlockFile> written;
   WriteFluidField<plb::descriptors::AdvectionDiffusionD3Q19Descriptor> * wff =
       new WriteFluidField<plb::descriptors::AdvectionDiffusionD3Q19Descriptor>(
-          cellfields, *cellfields.CEPACfield, iter, "CEPAC", dx, dt, cellfields.desiredCEPACfieldOutputVariables);
+          cellfields, *cellfields.CEPACfield, iter, "CEPAC", dx, dt, cellfields.desiredCEPACfieldOutputVariables, 1.,
+          &written);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(cellfields.CEPACfield);
   wrapper.push_back(cellfields.immersedParticles); //Needed for the atomicblock id, nothing else
   applyProcessingFunctional(wff, cellfields.CEPACfield->getBoundingBox(), wrapper);
+  writeXdmf(written, iter, outputTime(cellfields, iter, dt));
 
   global.statistics.getCurrent().stop();
 }
@@ -104,13 +112,18 @@ void writeFluidField_HDF5(HemoCellFields & cellfields, T dx, T dt, plint iter, s
     saveExternalForce(*cellfields.lattice, externalForce);
     cellfields.spreadParticleForce();
   }
-  WriteFluidField<DESCRIPTOR> * wff = new WriteFluidField<DESCRIPTOR>(cellfields, *cellfields.lattice, iter, "Fluid",
-                                                                      dx, dt, cellfields.desiredFluidOutputVariables);
+  // Density in kg/m^3: the lattice density times the mass per lattice volume (rhoP).
+  const T densityToSI = param::dm / (param::dx * param::dx * param::dx);
+  std::vector<XdmfBlockFile> written;
+  WriteFluidField<DESCRIPTOR> * wff =
+      new WriteFluidField<DESCRIPTOR>(cellfields, *cellfields.lattice, iter, "Fluid", dx, dt,
+                                      cellfields.desiredFluidOutputVariables, densityToSI, &written);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(cellfields.lattice);
   wrapper.push_back(cellfields.immersedParticles); //Needed for the atomicblock id, nothing else
   applyProcessingFunctional(wff, cellfields.lattice->getBoundingBox(), wrapper);
   if (outputForce) { restoreExternalForce(*cellfields.lattice, externalForce); }
+  writeXdmf(written, iter, outputTime(cellfields, iter, dt));
 
   global.statistics.getCurrent().stop();
 }

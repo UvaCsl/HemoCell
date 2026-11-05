@@ -71,6 +71,8 @@ public:
   /// Total number of cells of this type in the simulation. Collective: all
   /// ranks must call it (it synchronises the particle envelopes).
   int getNumberOfCells_Global();
+  /// Name used for the output files and datasets of this cell type: the
+  /// name without a leading directory (e.g. "RBC" for "cells/RBC").
   std::string getIdentifier();
   plb::MultiParticleField3D<HemoCellParticleField> * getParticleArg();
   void setOutputVariables(const vector<int> &);

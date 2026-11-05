@@ -266,18 +266,23 @@ Configuration conventions:
 when selecting tolerances: double-precision computation does not imply every
 HDF5 dataset is stored as doubles.
 
-Runs write `hdf5/<iteration>/`, `csv/`, logs and `checkpoint/` under the selected
-output directory. `writeOutput()` includes both HDF5 and CSV; drivers can call
+Runs write `hdf5/<iteration>/`, XDMF `*.xmf` descriptors, `csv/`, logs and
+`checkpoint/` under the selected output directory. `writeOutput()` includes
+HDF5, XDMF and CSV; drivers can call
 `writeCellInfo_CSV` separately for a different CSV frequency. Checkpoints include
 XML and lattice/particle `.dat` files, with previous copies renamed `.old`.
 Restarting may use a different number of ranks, but requires compatible state
 and a driver that implements restart handling.
 
-For ParaView, run `scripts/batchPostProcess.sh` from a case or output directory
-to generate XMF descriptors; use the legacy XDMF reader. When changing output
-constants, dataset names/shapes, units or CSV columns, update writers, relevant
-readers/converters and `doc/user_guide/reference/outputs.rst` together. Do not
-commit generated results, binaries, build trees or dependency downloads.
+HDF5 files are written per atomic block; every cell is written once (by the
+block holding its vertex 0) and fluid files hold bulk nodes only. Rank 0 writes
+`<name>.<iteration>.xmf` per step and `<name>.xmf` with all steps (XDMF 3,
+readable by ParaView's XDMF3 and legacy readers); `scripts/batchPostProcess.sh`
+(`scripts/HDF5toXDMF.py`) writes the same for output of older versions. When
+changing output constants, dataset names/shapes, units or CSV columns, update
+writers, the XDMF records (`io/xdmfOutput.h`), `scripts/HDF5toXDMF.py` and
+`doc/user_guide/reference/outputs.rst` together. Do not commit generated
+results, binaries, build trees or dependency downloads.
 
 `tools/packCells` has an independent CMake build and writes its binary into that
 directory. It produces `.pos` inputs with domain dimensions in micrometres:

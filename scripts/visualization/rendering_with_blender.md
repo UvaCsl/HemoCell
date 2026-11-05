@@ -20,12 +20,11 @@ this, the Blender Python API can be used, as illustrated in
 
 ## One cell shear example
 
-First run the simulation and generate the XMF output
+First run the simulation, which writes the XMF output
 
 ```bash
 # from hemocell/examples/oneCellShear
 mpirun -n 1 oneCellShear config.xml
-../../scripts/batchPostProcess.sh
 ```
 
 Then convert the XMF files to X3D format

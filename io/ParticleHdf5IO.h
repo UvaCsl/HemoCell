@@ -27,16 +27,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellParticle.h"
 #include "hemoCellFields.h"
 #include "hemoCellField.h"
+#include "xdmfOutput.h"
+
 namespace hemo {
+/**
+ * @brief Write the selected outputs of every cell type to HDF5 files (one per
+ * atomic block) and describe them in XDMF files (see writeXdmf()). Collective.
+ *
+ * Every cell is written once, by the block that holds its vertex 0 (see
+ * HemoCellParticleField::getOutputCells()).
+ *
+ * @param[in] cellFields All cell types.
+ * @param[in] dx Lattice spacing in metres (stored as attribute).
+ * @param[in] dt Time step in seconds (stored as attribute; gives the time of the step).
+ * @param[in] iter Iteration of the output step.
+ * @param[in] preString Prefix of the output names.
+ */
 void writeCellField3D_HDF5(HemoCellFields & cellFields, T dx, T dt, plint iter, std::string preString = "");
 
 
 class WriteCellField3DInMultipleHDF5Files : public BoxProcessingFunctional3D {
 public:
+  /// `written_` receives one record per block file written; it is owned by the
+  /// caller and shared by all clones of the functional.
   WriteCellField3DInMultipleHDF5Files(HemoCellField & cellField3D_, plint iter_, std::string identifier_, T dx_, T dt_,
-                                      int i);
-  /// Arguments: [0] Particle-field. [1] Lattice.
-  ~WriteCellField3DInMultipleHDF5Files(){}; //Fuck C c++
+                                      std::vector<XdmfBlockFile> * written_);
+  /// Arguments: [0] Particle-field.
   virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D *> fields);
   virtual WriteCellField3DInMultipleHDF5Files * clone() const;
   virtual void getTypeOfModification(std::vector<modif::ModifT> & modified) const;
@@ -48,7 +64,7 @@ private:
   std::string identifier;
   double dx;
   double dt;
-  int ctype;
+  std::vector<XdmfBlockFile> * written;
 };
 }
-#endif // FICSION_PARTICLE_HDF5IO_H
+#endif // PARTICLE_HDF5IO_H

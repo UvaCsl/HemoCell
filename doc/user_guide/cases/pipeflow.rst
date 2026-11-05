@@ -23,9 +23,6 @@ After :ref:`compilation<compilation>`, the example can be run as:
    # run the simulation from the `examples/pipeflow` directory
    mpirun -n 1 ./pipeflow config.xml
 
-   # generate Paraview compatible output files
-   ../../scripts/batchPostProcess.sh
-
 .. figure:: ../_static/cases/pipeflow-initial.png
    :alt: Pipeflow
    :align: center

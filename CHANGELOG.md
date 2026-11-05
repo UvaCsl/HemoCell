@@ -135,10 +135,48 @@ Unreleased (refactor)
     with it the summation order of force spreading and repulsion, so
     identical runs differed at round-off level (relative 1e-8 in forces after
     100 steps of pipeflow on 4 ranks), growing over time. No measurable cost.
+* Output (simulation results unchanged; what the files contain changes).
+  HDF5 output of a 4-rank pipeflow step: 6.1 MB -> 4.2 MB.
+  * Every cell is written once, by the block whose bulk holds its vertex 0.
+    Previously each block holding part of a cell wrote all of it, including
+    both images of a cell crossing a periodic boundary (55 copies of 30 RBCs
+    in that run), so analyses of the HDF5 files counted cells several times.
+  * Fluid and CEPAC files hold the bulk nodes of their block only (previously
+    one extra node layer around each block); `relativePosition` is the lower
+    corner of the first node's cell (first node - dx/2). Each node is one cell
+    of a regular grid, so the blocks tile the domain without overlap.
+  * Datasets are byte-shuffled and deflated at level 4 (was level 7 without
+    shuffle): about 10 % smaller and half the compression time.
+  * SI output: `OUTPUT_DENSITY` is in kg/m^3 (it was multiplied by `df/dx^2`,
+    giving three times a pressure); `OUTPUT_OMEGA` is dimensionless (was
+    multiplied by `df/dx^2`); the CEPAC density (a concentration) is written
+    unscaled.
+  * `OUTPUT_CELL_DENSITY` used the block-local node index as array index, which
+    placed the counts one node off per direction (with `fluidEnvelope` 2); the
+    dataset is named `CellDensity_<name>` with the cell type's output name.
+  * Cell types registered with a directory in their name (e.g.
+    `addCellType("cells/RBC")`) wrote no HDF5 or CSV output (the files were
+    created in non-existent subdirectories); output now uses the name without
+    the directory (`HemoCellField::getIdentifier()`).
+  * HemoCell writes XDMF 3 files at every output: `<name>.<iteration>.xmf` per
+    step and `<name>.xmf` with all steps and their time. ParaView's XDMF3 and
+    legacy readers load them (tested with 5.11 and 6.0). Previously
+    `batchPostProcess.sh` generated them afterwards, and only the legacy
+    reader could open them.
+  * `scripts/batchPostProcess.sh` runs the new `scripts/HDF5toXDMF.py`
+    (Python 3, h5py), which writes the same files for output of older
+    versions. Removed: `FluidHDF5.py`, `CellHDF5toXMF.py`,
+    `FluidHDF5toXMF.py`, `batchPostProcess_py2.sh` and the `*_py2.py`
+    converters, `CellInfoMergeCSV.sh` (the CSV output is already one file per
+    cell type and step). `convert_xmf_to_x3d.py` converts the per-step cell
+    files only.
+  * HDF5 property lists are closed (one leaked per dataset written).
 * Tests
   * Unit tests for the particle grid/repulsion, the configuration reader,
     `hemo::Array`, particle copy/move and log buffering; an integration test
     for checkpoint/restart.
+  * Integration test for the output: every cell written once, every lattice
+    node once, consistent cell density and XDMF files (1 and 2 ranks).
 
 2.6 (July 15 2022)
 -----------------

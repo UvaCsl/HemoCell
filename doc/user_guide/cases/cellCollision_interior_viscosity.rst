@@ -14,12 +14,9 @@ After :ref:`compilation<compilation>`, the example can be run using single core 
    # run the simulation from `examples/cellCollision_interior_viscosity/`
    mpirun -n 1 ./cellCollision_interior_viscosity config.xml
 
-   # generate Paraview compatible output files
-   ../../scripts/batchPostProcess.sh
-
 The outcome files are generated in ``tmp/``, where the flow field and particle
-fields can be visualised separately by viewing the ``tmp/Fluid.*.xmf``,
-``tmp/RBC.*.xmf``, and ``tmp/PLT.*.xmf`` files in `Paraview`_.
+fields can be visualised separately by viewing the ``tmp/Fluid.xmf``,
+``tmp/RBC.xmf``, and ``tmp/PLT.xmf`` files in `Paraview`_.
 
 In the presented example, the following initial cell positions are considered
 for the platelet and the red blood cell, see

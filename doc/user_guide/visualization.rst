@@ -7,16 +7,18 @@ output settings, specifically ``<sim><tmeas>`` and ``<sim><tcsv>`` (see also
 :ref:`Saving only the CSV output<other_topics:csv-output>`).
 
 By default HemoCell writes the fluid and cell fields to ``.h5`` files in a
-``hdf5`` directory in the output. These can be converted for visualization in
-Paraview using :ref:`scripts/batchPostProcess.sh<bpp>`.
+``hdf5`` directory in the output, together with ``*.xmf`` (XDMF) files that
+describe them for visualization tools (see :ref:`reference/outputs:Files`).
 
 Paraview
 --------
 
-After generating the ``*.xmf`` using :ref:`batchPostProcess.sh<bpp>` these files
-can be loaded in Paraview for visualization. On opening, please select the
-``Legacy XDMF`` reader to import the files, as the current ``*.xmf`` files are
-not yet XDMF3 compatible.
+Open ``<output>/Fluid.xmf``, ``<output>/RBC.xmf``, etc. in Paraview; they hold
+all output steps with their time, and Paraview's XDMF3 readers as well as the
+legacy XDMF reader load them. The files are updated at every output, so a
+running simulation can be inspected (use *File > Reload Files*). For output of
+older HemoCell versions, generate the files with
+:ref:`batchPostProcess.sh<bpp>`.
 
 Paraview provides a large set of tools for the post-processing, visualization,
 and investigation of the generated output files. All different fields, e.g.
@@ -33,7 +35,7 @@ data interpretation.
 
 Blender renders can be generated using
 :ref:`convert_xmf_to_x3d.py<helper_scripts:xmf_to_x3d>`. This script helps to convert
-the generated ``*.xmf`` particle files from :ref:`batchPostProcess.sh<bpp>` to
+the per-step ``*.xmf`` particle files (e.g. ``RBC.000000001000.xmf``) to
 the X3D file format. After running the script a ``x3d`` directory is created and
 populated with the ``*.x3d`` files. These can directly be imported in Blender
 (and many other computer graphics tools) for further rendering.
@@ -54,10 +56,8 @@ The full post-processing pipeline will look as follows
 .. code::
 
    # from /hemocell/examples/oneCellShear
+   # (writes tmp/hdf5 and the tmp/*.xmf files)
    mpirun -n 1 oneCellshear config.xml
-
-   # generate tmp/*.xmf files
-   ../../batchPostProcess.sh
 
    # convert tmp/*.xmf to tmp/x3d/*.x3d scenes
    cd ../scripts/visualization

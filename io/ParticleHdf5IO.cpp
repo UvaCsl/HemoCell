@@ -22,18 +22,41 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "ParticleHdf5IO.h"
+#include "hdf5Output.h"
 #include "hemocell.h"
 
 #include <hdf5.h>
 #include <hdf5_hl.h>
+#include <algorithm>
 #include <vector>
 
 namespace hemo {
+
+namespace {
+// Write rows x columns values of a 2D output as a dataset; returns the number of rows.
+template <typename Stored, typename Value>
+hsize_t writeRows(hid_t file, const std::string & name, hid_t type, const vector<vector<Value>> & rows) {
+  hsize_t dims[2];
+  dims[0] = rows.size();
+  dims[1] = rows.empty() ? 0 : rows[0].size();
+  hsize_t chunk[2];
+  chunk[0] = std::max<hsize_t>(1, std::min<hsize_t>(1000, dims[0]));
+  chunk[1] = std::max<hsize_t>(1, dims[1]);
+  std::vector<Stored> data;
+  data.reserve(dims[0] * dims[1]);
+  for (const vector<Value> & row : rows) {
+    for (const Value & v : row) { data.push_back(Stored(v)); }
+  }
+  writeCompressedDataset(file, name, type, 2, dims, chunk, data.data());
+  return dims[0];
+}
+} // namespace
+
 /* ******** WriteCellField3DInMultipleHDF5Files *********************************** */
 WriteCellField3DInMultipleHDF5Files::WriteCellField3DInMultipleHDF5Files(HemoCellField & cellField3D_, plint iter_,
                                                                          std::string identifier_, T dx_, T dt_,
-                                                                         int ctype_)
-    : cellField3D(cellField3D_), iter(iter_), identifier(identifier_), dx(dx_), dt(dt_), ctype(ctype_){};
+                                                                         std::vector<XdmfBlockFile> * written_)
+    : cellField3D(cellField3D_), iter(iter_), identifier(identifier_), dx(dx_), dt(dt_), written(written_){};
 
 void WriteCellField3DInMultipleHDF5Files::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D *> blocks) {
   PLB_PRECONDITION(blocks.size() > 0);
@@ -46,12 +69,16 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks(Box3D domain, std
     return; //No output desired, no problem
   }
 
-  if (cellField3D.cellFields.hemocell.partOfpreInlet) { identifier += "_PRE"; }
+  XdmfBlockFile record;
+  record.identifier = identifier;
+  if (cellField3D.cellFields.hemocell.partOfpreInlet) { record.identifier += "_PRE"; }
+  record.blockId = particleField.atomicBlockId;
+  record.file = "hdf5/" + zeroPadNumber(iter) + '/' + record.identifier + "." + zeroPadNumber(iter) + ".p." +
+                to_string(particleField.atomicBlockId) + ".h5";
   /************************************************************/
   /**            Initialise HDF5 file                        **/
   /************************************************************/
-  std::string fileName = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter) + '/' + identifier +
-                         "." + zeroPadNumber(iter) + ".p." + to_string(particleField.atomicBlockId) + ".h5";
+  std::string fileName = global::directories().getOutputDir() + "/" + record.file;
   hid_t file_id;
   file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
@@ -62,133 +89,55 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks(Box3D domain, std
   H5LTset_attribute_int(file_id, "/", "processorId", &id, 1);
   H5LTset_attribute_long(file_id, "/", "numberOfProcessors", &size, 1);
 
-  hsize_t dimVertices[2];
-  hsize_t chunk[2];
-
-  //vector<vector<T>> positions;
-
   /************************************************************/
   /**            Write output to HDF5 file                   **/
   /************************************************************/
-
+  bool hasPosition = false;
+  vector<vector<T>> output;
   for (pluint i = 0; i < cellField3D.desiredOutputVariables.size(); i++) {
-    vector<vector<T>> * output = new vector<vector<T>>();
     std::string vectorname = "";
-    particleField.passthroughpass(cellField3D.desiredOutputVariables[i], domain, *output, cellField3D.ctype,
-                                  vectorname);
+    particleField.passthroughpass(cellField3D.desiredOutputVariables[i], domain, output, cellField3D.ctype, vectorname);
     if (vectorname == "") { continue; }
-    dimVertices[0] = (*output).size();
-    dimVertices[1] = dimVertices[0] == 0 ? 0 : (*output)[0].size();
-    chunk[0] = 1000 < (*output).size() ? 1000 : (*output).size();
-    chunk[1] = dimVertices[1];
-    chunk[0] = chunk[0] > 1 ? chunk[0] : 1;
-    chunk[1] = chunk[1] > 1 ? chunk[1] : 1;
-
-    float * output_formatted = new float[dimVertices[0] * dimVertices[1]];
-
-    int fmt_cnt = 0;
-    for (pluint x = 0; x < dimVertices[0]; x++) {
-      for (pluint y = 0; y < dimVertices[1]; y++) {
-        output_formatted[fmt_cnt] = (*output)[x][y];
-        fmt_cnt++;
-      }
-    }
-    hid_t sid = H5Screate_simple(2, dimVertices, NULL);
-    hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
-    H5Pset_chunk(plist_id, 2, chunk);
-    H5Pset_deflate(plist_id, 7);
-    hid_t did = H5Dcreate2(file_id, vectorname.c_str(), H5T_NATIVE_FLOAT, sid, H5P_DEFAULT, plist_id, H5P_DEFAULT);
-    H5Dwrite(did, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, output_formatted);
-    H5Dclose(did);
-    H5Sclose(sid);
+    const hsize_t rows = writeRows<float>(file_id, vectorname, H5T_NATIVE_FLOAT, output);
+    // Blocks without vertices are left out of the XDMF file, so the
+    // components of an empty output do not matter.
+    XdmfAttribute attribute;
+    attribute.name = vectorname;
+    attribute.components = output.empty() ? 0 : int(output[0].size());
+    record.attributes.push_back(attribute);
 
     if (cellField3D.desiredOutputVariables[i] == OUTPUT_POSITION) {
-      //positions = (*output);
-      long int nP = (*output).size();
+      hasPosition = true;
+      record.vertices = rows;
+      long int nP = rows;
       H5LTset_attribute_long(file_id, "/", "numberOfParticles", &nP, 1);
     }
-
-    delete output;
-    delete[] output_formatted;
   }
 
-  if (cellField3D.outputTriangles) { //Treat triangles seperately because of T/int issues
-    vector<vector<plint>> * output = new vector<vector<plint>>();
+  if (cellField3D.outputTriangles) {
+    vector<vector<plint>> triangles;
     std::string vectorname;
-    particleField.outputTriangles(domain, *output, cellField3D.ctype, vectorname);
-
-    dimVertices[0] = output->size();
-    dimVertices[1] = dimVertices[0] == 0 ? 0 : (*output)[0].size();
-    chunk[0] = 1000 < output->size() ? 1000 : output->size();
-    chunk[1] = dimVertices[1];
-    chunk[0] = chunk[0] > 1 ? chunk[0] : 1;
-    chunk[1] = chunk[1] > 1 ? chunk[1] : 1;
-
-    int * output_formatted = new int[dimVertices[0] * dimVertices[1]];
-    int fmt_cnt = 0;
-    for (pluint x = 0; x < dimVertices[0]; x++) {
-      for (pluint y = 0; y < dimVertices[1]; y++) {
-        output_formatted[fmt_cnt] = (*output)[x][y];
-        fmt_cnt++;
-      }
-    }
-
-    hid_t sid = H5Screate_simple(2, dimVertices, NULL);
-    hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
-    H5Pset_chunk(plist_id, 2, chunk);
-    H5Pset_deflate(plist_id, 7);
-    hid_t did = H5Dcreate2(file_id, vectorname.c_str(), H5T_NATIVE_INT, sid, H5P_DEFAULT, plist_id, H5P_DEFAULT);
-    H5Dwrite(did, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, output_formatted);
-    H5Dclose(did);
-    H5Sclose(sid);
-
-    long int nT = output->size();
+    particleField.outputTriangles(domain, triangles, cellField3D.ctype, vectorname);
+    long int nT = writeRows<int>(file_id, vectorname, H5T_NATIVE_INT, triangles);
+    record.triangles = nT;
     H5LTset_attribute_long(file_id, "/", "numberOfTriangles", &nT, 1);
-    delete output;
-    delete[] output_formatted;
   }
 
   if (std::find(cellField3D.desiredOutputVariables.begin(), cellField3D.desiredOutputVariables.end(),
-                OUTPUT_INNER_LINKS) !=
-      cellField3D.desiredOutputVariables.end()) { //Treat lines seperately because of T/int issues
-
-    vector<vector<plint>> * output = new vector<vector<plint>>();
+                OUTPUT_INNER_LINKS) != cellField3D.desiredOutputVariables.end()) {
+    vector<vector<plint>> links;
     std::string vectorname;
-    particleField.outputInnerLinks(domain, *output, cellField3D.ctype, vectorname);
-    if (output->size() != 0) {
-      dimVertices[0] = output->size();
-      dimVertices[1] = dimVertices[0] == 0 ? 0 : (*output)[0].size();
-      chunk[0] = 1000 < output->size() ? 1000 : output->size();
-      chunk[1] = dimVertices[1];
-      chunk[0] = chunk[0] > 1 ? chunk[0] : 1;
-      chunk[1] = chunk[1] > 1 ? chunk[1] : 1;
-
-      int * output_formatted = new int[dimVertices[0] * dimVertices[1]];
-      int fmt_cnt = 0;
-      for (pluint x = 0; x < dimVertices[0]; x++) {
-        for (pluint y = 0; y < dimVertices[1]; y++) {
-          output_formatted[fmt_cnt] = (*output)[x][y];
-          fmt_cnt++;
-        }
-      }
-
-      hid_t sid = H5Screate_simple(2, dimVertices, NULL);
-      hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
-      H5Pset_chunk(plist_id, 2, chunk);
-      H5Pset_deflate(plist_id, 7);
-      hid_t did = H5Dcreate2(file_id, vectorname.c_str(), H5T_NATIVE_INT, sid, H5P_DEFAULT, plist_id, H5P_DEFAULT);
-      H5Dwrite(did, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, output_formatted);
-      H5Dclose(did);
-      H5Sclose(sid);
-
-      long int nT = output->size();
+    particleField.outputInnerLinks(domain, links, cellField3D.ctype, vectorname);
+    if (!links.empty()) {
+      long int nT = writeRows<int>(file_id, vectorname, H5T_NATIVE_INT, links);
+      record.innerLinks = nT;
       H5LTset_attribute_long(file_id, "/", "numberOfInnerLinks", &nT, 1);
-      delete[] output_formatted;
     }
-    delete output;
   }
 
   H5Fclose(file_id);
+  // Without positions there is no geometry to describe.
+  if (hasPosition) { written->push_back(record); }
 }
 
 WriteCellField3DInMultipleHDF5Files * WriteCellField3DInMultipleHDF5Files::clone() const {
@@ -207,14 +156,16 @@ BlockDomain::DomainT WriteCellField3DInMultipleHDF5Files::appliesTo() const {
 void writeCellField3D_HDF5(HemoCellFields & cellFields, T dx, T dt, plint iter, std::string preString) {
   global.statistics.getCurrent()["writeCellField"].start();
 
+  std::vector<XdmfBlockFile> written;
   for (pluint i = 0; i < cellFields.size(); i++) {
     std::string identifier = preString + cellFields[i]->getIdentifier();
     WriteCellField3DInMultipleHDF5Files * bprf =
-        new WriteCellField3DInMultipleHDF5Files(*cellFields[i], iter, identifier, dx, dt, i);
+        new WriteCellField3DInMultipleHDF5Files(*cellFields[i], iter, identifier, dx, dt, &written);
     vector<MultiBlock3D *> wrapper;
     wrapper.push_back(cellFields[i]->getParticleArg());
     applyProcessingFunctional(bprf, cellFields[i]->getParticleField3D()->getBoundingBox(), wrapper);
   }
+  writeXdmf(written, iter, cellFields.hemocell.outputInSiUnits ? iter * dt : double(iter));
 
   global.statistics.getCurrent().stop();
 }

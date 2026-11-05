@@ -196,22 +196,21 @@ Post-processing the output of a HemoCell case
 ---------------------------------------------
 
 A HemoCell case produces multiple types of output by default. The simplest is the ``csv``
-output which consists of all the information about cells in csv files. 
-On older HemoCell versions you might want to merge the csv files into a single one per time-step with the script :any:`ccsv`
-in the ``tmp`` directory. Note: HemoCell now does this automatically.
+output which consists of all the information about cells in csv files, one per
+cell type and time step.
 
 The more detailed output on both the fluid field and particle field is stored in compressed
-``hdf5`` format. We recommend using the `XDMF`_ format to make these
-readable for visualization tools such as `Paraview`_ . To generate ``*.xmf`` files run the :any:`bpp`
-script, e.g. from the folder of a case::
-  
+``hdf5`` format. HemoCell describes these files in the `XDMF`_ format, which
+visualization tools such as `Paraview`_ read: next to the ``hdf5`` directory
+the output directory holds ``Fluid.xmf``, ``RBC.xmf``, etc. with all output
+steps, and one ``.xmf`` file per step. Open e.g. ``tmp/RBC.xmf`` in Paraview
+(any of its XDMF readers) to get the time series. See
+:ref:`reference/outputs:Files` for the layout.
+
+For output of older HemoCell versions, generate the ``*.xmf`` files with the
+:any:`bpp` script, e.g. from the folder of a case::
+
   ../../scripts/batchPostProcess.sh
-
-When you have created the ``*.xmf`` files, they can be opened in Paraview.
-Please select the *Legacy* XDMF file format when loading them in. 
-
-.. note:: 
-  The HemoCell ``.xmf`` files are not yet XDMF3 compatible. Opening it with an XDMF3 reader might crash the visualization app.
 
 Resuming from a checkpoint
 --------------------------

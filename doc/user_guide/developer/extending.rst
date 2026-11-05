@@ -39,10 +39,14 @@ Adding an output field
    ``AddOutputMap()``. Fluid fields: add a ``case`` to ``WriteFluidField``
    (``io/FluidHdf5IO.hh``).
 #. Output must not change the simulation state; restore anything you modify.
+#. Datasets written through these paths are listed in the XDMF files
+   automatically (cell fields: one row per vertex of ``getOutputCells()``;
+   fluid fields: ``(z, y, x, components)`` over the bulk).
 #. State the dataset name, shape, units (SI or lattice units, see
    ``outputInSiUnits``) and precision in
-   ``doc/user_guide/reference/outputs.rst``, and update the XMF/analysis
-   scripts in ``scripts/`` if they need to know the new dataset.
+   ``doc/user_guide/reference/outputs.rst``, and update
+   ``scripts/HDF5toXDMF.py`` and the analysis scripts in ``scripts/`` if they
+   need to know the new dataset.
 
 Adding a configuration setting
 ------------------------------

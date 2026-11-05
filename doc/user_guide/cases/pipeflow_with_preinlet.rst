@@ -12,9 +12,6 @@ After :ref:`compilation<compilation>`, the example can be run as:
    # run the simulation from the `examples/pipeflow_with_preinlet` directory
    mpirun -n 2 ./pipeflow_with_preinlet config.xml
 
-   # generate Paraview compatible output files
-   ../../scripts/batchPostProcess.sh
-
 Pre-inlet boundary condition
 ============================
 

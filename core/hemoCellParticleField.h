@@ -103,6 +103,19 @@ public:
   // Keep AtomicBlock3D's const version visible (same box), e.g. for the
   // PLB_ASSERTs in const member functions.
   using plb::AtomicBlock3D::getBoundingBox;
+  /**
+   * @brief The cells of type @p ctype that this block writes to the cell output.
+   *
+   * These are the complete cells whose vertex 0 lies in this block's bulk, in
+   * ascending cell ID, so every cell is written by exactly one block. Envelope
+   * copies, including the shifted images of cells across a periodic boundary,
+   * are not written. All per-vertex outputs and the triangle and inner-link
+   * lists of a block use this list, so their rows correspond.
+   *
+   * @param[in] ctype Cell type index.
+   * @param[out] cellIds Cell IDs to write.
+   */
+  void getOutputCells(pluint ctype, vector<int> & cellIds);
   //Ugly output functions:
   void outputPositions(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
   void outputVelocities(plb::Box3D, vector<vector<T>> &, pluint, std::string &);

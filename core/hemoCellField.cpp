@@ -178,7 +178,9 @@ int HemoCellField::getNumberOfCells_Global() {
   return CellInformationFunctionals::getNumberOfCellsFromType(&cellFields.hemocell, name);
 }
 std::string HemoCellField::getIdentifier() {
-  return name;
+  // The name may include the directory of the <name>.xml and .pos files.
+  const std::string::size_type slash = name.find_last_of('/');
+  return slash == std::string::npos ? name : name.substr(slash + 1);
 }
 vector<int> HemoCellField::default_output({OUTPUT_POSITION});
 plb::MultiParticleField3D<HemoCellParticleField> * HemoCellField::getParticleField3D() {

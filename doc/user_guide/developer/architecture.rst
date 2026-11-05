@@ -194,6 +194,34 @@ lattice and particle field; its velocities and cells are passed to the main
 domain each step with one message per rank pair, using an exchange plan built
 on the first ``applyPreInlet()``.
 
+Output
+------
+
+``writeOutput()`` synchronises the envelopes, deletes incomplete cells,
+evaluates the force components (see `Force components`_) and calls the
+writers, which are collective:
+
+* ``writeCellField3D_HDF5()`` (``io/ParticleHdf5IO.cpp``) writes, per cell
+  type and atomic block, the cells listed by
+  ``HemoCellParticleField::getOutputCells()``: the complete cells whose
+  vertex 0 is in the block's bulk. Vertex 0 belongs to exactly one block, so
+  every cell is written once; envelope copies and periodic images are
+  skipped. All per-vertex outputs and the triangle/inner-link lists use this
+  list, so their rows correspond.
+* ``writeFluidField_HDF5()``/``writeCEPACField_HDF5()`` (``io/FluidHdf5IO.*``)
+  write the bulk nodes of each block, described as the cells of a regular grid
+  (node ``+-dx/2``), so blocks tile the domain.
+* ``writeCellInfo_CSV()`` gathers per-cell data to rank 0.
+
+Datasets go through ``writeCompressedDataset()`` (``io/hdf5Output.*``:
+shuffle + deflate). Each writer records what every block file contains
+(``XdmfBlockFile``) and passes the records to ``writeXdmf()``
+(``io/xdmfOutput.*``), which gathers them on rank 0 and writes the step's
+``<name>.<iteration>.xmf`` and the ``<name>.xmf`` time series (an XInclude of
+all step files found in the output directory, so restarts continue the
+series). ``scripts/HDF5toXDMF.py`` produces the same files from the HDF5
+files alone.
+
 Checkpoints
 -----------
 

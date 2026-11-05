@@ -18,9 +18,6 @@ After :ref:`compilation<compilation>`, the example can be run using single core 
    # run the simulation from the `examples/stretchCell/`
    mpirun -n 1 ./stretchCell config.xml
 
-   # generate Paraview compatible output files
-   ../../scripts/batchPostProcess.sh
-
 .. note::
    The stretching cell examples should be run with just a single processor, so
    either ``mpirun -n 1 ./stretchCell config.xml`` as above, or directly
@@ -28,8 +25,8 @@ After :ref:`compilation<compilation>`, the example can be run using single core 
    supports sequential operation.
 
 The outcome files are generated in ``tmp/``, where the flow field and particle
-fields can be visualised separately by viewing the ``tmp/Fluid.*.xmf`` and
-``tmp/RBC.*.xmf`` files in `Paraview`_.
+fields can be visualised separately by viewing the ``tmp/Fluid.xmf`` and
+``tmp/RBC.xmf`` files in `Paraview`_.
 
 .. figure:: ../_static/cases/one-stretched-cell.png
    :alt: A cell subjected to stretching forces.
