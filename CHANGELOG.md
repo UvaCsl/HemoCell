@@ -129,12 +129,18 @@ Unreleased (refactor)
     with fewer complete rows than its declared count uses those rows with a
     warning (previously the missing cells were placed at the origin).
 * Reproducibility
-  * Multi-rank runs are bit-for-bit reproducible: `syncEnvelopes()` unpacks
-    the received particles in ascending source rank instead of MPI arrival
-    order. The arrival order decided the order of particles in a block, and
-    with it the summation order of force spreading and repulsion, so
-    identical runs differed at round-off level (relative 1e-8 in forces after
-    100 steps of pipeflow on 4 ranks), growing over time. No measurable cost.
+  * Multi-rank runs are bit-for-bit reproducible: both particle exchanges of
+    `syncEnvelopes()` unpack the received particles in ascending source rank
+    instead of MPI arrival order. The arrival order decided the order of
+    particles in a block, and with it the summation order of force spreading
+    and repulsion, so identical runs differed at round-off level (relative
+    1e-8 in forces after 100 steps of pipeflow on 4 ranks), growing over time.
+    The envelope exchange, previously Palabos'
+    `duplicateOverlaps(modif::hemocell)`, is done by HemoCell
+    (`exchangeEnvelopes()`) over the same communication structure. No
+    measurable cost.
+  * Checkpoints of identical runs are byte-identical: the padding bytes of the
+    particle records are zeroed (they held uninitialised memory).
 * Output (simulation results unchanged; what the files contain changes).
   HDF5 output of a 4-rank pipeflow step: 6.1 MB -> 4.2 MB.
   * Every cell is written once, by the block whose bulk holds its vertex 0.

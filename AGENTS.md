@@ -250,9 +250,11 @@ Configuration conventions:
   rank even if only rank zero writes. Use `pcout`/`hlog` and existing profiler
   conventions; avoid per-particle logging and extra barriers in hot loops.
 - Runs with the same rank count and decomposition are bit-for-bit
-  reproducible (received particles are unpacked by source rank, not arrival
-  order). Keep received data processed in a fixed order, and compare outputs
-  exactly when a change should not alter numerics.
+  reproducible, checkpoint files included (received particles are unpacked by
+  source rank, not arrival order). Keep received data processed in a fixed
+  order, and compare outputs exactly when a change should not alter numerics.
+  Do not use Palabos' `duplicateOverlaps(modif::hemocell)` for the particle
+  field: it unpacks in arrival order.
 - Global/static simulation state means only one `HemoCell` instance may exist
   at a time. Do not assume reentrancy or thread safety. Tests that construct
   multiple simulations sequentially must reset any static helper state they use.

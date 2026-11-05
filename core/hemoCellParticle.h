@@ -30,6 +30,8 @@ class HemoCellParticle;
 #include "core/cell.hh"
 
 #include <cstdint>
+#include <cstring>
+#include <type_traits>
 #include <utility>
 
 #ifndef PARTICLE_ID
@@ -126,6 +128,10 @@ public:
   }
 
   HemoCellParticle(hemo::Array<T, 3> position_, plint cellId_, plint vertexId_, pluint celltype_) {
+    // Zero the padding bytes as well: sv is written as raw bytes to
+    // checkpoints, which are then the same for identical runs.
+    static_assert(std::is_trivially_copyable<serializeValues_t>::value, "sv is transferred as raw bytes");
+    std::memset(static_cast<void *>(&sv), 0, sizeof(sv));
     sv.v = {0., 0., 0.};
     sv.position = position_;
     sv.force = {0., 0., 0.};

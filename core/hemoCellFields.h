@@ -217,9 +217,20 @@ public:
   int periodicity_limit_offset_z = 10000;
 
 private:
+  /// Fill the particle envelopes of all blocks with the particles in the bulk
+  /// of their neighbours (normal and enabled periodic overlaps of the particle
+  /// field). Called by syncEnvelopes(); collective over all ranks.
+  void exchangeEnvelopes();
+
   vector<vector<NoInitChar>> sendBuffers, recvBuffers;
-  /// Private duplicate of MPI_COMM_WORLD for the particle exchange in
-  /// syncEnvelopes(), so its messages cannot be matched by Palabos or other
+  /// Partner ranks (ascending) and per-partner message sizes, data and receive
+  /// overlaps of exchangeEnvelopes(), kept between calls to avoid reallocation.
+  vector<int> envelopeSendRanks, envelopeRecvRanks;
+  vector<vector<int>> envelopeSendSizes, envelopeRecvSizes;
+  vector<vector<NoInitChar>> envelopeSendData, envelopeRecvData;
+  vector<vector<const plb::CommunicationInfo3D *>> envelopeRecvInfos;
+  /// Private duplicate of MPI_COMM_WORLD for the particle exchanges in
+  /// syncEnvelopes(), so their messages cannot be matched by Palabos or other
   /// HemoCell traffic. Created in the constructor (collective over all ranks),
   /// freed in the destructor.
   MPI_Comm particleComm = MPI_COMM_NULL;

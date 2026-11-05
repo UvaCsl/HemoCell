@@ -62,7 +62,6 @@ plint HemoCellParticleDataTransfer::staticCellSize() const {
 void HemoCellParticleDataTransfer::send(Box3D domain, std::vector<char> & buffer, modif::ModifT kind) const {
   global.statistics.getCurrent()["MpiSend"].start();
   buffer.clear();
-  std::vector<NoInitChar> * bufferNoInit = reinterpret_cast<std::vector<NoInitChar> *>(&buffer);
 
   // Particles, by definition, are dynamic data, and they need to
   //   be reconstructed in any case. Therefore, the send procedure
@@ -70,10 +69,12 @@ void HemoCellParticleDataTransfer::send(Box3D domain, std::vector<char> & buffer
   if ((kind == modif::hemocell || kind == modif::dataStructure)) {
     std::vector<HemoCellParticle *> foundParticles;
     particleField->findParticles(domain, foundParticles);
-    bufferNoInit->resize(sizeof(HemoCellParticle::serializeValues_t) * foundParticles.size());
+    // Zero-filled: assigning sv does not write its tail padding, and
+    // checkpoints (written through send()) would contain uninitialised bytes.
+    buffer.assign(sizeof(HemoCellParticle::serializeValues_t) * foundParticles.size(), 0);
     pluint offset = 0;
     for (HemoCellParticle * iParticle : foundParticles) {
-      *((HemoCellParticle::serializeValues_t *)&(*bufferNoInit)[offset]) = iParticle->sv;
+      *((HemoCellParticle::serializeValues_t *)&buffer[offset]) = iParticle->sv;
       offset += sizeof(HemoCellParticle::serializeValues_t);
     }
   }

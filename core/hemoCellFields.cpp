@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <mpi.h>
 #include <algorithm>
+#include <numeric>
 
 #include "hemoCellFields.h"
 #include "hemocell.h"
@@ -400,6 +401,133 @@ void HemoCellFields::calculateCommunicationStructure() {
   delete communicator;
 }
 
+// This replaces Palabos' duplicateOverlaps(modif::hemocell) on the particle
+// field, which unpacked the messages of the partner ranks in arrival order.
+// The unpack order decides the order of the particles in the receiving
+// blocks, and with it the floating-point summation order of force spreading
+// and repulsion, so multi-rank runs differed from run to run at round-off
+// level. Here the messages are unpacked in ascending source rank.
+void HemoCellFields::exchangeEnvelopes() {
+  const ParallelBlockCommunicator3D & communicator =
+      dynamic_cast<const ParallelBlockCommunicator3D &>(immersedParticles->getBlockCommunicator());
+  // Palabos rebuilds its cached communication structure after the overlaps
+  // changed (periodicity, envelope width); hemocell_no_comm moves no data.
+  if (communicator.overlapsModified || !communicator.communication) {
+    communicator.duplicateOverlaps(*immersedParticles, modif::hemocell_no_comm);
+  }
+  const CommunicationStructure3D & comms = *communicator.communication;
+  // Tags on particleComm, distinct from those of the large-envelope exchange.
+  const int tagSizes = 25;
+  const int tagData = 43;
+  const unsigned int particleSize = sizeof(HemoCellParticle::serializeValues_t);
+
+  envelopeSendRanks.clear();
+  for (const CommunicationInfo3D & info : comms.sendPackage) { envelopeSendRanks.push_back(info.toProcessId); }
+  std::sort(envelopeSendRanks.begin(), envelopeSendRanks.end());
+  envelopeSendRanks.erase(std::unique(envelopeSendRanks.begin(), envelopeSendRanks.end()), envelopeSendRanks.end());
+  envelopeRecvRanks.clear();
+  for (const CommunicationInfo3D & info : comms.recvPackage) { envelopeRecvRanks.push_back(info.fromProcessId); }
+  std::sort(envelopeRecvRanks.begin(), envelopeRecvRanks.end());
+  envelopeRecvRanks.erase(std::unique(envelopeRecvRanks.begin(), envelopeRecvRanks.end()), envelopeRecvRanks.end());
+  auto slot = [](const vector<int> & ranks, int rank) {
+    return unsigned(std::lower_bound(ranks.begin(), ranks.end(), rank) - ranks.begin());
+  };
+  const unsigned int nSend = envelopeSendRanks.size();
+  const unsigned int nRecv = envelopeRecvRanks.size();
+
+  // 1. Receive the message sizes. A partner sends one message per overlap,
+  //    in the order of its send package, which matches our receive package.
+  envelopeRecvSizes.resize(nRecv);
+  envelopeRecvData.resize(nRecv);
+  envelopeRecvInfos.resize(nRecv);
+  for (unsigned int r = 0; r < nRecv; r++) {
+    envelopeRecvSizes[r].clear();
+    envelopeRecvInfos[r].clear();
+  }
+  for (const CommunicationInfo3D & info : comms.recvPackage) {
+    const unsigned int r = slot(envelopeRecvRanks, info.fromProcessId);
+    envelopeRecvInfos[r].push_back(&info);
+    envelopeRecvSizes[r].push_back(0);
+  }
+  vector<MPI_Request> sizeRequests(nRecv), dataRequests(nRecv, MPI_REQUEST_NULL), sendRequests;
+  for (unsigned int r = 0; r < nRecv; r++) {
+    MPI_Irecv(envelopeRecvSizes[r].data(), int(envelopeRecvSizes[r].size()), MPI_INT, envelopeRecvRanks[r], tagSizes,
+              particleComm, &sizeRequests[r]);
+  }
+
+  // 2. Send the particles in the bulk part of every overlap: per partner the
+  //    message sizes, then all messages in one buffer.
+  envelopeSendSizes.resize(nSend);
+  envelopeSendData.resize(nSend);
+  for (unsigned int s = 0; s < nSend; s++) {
+    envelopeSendSizes[s].clear();
+    envelopeSendData[s].clear();
+  }
+  vector<HemoCellParticle *> found;
+  for (const CommunicationInfo3D & info : comms.sendPackage) {
+    const unsigned int s = slot(envelopeSendRanks, info.toProcessId);
+    immersedParticles->getComponent(info.fromBlockId).findParticles(info.fromDomain, found);
+    vector<NoInitChar> & data = envelopeSendData[s];
+    size_t offset = data.size();
+    data.resize(offset + found.size() * particleSize);
+    for (const HemoCellParticle * particle : found) {
+      *((HemoCellParticle::serializeValues_t *)&data[offset]) = particle->sv;
+      offset += particleSize;
+    }
+    envelopeSendSizes[s].push_back(int(found.size() * particleSize));
+  }
+  sendRequests.reserve(2 * nSend);
+  for (unsigned int s = 0; s < nSend; s++) {
+    sendRequests.emplace_back();
+    MPI_Isend(envelopeSendSizes[s].data(), int(envelopeSendSizes[s].size()), MPI_INT, envelopeSendRanks[s], tagSizes,
+              particleComm, &sendRequests.back());
+    if (!envelopeSendData[s].empty()) {
+      sendRequests.emplace_back();
+      MPI_Isend(envelopeSendData[s].data(), int(envelopeSendData[s].size()), MPI_CHAR, envelopeSendRanks[s], tagData,
+                particleComm, &sendRequests.back());
+    }
+  }
+
+  // 3. Copies between blocks of this rank.
+  for (const CommunicationInfo3D & info : comms.sendRecvPackage) {
+    const AtomicBlock3D & fromBlock = immersedParticles->getComponent(info.fromBlockId);
+    AtomicBlock3D & toBlock = immersedParticles->getComponent(info.toBlockId);
+    toBlock.getDataTransfer().attribute(info.toDomain, info.fromDomain.x0 - info.toDomain.x0,
+                                        info.fromDomain.y0 - info.toDomain.y0, info.fromDomain.z0 - info.toDomain.z0,
+                                        fromBlock, modif::hemocell, info.absoluteOffset);
+  }
+
+  // 4. Post the data receives as the sizes arrive (in any order), ...
+  for (unsigned int i = 0; i < nRecv; i++) {
+    int r;
+    MPI_Waitany(int(nRecv), sizeRequests.data(), &r, MPI_STATUS_IGNORE);
+    const vector<int> & sizes = envelopeRecvSizes[r];
+    const size_t total = std::accumulate(sizes.begin(), sizes.end(), size_t(0));
+    envelopeRecvData[r].resize(total);
+    if (total > 0) {
+      MPI_Irecv(envelopeRecvData[r].data(), int(total), MPI_CHAR, envelopeRecvRanks[r], tagData, particleComm,
+                &dataRequests[r]);
+    }
+  }
+  // ... but unpack them in ascending source rank, the messages of a partner
+  // in the order of the receive package.
+  for (unsigned int r = 0; r < nRecv; r++) {
+    MPI_Wait(&dataRequests[r], MPI_STATUS_IGNORE);
+    char * data = reinterpret_cast<char *>(envelopeRecvData[r].data());
+    size_t position = 0;
+    for (unsigned int m = 0; m < envelopeRecvInfos[r].size(); m++) {
+      const CommunicationInfo3D & info = *envelopeRecvInfos[r][m];
+      const int length = envelopeRecvSizes[r][m];
+      immersedParticles->getComponent(info.toBlockId)
+          .getDataTransfer()
+          .receive(info.toDomain, data + position, length, modif::hemocell, info.absoluteOffset);
+      position += length;
+    }
+  }
+
+  MPI_Waitall(int(sendRequests.size()), sendRequests.data(), MPI_STATUSES_IGNORE);
+}
+
 void HemoCellFields::HemoSyncEnvelopes::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D *> blocks) {
   dynamic_cast<HemoCellParticleField *>(blocks[0])->syncEnvelopes();
 }
@@ -412,7 +540,7 @@ void HemoCellFields::syncEnvelopes() {
     HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
     pf.removeParticles_inverse(pf.localDomain);
   }
-  immersedParticles->getBlockCommunicator().duplicateOverlaps(*immersedParticles, modif::hemocell);
+  exchangeEnvelopes();
 
   if (large_communicator) {
     CommunicationStructure3D * comms = large_communicator;

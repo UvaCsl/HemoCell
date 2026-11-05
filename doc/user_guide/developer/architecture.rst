@@ -152,26 +152,32 @@ Communication
 ``HemoCellFields::syncEnvelopes()`` refreshes the envelopes:
 
 #. Every block drops its non-local particles.
-#. Palabos' ``duplicateOverlaps`` with ``modif::hemocell`` copies particles in
-   the envelope (``HemoCellParticleDataTransfer``: ``sv`` as raw bytes;
-   positions and cell IDs shifted across periodic boundaries). Before the first
-   time step the envelope is the full ``<particleEnvelope>``; afterwards it is
-   3 nodes.
+#. ``exchangeEnvelopes()`` copies the particles in the envelope from the
+   neighbouring blocks (``sv`` as raw bytes; positions and cell IDs shifted
+   across periodic boundaries by ``HemoCellParticleDataTransfer``). It uses the
+   communication structure of the particle field's Palabos communicator
+   (normal and enabled periodic overlaps): per partner rank the message sizes
+   (tag 25) and one buffer with all messages (tag 43), on the private
+   communicator, unpacked in ascending source rank. Before the first time step
+   the envelope is the full ``<particleEnvelope>``; afterwards it is 3 nodes.
 #. After the first time step, cells are completed over the full particle
    envelope: each rank sends the IDs of the cells it holds to its large-envelope
    neighbours (tag 24) and receives all their particles of those cells (tag
    42), on a private communicator, receiving requests per known source rank.
-   Replies are unpacked in ascending source rank, not in arrival order: the
-   unpack order sets the order of particles in a block, and with it the
-   floating-point summation order of force spreading, so this keeps multi-rank
-   runs reproducible. Copies between blocks on the same rank use
-   ``attribute()``.
+   Replies are unpacked in ascending source rank as well.
+
+Both exchanges unpack in a fixed order, not in arrival order: the unpack order
+sets the order of particles in a block, and with it the floating-point
+summation order of force spreading and repulsion, so this keeps multi-rank runs
+reproducible. Copies between blocks on the same rank use ``attribute()``.
 
 HemoCell's processing functionals (``HemoCellFunctional``) declare that they
 modify nothing (``modif::nothing``), so Palabos never triggers envelope updates
 on its own; HemoCell decides when to synchronise. Palabos is patched
 (``patch/palabos.patch``) to add ``modif::hemocell`` and to route particle data
-through ``HemoCellParticleDataTransfer``.
+through ``HemoCellParticleDataTransfer`` (used by checkpoints). Do not use
+``duplicateOverlaps(modif::hemocell)`` on the particle field: the patched
+communicator unpacks those messages in arrival order.
 
 Pitfalls that cost time in the past:
 

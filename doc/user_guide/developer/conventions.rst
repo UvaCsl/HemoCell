@@ -73,7 +73,9 @@ Parallel correctness
   Keep it that way: when the order of processing received data affects the
   order of particles or of floating-point sums, process it in a fixed order
   (e.g. by source rank), never in MPI arrival order. Reproducibility is what
-  makes exact before/after comparisons possible.
+  makes exact before/after comparisons possible; checkpoints of identical runs
+  are byte-identical (``cmp`` their ``.dat`` files). Records written as raw
+  bytes need their padding zeroed for that (see ``HemoCellParticle``).
 * A single-rank run does not test communication. Changes to particle transfer,
   ownership, periodicity or decomposition need runs on several ranks, including
   block and periodic crossings, and a restart from a checkpoint.
