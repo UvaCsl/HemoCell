@@ -17,7 +17,7 @@ TEST(BuildConfiguration, MismatchWithTheLibraryIsFatal) {
   char * args[] = {(char *)"test", NULL};
   hemo::FatalErrorsThrow guard;
   try {
-    hemo::HemoCell hemocell(pipeflow_config, 0, args, hemo::HemoCell::MPIHandle::External, other.c_str());
+    hemo::HemoCell hemocell(pipeflowConfig(), 0, args, hemo::HemoCell::MPIHandle::External, other.c_str());
     FAIL() << "a case with another configuration was accepted";
   } catch (const hemo::FatalError & e) {
     const std::string message = e.what();
@@ -29,6 +29,6 @@ TEST(BuildConfiguration, MismatchWithTheLibraryIsFatal) {
 
 TEST(BuildConfiguration, MatchingConfigurationIsAccepted) {
   char * args[] = {(char *)"test", NULL};
-  hemo::HemoCell hemocell(pipeflow_config, 0, args, hemo::HemoCell::MPIHandle::External);
+  hemo::HemoCell hemocell(pipeflowConfig(), 0, args, hemo::HemoCell::MPIHandle::External);
   EXPECT_TRUE(hemo::global.hemoCellInitialized);
 }

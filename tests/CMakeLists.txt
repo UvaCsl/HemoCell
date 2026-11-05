@@ -4,6 +4,7 @@ set(BINARY ${PROJECT_NAME}_test)
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS LIST_DIRECTORIES false *.h *.cpp)
 add_executable(${BINARY} ${TEST_SOURCES})
 target_link_libraries(${BINARY} PRIVATE ${PROJECT_NAME} GTest::gtest)
+target_include_directories(${BINARY} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 # GoogleTest >= 1.17 requires C++17; the rest of the project is built as C++11.
 # The runner stays in its build tree (unlike case executables), so several
 # build trees (e.g. presets) do not overwrite each other's test binary.

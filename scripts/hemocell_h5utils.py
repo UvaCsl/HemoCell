@@ -30,11 +30,11 @@ def dtypeFromH5(h5file):
     """
     dtypeNames, dtypeSize = [], []
     
-    for i,v in h5file.iteritems():
+    for i,v in h5file.items():
         if ' ' not in i:
             dtypeNames += [str(i)]
             dtypeSize += [ str(v.shape[-1]) + '<' + str(v.dtype)[0] + '4' ]
-    for i,v in h5file.attrs.iteritems():
+    for i,v in h5file.attrs.items():
         if ' ' not in i:
             dtypeNames += [str(i)]
             dtypeSize += [ str(v.shape[-1]) + '<' + str(v.dtype)[0] + '4' ]
@@ -52,7 +52,7 @@ def readFicsionCellResults(hdf5_dir, cellType='RBC', progressBar=False, step=1):
         step -- read every 'step' timestep.
 
     Returns:
-        numpy hemo::Array containing all the data from all the timesteps.
+        numpy array containing all the data from all the timesteps.
             Dimensions are [timestep, cell, dimension]
 
 
@@ -67,16 +67,16 @@ def readFicsionCellResults(hdf5_dir, cellType='RBC', progressBar=False, step=1):
     hdf5_files = glob(identifier)
 
     # Extract the sorted list of timesteps in strings. Sorted strings can be different than integers.
-    timesteps = sorted(set(map(lambda x: x.split('.')[-4], hdf5_files)))[::step]
-    timesteps_int = map(int, timesteps)
-    timesteps = zip( *sorted(zip(timesteps_int,timesteps)) )[1]
+    timesteps = sorted(set([x.split('.')[-4] for x in hdf5_files]))[::step]
+    timesteps_int = list(map(int, timesteps))
+    timesteps = list(zip( *sorted(zip(timesteps_int,timesteps)) ))[1]
 
 
     Nt = len(timesteps)
     ra = None; 
     for it, timestep in enumerate(timesteps): # Loop through all the timesteps and processors.
         if progressBar: writeProgressBar( it*100.0/Nt )
-        parts = filter(lambda x: timestep + '.' in x, hdf5_files)
+        parts = [x for x in hdf5_files if timestep + '.' in x]
         storageDict = {}
         for part in parts: # Collect output from each processor
             pid_file = int( part.split('.')[-2] )
@@ -88,17 +88,17 @@ def readFicsionCellResults(hdf5_dir, cellType='RBC', progressBar=False, step=1):
                     sD[key] = h[key].value[ic]
                 sD['t'] = h.attrs['dt'][0] * np.int(timestep)
             h.close()
-        if type(ra) == type(None): # Initialize hemo::Array if not initialized.
-            Np = len(storageDict.keys())
+        if type(ra) == type(None): # Initialize the array if not initialized.
+            Np = len(list(storageDict.keys()))
             ra = np.empty((Nt, Np), dtype=dtype)
             # There are cases where certain cellIds are missing.
-            cellId2Id = dict( zip( storageDict.keys(),np.arange(Np) ) )
-        for cellId, sD in storageDict.items():
-            for key in sD.keys():
+            cellId2Id = dict( list(zip( list(storageDict.keys()),np.arange(Np) )) )
+        for cellId, sD in list(storageDict.items()):
+            for key in list(sD.keys()):
                 ra[key][it, cellId2Id[cellId] ] = sD[key]
     if progressBar: 
         writeProgressBar( 100.0 )
-        print 
+        print() 
     return ra
 
 
@@ -120,7 +120,7 @@ def rotateVector(vector, thetaDegrees):
 def main():
     import argparse, os
 
-    parser = argparse.ArgumentParser(description='Save CellType data in a numpy-hemo::Array file.')
+    parser = argparse.ArgumentParser(description='Save CellType data in a numpy array file.')
     parser.add_argument('-i', '--inputDir', dest='inputDir', default='./tmp/hdf5',
                        help='Input directory where HDF5 files are located [default:./tmp/hdf5]')
     parser.add_argument('-o', '--output', dest='outputFile', default='./ficsion_hdf5.npy',
@@ -133,10 +133,10 @@ def main():
     args = parser.parse_args()
 
     if not os.path.exists(args.inputDir):
-        print 'ERROR: \n\t "', args.inputDir, '" does not exist.'
+        print('ERROR: \n\t "', args.inputDir, '" does not exist.')
         sys.exit(1)
-    numpy_hemo::Array = readFicsionCellResults(args.inputDir, args.cellType, True, step=int(args.step))
-    np.save(args.outputFile, numpy_hemo::Array)
+    numpy_array = readFicsionCellResults(args.inputDir, args.cellType, True, step=int(args.step))
+    np.save(args.outputFile, numpy_array)
     return
 
 if __name__ == '__main__':

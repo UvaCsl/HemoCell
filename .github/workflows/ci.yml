@@ -1,7 +1,7 @@
 name: CI
 
-# Build the library, tests, examples and cases, and run the tests, on
-# GitHub-hosted runners. Hardware-dependent performance tests live in
+# Build the library, tests, examples and cases, run the tests and a short run
+# of every driver, on GitHub-hosted runners. Hardware-dependent performance tests live in
 # performance.yml (manual, self-hosted).
 on:
   push:
@@ -36,6 +36,7 @@ jobs:
             cxx: g++
             werror: "ON"
             labels: "unit|validation"
+            smoke: true
           # Second compiler: catches non-portable code (e.g. GCC-only extensions).
           - name: clang release
             preset: portable
@@ -97,6 +98,12 @@ jobs:
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
         run: ctest --test-dir build-${{ matrix.preset }} -L "${{ matrix.labels }}" --output-on-failure
 
+      # A few steps of every example and case on 2 ranks, with output and a
+      # checkpoint (scripts/ci/smoke_drivers.py; the slow ones are left out).
+      - name: Smoke run of the examples and cases
+        if: matrix.smoke
+        run: python3 scripts/ci/smoke_drivers.py -n 2 -t 900
+
       - name: Compiler cache statistics
         if: always()
         run: ccache --show-stats
@@ -137,6 +144,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Compile the Python scripts (Python 3, syntax warnings are errors)
+        run: |
+          find scripts tools doc -name '*.py' -not -path '*/.venv/*' -print0 |
+            PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache" xargs -0 python -W error::SyntaxWarning -m py_compile
       - name: Install Doxygen and Graphviz
         run: |
           sudo apt-get update -qq

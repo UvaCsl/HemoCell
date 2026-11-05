@@ -29,7 +29,7 @@ struct Result {
 // every cell ID right after loading, as after that many periodic laps.
 Result run(bool shiftIds) {
   char * args[] = {(char *)"test", NULL};
-  hemo::HemoCell hemocell((char *)pipeflow_config, 0, args, hemo::HemoCell::MPIHandle::External);
+  hemo::HemoCell hemocell(pipeflowConfig(), 0, args, hemo::HemoCell::MPIHandle::External);
   PipeflowSetup setup;
   setupPipeflow(hemocell, setup);
   hemocell.loadParticles();
@@ -74,7 +74,7 @@ TEST(CellIds, IdsBeyondIntRangeGiveTheSameTrajectory) {
 // out exactly (as float, the IDs of neighbouring cells would be merged).
 TEST(CellIds, IdsBeyondIntRangeAreWrittenExactly) {
   char * args[] = {(char *)"test", NULL};
-  hemo::HemoCell hemocell(pipeflow_config, 0, args, hemo::HemoCell::MPIHandle::External);
+  hemo::HemoCell hemocell(pipeflowConfig(), 0, args, hemo::HemoCell::MPIHandle::External);
   PipeflowSetup setup;
   setupPipeflow(hemocell, setup);
   hemocell.setOutputs(rbc_name, {hemo::OUTPUT_POSITION, hemo::OUTPUT_CELL_ID});

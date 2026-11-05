@@ -31,3 +31,14 @@ inputs (`tests/validation/...`, `examples/...`) relative to it. When running
 matches the parameterised `Validation/ValidationForceDisplacement` tests, which
 `Validation.*` misses). `Performance.*` needs a configuration argument and is
 not part of the CTest runs; see `.github/workflows/performance.yml`.
+
+The simulations of the tests write their output (HDF5, logs, checkpoints) into
+one temporary directory per run (`hemo_test::outputRoot()` in
+`test_support.h`), which is removed at the end; set `HEMOCELL_KEEP_TEST_OUTPUT=1`
+to keep it. Construct a simulation from `hemo_test::testConfig(path)` (or
+`pipeflowConfig()`), never from a configuration that writes into the repository.
+
+`scripts/ci/smoke_drivers.py` runs every built example and case for 20 steps
+with output and a checkpoint, in a temporary copy of its directory (`-n` ranks,
+default 2; `--slow` adds the large drivers listed in `SLOW`; name drivers such
+as `examples/pipeflow` to run only those). CI runs it in the gcc release job.

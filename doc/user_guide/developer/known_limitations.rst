@@ -52,6 +52,14 @@ Repulsion
    ``kRep = 5`` pN, a low value chosen to have an effect, not a validated one.
    Particle and wall repulsion must use the same update interval.
 
+Bending torque
+   The bending force of a vertex acts along its patch normal and is balanced by
+   equal shares on its neighbours: the net force of every model is zero, but
+   the bending term is not torque-free. For a mildly deformed cell the net
+   torque of all membrane forces is 1.5e-5 to 3e-5 of the sum of
+   ``|r| |F|`` (``tests/integration/test_mechanics.cpp``); it can spin cells
+   slightly.
+
 Force cap
    ``FORCE_LIMIT`` (default 50 pN per vertex) caps the membrane force spread to
    the fluid; a quarter of it caps the membrane-viscosity force per edge. Capping

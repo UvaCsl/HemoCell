@@ -4,6 +4,7 @@
 #define HEMOCELL_TESTS_PIPEFLOW_SETUP_H
 
 #include <hemocell.h>
+#include "test_support.h"
 #include <helper/voxelizeDomain.h>
 #include "rbcHighOrderModel.h"
 #include "pltSimpleModel.h"
@@ -21,6 +22,12 @@ constexpr const char * pipeflow_config = "tests/validation/pipeflow/config_pipef
 constexpr const char * pipeflow_geometry = "examples/pipeflow/tube.stl";
 constexpr const char * rbc_name = "tests/validation/pipeflow/RBC";
 constexpr const char * plt_name = "tests/validation/pipeflow/PLT";
+
+// The pipeflow configuration with its output in the tests' output directory
+// (hemo_test::testConfig()); pipeflow_config itself is the original file.
+inline std::string pipeflowConfig() {
+  return hemo_test::testConfig(pipeflow_config);
+}
 
 struct PipeflowSetup {
   std::unique_ptr<plb::MultiScalarField3D<int>> flagMatrix;

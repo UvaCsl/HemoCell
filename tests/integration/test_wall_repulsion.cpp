@@ -33,7 +33,7 @@ T maxRepulsionForce(hemo::HemoCell & hemocell) {
 TEST(Repulsion, WallRepulsionAloneDoesNotAccumulate) {
   static_assert(sizeof(T) == sizeof(double), "MPI_DOUBLE below assumes T == double");
   char * args[] = {(char *)"test", NULL};
-  hemo::HemoCell hemocell((char *)pipeflow_config, 0, args, hemo::HemoCell::MPIHandle::External);
+  hemo::HemoCell hemocell(pipeflowConfig(), 0, args, hemo::HemoCell::MPIHandle::External);
   PipeflowSetup setup;
   setupPipeflow(hemocell, setup, 0.0); // allow vertices next to the wall
   hemocell.loadParticles();
@@ -64,7 +64,7 @@ TEST(Repulsion, WallRepulsionAloneDoesNotAccumulate) {
 TEST(Repulsion, ConstantInPicoNewtonAndForceCapped) {
   static_assert(sizeof(T) == sizeof(double), "MPI_DOUBLE below assumes T == double");
   char * args[] = {(char *)"test", NULL};
-  hemo::HemoCell hemocell(pipeflow_config, 0, args, hemo::HemoCell::MPIHandle::External);
+  hemo::HemoCell hemocell(pipeflowConfig(), 0, args, hemo::HemoCell::MPIHandle::External);
   PipeflowSetup setup;
   setupPipeflow(hemocell, setup, 0.0); // allow vertices next to the wall
   hemocell.loadParticles();

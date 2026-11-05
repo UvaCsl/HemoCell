@@ -5,6 +5,7 @@
 #include "palabos3D.hh"
 #include "rbcHighOrderModel.h"
 #include "gtest/gtest.h"
+#include "test_support.h"
 
 // For these tests we probe the force-displacement curve after 10_000
 // iterations, where the curves are approaching their steady-state values.
@@ -59,7 +60,8 @@ class ValidationForceDisplacement : public ::testing::TestWithParam<ForcedDiamet
 TEST_P(ValidationForceDisplacement, StretchCell) {
   auto parameters = GetParam();
   char * args[] = {(char *)"test", (char *)"path", NULL};
-  char * inp = (char *)"tests/validation/stretch_cell/config_stretch_cell.xml";
+  const std::string inp =
+      hemo_test::testConfig("tests/validation/stretch_cell/config_stretch_cell.xml"); // output in the tests' directory
 
   hemo::HemoCell hemocell(inp, 0, args, hemo::HemoCell::MPIHandle::External);
   hemo::Config * cfg = hemocell.cfg;

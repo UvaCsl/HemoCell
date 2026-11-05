@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+r"""
 @author: Gabor Zavodszky
 
 Creating a hexagonal patch of material piece.

@@ -84,9 +84,16 @@ All tests live under ``tests/`` and build into one GoogleTest runner
   ``HemoCell::MPIHandle::External`` (MPI is initialised once in
   ``tests/main.cpp``). Name physics validations ``Validation...`` so the
   ``validation`` label picks them up.
-* Tests run in the repository root and read their inputs relative to it. Files
-  written by a test should go to ``testing::TempDir()`` with the MPI rank in
-  the name.
+* Tests run in the repository root and read their inputs relative to it.
+  Construct simulations from ``hemo_test::testConfig(path)``
+  (``tests/test_support.h``; ``pipeflowConfig()`` for the pipeflow setup), a
+  copy of the configuration whose output goes to ``hemo_test::outputRoot()``,
+  one temporary directory per run that is removed afterwards (set
+  ``HEMOCELL_KEEP_TEST_OUTPUT`` to keep it). Other files a test writes go there
+  as well, with the MPI rank in the name where ranks write separately.
+* ``tests/integration/test_mechanics.cpp`` checks the membrane forces of every
+  cell model (rest shape, net force and torque, rotation); register a new model
+  there.
 * Assert behaviour (values, invariants, equality between 1 and N ranks), not
   just that the code runs. Derive tolerances from the physics; do not widen
   them to make a test pass.

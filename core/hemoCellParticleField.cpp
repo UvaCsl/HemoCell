@@ -350,7 +350,7 @@ void HemoCellParticleField::findParticles(plb::Box3D domain, std::vector<HemoCel
 }
 
 inline plint HemoCellParticleField::nearestCell(T const pos) const {
-  return int(pos + 0.5);
+  return nearestNode(pos);
 }
 
 inline void HemoCellParticleField::computeGridPosition(hemo::Array<T, 3> const & position, plint * iX, plint * iY,
@@ -489,9 +489,9 @@ void HemoCellParticleField::advanceParticles() {
   for (HemoCellParticle & particle : particles) {
     particle.advance();
     //By lack of better place, check if it is on a boundary, if so, delete it
-    plint x = (particle.sv.position[0] - location.x) + 0.5;
-    plint y = (particle.sv.position[1] - location.y) + 0.5;
-    plint z = (particle.sv.position[2] - location.z) + 0.5;
+    const plint x = nearestNode(particle.sv.position[0] - location.x);
+    const plint y = nearestNode(particle.sv.position[1] - location.y);
+    const plint z = nearestNode(particle.sv.position[2] - location.z);
 
     if ((x >= box.x0) && (x <= box.x1) && (y >= box.y0) && (y <= box.y1) && (z >= box.z0) && (z <= box.z1)) {
       if (atomicLattice->get(x, y, z).getDynamics().isBoundary()) {

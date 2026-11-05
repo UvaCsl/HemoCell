@@ -166,27 +166,39 @@ case, lower priority).
 
 ### C. Tests, CI and tooling
 
-17. **No unit tests of the mechanics.** Per model (RBC, PLT, WBC, malaria):
+17. *Done* (`test_mechanics.cpp`: bending is not torque-free, documented;
+    conservation across periodic and block boundaries, pre-inlet transfer,
+    determinism; test output in a temporary directory).
+    **No unit tests of the mechanics.** Per model (RBC, PLT, WBC, malaria):
     zero force at the rest shape, zero net force and torque of the internal
     forces, symmetry. Also missing: conservation of cells crossing periodic and
     block boundaries, the pre-inlet, and a determinism test (run twice, compare
     the checkpoints with `cmp`). Tests leave their output directories in the
     repository root (`tmp`, `tmp_0`, `tmp_1`, ...: one per simulation a test
     constructs); write them to a temporary directory instead.
-18. **CI never runs a driver.** A 20-step smoke run of every example and case
+18. *Done* (`scripts/ci/smoke_drivers.py`, run in the gcc release CI job for
+    34 of the 39 built drivers: `cube` and `performance_testing` need
+    generated configurations, `microcontraction`, `stent_strut` and
+    `unbounded` take minutes (`--slow`). Not built at all, so not covered:
+    `cases/flowchamber_stenosis`, `cases/injured_vessel` and
+    `cases/stent_strut/stent_strut_crossings`, which are missing from
+    `cases/CMakeLists.txt`.)
+    **CI never runs a driver.** A 20-step smoke run of every example and case
     (with output and a checkpoint) would have caught A5 and B13; 31 of 36 pass
     today on 2 ranks, the five large ones (`AR2*`, `stent_strut`, `unbounded`)
     need reduced configurations.
-19. **Scripts and tools.** Eight of 42 Python scripts are Python 2 only
+19. *Done* (scripts ported, `py_compile` in CI; `packCells`: CMake >= 3.16,
+    exact periodic box, periodic neighbour search fixed, documented).
+    **Scripts and tools.** Eight of 42 Python scripts are Python 2 only
     (including `scripts/hemocell_h5utils.py` and
     `scripts/ParticleField3D_HDF5toXMF.py`); add `python3 -m py_compile` to CI.
     `tools/packCells` requires CMake 2.8 and packs periodically (cells cross
     the box faces), which is not documented (such files need
     `setPlaceCellsAcrossPeriodicBoundaries(true)` when packed for the domain).
-20. **Rounding of negative coordinates.** `plint(x + 0.5)` truncates towards
-    zero, mapping (-1, -0.5) to node 0, in `advanceParticles()` (wall removal),
-    `nearestCell()`, the particle grid and the position loader. Low impact; use
-    one `nearestNode()` helper.
+20. *Done* (`nearestNode()`). **Rounding of negative coordinates.**
+    `plint(x + 0.5)` truncates towards zero, mapping (-1, -0.5) to node 0, in
+    `advanceParticles()` (wall removal), `nearestCell()`, the particle grid
+    and the position loader. Low impact; use one `nearestNode()` helper.
 
 ### D. Model limits to document
 
@@ -201,3 +213,21 @@ case, lower priority).
     grows (`cases/pipeflow_wbc`; the same on `master` with the stock pipeflow
     example). Neither updating every step nor a larger `kArea` prevents it.
     Document in `developer/known_limitations.rst`.
+
+### E. Found while testing C
+
+23. **Pressure boundaries on a slab.** Nine drivers pass a box three nodes
+    thick to `addPressureBoundary0N()`/`0P()`, whose precondition requires a
+    plane: `examples/pipeflow_with_preinlet`,
+    `examples/curvedflow_with_preinlet`, `cases/AR2`, `cases/AR2_pulsatile`,
+    `cases/AR2_stiff`, `cases/stl_preinlet`, `cases/preinlet_shear`,
+    `cases/fc_solidified_stenosis` and `cases/injured_vessel`
+    (`bb.x0 .. bb.x0 + 2` or `bb.x1 - 2 .. bb.x1`). With `PLB_DEBUG` (the
+    `debug` preset) they abort at set-up; otherwise the Zou/He pressure
+    condition is applied on three layers. Use the face plane; this changes
+    their results. (`tests/integration/test_preinlet_transfer.cpp` uses the
+    plane.)
+24. **Unregistered drivers.** `cases/flowchamber_stenosis`,
+    `cases/injured_vessel` and `cases/stent_strut/stent_strut_crossings` are
+    missing from `cases/CMakeLists.txt`, so they are never built, run or
+    smoke-tested; build them or move them to `legacy/`.

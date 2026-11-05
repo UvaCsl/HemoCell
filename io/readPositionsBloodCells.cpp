@@ -128,7 +128,7 @@ inline bool vertexClearOfWalls(BlockLattice3D<T, DESCRIPTOR> & fluid, const hemo
                                int denyLayerSize) {
   const Box3D fluidbb = fluid.getBoundingBox();
   //Custom contains function for generic blocklattice3D structure
-  Dot3D absfluidloc(int(vertex[0] + 0.5), int(vertex[1] + 0.5), int(vertex[2] + 0.5));
+  Dot3D absfluidloc(nearestNode(vertex[0]), nearestNode(vertex[1]), nearestNode(vertex[2]));
   Dot3D relfluidloc = absfluidloc - fluid.getLocation();
 
   if (!(relfluidloc.x < fluidbb.x0 || relfluidloc.x > fluidbb.x1 || relfluidloc.y < fluidbb.y0 ||
@@ -303,14 +303,15 @@ void ReadPositionsBloodCellField3D::processGenericBlocks(Box3D domain, std::vect
 
   for (pluint iCF = 0; iCF < cellFields.size(); ++iCF) {
     for (const InitialCellPlacement & cell : cells[iCF]) {
-      // The centre must lie in the domain along the periodic axes (a node's
-      // cell is (x - 0.5, x + 0.5], as for isContainedABS()).
+      // The centre must lie in [x0, x1 + 1) along the periodic axes: one
+      // period, measured from the first node as positions are (packCells
+      // writes centres in [0, L) of its box).
       const hemo::Array<T, 3> centre = cell.position * posRatio;
       const T low[3] = {T(domainBox.x0), T(domainBox.y0), T(domainBox.z0)};
       const T high[3] = {T(domainBox.x1), T(domainBox.y1), T(domainBox.z1)};
       bool home = true;
       for (int d = 0; d < 3; d++) {
-        if (periodic[d] && !(centre[d] > low[d] - 0.5 && centre[d] <= high[d] + 0.5)) { home = false; }
+        if (periodic[d] && !(centre[d] >= low[d] && centre[d] < high[d] + 1)) { home = false; }
       }
       if (placeImages && !home) { continue; }
       const bool count = !placeImages && home && crossing;

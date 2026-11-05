@@ -38,7 +38,7 @@ std::string writeMaterial(const std::string & extraEdge) {
 std::string addCellTypeError(const std::string & extraEdge) {
   const std::string name = writeMaterial(extraEdge);
   char * args[] = {(char *)"test", NULL};
-  hemo::HemoCell hemocell(pipeflow_config, 0, args, hemo::HemoCell::MPIHandle::External);
+  hemo::HemoCell hemocell(pipeflowConfig(), 0, args, hemo::HemoCell::MPIHandle::External);
   PipeflowSetup setup;
   setupPipeflow(hemocell, setup);
   std::string message;

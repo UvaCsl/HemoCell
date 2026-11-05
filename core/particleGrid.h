@@ -26,9 +26,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "hemoCellParticle.h"
 
+#include <cmath>
 #include <vector>
 
 namespace hemo {
+
+/**
+ * @brief The lattice node nearest to a coordinate [lattice units].
+ *
+ * Rounds half up, also for negative coordinates (e.g. -0.7 -> -1, -2.7 -> -3);
+ * `plint(x + 0.5)` truncates towards zero and gives the node one too high for
+ * x < -0.5. Use it for absolute and block-local coordinates alike.
+ */
+inline plint nearestNode(T x) {
+  return plint(std::floor(x + 0.5));
+}
 
 /**
  * @brief Cell list that bins the particles of one atomic block onto its
@@ -36,9 +48,8 @@ namespace hemo {
  *
  * Used for short-range neighbour searches (particle-particle repulsion,
  * particle-wall repulsion, solidification). Each particle is assigned to the
- * node `int(position - location + 0.5)` per axis, i.e. the same truncating
- * rounding that HemoCell used before this class existed. Particles whose node
- * falls outside `[0,nx) x [0,ny) x [0,nz)` are not binned.
+ * nearest node, nearestNode(position - location), per axis. Particles whose
+ * node falls outside `[0,nx) x [0,ny) x [0,nz)` are not binned.
  *
  * Storage is compressed (CSR-like): `nodeStart` holds `nx*ny*nz+1` offsets
  * into `particleIndices`, so the particles of node `n` are

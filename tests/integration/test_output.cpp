@@ -74,7 +74,7 @@ int countOccurrences(const std::string & text, const std::string & pattern) {
 
 TEST(Output, CellsOnceFluidBulkAndXdmf) {
   char * args[] = {(char *)"test", NULL};
-  hemo::HemoCell hemocell((char *)pipeflow_config, 0, args, hemo::HemoCell::MPIHandle::External);
+  hemo::HemoCell hemocell(pipeflowConfig(), 0, args, hemo::HemoCell::MPIHandle::External);
   PipeflowSetup setup;
   setupPipeflow(hemocell, setup);
   hemocell.outputInSiUnits = false; // lattice units: positions in nodes, cell density in vertices per node

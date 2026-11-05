@@ -43,9 +43,9 @@ void ParticleGrid::build(const std::vector<HemoCellParticle> & particles, const 
   // (the count of node n is stored in nodeStart[n]).
   for (unsigned int i = 0; i < nParticles; i++) {
     const hemo::Array<T, 3> & pos = particles[i].sv.position;
-    const int x = pos[0] - location.x + 0.5;
-    const int y = pos[1] - location.y + 0.5;
-    const int z = pos[2] - location.z + 0.5;
+    const plint x = nearestNode(pos[0] - location.x);
+    const plint y = nearestNode(pos[1] - location.y);
+    const plint z = nearestNode(pos[2] - location.z);
     if ((x >= 0) && (x < nx) && (y >= 0) && (y < ny) && (z >= 0) && (z < nz)) {
       const unsigned int node = index(x, y, z);
       nodeOfParticle[i] = node;

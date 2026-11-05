@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "helper/hemocellInit.hh"
 #include "helper/cellInfo.h"
 #include "gtest/gtest.h"
+#include "test_support.h"
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
@@ -39,7 +40,8 @@ const T exp_def_lower = 0.0127918;
 
 TEST(Validation, oneCellShear) {
   char * args[] = {(char *)"test", (char *)"path", NULL};
-  char * inp = (char *)"tests/validation/oneCellShear/config.xml";
+  const std::string inp =
+      hemo_test::testConfig("tests/validation/oneCellShear/config.xml"); // output in the tests' directory
 
   hemo::HemoCell hemocell(inp, 0, args, hemo::HemoCell::MPIHandle::External);
   Config * cfg = hemocell.cfg;

@@ -18,27 +18,11 @@ using namespace pipeflow_test;
 
 namespace {
 
-void replace(std::string & text, const std::string & from, const std::string & to) {
-  const size_t at = text.find(from);
-  ASSERT_NE(at, std::string::npos) << from;
-  text.replace(at, from.size(), to);
-}
-
-// The pipeflow test configuration with cellsDeletedInfo enabled, writing its
-// output to the GoogleTest temporary directory.
+// The pipeflow test configuration with cellsDeletedInfo enabled.
 std::string writeConfig() {
-  std::ifstream in(pipeflow_config);
-  std::stringstream content;
-  content << in.rdbuf();
-  std::string xml = content.str();
-  replace(xml, "<hemocell>", "<hemocell>\n<verbose><cellsDeletedInfo>1</cellsDeletedInfo></verbose>");
-  replace(xml, "<outputDirectory>tmp</outputDirectory>",
-          "<outputDirectory>" + testing::TempDir() + "hemocell_global_state</outputDirectory>");
-  const std::string path =
-      testing::TempDir() + "hemocell_global_state_r" + std::to_string(plb::global::mpi().getRank()) + ".xml";
-  std::ofstream out(path);
-  out << xml;
-  return path;
+  return hemo_test::testConfig(pipeflow_config, [](std::string & xml) {
+    hemo_test::replaceOnce(xml, "<hemocell>", "<hemocell>\n<verbose><cellsDeletedInfo>1</cellsDeletedInfo></verbose>");
+  });
 }
 
 } // namespace

@@ -19,29 +19,15 @@ using namespace pipeflow_test;
 
 namespace {
 
-void replace(std::string & text, const std::string & from, const std::string & to) {
-  const size_t at = text.find(from);
-  ASSERT_NE(at, std::string::npos) << from;
-  text.replace(at, from.size(), to);
-}
-
 // The pipeflow test configuration with a pre-inlet and the domain split into
-// three blocks along x, writing its output to the GoogleTest temporary directory.
+// three blocks along x.
 std::string writeConfig() {
-  std::ifstream in(pipeflow_config);
-  std::stringstream content;
-  content << in.rdbuf();
-  std::string xml = content.str();
-  replace(xml, "<hemocell>",
-          "<hemocell>\n<preInlet><parameters><lengthN> 20 </lengthN><Re> 0.5 </Re></parameters></preInlet>");
-  replace(xml, "<domain>", "<domain>\n<mABx> 3 </mABx><mABy> 1 </mABy><mABz> 1 </mABz>");
-  replace(xml, "<outputDirectory>tmp</outputDirectory>",
-          "<outputDirectory>" + testing::TempDir() + "hemocell_preinlet_blocks</outputDirectory>");
-  const std::string path =
-      testing::TempDir() + "hemocell_preinlet_blocks_r" + std::to_string(plb::global::mpi().getRank()) + ".xml";
-  std::ofstream out(path);
-  out << xml;
-  return path;
+  return hemo_test::testConfig(pipeflow_config, [](std::string & xml) {
+    hemo_test::replaceOnce(
+        xml, "<hemocell>",
+        "<hemocell>\n<preInlet><parameters><lengthN> 20 </lengthN><Re> 0.5 </Re></parameters></preInlet>");
+    hemo_test::replaceOnce(xml, "<domain>", "<domain>\n<mABx> 3 </mABx><mABy> 1 </mABy><mABz> 1 </mABz>");
+  });
 }
 
 // Number of blocks of `management` that are not owned by a rank in [first, end).

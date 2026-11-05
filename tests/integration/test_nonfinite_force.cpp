@@ -13,7 +13,7 @@ using namespace pipeflow_test;
 
 TEST(NonFiniteForce, CellIsRemovedAndFluidStaysFinite) {
   char * args[] = {(char *)"test", NULL};
-  hemo::HemoCell hemocell((char *)pipeflow_config, 0, args, hemo::HemoCell::MPIHandle::External);
+  hemo::HemoCell hemocell(pipeflowConfig(), 0, args, hemo::HemoCell::MPIHandle::External);
   PipeflowSetup setup;
   setupPipeflow(hemocell, setup);
   hemocell.loadParticles();

@@ -16,7 +16,7 @@ namespace {
 // output and take statistics after every `readEvery` iterations.
 State run(unsigned int steps, unsigned int readEvery) {
   char * args[] = {(char *)"test", NULL};
-  hemo::HemoCell hemocell((char *)pipeflow_config, 0, args, hemo::HemoCell::MPIHandle::External);
+  hemo::HemoCell hemocell(pipeflowConfig(), 0, args, hemo::HemoCell::MPIHandle::External);
   PipeflowSetup setup;
   setupPipeflow(hemocell, setup);
   hemocell.loadParticles();

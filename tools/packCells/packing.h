@@ -63,6 +63,11 @@ class Packing {
   double Sphere_vol, Diam_dens;
   double Rc_max, Rcut, Rcut2, Relax;
   vector3 Box, Half;
+  // Edge lengths of the collision-check cells: Box / No_cells per axis, at
+  // least 1 (the interaction range in scaled units), so that the box itself is
+  // exactly the requested size and periodic with that size.
+  vector3 CellSize;
+  vector3 RequestedBox; // requested domain size (scaled)
 
   int *Link_head, *Link_list;
   int *Ncell_bound_x, *Ncell_bound_y, *Ncell_bound_z;
@@ -87,6 +92,14 @@ class Packing {
   void outputHeader();
   void output();
   double zeroin(BinaryEllipsoidSystem & ell, double ax, double bx);
+  // Collision-check cell of a position in the box (a position on the upper
+  // face belongs to the last cell).
+  int cellIndex(const vector3 & pos) const {
+    const int x = std::min(No_cells_x - 1, std::max(0, int(pos[0] / CellSize[0])));
+    const int y = std::min(No_cells_y - 1, std::max(0, int(pos[1] / CellSize[1])));
+    const int z = std::min(No_cells_z - 1, std::max(0, int(pos[2] / CellSize[2])));
+    return No_cells_z * (No_cells_y * x + y) + z;
+  }
 
 public:
   Packing();
@@ -212,9 +225,14 @@ void Packing::initBlood(float sizeX, float sizeY, float sizeZ, int maxSteps, dou
   sizeY *= Sizing;
   sizeZ *= Sizing;
 
-  No_cells_x = ceil(sizeX); // in the same quantity as cell diameters (umeter)
-  No_cells_y = ceil(sizeY);
-  No_cells_z = ceil(sizeZ);
+  // Collision-check cells of at least unit size (in the same quantity as the
+  // cell diameters); the box keeps its exact size. (It used to be rounded up to
+  // whole cells, so the packing was periodic with a larger box than requested
+  // and placed cells beyond the requested size.)
+  No_cells_x = std::max(1, int(floor(sizeX)));
+  No_cells_y = std::max(1, int(floor(sizeY)));
+  No_cells_z = std::max(1, int(floor(sizeZ)));
+  RequestedBox = vector3(sizeX, sizeY, sizeZ);
 
   cout << endl << "Sizing parameter: " << Sizing << endl;
   cout << "Resolution of collision check: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
@@ -266,9 +284,10 @@ void Packing::init() {
   No_cells = No_cells_x * No_cells_y * No_cells_z;
   Ncell_min = (No_cells_x < No_cells_y) ? No_cells_x : No_cells_y;
   Ncell_min = (No_cells_z < Ncell_min) ? No_cells_z : Ncell_min;
-  Box = vector3(No_cells_x, No_cells_y, No_cells_z);
+  Box = RequestedBox;
   Half = 0.5 * Box;
-  Diam_dens = No_cells / Sphere_vol;
+  CellSize = vector3(Box[0] / No_cells_x, Box[1] / No_cells_y, Box[2] / No_cells_z);
+  Diam_dens = Box[0] * Box[1] * Box[2] / Sphere_vol;
   double corr = 0;
   vector3 r;
   Rc_max = 0;
@@ -306,34 +325,37 @@ void Packing::init() {
   Pbc_y = new double[ndim_y];
   Pbc_z = new double[ndim_z];
 
+  // Cell index offsets and periodic image shifts (Pbc_*, in box lengths) for
+  // a search index running over three periods: [0, N) is the image below,
+  // [N, 2N) the box itself, [2N, 3N) the image above.
   imult = 1;
-  corr = -No_cells_x;
+  corr = -Box[0];
   for (int i = 1; i < ndim_x; i++) {
     Ncell_bound_x[i] = imult * No_cells_y * No_cells_z;
     Pbc_x[i] = corr;
     if (++imult >= No_cells_x) {
       imult = 0;
-      corr += No_cells_x;
+      corr += Box[0];
     }
   }
   imult = 1;
-  corr = -No_cells_y;
+  corr = -Box[1];
   for (int i = 1; i < ndim_y; i++) {
     Ncell_bound_y[i] = imult * No_cells_z;
     Pbc_y[i] = corr;
     if (++imult >= No_cells_y) {
       imult = 0;
-      corr += No_cells_y;
+      corr += Box[1];
     }
   }
   imult = 1;
-  corr = -No_cells_z;
+  corr = -Box[2];
   for (int i = 1; i < ndim_z; i++) {
     Ncell_bound_z[i] = imult;
     Pbc_z[i] = corr;
     if (++imult >= No_cells_z) {
       imult = 0;
-      corr += No_cells_z;
+      corr += Box[2];
     }
   }
 }
@@ -384,7 +406,8 @@ void Packing::calc_forces() {
     Rcut = 0.55 * Douter * ((k->getSize())[0] + Rc_max);
     Rcut2 = Rcut * Rcut;
 
-    if ((int)(2.0 * Rcut) < Ncell_min - 1)
+    const double minCellSize = std::min(CellSize[0], std::min(CellSize[1], CellSize[2]));
+    if ((int)(2.0 * Rcut / minCellSize) < Ncell_min - 1)
       force_part(ipart);
     else
       force_all(ipart);
@@ -425,18 +448,18 @@ void Packing::calc_motion() {
 
 void Packing::force_part(int ipart_p) {
   int jpart, ifirst;
-  int icell_x, icell_xy, icell_y, icell_z, icell;
+  int icell_x, icell_xy, icell;
   int leap_x, leap_y, leap_z;
   Ellipsoid *pi = particles[ipart_p], *pj;
   vector3 rij;
   vector3 pos = pi->get_pos();
 
-  int low_cell_x = (int)(pos[0] + No_cells_x - Rcut);
-  int low_cell_y = (int)(pos[1] + No_cells_y - Rcut);
-  int low_cell_z = (int)(pos[2] + No_cells_z - Rcut);
-  int lim_cell_x = (int)(pos[0] + No_cells_x + Rcut);
-  int lim_cell_y = (int)(pos[1] + No_cells_y + Rcut);
-  int lim_cell_z = (int)(pos[2] + No_cells_z + Rcut);
+  int low_cell_x = (int)((pos[0] - Rcut) / CellSize[0] + No_cells_x);
+  int low_cell_y = (int)((pos[1] - Rcut) / CellSize[1] + No_cells_y);
+  int low_cell_z = (int)((pos[2] - Rcut) / CellSize[2] + No_cells_z);
+  int lim_cell_x = (int)((pos[0] + Rcut) / CellSize[0] + No_cells_x);
+  int lim_cell_y = (int)((pos[1] + Rcut) / CellSize[1] + No_cells_y);
+  int lim_cell_z = (int)((pos[2] + Rcut) / CellSize[2] + No_cells_z);
 
 #pragma omp parallel
   for (leap_x = low_cell_x; leap_x <= lim_cell_x; leap_x++) {
@@ -449,7 +472,10 @@ void Packing::force_part(int ipart_p) {
         jpart = Link_head[icell];
         while (jpart != -1) {
           pj = particles[jpart];
-          rij = pj->get_pos() - pi->get_pos();
+          // The neighbour cell may lie in a periodic image of the box: shift
+          // the neighbour into it (the shift was computed but not applied, so
+          // cells were not repelled across the box faces and overlapped there).
+          rij = pj->get_pos() - pi->get_pos() + vector3(Pbc_x[leap_x], Pbc_y[leap_y], Pbc_z[leap_z]);
           BinaryEllipsoidSystem eij(*pi, *pj, rij);
           calc_forces(eij, *pi, *pj);
           jpart = Link_list[jpart];
@@ -458,10 +484,7 @@ void Packing::force_part(int ipart_p) {
     }
   }
 
-  icell_x = (int)pos[0];
-  icell_y = (int)pos[1];
-  icell_z = (int)pos[2];
-  icell = No_cells_z * (No_cells_y * icell_x + icell_y) + icell_z;
+  icell = cellIndex(pos);
   ifirst = Link_head[icell];
   Link_list[ipart_p] = ifirst;
   Link_head[icell] = ipart_p;
@@ -481,10 +504,7 @@ void Packing::force_all(int ipart_p) {
     BinaryEllipsoidSystem eij(*pi, *pj, rij);
     calc_forces(eij, *pi, *pj);
   }
-  int icell_x = (int)pos[0];
-  int icell_y = (int)pos[1];
-  int icell_z = (int)pos[2];
-  int icell = No_cells_z * (No_cells_y * icell_x + icell_y) + icell_z;
+  int icell = cellIndex(pos);
   int ifirst = Link_head[icell];
   Link_list[ipart_p] = ifirst;
   Link_head[icell] = ipart_p;

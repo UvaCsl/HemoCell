@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include "test_support.h"
 #include <hemocell.h>
 #include <helper/voxelizeDomain.h>
 #include "rbcHighOrderModel.h"
@@ -17,7 +18,8 @@ const auto geometry_file = "examples/pipeflow/tube.stl";
 /// Detailed validation test of the cell stretch problem.
 TEST(Validation, Pipeflow) {
   char * args[] = {(char *)"test", (char *)"path", NULL};
-  char * inp = (char *)"tests/validation/pipeflow/config_pipeflow.xml";
+  const std::string inp =
+      hemo_test::testConfig("tests/validation/pipeflow/config_pipeflow.xml"); // output in the tests' directory
 
   hemo::HemoCell hemocell(inp, 0, args, hemo::HemoCell::MPIHandle::External);
   hemo::Config * cfg = hemocell.cfg;

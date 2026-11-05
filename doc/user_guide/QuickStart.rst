@@ -168,6 +168,15 @@ them.
 .. note:: 
   The domain size is defined in microns, not in lattice units. This is to remain independent of the numerical resolution.
 
+.. note::
+  The packing is periodic in all three directions: the cell centres lie in the
+  box, but cells may cross its faces. By default HemoCell skips the cells that
+  cross a periodic boundary of the domain (and counts them in the log). If the
+  box equals the periodic domain of the case, call
+  ``hemocell.setPlaceCellsAcrossPeriodicBoundaries(true)`` before
+  ``loadParticles()`` to place them as well; with a different box they would
+  overlap cells at the opposite end.
+
 
 Running a HemoCell case
 -----------------------

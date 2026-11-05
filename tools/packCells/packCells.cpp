@@ -57,6 +57,10 @@ void PrintHelp() {
          "NOTE:\n"
          "  sX, sY and sZ are the domain size in [µm]\n"
          "  sX, sY, sZ and output are in [µm], not lattie units!\n"
+         "  The packing is periodic in all three directions: cell centres lie in the box,\n"
+         "  but cells may cross its faces. Placing those cells in HemoCell needs\n"
+         "  setPlaceCellsAcrossPeriodicBoundaries(true), and is correct only if the box\n"
+         "  equals the periodic domain of the case.\n"
          "  --hematocrit and --RBC are mutually exclusive\n"
          "  --hematocrit and --PLT are mutually exclusive\n"
          "  --PLT_ratio does not work without --hematocrit\n";

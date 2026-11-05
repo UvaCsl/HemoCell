@@ -379,6 +379,45 @@ Unreleased (refactor)
     repulsion constant is converted from pN and the repulsion force capped
     (1 and 2 ranks), and that every pre-inlet and domain block belongs to a
     rank of its lattice (2 ranks).
+  * Membrane forces of every cell model (RBC, PLT, WBC, malaria) on its
+    reference mesh: no force at the rest shape, zero net force, forces that
+    rotate and translate with the cell, and zero net torque of all terms but
+    bending (whose torque is bounded at the measured level, see the known
+    limitations).
+  * Cells crossing the periodic boundary and the block boundary between two
+    ranks while the simulation runs stay complete and keep their volume;
+    the pre-inlet passes its cells into the domain; identical runs write
+    byte-identical checkpoints (1 and 2 ranks); `nearestNode()`.
+  * The tests' simulations write into one temporary directory per run
+    (removed afterwards; `HEMOCELL_KEEP_TEST_OUTPUT` keeps it) instead of
+    `tmp`, `tmp_0`, ... in the repository root.
+* Tools and scripts
+  * `scripts/ci/smoke_drivers.py` runs every built example and case for 20
+    steps with output and a checkpoint; CI runs it (gcc release job) for all
+    but the three large drivers (`microcontraction`, `stent_strut`,
+    `unbounded`: `--slow`). The `microcontraction` README says where its
+    initial positions are.
+  * The eight Python 2 scripts (`scripts/hemocell_h5utils.py`,
+    `scripts/ParticleField3D_HDF5toXMF.py`, `scripts/conficsion.py`,
+    `scripts/storage/*.py`) run under Python 3; two of them were broken by an
+    old search-and-replace (`np.hemo::Array`). CI compiles all Python files.
+  * `tools/packCells`: the packing is periodic with the requested box size
+    (the box was rounded up to whole collision-check cells, e.g. 56 x 28 x 28
+    um for a requested 51.5 x 26.5 x 26.5 um, so cells were placed beyond the
+    requested box and the hematocrit was lower than requested), and cells
+    repel across the box faces (the periodic shift of the neighbour search
+    was computed but not applied, so cells overlapped across the faces). It
+    needs CMake >= 3.16, and its help describes the periodic packing.
+* Rounding to the nearest lattice node (`nearestNode()`) rounds negative
+  coordinates down; `plint(x + 0.5)` gave a node one too high for x < -0.5
+  (particle grid, wall removal in `advanceParticles()`, `nearestCell()`, the
+  wall check of the cell loader). It affected only particle copies outside a
+  block's lattice. Results change at round-off level where the loader places
+  periodic copies of cells into a block's envelope: copies just beyond the
+  fluid block, which the old rounding checked against its outermost envelope
+  node and dropped, are now kept until the first envelope synchronisation
+  (examples/pipeflow on 2 ranks: relative differences of 1e-16 growing to
+  1e-7 in the forces after 444 iterations; the pre-inlet example unchanged).
 
 2.6 (July 15 2022)
 -----------------

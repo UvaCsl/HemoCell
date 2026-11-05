@@ -19,6 +19,16 @@
 //
 // Finally, when leaving this function, the MPI environment will be teared down,
 // invoking `MPI_Finalize` only once.
+//
+// The simulations of the tests write into one directory per run in the
+// GoogleTest temporary directory (hemo_test::outputRoot(), see
+// test_support.h), removed afterwards unless HEMOCELL_KEEP_TEST_OUTPUT is set.
+#include "test_support.h"
+
+#include <cstdlib>
+#include <filesystem>
+#include <unistd.h>
+
 int argc;
 char ** argv;
 
@@ -28,5 +38,20 @@ int main(int t_argc, char * t_argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
 
   plb::plbInit(&(argc), &(argv));
-  return RUN_ALL_TESTS();
+
+  // One directory per run (the process ID of rank 0), the same on all ranks.
+  std::string root = testing::TempDir() + "hemocell_tests_" + std::to_string(getpid()) + "/";
+  plb::global::mpi().bCast(root);
+  hemo_test::outputRoot() = root;
+  if (plb::global::mpi().isMainProcessor()) { std::filesystem::create_directories(root); }
+  plb::global::mpi().barrier();
+
+  const int result = RUN_ALL_TESTS();
+
+  plb::global::mpi().barrier();
+  if (plb::global::mpi().isMainProcessor() && !std::getenv("HEMOCELL_KEEP_TEST_OUTPUT")) {
+    std::error_code ignored;
+    std::filesystem::remove_all(root, ignored);
+  }
+  return result;
 }

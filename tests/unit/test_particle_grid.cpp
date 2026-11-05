@@ -112,3 +112,25 @@ TEST(ParticleGrid, NoRepulsionWithinACellOrBeyondCutoff) {
 
   for (const HemoCellParticle & particle : particles) { EXPECT_EQ(norm3(particle.sv.force_repulsion), 0.0); }
 }
+
+// Rounding to the nearest node must not truncate towards zero for negative
+// coordinates: plint(x + 0.5) gave node 0 for x in (-1, -0.5) and one node
+// too high below.
+TEST(ParticleGrid, NearestNodeRoundsNegativeCoordinatesDown) {
+  EXPECT_EQ(hemo::nearestNode(0.49), 0);
+  EXPECT_EQ(hemo::nearestNode(0.5), 1);
+  EXPECT_EQ(hemo::nearestNode(2.5), 3);
+  EXPECT_EQ(hemo::nearestNode(-0.4), 0);
+  EXPECT_EQ(hemo::nearestNode(-0.5), 0);
+  EXPECT_EQ(hemo::nearestNode(-0.7), -1);
+  EXPECT_EQ(hemo::nearestNode(-2.7), -3);
+
+  // A particle just outside the block (local x = -0.7) is not binned into node 0.
+  std::vector<HemoCellParticle> particles;
+  particles.push_back(makeParticle(-0.7, 1.0, 1.0, 0));
+  hemo::ParticleGrid grid;
+  grid.build(particles, plb::Dot3D(0, 0, 0), 3, 3, 3);
+  unsigned int total = 0;
+  for (unsigned int n = 0; n < 3 * 3 * 3; n++) { total += grid.count(n); }
+  EXPECT_EQ(total, 0u);
+}

@@ -12,7 +12,7 @@
 
 import pylab as pl
 import numpy as np
-from StringIO import StringIO
+from io import StringIO
 
 sfile = open('tmp/stretchDeformation.log')
 force = float(sfile.readline().split()[-1])
@@ -29,13 +29,13 @@ sfile.close()
 pl.plot(t, D_A,label='$D_A$')
 pl.plot(t, D_T,label='$D_T$')
 pl.xlabel('time [$s$]')
-pl.ylabel('Diameter [$\mu{}m$]')
+pl.ylabel(r'Diameter [$\mu{}m$]')
 pl.title("Force = %03d pN"%(force*1e12))
 pl.legend(loc='best')
 #pl.show()
 pl.savefig("./force.%03d.png"%(force*1e12))
 
 
-print "%f %f %f"%(force*1e12, D_A[-1], D_T[-1],)
+print("%f %f %f"%(force*1e12, D_A[-1], D_T[-1],))
 
 

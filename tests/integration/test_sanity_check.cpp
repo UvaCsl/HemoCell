@@ -14,20 +14,12 @@
 using namespace pipeflow_test;
 
 TEST(SanityCheck, DoesNotNeedTmax) {
-  std::ifstream in(pipeflow_config);
-  std::stringstream content;
-  content << in.rdbuf();
-  std::string xml = content.str();
-  const size_t begin = xml.find("<tmax>");
-  const size_t end = xml.find("</tmax>");
-  ASSERT_NE(begin, std::string::npos);
-  xml.erase(begin, end + 7 - begin);
-  const std::string path =
-      testing::TempDir() + "hemocell_no_tmax_r" + std::to_string(plb::global::mpi().getRank()) + ".xml";
-  {
-    std::ofstream out(path);
-    out << xml;
-  }
+  const std::string path = hemo_test::testConfig(pipeflow_config, [](std::string & xml) {
+    const size_t begin = xml.find("<tmax>");
+    const size_t end = xml.find("</tmax>");
+    ASSERT_NE(begin, std::string::npos);
+    xml.erase(begin, end + 7 - begin);
+  });
 
   char * args[] = {(char *)"test", NULL};
   hemo::HemoCell hemocell(path, 0, args, hemo::HemoCell::MPIHandle::External);
@@ -37,5 +29,4 @@ TEST(SanityCheck, DoesNotNeedTmax) {
   hemocell.loadParticles();
   EXPECT_NO_THROW(hemocell.iterate()); // the first iterate() runs sanityCheck()
   EXPECT_EQ(hemocell.iter, 1u);
-  std::remove(path.c_str());
 }

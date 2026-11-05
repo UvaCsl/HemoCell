@@ -133,7 +133,7 @@ checkpoint compatibility.
 | `cases/` | Research cases, including experimental or incompletely validated features; validate before treating them as reference behavior |
 | `tests/` | GoogleTest runner, validation cases and performance-related inputs |
 | `tools/` | Standalone `packCells`, cell material templates/tester and position conversion tools |
-| `scripts/` | Postprocessing, analysis, cluster environments and batch templates; older Python 2 variants also exist |
+| `scripts/` | Postprocessing, analysis, cluster environments and batch templates (Python 3); `scripts/ci/` holds the driver smoke run |
 | `patch/`, `cmake/`, `external/` | Palabos integration patch, build/dependency helpers and vendored dependencies |
 | `doc/`, `legacy/` | Sphinx/Doxygen sources and historical implementations respectively |
 
@@ -252,10 +252,13 @@ Configuration conventions:
   and save/load together; do not serialize owning pointers or dynamic containers
   by copying their object bytes.
 - Distinguish absolute coordinates from atomic-block-local coordinates and real
-  owned particles from halo copies. Preserve periodic cell-ID mapping and
-  center-based ownership; avoid double-counting ghost cells in statistics.
-  Particle envelopes must cover stretched cells and coupling support. A single
-  rank run cannot establish communication correctness.
+  owned particles from halo copies. Round a coordinate to its lattice node
+  with `nearestNode()` (`core/particleGrid.h`), not `int(x + 0.5)`, which is
+  one node too high for x < -0.5 (halo copies have negative local
+  coordinates). Preserve periodic cell-ID mapping and center-based ownership;
+  avoid double-counting ghost cells in statistics. Particle envelopes must
+  cover stretched cells and coupling support. A single rank run cannot
+  establish communication correctness.
 - Keep MPI collectives in matching order on all participating ranks. A routine
   that gathers data or writes coordinated output may need to be called by every
   rank even if only rank zero writes. Use `pcout`/`hlog` and existing profiler
@@ -325,6 +328,10 @@ tools/packCells/packCells --help
 Build `hemocell_test` explicitly. All discovered tests share `tests/main.cpp`,
 which initializes MPI once. Construct simulations in tests with
 `HemoCell::MPIHandle::External`; do not initialize/finalize MPI for each test.
+Give them a configuration from `hemo_test::testConfig()` (`tests/test_support.h`),
+which redirects the output into a per-run temporary directory
+(`hemo_test::outputRoot()`, removed afterwards unless
+`HEMOCELL_KEEP_TEST_OUTPUT` is set); tests must not write into the repository.
 Use meaningful assertions on behavior, not just successful execution.
 
 Run the tests with CTest, or run the binary **from the repository root** (the
@@ -356,14 +363,22 @@ timings. Run it deliberately with a matching rank count and configuration, e.g.
 `mpirun -n 2 build/hemocell_test tests/performance/configs/config-2.xml --gtest_filter='Performance.*'`
 (GitHub workflow `performance.yml`, manual, self-hosted runner).
 The unit tests cover selected components (particle grid and repulsion, config
-reader, arrays, particle copies, logging, checkpoint restart); passing them is
-not sufficient verification for solver changes.
+reader, arrays, particle copies, logging, checkpoint restart, membrane forces
+of every model, determinism, periodic/block/pre-inlet transfer); passing them
+is not sufficient verification for solver changes.
+
+`scripts/ci/smoke_drivers.py` (from the repository root, after building
+`hemocell_examples hemocell_cases`) runs every built driver for 20 steps on 2
+ranks in a temporary copy of its directory and checks for errors, NaN, output
+and a checkpoint; `--slow` adds the large drivers it lists in `SLOW`. Run it
+after changing an interface the drivers use.
 
 Before submitting larger changes, also build and run the unit tests with the
 `sanitize` (AddressSanitizer + UBSan; set `ASAN_OPTIONS=detect_leaks=0`) and
 `debug` (Palabos assertions) presets. CI (`.github/workflows/ci.yml`) builds
 everything with GCC (`-Werror`) and Clang and runs unit and validation tests
-on 1 and 2 ranks, plus the unit tests under the sanitizers.
+on 1 and 2 ranks, the unit tests under the sanitizers, the driver smoke run
+(GCC release job) and `py_compile` of all Python files (warnings are errors).
 
 Match verification to the change:
 
