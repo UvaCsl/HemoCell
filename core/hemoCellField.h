@@ -65,6 +65,11 @@ public:
   T minimumDistanceFromSolid = 0;
   /// Number of cells listed in `<name>.pos` (set by loadParticles()).
   plint cellsInPositionFile = 0;
+  /// Cells of `<name>.pos` centred in the domain that cross a periodic
+  /// boundary and were not placed because image placement is off (see
+  /// HemoCell::setPlaceCellsAcrossPeriodicBoundaries()); set by loadParticles()
+  /// on the main rank.
+  plint cellsCrossingPeriodicBoundary = 0;
   bool outputTriangles = false;
   std::vector<hemo::Array<plint, 3>> triangle_list;
   void (*kernelMethod)(plb::BlockLattice3D<T, DESCRIPTOR> &, HemoCellParticle &);

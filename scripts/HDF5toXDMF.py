@@ -46,9 +46,14 @@ def number(value):
     return '%.15g' % value
 
 
-def hdf_item(dimensions, number_type, path, dataset):
-    return ('<DataItem Dimensions="%s" NumberType="%s" Precision="4" Format="HDF">%s:/%s</DataItem>'
-            % (' '.join(str(d) for d in dimensions), number_type, escape(path), escape(dataset)))
+def hdf_item(dimensions, h5dataset, path, dataset):
+    # NumberType and Precision from the stored type (e.g. "Cell Id" is a
+    # 64-bit integer since HemoCell 2.8, older files store float).
+    kind = h5dataset.dtype.kind
+    number_type = 'Float' if kind == 'f' else ('UInt' if kind == 'u' else 'Int')
+    return ('<DataItem Dimensions="%s" NumberType="%s" Precision="%d" Format="HDF">%s:/%s</DataItem>'
+            % (' '.join(str(d) for d in dimensions), number_type, h5dataset.dtype.itemsize, escape(path),
+               escape(dataset)))
 
 
 def attribute(name, components, center, item):
@@ -75,7 +80,7 @@ def structured_block(h5, path, block):
     out += '        </Geometry>\n'
     for name, dataset in h5.items():
         components = dataset.shape[3] if len(dataset.shape) == 4 else 1
-        out += attribute(name, components, 'Cell', hdf_item(nodes + [components], 'Float', path, name))
+        out += attribute(name, components, 'Cell', hdf_item(nodes + [components], dataset, path, name))
     out += '      </Grid>\n'
     return out
 
@@ -84,12 +89,12 @@ def cell_block(h5, path, block):
     if 'Position' not in h5 or len(h5['Position'].shape) != 2 or h5['Position'].shape[0] == 0:
         return ''
     vertices = h5['Position'].shape[0]
-    position = hdf_item([vertices, 3], 'Float', path, 'Position')
+    position = hdf_item([vertices, 3], h5['Position'], path, 'Position')
     out = '      <Grid Name="block %d" GridType="Uniform">\n' % block
     triangles = h5['Triangles'].shape[0] if 'Triangles' in h5 else 0
     if triangles > 0:
         out += '        <Topology TopologyType="Triangle" NumberOfElements="%d">\n' % triangles
-        out += '          %s\n        </Topology>\n' % hdf_item([triangles, 3], 'Int', path, 'Triangles')
+        out += '          %s\n        </Topology>\n' % hdf_item([triangles, 3], h5['Triangles'], path, 'Triangles')
     else:
         out += ('        <Topology TopologyType="Polyvertex" NumberOfElements="%d" NodesPerElement="1"/>\n'
                 % vertices)
@@ -98,13 +103,13 @@ def cell_block(h5, path, block):
         if name in TOPOLOGY_DATASETS or dataset.shape[0] != vertices:
             continue
         components = dataset.shape[1] if len(dataset.shape) == 2 else 1
-        out += attribute(name, components, 'Node', hdf_item([vertices, components], 'Float', path, name))
+        out += attribute(name, components, 'Node', hdf_item([vertices, components], dataset, path, name))
     out += '      </Grid>\n'
     links = h5['InnerLinks'].shape[0] if 'InnerLinks' in h5 else 0
     if links > 0:
         out += '      <Grid Name="block %d inner links" GridType="Uniform">\n' % block
         out += ('        <Topology TopologyType="Polyline" NumberOfElements="%d" NodesPerElement="2">\n'
-                '          %s\n        </Topology>\n' % (links, hdf_item([links, 2], 'Int', path, 'InnerLinks')))
+                '          %s\n        </Topology>\n' % (links, hdf_item([links, 2], h5['InnerLinks'], path, 'InnerLinks')))
         out += '        <Geometry GeometryType="XYZ">\n          %s\n        </Geometry>\n' % position
         out += '      </Grid>\n'
     return out

@@ -245,16 +245,28 @@ void HemoCell::loadParticles() {
   }
   MPI_Allreduce(MPI_IN_PLACE, placed.data(), int(placed.size()), MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
   bool dropped = false;
+  plint crossing = 0;
   for (pluint ctype = 0; ctype < cellfields->size(); ctype++) {
     const HemoCellField & type = *(*cellfields)[ctype];
     hlog << "(HemoCell) (CellField) " << type.name << ": placed " << placed[ctype] << " of " << type.cellsInPositionFile
-         << " cells" << endl;
+         << " cells";
+    if (type.cellsCrossingPeriodicBoundary > 0) {
+      hlog << " (" << type.cellsCrossingPeriodicBoundary << " skipped across a periodic boundary)";
+    }
+    hlog << endl;
     dropped = dropped || placed[ctype] < type.cellsInPositionFile;
+    crossing += type.cellsCrossingPeriodicBoundary;
   }
   if (dropped) {
     hlog << "(HemoCell) (CellField) WARNING: not all cells were placed. A cell is placed only if all its vertices lie "
-            "in the fluid, at least the setInitialMinimumDistanceFromSolid() distance from a wall, and not across a "
-            "periodic boundary or outside the domain."
+            "in the fluid, at least the setInitialMinimumDistanceFromSolid() distance from a wall, and inside the "
+            "domain."
+         << endl;
+  }
+  if (crossing > 0) {
+    hlog << "(HemoCell) (CellField) WARNING: " << crossing
+         << " cells centred in the domain cross a periodic boundary and were skipped. If the .pos files were packed "
+            "periodically for this domain, call setPlaceCellsAcrossPeriodicBoundaries(true) before loadParticles()."
          << endl;
   }
 }
@@ -486,6 +498,13 @@ void HemoCell::setInteriorViscosityTimeScaleSeperation(unsigned int separation, 
 
   cellfields->interiorViscosityTimescale = separation;
   cellfields->interiorViscosityEntireGridTimescale = separation_entire_grid;
+}
+
+void HemoCell::setPlaceCellsAcrossPeriodicBoundaries(bool place) {
+  if (!cellfields) { fatal("(HemoCell) Call initializeCellfield() before setPlaceCellsAcrossPeriodicBoundaries()."); }
+  hlog << "(HemoCell) (CellField) Cells crossing a periodic boundary are " << (place ? "" : "not ") << "placed at load."
+       << endl;
+  cellfields->placeCellsAcrossPeriodicBoundaries = place;
 }
 
 void HemoCell::setInitialMinimumDistanceFromSolid(string name, T distance) {

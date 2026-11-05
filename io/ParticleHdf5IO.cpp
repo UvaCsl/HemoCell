@@ -117,6 +117,23 @@ void WriteCellField3DInMultipleHDF5Files::processGenericBlocks(Box3D domain, std
     }
   }
 
+  // Cell IDs are 64-bit integers and grow with every periodic crossing; float
+  // would be exact only up to 2^24.
+  if (std::find(cellField3D.desiredOutputVariables.begin(), cellField3D.desiredOutputVariables.end(), OUTPUT_CELL_ID) !=
+      cellField3D.desiredOutputVariables.end()) {
+    vector<vector<plint>> cellIds;
+    std::string vectorname;
+    particleField.outputCellIds(cellIds, cellField3D.ctype, vectorname);
+    static_assert(sizeof(long long) == 8, "Cell Id is written as a 64-bit integer");
+    writeRows<long long>(file_id, vectorname, H5T_NATIVE_LLONG, cellIds);
+    XdmfAttribute attribute;
+    attribute.name = vectorname;
+    attribute.components = 1;
+    attribute.numberType = "Int";
+    attribute.precision = 8;
+    record.attributes.push_back(attribute);
+  }
+
   if (cellField3D.outputTriangles) {
     vector<vector<plint>> triangles;
     std::string vectorname;

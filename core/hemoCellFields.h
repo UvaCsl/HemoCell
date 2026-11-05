@@ -239,6 +239,10 @@ public:
   /// palabos field for storing the CPAC scalar field if used
   plb::MultiBlockLattice3D<T, CEPAC_DESCRIPTOR> * CEPACfield = 0;
 
+  /// Place the periodic images of cells that cross a periodic boundary at
+  /// load, see HemoCell::setPlaceCellsAcrossPeriodicBoundaries().
+  bool placeCellsAcrossPeriodicBoundaries = false;
+
   /// Repulsion cutoff [lattice units], set by HemoCell::setRepulsion()
   T repulsionCutoff = 0.0;
   /// Repulsion constant [lattice force units], set by HemoCell::setRepulsion() (in pN)

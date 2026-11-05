@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace pipeflow_test {
@@ -29,9 +30,11 @@ struct PipeflowSetup {
 
 // Same domain, lattice and cell types as Validation.Pipeflow, without loading
 // particles (that differs between a fresh start and a restart). `RbcModel` is
-// the constitutive model of the RBC type.
+// the constitutive model of the RBC type; `rbc` and `plt` name the cell types
+// (their .xml and .pos files).
 template <class RbcModel = hemo::RbcHighOrderModel>
-void setupPipeflow(hemo::HemoCell & hemocell, PipeflowSetup & setup, T rbcMinimumDistanceFromSolid = 0.5) {
+void setupPipeflow(hemo::HemoCell & hemocell, PipeflowSetup & setup, T rbcMinimumDistanceFromSolid = 0.5,
+                   const std::string & rbc = rbc_name, const std::string & plt = plt_name) {
   hemo::Config * cfg = hemocell.cfg;
   hemo::getFlagMatrixFromSTL(pipeflow_geometry, (*cfg)["domain"]["fluidEnvelope"].read<int>(),
                              (*cfg)["domain"]["refDirN"].read<int>(), (*cfg)["domain"]["refDir"].read<int>(),
@@ -47,11 +50,11 @@ void setupPipeflow(hemo::HemoCell & hemocell, PipeflowSetup & setup, T rbcMinimu
 
   hemocell.lattice->initialize();
   hemocell.initializeCellfield();
-  hemocell.addCellType<RbcModel>(rbc_name, hemo::RBC_FROM_SPHERE);
-  hemocell.setMaterialTimeScaleSeparation(rbc_name, (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  hemocell.setInitialMinimumDistanceFromSolid(rbc_name, rbcMinimumDistanceFromSolid);
-  hemocell.addCellType<hemo::PltSimpleModel>(plt_name, hemo::ELLIPSOID_FROM_SPHERE);
-  hemocell.setMaterialTimeScaleSeparation(plt_name, (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  hemocell.addCellType<RbcModel>(rbc, hemo::RBC_FROM_SPHERE);
+  hemocell.setMaterialTimeScaleSeparation(rbc, (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  hemocell.setInitialMinimumDistanceFromSolid(rbc, rbcMinimumDistanceFromSolid);
+  hemocell.addCellType<hemo::PltSimpleModel>(plt, hemo::ELLIPSOID_FROM_SPHERE);
+  hemocell.setMaterialTimeScaleSeparation(plt, (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
   hemocell.setSystemPeriodicity(0, true);
 }

@@ -215,6 +215,21 @@ public:
    */
   void setInitialMinimumDistanceFromSolid(std::string name, T distance);
 
+  /**
+   * @brief Also place the cells of the `.pos` files that cross a periodic
+   * boundary (default: off, such cells are skipped and counted in the log).
+   *
+   * A cell whose centre lies in the domain but whose surface crosses a
+   * periodic boundary is placed as during a run: as images on both sides of
+   * the boundary (shifted by the domain length, with the cell ID shifted as
+   * by a crossing). Enable this only for `.pos` files packed periodically
+   * for this domain (e.g. by tools/packCells with the domain size): a file
+   * packed for another box size gives overlapping cells at opposite ends.
+   * Call after initializeCellfield() and setSystemPeriodicity(), before
+   * loadParticles().
+   */
+  void setPlaceCellsAcrossPeriodicBoundaries(bool place);
+
   /// Select the fluid fields written by writeOutput() (OUTPUT_* constants).
   void setFluidOutputs(std::vector<int> outputs);
 

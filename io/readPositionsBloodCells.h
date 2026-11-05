@@ -29,6 +29,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "constantConversion.h"
 
 #include "core/geometry3D.h"
+
+#include <set>
 #include "offLattice/triangularSurfaceMesh.hh"
 
 namespace hemo {
@@ -55,15 +57,28 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & c
 /// Sum of the cell counts in the first line of every `<type name>.pos` file (read on each rank).
 int getTotalNumberOfCells(HemoCellFields & cellFields);
 
+/// Cells centred in the domain that cross a periodic boundary while image
+/// placement is off: those clear of the walls on a block (`candidates`) and
+/// those that touch a wall on some block (`blocked`, they would not be placed
+/// anyway).
+struct CellsCrossingPeriodicBoundary {
+  std::set<plint> candidates;
+  std::set<plint> blocked;
+};
+
 class ReadPositionsBloodCellField3D : public plb::BoxProcessingFunctional3D {
 public:
   /// @param cellFields_ All cell types (their meshes and particle fields).
   /// @param dx_ Lattice spacing in metres.
   /// @param cells_ Parsed cells per cell type; must outlive the functional (owned by the caller).
   /// @param particleEnvelope_ Cells are placed in a block if their centre is within this many lattice units of it.
+  /// @param crossing_ If not null, receives the IDs of cells centred in the
+  ///        domain that cross a periodic boundary (image placement off);
+  ///        must outlive the functional.
   ReadPositionsBloodCellField3D(HemoCellFields & cellFields_, T dx_,
-                                const std::vector<std::vector<InitialCellPlacement>> & cells_, plint particleEnvelope_)
-      : dx(dx_), cellFields(cellFields_), cells(cells_), particleEnvelope(particleEnvelope_) {}
+                                const std::vector<std::vector<InitialCellPlacement>> & cells_, plint particleEnvelope_,
+                                CellsCrossingPeriodicBoundary * crossing_ = 0)
+      : dx(dx_), cellFields(cellFields_), cells(cells_), particleEnvelope(particleEnvelope_), crossing(crossing_) {}
   /// Arguments: [0] fluid lattice, [1..] particle field of each cell type.
   virtual void processGenericBlocks(plb::Box3D domain, std::vector<plb::AtomicBlock3D *> fields);
   virtual ReadPositionsBloodCellField3D * clone() const;
@@ -74,6 +89,7 @@ public:
   HemoCellFields & cellFields;
   const std::vector<std::vector<InitialCellPlacement>> & cells;
   plint particleEnvelope;
+  CellsCrossingPeriodicBoundary * crossing;
 };
 }
 #endif

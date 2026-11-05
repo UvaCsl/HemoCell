@@ -36,9 +36,8 @@ Findings of a review of the `refactor` branch (November 2026). Items marked
 reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
 before others write drivers against the API.
 
-Status: A1-A9 and B11-B16 are done (see CHANGELOG), except placing periodic
-images of cells at load (A5) and exact cell IDs in HDF5 output (A7). B10 is
-deferred (special case, lower priority).
+Status: A1-A9 and B11-B16 are done (see CHANGELOG). B10 is deferred (special
+case, lower priority).
 
 ### A. Silent wrong results or lost runs
 
@@ -70,8 +69,9 @@ deferred (special case, lower priority).
    check against the vertex count (`mechanics/commonCellConstants.cpp`); the WBC
    template's pairs belong to the 642-vertex mesh and index out of bounds with
    another `minNumTriangles`. Check once at setup.
-5. *Done, except placing periodic images* (missing `.pos` is fatal; placed
-   cells are reported). **The cell loader drops cells silently** *(verified)*. A missing `.pos` file
+5. *Done* (missing `.pos` is fatal; placed cells are reported; cells across a
+   periodic boundary are counted, and placed as periodic images on request,
+   `setPlaceCellsAcrossPeriodicBoundaries()`). **The cell loader drops cells silently** *(verified)*. A missing `.pos` file
    is only a warning (`microcontraction`, `stentflow`, `stent_strut` ran without
    cells); the number of cells actually placed is never reported (86 of 100 RBCs
    were dropped without notice in `cases/pipeflow_wbc` before its positions were
@@ -89,9 +89,8 @@ deferred (special case, lower priority).
    independent of the output interval" holds physically, not bit for bit. Put
    envelope particles in a canonical order after a sync, or let output and
    statistics read without re-syncing; statistics must not modify state.
-7. *Done, except output* (IDs are `plint` throughout). Remaining: the HDF5
-   `Cell Id` dataset is float32, exact only up to 2^24; write it as a 64-bit
-   integer (writer, XDMF records, `HDF5toXDMF.py`, `outputs.rst`).
+7. *Done* (IDs are `plint` throughout; the HDF5 `Cell Id` dataset is a 64-bit
+   integer).
    **Cell IDs grow with every periodic lap.** A crossing adds `N` (x),
    `100 N` (y) or `10000 N` (z) and nothing folds the ID back, while
    `sanityCheck()` and `developer/architecture.rst` assume a bounded shift. With
@@ -182,7 +181,8 @@ deferred (special case, lower priority).
     (including `scripts/hemocell_h5utils.py` and
     `scripts/ParticleField3D_HDF5toXMF.py`); add `python3 -m py_compile` to CI.
     `tools/packCells` requires CMake 2.8 and packs periodically (cells cross
-    the box faces), which is not documented.
+    the box faces), which is not documented (such files need
+    `setPlaceCellsAcrossPeriodicBoundaries(true)` when packed for the domain).
 20. **Rounding of negative coordinates.** `plint(x + 0.5)` truncates towards
     zero, mapping (-1, -0.5) to node 0, in `advanceParticles()` (wall removal),
     `nearestCell()`, the particle grid and the position loader. Low impact; use

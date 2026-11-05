@@ -132,6 +132,16 @@ TEST(Output, CellsOnceFluidBulkAndXdmf) {
         EXPECT_EQ(cellId.values[r], cellId.values[r - r % type.numVertex]) << name;
       }
       for (float vertex : triangles.values) { EXPECT_LT(hsize_t(vertex), rows) << name; }
+      { // Cell IDs are stored as 64-bit integers (exact, unlike float).
+        hid_t f = H5Fopen((stepDirectory + name).c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+        hid_t dataset = H5Dopen2(f, "Cell Id", H5P_DEFAULT);
+        hid_t type = H5Dget_type(dataset);
+        EXPECT_EQ(H5Tget_class(type), H5T_INTEGER) << name;
+        EXPECT_EQ(H5Tget_size(type), 8u) << name;
+        H5Tclose(type);
+        H5Dclose(dataset);
+        H5Fclose(f);
+      }
       if (std::string(type.name) == "RBC") {
         rbcVertices += rows;
         hid_t f = H5Fopen((stepDirectory + name).c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -147,6 +157,9 @@ TEST(Output, CellsOnceFluidBulkAndXdmf) {
     const std::string xdmf = readText(directory + type.name + "." + step + ".xmf");
     EXPECT_EQ(countOccurrences(xdmf, "<Grid Name=\"block "), blocksWithCells) << type.name;
     EXPECT_NE(xdmf.find("CollectionType=\"Spatial\""), std::string::npos);
+    if (blocksWithCells > 0) {
+      EXPECT_NE(xdmf.find("NumberType=\"Int\" Precision=\"8\" Format=\"HDF\">"), std::string::npos) << type.name;
+    }
     const std::string series = readText(directory + type.name + ".xmf");
     EXPECT_NE(series.find("href=\"" + std::string(type.name) + "." + step + ".xmf\""), std::string::npos);
   }

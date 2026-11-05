@@ -33,8 +33,10 @@ namespace hemo {
 
 /// A dataset of a block file that is listed as an XDMF attribute.
 struct XdmfAttribute {
-  std::string name; ///< HDF5 dataset name, also the attribute name.
-  int components;   ///< Values per vertex (cells) or per lattice node (fluid).
+  std::string name;                 ///< HDF5 dataset name, also the attribute name.
+  int components;                   ///< Values per vertex (cells) or per lattice node (fluid).
+  std::string numberType = "Float"; ///< XDMF NumberType of the dataset ("Float" or "Int").
+  int precision = 4;                ///< Bytes per value of the dataset.
 };
 
 /**

@@ -172,7 +172,8 @@ Typical initialization order (see `examples/pipeflow/pipeflow.cpp`):
 3. Call `initializeCellfield()`. Register each type with
    `addCellType<Mechanics>(name, shape)`, configure outputs and update intervals,
    and set periodicity through `setSystemPeriodicity()` so both fields agree.
-4. Set initial clearance controls before `loadParticles()`. On a restart follow
+4. Set initial clearance controls (and `setPlaceCellsAcrossPeriodicBoundaries()`
+   for `.pos` files packed periodically for the domain) before `loadParticles()`. On a restart follow
    the case's `cfg->checkpointed`/`loadCheckPoint()` branch instead of loading
    fresh positions. Enable interactions before stepping.
 5. Run `iterate()` with case-specific forcing and output/checkpoint intervals.

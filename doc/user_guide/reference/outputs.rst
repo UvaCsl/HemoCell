@@ -103,7 +103,9 @@ Pass these to ``setOutputs(name, {...})``.
    * - ``OUTPUT_INNER_LINKS``
      - The inner-edge connectivity of the cell.
    * - ``OUTPUT_CELL_ID``
-     - The unique id of the cell each vertex belongs to.
+     - The unique id of the cell each vertex belongs to, as a 64-bit integer
+       (exact; IDs grow with every periodic crossing, see
+       :ref:`developer/architecture:Cell IDs and periodicity`).
    * - ``OUTPUT_VERTEX_ID``
      - The id of each vertex.
    * - ``OUTPUT_RES_TIME``

@@ -204,6 +204,12 @@ Unreleased (refactor)
     cell type and step). `convert_xmf_to_x3d.py` converts the per-step cell
     files only.
   * HDF5 property lists are closed (one leaked per dataset written).
+  * `Cell Id` is stored as a 64-bit integer (it was a 32-bit float, exact only
+    up to 2^24, while IDs grow with every periodic crossing). The XDMF files
+    describe it as `NumberType="Int" Precision="8"` (read as integers by
+    ParaView 5.11's XDMF and XDMF3 readers), and `scripts/HDF5toXDMF.py` takes
+    each dataset's number type and precision from the file, so it describes
+    old and new output correctly.
 * Hardening (results bit-identical)
   * Fatal errors go through `hemo::fatal()` (`config/error.h`) instead of 42
     `exit(1)` calls: the message is printed with the MPI rank on whichever rank
@@ -229,6 +235,15 @@ Unreleased (refactor)
     `cases/stentflow` and `cases/stent_strut` (whose files are named `.POS`)
     did so). `loadParticles()` logs how many cells of each type were placed out
     of those in the file, with a warning when cells were dropped.
+  * Cells of a `.pos` file that cross a periodic boundary were dropped without
+    notice. They are still skipped by default (results unchanged), but counted
+    in the log with a pointer to the new
+    `HemoCell::setPlaceCellsAcrossPeriodicBoundaries(true)`, which places them
+    as during a run: as periodic images on both sides of the boundary (cell
+    IDs shifted as by a crossing). It is off by default because it is correct
+    only for `.pos` files packed periodically for the domain; the shipped files
+    were packed for other box sizes, and their cells at opposite ends would
+    overlap (the pipeflow test file: 7 more cells, 3 of them overlapping).
   * Cell IDs are 64-bit (`plint`) throughout. An ID grows by a multiple of the
     number of cells at every periodic crossing and is never folded back, but
     the lookup maps, the statistics and the cell ID requests of
@@ -353,6 +368,9 @@ Unreleased (refactor)
   * Tests that destroying a `HemoCell` object resets the process-wide state,
     and that cells of the `NoOp` model carry no membrane force (1 and 2
     ranks).
+  * Tests that cells across a periodic boundary are counted, or placed as
+    complete cells with their reference volume on request, and that cell IDs
+    beyond 2^32 are written exactly as 64-bit integers (1 and 2 ranks).
   * Tests that configuration errors name file, line and path, that
     `sanityCheck()` runs without `<sim><tmax>`, that a configuration
     mismatch between case and library is fatal, and that checkpoints record

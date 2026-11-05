@@ -58,12 +58,14 @@ Force cap
    keeps runs stable but changes the physics when it is active (a warning is
    printed at start-up).
 
-Cell IDs in HDF5 output
-   ``Cell Id`` is written as a 32-bit float, exact up to 16,777,216. IDs grow
-   by a multiple of the number of cells at every periodic crossing (see
-   :ref:`developer/architecture:Cell IDs and periodicity`), so long periodic
-   runs exceed that (200,000 cells after 84 crossings in x) and the written
-   IDs are rounded. The CSV files hold exact cell and base cell IDs.
+Cells across a periodic boundary at load
+   By default, a cell of a ``.pos`` file whose surface crosses a periodic
+   boundary is not placed; the log counts such cells. With
+   ``setPlaceCellsAcrossPeriodicBoundaries(true)`` they are placed as periodic
+   images, which is correct only for ``.pos`` files packed periodically for
+   this domain: the shipped ``.pos`` files were packed for other box sizes (the
+   pipeflow test file for 67 um in x, its domain is 51.5 um), and their cells at
+   opposite ends would overlap.
 
 Broken cells
    A cell that loses a vertex (it enters a wall node or leaves the domain, or

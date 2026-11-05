@@ -28,6 +28,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "logfile.h"
 #include "hemocell.h"
 #include "preInlet.h"
+#include "hemoCellFunctional.h"
+
+#include <map>
+#include <set>
 #include "offLattice/triangularSurfaceMesh.h"
 #include "offLattice/triangularSurfaceMesh.hh"
 
@@ -117,48 +121,55 @@ inline void meshRotation(TriangularSurfaceMesh<T> * mesh, hemo::Array<T, 3> rota
   mesh->translate(meshCenter);
 }
 
+// Whether a vertex is clear of walls as far as this block's lattice can tell:
+// its node and the nodes within denyLayerSize of it are not boundary nodes
+// (nodes outside the block's lattice are not checked).
+inline bool vertexClearOfWalls(BlockLattice3D<T, DESCRIPTOR> & fluid, const hemo::Array<T, 3> & vertex,
+                               int denyLayerSize) {
+  const Box3D fluidbb = fluid.getBoundingBox();
+  //Custom contains function for generic blocklattice3D structure
+  Dot3D absfluidloc(int(vertex[0] + 0.5), int(vertex[1] + 0.5), int(vertex[2] + 0.5));
+  Dot3D relfluidloc = absfluidloc - fluid.getLocation();
+
+  if (!(relfluidloc.x < fluidbb.x0 || relfluidloc.x > fluidbb.x1 || relfluidloc.y < fluidbb.y0 ||
+        relfluidloc.y > fluidbb.y1 || relfluidloc.z < fluidbb.z0 || relfluidloc.z > fluidbb.z1)) {
+    // Test when particle is inside if in a boundary -> dont add this particle
+    if (fluid.get(relfluidloc.x, relfluidloc.y, relfluidloc.z).getDynamics().isBoundary()) { return false; }
+  }
+
+  for (int px = -denyLayerSize; px <= denyLayerSize; ++px) {
+    for (int py = -denyLayerSize; py <= denyLayerSize; ++py) {
+      for (int pz = -denyLayerSize; pz <= denyLayerSize; ++pz) {
+        const Dot3D rrelfluidloc = {relfluidloc.x + px, relfluidloc.y + py, relfluidloc.z + pz};
+        if (!(rrelfluidloc.x < fluidbb.x0 || rrelfluidloc.x > fluidbb.x1 || rrelfluidloc.y < fluidbb.y0 ||
+              rrelfluidloc.y > fluidbb.y1 || rrelfluidloc.z < fluidbb.z0 || rrelfluidloc.z > fluidbb.z1)) {
+          if (fluid.get(rrelfluidloc.x, rrelfluidloc.y, rrelfluidloc.z).getDynamics().isBoundary()) { return false; }
+        }
+      }
+    }
+  }
+  return true;
+}
+
+// Deny particles that are in the outer most layer, aka. the "shear layer"
+inline int denyLayerSize(HemoCellParticleField & particleField, pluint celltype) {
+  return ((*particleField.cellFields)[celltype]->minimumDistanceFromSolid * 1e-6) / param::dx;
+}
+
 inline void positionCellInParticleField(HemoCellParticleField & particleField, BlockLattice3D<T, DESCRIPTOR> & fluid,
                                         TriangularSurfaceMesh<T> * mesh, hemo::Array<T, 3> startingPoint, plint cellId,
                                         pluint celltype) {
   plint nVertices = mesh->getNumVertices();
-  Box3D fluidbb = fluid.getBoundingBox();
-  Dot3D rrelfluidloc;                                  // used later;
-  HemoCellParticle::serializeValues_t to_add_particle; // used_later
-  // Deny particles that are in the outer most layer, aka. the "shear layer"
-  const int denyLayerSize = ((*particleField.cellFields)[celltype]->minimumDistanceFromSolid * 1e-6) / param::dx;
+  const int deny = denyLayerSize(particleField, celltype);
 
   for (plint iVertex = 0; iVertex < nVertices; ++iVertex) {
     hemo::Array<T, 3> vertex = startingPoint + mesh->getVertex(iVertex);
 
     //If we cannot place it in the particle field continue
     if (!particleField.isContainedABS(vertex, particleField.getBoundingBox())) { continue; }
+    if (!vertexClearOfWalls(fluid, vertex, deny)) { continue; }
 
-    //Custom contains function for generic blocklattice3D structure
-    Dot3D absfluidloc(int(vertex[0] + 0.5), int(vertex[1] + 0.5), int(vertex[2] + 0.5));
-    Dot3D relfluidloc = absfluidloc - fluid.getLocation();
-
-
-    if (!(relfluidloc.x < fluidbb.x0 || relfluidloc.x > fluidbb.x1 || relfluidloc.y < fluidbb.y0 ||
-          relfluidloc.y > fluidbb.y1 || relfluidloc.z < fluidbb.z0 || relfluidloc.z > fluidbb.z1)) {
-      // Test when particle is inside if in a boundary -> dont add this particle
-      if (fluid.get(relfluidloc.x, relfluidloc.y, relfluidloc.z).getDynamics().isBoundary()) { goto no_add; }
-    }
-
-    for (int px = -denyLayerSize; px <= denyLayerSize; ++px) {
-      for (int py = -denyLayerSize; py <= denyLayerSize; ++py) {
-        for (int pz = -denyLayerSize; pz <= denyLayerSize; ++pz) {
-          rrelfluidloc = {relfluidloc.x + px, relfluidloc.y + py, relfluidloc.z + pz};
-          if (!(rrelfluidloc.x < fluidbb.x0 || rrelfluidloc.x > fluidbb.x1 || rrelfluidloc.y < fluidbb.y0 ||
-                rrelfluidloc.y > fluidbb.y1 || rrelfluidloc.z < fluidbb.z0 || rrelfluidloc.z > fluidbb.z1)) {
-            if (fluid.get(rrelfluidloc.x, rrelfluidloc.y, rrelfluidloc.z).getDynamics().isBoundary()) { goto no_add; }
-          }
-        }
-      }
-    }
-
-    to_add_particle = HemoCellParticle(vertex, cellId, iVertex, celltype).sv;
-    particleField.addParticle(to_add_particle);
-  no_add:;
+    particleField.addParticle(HemoCellParticle(vertex, cellId, iVertex, celltype).sv);
   }
 }
 
@@ -245,31 +256,112 @@ void ReadPositionsBloodCellField3D::processGenericBlocks(Box3D domain, std::vect
   // Positions are in micrometres; this converts them to lattice units.
   // Note: this method uses the center of the particles for location
   const T posRatio = 1e-6 / dx;
-  // Change positions to match dx (it is in um originally)
-  T wallWidth =
-      0; // BB wall in [lu]. Offset to count in width of the wall in particle position (useful for pipeflow, not necessarily useful elswhere)
+
+  // Periodic images. During a run, a cell across a periodic boundary exists
+  // as images on both sides: the copy shifted by the domain length L along an
+  // axis has the cell ID shifted as by a crossing (+-1, +-offset_y,
+  // +-offset_z times the number of cells; HemoCellParticleDataTransfer). The
+  // same images are placed here if cellFields.placeCellsAcrossPeriodicBoundaries
+  // is set, so that cells crossing a periodic boundary in the .pos file are
+  // placed instead of dropped. Then only cells whose centre lies in the domain
+  // along every periodic axis are placed (cells centred outside were never
+  // placed): a .pos file packed for a larger box would otherwise wrap its
+  // outer cells onto the inner ones. Images that lie outside a block's
+  // particle field are skipped by the check below. Without it, the loop is
+  // the original one (only the cells themselves), and the cells centred in
+  // the domain that cross a periodic boundary are counted (`crossing`).
+  const bool placeImages = cellFields.placeCellsAcrossPeriodicBoundaries;
+  struct PeriodicImage {
+    hemo::Array<T, 3> shift; // [lattice units]
+    plint idOffset;
+    bool original; // the cell itself (no shift)
+  };
+  std::vector<PeriodicImage> images;
+  const Box3D domainBox = cellFields.immersedParticles->getBoundingBox();
+  bool periodic[3];
+  {
+    const plint length[3] = {domainBox.getNx(), domainBox.getNy(), domainBox.getNz()};
+    const plint idStep[3] = {1, plint(cellFields.periodicity_limit_offset_y),
+                             plint(cellFields.periodicity_limit_offset_z)};
+    int range[3];
+    for (int d = 0; d < 3; d++) {
+      periodic[d] = cellFields.immersedParticles->periodicity().get(d);
+      range[d] = periodic[d] ? 1 : 0;
+    }
+    for (int i = -range[0]; i <= range[0]; i++) {
+      for (int j = -range[1]; j <= range[1]; j++) {
+        for (int k = -range[2]; k <= range[2]; k++) {
+          PeriodicImage image;
+          image.shift = {T(i * length[0]), T(j * length[1]), T(k * length[2])};
+          image.idOffset = (i * idStep[0] + j * idStep[1] + k * idStep[2]) * plint(cellFields.number_of_cells);
+          image.original = (i == 0 && j == 0 && k == 0);
+          images.push_back(image);
+        }
+      }
+    }
+  }
 
   for (pluint iCF = 0; iCF < cellFields.size(); ++iCF) {
     for (const InitialCellPlacement & cell : cells[iCF]) {
-      //Check if it actually fits (mostly) in this atomic block
-      const hemo::Array<T, 3> & position = cell.position;
-      if (position[0] * posRatio < realDomain.x0 - particleEnvelope ||
-          position[0] * posRatio > realDomain.x1 + particleEnvelope ||
-          position[1] * posRatio < realDomain.y0 - particleEnvelope ||
-          position[1] * posRatio > realDomain.y1 + particleEnvelope ||
-          position[2] * posRatio < realDomain.z0 - particleEnvelope ||
-          position[2] * posRatio > realDomain.z1 + particleEnvelope) {
-        continue;
+      // The centre must lie in the domain along the periodic axes (a node's
+      // cell is (x - 0.5, x + 0.5], as for isContainedABS()).
+      const hemo::Array<T, 3> centre = cell.position * posRatio;
+      const T low[3] = {T(domainBox.x0), T(domainBox.y0), T(domainBox.z0)};
+      const T high[3] = {T(domainBox.x1), T(domainBox.y1), T(domainBox.z1)};
+      bool home = true;
+      for (int d = 0; d < 3; d++) {
+        if (periodic[d] && !(centre[d] > low[d] - 0.5 && centre[d] <= high[d] + 0.5)) { home = false; }
       }
+      if (placeImages && !home) { continue; }
+      const bool count = !placeImages && home && crossing;
+      for (const PeriodicImage & image : images) {
+        // Without image placement, images are only checked for counting.
+        if (!placeImages && !image.original && !count) { continue; }
+        //Check if it actually fits (mostly) in this atomic block
+        const hemo::Array<T, 3> position = cell.position * posRatio + image.shift;
+        if (position[0] < realDomain.x0 - particleEnvelope || position[0] > realDomain.x1 + particleEnvelope ||
+            position[1] < realDomain.y0 - particleEnvelope || position[1] > realDomain.y1 + particleEnvelope ||
+            position[2] < realDomain.z0 - particleEnvelope || position[2] > realDomain.z1 + particleEnvelope) {
+          continue;
+        }
 
-      ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;
-      TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
+        ElementsOfTriangularSurfaceMesh<T> emptyEoTSMCopy;
+        TriangularSurfaceMesh<T> * meshCopy = copyTriangularSurfaceMesh(*meshes[iCF], emptyEoTSMCopy);
 
-      meshRotation(meshCopy, cell.angles);
+        meshRotation(meshCopy, cell.angles);
 
-      positionCellInParticleField(*(particleFields[iCF]), fluid, meshCopy, position * posRatio + wallWidth, cell.cellId,
-                                  iCF);
-      delete meshCopy;
+        if (count) {
+          // A crossing cell counts if all its images are clear of the walls,
+          // as checked on every block they reach (one wall vetoes it), i.e.
+          // if image placement would place it.
+          const int deny = denyLayerSize(*particleFields[iCF], iCF);
+          bool crosses = false;
+          bool clear = true;
+          for (plint iVertex = 0; iVertex < meshCopy->getNumVertices() && clear; ++iVertex) {
+            const hemo::Array<T, 3> vertex = position + meshCopy->getVertex(iVertex);
+            for (int d = 0; d < 3; d++) {
+              if (vertex[d] > low[d] - 0.5 && vertex[d] <= high[d] + 0.5) { continue; }
+              if (periodic[d]) {
+                crosses = true;
+              } else {
+                clear = false; // outside the domain: not placed either way
+              }
+            }
+            clear = clear && vertexClearOfWalls(fluid, vertex, deny);
+          }
+          if (!clear) {
+            crossing->blocked.insert(cell.cellId);
+          } else if (crosses && image.original) {
+            crossing->candidates.insert(cell.cellId);
+          }
+        }
+
+        if (placeImages || image.original) {
+          positionCellInParticleField(*(particleFields[iCF]), fluid, meshCopy, position, cell.cellId + image.idOffset,
+                                      iCF);
+        }
+        delete meshCopy;
+      }
     }
 
     particleFields[iCF]->deleteIncompleteCells(iCF, false);
@@ -348,13 +440,30 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & c
   // before placing cells: the periodic cell-id mapping depends on it.
   cellFields.number_of_cells = nextCellId;
 
+  CellsCrossingPeriodicBoundary crossing;
   if (cellFields.hemocell.preInlet && cellFields.hemocell.preInlet->initialized &&
       !cellFields.hemocell.partOfpreInlet) {
   } else {
     const plint particleEnvelope = cfg["domain"]["particleEnvelope"].read<int>();
-    applyProcessingFunctional(new ReadPositionsBloodCellField3D(cellFields, dx, cells, particleEnvelope),
+    applyProcessingFunctional(new ReadPositionsBloodCellField3D(cellFields, dx, cells, particleEnvelope, &crossing),
                               cellFields.lattice->getBoundingBox(), fluidAndParticleFieldsArg);
     hlogfile << "Mpi Process: " << global::mpi().getRank() << " Completed loading particles" << std::endl;
+  }
+  // Cells skipped across a periodic boundary, counted per type on the main
+  // rank (collective: every rank takes part, also those without cells).
+  // A cell counts if some block found it clear of the walls and none vetoed it.
+  std::map<plint, bool> crossingIds;
+  for (const plint id : crossing.candidates) { crossingIds[id] = true; }
+  std::map<plint, bool> blocked;
+  for (const plint id : crossing.blocked) { blocked[id] = true; }
+  HemoCellGatheringFunctional<bool>::gatherToRoot(crossingIds);
+  HemoCellGatheringFunctional<bool>::gatherToRoot(blocked);
+  for (const auto & entry : blocked) { crossingIds.erase(entry.first); }
+  for (pluint j = 0; j < cellFields.size(); j++) {
+    cellFields[j]->cellsCrossingPeriodicBoundary = 0;
+    for (const InitialCellPlacement & cell : cells[j]) {
+      if (crossingIds.count(cell.cellId)) { cellFields[j]->cellsCrossingPeriodicBoundary++; }
+    }
   }
 }
 

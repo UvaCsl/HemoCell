@@ -53,7 +53,9 @@ std::string serialize(const std::vector<XdmfBlockFile> & blocks) {
     for (int i = 0; i < 3; i++) { out << '\t' << b.origin[i]; }
     for (int i = 0; i < 3; i++) { out << '\t' << b.spacing[i]; }
     out << '\t' << b.vertices << '\t' << b.triangles << '\t' << b.innerLinks << '\t' << b.attributes.size();
-    for (const XdmfAttribute & a : b.attributes) { out << '\t' << a.name << '\t' << a.components; }
+    for (const XdmfAttribute & a : b.attributes) {
+      out << '\t' << a.name << '\t' << a.components << '\t' << a.numberType << '\t' << a.precision;
+    }
     out << '\n';
   }
   return out.str();
@@ -86,6 +88,8 @@ std::vector<XdmfBlockFile> parse(const std::string & text) {
       XdmfAttribute attribute;
       attribute.name = f[k++];
       attribute.components = std::stoi(f[k++]);
+      attribute.numberType = f[k++];
+      attribute.precision = std::stoi(f[k++]);
       b.attributes.push_back(attribute);
     }
     blocks.push_back(b);
@@ -149,10 +153,10 @@ const char * attributeType(int components) {
   }
 }
 
-void writeHdfItem(std::ostream & out, const std::string & dimensions, const char * numberType, const std::string & file,
-                  const std::string & dataset) {
-  out << "<DataItem Dimensions=\"" << dimensions << "\" NumberType=\"" << numberType
-      << "\" Precision=\"4\" Format=\"HDF\">" << escape(file) << ":/" << escape(dataset) << "</DataItem>";
+void writeHdfItem(std::ostream & out, const std::string & dimensions, const std::string & numberType,
+                  const std::string & file, const std::string & dataset, int precision = 4) {
+  out << "<DataItem Dimensions=\"" << dimensions << "\" NumberType=\"" << numberType << "\" Precision=\"" << precision
+      << "\" Format=\"HDF\">" << escape(file) << ":/" << escape(dataset) << "</DataItem>";
 }
 
 void writeStructuredBlock(std::ostream & out, const XdmfBlockFile & b) {
@@ -171,7 +175,7 @@ void writeStructuredBlock(std::ostream & out, const XdmfBlockFile & b) {
     dims << b.nodes[0] << ' ' << b.nodes[1] << ' ' << b.nodes[2] << ' ' << a.components;
     out << "        <Attribute Name=\"" << escape(a.name) << "\" AttributeType=\"" << attributeType(a.components)
         << "\" Center=\"Cell\">\n          ";
-    writeHdfItem(out, dims.str(), "Float", b.file, a.name);
+    writeHdfItem(out, dims.str(), a.numberType, b.file, a.name, a.precision);
     out << "\n        </Attribute>\n";
   }
   out << "      </Grid>\n";
@@ -199,7 +203,7 @@ void writeCellBlock(std::ostream & out, const XdmfBlockFile & b) {
     dims << b.vertices << ' ' << a.components;
     out << "        <Attribute Name=\"" << escape(a.name) << "\" AttributeType=\"" << attributeType(a.components)
         << "\" Center=\"Node\">\n          ";
-    writeHdfItem(out, dims.str(), "Float", b.file, a.name);
+    writeHdfItem(out, dims.str(), a.numberType, b.file, a.name, a.precision);
     out << "\n        </Attribute>\n";
   }
   out << "      </Grid>\n";

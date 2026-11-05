@@ -42,7 +42,6 @@ void HemoCellParticleField::AddOutputMap() {
   outputFunctionMap[OUTPUT_FORCE_BENDING] = &HemoCellParticleField::outputForceBending;
   outputFunctionMap[OUTPUT_FORCE_VISC] = &HemoCellParticleField::outputForceVisc;
   outputFunctionMap[OUTPUT_VERTEX_ID] = &HemoCellParticleField::outputVertexId;
-  outputFunctionMap[OUTPUT_CELL_ID] = &HemoCellParticleField::outputCellId;
   outputFunctionMap[OUTPUT_FORCE_REPULSION] = &HemoCellParticleField::outputForceRepulsion;
   outputFunctionMap[OUTPUT_RES_TIME] = &HemoCellParticleField::outputResTime;
 }
@@ -206,9 +205,13 @@ void HemoCellParticleField::outputVertexId(Box3D domain, vector<vector<T>> & out
   outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return vector<T>{T(p.sv.vertexId)}; });
 }
 
-void HemoCellParticleField::outputCellId(Box3D domain, vector<vector<T>> & output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputCellIds(vector<vector<plint>> & output, pluint ctype, std::string & name) {
   name = "Cell Id";
-  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return vector<T>{T(p.sv.cellId)}; });
+  output.clear();
+  vector<plint> cellIds;
+  getOutputCells(ctype, cellIds);
+  const pluint nVertices = (*cellFields)[ctype]->numVertex;
+  for (const plint cellId : cellIds) { output.insert(output.end(), nVertices, vector<plint>{cellId}); }
 }
 
 void HemoCellParticleField::outputResTime(Box3D domain, vector<vector<T>> & output, pluint ctype, std::string & name) {

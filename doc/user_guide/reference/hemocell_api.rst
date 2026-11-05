@@ -106,6 +106,11 @@ Setting up the cells
        initialisation: vertices within ``floor(d / dx)`` lattice nodes of a
        solid node are rejected, and cells with rejected vertices are removed.
        Must be called **before** ``loadParticles()``.
+   * - ``setPlaceCellsAcrossPeriodicBoundaries(bool)``
+     - Also place the cells that cross a periodic boundary (as periodic images
+       on both sides); only for ``.pos`` files packed periodically for this
+       domain. Off by default: such cells are skipped and counted in the log.
+       Call after ``setSystemPeriodicity()``, before ``loadParticles()``.
 
 Controlling cost (time-scale separation)
 ----------------------------------------

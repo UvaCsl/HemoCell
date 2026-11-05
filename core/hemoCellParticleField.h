@@ -151,7 +151,9 @@ public:
   void outputInnerLinks(plb::Box3D, std::vector<std::vector<plint>> &, pluint, std::string &);
 
   void outputVertexId(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
-  void outputCellId(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
+  /// One row per vertex of the cells this block writes (getOutputCells()),
+  /// holding the cell's ID (exact, not converted to T).
+  void outputCellIds(std::vector<std::vector<plint>> & output, pluint ctype, std::string & name);
   void outputForceInnerLink(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
   void outputResTime(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
 
