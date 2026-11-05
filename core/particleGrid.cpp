@@ -76,7 +76,9 @@ inline void repulseParticlePair(HemoCellParticle & lParticle, HemoCellParticle &
   if (lParticle.sv.cellId == nParticle.sv.cellId) { return; }
   const hemo::Array<T, 3> dv = lParticle.sv.position - nParticle.sv.position;
   const T distance = std::sqrt(dv[0] * dv[0] + dv[1] * dv[1] + dv[2] * dv[2]);
-  if (distance < r_cutoff) {
+  // Coincident particles have no direction to repel along (and 1/distance would
+  // be infinite); they are left to the other forces.
+  if (distance < r_cutoff && distance > 0) {
     const hemo::Array<T, 3> rfm = r_const * (1 / (distance / r_cutoff)) * (dv / distance);
     lParticle.sv.force_repulsion = lParticle.sv.force_repulsion + rfm;
     nParticle.sv.force_repulsion = nParticle.sv.force_repulsion - rfm;

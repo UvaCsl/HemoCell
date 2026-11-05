@@ -63,6 +63,8 @@ public:
   unsigned int timescale = 1;
   /// Minimum initial distance of cell vertices from solid nodes [micrometre], see HemoCell::setInitialMinimumDistanceFromSolid()
   T minimumDistanceFromSolid = 0;
+  /// Number of cells listed in `<name>.pos` (set by loadParticles()).
+  plint cellsInPositionFile = 0;
   bool outputTriangles = false;
   vector<hemo::Array<plint, 3>> triangle_list;
   void (*kernelMethod)(plb::BlockLattice3D<T, DESCRIPTOR> &, HemoCellParticle &);

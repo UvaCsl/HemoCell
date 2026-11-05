@@ -333,11 +333,13 @@ void readPositionsBloodCellField3D(HemoCellFields & cellFields, T dx, Config & c
     }
     global::mpi().bCast(&opened, 1);
     if (!opened) {
-      hlog << "*** WARNING! particle positions input file " << name << ".pos does not exist!" << endl;
-      continue;
+      fatal("(readPositionsBloodCells) The positions file ", name,
+            ".pos does not exist (paths are relative to the working directory). Create it, e.g. with "
+            "tools/packCells, or write a file containing 0 for no cells of this type.");
     }
     global::mpi().bCast(text);
     cells[j] = parsePositions(text, name, cellFields, posRatio, nextCellId);
+    cellFields[j]->cellsInPositionFile = cells[j].size();
   }
   // Cell ids run over all types, so this is the total over all files. Set
   // before placing cells: the periodic cell-id mapping depends on it.

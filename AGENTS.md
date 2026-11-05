@@ -249,6 +249,9 @@ Configuration conventions:
   that gathers data or writes coordinated output may need to be called by every
   rank even if only rank zero writes. Use `pcout`/`hlog` and existing profiler
   conventions; avoid per-particle logging and extra barriers in hot loops.
+  Report errors with `hemo::fatal()` (`config/error.h`; prints with the rank on
+  any rank, ends the job with `MPI_Abort`), never `exit()`: `hlog` prints on
+  rank 0 only.
 - Runs with the same rank count and decomposition are bit-for-bit
   reproducible, checkpoint files included (received particles are unpacked by
   source rank, not arrival order). Keep received data processed in a fixed
@@ -272,7 +275,9 @@ Runs write `hdf5/<iteration>/`, XDMF `*.xmf` descriptors, `csv/`, logs and
 `checkpoint/` under the selected output directory. `writeOutput()` includes
 HDF5, XDMF and CSV; drivers can call
 `writeCellInfo_CSV` separately for a different CSV frequency. Checkpoints include
-XML and lattice/particle `.dat` files, with previous copies renamed `.old`.
+lattice/particle `.dat` files and, written last, `checkpoint.xml`, with previous
+copies renamed `.old`; the XML records a build fingerprint (particle layout,
+cell types, dx, dt) that a restart checks.
 Restarting may use a different number of ranks, but requires compatible state
 and a driver that implements restart handling.
 

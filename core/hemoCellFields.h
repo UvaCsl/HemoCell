@@ -89,12 +89,26 @@ private:
   void copyXMLreader2XMLwriter(plb::XMLreaderProxy readerProxy, plb::XMLwriter & writer);
 
 public:
-  ///Load a checkpoint, store the current iteration in &iter
+  /// Load a checkpoint, store the current iteration in `iter`. Checks the
+  /// build fingerprint written by saveCheckPointDescription() (fatal error on
+  /// a mismatch; older checkpoints without one load with a warning).
+  /// Collective.
   void load(plb::XMLreader * documentXML, unsigned int & iter, Config * cfg = NULL);
-  ///Save a checkpoint
+  /// Write the checkpoint data files, after renaming the previous ones
+  /// (including checkpoint.xml) to `.old`. checkpoint.xml itself is written
+  /// last, by saveCheckPointDescription(), so that a checkpoint interrupted
+  /// while saving has no checkpoint.xml instead of a mismatching one.
+  /// Collective.
   void save(plb::XMLreader * documentXML, unsigned int iter, Config * cfg = NULL);
+  /// Write checkpoint.xml (configuration, iteration, number of cells and the
+  /// build fingerprint) under a temporary name and rename it into place.
+  /// Call after all checkpoint data files are written. Collective.
+  void saveCheckPointDescription(plb::XMLreader * documentXML, unsigned int iter);
 
 private:
+  /// Fatal error if the build fingerprint of a checkpoint does not match this
+  /// build and setup; warning if the checkpoint has none (older versions).
+  void checkCheckPointFingerprint(plb::XMLreader & documentXML);
   /// Load the CEPAC field from a checkpoint directory if it is enabled and present.
   void loadCEPACfield(const std::string & checkpointDirectory);
 

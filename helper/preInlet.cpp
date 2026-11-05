@@ -539,28 +539,18 @@ void PreInlet::preInletFromSlice(Direction direction_, Box3D boundary) {
   switch (direction) {
     case Direction::Xneg:
     case Direction::Xpos:
-      if (boundary.x0 != boundary.x1) {
-        hlog << "Not a flat slice, refusing to create preInlet" << endl;
-        exit(1);
-      }
+      if (boundary.x0 != boundary.x1) { fatal("(PreInlet) The pre-inlet boundary is not a flat slice."); }
       break;
     case Direction::Yneg:
     case Direction::Ypos:
-      if (boundary.y0 != boundary.y1) {
-        hlog << "Not a flat slice, refusing to create preInlet" << endl;
-        exit(1);
-      }
+      if (boundary.y0 != boundary.y1) { fatal("(PreInlet) The pre-inlet boundary is not a flat slice."); }
       break;
     case Direction::Zneg:
     case Direction::Zpos:
-      if (boundary.z0 != boundary.z1) {
-        hlog << "Not a flat slice, refusing to create preInlet" << endl;
-        exit(1);
-      }
+      if (boundary.z0 != boundary.z1) { fatal("(PreInlet) The pre-inlet boundary is not a flat slice."); }
       break;
     default:
-      hlog << "This should not happen" << endl;
-      exit(1);
+      fatal("(PreInlet) Invalid pre-inlet direction.");
       break;
   }
 
@@ -576,10 +566,7 @@ void PreInlet::preInletFromSlice(Direction direction_, Box3D boundary) {
   if (foundPreInlet) { values[global::mpi().getRank()] = preInletDomain; }
   HemoCellGatheringFunctional<Box3D_simple>::gather(values);
 
-  if (values.size() == 0) {
-    hlog << "(PreInlet) no preinlet found, is it in the correct location?" << endl;
-    exit(1);
-  }
+  if (values.size() == 0) { fatal("(PreInlet) No pre-inlet found; is it in the correct location?"); }
   preInletDomain = values.begin()->second.getBox3D();
   for (auto & pair : values) {
     Box3D value = pair.second.getBox3D();
@@ -696,10 +683,7 @@ void PreInlet::autoPreinletFromBoundary(Direction dir_) {
   if (foundPreInlet) { values[global::mpi().getRank()] = preInletDomain; }
   HemoCellGatheringFunctional<Box3D_simple>::gather(values);
 
-  if (values.size() == 0) {
-    hlog << "(PreInlet) no preinlet found, does fluid domain extend to the wall?" << endl;
-    exit(1);
-  }
+  if (values.size() == 0) { fatal("(PreInlet) No pre-inlet found; does the fluid domain extend to the wall?"); }
   preInletDomain = values.begin()->second.getBox3D();
   for (auto & pair : values) {
     Box3D value = pair.second.getBox3D();

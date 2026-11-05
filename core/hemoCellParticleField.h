@@ -186,6 +186,9 @@ private:
   void update_pg();
   void issueWarning(HemoCellParticle & p);
   int deleteIncompleteCellsImpl(bool onlyType, pluint ctype, bool verbose);
+  /// Zero the force of a vertex with a non-finite force and tag it (tag 1)
+  /// for removal by spreadParticleForce(); warns for the first one (count 0).
+  void dropNonFiniteParticle(HemoCellParticle & particle, plint & count);
 
   /// Particles binned per lattice node; valid only while pg_up_to_date is
   /// true (any change to `particles` invalidates it, see update_pg()).

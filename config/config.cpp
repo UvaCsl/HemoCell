@@ -43,15 +43,13 @@ void Config::reload(std::string paramXmlFileName) {
 
 void Config::load(std::string paramXmlFileName) {
   if (!file_exists(paramXmlFileName)) {
-    plb::pcout << paramXmlFileName + " is not an existing config file, exiting ..." << std::endl;
-    exit(1);
+    fatal("(Config) The configuration file ", paramXmlFileName, " does not exist.");
   }
   orig = new tinyxml2::XMLDocument();
   if (orig->LoadFile(paramXmlFileName.c_str()) != tinyxml2::XML_SUCCESS) {
-    plb::pcout << "(HemoCell) (Config) Error parsing " << paramXmlFileName << ": " << orig->ErrorName();
-    if (orig->GetErrorStr1()) { plb::pcout << " " << orig->GetErrorStr1(); }
-    plb::pcout << " (line " << orig->GetErrorLineNum() << "), exiting ..." << std::endl;
-    exit(1);
+    fatal("(Config) Error parsing ", paramXmlFileName, ": ", orig->ErrorName(),
+          orig->GetErrorStr1() ? std::string(" ") + orig->GetErrorStr1() : std::string(), " (line ",
+          orig->GetErrorLineNum(), ").");
   }
   // Check if it is a fresh start (root <hemocell>) or a checkpoint (root
   // <Checkpoint> containing <hemocell>). The root is validated once here so
@@ -61,9 +59,8 @@ void Config::load(std::string paramXmlFileName) {
   tinyxml2::XMLElement * hemocellRoot =
       checkpointed ? root->FirstChildElement("hemocell") : orig->FirstChildElement("hemocell");
   if (!hemocellRoot) {
-    plb::pcout << "(HemoCell) (Config) Error: " << paramXmlFileName << " has no <hemocell> root element"
-               << (checkpointed ? " inside <Checkpoint>" : "") << ", exiting ..." << std::endl;
-    exit(1);
+    fatal("(Config) ", paramXmlFileName, " has no <hemocell> root element", checkpointed ? " inside <Checkpoint>" : "",
+          ".");
   }
 }
 
@@ -173,10 +170,7 @@ logfile_open_done:
   hemo::hlog.filename = filename;
   plb::global::mpi().barrier();
   if (plb::global::mpi().getRank() == 0) {
-    if (!hemo::hlog.open(filename)) {
-      plb::pcerr << "(HemoCell) (LogFile) Error opening logfile, exiting" << std::endl;
-      exit(1);
-    }
+    if (!hemo::hlog.open(filename)) { fatal("(LogFile) Cannot open the log file ", filename, "."); }
   }
 
   //Setting CheckpointDirectory
@@ -201,10 +195,7 @@ void loadGlobalConfigValues(hemo::Config * cfg) {
     global.enableSolidifyMechanics = (*cfg)["parameters"]["enableSolidifyMechanics"].read<int>();
 #ifndef SOLIDIFY_MECHANICS
     if (global.enableSolidifyMechanics) {
-      hlog
-          << "(Hemocell) (Config) Error EnableSolidifyMechanics is true but SOLIDIFY_MECHANICS (compile time) Is not defined"
-          << std::endl;
-      exit(1);
+      fatal("(Config) enableSolidifyMechanics needs a library built with SOLIDIFY_MECHANICS.");
     }
 #endif
   } catch (std::invalid_argument & e) {}

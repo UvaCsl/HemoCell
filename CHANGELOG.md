@@ -177,12 +177,40 @@ Unreleased (refactor)
     cell type and step). `convert_xmf_to_x3d.py` converts the per-step cell
     files only.
   * HDF5 property lists are closed (one leaked per dataset written).
+* Hardening (results bit-identical)
+  * Fatal errors go through `hemo::fatal()` (`config/error.h`) instead of 42
+    `exit(1)` calls: the message is printed with the MPI rank on whichever rank
+    detects the error (previously mostly through `hlog`, which prints on rank 0
+    only, so errors found on other ranks were silent) and the job ends with
+    `MPI_Abort`. `hemo::warning()` reports from any rank; `FatalErrorsThrow`
+    makes `fatal()` throw, for tests of error paths.
+  * A vertex with a non-finite force (e.g. from a degenerate triangle) is no
+    longer spread into the fluid, where it made the whole lattice NaN: it is
+    removed with a warning, which deletes its cell. The `FORCE_LIMIT` check
+    catches it at no extra cost. Particle and wall repulsion skip coincident
+    points instead of dividing by a zero distance.
+  * Checkpoints: `checkpoint.xml` is written last, under a temporary name, so
+    a save that is interrupted leaves no `checkpoint.xml` next to partial data
+    files (the previous checkpoint is complete in the `.old` files). It records
+    the particle record layout, the cell types (name and vertex count, in
+    `addCellType()` order), `dx` and `dt`; a restart with a different library
+    variant, cell types or resolution is a fatal error instead of misreading the
+    raw particle data. Older checkpoints load with a warning.
+    `renameFileToDotOld()` reports failed renames (its status was shadowed).
+  * Initial positions: a missing `<name>.pos` file is a fatal error (it was a
+    warning, and the case ran without those cells; `examples/microcontraction`,
+    `cases/stentflow` and `cases/stent_strut` (whose files are named `.POS`)
+    did so). `loadParticles()` logs how many cells of each type were placed out
+    of those in the file, with a warning when cells were dropped.
 * Tests
   * Unit tests for the particle grid/repulsion, the configuration reader,
     `hemo::Array`, particle copy/move and log buffering; an integration test
     for checkpoint/restart.
   * Integration test for the output: every cell written once, every lattice
     node once, consistent cell density and XDMF files (1 and 2 ranks).
+  * Tests for `fatal()` and fatal configuration errors, for a non-finite
+    vertex force (fluid stays finite, the cell is removed), and for the
+    checkpoint write order and fingerprint checks.
 
 2.6 (July 15 2022)
 -----------------

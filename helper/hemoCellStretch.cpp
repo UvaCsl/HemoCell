@@ -36,10 +36,7 @@ void HemoCellStretch::FindForcedLsps::processGenericBlocks(Box3D domain, std::ve
 
   const vector<int> & p_indices = ppc.at(0);
   for (int p_index : p_indices) {
-    if (p_index == -1) {
-      cout << "Error -1 found in cell, exiting" << endl;
-      exit(1);
-    }
+    if (p_index == -1) { fatal("(HemoCellStretch) The stretched cell is incomplete on this block."); }
     found.push_back(&pf->particles[p_index]);
   }
   //sort found on first dimension
@@ -85,8 +82,7 @@ HemoCellStretch::HemoCellStretch(HemoCellField & cellfield_, unsigned int n_forc
     : cellfield(cellfield_) {
   //Sanity Checks
   if (cellfield.cellFields.number_of_cells != 1) {
-    pcout << "(HemoCellStretch) Refusing to run with more or less than 1 cell" << endl;
-    exit(1);
+    fatal("(HemoCellStretch) Needs exactly 1 cell, there are ", cellfield.cellFields.number_of_cells, ".");
   }
   n_forced_lsps = n_forced_lsps_;
   external_force = external_force_ / n_forced_lsps;
@@ -104,8 +100,7 @@ T HemoCellStretch::scale = 1.0;
 
 void HemoCellStretch::applyForce() {
   if (cellfield.timescale != 1) {
-    pcout << "Refusing to stretch with particle update timestep larger than 1" << endl;
-    exit(1);
+    fatal("(HemoCellStretch) Needs a material update interval of 1, it is ", cellfield.timescale, ".");
   }
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(cellfield.getParticleField3D());

@@ -46,7 +46,7 @@ void weakScaling(int Nx, int Ny, int Nz, int numberOfProcesses, vector<int> & ne
 int renameFileToDotOld(std::string fName) {
   int renameStatus = 0;
   if (file_exists(fName)) {
-    int renameStatus = rename(fName.c_str(), (fName + ".old").c_str());
+    renameStatus = rename(fName.c_str(), (fName + ".old").c_str());
     if (renameStatus != 0) { plb::pcout << fName << " error." << std::endl; }
   }
   return renameStatus;

@@ -118,19 +118,14 @@ void InteriorViscosityHelper::restore(HemoCellFields & cellFields) {
   std::string file_dat = outDir + "internalViscosity.dat";
   std::string file_plb = outDir + "internalViscosity.plb";
   if (!(file_exists(file_dat) && file_exists(file_plb))) {
-    hlog
-        << "(internalViscosityField) Error restoring internalViscosity fields from checkpoint, they do not seem to exist"
-        << endl;
-    exit(1);
+    fatal("(InteriorViscosity) The checkpoint has no interior viscosity field (", file_dat, ", ", file_plb, ").");
   }
   if (cellFields.hemocell.preInlet) {
     std::string file_dat = outDir + "PRE_internalViscosity.dat";
     std::string file_plb = outDir + "PRE_internalViscosity.plb";
     if (!(file_exists(file_dat) && file_exists(file_plb))) {
-      hlog
-          << "(PRE_internalViscosityField) Error restoring PRE_internalViscosity fields from checkpoint, they do not seem to exist"
-          << endl;
-      exit(1);
+      fatal("(InteriorViscosity) The checkpoint has no pre-inlet interior viscosity field (", file_dat, ", ", file_plb,
+            ").");
     }
   }
   plb::parallelIO::load(outDir + "internalViscosity", *get(cellFields).domain_multiInteriorViscosityField, true);

@@ -28,6 +28,7 @@ class HemoCellParticle;
 }
 #include "helper/array.h"
 #include "core/cell.hh"
+#include "config/error.h"
 
 #include <cstdint>
 #include <cstring>
@@ -152,12 +153,7 @@ public:
 #endif
     tag = -1;
 
-    if (vertexId_ > UINT16_MAX) {
-      std::cerr
-          << "(HemoCellParticle) Trying to add more vertexes to a single cell than UINT16_MAX, consider converting vertexid to a long int"
-          << std::endl;
-      exit(1);
-    }
+    if (vertexId_ > UINT16_MAX) { fatal("A cell can have at most ", UINT16_MAX + 1, " vertices."); }
   }
 
   HemoCellParticle(const serializeValues_t & sv_) {

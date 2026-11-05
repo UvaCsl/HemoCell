@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "hemoCellParticleField.h"
+
+#include <cmath>
 #include "hemocell.h"
 #include "octree.h"
 #include "mollerTrumbore.h"
@@ -627,16 +629,10 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
 }
 #else
 void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
-  pcout
-      << "(HemoCellParticleField) (Error) findInternalParticleGridPoints called, but INTERIOR_VISCOSITY not defined, exiting..."
-      << endl;
-  exit(1);
+  fatal("findInternalParticleGridPoints() needs a library built with INTERIOR_VISCOSITY.");
 }
 void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
-  pcout
-      << "(HemoCellParticleField) (Error) internalGridPointsMembrane called, but INTERIOR_VISCOSITY not defined, exiting..."
-      << endl;
-  exit(1);
+  fatal("internalGridPointsMembrane() needs a library built with INTERIOR_VISCOSITY.");
 }
 #endif
 
@@ -674,11 +670,29 @@ void HemoCellParticleField::spreadParticleForce(Box3D domain) {
   // viscosity uses the kernels of all particles, so it keeps computing them.)
   const plb::Box3D spreadDomain = localDomain.enlarge(2);
 #endif
+  // A non-finite force (e.g. from a degenerate triangle of a broken cell)
+  // would make the whole lattice NaN; such a vertex spreads nothing and is
+  // removed, which deletes its cell like any incomplete cell.
+  plint nonFinite = 0;
   for (HemoCellParticle & particle : particles) {
-    // Capping force to ensure stability -> NOTE: this can introduce an error if forces are large!
-#ifdef FORCE_LIMIT
     const T force_mag = norm(particle.sv.force);
-    if (force_mag > param::f_limit) particle.sv.force *= param::f_limit / force_mag;
+#ifdef FORCE_LIMIT
+    // Capping force to ensure stability -> NOTE: this can introduce an error if forces are large!
+    // !(a <= b) is also true for NaN, so the finiteness check costs nothing
+    // for forces within the limit.
+    if (!(force_mag <= param::f_limit)) {
+      if (std::isfinite(force_mag)) {
+        particle.sv.force *= param::f_limit / force_mag;
+      } else {
+        dropNonFiniteParticle(particle, nonFinite);
+        continue;
+      }
+    }
+#else
+    if (!std::isfinite(force_mag)) {
+      dropNonFiniteParticle(particle, nonFinite);
+      continue;
+    }
 #endif
 
 #ifndef INTERIOR_VISCOSITY
@@ -705,6 +719,21 @@ void HemoCellParticleField::spreadParticleForce(Box3D domain) {
       external[2] += force[2] * weight;
     }
   }
+  if (nonFinite > 0) { removeParticles(1); }
+}
+
+void HemoCellParticleField::dropNonFiniteParticle(HemoCellParticle & particle, plint & count) {
+  if (count == 0) {
+    warning("Non-finite force on vertex ", particle.sv.vertexId, " of cell ",
+            cellFields->base_cell_id(particle.sv.cellId), " (type ", (*cellFields)[particle.sv.celltype]->name,
+            ") at (", particle.sv.position[0], ", ", particle.sv.position[1], ", ", particle.sv.position[2],
+            "); its cell is removed.");
+  }
+  count++;
+  particle.sv.force = {0., 0., 0.};
+  particle.kernelLocations.clear();
+  particle.kernelWeights.clear();
+  particle.setTag(1);
 }
 
 void HemoCellParticleField::populateBoundaryParticles() {
@@ -752,7 +781,7 @@ void HemoCellParticleField::applyBoundaryRepulsionForce(bool resetFirst) {
             HemoCellParticle & lParticle = particles[*i];
             const hemo::Array<T, 3> dv = lParticle.sv.position - (b_particle + this->atomicLattice->getLocation());
             const T distance = sqrt(dv[0] * dv[0] + dv[1] * dv[1] + dv[2] * dv[2]);
-            if (distance < br_cutoff) {
+            if (distance < br_cutoff && distance > 0) { // see repulseParticlePair()
               const hemo::Array<T, 3> rfm = br_const * (1 / (distance / br_cutoff)) * (dv / distance);
               lParticle.sv.force_repulsion = lParticle.sv.force_repulsion + rfm;
             }
@@ -850,8 +879,7 @@ void HemoCellParticleField::prepareSolidification() {
     }
   }
 #else
-  hlog << "(HemoCellParticleField) prepareSolidification called but SOLIDIFY_MECHANICS not enabled" << endl;
-  exit(1);
+  fatal("prepareSolidification() needs a library built with SOLIDIFY_MECHANICS.");
 #endif
 }
 
@@ -900,8 +928,7 @@ void HemoCellParticleField::solidifyCells() {
     }
   }
 #else
-  hlog << "(HemoCellParticleField) SolidifyCells called but SOLIDIFY_MECHANICS not enabled" << endl;
-  exit(1);
+  fatal("solidifyCells() needs a library built with SOLIDIFY_MECHANICS.");
 #endif
 }
 

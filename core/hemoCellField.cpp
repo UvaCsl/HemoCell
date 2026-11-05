@@ -38,12 +38,7 @@ using namespace hemo;
 //HemoCellField
 HemoCellField::HemoCellField(HemoCellFields & cellFields_, string & name_, unsigned int ctype_, int constructType)
     : name(name_), cellFields(cellFields_), desiredOutputVariables(default_output), ctype(ctype_) {
-  if (ctype_ > UCHAR_MAX) {
-    hlog
-        << "(HemoCell) (AddCellType) more celltypes than UCHAR_MAX (255) added, please convert celltype to int or add less celltypes"
-        << endl;
-    exit(1);
-  }
+  if (ctype_ > UCHAR_MAX) { fatal("(AddCellType) At most ", UCHAR_MAX + 1, " cell types are supported."); }
 
   string materialXML = name + ".xml";
   materialCfg = new Config(materialXML.c_str());
@@ -54,8 +49,7 @@ HemoCellField::HemoCellField(HemoCellFields & cellFields_, string & name_, unsig
   }
 
   if (constructType == STRING_FROM_VERTEXES) {
-    hlog << "(HemoCell) (AddCellType) Error STRING_FROM_VERTEXES not supported anymore" << std::endl;
-    exit(1);
+    fatal("(AddCellType) STRING_FROM_VERTEXES is not supported anymore.");
   } else {
     try {
       boundaryElement = new TriangleBoundary3D<T>(constructMeshElement(
@@ -110,9 +104,8 @@ HemoCellField::HemoCellField(HemoCellFields & cellFields_, string & name_, unsig
         innerViscosityDynamics->setOmega(omegaInt);
         global.enableInteriorViscosity = true;
 #else
-        hlog << "(HemoCell) (AddCellType) (" << name
-             << ") Cannot enable interior viscosity when INTERIOR_VISCOSITY is not defined at compile time" << endl;
-        exit(1);
+        fatal("(AddCellType) (", name,
+              ") enableInteriorViscosity needs a library built with INTERIOR_VISCOSITY (hemocell_interior_viscosity).");
 #endif
       }
     } catch (std::invalid_argument & e) {}
@@ -158,8 +151,7 @@ hemo::Array<T, 6> HemoCellField::getOriginalBoundingBox() {
 
 // position is in micrometers, so we still have to convert it
 void HemoCellField::addSingleCell(hemo::Array<T, 3> position, plint cellId) {
-  pcerr << "(HemoCell) (ParticleType) addSingleCell not implemented, but might definitely be nice to have" << endl;
-  exit(1);
+  fatal("HemoCellField::addSingleCell() is not implemented.");
 }
 
 void HemoCellField::statistics() {

@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "constant_defaults.h"
 #include "voxelizeDomain.h"
 #include "logfile.h"
+#include "error.h"
 
 #include "palabos3D.h"
 #include "palabos3D.hh"
@@ -84,10 +85,7 @@ void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth,
   // Requirement: margin>=borderWidth.
   plint margin = 1; // Extra margin of allocated cells around the obstacle.
 
-  if (!file_exists(meshFileName)) {
-    hlog << "(Voxelizer) Error: " << meshFileName << " is not an existing stl file." << endl;
-    exit(1);
-  }
+  if (!file_exists(meshFileName)) { fatal("(Voxelizer) The STL file ", meshFileName, " does not exist."); }
 
   TriangleSet<T> * triangleSet = new TriangleSet<T>(meshFileName, DBL);
 

@@ -85,6 +85,13 @@ Errors and logging
 
 * Use ``hlog`` (stdout and log file, rank 0) and ``hlogfile`` (log file only)
   for messages, ``pcout`` for console-only output; never log per particle.
+* Report errors with ``hemo::fatal(...)`` (``config/error.h``), never
+  ``exit()``: it prints the message with the MPI rank on the rank that calls it
+  (``hlog`` prints nothing on the other ranks) and ends the job with
+  ``MPI_Abort``. ``hemo::warning(...)`` reports from any rank. Both stream
+  their arguments into the message. Under a ``FatalErrorsThrow`` guard,
+  ``fatal()`` throws ``FatalError``, so tests can check error paths (only where
+  every rank reaches the error).
 * Configuration values are read with ``read<T>()``, which throws
   ``std::invalid_argument`` for missing, empty or invalid values. Optional
   settings catch it and use a default; required ones let it propagate.

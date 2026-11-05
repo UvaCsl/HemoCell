@@ -36,22 +36,28 @@ Findings of a review of the `refactor` branch (November 2026). Items marked
 reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
 before others write drivers against the API.
 
+Status: A1, A2, A3 and A5 are done (see CHANGELOG, "Hardening"), except
+placing periodic images of cells at load (A5).
+
 ### A. Silent wrong results or lost runs
 
-1. **Fatal errors lose their message and may not end the job.** There are 45
+1. *Done* (`hemo::fatal()`, `hemo::warning()`, `config/error.h`).
+   **Fatal errors lose their message and may not end the job.** There are 45
    `exit(1)` calls in library code, most logging through `hlog`, which writes on
    rank 0 only: an error detected on another rank leaves no reason, and
    launchers other than `mpirun` may leave the other ranks hanging. Add one
    `hemo::fatal(msg)` that prints with the rank to stderr and calls `MPI_Abort`
    (or throws in tests, so error paths can be tested).
-2. **NaN/infinity pass into the fluid.** No `isfinite` check exists; the force
+2. *Done* (non-finite vertex forces are removed with their cell; repulsion
+   skips zero distances). **NaN/infinity pass into the fluid.** No `isfinite` check exists; the force
    cap (`core/hemoCellParticleField.cpp`, `spreadParticleForce()`) uses
    `force_mag > f_limit`, which is false for NaN. Link and bending terms divide
    by edge and normal lengths without a guard, and collapsed RBC triangles occur
    at high shear. One bad vertex corrupts the whole lattice silently. Test
    `!(force_mag <= f_limit)` in the existing branch (no cost in the normal path)
    and report and remove the cell.
-3. **Checkpoints are not crash-safe or self-describing.** `checkpoint.xml` is
+3. *Done* (`checkpoint.xml` last and atomic; fingerprint checked on load).
+   **Checkpoints are not crash-safe or self-describing.** `checkpoint.xml` is
    written before the data files (`HemoCellFields::save()`): a job killed during
    writing leaves new metadata next to partial `.dat` files. Nothing records
    `sizeof(serializeValues_t)`, the compile-time variant, the cell-type names and
@@ -62,7 +68,8 @@ before others write drivers against the API.
    check against the vertex count (`mechanics/commonCellConstants.cpp`); the WBC
    template's pairs belong to the 642-vertex mesh and index out of bounds with
    another `minNumTriangles`. Check once at setup.
-5. **The cell loader drops cells silently** *(verified)*. A missing `.pos` file
+5. *Done, except placing periodic images* (missing `.pos` is fatal; placed
+   cells are reported). **The cell loader drops cells silently** *(verified)*. A missing `.pos` file
    is only a warning (`microcontraction`, `stentflow`, `stent_strut` ran without
    cells); the number of cells actually placed is never reported (86 of 100 RBCs
    were dropped without notice in `cases/pipeflow_wbc` before its positions were

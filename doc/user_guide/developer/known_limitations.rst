@@ -75,7 +75,11 @@ Time-scale separation
 Initial placement
    ``setInitialMinimumDistanceFromSolid()`` rejects vertices within
    ``floor(d / dx)`` lattice nodes of a wall; distances below one lattice
-   spacing have no effect.
+   spacing have no effect. A cell is dropped as a whole when one of its
+   vertices is rejected, lies outside the domain or across a periodic boundary
+   (images are not placed); ``loadParticles()`` logs how many cells of each
+   type were placed. A missing ``<name>.pos`` file is a fatal error; a file
+   containing ``0`` means no cells of that type.
 
 Software constraints
 --------------------

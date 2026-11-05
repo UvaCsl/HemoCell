@@ -45,10 +45,7 @@ HemoCellFields::HemoCellFields(MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, un
   envelopeSize = particleEnvelopeWidth;
   hlog << "(Hemocell) (HemoCellFields) (Init) particle envelope: " << particleEnvelopeWidth << " [lu]" << std::endl;
   if (hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth() < 2) {
-    hlog
-        << "(Hemocell) (ERROR) fluid envelope is less than 2, this will cause incorrect forces over the block boundaries"
-        << endl;
-    exit(1);
+    fatal("The fluid envelope is narrower than 2 nodes, which gives wrong forces at block boundaries.");
   }
   MPI_Comm_dup(MPI_COMM_WORLD, &particleComm);
   createParticleField();
@@ -149,9 +146,7 @@ unsigned int HemoCellFields::size() {
 
 HemoCellField * HemoCellFields::operator[](unsigned int index) {
   if (index >= cellFields.size()) {
-    hlog << "(HemoCellFields) Error, cellindex " << index << " requested, but there are only " << cellFields.size()
-         << " celltypes." << endl;
-    exit(1);
+    fatal("Cell type index ", index, " requested, but there are only ", cellFields.size(), " cell types.");
   }
   return cellFields[index];
 }
@@ -160,8 +155,7 @@ HemoCellField * HemoCellFields::operator[](string name) {
   for (unsigned int i = 0; i < cellFields.size(); i++) {
     if (cellFields[i]->name == name) { return cellFields[i]; }
   }
-  hlog << "(Error) (CellFields) " << name << "Celltype requested but it does not exist" << endl;
-  exit(1);
+  fatal("Cell type \"", name, "\" requested, but it was not added with addCellType().");
   return NULL;
 }
 
@@ -236,6 +230,8 @@ void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter, Config *
     plb::global::directories().setOutputDir(outDir);
     loadDirectories(cfg, false);
 
+    checkCheckPointFingerprint(*documentXML);
+
     // Restore state that cannot be re-derived from the input files. Older
     // checkpoints lack these entries (Palabos then throws); fall back to the
     // previous behaviour for those.
@@ -282,15 +278,6 @@ void HemoCellFields::load(XMLreader * documentXML, unsigned int & iter, Config *
 }
 
 void HemoCellFields::save(XMLreader * xmlr, unsigned int iter, Config * cfg) {
-  XMLwriter xmlw;
-  std::string firstField = (*(xmlr->getChildren(xmlr->getFirstId())[0])).getName();
-  bool isCheckpointed = (firstField == "Checkpoint");
-  if (!isCheckpointed) {
-    copyXMLreader2XMLwriter((*xmlr)["hemocell"], xmlw["Checkpoint"]);
-  } else {
-    copyXMLreader2XMLwriter((*xmlr)["Checkpoint"]["hemocell"], xmlw["Checkpoint"]);
-  }
-
   std::string & outDir = hemo::global.checkpointDirectory;
 
   mkpath(outDir.c_str(), 0777);
@@ -317,14 +304,6 @@ void HemoCellFields::save(XMLreader * xmlr, unsigned int iter, Config * cfg) {
 
   global::mpi().barrier();
 
-  /* Save XML & Data */
-  xmlw["Checkpoint"]["General"]["Iteration"].set(iter);
-  xmlw["Checkpoint"]["General"]["OutDirectory"].set(plb::global::directories().getOutputDir());
-  // State that cannot be re-derived from the input files at restart.
-  xmlw["Checkpoint"]["General"]["NumberOfCells"].set(number_of_cells);
-  xmlw["Checkpoint"]["General"]["LastOutputIteration"].set(hemocell.getLastOutputIteration());
-  xmlw.print(outDir + "checkpoint.xml");
-
   if (hemocell.preInlet) {
     plb::parallelIO::save(*hemocell.preinlet_lattice, outDir + "PRE_lattice", true);
     plb::parallelIO::save(*preinlet_immersedParticles, outDir + "PRE_particleField", true);
@@ -333,6 +312,93 @@ void HemoCellFields::save(XMLreader * xmlr, unsigned int iter, Config * cfg) {
   plb::parallelIO::save(*hemocell.domain_lattice, outDir + "lattice", true);
   plb::parallelIO::save(*domain_immersedParticles, outDir + "particleField", true);
   if (global.enableCEPACfield && CEPACfield) { plb::parallelIO::save(*CEPACfield, outDir + "CEPAC", true); }
+}
+
+namespace {
+// Compile-time choices that change the raw particle records of checkpoints.
+std::string particleLayout() {
+  std::ostringstream layout;
+  // No spaces: Palabos' XML reader reads strings up to the first space.
+  layout << "record=" << sizeof(HemoCellParticle::serializeValues_t) << ",T=" << sizeof(T) << ",plint=" << sizeof(plint)
+         << ",MATERIAL_INTEGRATION=" << HEMOCELL_MATERIAL_INTEGRATION;
+#ifdef SOLIDIFY_MECHANICS
+  layout << ",SOLIDIFY_MECHANICS";
+#endif
+  return layout.str();
+}
+
+std::string trimmed(const std::string & text) {
+  const std::string::size_type first = text.find_first_not_of(" \t\n\r");
+  if (first == std::string::npos) { return ""; }
+  return text.substr(first, text.find_last_not_of(" \t\n\r") - first + 1);
+}
+
+// Registered cell types in type-index order, "name:vertices" separated by commas.
+std::string cellTypeList(HemoCellFields & fields) {
+  std::ostringstream list;
+  for (unsigned int i = 0; i < fields.size(); i++) {
+    list << (i ? "," : "") << fields[i]->getIdentifier() << ":" << fields[i]->numVertex;
+  }
+  return list.str();
+}
+} // namespace
+
+void HemoCellFields::saveCheckPointDescription(XMLreader * xmlr, unsigned int iter) {
+  XMLwriter xmlw;
+  std::string firstField = (*(xmlr->getChildren(xmlr->getFirstId())[0])).getName();
+  if (firstField == "Checkpoint") {
+    copyXMLreader2XMLwriter((*xmlr)["Checkpoint"]["hemocell"], xmlw["Checkpoint"]);
+  } else {
+    copyXMLreader2XMLwriter((*xmlr)["hemocell"], xmlw["Checkpoint"]);
+  }
+  xmlw["Checkpoint"]["General"]["Iteration"].set(iter);
+  xmlw["Checkpoint"]["General"]["OutDirectory"].set(plb::global::directories().getOutputDir());
+  // State that cannot be re-derived from the input files at restart.
+  xmlw["Checkpoint"]["General"]["NumberOfCells"].set(number_of_cells);
+  xmlw["Checkpoint"]["General"]["LastOutputIteration"].set(hemocell.getLastOutputIteration());
+  // Build fingerprint, checked by load().
+  xmlw["Checkpoint"]["General"]["ParticleLayout"].set(particleLayout());
+  xmlw["Checkpoint"]["General"]["CellTypes"].set(cellTypeList(*this));
+  xmlw["Checkpoint"]["General"]["dx"].set(param::dx, 17);
+  xmlw["Checkpoint"]["General"]["dt"].set(param::dt, 17);
+
+  const std::string file = hemo::global.checkpointDirectory + "checkpoint.xml";
+  global::mpi().barrier(); // all data files are complete
+  xmlw.print(file + ".tmp");
+  if (global::mpi().isMainProcessor() && std::rename((file + ".tmp").c_str(), file.c_str()) != 0) {
+    fatal("(Checkpoint) Cannot rename ", file, ".tmp to ", file, ".");
+  }
+  global::mpi().barrier();
+}
+
+void HemoCellFields::checkCheckPointFingerprint(XMLreader & documentXML) {
+  std::string layout, types;
+  T dx = 0, dt = 0;
+  try {
+    documentXML["Checkpoint"]["General"]["ParticleLayout"].read(layout);
+    documentXML["Checkpoint"]["General"]["CellTypes"].read(types);
+    documentXML["Checkpoint"]["General"]["dx"].read(dx);
+    documentXML["Checkpoint"]["General"]["dt"].read(dt);
+    layout = trimmed(layout);
+    types = trimmed(types);
+  } catch (plb::PlbIOException & e) {
+    hlog << "(HemoCell) (CellFields) WARNING: the checkpoint has no build fingerprint (written by an older version); "
+            "it cannot be checked that it matches this build and cell types."
+         << endl;
+    return;
+  }
+  if (layout != particleLayout()) {
+    fatal("(Checkpoint) The checkpoint was written by a build with particle records \"", layout,
+          "\", this build has \"", particleLayout(), "\"; use a library variant with the same compile-time features.");
+  }
+  if (types != cellTypeList(*this)) {
+    fatal("(Checkpoint) The checkpoint has the cell types \"", types, "\" (name:vertices, in addCellType() order), ",
+          "this run registers \"", cellTypeList(*this), "\".");
+  }
+  if (std::fabs(dx - param::dx) > 1e-12 * param::dx || std::fabs(dt - param::dt) > 1e-12 * param::dt) {
+    fatal("(Checkpoint) The checkpoint has dx = ", dx, ", dt = ", dt, ", this run dx = ", param::dx,
+          ", dt = ", param::dt, ".");
+  }
 }
 
 void HemoCellFields::loadCEPACfield(const std::string & checkpointDirectory) {
@@ -643,8 +709,7 @@ void HemoCellFields::syncEnvelopes() {
     for (unsigned int i = 0; i < recv_procs_v.size(); i++) {
       MPI_Status status;
       if (MPI_SUCCESS != MPI_Wait(&recv_reqs[i], &status)) {
-        hlog << "(HemoCellFields) (syncenvelopes) error returned in MPI_Wait " << status.MPI_ERROR << endl;
-        exit(1);
+        fatal("(syncEnvelopes) MPI_Wait failed with error ", status.MPI_ERROR, ".");
       }
       //Get Offsets and Destinations
       for (CommunicationInfo3D const * info : recv_infos[recv_procs_v[i]]) {

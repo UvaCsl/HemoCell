@@ -31,10 +31,8 @@ namespace hemo {
 bindingFieldHelper::bindingFieldHelper(HemoCellFields * cellFields_) : cellFields(*cellFields_) {
   //Check if function is not called too early
   if (!cellFields_) {
-    hlog
-        << "(BindingField) ERROR: Bindingfield is requested while cellfields is not initialized. Perhaps populateBindingSites is called before hemocell.initializeCellFields?"
-        << endl;
-    exit(1);
+    fatal(
+        "(BindingField) The binding field was requested before initializeCellfield() (populateBindingSites() called too early?).");
   }
 
   //Create bindingfield with same properties as fluid field underlying the particleField.
@@ -91,8 +89,7 @@ void bindingFieldHelper::restore(HemoCellFields & cellFields) {
   std::string file_dat = outDir + "bindingSites.dat";
   std::string file_plb = outDir + "bindingSites.plb";
   if (!(file_exists(file_dat) && file_exists(file_plb))) {
-    hlog << "(BindingField) Error restoring bindingSites fields from checkpoint, they do not seem to exist" << endl;
-    exit(1);
+    fatal("(BindingField) The checkpoint has no binding sites (", file_dat, ", ", file_plb, ").");
   }
 
   plb::parallelIO::load(outDir + "bindingSites", *get(cellFields).multiBindingField, true);

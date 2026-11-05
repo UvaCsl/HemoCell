@@ -80,10 +80,7 @@ void restore_interrupt_handler() {
 HemoCell::HemoCell(char * configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handler) {
   if (mpi_handler == HemoCell::MPIHandle::Internal) { plb::plbInit(&(argc), &(argv)); }
 
-  if (global.hemoCellInitialized) {
-    pcout << "(HemoCell) (Error) Hemocell object already created, refusing to construct another one" << endl;
-    exit(1);
-  }
+  if (global.hemoCellInitialized) { fatal("A HemoCell object already exists; only one may exist at a time."); }
   global.hemoCellInitialized = true;
   // Log (and buffer until the log file is opened) on the main process only.
   hlog.mainProcess = global::mpi().isMainProcessor();
@@ -166,15 +163,9 @@ void HemoCell::setCEPACOutputs(vector<int> outputs) {
 
 
 void HemoCell::setSystemPeriodicity(unsigned int axis, bool bePeriodic) {
-  if (lattice == 0) {
-    pcerr << "(HemoCell) (Periodicity) please create a lattice before trying to set the periodicity" << endl;
-    exit(1);
-  }
-  if (cellfields->immersedParticles == 0) {
-    pcerr
-        << "(HemoCell) (Periodicity) please create a particlefield (hemocell.initializeCellfields()) before trying to set the periodicity"
-        << endl;
-    exit(1);
+  if (lattice == 0) { fatal("(Periodicity) Create the lattice before setting the periodicity."); }
+  if (cellfields == 0 || cellfields->immersedParticles == 0) {
+    fatal("(Periodicity) Call initializeCellfield() before setting the periodicity.");
   }
   lattice->periodicity().toggle(axis, bePeriodic);
   cellfields->immersedParticles->periodicity().toggle(axis, bePeriodic);
@@ -196,6 +187,31 @@ void HemoCell::loadParticles() {
   readPositionsBloodCellField3D(*cellfields, param::dx, *cfg);
   cellfields->syncEnvelopes();
   cellfields->deleteIncompleteCells(false);
+
+  // Report how many cells were actually placed: a cell is dropped as a whole
+  // when one of its vertices cannot be placed.
+  std::vector<long> placed(cellfields->size(), 0);
+  std::vector<int> ids;
+  for (plint bid : cellfields->immersedParticles->getLocalInfo().getBlocks()) {
+    for (pluint ctype = 0; ctype < cellfields->size(); ctype++) {
+      cellfields->immersedParticles->getComponent(bid).getOutputCells(ctype, ids);
+      placed[ctype] += ids.size();
+    }
+  }
+  MPI_Allreduce(MPI_IN_PLACE, placed.data(), int(placed.size()), MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
+  bool dropped = false;
+  for (pluint ctype = 0; ctype < cellfields->size(); ctype++) {
+    const HemoCellField & type = *(*cellfields)[ctype];
+    hlog << "(HemoCell) (CellField) " << type.name << ": placed " << placed[ctype] << " of " << type.cellsInPositionFile
+         << " cells" << endl;
+    dropped = dropped || placed[ctype] < type.cellsInPositionFile;
+  }
+  if (dropped) {
+    hlog << "(HemoCell) (CellField) WARNING: not all cells were placed. A cell is placed only if all its vertices lie "
+            "in the fluid, at least the setInitialMinimumDistanceFromSolid() distance from a wall, and not across a "
+            "periodic boundary or outside the domain."
+         << endl;
+  }
 }
 
 void HemoCell::loadCheckPoint() {
@@ -210,6 +226,9 @@ void HemoCell::saveCheckPoint() {
   cellfields->save(documentXML, iter, cfg);
   if (global.enableSolidifyMechanics) { bindingFieldHelper::get(*cellfields).checkpoint(); }
   if (global.enableInteriorViscosity) { InteriorViscosityHelper::get(*cellfields).checkpoint(); }
+  // Last, so that an interrupted save leaves no checkpoint.xml (the previous
+  // checkpoint is complete in the .old files).
+  cellfields->saveCheckPointDescription(documentXML, iter);
 }
 
 void HemoCell::writeOutput() {
@@ -482,12 +501,7 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
     domain_lattice = lattice;
     return;
   }
-  if (global::mpi().getSize() <= 1) {
-    hlog
-        << "(HemoCell) (PreInlet) Trying to run with preInlet with less than 2 processors, specify at least 2, exiting ..."
-        << endl;
-    exit(1);
-  }
+  if (global::mpi().getSize() <= 1) { fatal("(PreInlet) A pre-inlet needs at least 2 MPI processes."); }
 
   plint totalNodes = 0;
   totalNodes += preInlet->getNumberOfNodes();
@@ -605,19 +619,17 @@ void HemoCell::sanityCheck() {
   // Material sanity
   if (boundaryRepulsionEnabled) {
     if (cellfields->boundaryRepulsionTimescale % cellfields->particleVelocityUpdateTimescale != 0) {
-      hlog
-          << "(HemoCell) Error, Particle velocity timescale separation cannot divide this repulsion timescale separation, exiting ..."
-          << endl;
-      exit(1);
+      fatal("The boundary repulsion interval (", cellfields->boundaryRepulsionTimescale,
+            ") is not a multiple of the particle velocity update interval (",
+            cellfields->particleVelocityUpdateTimescale, ").");
     }
   }
 
   if (repulsionEnabled) {
     if (cellfields->repulsionTimescale % cellfields->particleVelocityUpdateTimescale != 0) {
-      hlog
-          << "(HemoCell) Error, Velocity timescale separation cannot divide this repulsion timescale separation, exiting ..."
-          << endl;
-      exit(1);
+      fatal("The repulsion interval (", cellfields->repulsionTimescale,
+            ") is not a multiple of the particle velocity update interval (",
+            cellfields->particleVelocityUpdateTimescale, ").");
     }
   }
 
@@ -626,10 +638,8 @@ void HemoCell::sanityCheck() {
   // would accumulate between those resets.
   if (repulsionEnabled && boundaryRepulsionEnabled &&
       cellfields->repulsionTimescale != cellfields->boundaryRepulsionTimescale) {
-    hlog << "(HemoCell) Error, particle and boundary repulsion must use the same timescale separation ("
-         << cellfields->repulsionTimescale << " vs " << cellfields->boundaryRepulsionTimescale << "), exiting ..."
-         << endl;
-    exit(1);
+    fatal("Particle and boundary repulsion must use the same interval (", cellfields->repulsionTimescale, " vs ",
+          cellfields->boundaryRepulsionTimescale, ").");
   }
 
   // The repulsion neighbour searches only visit adjacent lattice nodes (see
@@ -650,19 +660,18 @@ void HemoCell::sanityCheck() {
   if (global.enableInteriorViscosity) {
     if (cellfields->interiorViscosityEntireGridTimescale % cellfields->particleVelocityUpdateTimescale != 0 ||
         cellfields->interiorViscosityTimescale % cellfields->particleVelocityUpdateTimescale != 0) {
-      hlog
-          << "(HemoCell) Error, Velocity timescale separation cannot divide this interior viscosity timescale separation, exiting ..."
-          << endl;
-      exit(1);
+      fatal("The interior viscosity intervals (", cellfields->interiorViscosityTimescale, ", ",
+            cellfields->interiorViscosityEntireGridTimescale,
+            ") are not multiples of the particle velocity update interval (",
+            cellfields->particleVelocityUpdateTimescale, ").");
     }
   }
 
   for (unsigned int i = 0; i < cellfields->size(); i++) {
     if ((*cellfields)[i]->timescale % cellfields->particleVelocityUpdateTimescale != 0) {
-      hlog
-          << "(HemoCell) Error, Velocity timescale separation cannot divide all material timescale separations, exiting ..."
-          << endl;
-      exit(1);
+      fatal("The material update interval of ", (*cellfields)[i]->name, " (", (*cellfields)[i]->timescale,
+            ") is not a multiple of the particle velocity update interval (",
+            cellfields->particleVelocityUpdateTimescale, ").");
     }
   }
 
@@ -717,13 +726,8 @@ void HemoCell::sanityCheck() {
   if (cellfields->number_of_cells) { // running with cells
     if (cellfields->periodicity_limit_offset_y + cellfields->periodicity_limit_offset_z >
         INT_MAX / cellfields->number_of_cells) { //can HemoCellParticleDataTransfer::getOffset overflow?
-      cerr
-          << "(SanityCheck) (HemoCellParticleDataTransfer) Integer overflow detected when calculating offset, refusing to invoke undefined behaviour later in the program"
-          << endl;
-      cerr
-          << "(SanityCheck) (HemoCellParticleDataTransfer) Either setSystemPeriodicityLimit is used wrongly or there are too many cells in the simulation"
-          << endl;
-      exit(1);
+      fatal("(SanityCheck) Periodic cell IDs would overflow an int: too many cells (", cellfields->number_of_cells,
+            ") for the periodicity limits (setSystemPeriodicityLimit()).");
     }
   }
 

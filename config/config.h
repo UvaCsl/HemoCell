@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "external/tinyxml2/tinyxml2.h"
 #include "constant_defaults.h"
+#include "error.h"
 #include <string>
 #include <iostream>
 #include <sstream>

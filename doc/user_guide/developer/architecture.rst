@@ -231,12 +231,21 @@ files alone.
 Checkpoints
 -----------
 
-``saveCheckPoint()`` writes to ``<outputDirectory>/<checkpointDirectory>/``:
-``checkpoint.xml`` (the configuration under ``<Checkpoint><hemocell>`` plus
-``<General>``: iteration, output directory, number of cells, last output
-iteration), the lattice and particle field (``lattice.*``,
-``particleField.*``, ``PRE_*`` for a pre-inlet), and the CEPAC, binding-site or
-interior-viscosity fields when enabled. Previous files are renamed to
-``*.old`` first. Case-level state (e.g. a body force) is the case's
-responsibility: restart a case by passing ``checkpoint.xml`` as its
+``saveCheckPoint()`` writes to ``<outputDirectory>/<checkpointDirectory>/``
+the lattice and particle field (``lattice.*``, ``particleField.*``, ``PRE_*``
+for a pre-inlet), the CEPAC, binding-site or interior-viscosity fields when
+enabled, and, last, ``checkpoint.xml``: the configuration under
+``<Checkpoint><hemocell>`` plus ``<General>`` with the iteration, output
+directory, number of cells, last output iteration and a build fingerprint
+(``ParticleLayout``: size of the particle records and the compile-time
+features that change them; ``CellTypes``: name and vertex count in
+``addCellType()`` order; ``dx``, ``dt``). Previous files, including
+``checkpoint.xml``, are renamed to ``*.old`` first, and ``checkpoint.xml`` is
+written under a temporary name and renamed into place. A save that is
+interrupted therefore leaves no ``checkpoint.xml``; the previous checkpoint is
+complete in the ``*.old`` files (rename them back to restart from it).
+``load()`` checks the fingerprint and stops with a fatal error on a mismatch,
+since the particle data are raw bytes; checkpoints without one (older
+versions) load with a warning. Case-level state (e.g. a body force) is the
+case's responsibility: restart a case by passing ``checkpoint.xml`` as its
 configuration and following its ``cfg->checkpointed`` branch.
