@@ -22,8 +22,8 @@ TEST(Validation, Pipeflow) {
   hemo::HemoCell hemocell(inp, 0, args, hemo::HemoCell::MPIHandle::External);
   hemo::Config * cfg = hemocell.cfg;
 
-  std::auto_ptr<plb::MultiScalarField3D<int>> flagMatrix;
-  std::auto_ptr<hemo::VoxelizedDomain3D<T>> voxelizedDomain;
+  std::unique_ptr<plb::MultiScalarField3D<int>> flagMatrix;
+  std::unique_ptr<plb::VoxelizedDomain3D<T>> voxelizedDomain;
 
   hemo::getFlagMatrixFromSTL(geometry_file, (*cfg)["domain"]["fluidEnvelope"].read<int>(),
                              (*cfg)["domain"]["refDirN"].read<int>(), (*cfg)["domain"]["refDir"].read<int>(),
@@ -40,7 +40,7 @@ TEST(Validation, Pipeflow) {
       new plb::GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / hemo::param::tau));
 
   defineDynamics(*hemocell.lattice, *flagMatrix.get(), (*hemocell.lattice).getBoundingBox(),
-                 new hemo::BounceBack<T, DESCRIPTOR>(1.), 0);
+                 new plb::BounceBack<T, DESCRIPTOR>(1.), 0);
 
   hemocell.lattice->toggleInternalStatistics(false);
   hemocell.lattice->periodicity().toggleAll(false);
@@ -54,7 +54,7 @@ TEST(Validation, Pipeflow) {
   hemocell.lattice->initialize();
   hemocell.initializeCellfield();
 
-  hemocell.addCellType<hemo::RbcHighOrderModel>("tests/validation/pipeflow/RBC", RBC_FROM_SPHERE);
+  hemocell.addCellType<hemo::RbcHighOrderModel>("tests/validation/pipeflow/RBC", hemo::RBC_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("tests/validation/pipeflow/RBC",
                                           (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
   // The expected cell count and viscosity bounds below were established while
@@ -63,7 +63,7 @@ TEST(Validation, Pipeflow) {
   // unchanged; 0.5 um now excludes the first wall node and leaves 36 cells.
   hemocell.setInitialMinimumDistanceFromSolid("tests/validation/pipeflow/RBC", 0.0);
 
-  hemocell.addCellType<hemo::PltSimpleModel>("tests/validation/pipeflow/PLT", ELLIPSOID_FROM_SPHERE);
+  hemocell.addCellType<hemo::PltSimpleModel>("tests/validation/pipeflow/PLT", hemo::ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation("tests/validation/pipeflow/PLT",
                                           (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
 

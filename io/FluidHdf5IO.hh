@@ -37,7 +37,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace hemo {
 
 // Write a 4D dataset (z, y, x, component), one chunk per block (up to 1000 nodes per direction).
-inline void outputHDF5(hsize_t * dim, hsize_t * chunk, hid_t & file_id, string & name, float * output) {
+inline void outputHDF5(hsize_t * dim, hsize_t * chunk, hid_t & file_id, std::string & name, float * output) {
   chunk[3] = dim[3];
   writeCompressedDataset(file_id, name, H5T_NATIVE_FLOAT, 4, dim, chunk, output);
 }
@@ -48,29 +48,29 @@ inline void outputHDF5(hsize_t * dim, hsize_t * chunk, hid_t & file_id, string &
  * component)`. Arguments: [0] lattice, [1] particle field (for the block ID).
  */
 template <template <class U> class DD>
-class WriteFluidField : public BoxProcessingFunctional3D {
+class WriteFluidField : public plb::BoxProcessingFunctional3D {
 public:
   /// `densityToSI_` converts the lattice density to SI output (1 for a
   /// concentration). `written_` receives one record per block file written;
   /// it is owned by the caller and shared by all clones of the functional.
-  WriteFluidField(HemoCellFields & cellfields_, MultiBlock3D & fluid_, plint iter_, string identifier_, T dx_, T dt_,
-                  vector<int> & outputVariables_, T densityToSI_, std::vector<XdmfBlockFile> * written_)
+  WriteFluidField(HemoCellFields & cellfields_, plb::MultiBlock3D & fluid_, plint iter_, std::string identifier_, T dx_,
+                  T dt_, std::vector<int> & outputVariables_, T densityToSI_, std::vector<XdmfBlockFile> * written_)
       : cellfields(cellfields_), fluid(fluid_), iter(iter_), identifier(identifier_), dx(dx_), dt(dt_),
         densityToSI(densityToSI_), written(written_), outputVariables(outputVariables_) {}
 
   ~WriteFluidField(){};
 
-  BlockDomain::DomainT appliesTo() const { return BlockDomain::bulk; }
+  plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
 
   WriteFluidField * clone() const { return new WriteFluidField(*this); }
 
-  void getTypeOfModification(vector<modif::ModifT> & modified) const {
-    for (pluint i = 0; i < modified.size(); i++) { modified[i] = modif::nothing; }
+  void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const {
+    for (pluint i = 0; i < modified.size(); i++) { modified[i] = plb::modif::nothing; }
   }
 
-  void processGenericBlocks(Box3D domain, vector<AtomicBlock3D *> blocks) {
-    int id = global::mpi().getRank();
-    ablock = dynamic_cast<BlockLattice3D<T, DD> *>(blocks[0]);
+  void processGenericBlocks(plb::Box3D domain, std::vector<plb::AtomicBlock3D *> blocks) {
+    int id = plb::global::mpi().getRank();
+    ablock = dynamic_cast<plb::BlockLattice3D<T, DD> *>(blocks[0]);
     particlefield = dynamic_cast<HemoCellParticleField *>(blocks[1]);
     blockid = particlefield
                   ->atomicBlockId; //Nasty trick to prevent us from having to overload the fluid field ( palabos domain)
@@ -89,8 +89,8 @@ public:
     record.blockId = blockid;
     record.structured = true;
     record.file = "hdf5/" + zeroPadNumber(iter) + '/' + record.identifier + "." + zeroPadNumber(iter) + ".p." +
-                  to_string(blockid) + ".h5";
-    std::string fileName = global::directories().getOutputDir() + "/" + record.file;
+                  std::to_string(blockid) + ".h5";
+    std::string fileName = plb::global::directories().getOutputDir() + "/" + record.file;
     hid_t file_id;
     file_id = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     H5LTset_attribute_double(file_id, "/", "dx", &dx, 1);
@@ -108,7 +108,7 @@ public:
     this->nCellsStorage = nCells;
     this->nCells = &this->nCellsStorage;
     int ncells = Nx * Ny * Nz;
-    Dot3D rp_temp = blocks[0]->getLocation();
+    plb::Dot3D rp_temp = blocks[0]->getLocation();
     int subdomainSize[] = {int(Nz), int(Ny), int(Nx)}; //Reverse for paraview
     // Lower corner of the first node's cell, z, y, x.
     const double scale = cellfields.hemocell.outputInSiUnits ? double(param::dx) : 1.;
@@ -141,7 +141,7 @@ public:
       //These variables should be set by the functions:
       float * output = 0;
       hsize_t dim[4] = {Nz, Ny, Nx, 0};
-      string name;
+      std::string name;
 
       switch (outputVariable) {
         case OUTPUT_VELOCITY:
@@ -220,7 +220,7 @@ public:
   }
 
 private:
-  static XdmfAttribute attribute(const string & name, hsize_t components) {
+  static XdmfAttribute attribute(const std::string & name, hsize_t components) {
     XdmfAttribute a;
     a.name = name;
     a.components = int(components);
@@ -312,8 +312,9 @@ private:
   float * outputBindingSites() {
     float * output = new float[(*nCells)];
     if (!particlefield->bindingField) {
-      pcout << "(FluidHdf5) (Error) OUTPUT_BINDING_SITES requested, but binding sites not used, outputting a zero field"
-            << endl;
+      plb::pcout
+          << "(FluidHdf5) (Error) OUTPUT_BINDING_SITES requested, but binding sites not used, outputting a zero field"
+          << std::endl;
       for (hsize_t i = 0; i < *nCells; i++) { output[i] = 0; }
       return output;
     }
@@ -336,9 +337,9 @@ private:
   float * outputInteriorPoints() {
     float * output = new float[(*nCells)];
     if (!particlefield->interiorViscosityField) {
-      pcout
+      plb::pcout
           << "(FluidHdf5) (Error) OUTPUT_INTERIOR_POINTS requested, but interior viscosity not used, outputting a zero field"
-          << endl;
+          << std::endl;
       for (hsize_t i = 0; i < *nCells; i++) { output[i] = 0; }
       return output;
     }
@@ -370,17 +371,17 @@ private:
     return output;
   }
 
-  float * outputCellDensity(string name) {
+  float * outputCellDensity(std::string name) {
     float * output = new float[(*nCells)];
     memset(output, 0, sizeof(float) * (*nCells));
 
-    vector<HemoCellParticle *> found;
+    std::vector<HemoCellParticle *> found;
     particlefield->findParticles(particlefield->localDomain, found, cellfields[name]->ctype);
 
     const plint nx = odomain->x1 - odomain->x0 + 1;
     const plint ny = odomain->y1 - odomain->y0 + 1;
     const plint nz = odomain->z1 - odomain->z0 + 1;
-    const Dot3D location = ablock->getLocation();
+    const plb::Dot3D location = ablock->getLocation();
 
     for (HemoCellParticle * particle : found) {
       // Node whose cell (half a node in each direction, upper face included,
@@ -491,9 +492,9 @@ private:
     float * output = new float[(*nCells) * 6];
     unsigned int n = 0;
     // calculate tensorfield strain rate
-    std::unique_ptr<TensorField3D<T, 6>> strainrate(computeStrainRateFromStress(*ablock));
+    std::unique_ptr<plb::TensorField3D<T, 6>> strainrate(computeStrainRateFromStress(*ablock));
     // calculate norm of tensorfield
-    std::unique_ptr<ScalarField3D<T>> shearrate(computeSymmetricTensorNorm(*strainrate));
+    std::unique_ptr<plb::ScalarField3D<T>> shearrate(computeSymmetricTensorNorm(*strainrate));
 
     //strainrate.get()
 
@@ -532,21 +533,21 @@ private:
 
 
   HemoCellFields & cellfields;
-  MultiBlock3D & fluid;
+  plb::MultiBlock3D & fluid;
   plint iter;
-  string identifier;
+  std::string identifier;
   double dx;
   double dt;
   T densityToSI;
   std::vector<XdmfBlockFile> * written;
-  Box3D * odomain;
-  Box3D odomainStorage;
-  BlockLattice3D<T, DD> * ablock;
+  plb::Box3D * odomain;
+  plb::Box3D odomainStorage;
+  plb::BlockLattice3D<T, DD> * ablock;
   HemoCellParticleField * particlefield;
   int blockid;
   hsize_t * nCells;
   hsize_t nCellsStorage = 0;
-  vector<int> & outputVariables;
+  std::vector<int> & outputVariables;
 };
 }
 #endif

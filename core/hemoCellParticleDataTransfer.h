@@ -33,37 +33,37 @@ class HemoCellParticleDataTransfer;
 #include "constant_defaults.h"
 
 namespace hemo {
-using namespace plb;
 
-class HemoCellParticleDataTransfer : public BlockDataTransfer3D {
+class HemoCellParticleDataTransfer : public plb::BlockDataTransfer3D {
 public:
   HemoCellParticleDataTransfer();
   virtual plint staticCellSize() const;
-  virtual void send(Box3D domain, std::vector<char> & buffer, modif::ModifT kind) const;
-  virtual void send_preinlet(Box3D domain, std::vector<char> & buffer, modif::ModifT kind) const;
+  virtual void send(plb::Box3D domain, std::vector<char> & buffer, plb::modif::ModifT kind) const;
+  virtual void send_preinlet(plb::Box3D domain, std::vector<char> & buffer, plb::modif::ModifT kind) const;
   // Much faster since we can circumvent memcpy (twice!)
-  void receive(Box3D const & domain, char *, unsigned int size, modif::ModifT);
-  void receive(Box3D const & domain, char *, unsigned int size, modif::ModifT, Dot3D absoluteOffset);
-  void receive(char *, unsigned int size, modif::ModifT);
-  void receive(char *, unsigned int size, modif::ModifT, Dot3D absoluteOffset);
-  void receivePreInlet(char *, unsigned int size, modif::ModifT, Dot3D absoluteOffset);
+  void receive(plb::Box3D const & domain, char *, unsigned int size, plb::modif::ModifT);
+  void receive(plb::Box3D const & domain, char *, unsigned int size, plb::modif::ModifT, plb::Dot3D absoluteOffset);
+  void receive(char *, unsigned int size, plb::modif::ModifT);
+  void receive(char *, unsigned int size, plb::modif::ModifT, plb::Dot3D absoluteOffset);
+  void receivePreInlet(char *, unsigned int size, plb::modif::ModifT, plb::Dot3D absoluteOffset);
 
-  virtual void receive(Box3D domain, std::vector<NoInitChar> const & buffer);
-  virtual void receive(Box3D domain, std::vector<NoInitChar> const & buffer, Dot3D absoluteOffset);
-  virtual void receive(Box3D domain, std::vector<char> const & buffer, modif::ModifT kind);
-  virtual void receive(Box3D domain, std::vector<char> const & buffer, modif::ModifT kind, Dot3D absoluteOffset);
-  virtual void receive(Box3D domain, std::vector<char> const & buffer, modif::ModifT kind,
+  virtual void receive(plb::Box3D domain, std::vector<NoInitChar> const & buffer);
+  virtual void receive(plb::Box3D domain, std::vector<NoInitChar> const & buffer, plb::Dot3D absoluteOffset);
+  virtual void receive(plb::Box3D domain, std::vector<char> const & buffer, plb::modif::ModifT kind);
+  virtual void receive(plb::Box3D domain, std::vector<char> const & buffer, plb::modif::ModifT kind,
+                       plb::Dot3D absoluteOffset);
+  virtual void receive(plb::Box3D domain, std::vector<char> const & buffer, plb::modif::ModifT kind,
                        std::map<int, std::string> const & foreignIds) {
     receive(domain, buffer, kind);
   }
-  virtual void setBlock(AtomicBlock3D & block);
-  virtual void setConstBlock(AtomicBlock3D const & block);
+  virtual void setBlock(plb::AtomicBlock3D & block);
+  virtual void setConstBlock(plb::AtomicBlock3D const & block);
   virtual HemoCellParticleDataTransfer * clone() const { return new HemoCellParticleDataTransfer(*this); }
-  virtual void attribute(Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ, AtomicBlock3D const & from,
-                         modif::ModifT kind);
-  virtual void attribute(Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ, AtomicBlock3D const & from,
-                         modif::ModifT kind, Dot3D absoluteOffset);
-  plint getOffset(Dot3D const &);
+  virtual void attribute(plb::Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ, plb::AtomicBlock3D const & from,
+                         plb::modif::ModifT kind);
+  virtual void attribute(plb::Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ, plb::AtomicBlock3D const & from,
+                         plb::modif::ModifT kind, plb::Dot3D absoluteOffset);
+  plint getOffset(plb::Dot3D const &);
 
 private:
   HemoCellParticleField * particleField;

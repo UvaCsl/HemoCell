@@ -46,17 +46,17 @@ namespace hemo {
 void writeCellField3D_HDF5(HemoCellFields & cellFields, T dx, T dt, plint iter, std::string preString = "");
 
 
-class WriteCellField3DInMultipleHDF5Files : public BoxProcessingFunctional3D {
+class WriteCellField3DInMultipleHDF5Files : public plb::BoxProcessingFunctional3D {
 public:
   /// `written_` receives one record per block file written; it is owned by the
   /// caller and shared by all clones of the functional.
   WriteCellField3DInMultipleHDF5Files(HemoCellField & cellField3D_, plint iter_, std::string identifier_, T dx_, T dt_,
                                       std::vector<XdmfBlockFile> * written_);
   /// Arguments: [0] Particle-field.
-  virtual void processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D *> fields);
+  virtual void processGenericBlocks(plb::Box3D domain, std::vector<plb::AtomicBlock3D *> fields);
   virtual WriteCellField3DInMultipleHDF5Files * clone() const;
-  virtual void getTypeOfModification(std::vector<modif::ModifT> & modified) const;
-  virtual BlockDomain::DomainT appliesTo() const;
+  virtual void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const;
+  virtual plb::BlockDomain::DomainT appliesTo() const;
 
 private:
   HemoCellField & cellField3D;

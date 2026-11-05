@@ -22,14 +22,16 @@ constexpr const char * rbc_name = "tests/validation/pipeflow/RBC";
 constexpr const char * plt_name = "tests/validation/pipeflow/PLT";
 
 struct PipeflowSetup {
-  std::auto_ptr<plb::MultiScalarField3D<int>> flagMatrix;
-  std::auto_ptr<hemo::VoxelizedDomain3D<T>> voxelizedDomain;
+  std::unique_ptr<plb::MultiScalarField3D<int>> flagMatrix;
+  std::unique_ptr<plb::VoxelizedDomain3D<T>> voxelizedDomain;
   plb::Array<T, 3> drivingForce;
 };
 
 // Same domain, lattice and cell types as Validation.Pipeflow, without loading
-// particles (that differs between a fresh start and a restart).
-inline void setupPipeflow(hemo::HemoCell & hemocell, PipeflowSetup & setup, T rbcMinimumDistanceFromSolid = 0.5) {
+// particles (that differs between a fresh start and a restart). `RbcModel` is
+// the constitutive model of the RBC type.
+template <class RbcModel = hemo::RbcHighOrderModel>
+void setupPipeflow(hemo::HemoCell & hemocell, PipeflowSetup & setup, T rbcMinimumDistanceFromSolid = 0.5) {
   hemo::Config * cfg = hemocell.cfg;
   hemo::getFlagMatrixFromSTL(pipeflow_geometry, (*cfg)["domain"]["fluidEnvelope"].read<int>(),
                              (*cfg)["domain"]["refDirN"].read<int>(), (*cfg)["domain"]["refDir"].read<int>(),
@@ -43,7 +45,7 @@ inline void setupPipeflow(hemo::HemoCell & hemocell, PipeflowSetup & setup, T rb
       plb::defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
       new plb::GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / hemo::param::tau));
   defineDynamics(*hemocell.lattice, *setup.flagMatrix.get(), (*hemocell.lattice).getBoundingBox(),
-                 new hemo::BounceBack<T, DESCRIPTOR>(1.), 0);
+                 new plb::BounceBack<T, DESCRIPTOR>(1.), 0);
   hemocell.lattice->toggleInternalStatistics(false);
   hemocell.lattice->periodicity().toggleAll(false);
   hemocell.latticeEquilibrium(1., {0., 0., 0.});
@@ -54,10 +56,10 @@ inline void setupPipeflow(hemo::HemoCell & hemocell, PipeflowSetup & setup, T rb
 
   hemocell.lattice->initialize();
   hemocell.initializeCellfield();
-  hemocell.addCellType<hemo::RbcHighOrderModel>(rbc_name, RBC_FROM_SPHERE);
+  hemocell.addCellType<RbcModel>(rbc_name, hemo::RBC_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation(rbc_name, (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
   hemocell.setInitialMinimumDistanceFromSolid(rbc_name, rbcMinimumDistanceFromSolid);
-  hemocell.addCellType<hemo::PltSimpleModel>(plt_name, ELLIPSOID_FROM_SPHERE);
+  hemocell.addCellType<hemo::PltSimpleModel>(plt_name, hemo::ELLIPSOID_FROM_SPHERE);
   hemocell.setMaterialTimeScaleSeparation(plt_name, (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
   hemocell.setSystemPeriodicity(0, true);

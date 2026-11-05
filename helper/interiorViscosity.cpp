@@ -26,6 +26,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
+using namespace std;
+using namespace plb;
+
 namespace hemo {
 InteriorViscosityHelper::InteriorViscosityHelper(HemoCellFields & cellFields_) : cellFields(cellFields_) {
   //Create viscosity field with same properties as fluid field underlying the particleField.
@@ -136,21 +139,21 @@ void InteriorViscosityHelper::restore(HemoCellFields & cellFields) {
   get(cellFields).refillBindingSites();
 }
 
-void InteriorViscosityHelper::add(HemoCellParticleField & pf, const Dot3D & internalPoint, T tau) {
+void InteriorViscosityHelper::add(HemoCellParticleField & pf, const plb::Dot3D & internalPoint, T tau) {
   pf.internalPoints.insert(internalPoint);
   pf.interiorViscosityField->get(internalPoint.x, internalPoint.y, internalPoint.z) = tau;
 }
 
-void InteriorViscosityHelper::add(HemoCellParticleField & pf, const vector<Dot3D> & internalPoints, T tau) {
+void InteriorViscosityHelper::add(HemoCellParticleField & pf, const std::vector<plb::Dot3D> & internalPoints, T tau) {
   for (const Dot3D & internalPoint : internalPoints) { add(pf, internalPoint, tau); }
 }
 
-void InteriorViscosityHelper::remove(HemoCellParticleField & pf, const Dot3D & internalPoint) {
+void InteriorViscosityHelper::remove(HemoCellParticleField & pf, const plb::Dot3D & internalPoint) {
   pf.internalPoints.erase(internalPoint);
   pf.interiorViscosityField->get(internalPoint.x, internalPoint.y, internalPoint.z) = 0;
 }
 
-void InteriorViscosityHelper::remove(HemoCellParticleField & pf, const vector<Dot3D> & internalPoints) {
+void InteriorViscosityHelper::remove(HemoCellParticleField & pf, const std::vector<plb::Dot3D> & internalPoints) {
   for (const Dot3D & internalPoint : internalPoints) { remove(pf, internalPoint); }
 }
 

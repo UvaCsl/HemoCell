@@ -38,9 +38,11 @@ Available models
      - An RBC variant with an additional inner-link term (``k_inner_link``) used
        to study malaria-infected red blood cells :cite:`czaja2020influence`.
    * - ``NoOp`` (``NoOp.h``)
-     - Rigid / passive particles
+     - Passive tracers
      - A null model: ``ParticleMechanics`` does nothing, so the cell experiences
-       no internal forces. Useful for tracer-like or perfectly rigid particles.
+       no internal forces. Its vertices follow the fluid like tracers and the
+       cell does not keep its shape (it is not rigid). The cell type still
+       needs its ``<name>.xml``, for the mesh.
 
 Force coefficients
 ------------------

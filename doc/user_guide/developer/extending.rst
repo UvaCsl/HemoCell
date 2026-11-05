@@ -33,8 +33,9 @@ Adding a mechanical model
 Adding an output field
 ----------------------
 
-#. Add an ``OUTPUT_*`` constant in ``config/constant_defaults.h`` (do not
-   renumber existing ones; case files use them).
+#. Add an ``OUTPUT_*`` constant (``constexpr int`` in ``namespace hemo``) in
+   ``config/constant_defaults.h`` (do not renumber existing ones; case files
+   and output files use them).
 #. Cell fields: add an ``output*`` member to ``HemoCellParticleField``
    (``io/hemoCellParticleFieldOutputFunctions.cpp``) and register it in
    ``AddOutputMap()``. Fluid fields: add a ``case`` to ``WriteFluidField``

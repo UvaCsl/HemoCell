@@ -85,8 +85,8 @@ public:
   void setDrivingForce();
   void setDrivingForceTimeDependent(double t);
   void calculateDrivingForce();
-  double interpolate(vector<double> & xData, vector<double> & yData, double x, bool extrapolate);
-  double average(vector<double> values);
+  double interpolate(std::vector<double> & xData, std::vector<double> & yData, double x, bool extrapolate);
+  double average(std::vector<double> values);
   void applyPreInletVelocityBoundary();
   void applyPreInletParticleBoundary();
   void applyPreInlet() {
@@ -101,7 +101,7 @@ public:
   };
 
   void autoPreinletFromBoundary(Direction);
-  void preInletFromSlice(Direction direction_, Box3D boundary);
+  void preInletFromSlice(Direction direction_, plb::Box3D boundary);
 
   Direction direction = Direction::Zneg;
   plb::Box3D location;
@@ -118,7 +118,7 @@ public:
   std::map<int, plint> particleSendMpi;
   std::map<int, bool> particleReceiveMpi;
   std::vector<plint> communicating_blocks;
-  std::map<int, Box3D> domain_at_rank;
+  std::map<int, plb::Box3D> domain_at_rank;
   std::vector<int> my_send_blocks;
   std::vector<int> my_recv_blocks;
   int sendingBlocks = 0;
@@ -129,7 +129,7 @@ public:
   std::vector<int> particle_receivers;
   std::vector<int> particle_senders;
   HemoCell * hemocell;
-  MultiScalarField3D<int> * flagMatrix = 0;
+  plb::MultiScalarField3D<int> * flagMatrix = 0;
 
   ~PreInlet();
 

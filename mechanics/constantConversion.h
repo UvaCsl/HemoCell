@@ -50,6 +50,13 @@ public:
   static void lbm_LE_parameters(Config & cfg, T ny);
   static void lbm_base_parameters(Config & cfg);
   static void printParameters();
+  /// Set all parameters back to their initial value (zero); called when a
+  /// HemoCell object is destroyed, so a next simulation in the same process
+  /// does not inherit them.
+  static void reset();
 };
+
+/// Short name of Parameters (formerly a macro), e.g. `param::dx`.
+typedef Parameters param;
 }
 #endif

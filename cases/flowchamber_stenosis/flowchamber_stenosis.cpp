@@ -33,6 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.hh"
 
 using namespace hemo;
+using namespace plb;
 
 /// A functional, used to instantiate bounce-back nodes at the locations of the sphere
 template <typename T>

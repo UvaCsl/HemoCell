@@ -78,7 +78,7 @@ public:
   HemoCellField * operator[](unsigned int index);
 
   ///Easy access to contained celltypes
-  HemoCellField * operator[](string name);
+  HemoCellField * operator[](std::string name);
 
   ///Get the number of celltypes
   unsigned int size();
@@ -190,10 +190,10 @@ public:
   void syncEnvelopes();
 
   /// Get particles in a given domain
-  void getParticles(vector<HemoCellParticle *> & particles, plb::Box3D & domain);
+  void getParticles(std::vector<HemoCellParticle *> & particles, plb::Box3D & domain);
 
   /// Add particles to local processors
-  void addParticles(vector<HemoCellParticle> & particles);
+  void addParticles(std::vector<HemoCellParticle> & particles);
 
   /// Add boundary particles on the fluid-solid boundary
   void populateBoundaryParticles();
@@ -216,13 +216,13 @@ public:
   ///the fluid lattice
   plb::MultiBlockLattice3D<T, DESCRIPTOR> * lattice;
   ///A vector specifying the output variables (from const_defaults.h)
-  vector<int> desiredFluidOutputVariables;
+  std::vector<int> desiredFluidOutputVariables;
 
-  vector<int> desiredCEPACfieldOutputVariables;
+  std::vector<int> desiredCEPACfieldOutputVariables;
   ///Reference to parent
   HemoCell & hemocell;
   ///Vector containing the cellTypes
-  vector<HemoCellField *> cellFields;
+  std::vector<HemoCellField *> cellFields;
   ///The envelopeSize for the particles
   pluint envelopeSize;
   /// palabos field storing the particles
@@ -267,13 +267,13 @@ private:
   /// field). Called by syncEnvelopes(); collective over all ranks.
   void exchangeEnvelopes();
 
-  vector<vector<NoInitChar>> sendBuffers, recvBuffers;
+  std::vector<std::vector<NoInitChar>> sendBuffers, recvBuffers;
   /// Partner ranks (ascending) and per-partner message sizes, data and receive
   /// overlaps of exchangeEnvelopes(), kept between calls to avoid reallocation.
-  vector<int> envelopeSendRanks, envelopeRecvRanks;
-  vector<vector<int>> envelopeSendSizes, envelopeRecvSizes;
-  vector<vector<NoInitChar>> envelopeSendData, envelopeRecvData;
-  vector<vector<const plb::CommunicationInfo3D *>> envelopeRecvInfos;
+  std::vector<int> envelopeSendRanks, envelopeRecvRanks;
+  std::vector<std::vector<int>> envelopeSendSizes, envelopeRecvSizes;
+  std::vector<std::vector<NoInitChar>> envelopeSendData, envelopeRecvData;
+  std::vector<std::vector<const plb::CommunicationInfo3D *>> envelopeRecvInfos;
   /// Private duplicate of MPI_COMM_WORLD for the particle exchanges in
   /// syncEnvelopes(), so their messages cannot be matched by Palabos or other
   /// HemoCell traffic. Created in the constructor (collective over all ranks),
@@ -305,7 +305,6 @@ public:
   InteriorViscosityHelper * interiorViscosityHelper = 0;
 
   plb::CommunicationStructure3D * large_communicator = 0;
-  plb::ParallelBlockCommunicator3D envelope_communicator;
 
   void calculateCommunicationStructure();
 
@@ -368,26 +367,21 @@ public:
   public:
     bool verbose;
   };
-  class HemoSyncEnvelopes : public HemoCellFunctional {
-    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
-    HemoSyncEnvelopes * clone() const;
-    void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const;
-  };
   class HemoGetParticles : public HemoCellFunctional {
-    vector<HemoCellParticle *> & particles;
+    std::vector<HemoCellParticle *> & particles;
     void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
     HemoGetParticles * clone() const;
 
   public:
-    HemoGetParticles(vector<HemoCellParticle *> & particles_) : particles(particles_) {}
+    HemoGetParticles(std::vector<HemoCellParticle *> & particles_) : particles(particles_) {}
   };
   class HemoSetParticles : public HemoCellFunctional {
-    vector<HemoCellParticle> & particles;
+    std::vector<HemoCellParticle> & particles;
     void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
     HemoSetParticles * clone() const;
 
   public:
-    HemoSetParticles(vector<HemoCellParticle> & particles_) : particles(particles_) {}
+    HemoSetParticles(std::vector<HemoCellParticle> & particles_) : particles(particles_) {}
   };
   class HemoPopulateBoundaryParticles : public HemoCellFunctional {
     void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);

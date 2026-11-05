@@ -25,6 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellParticleField.h"
 #include "hemocell.h"
 
+using namespace std;
+using namespace plb;
+
 namespace hemo {
 
 /* *************** class HemoParticleDataTransfer3D ************************ */
@@ -107,7 +110,7 @@ void HemoCellParticleDataTransfer::send_preinlet(Box3D domain, std::vector<char>
   global.statistics.getCurrent().stop();
 }
 
-void HemoCellParticleDataTransfer::receive(Box3D domain, std::vector<NoInitChar> const & buffer) {
+void HemoCellParticleDataTransfer::receive(plb::Box3D domain, std::vector<NoInitChar> const & buffer) {
   global.statistics.getCurrent()["MpiReceive"].start();
   unsigned int posInBuffer = 0;
   unsigned int size = buffer.size();
@@ -121,7 +124,8 @@ void HemoCellParticleDataTransfer::receive(Box3D domain, std::vector<NoInitChar>
   global.statistics.getCurrent().stop();
 }
 
-void HemoCellParticleDataTransfer::receive(Box3D domain, std::vector<NoInitChar> const & buffer, Dot3D absoluteOffset) {
+void HemoCellParticleDataTransfer::receive(plb::Box3D domain, std::vector<NoInitChar> const & buffer,
+                                           plb::Dot3D absoluteOffset) {
   if (absoluteOffset.x == 0 && absoluteOffset.y == 0 && absoluteOffset.z == 0) {
     receive(domain, buffer);
     return;
@@ -150,7 +154,7 @@ void HemoCellParticleDataTransfer::receive(Box3D domain, std::vector<NoInitChar>
   global.statistics.getCurrent().stop();
 }
 
-void HemoCellParticleDataTransfer::receive(char * buffer, unsigned int size, modif::ModifT kind) {
+void HemoCellParticleDataTransfer::receive(char * buffer, unsigned int size, plb::modif::ModifT kind) {
   global.statistics.getCurrent()["MpiReceive"].start();
 
   if ((kind == modif::hemocell || kind == modif::dataStructure)) {
@@ -167,7 +171,8 @@ void HemoCellParticleDataTransfer::receive(char * buffer, unsigned int size, mod
   global.statistics.getCurrent().stop();
 }
 
-void HemoCellParticleDataTransfer::receive(Box3D const & domain, char * buffer, unsigned int size, modif::ModifT kind) {
+void HemoCellParticleDataTransfer::receive(plb::Box3D const & domain, char * buffer, unsigned int size,
+                                           plb::modif::ModifT kind) {
   PLB_PRECONDITION(contained(domain, particleField->getBoundingBox()));
   // Clear the existing data before introducing the new data.
   //particleField->removeParticles(domain);
@@ -219,7 +224,8 @@ void HemoCellParticleDataTransfer::receivePreInlet(char * buffer, unsigned int s
   global.statistics.getCurrent().stop();
 }
 
-void HemoCellParticleDataTransfer::receive(char * buffer, unsigned int size, modif::ModifT kind, Dot3D absoluteOffset) {
+void HemoCellParticleDataTransfer::receive(char * buffer, unsigned int size, plb::modif::ModifT kind,
+                                           plb::Dot3D absoluteOffset) {
   if (absoluteOffset.x == 0 && absoluteOffset.y == 0 && absoluteOffset.z == 0) {
     receive(buffer, size, kind);
     return;
@@ -247,8 +253,8 @@ void HemoCellParticleDataTransfer::receive(char * buffer, unsigned int size, mod
   global.statistics.getCurrent().stop();
 }
 
-void HemoCellParticleDataTransfer::receive(Box3D const & domain, char * buffer, unsigned int size, modif::ModifT kind,
-                                           Dot3D absoluteOffset) {
+void HemoCellParticleDataTransfer::receive(plb::Box3D const & domain, char * buffer, unsigned int size,
+                                           plb::modif::ModifT kind, plb::Dot3D absoluteOffset) {
   if (absoluteOffset.x == 0 && absoluteOffset.y == 0 && absoluteOffset.z == 0) {
     receive(domain, buffer, size, kind);
     return;
@@ -276,13 +282,14 @@ void HemoCellParticleDataTransfer::receive(Box3D const & domain, char * buffer, 
   global.statistics.getCurrent().stop();
 }
 
-void HemoCellParticleDataTransfer::receive(Box3D domain, std::vector<char> const & buffer, modif::ModifT kind) {
+void HemoCellParticleDataTransfer::receive(plb::Box3D domain, std::vector<char> const & buffer,
+                                           plb::modif::ModifT kind) {
   //cast to char* because we ARE going to edit
   receive(domain, const_cast<char *>(buffer.data()), buffer.size(), kind);
 }
 
-void HemoCellParticleDataTransfer::receive(Box3D domain, std::vector<char> const & buffer, modif::ModifT kind,
-                                           Dot3D absoluteOffset) {
+void HemoCellParticleDataTransfer::receive(plb::Box3D domain, std::vector<char> const & buffer, plb::modif::ModifT kind,
+                                           plb::Dot3D absoluteOffset) {
   //cast to char* because we ARE going to edit
   receive(domain, const_cast<char *>(buffer.data()), buffer.size(), kind, absoluteOffset);
 }
@@ -297,8 +304,8 @@ void HemoCellParticleDataTransfer::setConstBlock(AtomicBlock3D const & block) {
   constParticleField = dynamic_cast<HemoCellParticleField const *>(&block);
 }
 
-void HemoCellParticleDataTransfer::attribute(Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
-                                             AtomicBlock3D const & from, modif::ModifT kind) {
+void HemoCellParticleDataTransfer::attribute(plb::Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
+                                             plb::AtomicBlock3D const & from, plb::modif::ModifT kind) {
   global.statistics.getCurrent()["LocalCommunication"].start();
 
   if ((kind == modif::hemocell || kind == modif::dataStructure)) {
@@ -316,8 +323,9 @@ void HemoCellParticleDataTransfer::attribute(Box3D toDomain, plint deltaX, plint
   global.statistics.getCurrent().stop();
 }
 
-void HemoCellParticleDataTransfer::attribute(Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
-                                             AtomicBlock3D const & from, modif::ModifT kind, Dot3D absoluteOffset) {
+void HemoCellParticleDataTransfer::attribute(plb::Box3D toDomain, plint deltaX, plint deltaY, plint deltaZ,
+                                             plb::AtomicBlock3D const & from, plb::modif::ModifT kind,
+                                             plb::Dot3D absoluteOffset) {
   if (absoluteOffset.x == 0 && absoluteOffset.y == 0 && absoluteOffset.z == 0) {
     attribute(toDomain, deltaX, deltaY, deltaZ, from, kind);
     return;

@@ -33,6 +33,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wint-in-bool-context"
 #include <Eigen3/Eigenvalues>
+
+using namespace std;
+using namespace plb;
 #pragma GCC diagnostic pop
 
 namespace hemo {
@@ -315,10 +318,6 @@ void HemoCellParticleField::removeParticles_inverse(Box3D domain) {
     ppc_up_to_date = false;
     pg_up_to_date = false;
   }
-}
-
-void HemoCellParticleField::syncEnvelopes() {
-  removeParticles_inverse(localDomain);
 }
 
 void HemoCellParticleField::findParticles(plb::Box3D domain, std::vector<HemoCellParticle *> & found) {

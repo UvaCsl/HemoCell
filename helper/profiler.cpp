@@ -117,6 +117,13 @@ void Profiler::reset() {
   }
 }
 
+void Profiler::clear() {
+  started = false;
+  total_time = std::chrono::high_resolution_clock::duration::zero();
+  timers.clear();
+  current = this;
+}
+
 std::chrono::high_resolution_clock::duration Profiler::elapsed() {
   if (!started) {
     return total_time;

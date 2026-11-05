@@ -30,6 +30,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "boundaryCondition/boundaryInstantiator3D.h"
 #include "hemoCellFields.h"
 
+using namespace std;
+using namespace plb;
+
 namespace hemo {
 struct Box3D_simple {
   plint x0, x1, y0, y1, z0, z1;

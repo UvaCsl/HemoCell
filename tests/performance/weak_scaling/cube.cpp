@@ -52,6 +52,8 @@ extern int argc;
 extern char ** argv;
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
 TEST(Performance, cube) {
   char * args[] = {(char *)"test", (char *)"path", NULL};

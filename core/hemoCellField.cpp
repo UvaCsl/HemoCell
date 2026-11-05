@@ -33,6 +33,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <climits>
 
+using namespace std;
+using namespace plb;
+
 using namespace hemo;
 
 //HemoCellField

@@ -31,6 +31,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "io/parallelIO.h"
 
+using namespace std;
+using namespace plb;
+
 namespace hemo {
 
 void weakScaling(int Nx, int Ny, int Nz, int numberOfProcesses, vector<int> & newNxNyNz) {

@@ -23,6 +23,8 @@
 #include "palabos3D.hh"
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
 
 /*Main program*/

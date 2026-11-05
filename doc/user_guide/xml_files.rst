@@ -152,10 +152,10 @@ we listed the options present in this file and when you can use them
 * ``HEMOCELL_PARTICLE_FILED`` This has been built in and can't change anymore,
   it used to be interchangable with Palabos particle fields very early on.
 * ``OUTPUT_XXX`` Defines the outputs that can be requested in a **case.cpp** for
-  either the fluid or the cells.
+  either the fluid or the cells (constants in ``namespace hemo``).
 * ``T`` It is possible to define ``T`` as float instead of double, this
   decreases accuracy but increases speed, also decreases memory footprint.
-* ``constructMeshElement``
+* ``constructMeshElement`` (shape constants in ``namespace hemo``)
 
   * ``RBC_FROM_SPHERE`` create the RBC model from mathematical equations (see
     HemoCell paper), accepts a minimum number of to be created vertices.

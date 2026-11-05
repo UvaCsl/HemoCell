@@ -114,6 +114,19 @@ void Parameters::printParameters() {
 #endif
 }
 
+void Parameters::reset() {
+  dt = dx = dm = df = 0.0;
+  nu_p = rho_p = kBT_p = 0.0;
+  tau = re = 0.0;
+  nu_lbm = u_lbm_max = kBT_lbm = shearrate_lbm = LE_force = 0.0;
+#ifdef FORCE_LIMIT
+  f_limit = 0.0;
+#endif
+  ef_lbm = 0.0;
+  pipe_radius = 0.0;
+  tau_CEPAC = 0.0;
+}
+
 T Parameters::dt = 0.0;
 T Parameters::dx = 0.0;
 T Parameters::dm = 0.0;

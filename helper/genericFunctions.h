@@ -39,9 +39,6 @@ namespace hemo {
 typedef struct stat Stat;
 
 
-using namespace std;
-
-
 /*
  * Returns the new dimensions in case of weak scaling
  * eg.
@@ -49,7 +46,7 @@ using namespace std;
  *    newdim -> (64, 64, 32)
  *
  */
-void weakScaling(int Nx, int Ny, int Nz, int numberOfProcesses, vector<int> & newNxNyNz);
+void weakScaling(int Nx, int Ny, int Nz, int numberOfProcesses, std::vector<int> & newNxNyNz);
 
 inline bool file_exists(const std::string & name) {
   /* Checks if a file exists */
@@ -95,10 +92,10 @@ void boundaryFromFlagMatrix(plb::MultiBlockLattice3D<T, DESCRIPTOR> * fluid, plb
                             bool);
 inline std::ostream & operator<<(std::ostream & stream, const plb::Box3D & box) {
   return stream << "Box3D: " << box.x0 << " " << box.x1 << " " << box.y0 << " " << box.y1 << " " << box.z0 << " "
-                << box.z1 << endl;
+                << box.z1 << std::endl;
 }
 inline std::ostream & operator<<(std::ostream & stream, const plb::Dot3D & dot) {
-  return stream << "Dot3D: " << dot.x << " " << dot.y << " " << dot.z << endl;
+  return stream << "Dot3D: " << dot.x << " " << dot.y << " " << dot.z << std::endl;
 }
 }
 #endif // FCN_GENERIC_FUNCTIONS_HH

@@ -36,8 +36,10 @@ Findings of a review of the `refactor` branch (November 2026). Items marked
 reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
 before others write drivers against the API.
 
-Status: A1, A2, A3, A5, A6 and A7 are done (see CHANGELOG), except placing
-periodic images of cells at load (A5) and exact cell IDs in HDF5 output (A7).
+Status: A1, A2, A3, A5, A6, A7, B11, B12 and B16 are done (see CHANGELOG),
+except placing periodic images of cells at load (A5), exact cell IDs in HDF5
+output (A7) and `DESCRIPTOR` as a macro (B12). B10 is deferred (special case,
+lower priority).
 
 ### A. Silent wrong results or lost runs
 
@@ -108,22 +110,30 @@ periodic images of cells at load (A5) and exact cell IDs in HDF5 output (A7).
 
 ### B. A robust base for other developers
 
-10. **The ParMETIS variant does not compile** *(verified)*.
+10. *Deferred (special case, lower priority).*
+    **The ParMETIS variant does not compile** *(verified)*.
     `helper/loadBalancer.cpp` uses block timers (`pf->timer`, `ff->timer`) that
     do not exist. CI cannot see it (no ParMETIS); build it against a stub
     header in CI, or drop the variant until it is finished.
-11. **Global state survives a simulation.** `~HemoCell` does not reset
-    `param::*`, the `global` flags, or the static pointers and data of
-    `HemoCellParticleField`, `CellInformationFunctionals`, `HemoCellStretch`
-    and the Lees-Edwards helper. Reset them in one place and test two
-    sequential simulations.
-12. **Public API.** `std::auto_ptr` in `getFlagMatrixFromSTL()` (and 10
-    drivers) was removed in C++17 and only compiles with libstdc++; the
-    constructor takes `char *`; public headers contain
-    `using namespace std/plb/hemo` (`hemocell.h` makes `Array` ambiguous);
-    generic macros (`DESCRIPTOR`, `OUTPUT_*`, `WBC_SPHERE`) pollute user code.
-    Use `std::unique_ptr`, `const std::string &`, and namespaced constants with
-    the old macros as aliases.
+11. *Done* (`resetGlobalState()` in `~HemoCell`; stretch and Lees-Edwards
+    data per object). **Global state survives a simulation.** `~HemoCell`
+    does not reset `param::*`, the `global` flags, or the static pointers and
+    data of `HemoCellParticleField`, `CellInformationFunctionals`,
+    `HemoCellStretch` and the Lees-Edwards helper. Reset them in one place and
+    test two sequential simulations.
+12. *Done, except `DESCRIPTOR`* (no `using namespace` in headers, drivers
+    declare their own; the constants keep their names in namespace `hemo`,
+    without macros; `unique_ptr`; `const std::string &`). `DESCRIPTOR` and
+    `CEPAC_DESCRIPTOR` remain macros: an alias template passed as a template
+    template argument is not guaranteed to be the same template as the one it
+    names (CWG 1286), so lattice types could differ between library and case;
+    this belongs with B14. **Public API.** `std::auto_ptr` in
+    `getFlagMatrixFromSTL()` (and 10 drivers) was removed in C++17 and only
+    compiles with libstdc++; the constructor takes `char *`; public headers
+    contain `using namespace std/plb/hemo` (`hemocell.h` makes `Array`
+    ambiguous); generic macros (`DESCRIPTOR`, `OUTPUT_*`, `WBC_SPHERE`)
+    pollute user code. Use `std::unique_ptr`, `const std::string &`, and
+    namespaced constants with the old macros as aliases.
 13. **Configuration friction.** `sanityCheck()` requires `<sim><tmax>` even in
     drivers that do not use it; "XML child X does not exist" names neither the
     parent path nor the file.
@@ -133,8 +143,9 @@ periodic images of cells at load (A5) and exact cell IDs in HDF5 output (A7).
     be changed by recompiling; the version is defined both in CMake and in the
     header. Use CMake options and a generated configuration header.
 15. **Driver boilerplate.** Seventeen drivers copy the STL voxelisation and
-    lattice setup (including `auto_ptr`); move it into a library helper.
-16. **Dead code.** `HemoCellFields::HemoSyncEnvelopes` (declares
+    lattice setup; move it into a library helper.
+16. *Done* (removed; `NoOp` fixed and tested). **Dead code.**
+    `HemoCellFields::HemoSyncEnvelopes` (declares
     `modif::hemocell`; applying it would bring back arrival-order
     communication), `HemoCellFields::envelope_communicator`,
     `tests/test_example.cpp` (`Dummy.foobar`), `mechanics/NoOp.h` (does not

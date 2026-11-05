@@ -28,9 +28,17 @@ Naming
 Follow the surrounding code; for new code:
 
 * Types: ``CamelCase`` (``HemoCellParticleField``); functions and variables:
-  ``camelCase`` (``applyRepulsionForce``, ``repulsionCutoff``); macros and
+  ``camelCase`` (``applyRepulsionForce``, ``repulsionCutoff``); constants and
   compile-time options: ``UPPER_CASE`` (``FORCE_LIMIT``, ``OUTPUT_FORCE``).
-* Everything in ``namespace hemo``; no ``using namespace`` in new headers.
+* Everything in ``namespace hemo``, constants included (``hemo::OUTPUT_FORCE``,
+  ``hemo::RBC_FROM_SPHERE``); macros only for compile-time options.
+* No ``using namespace`` in headers (``.h``/``.hh``): qualify ``std::`` and
+  ``plb::`` names there. Source files of the library may use
+  ``using namespace std;`` and ``using namespace plb;``; case files declare
+  what they import themselves (usually ``hemo``, ``plb`` and ``std``).
+* No process-wide state that outlives a simulation: anything static is reset
+  in ``resetGlobalState()`` (``core/hemoCell.cpp``), which ``~HemoCell`` calls;
+  per-simulation data belongs to an object (as in ``HemoCellStretch``).
 * Existing misspellings in the public API (e.g. ``...TimeScaleSeperation``) are
   kept for compatibility; add a correctly spelled alias rather than renaming.
 

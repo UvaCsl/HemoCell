@@ -23,6 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "rbcMalariaModel.h"
 #include "logfile.h"
+
+using namespace std;
+using namespace plb;
 //TODO Make all inner hemo::Array variables constant as well
 
 namespace hemo {

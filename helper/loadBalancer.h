@@ -65,7 +65,7 @@ public:
   };
   struct Box3D_simple {
     plint x0, x1, y0, y1, z0, z1;
-    inline Box3D_simple & operator=(const Box3D & box) {
+    inline Box3D_simple & operator=(const plb::Box3D & box) {
       x0 = box.x0;
       x1 = box.x1;
       y0 = box.y0;
@@ -74,23 +74,23 @@ public:
       z1 = box.z1;
       return *this;
     }
-    inline Box3D getBox3D() const { return Box3D(x0, x1, y0, y1, z0, z1); }
+    inline plb::Box3D getBox3D() const { return plb::Box3D(x0, x1, y0, y1, z0, z1); }
   };
 
   class GatherTimeOfAtomicBlocks : public HemoCellGatheringFunctional<TOAB_t> {
   public:
     using HemoCellGatheringFunctional<TOAB_t>::HemoCellGatheringFunctional; //Inherit Constructor
-    void processGenericBlocks(Box3D, vector<AtomicBlock3D *>);
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
     GatherTimeOfAtomicBlocks * clone() const;
   };
 
 private:
   bool FLI_iscalled = false;
-  map<int, TOAB_t> gatherValues;
+  std::map<int, TOAB_t> gatherValues;
   HemoCell & hemocell;
   bool original_block_stored = true;
-  SparseBlockStructure3D * original_block_structure = 0;
-  ThreadAttribution * original_thread_attribution = 0;
+  plb::SparseBlockStructure3D * original_block_structure = 0;
+  plb::ThreadAttribution * original_thread_attribution = 0;
 };
 }
 #endif

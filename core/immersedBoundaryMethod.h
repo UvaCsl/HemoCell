@@ -30,13 +30,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace hemo {
 
 /// Decide if a Lagrangian point is contained in 3D box, boundaries exclusive
-inline bool contained_sane(hemo::Array<plint, 3> const & x, Box3D const & box) {
+inline bool contained_sane(hemo::Array<plint, 3> const & x, plb::Box3D const & box) {
   return x[0] >= box.x0 && x[0] <= box.x1 && x[1] >= box.y0 && x[1] <= box.y1 && x[2] >= box.z0 && x[2] <= box.z1;
 }
 inline T phi2(T x) {
   x = fabs(x);
   x = 1.0 - x;
-  return max(x, (T)0.0);
+  return std::max(x, (T)0.0);
 }
 
 template <typename T>
@@ -49,12 +49,12 @@ template <typename T>
 T phi4c(T x);
 
 template <typename T, template <typename U> class Descriptor>
-void interpolationCoefficients(BlockLattice3D<T, Descriptor> const & block, hemo::Array<T, 3> const & position,
-                               std::vector<Dot3D> & cellPos, std::vector<T> & weights);
+void interpolationCoefficients(plb::BlockLattice3D<T, Descriptor> const & block, hemo::Array<T, 3> const & position,
+                               std::vector<plb::Dot3D> & cellPos, std::vector<T> & weights);
 
 template <typename T, template <typename U> class Descriptor>
-void interpolationCoefficientsPhi1(BlockLattice3D<T, Descriptor> const & block, hemo::Array<T, 3> const & position,
-                                   std::vector<Dot3D> & cellPos, std::vector<T> & weights);
+void interpolationCoefficientsPhi1(plb::BlockLattice3D<T, Descriptor> const & block, hemo::Array<T, 3> const & position,
+                                   std::vector<plb::Dot3D> & cellPos, std::vector<T> & weights);
 
 /**
  * @brief Compute the IBM kernel of a particle with the 2-point hat function
@@ -70,7 +70,7 @@ void interpolationCoefficientsPhi1(BlockLattice3D<T, Descriptor> const & block, 
  * @param block    fluid block of the particle (block-local node coordinates)
  * @param particle particle with absolute lattice position `sv.position`
  */
-inline void interpolationCoefficientsPhi2(BlockLattice3D<T, DESCRIPTOR> & block, HemoCellParticle & particle) {
+inline void interpolationCoefficientsPhi2(plb::BlockLattice3D<T, DESCRIPTOR> & block, HemoCellParticle & particle) {
   particle.kernelWeights.clear();
   particle.kernelWeights.reserve(8);
   particle.kernelLocations.clear();
@@ -79,8 +79,8 @@ inline void interpolationCoefficientsPhi2(BlockLattice3D<T, DESCRIPTOR> & block,
   particle.kernelCoordinates.reserve(8);
 #endif
 
-  const Dot3D location = block.getLocation();
-  const Box3D boundingBox = block.getBoundingBox();
+  const plb::Dot3D location = block.getLocation();
+  const plb::Box3D boundingBox = block.getBoundingBox();
   const plint lower[3] = {boundingBox.x0, boundingBox.y0, boundingBox.z0};
   const plint upper[3] = {boundingBox.x1, boundingBox.y1, boundingBox.z1};
 
@@ -132,25 +132,24 @@ inline void interpolationCoefficientsPhi2(BlockLattice3D<T, DESCRIPTOR> & block,
 template <typename T, template <typename U> class Descriptor>
 void interpolationCoefficientsPhi3(
 
-    BlockLattice3D<T, Descriptor> const & block, hemo::Array<T, 3> const & position, std::vector<Dot3D> & cellPos,
-    std::vector<T> & weights);
+    plb::BlockLattice3D<T, Descriptor> const & block, hemo::Array<T, 3> const & position,
+    std::vector<plb::Dot3D> & cellPos, std::vector<T> & weights);
 
-void interpolationCoefficientsPhi4(BlockLattice3D<double, DESCRIPTOR> const & block,
-                                   hemo::Array<double, 3> const & position, std::vector<Dot3D> & cellPos,
+void interpolationCoefficientsPhi4(plb::BlockLattice3D<double, DESCRIPTOR> const & block,
+                                   hemo::Array<double, 3> const & position, std::vector<plb::Dot3D> & cellPos,
                                    std::vector<double> & weights);
 
 template <typename T, template <typename U> class Descriptor>
-void interpolationCoefficientsPhi4c(BlockLattice3D<T, Descriptor> const & block, hemo::Array<T, 3> const & position,
-                                    std::vector<Dot3D> & cellPos, std::vector<T> & weights);
+void interpolationCoefficientsPhi4c(plb::BlockLattice3D<T, Descriptor> const & block,
+                                    hemo::Array<T, 3> const & position, std::vector<plb::Dot3D> & cellPos,
+                                    std::vector<T> & weights);
 
 /*
  * In case one of the interpolating boundary nodes is a boundary,
  * the force is spread to the rest of the nodes
  * */
 template <typename T, template <typename U> class Descriptor>
-void curateInterpolationCoefficients(BlockLattice3D<T, Descriptor> & fluid, std::vector<Dot3D> & cellPos,
+void curateInterpolationCoefficients(plb::BlockLattice3D<T, Descriptor> & fluid, std::vector<plb::Dot3D> & cellPos,
                                      std::vector<T> & weights);
-
-
 }
 #endif // IMMERSEDBOUNDARYMETHOD_3D_H

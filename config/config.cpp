@@ -31,6 +31,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parallelism/mpiManager.h"
 #include "io/parallelIO.h"
 
+using namespace std;
+using namespace plb;
+
 namespace hemo {
 Config::Config(string paramXmlFileName) {
   load(paramXmlFileName);
@@ -183,6 +186,16 @@ logfile_open_done:
 }
 
 ConfigValues global;
+
+void resetGlobalConfigValues() {
+  const ConfigValues defaults;
+  global.cellsDeletedInfo = defaults.cellsDeletedInfo;
+  global.enableCEPACfield = defaults.enableCEPACfield;
+  global.enableSolidifyMechanics = defaults.enableSolidifyMechanics;
+  global.enableInteriorViscosity = defaults.enableInteriorViscosity;
+  global.checkpointDirectory = defaults.checkpointDirectory;
+  global.statistics.clear();
+}
 
 void loadGlobalConfigValues(hemo::Config * cfg) {
   try {

@@ -22,6 +22,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "hemoCellStretch.h"
+
+using namespace std;
+using namespace plb;
 namespace hemo {
 
 
@@ -31,8 +34,11 @@ HemoCellStretch::FindForcedLsps * HemoCellStretch::FindForcedLsps::clone() const
 
 void HemoCellStretch::FindForcedLsps::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D *> blocks) {
   vector<HemoCellParticle *> found;
+  // Every block that holds the cell gives the same vertices: take the first.
+  if (!stretch.lower_lsps.empty()) { return; }
   HemoCellParticleField * pf = dynamic_cast<HemoCellParticleField *>(blocks[0]);
   const map<plint, vector<int>> & ppc = pf->get_particles_per_cell();
+  if (ppc.find(0) == ppc.end()) { return; }
 
   const vector<int> & p_indices = ppc.at(0);
   for (int p_index : p_indices) {
@@ -51,9 +57,9 @@ void HemoCellStretch::FindForcedLsps::processGenericBlocks(Box3D domain, std::ve
       }
     }
   }
-  for (unsigned int i = 0; i < n_forced_lsps; i++) {
-    lower_lsps.push_back(found[i]->sv.vertexId);
-    upper_lsps.push_back(found[found.size() - 1 - i]->sv.vertexId);
+  for (unsigned int i = 0; i < stretch.n_forced_lsps; i++) {
+    stretch.lower_lsps.push_back(found[i]->sv.vertexId);
+    stretch.upper_lsps.push_back(found[found.size() - 1 - i]->sv.vertexId);
   }
 }
 
@@ -65,13 +71,13 @@ void HemoCellStretch::ForceForcedLsps::processGenericBlocks(Box3D domain, std::v
   const map<plint, std::vector<int>> & ppc = dynamic_cast<HemoCellParticleField *>(blocks[0])->get_particles_per_cell();
   vector<HemoCellParticle> * particles = &dynamic_cast<HemoCellParticleField *>(blocks[0])->particles;
 
-  hemo::Array<T, 3> ex_force = {external_force * scale, 0., 0.};
-  for (unsigned int vi : lower_lsps) {
+  hemo::Array<T, 3> ex_force = {stretch.external_force * stretch.scale, 0., 0.};
+  for (unsigned int vi : stretch.lower_lsps) {
     if (ppc.find(0) == ppc.end()) { continue; }
     if (ppc.at(0)[vi] < 0) { continue; }
     (*particles)[ppc.at(0)[vi]].sv.force -= ex_force;
   }
-  for (unsigned int vi : upper_lsps) {
+  for (unsigned int vi : stretch.upper_lsps) {
     if (ppc.find(0) == ppc.end()) { continue; }
     if (ppc.at(0)[vi] < 0) { continue; }
     (*particles)[ppc.at(0)[vi]].sv.force += ex_force;
@@ -79,24 +85,17 @@ void HemoCellStretch::ForceForcedLsps::processGenericBlocks(Box3D domain, std::v
 }
 
 HemoCellStretch::HemoCellStretch(HemoCellField & cellfield_, unsigned int n_forced_lsps_, T external_force_)
-    : cellfield(cellfield_) {
+    : cellfield(cellfield_), n_forced_lsps(n_forced_lsps_), external_force(external_force_ / n_forced_lsps_) {
   //Sanity Checks
   if (cellfield.cellFields.number_of_cells != 1) {
     fatal("(HemoCellStretch) Needs exactly 1 cell, there are ", cellfield.cellFields.number_of_cells, ".");
   }
-  n_forced_lsps = n_forced_lsps_;
-  external_force = external_force_ / n_forced_lsps;
+  if (n_forced_lsps == 0) { fatal("(HemoCellStretch) The number of pulled vertices must be positive."); }
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(cellfield.getParticleField3D());
   cellfield.cellFields.syncEnvelopes();
-  applyProcessingFunctional(new FindForcedLsps(), cellfield.getParticleField3D()->getBoundingBox(), wrapper);
+  applyProcessingFunctional(new FindForcedLsps(*this), cellfield.getParticleField3D()->getBoundingBox(), wrapper);
 }
-
-vector<plint> HemoCellStretch::lower_lsps = vector<plint>();
-vector<plint> HemoCellStretch::upper_lsps = vector<plint>();
-unsigned int HemoCellStretch::n_forced_lsps = 0;
-T HemoCellStretch::external_force = 0.0;
-T HemoCellStretch::scale = 1.0;
 
 void HemoCellStretch::applyForce() {
   if (cellfield.timescale != 1) {
@@ -104,7 +103,7 @@ void HemoCellStretch::applyForce() {
   }
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(cellfield.getParticleField3D());
-  applyProcessingFunctional(new ForceForcedLsps(), cellfield.getParticleField3D()->getBoundingBox(), wrapper);
+  applyProcessingFunctional(new ForceForcedLsps(*this), cellfield.getParticleField3D()->getBoundingBox(), wrapper);
 }
 
 }

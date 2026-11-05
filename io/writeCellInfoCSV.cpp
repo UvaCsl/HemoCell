@@ -25,6 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cellInfo.h"
 #include "hemocell.h"
 
+using namespace std;
+using namespace plb;
+
 namespace hemo {
 
 void writeCellInfo_CSV(HemoCell & hemocell) {

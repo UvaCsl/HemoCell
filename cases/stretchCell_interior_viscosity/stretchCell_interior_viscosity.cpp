@@ -30,6 +30,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.hh"
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
 
 int main(int argc, char * argv[]) {
@@ -140,9 +142,9 @@ int main(int argc, char * argv[]) {
 
   while (hemocell.iter < tmax) {
     //set sawtooth behaviour
-    HemoCellStretch::scale = (hemocell.iter / speedRate) % 2 == 0
-                                 ? ((hemocell.iter % speedRate) / (T)speedRate)
-                                 : ((speedRate - (hemocell.iter % speedRate)) / (T)speedRate);
+    cellStretch.scale = (hemocell.iter / speedRate) % 2 == 0
+                            ? ((hemocell.iter % speedRate) / (T)speedRate)
+                            : ((speedRate - (hemocell.iter % speedRate)) / (T)speedRate);
 
     cellStretch.applyForce(); //IMPORTANT, not done normally in hemocell.iterate()
     hemocell.iterate();

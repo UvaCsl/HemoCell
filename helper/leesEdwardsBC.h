@@ -26,11 +26,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Lees-Edwards boundary condition class which makes use of two data processors
 for calculating and writing of the populations according to the Lees-Edwards algorithm.
 
-Populations are read and writen between two static 2D arrays (topPopulations & bottomPopulations).
+Populations are read and writen between two 2D arrays (topPopulations & bottomPopulations).
 The memory address for the current Lees-Edwards displacement is shared with the hemoCell class.
 
-The 2D arrays and Lees-Edwards displacement are static in order to guarantee data consistency
-after subdivision of the code over the individual lattice blocks.
+The 2D arrays and Lees-Edwards displacement are members of the LeesEdwardsBC object; the data
+processors of all lattice blocks refer to them through pointers. The object must therefore
+live as long as the lattice is iterated, and it is not copyable.
 
 The velocity in the system comes from setting the macroscopic velocity in the boundary nodes
 
@@ -98,16 +99,16 @@ public:
      * @param lattice individual block lattice
      */
   virtual void process(plb::Box3D domain, plb::BlockLattice3D<T, Descriptor> & lattice) {
-    Dot3D absoluteOffset = lattice.getLocation(); // Location of this block lattice {x, y, z}
+    plb::Dot3D absoluteOffset = lattice.getLocation(); // Location of this block lattice {x, y, z}
 
     // The portion of the population streamed from node S1 or S2 is determined by the overlap with the reference node
     double gfrac = std::fmod((*this->LEcurrentDisplacement), 1.0);
     plint globalX, globalY;
     plint globalZ0 = absoluteOffset.z + domain.z0;
     plint globalZ1 = absoluteOffset.z + domain.z1;
-    Cell<T, Descriptor> curCell;
-    Cell<T, Descriptor> s1Cell;
-    Cell<T, Descriptor> s2Cell;
+    plb::Cell<T, Descriptor> curCell;
+    plb::Cell<T, Descriptor> s1Cell;
+    plb::Cell<T, Descriptor> s2Cell;
 
     // Variables for setting the macroscopic velocity
     T rhoBar;
@@ -184,10 +185,12 @@ public:
   }
 
   // Return the type of data that is modified
-  virtual void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const { modified[0] = modif::nothing; }
+  virtual void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const {
+    modified[0] = plb::modif::nothing;
+  }
 
   // Only need the bulk of the domain
-  virtual plb::BlockDomain::DomainT appliesTo() const { return BlockDomain::bulk; }
+  virtual plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
 };
 
 /*  Write the streaming of the populations according to the Lees-Edwards algorithm
@@ -226,7 +229,7 @@ public:
      * @param lattice individual block lattice
      */
   virtual void process(plb::Box3D domain, plb::BlockLattice3D<T, Descriptor> & lattice) {
-    Dot3D absoluteOffset = lattice.getLocation(); // Location of this block lattice {x, y, z}
+    plb::Dot3D absoluteOffset = lattice.getLocation(); // Location of this block lattice {x, y, z}
 
     plint globalZ0 = absoluteOffset.z + domain.z0;
     plint globalZ1 = absoluteOffset.z + domain.z1;
@@ -262,11 +265,11 @@ public:
 
   // Return the type of data that is modified
   virtual void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const {
-    modified[0] = modif::staticVariables;
+    modified[0] = plb::modif::staticVariables;
   }
 
   // Only need the bulk of the domain
-  virtual plb::BlockDomain::DomainT appliesTo() const { return BlockDomain::bulk; }
+  virtual plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
 };
 
 
@@ -280,20 +283,19 @@ public:
   plint ny; // Dimension in y direction
   plint nz; // Dimension in z direction
   // int direction; // TODO direction of the LE boundary x = 0, y = 1, z = 2
-  double LEdisplacement;               // Displacement per timestep
-  static double LEcurrentDisplacement; // Current total displacement
-  T dt;                                // Timestep size
-  T topVelocity;                       // Macroscopic velocity top boundary layer
-  T bottomVelocity;                    // Macroscopic velocity bottom boundary layer
-  plint dataProcessorLevel;            // level of operation of the Lees-Edwards data processors
+  double LEdisplacement;            // Displacement per timestep
+  double LEcurrentDisplacement = 0; // Current total displacement
+  T dt;                             // Timestep size
+  T topVelocity;                    // Macroscopic velocity top boundary layer
+  T bottomVelocity;                 // Macroscopic velocity bottom boundary layer
+  plint dataProcessorLevel;         // level of operation of the Lees-Edwards data processors
 
-  static std::vector<std::vector<std::vector<T>>> topPopulations;    // Data structure containing the top populations
-  static std::vector<std::vector<std::vector<T>>> bottomPopulations; // Data structure containing the bottom populations
+  std::vector<std::vector<std::vector<T>>> topPopulations;    // Data structure containing the top populations
+  std::vector<std::vector<std::vector<T>>> bottomPopulations; // Data structure containing the bottom populations
 
   LeesEdwardsBC(plb::MultiBlockLattice3D<T, Descriptor> & lattice, T shearRate, T dt,
                 double ** hemoCellLEcurrentDisplacement, plint dataProcessorLevel = 1)
       : lattice(lattice) {
-    this->lattice = lattice;
     this->nx = lattice.getNx();
     this->ny = lattice.getNy();
     this->nz = lattice.getNz();
@@ -306,6 +308,9 @@ public:
     *hemoCellLEcurrentDisplacement =
         &LEcurrentDisplacement; // Let the hemocell LE displacement point to this memory address
   }
+  // The data processors and HemoCell point into this object.
+  LeesEdwardsBC(const LeesEdwardsBC &) = delete;
+  LeesEdwardsBC & operator=(const LeesEdwardsBC &) = delete;
 
   void initialize() {
     // Uses the default periodicity because otherwise a form of bounceback boundary will be initialized per default
@@ -334,20 +339,6 @@ public:
   }
 };
 
-#ifndef LEBC_STATICS
-#define LEBC_STATICS
-// Initialize static variables
-// Lees-Edwards displacement
-template <typename T, template <typename U> class Descriptor>
-double LeesEdwardsBC<T, Descriptor>::LEcurrentDisplacement;
-// Top populations data storage for separate writing and reading across different data processors
-template <typename T, template <typename U> class Descriptor>
-std::vector<std::vector<std::vector<T>>> LeesEdwardsBC<T, Descriptor>::topPopulations;
-// Bottom populations data storage for separate writing and reading across different data processors
-template <typename T, template <typename U> class Descriptor>
-std::vector<std::vector<std::vector<T>>> LeesEdwardsBC<T, Descriptor>::bottomPopulations;
-#else
-#endif
 
 }; // namespace hemo
 

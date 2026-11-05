@@ -30,6 +30,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.hh"
 #include "bindingField.h"
 
+using namespace std;
+using namespace plb;
+
 
 namespace hemo {
 PltSimpleModel::PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_)

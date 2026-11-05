@@ -86,7 +86,8 @@ Initial placement
 Software constraints
 --------------------
 
-* One ``HemoCell`` object per process (process-wide state).
+* One ``HemoCell`` object at a time per process (process-wide state, reset
+  when the object is destroyed).
 * Library code is C++11; the test runner is C++17.
 * ``config/constant_defaults.h`` defines ``SOLIDIFY_MECHANICS`` for every
   build, so ``hemocell_solidify_mechanics`` equals ``hemocell``.

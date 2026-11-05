@@ -25,6 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellParticleField.h"
 #include "hemocell.h"
 
+using namespace std;
+using namespace plb;
+
 namespace hemo {
 
 void GatherParticleVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D *> blocks) {

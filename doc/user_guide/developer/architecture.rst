@@ -47,8 +47,13 @@ Positions are absolute lattice coordinates (not block-local); velocities and
 forces are in lattice units. Output converts to SI.
 
 Only one ``HemoCell`` object may exist at a time: unit conversion
-(``param::``/``hemo::Parameters``), ``hemo::global``, the log (``hlog``) and
-``HemoCellParticleField::cellFields`` are process-wide.
+(``param::``/``hemo::Parameters``), ``hemo::global`` (settings and the
+profiler), the log (``hlog``), the signal handlers,
+``HemoCellParticleField::cellFields`` and
+``CellInformationFunctionals::info_per_cell`` are process-wide. Destroying the
+``HemoCell`` object resets all of them (``resetGlobalState()`` in
+``core/hemoCell.cpp``), so simulations that follow each other in one process
+(as in the test suite) do not influence each other.
 
 One time step
 -------------

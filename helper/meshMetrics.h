@@ -38,7 +38,6 @@ class MeshMetrics;
 #include "array.h"
 
 namespace plb {
-using namespace std;
 
 template <typename T>
 class ElementsOfTriangularSurfaceMesh {
@@ -149,8 +148,8 @@ void MeshMetrics<T>::init() {
   plb::Array<T, 2> yRange;
   plb::Array<T, 2> zRange;
   mesh.computeBoundingBox(xRange, yRange, zRange);
-  cellRadius = max(xRange[1] - xRange[0], yRange[1] - yRange[0]);
-  cellRadius = max(cellRadius, zRange[1] - zRange[0]) * 0.5;
+  cellRadius = std::max(xRange[1] - xRange[0], yRange[1] - yRange[0]);
+  cellRadius = std::max(cellRadius, zRange[1] - zRange[0]) * 0.5;
 
   Nn = 0;
   Nn6 = 0;

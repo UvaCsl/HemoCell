@@ -43,6 +43,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "preInlet.h"
 #include "bindingField.h"
 #include "interiorViscosity.h"
+#include "cellInfo.h"
+
+using namespace std;
+using namespace plb;
 
 using namespace hemo;
 
@@ -76,9 +80,29 @@ void restore_interrupt_handler() {
   interrupt_handler_set = false;
   interrupted = 0;
 }
+
+// Put the process-wide state that a simulation sets back to its initial
+// values, so that a next HemoCell object in the same process (as in the test
+// suite) starts as it would in a new process. Process-wide state of HemoCell:
+// the Parameters (`param::`), `global`, the log file, the signal handlers,
+// HemoCellParticleField::cellFields and CellInformationFunctionals::info_per_cell.
+// (HemoCellField::default_output is a user setting and is kept; Palabos'
+// global settings, such as the output directory, are set by every simulation.)
+void resetGlobalState() {
+  Parameters::reset();
+  resetGlobalConfigValues();
+  HemoCellParticleField::cellFields = 0;
+  CellInformationFunctionals::clear_list();
+  // Give the process its original signal behaviour back.
+  restore_interrupt_handler();
+  // Close this simulation's log file, so that a next HemoCell object logs to
+  // its own file.
+  hlog.close();
+  hemo::global.hemoCellInitialized = false;
+}
 } // namespace
 
-HemoCell::HemoCell(char * configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handler) {
+HemoCell::HemoCell(const std::string & configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handler) {
   if (mpi_handler == HemoCell::MPIHandle::Internal) { plb::plbInit(&(argc), &(argv)); }
 
   if (global.hemoCellInitialized) { fatal("A HemoCell object already exists; only one may exist at a time."); }
@@ -115,15 +139,8 @@ HemoCell::~HemoCell() {
   if (loadBalancer) { delete loadBalancer; }
   if (preInlet) { delete preInlet; }
   if (preinlet_lattice_management) { delete preinlet_lattice_management; }
-  // Give the process its original signal behaviour back.
-  restore_interrupt_handler();
-  // Close this simulation's log file, so that a next HemoCell instance (e.g.
-  // in the test suite) logs to its own file.
-  hlog.close();
-  // After cleaning up, signal that there is no hemocell instance initialised
-  // anymore, allowing to recreated another one if needed, for instance when
-  // running multiple test instances.
-  global.hemoCellInitialized = false;
+  // Allows another HemoCell object to be created afterwards (e.g. in tests).
+  resetGlobalState();
 }
 
 void HemoCell::latticeEquilibrium(T rho, hemo::Array<T, 3> vel) {

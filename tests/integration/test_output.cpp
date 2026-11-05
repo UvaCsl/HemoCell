@@ -78,9 +78,10 @@ TEST(Output, CellsOnceFluidBulkAndXdmf) {
   PipeflowSetup setup;
   setupPipeflow(hemocell, setup);
   hemocell.outputInSiUnits = false; // lattice units: positions in nodes, cell density in vertices per node
-  hemocell.setOutputs(rbc_name, {OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_CELL_ID, OUTPUT_VERTEX_ID});
-  hemocell.setOutputs(plt_name, {OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_CELL_ID});
-  hemocell.setFluidOutputs({OUTPUT_VELOCITY, OUTPUT_DENSITY, OUTPUT_CELL_DENSITY});
+  hemocell.setOutputs(rbc_name,
+                      {hemo::OUTPUT_POSITION, hemo::OUTPUT_TRIANGLES, hemo::OUTPUT_CELL_ID, hemo::OUTPUT_VERTEX_ID});
+  hemocell.setOutputs(plt_name, {hemo::OUTPUT_POSITION, hemo::OUTPUT_TRIANGLES, hemo::OUTPUT_CELL_ID});
+  hemocell.setFluidOutputs({hemo::OUTPUT_VELOCITY, hemo::OUTPUT_DENSITY, hemo::OUTPUT_CELL_DENSITY});
   hemocell.loadParticles();
   setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(), DESCRIPTOR<T>::ExternalField::forceBeginsAt,
                     setup.drivingForce);

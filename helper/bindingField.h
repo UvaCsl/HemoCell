@@ -43,10 +43,10 @@ public:
   static void restore(HemoCellFields & cellFields);
 
   //Called within functional, from particlefield
-  void add(HemoCellParticleField & pf, const Dot3D & bindingSite);
-  void add(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites);
-  void remove(HemoCellParticleField & pf, const Dot3D & bindingSite);
-  void remove(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites);
+  void add(HemoCellParticleField & pf, const plb::Dot3D & bindingSite);
+  void add(HemoCellParticleField & pf, const std::vector<plb::Dot3D> & bindingSites);
+  void remove(HemoCellParticleField & pf, const plb::Dot3D & bindingSite);
+  void remove(HemoCellParticleField & pf, const std::vector<plb::Dot3D> & bindingSites);
 
 private:
   HemoCellFields & cellFields;

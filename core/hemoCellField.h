@@ -40,17 +40,17 @@ class HemoCellField;
 namespace hemo {
 /*contains information about one particular cellfield, structlike*/
 class HemoCellField {
-  static vector<int> default_output;
+  static std::vector<int> default_output;
 
 public:
-  HemoCellField(HemoCellFields & cellFields_, string & name_, unsigned int ctype_, int contructType);
+  HemoCellField(HemoCellFields & cellFields_, std::string & name_, unsigned int ctype_, int contructType);
   ~HemoCellField();
   T getVolumeFraction();
   //ShellModel3D<T> * model;
   plb::TriangularSurfaceMesh<T> & getMesh();
   std::string name;
   HemoCellFields & cellFields;
-  vector<int> desiredOutputVariables;
+  std::vector<int> desiredOutputVariables;
   plb::TriangularSurfaceMesh<T> * meshElement = 0;
   plb::TriangleBoundary3D<T> * boundaryElement = 0;
   Config * materialCfg = 0;
@@ -66,7 +66,7 @@ public:
   /// Number of cells listed in `<name>.pos` (set by loadParticles()).
   plint cellsInPositionFile = 0;
   bool outputTriangles = false;
-  vector<hemo::Array<plint, 3>> triangle_list;
+  std::vector<hemo::Array<plint, 3>> triangle_list;
   void (*kernelMethod)(plb::BlockLattice3D<T, DESCRIPTOR> &, HemoCellParticle &);
   plb::MultiParticleField3D<HemoCellParticleField> * getParticleField3D();
   plb::MultiBlockLattice3D<T, DESCRIPTOR> * getFluidField3D();
@@ -77,7 +77,7 @@ public:
   /// name without a leading directory (e.g. "RBC" for "cells/RBC").
   std::string getIdentifier();
   plb::MultiParticleField3D<HemoCellParticleField> * getParticleArg();
-  void setOutputVariables(const vector<int> &);
+  void setOutputVariables(const std::vector<int> &);
   CellMechanics * mechanics = 0;
   void statistics();
   /* position is in micrometers, so we still have to convert it*/

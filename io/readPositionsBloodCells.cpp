@@ -31,6 +31,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "offLattice/triangularSurfaceMesh.h"
 #include "offLattice/triangularSurfaceMesh.hh"
 
+using namespace std;
+using namespace plb;
+
 
 namespace hemo {
 

@@ -47,8 +47,8 @@ public:
 public:
   WbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_);
 
-  void ParticleMechanics(map<plint, vector<HemoCellParticle *>> & particles_per_cell, const map<plint, bool> & lpc,
-                         size_t ctype) override;
+  void ParticleMechanics(std::map<plint, std::vector<HemoCellParticle *>> & particles_per_cell,
+                         const std::map<plint, bool> & lpc, size_t ctype) override;
 
   void statistics() override;
 

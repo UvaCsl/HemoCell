@@ -34,6 +34,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "wedge.h"
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
 /// \brief Possible scenarios for the capillary flow examples.
 /// The Bifurcation variant considiers a split channel with two parallel capillaries,

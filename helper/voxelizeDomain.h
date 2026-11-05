@@ -30,6 +30,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "array.h"
 
+#include <memory>
+
 namespace hemo {
 class CopyFromNeighbor : public plb::BoxProcessingFunctional3D_S<int> {
 public:
@@ -50,9 +52,11 @@ private:
 void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeWidth, plb::plint refDirLength,
                           plb::plint refDir, plb::VoxelizedDomain3D<T> *& voxelizedDomain,
                           plb::MultiScalarField3D<int> *& flagMatrix, plint blockSize, int particleEnvelope = 0);
+/// As above, with the created objects owned by @p voxelizedDomain and
+/// @p flagMatrix (formerly std::auto_ptr, which C++17 removed).
 void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeWidth, plb::plint refDirLength,
-                          plb::plint refDir, std::auto_ptr<plb::VoxelizedDomain3D<T>> & voxelizedDomain,
-                          std::auto_ptr<plb::MultiScalarField3D<int>> & flagMatrix, plint blockSize,
+                          plb::plint refDir, std::unique_ptr<plb::VoxelizedDomain3D<T>> & voxelizedDomain,
+                          std::unique_ptr<plb::MultiScalarField3D<int>> & flagMatrix, plint blockSize,
                           int particleEnvelope = 0);
 }
 #endif

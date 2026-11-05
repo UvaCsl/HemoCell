@@ -52,6 +52,9 @@ public:
   void start();
   void stop();
   void reset();
+  /// Stop this timer, zero it and remove all subtimers (the root timer
+  /// `global.statistics` is cleared when a HemoCell object is destroyed).
+  void clear();
   void printStatistics();
   void outputStatistics();
   void outputStatistics(int);

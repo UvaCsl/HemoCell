@@ -7,7 +7,7 @@ You select what HemoCell writes to disk with two calls from your case:
   type**, and
 * ``hemocell.setFluidOutputs({ ... })`` — fluid (lattice) fields.
 
-Each takes a list of ``OUTPUT_*`` constants defined in
+Each takes a list of ``OUTPUT_*`` constants defined in namespace ``hemo`` in
 ``config/constant_defaults.h``. Requesting only what you need keeps the output
 smaller and the simulation faster. By default the values are written in SI units
 (set ``hemocell.outputInSiUnits = false`` for lattice units). The fields end up

@@ -48,8 +48,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "voxelizeDomain.h"
 #include "palabos3D.h"
 #include "palabos3D.hh"
-using namespace hemo;
-using namespace plb;
 #endif
 
 namespace hemo {
@@ -82,7 +80,7 @@ public:
    *        restart), relative to the working directory
    * @param argc,argv command-line arguments, passed on to plb::plbInit()
    */
-  HemoCell(char * configFileName, int argc, char * argv[])
+  HemoCell(const std::string & configFileName, int argc, char * argv[])
       : HemoCell{configFileName, argc, argv, HemoCell::MPIHandle::Internal} {};
 
   /**
@@ -92,7 +90,7 @@ public:
    * @param mpi_handle MPIHandle::External if MPI is already initialised (e.g.
    *        by the test runner); plb::plbInit() is then not called.
    */
-  HemoCell(char * configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handle);
+  HemoCell(const std::string & configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handle);
 
   /*
    * Clean up hemocell
@@ -126,7 +124,7 @@ public:
    *        (constants in constant_defaults.h).
    */
   template <class Mechanics>
-  void addCellType(string name, int constructType) {
+  void addCellType(std::string name, int constructType) {
     HemoCellField * cellfield = cellfields->addCellType(name, constructType);
     Mechanics * mechanics = new Mechanics(*cellfield->materialCfg, *cellfield);
     cellfield->mechanics = mechanics;
@@ -139,7 +137,7 @@ public:
    * @param outputs OUTPUT_* constants from constant_defaults.h, e.g.
    *        {OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE}
    */
-  void setOutputs(string name, vector<int> outputs);
+  void setOutputs(std::string name, std::vector<int> outputs);
 
   bool repulsionEnabled = false;
   bool boundaryRepulsionEnabled = false;
@@ -156,18 +154,20 @@ public:
 
   // Lees-Edwards boundary condition
   bool leesEdwardsBC = false;
-  double * LEcurrentDisplacement;
+  /// Current Lees-Edwards displacement, owned by the LeesEdwardsBC object
+  /// (helper/leesEdwardsBC.h), which sets this pointer.
+  double * LEcurrentDisplacement = 0;
 
   /**
    * @brief Evaluate the constitutive model of a cell type every `separation`
    * iterations (default 1). Must be a multiple of the velocity update interval
    * (setParticleVelocityUpdateTimeScaleSeparation()).
    */
-  void setMaterialTimeScaleSeparation(string name, unsigned int separation);
+  void setMaterialTimeScaleSeparation(std::string name, unsigned int separation);
 
   //Enable solidify mechanics of a celltype
-  void enableSolidifyMechanics(string name) {
-    hlog << "(HemoCell) Enabling Solidify Mechanics for " << name << " mechanical model" << endl;
+  void enableSolidifyMechanics(std::string name) {
+    hlog << "(HemoCell) Enabling Solidify Mechanics for " << name << " mechanical model" << std::endl;
     (*cellfields)[name]->doSolidifyMechanics = true;
   }
 
@@ -210,13 +210,13 @@ public:
    * @param name cell type name (as given to addCellType())
    * @param distance [micrometre]
    */
-  void setInitialMinimumDistanceFromSolid(string name, T distance);
+  void setInitialMinimumDistanceFromSolid(std::string name, T distance);
 
   /// Select the fluid fields written by writeOutput() (OUTPUT_* constants).
-  void setFluidOutputs(vector<int> outputs);
+  void setFluidOutputs(std::vector<int> outputs);
 
   /// Select the CEPAC fields written by writeOutput() (OUTPUT_* constants).
-  void setCEPACOutputs(vector<int> outputs);
+  void setCEPACOutputs(std::vector<int> outputs);
 
   /**
    * @brief Set periodicity of the fluid and the particle field together.
@@ -297,26 +297,26 @@ public:
   void doRestructure(bool checkpoint_avail = true);
 
   ///Initialize the fluid field with the given management, should be done after specifing the pre inlets and before initializing the cellfields
-  void initializeLattice(MultiBlockManagement3D const & management);
+  void initializeLattice(plb::MultiBlockManagement3D const & management);
 
   PreInlet * preInlet = 0;
 
   bool partOfpreInlet = false;
 
-  map<plint, plint> BlockToMpi;
+  std::map<plint, plint> BlockToMpi;
 
   LoadBalancer * loadBalancer = 0;
   ///The fluid lattice
-  MultiBlockLattice3D<T, DESCRIPTOR> *lattice = 0, *preinlet_lattice = 0, *domain_lattice = 0;
+  plb::MultiBlockLattice3D<T, DESCRIPTOR> *lattice = 0, *preinlet_lattice = 0, *domain_lattice = 0;
 
-  MultiBlockManagement3D *preinlet_lattice_management = 0, *domain_lattice_management = 0;
+  plb::MultiBlockManagement3D *preinlet_lattice_management = 0, *domain_lattice_management = 0;
 
   Config * cfg = 0;
   ///The cellfields contains the particle field and all celltypes
   HemoCellFields * cellfields = 0;
   unsigned int iter = 0;
 
-  XMLreader * documentXML = 0; //Needed for legacy checkpoint reading TODO fix
+  plb::XMLreader * documentXML = 0; //Needed for legacy checkpoint reading TODO fix
 
   /// Iteration of the last writeOutput() call. Residence times are advanced by
   /// the number of iterations since then, so it is stored in checkpoints.

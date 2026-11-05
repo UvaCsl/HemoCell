@@ -25,6 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemocell.h"
 #include "hemoCellParticleField.h"
 
+using namespace std;
+using namespace plb;
+
 namespace hemo {
 
 void CellInformationFunctionals::clear_list() {
@@ -264,50 +267,44 @@ void CellInformationFunctionals::allCellInformation::processGenericBlocks(plb::B
   }
 }
 
-void CellInformationFunctionals::calculateCellVolume(HemoCell * hemocell_) {
-  hemocell = hemocell_;
+void CellInformationFunctionals::calculateCellVolume(HemoCell * hemocell) {
   HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyProcessingFunctional(new CellVolume(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
+  applyProcessingFunctional(new CellVolume(hemocell), hemocell->cellfields->immersedParticles->getBoundingBox(),
+                            wrapper);
 }
-void CellInformationFunctionals::calculateCellArea(HemoCell * hemocell_) {
-  hemocell = hemocell_;
+void CellInformationFunctionals::calculateCellArea(HemoCell * hemocell) {
   HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyProcessingFunctional(new CellArea(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
+  applyProcessingFunctional(new CellArea(hemocell), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
 }
-void CellInformationFunctionals::calculateCellPosition(HemoCell * hemocell_) {
-  hemocell = hemocell_;
+void CellInformationFunctionals::calculateCellPosition(HemoCell * hemocell) {
   HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyProcessingFunctional(new CellPosition(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
 }
-void CellInformationFunctionals::calculateCellStretch(HemoCell * hemocell_) {
-  hemocell = hemocell_;
+void CellInformationFunctionals::calculateCellStretch(HemoCell * hemocell) {
   HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyProcessingFunctional(new CellStretch(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
 }
-void CellInformationFunctionals::calculateCellBoundingBox(HemoCell * hemocell_) {
-  hemocell = hemocell_;
+void CellInformationFunctionals::calculateCellBoundingBox(HemoCell * hemocell) {
   HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyProcessingFunctional(new CellBoundingBox(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
 }
-void CellInformationFunctionals::calculateCellAtomicBlock(HemoCell * hemocell_) {
-  hemocell = hemocell_;
+void CellInformationFunctionals::calculateCellAtomicBlock(HemoCell * hemocell) {
   HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyProcessingFunctional(new CellAtomicBlock(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
 }
-void CellInformationFunctionals::calculateCellType(HemoCell * hemocell_) {
-  hemocell = hemocell_;
+void CellInformationFunctionals::calculateCellType(HemoCell * hemocell) {
   HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
@@ -391,6 +388,4 @@ CellInformationFunctionals::allCellInformation * CellInformationFunctionals::all
 
 
 map<plint, CellInformation> CellInformationFunctionals::info_per_cell = map<plint, CellInformation>();
-HemoCell * CellInformationFunctionals::hemocell = 0;
-
 }

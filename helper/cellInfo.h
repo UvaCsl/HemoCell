@@ -55,16 +55,23 @@ struct CellInformation {
 };
 
 class CellInformationFunctionals {
-  // Legacy interface, remove at some point
-  static HemoCell * hemocell;
-
   class CellVolume : public HemoCellFunctional {
+  public:
+    explicit CellVolume(HemoCell * hemocell_) : hemocell(hemocell_) {}
+
+  private:
     void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
     CellVolume * clone() const;
+    HemoCell * hemocell;
   };
   class CellArea : public HemoCellFunctional {
+  public:
+    explicit CellArea(HemoCell * hemocell_) : hemocell(hemocell_) {}
+
+  private:
     void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
     CellArea * clone() const;
+    HemoCell * hemocell;
   };
   class CellPosition : public HemoCellFunctional {
     void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
@@ -90,10 +97,10 @@ class CellInformationFunctionals {
 
   class allCellInformation : public HemoCellFunctional {
     HemoCell * hemocell;
-    map<plint, CellInformation> & info_per_cell;
+    std::map<plint, CellInformation> & info_per_cell;
 
   public:
-    allCellInformation(HemoCell * hemocell_, map<plint, CellInformation> & info_per_cell_)
+    allCellInformation(HemoCell * hemocell_, std::map<plint, CellInformation> & info_per_cell_)
         : hemocell(hemocell_), info_per_cell(info_per_cell_) {}
 
   private:
@@ -104,7 +111,7 @@ class CellInformationFunctionals {
 
 public:
   // Legacy interface, should become private at some point.
-  static map<plint, CellInformation> info_per_cell;
+  static std::map<plint, CellInformation> info_per_cell;
   static void clear_list();
   static void calculate_vol_pos_area(HemoCell *); /*This excludes Stretch, since it is compute intensive!*/
   static void calculateCellVolume(HemoCell *);
@@ -118,9 +125,9 @@ public:
 
   //Interface that should be used, less error prone at the cost of some extra computation and memory usage
   static pluint getTotalNumberOfCells(HemoCell *);
-  static pluint getNumberOfCellsFromType(HemoCell *, string type);
+  static pluint getNumberOfCellsFromType(HemoCell *, std::string type);
   /// Calculate all possible macroscopic information and return it within the reference.
-  static void calculateCellInformation(HemoCell *, map<plint, CellInformation> &);
+  static void calculateCellInformation(HemoCell *, std::map<plint, CellInformation> &);
 };
 }
 #endif

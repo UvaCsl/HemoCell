@@ -35,6 +35,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 typedef double T;
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
 int main(int argc, char * argv[]) {
   if (argc < 2) {

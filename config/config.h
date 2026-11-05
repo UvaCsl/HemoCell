@@ -106,9 +106,13 @@ private:
 
 void loadDirectories(hemo::Config * cfg, bool edit_out_dir = true);
 
+/// Process-wide settings of the running simulation. They are set from the
+/// configuration when a HemoCell object is constructed and reset to these
+/// defaults when it is destroyed (resetGlobalConfigValues()).
 struct ConfigValues {
-  bool hemoCellInitialized =
-      false; // Keep track since two hemocells cannot run at the same time, because of static variables
+  /// True while a HemoCell object exists; only one may exist at a time,
+  /// because of this and other process-wide state.
+  bool hemoCellInitialized = false;
   bool cellsDeletedInfo = false;
 
   bool enableCEPACfield = false;
@@ -125,6 +129,8 @@ struct ConfigValues {
 extern ConfigValues global;
 
 void loadGlobalConfigValues(hemo::Config * cfg);
-
+/// Put `global` back to its defaults (except hemoCellInitialized) and clear
+/// the run statistics; called when a HemoCell object is destroyed.
+void resetGlobalConfigValues();
 }
 #endif

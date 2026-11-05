@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "commonCellConstants.h"
 
+using namespace plb;
+
 namespace hemo {
 using namespace std;
 CommonCellConstants::CommonCellConstants(

@@ -29,29 +29,62 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace hemo {
 
+/**
+ * @brief Stretch a single cell by pulling vertices at both ends along x, as
+ * in an optical-tweezers experiment.
+ *
+ * The data are per object, so several simulations (or stretches) in one
+ * process do not influence each other. The object must live as long as
+ * applyForce() is called.
+ */
 class HemoCellStretch {
 public:
+  /**
+   * @brief Select the vertices to pull.
+   *
+   * Picks the @p n_forced_lsps_ vertices of the cell with the lowest and the
+   * highest x position. Synchronises the particle envelopes; all MPI ranks
+   * must call it.
+   * @param[in] cellfield_ Cell type with exactly one cell (cell ID 0).
+   * @param[in] n_forced_lsps_ Number of vertices pulled at each end.
+   * @param[in] external_force_ Total force per end [lattice force units],
+   *            divided equally over its vertices.
+   */
   HemoCellStretch(HemoCellField & cellfield_, unsigned int n_forced_lsps_, T external_force_);
+  /// Add the pulling force (times #scale) to the vertices; call after every
+  /// iterate() (needs a material update interval of 1). All MPI ranks must call it.
   void applyForce();
 
   class FindForcedLsps : public HemoCellFunctional {
-    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D *>);
-    FindForcedLsps * clone() const;
+  public:
+    explicit FindForcedLsps(HemoCellStretch & stretch_) : stretch(stretch_) {}
+
+  private:
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>) override;
+    FindForcedLsps * clone() const override;
+    HemoCellStretch & stretch;
   };
 
   class ForceForcedLsps : public HemoCellFunctional {
-    void processGenericBlocks(Box3D, std::vector<AtomicBlock3D *>);
-    ForceForcedLsps * clone() const;
+  public:
+    explicit ForceForcedLsps(const HemoCellStretch & stretch_) : stretch(stretch_) {}
+
+  private:
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>) override;
+    ForceForcedLsps * clone() const override;
+    const HemoCellStretch & stretch;
   };
 
-  //Vertex id of lsps
-  static vector<plint> lower_lsps;
-  static vector<plint> upper_lsps;
+  /// Vertex IDs of the vertices pulled towards -x (lower) and +x (upper).
+  std::vector<plint> lower_lsps;
+  std::vector<plint> upper_lsps;
 
   HemoCellField & cellfield;
-  static unsigned int n_forced_lsps;
-  static T external_force;
-  static T scale;
+  unsigned int n_forced_lsps;
+  /// Force per pulled vertex [lattice force units].
+  T external_force;
+  /// Factor applied to the force at the next applyForce() calls (default 1).
+  T scale = 1.0;
 };
 }
 #endif

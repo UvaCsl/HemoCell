@@ -89,7 +89,7 @@ TEST_P(ValidationForceDisplacement, StretchCell) {
   hemocell.lattice->initialize();
 
   hemocell.initializeCellfield();
-  hemocell.addCellType<hemo::RbcHighOrderModel>("tests/validation/stretch_cell/stretch_RBC", RBC_FROM_SPHERE);
+  hemocell.addCellType<hemo::RbcHighOrderModel>("tests/validation/stretch_cell/stretch_RBC", hemo::RBC_FROM_SPHERE);
   hemocell.loadParticles();
 
   auto cellfield = (*hemocell.cellfields)["tests/validation/stretch_cell/stretch_RBC"];
@@ -133,12 +133,6 @@ TEST_P(ValidationForceDisplacement, StretchCell) {
   volume /= std::pow(to_micro_meter, 3);
   ASSERT_LE(volume / initial_volume, 1.020);
   ASSERT_GT(volume / initial_volume, 0.980);
-
-  // FIXME: the static nature of the forced points in the cell stretch array
-  // require us to reset its content here, as the destructor will not clean up
-  // the contents before the end of the complete execution.
-  cellStretch.lower_lsps.clear();
-  cellStretch.upper_lsps.clear();
 }
 
 // Setup the parameterised test suite to assert the axial and transverse

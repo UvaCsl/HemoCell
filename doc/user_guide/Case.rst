@@ -41,6 +41,18 @@ Firstly we have to include the headers we need in ``newCase.cpp``.
   // HemoCell but can be handy nonetheless
   #include <cellInfo.h>
   #include <fluidInfo.h>
+  // Palabos, used directly for the lattice and boundary conditions
+  #include <palabos3D.h>
+  #include <palabos3D.hh>
+
+  // HemoCell's headers do not import any namespace: a case file chooses what to
+  // use unqualified. All examples use these three.
+  using namespace hemo;
+  using namespace plb;
+  using namespace std;
+
+With both ``hemo`` and ``plb`` imported, ``Array`` is ambiguous (``hemo::Array``
+and ``plb::Array``): write ``hemo::Array`` or ``plb::Array`` explicitly.
 
 After that we have to define a main function as this will become the main
 program. it is useful to include the ``config.xml`` file as first argument,

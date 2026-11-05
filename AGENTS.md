@@ -266,8 +266,10 @@ Configuration conventions:
 - Cell IDs are `plint` and grow with every periodic crossing (never folded
   back); do not store them in an `int`.
 - Global/static simulation state means only one `HemoCell` instance may exist
-  at a time. Do not assume reentrancy or thread safety. Tests that construct
-  multiple simulations sequentially must reset any static helper state they use.
+  at a time. Do not assume reentrancy or thread safety. `~HemoCell` resets all
+  of it (`resetGlobalState()` in `core/hemoCell.cpp`), so sequential
+  simulations in one process start alike; reset any new static state there,
+  or keep per-simulation data in an object.
 
 ## Outputs and supporting tools
 
@@ -383,9 +385,12 @@ modernization or unsolicited dependency/toolchain changes. Internals,
 conventions, extension recipes and known limitations are documented in
 `doc/user_guide/developer/`.
 
-- Keep library symbols in `namespace hemo`; qualify `hemo::`/`plb::` where it
-  prevents ambiguity. Do not add new global `using namespace` directives to
-  headers. Use include guards and keep template definitions visible in headers
+- Keep library symbols, constants included (`OUTPUT_*`, cell shapes), in
+  `namespace hemo`; no new macros except compile-time options. Headers contain
+  no `using namespace` at all: qualify `std::` and `plb::` there. Library
+  `.cpp` files may use `using namespace std; using namespace plb;`; drivers
+  and tests declare their own (`hemo`, `plb`, `std`), and then `Array` is
+  ambiguous between `hemo::Array` and `plb::Array`. Use include guards and keep template definitions visible in headers
   or included `.hh` files, following the existing layout.
 - Use existing `T`, `plint`/`pluint`, `hemo::Array` and Palabos types at their
   interfaces. Check conversions between signed indices, container sizes and

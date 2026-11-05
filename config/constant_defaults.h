@@ -77,45 +77,48 @@ this default) at compile time to change or disable the cap.
 #define FORCE_LIMIT 50.0
 #endif
 
+namespace hemo {
 /*
- * Used for defining the shape of the cells through constructMeshElement function
+ * Shape of the reference mesh of a cell type (HemoCell::addCellType(),
+ * constructMeshElement()). Constants in namespace hemo (formerly macros).
  */
-#define RBC_FROM_SPHERE 1
-#define ELLIPSOID_FROM_SPHERE 6
-#define STRING_FROM_VERTEXES 7
-#define WBC_SPHERE 0
-#define MESH_FROM_STL 2
+constexpr int WBC_SPHERE = 0;
+constexpr int RBC_FROM_SPHERE = 1;
+constexpr int MESH_FROM_STL = 2;
+constexpr int ELLIPSOID_FROM_SPHERE = 6;
+constexpr int STRING_FROM_VERTEXES = 7;
 
 /*
- * Defines for desired output per celltype, can save space/time etc. etc. also works for specific fluid ones (vel, force etc)
+ * Output fields per cell type (HemoCell::setOutputs()) and of the fluid
+ * (HemoCell::setFluidOutputs(), setCEPACOutputs()); see
+ * doc/user_guide/reference/outputs.rst. Constants in namespace hemo
+ * (formerly macros).
  */
-#define OUTPUT_POSITION 1
-#define OUTPUT_FORCE 2
-#define OUTPUT_FORCE_VOLUME 21
-#define OUTPUT_FORCE_BENDING 22
-#define OUTPUT_FORCE_AREA 23
-#define OUTPUT_FORCE_LINK 24
-#define OUTPUT_FORCE_VISC 25
-#define OUTPUT_FORCE_INNER_LINK 26
-#define OUTPUT_FORCE_REPULSION 27
-#define OUTPUT_TRIANGLES 3
-#define OUTPUT_VELOCITY 4
-#define OUTPUT_DENSITY 5
-#define OUTPUT_VERTEX_ID 7
-#define OUTPUT_CELL_ID 8
-#define OUTPUT_CELL_DENSITY 9
-#define OUTPUT_SHEAR_STRESS 10
-#define OUTPUT_INNER_LINKS 11
-#define OUTPUT_OMEGA 12
-#define OUTPUT_BOUNDARY 13
-#define OUTPUT_BINDING_SITES 14
-#define OUTPUT_INTERIOR_POINTS 15
-#define OUTPUT_SHEAR_RATE 16
-#define OUTPUT_STRAIN_RATE 17
-#define OUTPUT_RES_TIME 18
-
-//==================== Not really an option but a nice shortcut
-#define param Parameters
+constexpr int OUTPUT_POSITION = 1;
+constexpr int OUTPUT_FORCE = 2;
+constexpr int OUTPUT_FORCE_VOLUME = 21;
+constexpr int OUTPUT_FORCE_BENDING = 22;
+constexpr int OUTPUT_FORCE_AREA = 23;
+constexpr int OUTPUT_FORCE_LINK = 24;
+constexpr int OUTPUT_FORCE_VISC = 25;
+constexpr int OUTPUT_FORCE_INNER_LINK = 26;
+constexpr int OUTPUT_FORCE_REPULSION = 27;
+constexpr int OUTPUT_TRIANGLES = 3;
+constexpr int OUTPUT_VELOCITY = 4;
+constexpr int OUTPUT_DENSITY = 5;
+constexpr int OUTPUT_VERTEX_ID = 7;
+constexpr int OUTPUT_CELL_ID = 8;
+constexpr int OUTPUT_CELL_DENSITY = 9;
+constexpr int OUTPUT_SHEAR_STRESS = 10;
+constexpr int OUTPUT_INNER_LINKS = 11;
+constexpr int OUTPUT_OMEGA = 12;
+constexpr int OUTPUT_BOUNDARY = 13;
+constexpr int OUTPUT_BINDING_SITES = 14;
+constexpr int OUTPUT_INTERIOR_POINTS = 15;
+constexpr int OUTPUT_SHEAR_RATE = 16;
+constexpr int OUTPUT_STRAIN_RATE = 17;
+constexpr int OUTPUT_RES_TIME = 18;
+} // namespace hemo
 
 #ifndef T
 typedef double T;

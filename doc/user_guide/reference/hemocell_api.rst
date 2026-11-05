@@ -8,7 +8,9 @@ API, see the auto-generated :ref:`Doxygen reference
 <hemocell_doxygen:HemoCell Doxygen Documentation>`.
 
 A minimal case follows the same skeleton in every example (see
-:ref:`Case:Creating your own HemoCell Case` for the full walk-through):
+:ref:`Case:Creating your own HemoCell Case` for the full walk-through). The
+library's headers import no namespace; the examples start with
+``using namespace hemo; using namespace plb; using namespace std;``.
 
 .. code-block:: c++
 
@@ -39,6 +41,10 @@ Construction and lifecycle
    * - ``HemoCell(configFile, argc, argv, MPIHandle::External)``
      - Same, but for when MPI is initialised outside HemoCell (HemoCell then
        skips ``plbInit``).
+   * - ``~HemoCell()``
+     - Ends the simulation and resets the process-wide state (``param::``,
+       ``global``, the log), so another ``HemoCell`` can be created afterwards.
+       Only one may exist at a time.
    * - ``iter``
      - The current iteration counter (read it to drive your main loop).
    * - ``cfg``

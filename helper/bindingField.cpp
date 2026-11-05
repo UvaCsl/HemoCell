@@ -27,6 +27,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.hh"
 #include "preInlet.h"
 
+using namespace std;
+using namespace plb;
+
 namespace hemo {
 bindingFieldHelper::bindingFieldHelper(HemoCellFields * cellFields_) : cellFields(*cellFields_) {
   //Check if function is not called too early
@@ -96,21 +99,21 @@ void bindingFieldHelper::restore(HemoCellFields & cellFields) {
   get(cellFields).refillBindingSites();
 }
 
-void bindingFieldHelper::add(HemoCellParticleField & pf, const Dot3D & bindingSite) {
+void bindingFieldHelper::add(HemoCellParticleField & pf, const plb::Dot3D & bindingSite) {
   pf.bindingSites.insert(bindingSite);
   pf.bindingField->get(bindingSite.x, bindingSite.y, bindingSite.z) = true;
 }
 
-void bindingFieldHelper::add(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites) {
+void bindingFieldHelper::add(HemoCellParticleField & pf, const std::vector<plb::Dot3D> & bindingSites) {
   for (const Dot3D & bindingSite : bindingSites) { add(pf, bindingSite); }
 }
 
-void bindingFieldHelper::remove(HemoCellParticleField & pf, const Dot3D & bindingSite) {
+void bindingFieldHelper::remove(HemoCellParticleField & pf, const plb::Dot3D & bindingSite) {
   pf.bindingSites.erase(bindingSite);
   pf.bindingField->get(bindingSite.x, bindingSite.y, bindingSite.z) = false;
 }
 
-void bindingFieldHelper::remove(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites) {
+void bindingFieldHelper::remove(HemoCellParticleField & pf, const std::vector<plb::Dot3D> & bindingSites) {
   for (const Dot3D & bindingSite : bindingSites) { remove(pf, bindingSite); }
 }
 

@@ -36,7 +36,6 @@ class HemoCellParticleField;
 #include "atomicBlock/blockLattice3D.hh"
 
 namespace hemo {
-using namespace std;
 class HemoCellParticleField : public plb::AtomicBlock3D {
 public:
   HemoCellParticleField(plint nx, plint ny, plint nz);
@@ -94,7 +93,6 @@ public:
   void snapshotParticles();
   /// Discard the current particles and put back those kept by snapshotParticles().
   void restoreParticles();
-  void syncEnvelopes();
   void populateBoundaryParticles();
   void applyBoundaryRepulsionForce(bool resetFirst = false);
   void populateBindingSites(plb::Box3D & domain);
@@ -134,30 +132,31 @@ public:
    * @param[in] ctype Cell type index.
    * @param[out] cellIds Cell IDs to write.
    */
-  void getOutputCells(pluint ctype, vector<plint> & cellIds);
+  void getOutputCells(pluint ctype, std::vector<plint> & cellIds);
   //Ugly output functions:
-  void outputPositions(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
-  void outputVelocities(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
-  void outputForces(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
-  void outputForceVolume(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
-  void outputForceArea(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
-  void outputForceBending(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
-  void outputForceLink(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
-  void outputForceVisc(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
-  void outputForceRepulsion(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
+  void outputPositions(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
+  void outputVelocities(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
+  void outputForces(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
+  void outputForceVolume(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
+  void outputForceArea(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
+  void outputForceBending(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
+  void outputForceLink(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
+  void outputForceVisc(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
+  void outputForceRepulsion(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
 
-  void outputTriangles(plb::Box3D, vector<vector<plint>> &, pluint, std::string &);
-  void outputInnerLinks(plb::Box3D, vector<vector<plint>> &, pluint, std::string &);
+  void outputTriangles(plb::Box3D, std::vector<std::vector<plint>> &, pluint, std::string &);
+  void outputInnerLinks(plb::Box3D, std::vector<std::vector<plint>> &, pluint, std::string &);
 
-  void outputVertexId(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
-  void outputCellId(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
-  void outputForceInnerLink(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
-  void outputResTime(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
+  void outputVertexId(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
+  void outputCellId(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
+  void outputForceInnerLink(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
+  void outputResTime(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
 
 
   void AddOutputMap();
-  map<int, void (HemoCellParticleField::*)(plb::Box3D, vector<vector<T>> &, pluint, std::string &)> outputFunctionMap;
-  void passthroughpass(int, plb::Box3D, vector<vector<T>> &, pluint, std::string &);
+  std::map<int, void (HemoCellParticleField::*)(plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &)>
+      outputFunctionMap;
+  void passthroughpass(int, plb::Box3D, std::vector<std::vector<T>> &, pluint, std::string &);
 
 public:
   virtual HemoCellParticleDataTransfer & getDataTransfer();
@@ -168,14 +167,14 @@ public:
   plb::BlockLattice3D<T, DESCRIPTOR> * atomicLattice = 0;
   plb::BlockLattice3D<T, CEPAC_DESCRIPTOR> * CEPAClattice = 0;
 
-  vector<plint> neighbours;
-  vector<plb::Dot3D> boundaryParticles;
+  std::vector<plint> neighbours;
+  std::vector<plb::Dot3D> boundaryParticles;
   pluint envelopeSize;
   pluint getsize() { return particles.size(); }
   plint nearestCell(T const) const;
   static std::string basicType() { return std::string(plb::NativeType<T>::getName()); }
   static std::string descriptorType() { return std::string(DESCRIPTOR<T>::name); }
-  vector<HemoCellParticle> particles;
+  std::vector<HemoCellParticle> particles;
   plb::Box3D boundingBox;
   int nFluidCells = 0;
 
@@ -194,10 +193,10 @@ public:
   void invalidate_pg() { pg_up_to_date = false; };
 
 private:
-  vector<vector<unsigned int>> _particles_per_type;
-  map<plint, vector<int>> _particles_per_cell;
-  map<plint, vector<int>> _preinlet_particles_per_cell;
-  map<plint, bool> _lpc;
+  std::vector<std::vector<unsigned int>> _particles_per_type;
+  std::map<plint, std::vector<int>> _particles_per_cell;
+  std::map<plint, std::vector<int>> _preinlet_particles_per_cell;
+  std::map<plint, bool> _lpc;
   void update_lpc();
   void update_ppc();
   void update_preinlet_ppc();
@@ -208,7 +207,7 @@ private:
   /// with a vertex in @p near if it is not null.
   int deleteIncompleteCellsImpl(bool onlyType, pluint ctype, const plb::Box3D * near, bool verbose);
   /// The particles kept aside by snapshotParticles().
-  vector<HemoCellParticle> particlesSnapshot;
+  std::vector<HemoCellParticle> particlesSnapshot;
   /// Zero the force of a vertex with a non-finite force and tag it (tag 1)
   /// for removal by spreadParticleForce(); warns for the first one (count 0).
   void dropNonFiniteParticle(HemoCellParticle & particle, plint & count);
@@ -217,15 +216,15 @@ private:
   /// true (any change to `particles` invalidates it, see update_pg()).
   ParticleGrid particleGrid;
 
-  vector<hemo::Array<T, 3> *> allocated_for_output;
+  std::vector<hemo::Array<T, 3> *> allocated_for_output;
 
 public:
-  const vector<vector<unsigned int>> & get_particles_per_type();
-  const map<plint, vector<int>> & get_particles_per_cell();
-  const map<plint, vector<int>> & get_preinlet_particles_per_cell();
-  const map<plint, bool> & get_lpc();
+  const std::vector<std::vector<unsigned int>> & get_particles_per_type();
+  const std::map<plint, std::vector<int>> & get_particles_per_cell();
+  const std::map<plint, std::vector<int>> & get_preinlet_particles_per_cell();
+  const std::map<plint, bool> & get_lpc();
 
-  set<plb::Dot3D> internalPoints; // Store found interior points
+  std::set<plb::Dot3D> internalPoints; // Store found interior points
   plb::ScalarField3D<T> * interiorViscosityField = 0;
 
 

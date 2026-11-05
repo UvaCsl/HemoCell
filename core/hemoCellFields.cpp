@@ -35,6 +35,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
+using namespace std;
+using namespace plb;
+
 
 namespace hemo {
 
@@ -151,7 +154,7 @@ HemoCellField * HemoCellFields::operator[](unsigned int index) {
   return cellFields[index];
 }
 
-HemoCellField * HemoCellFields::operator[](string name) {
+HemoCellField * HemoCellFields::operator[](std::string name) {
   for (unsigned int i = 0; i < cellFields.size(); i++) {
     if (cellFields[i]->name == name) { return cellFields[i]; }
   }
@@ -600,14 +603,9 @@ void HemoCellFields::exchangeEnvelopes() {
   MPI_Waitall(int(sendRequests.size()), sendRequests.data(), MPI_STATUSES_IGNORE);
 }
 
-void HemoCellFields::HemoSyncEnvelopes::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D *> blocks) {
-  dynamic_cast<HemoCellParticleField *>(blocks[0])->syncEnvelopes();
-}
 void HemoCellFields::syncEnvelopes() {
   global.statistics.getCurrent()["syncEnvelopes"].start();
 
-  vector<MultiBlock3D *> wrapper;
-  wrapper.push_back(immersedParticles);
   for (plint lbid : immersedParticles->getLocalInfo().getBlocks()) {
     HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
     pf.removeParticles_inverse(pf.localDomain);
@@ -994,9 +992,6 @@ HemoCellFields::HemoAdvanceParticles * HemoCellFields::HemoAdvanceParticles::clo
 HemoCellFields::HemoApplyConstitutiveModel * HemoCellFields::HemoApplyConstitutiveModel::clone() const {
   return new HemoCellFields::HemoApplyConstitutiveModel(*this);
 }
-HemoCellFields::HemoSyncEnvelopes * HemoCellFields::HemoSyncEnvelopes::clone() const {
-  return new HemoCellFields::HemoSyncEnvelopes(*this);
-}
 HemoCellFields::HemoRepulsionForce * HemoCellFields::HemoRepulsionForce::clone() const {
   return new HemoCellFields::HemoRepulsionForce(*this);
 }
@@ -1031,10 +1026,6 @@ HemoCellFields::HemoupdateResidenceTime * HemoCellFields::HemoupdateResidenceTim
   return new HemoCellFields::HemoupdateResidenceTime(*this);
 }
 
-
-void HemoCellFields::HemoSyncEnvelopes::getTypeOfModification(std::vector<modif::ModifT> & modified) const {
-  for (pluint i = 0; i < modified.size(); i++) { modified[i] = modif::hemocell; }
-}
 
 MultiParticleField3D<HemoCellParticleField> & HemoCellFields::getParticleField3D() {
   return *immersedParticles;

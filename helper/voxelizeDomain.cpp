@@ -64,15 +64,15 @@ BlockDomain::DomainT CopyFromNeighbor::appliesTo() const {
 // ---------------------- Read in STL geometry ---------------------------------
 
 void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeWidth, plb::plint refDirLength,
-                          plb::plint refDir, std::auto_ptr<plb::VoxelizedDomain3D<T>> & voxelizedDomain,
-                          std::auto_ptr<plb::MultiScalarField3D<int>> & flagMatrix, plint blockSize,
+                          plb::plint refDir, std::unique_ptr<plb::VoxelizedDomain3D<T>> & voxelizedDomain,
+                          std::unique_ptr<plb::MultiScalarField3D<int>> & flagMatrix, plint blockSize,
                           int particleEnvelope) {
   VoxelizedDomain3D<T> * voxelizedDomain_t;
   plb::MultiScalarField3D<int> * flagMatrix_t;
   getFlagMatrixFromSTL(meshFileName, extendedEnvelopeWidth, refDirLength, refDir, voxelizedDomain_t, flagMatrix_t,
                        blockSize, particleEnvelope);
-  voxelizedDomain = std::auto_ptr<plb::VoxelizedDomain3D<T>>(voxelizedDomain_t);
-  flagMatrix = std::auto_ptr<plb::MultiScalarField3D<int>>(flagMatrix_t);
+  voxelizedDomain.reset(voxelizedDomain_t);
+  flagMatrix.reset(flagMatrix_t);
 }
 
 void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint refDirLength, plint refDir,

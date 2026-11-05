@@ -234,6 +234,50 @@ Unreleased (refactor)
     override with the old signature (not marked `override`) would silently no
     longer be called. `HemoCellGatheringFunctional::gather()` and
     `gatherToRoot()` accept maps with any integer key.
+  * Destroying a `HemoCell` object resets the process-wide state it set: the
+    `param::` values, the `global` settings and profiler,
+    `HemoCellParticleField::cellFields` and
+    `CellInformationFunctionals::info_per_cell` (`resetGlobalState()` in
+    `core/hemoCell.cpp`). Before, a setting such as `<cellsDeletedInfo>` or a
+    `param::` value carried over to the next simulation in the same process
+    (as in the test suite), the profiler kept accumulating, and the vertices
+    pulled by `HemoCellStretch` were added to those of the next stretch (the
+    stretch tests cleared them by hand).
+* Structure (case files may need changes; results bit-identical)
+  * No HemoCell header contains a `using namespace` directive any more:
+    `hemocell.h` imported `hemo` and `plb` into case files (making `Array`
+    ambiguous), and library headers imported all of `std` and `plb` into
+    namespace `hemo` (and `std` into `plb`). A case file declares what it uses
+    unqualified; all examples and cases now start with
+    `using namespace hemo; using namespace plb; using namespace std;`.
+    Palabos names written with `hemo::` (e.g. `hemo::BounceBack`) need `plb::`.
+  * The `OUTPUT_*` and cell-shape constants (`RBC_FROM_SPHERE`, ...) are
+    `constexpr int` in namespace `hemo` instead of macros, and `param` is a
+    typedef of `hemo::Parameters` instead of a macro (which renamed every
+    identifier called `param`). Case files with `using namespace hemo` are
+    unaffected; elsewhere write `hemo::OUTPUT_POSITION`. `DESCRIPTOR` and
+    `CEPAC_DESCRIPTOR` remain macros (compile-time options).
+  * `getFlagMatrixFromSTL()` takes `std::unique_ptr` instead of
+    `std::auto_ptr` (removed in C++17; it compiled only with libstdc++).
+  * The `HemoCell` constructor takes the configuration file name as
+    `const std::string &` (was `char *`); existing calls compile unchanged.
+  * `HemoCellStretch` keeps its pulled vertices, force and `scale` per object
+    instead of in static members: `HemoCellStretch::scale = x` becomes
+    `cellStretch.scale = x`. Blocks without the cell are skipped (they threw
+    `std::out_of_range`), and the vertices are selected once per process.
+  * `LeesEdwardsBC` keeps its displacement and boundary populations per object
+    instead of in static members, and cannot be copied (its data processors
+    point into it): it must live as long as the lattice is iterated. Its
+    constructor no longer assigns the lattice to itself (a full copy).
+  * `NoOp` (`mechanics/NoOp.h`), the null cell model, compiles and works (it
+    had no matching `CellMechanics` constructor and did not override
+    `ParticleMechanics()`). It is a passive tracer, not a rigid particle as
+    documented before.
+  * Removed unused code: `HemoCellFields::HemoSyncEnvelopes` (applying it
+    would have brought back arrival-order communication),
+    `HemoCellFields::envelope_communicator`,
+    `HemoCellParticleField::syncEnvelopes()` (it only deleted the particles
+    outside the block), and the placeholder test `Dummy.foobar`.
 * Tests
   * Unit tests for the particle grid/repulsion, the configuration reader,
     `hemo::Array`, particle copy/move and log buffering; an integration test
@@ -246,6 +290,9 @@ Unreleased (refactor)
   * Tests that output and statistics leave the trajectory unchanged, that cell
     IDs beyond 2^32 give the same trajectory, that `iterate()` deletes a broken
     cell, and of `HemoCellGatheringFunctional` with 64-bit keys (1 and 2
+    ranks).
+  * Tests that destroying a `HemoCell` object resets the process-wide state,
+    and that cells of the `NoOp` model carry no membrane force (1 and 2
     ranks).
 
 2.6 (July 15 2022)

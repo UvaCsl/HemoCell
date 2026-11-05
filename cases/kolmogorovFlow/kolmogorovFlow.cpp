@@ -30,6 +30,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "helper/particleInfo.h"
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
 
 int main(int argc, char * argv[]) {

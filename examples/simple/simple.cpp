@@ -11,6 +11,8 @@
 #include "palabos3D.hh"
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
 int main(int argc, char * argv[]) {
   if (argc < 2) {

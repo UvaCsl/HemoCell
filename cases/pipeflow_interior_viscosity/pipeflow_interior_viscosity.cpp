@@ -37,6 +37,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 typedef double T;
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
 int main(int argc, char * argv[]) {
   if (argc < 2) {
@@ -50,8 +52,8 @@ int main(int argc, char * argv[]) {
   hlogfile << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>()
            << std::endl;
 
-  std::auto_ptr<MultiScalarField3D<int>> flagMatrix;
-  std::auto_ptr<VoxelizedDomain3D<T>> voxelizedDomain;
+  std::unique_ptr<MultiScalarField3D<int>> flagMatrix;
+  std::unique_ptr<VoxelizedDomain3D<T>> voxelizedDomain;
   getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(), (*cfg)["domain"]["fluidEnvelope"].read<int>(),
                        (*cfg)["domain"]["refDirN"].read<int>(), (*cfg)["domain"]["refDir"].read<int>(), voxelizedDomain,
                        flagMatrix, (*cfg)["domain"]["blockSize"].read<int>(),

@@ -24,14 +24,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HEMOCELL_NOOP_H
 #define HEMOCELL_NOOP_H
 #include "cellMechanics.h"
+
+namespace hemo {
+/**
+ * @brief Null cell model: no membrane forces.
+ *
+ * ParticleMechanics() adds nothing, so the vertices only carry the forces of
+ * other sources (repulsion) and otherwise follow the fluid like tracers. The
+ * cell does not keep its shape. The material file `<name>.xml` must still
+ * exist, as for every cell type (the mesh and the common constants are read
+ * from it).
+ */
 class NoOp : public CellMechanics {
 public:
-  NoOp() : CellMechanics(){};
-  NoOp(Config & cfg, HemoCellField & cellfield) : CellMechanics(){};
+  NoOp(Config & modelCfg_, HemoCellField & cellField_) : CellMechanics(cellField_, modelCfg_), cellField(cellField_) {}
 
+  void ParticleMechanics(std::map<plint, std::vector<HemoCellParticle *>> &, const std::map<plint, bool> &,
+                         pluint) override {}
+  void statistics() override {
+    hlog << "(Cell-mechanics model) NoOp for " << cellField.name << " cellfield: no membrane forces" << std::endl;
+  }
 
-  inline void ParticleMechanics(map<plint, vector<HemoCellParticle *>>, map<plint, bool>, pluint ctype) {};
-  inline void statistics() { cerr << "Mechanical model is NoOp"; }
+private:
+  HemoCellField & cellField;
 };
+}
 
 #endif

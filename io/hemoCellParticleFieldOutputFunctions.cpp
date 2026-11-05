@@ -26,6 +26,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <algorithm>
 
+using namespace std;
+using namespace plb;
+
 namespace hemo {
 
 void HemoCellParticleField::AddOutputMap() {
