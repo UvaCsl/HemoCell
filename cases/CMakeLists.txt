@@ -17,6 +17,7 @@ set(HEMOCELL_CASES
   "performance_testing"
   "pipeflowMalaria"
   "pipeflow_interior_viscosity"
+  "pipeflow_wbc"
   "preinlet_shear"
   "solidify_example"
   "stenosis"

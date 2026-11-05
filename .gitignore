@@ -51,6 +51,7 @@ rules.ninja
 /cases/performance_testing/performance_testing
 /cases/pipeflowMalaria/pipeflowMalaria
 /cases/pipeflow_interior_viscosity/pipeflow_interior_viscosity
+/cases/pipeflow_wbc/pipeflow_wbc
 /cases/preinlet_shear/preinlet_shear
 /cases/solidify_example/solidify_example
 /cases/stenosis/stenosis
