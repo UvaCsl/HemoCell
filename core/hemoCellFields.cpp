@@ -368,6 +368,8 @@ void HemoCellFields::saveCheckPointDescription(XMLreader * xmlr, unsigned int it
   // Build fingerprint, checked by load().
   xmlw["Checkpoint"]["General"]["ParticleLayout"].set(particleLayout());
   xmlw["Checkpoint"]["General"]["CellTypes"].set(cellTypeList(*this));
+  // For the record (compared at restart, with a warning only).
+  xmlw["Checkpoint"]["General"]["BuildConfiguration"].set(std::string(HEMOCELL_BUILD_CONFIGURATION));
   xmlw["Checkpoint"]["General"]["dx"].set(param::dx, 17);
   xmlw["Checkpoint"]["General"]["dt"].set(param::dt, 17);
 
@@ -407,6 +409,16 @@ void HemoCellFields::checkCheckPointFingerprint(XMLreader & documentXML) {
   if (std::fabs(dx - param::dx) > 1e-12 * param::dx || std::fabs(dt - param::dt) > 1e-12 * param::dt) {
     fatal("(Checkpoint) The checkpoint has dx = ", dx, ", dt = ", dt, ", this run dx = ", param::dx,
           ", dt = ", param::dt, ".");
+  }
+  // Settings that do not change the data layout (e.g. FORCE_LIMIT) can differ.
+  std::string configuration;
+  try {
+    documentXML["Checkpoint"]["General"]["BuildConfiguration"].read(configuration);
+    configuration = trimmed(configuration);
+  } catch (plb::PlbIOException & e) {}
+  if (!configuration.empty() && configuration != HEMOCELL_BUILD_CONFIGURATION) {
+    hlog << "(HemoCell) (CellFields) WARNING: the checkpoint was written with the compile-time configuration "
+         << configuration << ", this build has " << HEMOCELL_BUILD_CONFIGURATION << "." << endl;
   }
 }
 

@@ -63,3 +63,35 @@ TEST(Config, ReadBoolAndString) {
   EXPECT_THROW(cfg["x"].read<bool>(), std::invalid_argument);
   EXPECT_EQ(cfg["s"].read<std::string>(), "output dir/with space");
 }
+
+namespace {
+// The message of the std::invalid_argument thrown by `access`.
+template <typename F>
+std::string errorOf(F access) {
+  try {
+    access();
+  } catch (const std::invalid_argument & e) { return e.what(); }
+  return "";
+}
+} // namespace
+
+// Errors name the file, the element path and its line, so a missing or
+// invalid setting can be found without knowing which code read it.
+TEST(Config, ErrorsNameFileElementAndLine) {
+  const std::string path = writeTempXml("errors.xml", "<hemocell>\n<sim>\n<tmax></tmax>\n<tmeas>x</tmeas>\n</sim>\n"
+                                                      "</hemocell>\n");
+  hemo::Config cfg(path);
+
+  const std::string missing = errorOf([&] { cfg["sim"]["tcheckpoint"]; });
+  EXPECT_NE(missing.find(path), std::string::npos) << missing;
+  EXPECT_NE(missing.find("line 2: hemocell/sim has no element <tcheckpoint>"), std::string::npos) << missing;
+
+  const std::string empty = errorOf([&] { cfg["sim"]["tmax"].read<int>(); });
+  EXPECT_NE(empty.find("line 3: hemocell/sim/tmax is empty"), std::string::npos) << empty;
+
+  const std::string invalid = errorOf([&] { cfg["sim"]["tmeas"].read<int>(); });
+  EXPECT_NE(invalid.find("line 4: hemocell/sim/tmeas: cannot convert \"x\""), std::string::npos) << invalid;
+
+  const std::string root = errorOf([&] { cfg["domain"]; });
+  EXPECT_NE(root.find("line 1: hemocell has no element <domain>"), std::string::npos) << root;
+}

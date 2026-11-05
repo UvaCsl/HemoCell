@@ -45,10 +45,12 @@ void Config::reload(std::string paramXmlFileName) {
 }
 
 void Config::load(std::string paramXmlFileName) {
+  fileName = paramXmlFileName;
   if (!file_exists(paramXmlFileName)) {
     fatal("(Config) The configuration file ", paramXmlFileName, " does not exist.");
   }
   orig = new tinyxml2::XMLDocument();
+  orig->SetUserData(&fileName);
   if (orig->LoadFile(paramXmlFileName.c_str()) != tinyxml2::XML_SUCCESS) {
     fatal("(Config) Error parsing ", paramXmlFileName, ": ", orig->ErrorName(),
           orig->GetErrorStr1() ? std::string(" ") + orig->GetErrorStr1() : std::string(), " (line ",
@@ -113,8 +115,22 @@ XMLElement XMLElement::operator[](string name) const {
   if (child) {
     return static_cast<XMLElement>(child);
   } else {
-    throw invalid_argument("XML child " + name + " does not exist.");
+    // Built only on error: optional values are looked up through this path.
+    throw invalid_argument(where() + " has no element <" + name + ">.");
   }
+}
+
+string XMLElement::path() const {
+  string result = orig->Name();
+  for (const tinyxml2::XMLNode * node = orig->Parent(); node && node->ToElement(); node = node->Parent()) {
+    result = string(node->ToElement()->Name()) + "/" + result;
+  }
+  return result;
+}
+
+string XMLElement::where() const {
+  const string * file = static_cast<const string *>(orig->GetDocument()->GetUserData());
+  return "(Config) " + (file ? *file : string("<XML>")) + ", line " + to_string(orig->GetLineNum()) + ": " + path();
 }
 
 void loadDirectories(hemo::Config * cfg, bool edit_out_dir) {

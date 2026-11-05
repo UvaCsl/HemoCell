@@ -36,10 +36,9 @@ Findings of a review of the `refactor` branch (November 2026). Items marked
 reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
 before others write drivers against the API.
 
-Status: A1-A9, B11, B12 and B16 are done (see CHANGELOG),
-except placing periodic images of cells at load (A5), exact cell IDs in HDF5
-output (A7) and `DESCRIPTOR` as a macro (B12). B10 is deferred (special case,
-lower priority).
+Status: A1-A9 and B11-B16 are done (see CHANGELOG), except placing periodic
+images of cells at load (A5) and exact cell IDs in HDF5 output (A7). B10 is
+deferred (special case, lower priority).
 
 ### A. Silent wrong results or lost runs
 
@@ -125,29 +124,38 @@ lower priority).
     data of `HemoCellParticleField`, `CellInformationFunctionals`,
     `HemoCellStretch` and the Lees-Edwards helper. Reset them in one place and
     test two sequential simulations.
-12. *Done, except `DESCRIPTOR`* (no `using namespace` in headers, drivers
-    declare their own; the constants keep their names in namespace `hemo`,
-    without macros; `unique_ptr`; `const std::string &`). `DESCRIPTOR` and
-    `CEPAC_DESCRIPTOR` remain macros: an alias template passed as a template
-    template argument is not guaranteed to be the same template as the one it
-    names (CWG 1286), so lattice types could differ between library and case;
-    this belongs with B14. **Public API.** `std::auto_ptr` in
+12. *Done* (no `using namespace` in headers, drivers declare their own; the
+    constants keep their names in namespace `hemo`, without macros;
+    `unique_ptr`; `const std::string &`). `DESCRIPTOR` and `CEPAC_DESCRIPTOR`
+    remain macros by design: they are compile-time options of
+    `constant_defaults.h` (an alias template passed as a template template
+    argument is not guaranteed to be the same template as the one it names,
+    CWG 1286), and the start-up check of B14 covers them. **Public API.** `std::auto_ptr` in
     `getFlagMatrixFromSTL()` (and 10 drivers) was removed in C++17 and only
     compiles with libstdc++; the constructor takes `char *`; public headers
     contain `using namespace std/plb/hemo` (`hemocell.h` makes `Array`
     ambiguous); generic macros (`DESCRIPTOR`, `OUTPUT_*`, `WBC_SPHERE`)
     pollute user code. Use `std::unique_ptr`, `const std::string &`, and
     namespaced constants with the old macros as aliases.
-13. **Configuration friction.** `sanityCheck()` requires `<sim><tmax>` even in
+13. *Done* (`<sim><tmax>` optional for `sanityCheck()`; errors name file, line
+    and element path). **Configuration friction.** `sanityCheck()` requires `<sim><tmax>` even in
     drivers that do not use it; "XML child X does not exist" names neither the
     parent path nor the file.
-14. **Compile-time configuration hidden in a header.** `SOLIDIFY_MECHANICS` is
-    always defined in `config/constant_defaults.h`, so
-    `hemocell_solidify_mechanics` equals the base library; `FORCE_LIMIT` can only
-    be changed by recompiling; the version is defined both in CMake and in the
-    header. Use CMake options and a generated configuration header.
-15. **Driver boilerplate.** Seventeen drivers copy the STL voxelisation and
-    lattice setup; move it into a library helper.
+14. *Done* (reworded after review: keep `config/constant_defaults.h` as the
+    one readable place). **Compile-time configuration.** `SOLIDIFY_MECHANICS`
+    was always defined in `config/constant_defaults.h`, so
+    `hemocell_solidify_mechanics` equalled the base library; a case compiled
+    with other settings than the library it links (layout-changing macros,
+    `FORCE_LIMIT`) was not detected; the configuration of a run was not
+    recorded; the version was defined both in CMake and in the header. Now:
+    the features default to off in the header and the variants switch them
+    on; the case's configuration is compared with the library's at start-up;
+    it is logged and stored in checkpoints; CMake and the docs read the
+    version from the header.
+15. *Done* (`getFlagMatrixFromSTL(cfg, ...)` in 14 drivers,
+    `HemoCell::initializeLatticeFromFlagMatrix()` in the 5 pipe drivers and the
+    tests). **Driver boilerplate.** Seventeen drivers copy the STL voxelisation
+    and lattice setup; move it into a library helper.
 16. *Done* (removed; `NoOp` fixed and tested). **Dead code.**
     `HemoCellFields::HemoSyncEnvelopes` (declares
     `modif::hemocell`; applying it would bring back arrival-order

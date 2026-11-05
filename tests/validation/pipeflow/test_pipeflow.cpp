@@ -33,18 +33,7 @@ TEST(Validation, Pipeflow) {
   hemo::param::lbm_pipe_parameters((*cfg), flagMatrix.get());
   hemo::param::printParameters();
 
-  hemocell.lattice = new plb::MultiBlockLattice3D<T, DESCRIPTOR>(
-      voxelizedDomain.get()->getMultiBlockManagement(), plb::defaultMultiBlockPolicy3D().getBlockCommunicator(),
-      plb::defaultMultiBlockPolicy3D().getCombinedStatistics(),
-      plb::defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-      new plb::GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / hemo::param::tau));
-
-  defineDynamics(*hemocell.lattice, *flagMatrix.get(), (*hemocell.lattice).getBoundingBox(),
-                 new plb::BounceBack<T, DESCRIPTOR>(1.), 0);
-
-  hemocell.lattice->toggleInternalStatistics(false);
-  hemocell.lattice->periodicity().toggleAll(false);
-  hemocell.latticeEquilibrium(1., {0., 0., 0.});
+  hemocell.initializeLatticeFromFlagMatrix(voxelizedDomain->getMultiBlockManagement(), *flagMatrix);
 
   //Driving Force
   auto poiseuilleForce =

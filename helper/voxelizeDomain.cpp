@@ -75,6 +75,24 @@ void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeW
   flagMatrix.reset(flagMatrix_t);
 }
 
+void getFlagMatrixFromSTL(Config & cfg, VoxelizedDomain3D<T> *& voxelizedDomain,
+                          MultiScalarField3D<int> *& flagMatrix) {
+  const std::string geometry = cfg["domain"]["geometry"].read<std::string>();
+  hlog << "(Voxelizer) Reading and voxelising " << geometry << endl;
+  getFlagMatrixFromSTL(geometry, cfg["domain"]["fluidEnvelope"].read<int>(), cfg["domain"]["refDirN"].read<int>(),
+                       cfg["domain"]["refDir"].read<int>(), voxelizedDomain, flagMatrix,
+                       cfg["domain"]["blockSize"].read<int>(), cfg["domain"]["particleEnvelope"].read<int>());
+}
+
+void getFlagMatrixFromSTL(Config & cfg, std::unique_ptr<VoxelizedDomain3D<T>> & voxelizedDomain,
+                          std::unique_ptr<MultiScalarField3D<int>> & flagMatrix) {
+  VoxelizedDomain3D<T> * voxelizedDomain_t;
+  MultiScalarField3D<int> * flagMatrix_t;
+  getFlagMatrixFromSTL(cfg, voxelizedDomain_t, flagMatrix_t);
+  voxelizedDomain.reset(voxelizedDomain_t);
+  flagMatrix.reset(flagMatrix_t);
+}
+
 void getFlagMatrixFromSTL(std::string meshFileName, plint extendedEnvelopeWidth, plint refDirLength, plint refDir,
                           VoxelizedDomain3D<T> *& voxelizedDomain, MultiScalarField3D<int> *& flagMatrix,
                           plint blockSize, int particleEnvelope) {

@@ -272,7 +272,37 @@ Unreleased (refactor)
     would take every rank is a fatal error. `~HemoCell` also deletes the
     second lattice of a pre-inlet run. Results with at most one block per rank
     are bit-identical (pre-inlet example on 4 and 8 ranks).
+  * Configuration errors name the file, the line and the element path (e.g.
+    `(Config) config.xml, line 34: hemocell/sim has no element <tmax>.`), and
+    `sanityCheck()` no longer requires `<sim><tmax>` (drivers that use it
+    read it themselves). Solidification reads its two thresholds once per
+    cell type and step instead of from the XML tree for every particle near a
+    binding site.
+  * Compile-time configuration: `config/constant_defaults.h` stays the one
+    place for it, and is now also the only place for the version (CMake and
+    the documentation read it). `SOLIDIFY_MECHANICS` is off by default there
+    (it was always on, so `hemocell_solidify_mechanics` equalled `hemocell`);
+    the variants switch their feature on. The effective configuration is
+    printed at the top of the log and stored in checkpoints (a restart with a
+    different one warns), and a case compiled with another configuration than
+    the library it links (e.g. linked against the wrong variant) is a fatal
+    error at start-up instead of corrupting memory.
 * Structure (case files may need changes; results bit-identical)
+  * Cases that use solidification must link `hemocell_solidify_mechanics`
+    (`cases/fc_solidified_stenosis` linked `hemocell`); the base library no
+    longer has it. Checkpoints written by the base library of earlier
+    versions of this branch carry `SOLIDIFY_MECHANICS` in their particle
+    layout and are rejected by the new base library (the particle records
+    themselves are unchanged).
+  * The `HemoCell` constructor has one more, defaulted parameter that carries
+    the case's compile-time configuration; leave it out. The three-argument
+    form is the same constructor with defaults.
+  * New helpers for the setup most cases repeated:
+    `getFlagMatrixFromSTL(*cfg, voxelizedDomain, flagMatrix)` voxelises
+    `<domain><geometry>` with the related `<domain>` settings, and
+    `HemoCell::initializeLatticeFromFlagMatrix()` creates the lattice with
+    bounce-back walls, without periodicity and at rest. The pipe and
+    pre-inlet examples and cases use them (results bit-identical).
   * No HemoCell header contains a `using namespace` directive any more:
     `hemocell.h` imported `hemo` and `plb` into case files (making `Array`
     ambiguous), and library headers imported all of `std` and `plb` into
@@ -323,6 +353,10 @@ Unreleased (refactor)
   * Tests that destroying a `HemoCell` object resets the process-wide state,
     and that cells of the `NoOp` model carry no membrane force (1 and 2
     ranks).
+  * Tests that configuration errors name file, line and path, that
+    `sanityCheck()` runs without `<sim><tmax>`, that a configuration
+    mismatch between case and library is fatal, and that checkpoints record
+    the configuration.
   * Tests that out-of-mesh or unreadable inner edges are fatal, that the
     repulsion constant is converted from pN and the repulsion force capped
     (1 and 2 ranks), and that every pre-inlet and domain block belongs to a

@@ -130,17 +130,26 @@ the rotation in degrees in X,Y,Z respectively
 config/constant_defaults.h
 --------------------------
 
-This file is used to define compile time constants for the HemoCell library. The
-HemoCell library (in build/hemocell) is used to link all the **case.cpp** files
-against. For example, whenever you want to use HemoCell with interior viscosity
-you must uncomment ``#define INTERIOR_VISCOSITY`` such that it is enabled. Below
-we listed the options present in this file and when you can use them
+This file is the one place for the compile-time configuration of HemoCell:
+every library and every **case.cpp** is compiled with it. The optional
+features are off by default; the library variants switch one on for themselves
+and the cases that link them (``hemocell_solidify_mechanics``,
+``hemocell_interior_viscosity``; a case selects one in its ``CMakeLists.txt``). To change a default for every library, edit this file.
+The effective configuration is printed at the top of the log of every run
+(``Compile-time configuration: ...``) and stored in its checkpoints; a case
+compiled with another configuration than the library it links (e.g. linked
+against the wrong variant) stops with an error at start-up. The version
+(``VERSION_MAJOR``, ``VERSION_MINOR``) is defined here as well; CMake and the
+documentation read it from this file. Below we listed the options present in
+this file and when you can use them
 
-* ``SOLIDIFY_MECHANICS`` Used for thrombus formation, relevant examples and
-  source code is not yet available in V2.0
+* ``SOLIDIFY_MECHANICS`` Solidification of platelets near binding sites
+  (``cases/solidify_example``); off by default, on in
+  ``hemocell_solidify_mechanics``.
 * ``INTERIOR_VISCOSITY`` Enable if you want to run cases with interior
   viscosity, adds two vectors to the HemoCellparticle class, and thus has a
-  measurable performance impact (don't enable when not needed)
+  measurable performance impact (don't enable when not needed); off by
+  default, on in ``hemocell_interior_viscosity``.
 * ``HEMOCELL_MATERIAL_INTEGRATION`` Defines how the velocity of the fluid is
   integrated to the particles. Euler [1] or Adams-Bashforth [2]. See
   ``src/hemoCellParticle.h`` for implementation details

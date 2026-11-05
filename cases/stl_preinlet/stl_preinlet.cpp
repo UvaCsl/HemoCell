@@ -47,13 +47,9 @@ int main(int argc, char * argv[]) {
   HemoCell hemocell(argv[1], argc, argv);
   Config * cfg = hemocell.cfg;
 
-  hlog << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>()
-       << endl;
   MultiScalarField3D<int> * flagMatrix = 0;
   VoxelizedDomain3D<double> * voxelizedDomain = 0;
-  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(), (*cfg)["domain"]["fluidEnvelope"].read<int>(),
-                       (*cfg)["domain"]["refDirN"].read<int>(), (*cfg)["domain"]["refDir"].read<int>(), voxelizedDomain,
-                       flagMatrix, (*cfg)["domain"]["blockSize"].read<int>());
+  getFlagMatrixFromSTL(*cfg, voxelizedDomain, flagMatrix);
 
   hlog << "(Stl preinlet) (Parameters) setting lbm parameters" << endl;
   param::lbm_base_parameters((*cfg));

@@ -74,23 +74,22 @@ public:
   enum class MPIHandle { Internal, External };
 
   /**
-   * @brief Create the simulation object and initialise MPI (through Palabos).
+   * @brief Create the simulation object (and initialise MPI through Palabos).
    *
    * @param configFileName main configuration file (or a checkpoint.xml to
    *        restart), relative to the working directory
    * @param argc,argv command-line arguments, passed on to plb::plbInit()
-   */
-  HemoCell(const std::string & configFileName, int argc, char * argv[])
-      : HemoCell{configFileName, argc, argv, HemoCell::MPIHandle::Internal} {};
-
-  /**
-   * @brief Create the simulation object.
-   * @param configFileName main configuration file (or a checkpoint.xml)
-   * @param argc,argv command-line arguments for plb::plbInit()
    * @param mpi_handle MPIHandle::External if MPI is already initialised (e.g.
    *        by the test runner); plb::plbInit() is then not called.
+   * @param caseConfiguration leave the default: it is evaluated where the
+   *        case calls the constructor, so it carries the compile-time
+   *        configuration (config/constant_defaults.h) the case was compiled
+   *        with. A case compiled with another configuration than the library
+   *        (e.g. linked against the wrong library variant) is a fatal error.
    */
-  HemoCell(const std::string & configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handle);
+  HemoCell(const std::string & configFileName, int argc, char * argv[],
+           HemoCell::MPIHandle mpi_handle = HemoCell::MPIHandle::Internal,
+           const char * caseConfiguration = HEMOCELL_BUILD_CONFIGURATION);
 
   /*
    * Clean up hemocell
@@ -302,6 +301,21 @@ public:
 
   ///Initialize the fluid field with the given management, should be done after specifing the pre inlets and before initializing the cellfields
   void initializeLattice(plb::MultiBlockManagement3D const & management);
+
+  /**
+   * @brief Create the fluid lattice of a voxelised geometry without a pre-inlet.
+   *
+   * The lattice gets the blocks of @p management (usually
+   * `voxelizedDomain->getMultiBlockManagement()`) and BGK dynamics with Guo
+   * forcing (relaxation time param::tau); the nodes where @p flagMatrix is 0
+   * become bounce-back walls. Periodicity and internal statistics are
+   * switched off and the fluid is at rest with density 1. Call
+   * `lattice->initialize()` afterwards, after adding any further boundary
+   * conditions or periodicity. The lattice parameters (param::lbm_*_parameters())
+   * must be computed first. Collective.
+   */
+  void initializeLatticeFromFlagMatrix(plb::MultiBlockManagement3D const & management,
+                                       plb::MultiScalarField3D<int> & flagMatrix);
 
   PreInlet * preInlet = 0;
 

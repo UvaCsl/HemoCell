@@ -39,16 +39,7 @@ void setupPipeflow(hemo::HemoCell & hemocell, PipeflowSetup & setup, T rbcMinimu
                              (*cfg)["domain"]["particleEnvelope"].read<int>());
   hemo::param::lbm_pipe_parameters((*cfg), setup.flagMatrix.get());
 
-  hemocell.lattice = new plb::MultiBlockLattice3D<T, DESCRIPTOR>(
-      setup.voxelizedDomain.get()->getMultiBlockManagement(), plb::defaultMultiBlockPolicy3D().getBlockCommunicator(),
-      plb::defaultMultiBlockPolicy3D().getCombinedStatistics(),
-      plb::defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-      new plb::GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / hemo::param::tau));
-  defineDynamics(*hemocell.lattice, *setup.flagMatrix.get(), (*hemocell.lattice).getBoundingBox(),
-                 new plb::BounceBack<T, DESCRIPTOR>(1.), 0);
-  hemocell.lattice->toggleInternalStatistics(false);
-  hemocell.lattice->periodicity().toggleAll(false);
-  hemocell.latticeEquilibrium(1., {0., 0., 0.});
+  hemocell.initializeLatticeFromFlagMatrix(setup.voxelizedDomain->getMultiBlockManagement(), *setup.flagMatrix);
 
   const T poiseuilleForce =
       8 * hemo::param::nu_lbm * (hemo::param::u_lbm_max * 0.5) / hemo::param::pipe_radius / hemo::param::pipe_radius;

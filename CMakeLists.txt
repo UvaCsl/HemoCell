@@ -3,7 +3,18 @@ cmake_minimum_required(VERSION 3.16...3.31 FATAL_ERROR)
 # HemoCell. Configure out of source, for example:
 #   cmake -S . -B build && cmake --build build --target hemocell
 # or use a preset (CMake >= 3.21): cmake --preset release
-project(hemocell VERSION 2.8 LANGUAGES C CXX)
+
+# The version is defined once, in config/constant_defaults.h.
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/config/constant_defaults.h" _hemocell_version_lines
+     REGEX "^#define VERSION_(MAJOR|MINOR) ")
+string(REGEX MATCH "VERSION_MAJOR ([0-9]+)" _ "${_hemocell_version_lines}")
+set(_hemocell_version_major "${CMAKE_MATCH_1}")
+string(REGEX MATCH "VERSION_MINOR \"([0-9]+)\"" _ "${_hemocell_version_lines}")
+set(_hemocell_version_minor "${CMAKE_MATCH_1}")
+if(_hemocell_version_major STREQUAL "" OR _hemocell_version_minor STREQUAL "")
+  message(FATAL_ERROR "Cannot read VERSION_MAJOR/VERSION_MINOR from config/constant_defaults.h")
+endif()
+project(hemocell VERSION ${_hemocell_version_major}.${_hemocell_version_minor} LANGUAGES C CXX)
 
 set(PALABOS_DIR "${PROJECT_SOURCE_DIR}/palabos")
 if(NOT EXISTS "${PALABOS_DIR}/src/palabos3D.h")

@@ -90,8 +90,6 @@ Software constraints
 * One ``HemoCell`` object at a time per process (process-wide state, reset
   when the object is destroyed).
 * Library code is C++11; the test runner is C++17.
-* ``config/constant_defaults.h`` defines ``SOLIDIFY_MECHANICS`` for every
-  build, so ``hemocell_solidify_mechanics`` equals ``hemocell``.
 * Output is written as one HDF5 file per atomic block and output step; very
   large runs produce many small files. Most datasets are single precision.
 * Restarts need the same case code and cell types; the number of ranks may

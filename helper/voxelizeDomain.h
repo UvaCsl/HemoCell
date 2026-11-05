@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "array.h"
+#include "config.h"
 
 #include <memory>
 
@@ -49,6 +50,21 @@ private:
   hemo::Array<plb::plint, 3> offset;
 };
 
+/**
+ * @brief Voxelise a closed STL surface into a flag matrix (1 fluid, 0 solid).
+ *
+ * The geometry is scaled so that it spans @p refDirLength lattice nodes in
+ * direction @p refDir (0 x, 1 y, 2 z), and opened at both x ends (inflow and
+ * outflow). Collective. The caller owns the created objects.
+ * @param[in] meshFileName STL file, relative to the working directory
+ * @param[in] extendedEnvelopeWidth envelope of the voxelised blocks [lattice nodes]
+ * @param[in] refDirLength extent of the geometry along @p refDir [lattice nodes]
+ * @param[in] refDir reference direction (0 x, 1 y, 2 z)
+ * @param[out] voxelizedDomain the voxelised domain (its block management)
+ * @param[out] flagMatrix 1 at fluid nodes, 0 elsewhere
+ * @param[in] blockSize atomic block size [lattice nodes]; <= 0 for one block per rank
+ * @param[in] particleEnvelope only used for advice in the log (0: 25)
+ */
 void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeWidth, plb::plint refDirLength,
                           plb::plint refDir, plb::VoxelizedDomain3D<T> *& voxelizedDomain,
                           plb::MultiScalarField3D<int> *& flagMatrix, plint blockSize, int particleEnvelope = 0);
@@ -58,5 +74,20 @@ void getFlagMatrixFromSTL(std::string meshFileName, plb::plint extendedEnvelopeW
                           plb::plint refDir, std::unique_ptr<plb::VoxelizedDomain3D<T>> & voxelizedDomain,
                           std::unique_ptr<plb::MultiScalarField3D<int>> & flagMatrix, plint blockSize,
                           int particleEnvelope = 0);
+
+/**
+ * @brief Voxelise the geometry of a case configuration (see above).
+ *
+ * Reads from `<domain>`: `geometry` (the STL file, relative to the working
+ * directory), `fluidEnvelope`, `refDirN`, `refDir`, `blockSize` and
+ * `particleEnvelope`. Replaces the call with these six values that most
+ * cases repeat. Collective.
+ */
+void getFlagMatrixFromSTL(Config & cfg, std::unique_ptr<plb::VoxelizedDomain3D<T>> & voxelizedDomain,
+                          std::unique_ptr<plb::MultiScalarField3D<int>> & flagMatrix);
+/// As above, with raw pointers owned by the caller (e.g. for a PreInlet,
+/// which keeps a pointer to the flag matrix).
+void getFlagMatrixFromSTL(Config & cfg, plb::VoxelizedDomain3D<T> *& voxelizedDomain,
+                          plb::MultiScalarField3D<int> *& flagMatrix);
 }
 #endif

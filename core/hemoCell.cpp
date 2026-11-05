@@ -118,8 +118,16 @@ void resetGlobalState() {
 }
 } // namespace
 
-HemoCell::HemoCell(const std::string & configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handler) {
+HemoCell::HemoCell(const std::string & configFileName, int argc, char * argv[], HemoCell::MPIHandle mpi_handler,
+                   const char * caseConfiguration) {
   if (mpi_handler == HemoCell::MPIHandle::Internal) { plb::plbInit(&(argc), &(argv)); }
+  // Checked once: a mismatch means that the case and the library disagree on
+  // class layouts or constants (e.g. a case linked against the wrong variant).
+  if (std::string(caseConfiguration) != HEMOCELL_BUILD_CONFIGURATION) {
+    fatal("(HemoCell) The case was compiled with the configuration\n  ", caseConfiguration,
+          "\nbut the library with\n  ", HEMOCELL_BUILD_CONFIGURATION,
+          "\nLink the library variant with the same features (config/constant_defaults.h, CMakeLists.txt).");
+  }
 
   if (global.hemoCellInitialized) { fatal("A HemoCell object already exists; only one may exist at a time."); }
   global.hemoCellInitialized = true;
@@ -526,6 +534,23 @@ void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRe
   boundaryRepulsionEnabled = true;
 }
 
+void HemoCell::initializeLatticeFromFlagMatrix(MultiBlockManagement3D const & management,
+                                               MultiScalarField3D<int> & flagMatrix) {
+  if (preInlet) { fatal("(HemoCell) With a pre-inlet, create the lattice with initializeLattice()."); }
+  if (!(param::tau > 0)) {
+    fatal("(HemoCell) Compute the lattice parameters (param::lbm_*_parameters()) before creating the lattice.");
+  }
+  if (lattice) { delete lattice; }
+  lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(management, defaultMultiBlockPolicy3D().getBlockCommunicator(),
+                                                   defaultMultiBlockPolicy3D().getCombinedStatistics(),
+                                                   defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+                                                   new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
+  defineDynamics(*lattice, flagMatrix, lattice->getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
+  lattice->toggleInternalStatistics(false);
+  lattice->periodicity().toggleAll(false);
+  latticeEquilibrium(1., {0., 0., 0.});
+}
+
 void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   if (lattice) { delete lattice; }
 
@@ -768,11 +793,17 @@ void HemoCell::sanityCheck() {
   }
 
 
-  if ((*cfg)["sim"]["tmax"].read<long int>() > 100000000000) {
-    hlog
-        << "(HemoCell) (SanityChecking) More than 100000000000 iterations requested, this means that the zero padding will not be consistent, therefore string sorting output will not work!"
-        << endl;
-  };
+  // Output names zero-pad the iteration to 12 digits. <sim><tmax> is read by
+  // the drivers that use it, so it is optional here.
+  long int tmax = 0;
+  try {
+    tmax = (*cfg)["sim"]["tmax"].read<long int>();
+  } catch (std::invalid_argument &) {}
+  if (tmax > 100000000000) {
+    hlog << "(HemoCell) (SanityChecking) More than 100000000000 iterations requested, this means that the zero padding "
+            "will not be consistent, therefore string sorting output will not work!"
+         << endl;
+  }
 
   // A cell ID grows by up to (1 + offset_y + offset_z) x number_of_cells at
   // every periodic crossing and is never folded back

@@ -9,6 +9,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 get_filename_component(MAIN ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 add_executable(${EXEC_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${MAIN}.cpp")
 
-# link the executable to `hemocell` and `HDF5` dependencies
-target_link_libraries(${EXEC_NAME} ${PROJECT_NAME})
+# link the executable to `hemocell_solidify_mechanics` (the case uses
+# solidification) and `HDF5` dependencies
+target_link_libraries(${EXEC_NAME} "${PROJECT_NAME}_solidify_mechanics")
 target_link_libraries(${EXEC_NAME} ${HDF5_C_HL_LIBRARIES} ${HDF5_LIBRARIES})

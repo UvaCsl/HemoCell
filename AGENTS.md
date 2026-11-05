@@ -103,11 +103,16 @@ in an executable or link incompatible variants together. Combined features need
 an explicitly consistent build; the existing targets do not represent every
 combination.
 
-Also inspect `config/constant_defaults.h`: it currently defines
-`SOLIDIFY_MECHANICS` even for the base target. Target names alone therefore do not
-tell you all enabled macros. Runtime switches in XML/per-cell setup are separate
-from compiled support. Changes to these defaults affect every target and can
-change particle layout, performance and checkpoint compatibility.
+`config/constant_defaults.h` is the one place for the compile-time
+configuration (and the version, which CMake and the docs read from it). The
+optional features are off there; the variants switch them on. The effective
+configuration (`HEMOCELL_BUILD_CONFIGURATION`) is logged at start-up and stored
+in checkpoints, and `HemoCell`'s constructor compares the case's configuration
+(a default argument, evaluated in the case) with the library's: add any new
+layout- or behaviour-changing macro to that string. Runtime switches in
+XML/per-cell setup are separate from compiled support. Changes to these
+defaults affect every target and can change particle layout, performance and
+checkpoint compatibility.
 
 ## Source layout and responsibilities
 
@@ -161,7 +166,9 @@ Typical initialization order (see `examples/pipeflow/pipeflow.cpp`):
 
 1. Construct `HemoCell` with the configuration and command-line arguments.
 2. Compute `param::lbm_*_parameters` and print them. Create the domain/lattice,
-   boundary conditions and equilibrium, then initialize the lattice.
+   boundary conditions and equilibrium, then initialize the lattice. For an
+   STL geometry, `getFlagMatrixFromSTL(*cfg, voxelizedDomain, flagMatrix)` and
+   `initializeLatticeFromFlagMatrix()` do the common part.
 3. Call `initializeCellfield()`. Register each type with
    `addCellType<Mechanics>(name, shape)`, configure outputs and update intervals,
    and set periodicity through `setSystemPeriodicity()` so both fields agree.
@@ -196,7 +203,8 @@ Configuration conventions:
   rotations are in **degrees**, applied in X, Y, Z order by the loader.
 - Settings such as `tmax`, `tmeas`, `tcsv`, `tcheckpoint` and warmup are consumed
   by individual drivers; adding an XML tag alone does not activate behavior.
-- Missing XML children throw `std::invalid_argument`. `XMLElement::read` uses
+- Missing XML children throw `std::invalid_argument` naming the file, line and
+  element path. `XMLElement::read` uses
   stream extraction and does not provide comprehensive value validation. Check
   new required values and cross-field constraints before entering collective or
   numerical work; optional values need explicit defaults.

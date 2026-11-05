@@ -63,6 +63,12 @@ Setting up the fluid
    * - ``initializeLattice(management)``
      - Create the fluid lattice from a Palabos ``MultiBlockManagement3D``. Call
        after defining any pre-inlets and before ``initializeCellfield()``.
+   * - ``initializeLatticeFromFlagMatrix(management, flagMatrix)``
+     - Create the fluid lattice of a voxelised geometry (no pre-inlet):
+       bounce-back walls where the flag matrix is 0, no periodicity, fluid at
+       rest. Then call ``lattice->initialize()``. The geometry itself comes from
+       ``getFlagMatrixFromSTL(*cfg, voxelizedDomain, flagMatrix)``, which reads
+       ``<domain><geometry>`` and the related settings (see ``examples/pipeflow``).
    * - ``lattice``
      - The underlying Palabos ``MultiBlockLattice3D`` (set periodicity,
        boundaries, driving force, ... directly on it).

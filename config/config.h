@@ -41,6 +41,9 @@ class XMLElement {
 
 public:
   XMLElement(tinyxml2::XMLElement * orig_) : orig(orig_) {}
+  /// The child element @p name.
+  /// @throws std::invalid_argument if there is none; the message names the
+  /// file, the element path (e.g. `hemocell/sim`) and its line.
   XMLElement operator[](std::string name) const;
 
   /**
@@ -58,18 +61,21 @@ public:
   template <typename T>
   T read() {
     const char * text = orig->GetText();
-    if (!text) { throw std::invalid_argument(std::string("XML element <") + orig->Name() + "> is empty."); }
+    if (!text) { throw std::invalid_argument(where() + " is empty."); }
     T ret = T();
-    if (!parseValue(text, ret)) {
-      throw std::invalid_argument(std::string("Cannot convert value \"") + text + "\" of XML element <" + orig->Name() +
-                                  ">.");
-    }
+    if (!parseValue(text, ret)) { throw std::invalid_argument(where() + ": cannot convert \"" + text + "\"."); }
     return ret;
   }
 
   tinyxml2::XMLElement * getOrig() { return orig; }
 
+  /// Path of this element from the root, e.g. `hemocell/sim/tmax`.
+  std::string path() const;
+
 private:
+  /// "<file>, line <n>: <path>" of this element, for error messages.
+  std::string where() const;
+
   template <typename V>
   static bool parseValue(const std::string & text, V & value) {
     std::istringstream stream(text);
@@ -84,6 +90,9 @@ private:
 
 class Config {
   tinyxml2::XMLDocument * orig;
+  /// Name of the loaded file; the document refers to it (user data), so
+  /// that error messages of its elements can name it.
+  std::string fileName;
 
 public:
   /// True if the root element is `Checkpoint` (a checkpoint.xml written by HemoCell).

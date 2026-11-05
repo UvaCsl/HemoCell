@@ -51,15 +51,9 @@ int main(int argc, char * argv[]) {
 
   // ----------------- Read in config file & geometry ---------------------------
 
-  hlogfile << "(stent_strut) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>()
-           << endl;
-
   std::unique_ptr<MultiScalarField3D<int>> flagMatrix;
   std::unique_ptr<VoxelizedDomain3D<T>> voxelizedDomain;
-  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(), (*cfg)["domain"]["fluidEnvelope"].read<int>(),
-                       (*cfg)["domain"]["refDirN"].read<int>(), (*cfg)["domain"]["refDir"].read<int>(), voxelizedDomain,
-                       flagMatrix, (*cfg)["domain"]["blockSize"].read<int>(),
-                       (*cfg)["domain"]["particleEnvelope"].read<int>());
+  getFlagMatrixFromSTL(*cfg, voxelizedDomain, flagMatrix);
 
   plint nx = (*cfg)["domain"]["refDirN"].read<int>();
   plint ny = 0.5 * nx;

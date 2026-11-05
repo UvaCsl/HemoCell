@@ -54,26 +54,13 @@ int main(int argc, char * argv[]) {
 
   std::unique_ptr<MultiScalarField3D<int>> flagMatrix;
   std::unique_ptr<VoxelizedDomain3D<T>> voxelizedDomain;
-  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(), (*cfg)["domain"]["fluidEnvelope"].read<int>(),
-                       (*cfg)["domain"]["refDirN"].read<int>(), (*cfg)["domain"]["refDir"].read<int>(), voxelizedDomain,
-                       flagMatrix, (*cfg)["domain"]["blockSize"].read<int>(),
-                       (*cfg)["domain"]["particleEnvelope"].read<int>());
+  getFlagMatrixFromSTL(*cfg, voxelizedDomain, flagMatrix);
 
   param::lbm_pipe_parameters((*cfg), flagMatrix.get());
   param::printParameters();
 
-  hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
-      voxelizedDomain.get()->getMultiBlockManagement(), defaultMultiBlockPolicy3D().getBlockCommunicator(),
-      defaultMultiBlockPolicy3D().getCombinedStatistics(),
-      defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-      new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
-
-  defineDynamics(*hemocell.lattice, *flagMatrix.get(), (*hemocell.lattice).getBoundingBox(),
-                 new BounceBack<T, DESCRIPTOR>(1.), 0);
-
-  hemocell.lattice->toggleInternalStatistics(false);
-  hemocell.lattice->periodicity().toggleAll(false);
-  hemocell.latticeEquilibrium(1., plb::Array<T, 3>(0., 0., 0.));
+  // Bounce-back walls where the geometry is solid, fluid at rest
+  hemocell.initializeLatticeFromFlagMatrix(voxelizedDomain->getMultiBlockManagement(), *flagMatrix);
 
   //Driving Force
   T poiseuilleForce = 8 * param::nu_lbm * (param::u_lbm_max * 0.5) / param::pipe_radius / param::pipe_radius;

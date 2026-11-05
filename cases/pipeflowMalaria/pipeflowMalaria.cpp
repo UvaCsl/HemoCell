@@ -51,25 +51,13 @@ int main(int argc, char * argv[]) {
         << endl;
   MultiScalarField3D<int> * flagMatrix = 0;
   VoxelizedDomain3D<T> * voxelizedDomain = 0;
-  getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(), (*cfg)["domain"]["fluidEnvelope"].read<int>(),
-                       (*cfg)["domain"]["refDirN"].read<int>(), (*cfg)["domain"]["refDir"].read<int>(), voxelizedDomain,
-                       flagMatrix, (*cfg)["domain"]["blockSize"].read<int>());
+  getFlagMatrixFromSTL(*cfg, voxelizedDomain, flagMatrix);
 
   param::lbm_pipe_parameters((*cfg), flagMatrix);
   param::printParameters();
 
-  hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
-      voxelizedDomain->getMultiBlockManagement(), defaultMultiBlockPolicy3D().getBlockCommunicator(),
-      defaultMultiBlockPolicy3D().getCombinedStatistics(),
-      defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-      new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
-
-  defineDynamics(*hemocell.lattice, *flagMatrix, (*hemocell.lattice).getBoundingBox(),
-                 new BounceBack<T, DESCRIPTOR>(1.), 0);
-
-  hemocell.lattice->toggleInternalStatistics(false);
-  hemocell.lattice->periodicity().toggleAll(false);
-  hemocell.latticeEquilibrium(1., plb::Array<T, 3>(0., 0., 0.));
+  // Bounce-back walls where the geometry is solid, fluid at rest
+  hemocell.initializeLatticeFromFlagMatrix(voxelizedDomain->getMultiBlockManagement(), *flagMatrix);
 
   //Driving Force
   T rPipe = (*cfg)["domain"]["refDirN"].read<int>() / 2.0;

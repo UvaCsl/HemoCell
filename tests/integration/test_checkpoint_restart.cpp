@@ -155,3 +155,15 @@ TEST(Checkpoint, MismatchingParticleLayoutIsRejected) {
   replaceInFile(checkpointFile, "record=", "record=1");
   expectRestartRejected(checkpointFile, "particle records");
 }
+
+// A checkpoint records the compile-time configuration it was written with
+// (config/constant_defaults.h), for the record; a restart only warns if it
+// differs (the particle layout is checked separately).
+TEST(Checkpoint, RecordsBuildConfiguration) {
+  const std::string checkpointFile = writeCheckpoint();
+  std::ifstream in(checkpointFile.c_str());
+  std::stringstream text;
+  text << in.rdbuf();
+  EXPECT_NE(text.str().find("<BuildConfiguration>"), std::string::npos);
+  EXPECT_NE(text.str().find(HEMOCELL_BUILD_CONFIGURATION), std::string::npos);
+}

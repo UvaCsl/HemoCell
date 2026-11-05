@@ -940,6 +940,10 @@ void HemoCellParticleField::solidifyCells() {
   // - close enough in space to a binding site,
   // - shows a minimum tresca stress,
   // the particle is labelled to be solified.
+  // The thresholds of a cell type are read from its material file once per
+  // call, on first use (only the types found near a binding site need them).
+  std::vector<T> distanceThreshold(cellFields->size(), -1), shearThreshold(cellFields->size(), -1);
+  std::vector<bool> thresholdsRead(cellFields->size(), false);
   for (const Dot3D & b_particle : bindingSites) {
     for (int x = b_particle.x - 1; x <= b_particle.x + 1; x++) {
       if (x < 0 || x > this->atomicLattice->getNx() - 1) { continue; }
@@ -959,12 +963,14 @@ void HemoCellParticleField::solidifyCells() {
             const T distance = sqrt(dv[0] * dv[0] + dv[1] * dv[1] + dv[2] * dv[2]);
             T tresca = eigenValueFromCell(this->atomicLattice->get(x, y, z));
 
-            // FIXME: both user-defined constants could be extracted outside the loop.
-            if ((distance <= (*cellFields)[lParticle.sv.celltype]
-                                 ->mechanics->cfg["MaterialModel"]["distanceThreshold"]
-                                 .read<T>()) &&
-                (abs(tresca / 1e-7) >
-                 (*cellFields)[lParticle.sv.celltype]->mechanics->cfg["MaterialModel"]["shearThreshold"].read<T>())) {
+            const pluint ctype = lParticle.sv.celltype;
+            if (!thresholdsRead[ctype]) {
+              Config & material = (*cellFields)[ctype]->mechanics->cfg;
+              distanceThreshold[ctype] = material["MaterialModel"]["distanceThreshold"].read<T>();
+              shearThreshold[ctype] = material["MaterialModel"]["shearThreshold"].read<T>();
+              thresholdsRead[ctype] = true;
+            }
+            if ((distance <= distanceThreshold[ctype]) && (abs(tresca / 1e-7) > shearThreshold[ctype])) {
               lParticle.sv.solidify = true;
             }
           }

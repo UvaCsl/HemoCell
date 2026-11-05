@@ -27,19 +27,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef CONSTANT_DEFAULTS_H
 #define CONSTANT_DEFAULTS_H
 // ============== Compile time options - Set these
+//
+// This file is the one place for HemoCell's compile-time configuration; every
+// library and every case is compiled with it. The effective configuration of a
+// run is printed at the top of its log and stored in its checkpoints
+// (HEMOCELL_BUILD_CONFIGURATION below), and a case compiled with another
+// configuration than the library it links is rejected at start-up.
 
 /*
- * Which version are we at
+ * Which version are we at (CMake and the documentation read it from here).
  */
 #define VERSION_MAJOR 2
 #define VERSION_MINOR "8"
 
-// Use for solidifying, performance impact so only enable when using
+/*
+ * Optional features. They are off by default, i.e. in the base library
+ * `hemocell`. The library variants switch one on for themselves and for the
+ * cases that link them (CMakeLists.txt): hemocell_solidify_mechanics defines
+ * SOLIDIFY_MECHANICS, hemocell_interior_viscosity INTERIOR_VISCOSITY. To
+ * change a default for every library, uncomment its #define here.
+ */
+// Solidification of platelets near binding sites (cases/solidify_example).
 #ifndef SOLIDIFY_MECHANICS
-#define SOLIDIFY_MECHANICS
+//#define SOLIDIFY_MECHANICS
 #endif
 
-// Use for Interior Viscosity mechanics, performance impact so only enable when using
+// Interior viscosity of cells; adds data to every particle, performance impact.
 #ifndef INTERIOR_VISCOSITY
 //#define INTERIOR_VISCOSITY
 #endif
@@ -122,6 +135,9 @@ constexpr int OUTPUT_RES_TIME = 18;
 
 #ifndef T
 typedef double T;
+#define HEMOCELL_CONFIGURATION_T "double"
+#else
+#define HEMOCELL_CONFIGURATION_T HEMOCELL_STRINGIFY(T)
 #endif
 
 #ifndef PI
@@ -179,6 +195,47 @@ constexpr T MaxPLTBendingAngle = 2.467;
 constexpr T MaxCellPersistenceLength = 9.0;
 
 /** @} */ // end of the cell group constants
+
+/*
+ * The compile-time configuration above as a string, e.g.
+ * "version=2.8,T=double,DESCRIPTOR=...,MATERIAL_INTEGRATION=1,FORCE_LIMIT=50.0".
+ * It is expanded where it is used, so the HemoCell constructor's default
+ * argument carries the configuration of the case and the library compares it
+ * with its own (HemoCell::HemoCell()). No spaces (Palabos' XML reader stops at
+ * the first space).
+ */
+#define HEMOCELL_STRINGIFY_(x) #x
+#define HEMOCELL_STRINGIFY(x) HEMOCELL_STRINGIFY_(x)
+#ifdef FORCE_LIMIT
+#define HEMOCELL_CONFIGURATION_FORCE_LIMIT ",FORCE_LIMIT=" HEMOCELL_STRINGIFY(FORCE_LIMIT)
+#else
+#define HEMOCELL_CONFIGURATION_FORCE_LIMIT ",FORCE_LIMIT=none"
+#endif
+#ifdef SOLIDIFY_MECHANICS
+#define HEMOCELL_CONFIGURATION_SOLIDIFY ",SOLIDIFY_MECHANICS"
+#else
+#define HEMOCELL_CONFIGURATION_SOLIDIFY ""
+#endif
+#ifdef INTERIOR_VISCOSITY
+#define HEMOCELL_CONFIGURATION_INTERIOR ",INTERIOR_VISCOSITY"
+#else
+#define HEMOCELL_CONFIGURATION_INTERIOR ""
+#endif
+#ifdef HEMO_PARMETIS
+#define HEMOCELL_CONFIGURATION_PARMETIS ",HEMO_PARMETIS"
+#else
+#define HEMOCELL_CONFIGURATION_PARMETIS ""
+#endif
+#define HEMOCELL_CONFIGURATION_VERSION "version=" HEMOCELL_STRINGIFY(VERSION_MAJOR) "." VERSION_MINOR
+#define HEMOCELL_CONFIGURATION_TYPES ",T=" HEMOCELL_CONFIGURATION_T ",DESCRIPTOR=" HEMOCELL_STRINGIFY(DESCRIPTOR)
+#define HEMOCELL_CONFIGURATION_INTEGRATION ",MATERIAL_INTEGRATION=" HEMOCELL_STRINGIFY(HEMOCELL_MATERIAL_INTEGRATION)
+// clang-format off
+#define HEMOCELL_BUILD_CONFIGURATION                                                 \
+  HEMOCELL_CONFIGURATION_VERSION HEMOCELL_CONFIGURATION_TYPES                        \
+  HEMOCELL_CONFIGURATION_INTEGRATION HEMOCELL_CONFIGURATION_FORCE_LIMIT              \
+  HEMOCELL_CONFIGURATION_SOLIDIFY HEMOCELL_CONFIGURATION_INTERIOR                    \
+  HEMOCELL_CONFIGURATION_PARMETIS
+// clang-format on
 
 namespace hemo {
 ///Used to circumvent buffer initialization of characters

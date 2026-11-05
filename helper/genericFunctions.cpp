@@ -114,6 +114,7 @@ void printHeader() {
   hlog << "(_) (_) (____) (_/\\/\\_) (_____)  \\___) (____) (____) (____) " << endl;
   hlog << "                         v." << VERSION_MAJOR << "." << VERSION_MINOR << endl;
   hlog << endl;
+  hlog << "(HemoCell) Compile-time configuration: " << HEMOCELL_BUILD_CONFIGURATION << endl;
 }
 
 }
