@@ -799,6 +799,14 @@ void HemoCellFields::applyRepulsionForce() {
   global.statistics.getCurrent().stop();
 }
 
+void HemoCellFields::capRepulsionForce() {
+#ifdef FORCE_LIMIT
+  for (plint lbid : immersedParticles->getLocalInfo().getBlocks()) {
+    immersedParticles->getComponent(lbid).capRepulsionForce(param::f_limit);
+  }
+#endif
+}
+
 void HemoCellFields::HemoBoundaryRepulsionForce::processGenericBlocks(Box3D domain,
                                                                       std::vector<AtomicBlock3D *> blocks) {
   dynamic_cast<HemoCellParticleField *>(blocks[0])->applyBoundaryRepulsionForce(resetFirst);

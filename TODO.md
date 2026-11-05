@@ -36,7 +36,7 @@ Findings of a review of the `refactor` branch (November 2026). Items marked
 reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
 before others write drivers against the API.
 
-Status: A1, A2, A3, A5, A6, A7, B11, B12 and B16 are done (see CHANGELOG),
+Status: A1-A9, B11, B12 and B16 are done (see CHANGELOG),
 except placing periodic images of cells at load (A5), exact cell IDs in HDF5
 output (A7) and `DESCRIPTOR` as a macro (B12). B10 is deferred (special case,
 lower priority).
@@ -66,7 +66,8 @@ lower priority).
    order, or dx/dt, so a restart with another variant or registration order
    misreads the raw particle bytes. Write the XML last (or write to a temporary
    directory and rename it), and validate a fingerprint on load.
-4. **Inner-edge indices are not validated.** `InnerEdges` are read without a
+4. *Done* (checked once when the cell type is added).
+   **Inner-edge indices are not validated.** `InnerEdges` are read without a
    check against the vertex count (`mechanics/commonCellConstants.cpp`); the WBC
    template's pairs belong to the 642-vertex mesh and index out of bounds with
    another `minNumTriangles`. Check once at setup.
@@ -99,10 +100,13 @@ lower priority).
    then reset to its base ID and most likely deleted. Use 64-bit IDs throughout
    (`sv.cellId` is already `plint`; the lookup maps and `base_cell_id()` use
    `int`); checkpoints are unaffected.
-8. **The pre-inlet is wrong with more than one block per rank.**
+8. *Done* (partners from all interface blocks of a rank; every block
+   assigned to a rank of its lattice).
+   **The pre-inlet is wrong with more than one block per rank.**
    `helper/preInlet.cpp` keeps only the last bulk per rank (FIXME there). Fail
    clearly in that case, or support it.
-9. **Repulsion is a no-op in all shipped configurations.** `kRep` is used as a
+9. *Done* (`k` in pN, 5 pN in the shipped configurations; repulsion capped
+   at `FORCE_LIMIT`). **Repulsion is a no-op in all shipped configurations.** `kRep` is used as a
    lattice-unit force (`HemoCell::setRepulsion()`, `core/particleGrid.cpp`), so
    `2e-22` is about 1e-18 pN; repulsion is also added after the `FORCE_LIMIT`
    cap, so a meaningful value would be uncapped. Give `kRep` units (pN), convert

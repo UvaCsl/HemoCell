@@ -27,15 +27,17 @@ thresholds.
 For two vertices of different cells (or a vertex and a wall node) at a distance
 ``d`` below the cutoff ``r_c``, the force has magnitude ``k * r_c / d`` and acts
 along the line between them (equal and opposite on two vertices; at a wall
-only the vertex is pushed).
+only the vertex is pushed). ``k`` is thus the force at the cutoff distance.
+The repulsion force of a vertex (particle and wall repulsion together) is
+capped at ``FORCE_LIMIT`` (50 pN by default), separately from the membrane
+force; at ``k = 5 pN`` the cap is reached at a tenth of the cutoff.
 
 .. note::
-   The ``repulsionConstant`` and ``boundaryRepulsionConstant`` (``k``) are used
-   as given, in **lattice force units** (one lattice force unit is
-   ``rho * dx^4 / dt^2``, e.g. about 6.4e-9 N for ``dx = 0.5 um``,
-   ``dt = 1e-7 s`` and plasma density). The cutoffs are given in
-   **micrometres** and converted to lattice units. The value ``2e-22`` found in
-   several example configurations is negligible in lattice units.
+   The ``repulsionConstant`` and ``boundaryRepulsionConstant`` (``k``) are given
+   in **pN** and the cutoffs in **micrometres**; both are converted to lattice
+   units (call these functions after ``param::lbm_*_parameters()``). The
+   example configurations use ``kRep = 5`` pN. (Before this version ``k`` was
+   used as a lattice force; the former value ``2e-22`` had no effect.)
 
 .. note::
    Neighbours are searched in adjacent lattice nodes only, so a cutoff larger

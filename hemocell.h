@@ -144,11 +144,14 @@ public:
   /**
    * @brief Enable repulsion between vertices of different cells.
    *
-   * Force `k * r_c / d` along the connecting line for `d < r_c`. The
+   * Force `k * r_c / d` along the connecting line for `d < r_c` (k at the
+   * cutoff, growing as the vertices approach). The repulsion force of a
+   * vertex (with wall repulsion, if enabled) is capped at FORCE_LIMIT. The
    * neighbour search covers adjacent lattice nodes only (cutoffs above one
-   * lattice spacing are partially effective).
-   * @param repulsionConstant k [lattice force units, used as given]
-   * @param repulsionCutoff r_c [micrometre]
+   * lattice spacing are partially effective). Call after the lattice
+   * parameters are computed (param::lbm_*_parameters()).
+   * @param repulsionConstant k [pN], >= 0 (converted with param::df)
+   * @param repulsionCutoff r_c [micrometre], > 0
    */
   void setRepulsion(T repulsionConstant, T repulsionCutoff);
 
@@ -195,9 +198,10 @@ public:
 
   /**
    * @brief Enable repulsion between vertices and wall (solid) nodes.
-   * Collective (detects the wall nodes next to fluid).
-   * @param boundaryRepulsionConstant k [lattice force units, used as given]
-   * @param boundaryRepulsionCutoff r_c [micrometre]
+   * Collective (detects the wall nodes next to fluid). Same force law and cap
+   * as setRepulsion().
+   * @param boundaryRepulsionConstant k [pN], >= 0 (converted with param::df)
+   * @param boundaryRepulsionCutoff r_c [micrometre], > 0
    * @param timestep update interval [iterations]; equal to the particle
    *        repulsion interval if that is enabled too
    */

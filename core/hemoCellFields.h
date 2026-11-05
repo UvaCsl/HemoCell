@@ -149,6 +149,12 @@ public:
   /// resets it, is not enabled).
   void applyBoundaryRepulsionForce(bool resetFirst = false);
 
+  /// Limit the repulsion force (sv.force_repulsion, particle and wall
+  /// repulsion together) of every particle to FORCE_LIMIT (param::f_limit);
+  /// no-op if FORCE_LIMIT is not defined. Local to each block (no
+  /// communication); called after a repulsion update.
+  void capRepulsionForce();
+
   /// Delete any incomplete cells on a block
   void deleteIncompleteCells(bool verbose = true);
 
@@ -233,16 +239,16 @@ public:
   /// palabos field for storing the CPAC scalar field if used
   plb::MultiBlockLattice3D<T, CEPAC_DESCRIPTOR> * CEPACfield = 0;
 
-  ///Repulsion variable set through hemocell.h
+  /// Repulsion cutoff [lattice units], set by HemoCell::setRepulsion()
   T repulsionCutoff = 0.0;
-  ///Repulsion variable set through hemocell.h
+  /// Repulsion constant [lattice force units], set by HemoCell::setRepulsion() (in pN)
   T repulsionConstant = 0.0;
   ///Timescale seperation for repulsion, set through hemocell.h
   pluint repulsionTimescale = 1;
 
-  ///Boundary repulsion variable set through hemocell.h
+  /// Wall repulsion cutoff [lattice units], set by HemoCell::enableBoundaryParticles()
   T boundaryRepulsionCutoff = 0.0;
-  ///Boundary repulsion variable set through hemocell.h
+  /// Wall repulsion constant [lattice force units], set by HemoCell::enableBoundaryParticles() (in pN)
   T boundaryRepulsionConstant = 0.0;
   ///Timescale seperation for boundary repulsion, set through hemocell.h
   pluint boundaryRepulsionTimescale = 1;

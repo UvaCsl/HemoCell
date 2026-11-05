@@ -133,7 +133,7 @@ Optional physics
      - Purpose
    * - ``setRepulsion(constant, cutoff)``
      - Enable and parameterise short-range cell–cell repulsion (constant in
-       lattice force units, cutoff in micrometres). See
+       pN, cutoff in micrometres; the force is capped at ``FORCE_LIMIT``). See
        :ref:`advanced_cases/repulsion:Repulsive forces`.
    * - ``enableBoundaryParticles(constant, cutoff, timestep)``
      - Enable repulsion between cells and solid boundaries (same units;

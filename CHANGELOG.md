@@ -39,6 +39,17 @@ Unreleased (refactor)
     with `<cellsDeletedInfo>`), and in between their remaining vertices kept
     moving and, with a material time-scale separation, spreading their last
     forces. Runs in which no cell breaks are unchanged without output.
+  * Repulsion: the constants of `setRepulsion()` and
+    `enableBoundaryParticles()` are in pN (they were used as lattice forces,
+    so the shipped `kRep = 2e-22` was about 1e-18 pN and had no effect). The
+    shipped configurations now use `kRep = 5` pN, a low value chosen to have
+    an effect (not a validated one); runs that enable repulsion
+    (`examples/flowaroundsphere`, the wall repulsion of `cases/CEPAC`) change.
+    The repulsion force of a vertex (particle and wall repulsion together) is
+    capped at `FORCE_LIMIT`, once per repulsion update, separately from the
+    membrane force; `k * r_c / d` grew without bound before. Drivers that
+    passed tuned lattice-force values must convert them to pN (multiply by
+    `param::df * 1e12`); the setup log prints both.
 * Fixes
   * Particle neighbour grid: replaced the fixed 10-particles-per-node grid
     (unchecked heap overflow) by a compact cell list without a capacity limit.
@@ -243,6 +254,24 @@ Unreleased (refactor)
     (as in the test suite), the profiler kept accumulating, and the vertices
     pulled by `HemoCellStretch` were added to those of the next stretch (the
     stretch tests cleared them by hand).
+  * Inner edges (`<InnerEdges>` of a material file) are checked once when the
+    cell type is added: a pair that is not two distinct vertices of the cell
+    type's mesh, or that cannot be read, is a fatal error naming the vertex
+    count. Before, a material file made for another mesh resolution (e.g. the
+    642-vertex WBC template with another `minNumTriangles`) read vertex
+    positions out of bounds, and an unreadable pair reused the previous one.
+    All shipped material files pass.
+  * Pre-inlet with several atomic blocks per rank: the ranks that exchange
+    cells are chosen from all of a rank's blocks at the interface (only the
+    last one was used, so cells could miss the blocks of a rank), and every
+    block of the domain and the pre-inlet is assigned to a rank of its own
+    lattice when `mAB*`/`pAB*` ask for more blocks than ranks (the extra
+    blocks went to the rank equal to their block ID: a pre-inlet rank or no
+    rank at all). Without a pre-inlet, `mAB*` with more blocks than ranks
+    distributes the blocks over all ranks the same way. A pre-inlet that
+    would take every rank is a fatal error. `~HemoCell` also deletes the
+    second lattice of a pre-inlet run. Results with at most one block per rank
+    are bit-identical (pre-inlet example on 4 and 8 ranks).
 * Structure (case files may need changes; results bit-identical)
   * No HemoCell header contains a `using namespace` directive any more:
     `hemocell.h` imported `hemo` and `plb` into case files (making `Array`
@@ -294,6 +323,10 @@ Unreleased (refactor)
   * Tests that destroying a `HemoCell` object resets the process-wide state,
     and that cells of the `NoOp` model carry no membrane force (1 and 2
     ranks).
+  * Tests that out-of-mesh or unreadable inner edges are fatal, that the
+    repulsion constant is converted from pN and the repulsion force capped
+    (1 and 2 ranks), and that every pre-inlet and domain block belongs to a
+    rank of its lattice (2 ranks).
 
 2.6 (July 15 2022)
 -----------------

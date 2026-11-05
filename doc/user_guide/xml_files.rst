@@ -77,7 +77,8 @@ These options are denoted with a bold **case.cpp**.
     * ``<particleEnvelope>`` This option is denoted in ``<dx>``. Should be a bit larger than the longest stretch of
       a particle in the current simulation. otherwise particles will be deleted.
       Usually a value of 25 is used, otherwise a warning is displayed.
-    * ``<kRep>`` **case.cpp** Repulsion constant used for repulsion force. 
+    * ``<kRep>`` **case.cpp** Repulsion constant: the repulsion force at the
+      cutoff distance, in **pN** (5 in the examples).
       Uncomment line in pipeflow.cpp if you want to use this.
     * ``<RepCutoff>`` **case.cpp** Cutoff distance in **micrometer!** for the
       repulsion force. Uncomment line in pipeflow.cpp if you want to use this.

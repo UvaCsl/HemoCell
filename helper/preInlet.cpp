@@ -70,6 +70,12 @@ void PreInlet::initializePreInletParticleBoundary() {
   if (comm == MPI_COMM_NULL) {
     MPI_Comm_dup(MPI_COMM_WORLD, &comm); // collective: all ranks initialise the pre-inlet
   }
+  domain_at_rank.clear();
+  particleSendMpi.clear();
+  particleReceiveMpi.clear();
+  communicating_blocks.clear();
+  my_send_blocks.clear();
+  my_recv_blocks.clear();
 
   Box3D preinlet_boundary = fluidInlet;
 
@@ -126,31 +132,19 @@ void PreInlet::initializePreInletParticleBoundary() {
   auto rank = global::mpi().getRank();
 
   // Extract all ranks and their domains that intersect the pre-inlet interface.
+  // A rank's domain is the bounding box of all its blocks at the interface (a
+  // rank can hold several). Where the box covers space between those blocks,
+  // it can only add partners: received particles outside a block are not
+  // inserted (addParticlePreinlet()), so no particle is lost or duplicated.
   for (int block_id : hemocell->lattice->getLocalInfo().getBlocks()) {
     Box3D bulk = hemocell->lattice->getMultiBlockManagement().getBulk(block_id);
-
-    domain_at_rank[rank] = bulk;
-
-    /*
-    FIXME: This assumes only a single bulk per rank is considered, which
-    seems to be the cases most of the time. An improviement would be to
-    implementt the subsequent if-statement: if the bulk is already set for
-    the current rank -> merge the bulks, otherwise inser the current bulk.
-    If situations do exists where such merges would fail, we might need to
-    opt to store an vector of bulks and loop over all present entries.
+    if (!doesIntersect(preinlet_boundary, bulk)) { continue; }
 
     if (domain_at_rank.find(rank) == domain_at_rank.end()) {
       domain_at_rank[rank] = bulk;
     } else {
-      auto merged = merge(domain_at_rank[rank], bulk);
-      if (not merged) {
-        hlog << "Pre-inlet cannot handle not-aligned bulks efficiently." << endl;
-        exit(1);
-      }
+      domain_at_rank[rank] = bound(domain_at_rank[rank], bulk);
     }
-    */
-
-    if (!doesIntersect(preinlet_boundary, bulk)) { continue; }
 
     if (hemocell->partOfpreInlet) {
       particleSendMpi[rank] += 1;

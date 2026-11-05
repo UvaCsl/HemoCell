@@ -43,13 +43,14 @@ Numerical and modelling notes
 
 Repulsion
    The force is ``k * r_c / d`` along the line between two vertices of
-   different cells (or a vertex and a wall node) for ``d < r_c``; ``k`` is used
-   as given, in lattice force units, and ``r_c`` is given in micrometres. The
-   neighbour search covers adjacent lattice nodes only, so cutoffs above one
-   lattice spacing are only partially effective (a warning is printed). The
-   value ``kRep = 2e-22`` in the shipped configurations is negligible in lattice
-   units; check the intended magnitude before using repulsion. Particle and
-   wall repulsion must use the same update interval.
+   different cells (or a vertex and a wall node) for ``d < r_c``; ``k`` is
+   given in pN and ``r_c`` in micrometres. The repulsion force per vertex is
+   capped at ``FORCE_LIMIT``, separately from the membrane force, so the total
+   force of a vertex can reach twice the limit. The neighbour search covers
+   adjacent lattice nodes only, so cutoffs above one lattice spacing are only
+   partially effective (a warning is printed). The shipped configurations use
+   ``kRep = 5`` pN, a low value chosen to have an effect, not a validated one.
+   Particle and wall repulsion must use the same update interval.
 
 Force cap
    ``FORCE_LIMIT`` (default 50 pN per vertex) caps the membrane force spread to

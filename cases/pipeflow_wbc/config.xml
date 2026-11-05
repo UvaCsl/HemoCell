@@ -25,7 +25,7 @@
     <wallShearRate> 1000 </wallShearRate> <!-- Wall shear rate of cell-free Poiseuille flow with the same pressure gradient [1/s] -->
     <particleEnvelope> 25 </particleEnvelope> <!-- [LU] -->
     <repulsion> 0 </repulsion> <!-- 1: cell-cell repulsion with kRep and RepCutoff -->
-    <kRep> 2e-22 </kRep> <!-- Repulsion constant [N m] -->
+    <kRep> 5.0 </kRep> <!-- Repulsion constant: force at the cutoff distance [pN] -->
     <RepCutoff> 0.7 </RepCutoff> <!-- Repulsion cutoff [um] -->
 </domain>
 

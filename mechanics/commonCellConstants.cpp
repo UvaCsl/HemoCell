@@ -22,6 +22,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "commonCellConstants.h"
+#include "error.h"
 
 using namespace plb;
 
@@ -117,16 +118,28 @@ CommonCellConstants CommonCellConstants::CommonCellConstantsConstructor(HemoCell
   }
 
   // Define opposite points TODO: make it automatic / or add the 33 links version ;)
+  // The pairs are vertex indices of one particular mesh (shape and
+  // minNumTriangles). They are checked here, once, so that a material file
+  // made for another mesh fails at setup instead of indexing out of bounds.
   vector<hemo::Array<plint, 2>> inner_edge_list_;
   try {
-    int v1 = 0, v2 = 0;
     tinyxml2::XMLElement * ie = modelCfg_["MaterialModel"]["InnerEdges"].getOrig();
+    const plint nVertices = cellField.meshElement->getNumVertices();
     for (tinyxml2::XMLElement * edge = ie->FirstChildElement(); edge != NULL; edge = edge->NextSiblingElement()) {
-      if (sscanf(edge->GetText(), "%d %d", &v1, &v2) != 2) {
-        pcout << "Inner Edges not read, somethings wrong" << endl;
+      const char * text = edge->GetText();
+      long v1 = 0, v2 = 0;
+      char rest = 0;
+      if (!text || sscanf(text, "%ld %ld %c", &v1, &v2, &rest) != 2) {
+        fatal("(Cell material) ", cellField.name, ": inner edge '", text ? text : "",
+              "' is not a pair of vertex indices.");
       }
-      // read out integers
-      inner_edge_list_.push_back({v1, v2});
+      if (v1 < 0 || v2 < 0 || v1 >= nVertices || v2 >= nVertices || v1 == v2) {
+        fatal("(Cell material) ", cellField.name, ": inner edge ", v1, " ", v2, " does not join two vertices of its ",
+              nVertices,
+              "-vertex mesh. The inner edges of a material file belong to one mesh; check the shape and "
+              "minNumTriangles it was made for.");
+      }
+      inner_edge_list_.push_back({plint(v1), plint(v2)});
     }
   } catch (std::invalid_argument & exeption) {}
 

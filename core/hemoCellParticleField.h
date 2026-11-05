@@ -61,6 +61,9 @@ public:
   void findParticles(plb::Box3D domain, std::vector<HemoCellParticle *> & found, pluint type);
   virtual void advanceParticles();
   void applyRepulsionForce(bool forced = false);
+  /// Scale sv.force_repulsion down to magnitude @p limit where it is larger
+  /// [lattice force units].
+  void capRepulsionForce(T limit);
   virtual void interpolateFluidVelocity(plb::Box3D domain);
   virtual void spreadParticleForce(plb::Box3D domain);
   void separateForceVectors();

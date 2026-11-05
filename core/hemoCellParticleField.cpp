@@ -599,6 +599,14 @@ void HemoCellParticleField::applyRepulsionForce(bool forced) {
   computePairRepulsion(particles, particleGrid, r_const, r_cutoff);
 }
 
+void HemoCellParticleField::capRepulsionForce(const T limit) {
+  for (HemoCellParticle & particle : particles) {
+    hemo::Array<T, 3> & force = particle.sv.force_repulsion;
+    const T magnitude = sqrt(force[0] * force[0] + force[1] * force[1] + force[2] * force[2]);
+    if (magnitude > limit) { force *= limit / magnitude; }
+  }
+}
+
 #ifdef INTERIOR_VISCOSITY
 void HemoCellParticleField::internalGridPointsMembrane(Box3D domain) {
   // This could be done less complex I guess?

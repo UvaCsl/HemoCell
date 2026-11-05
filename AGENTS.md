@@ -218,8 +218,10 @@ Configuration conventions:
   constants, force caps or resolution.
 - `FORCE_LIMIT` is specified in pN per surface point and converted to lattice
   force in `Parameters`. Check the actual use site for new terms rather than
-  assuming every model applies the same scaling. Repulsion cutoffs supplied to
-  `setRepulsion`/`enableBoundaryParticles` are micrometres and converted there.
+  assuming every model applies the same scaling. Repulsion constants supplied
+  to `setRepulsion`/`enableBoundaryParticles` are pN and their cutoffs
+  micrometres, both converted there; the repulsion force per vertex is capped
+  at `FORCE_LIMIT` separately from the membrane force.
 - Update intervals must be positive. The material intervals and the enabled
   repulsion/interior-viscosity intervals checked in `HemoCell::sanityCheck()`
   must be divisible by the particle-velocity update interval. Preserve these

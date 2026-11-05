@@ -49,7 +49,8 @@ Internally everything is in lattice units (``dx``, ``dt``, ``dm`` from
 ``hemo::Parameters``, also available as ``param::``). Interfaces mix SI values,
 micrometres, iterations and lattice units, so every public function and XML
 setting documents its unit, and conversion happens once, where a value enters
-(e.g. ``setRepulsion()`` converts the cutoff from micrometres). Never retune a
+(e.g. ``setRepulsion()`` converts ``k`` from pN and the cutoff from
+micrometres). Never retune a
 material constant, force cap or resolution to hide a regression.
 
 Performance rules

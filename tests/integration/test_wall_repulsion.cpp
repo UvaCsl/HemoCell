@@ -39,7 +39,7 @@ TEST(Repulsion, WallRepulsionAloneDoesNotAccumulate) {
   hemocell.loadParticles();
 
   const unsigned int interval = (*hemocell.cfg)["ibm"]["stepParticleEvery"].read<unsigned int>();
-  hemocell.enableBoundaryParticles(1e-6, 1.0, interval); // k [lattice force], cutoff 1 um
+  hemocell.enableBoundaryParticles(5.0, 1.0, interval); // k 5 pN, cutoff 1 um
   ASSERT_FALSE(hemocell.repulsionEnabled);
 
   setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(), DESCRIPTOR<T>::ExternalField::forceBeginsAt,
@@ -56,3 +56,31 @@ TEST(Repulsion, WallRepulsionAloneDoesNotAccumulate) {
   ASSERT_GT(once, 0.0); // some vertices are within the cutoff of the wall
   EXPECT_DOUBLE_EQ(twice, once);
 }
+
+#ifdef FORCE_LIMIT
+// The repulsion constant is given in pN, and the repulsion force of a vertex
+// (particle and wall repulsion together) is capped at FORCE_LIMIT: without
+// the cap, k * r_c / d grows without bound as a vertex approaches.
+TEST(Repulsion, ConstantInPicoNewtonAndForceCapped) {
+  static_assert(sizeof(T) == sizeof(double), "MPI_DOUBLE below assumes T == double");
+  char * args[] = {(char *)"test", NULL};
+  hemo::HemoCell hemocell(pipeflow_config, 0, args, hemo::HemoCell::MPIHandle::External);
+  PipeflowSetup setup;
+  setupPipeflow(hemocell, setup, 0.0); // allow vertices next to the wall
+  hemocell.loadParticles();
+
+  const unsigned int interval = (*hemocell.cfg)["ibm"]["stepParticleEvery"].read<unsigned int>();
+  hemocell.setRepulsion(5.0, 0.5); // 5 pN, 0.5 um
+  EXPECT_DOUBLE_EQ(hemocell.cellfields->repulsionConstant, 5.0e-12 / hemo::param::df);
+  hemocell.setRepulsionTimeScaleSeperation(interval);
+  hemocell.enableBoundaryParticles(1e6, 1.0, interval); // 1e6 pN: far above the cap within the cutoff
+  EXPECT_DOUBLE_EQ(hemocell.cellfields->boundaryRepulsionConstant, 1e6 * 1e-12 / hemo::param::df);
+
+  setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(), DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+                    setup.drivingForce);
+  iterate(hemocell, setup, 1); // the first step updates (and caps) the repulsion
+
+  const T maxForce = maxRepulsionForce(hemocell);
+  EXPECT_NEAR(maxForce, hemo::param::f_limit, 1e-12 * hemo::param::f_limit);
+}
+#endif

@@ -81,6 +81,22 @@ void restore_interrupt_handler() {
   interrupted = 0;
 }
 
+// Give every block of `blocks` one of the ranks firstRank .. firstRank +
+// nRanks - 1: in ascending block ID, block i gets firstRank + i when there are
+// at most as many blocks as ranks, otherwise consecutive blocks share a rank
+// (each rank gets one or more). A block without an entry would get the rank
+// equal to its block ID (Palabos' default), which can be a rank of the other
+// lattice (with a pre-inlet) or no rank at all.
+void attributeBlocksToRanks(const SparseBlockStructure3D & blocks, int firstRank, int nRanks,
+                            std::map<plint, plint> & blockToMpi) {
+  const plint nBlocks = blocks.getNumBlocks();
+  plint i = 0;
+  for (const auto & bulk : blocks.getBulks()) {
+    blockToMpi[bulk.first] = firstRank + (nBlocks <= nRanks ? i : i * nRanks / nBlocks);
+    i++;
+  }
+}
+
 // Put the process-wide state that a simulation sets back to its initial
 // values, so that a next HemoCell object in the same process (as in the test
 // suite) starts as it would in a new process. Process-wide state of HemoCell:
@@ -134,6 +150,9 @@ HemoCell::~HemoCell() {
     delete documentXML;
     documentXML = 0;
   }
+  // With a pre-inlet, `lattice` is one of preinlet_lattice and domain_lattice.
+  if (preinlet_lattice && preinlet_lattice != lattice) { delete preinlet_lattice; }
+  if (domain_lattice && domain_lattice != lattice) { delete domain_lattice; }
   if (lattice) { delete lattice; }
   if (domain_lattice_management) { delete domain_lattice_management; }
   if (loadBalancer) { delete loadBalancer; }
@@ -346,12 +365,17 @@ void HemoCell::iterate() {
   if (!cellfields->large_communicator) { cellfields->calculateCommunicationStructure(); }
   global.statistics.getCurrent()["iterate"].start();
   // ### 1 ### Particle Force to Fluid
-  if (repulsionEnabled && iter % cellfields->repulsionTimescale == 0) { cellfields->applyRepulsionForce(); }
-  if (boundaryRepulsionEnabled && iter % cellfields->boundaryRepulsionTimescale == 0) {
+  const bool repulsionStep = repulsionEnabled && iter % cellfields->repulsionTimescale == 0;
+  const bool boundaryRepulsionStep = boundaryRepulsionEnabled && iter % cellfields->boundaryRepulsionTimescale == 0;
+  if (repulsionStep) { cellfields->applyRepulsionForce(); }
+  if (boundaryRepulsionStep) {
     // Particle-particle repulsion resets force_repulsion; without it the wall
     // contribution must reset it itself, or it would accumulate every update.
     cellfields->applyBoundaryRepulsionForce(!repulsionEnabled);
   }
+  // The repulsion force grows without bound as two points approach; cap it
+  // (once per update) like the membrane force in spreadParticleForce().
+  if (repulsionStep || boundaryRepulsionStep) { cellfields->capRepulsionForce(); }
   cellfields->spreadParticleForce();
 
   // #### 2 #### LBM
@@ -467,21 +491,36 @@ void HemoCell::setInitialMinimumDistanceFromSolid(string name, T distance) {
   (*cellfields)[name]->minimumDistanceFromSolid = distance;
 }
 
+namespace {
+// Repulsion constant [pN] in lattice force units; checked once at setup.
+T repulsionConstantToLattice(T constant_pN, T cutoff_um, const char * what) {
+  if (!(param::df > 0) || !(param::dx > 0)) {
+    fatal("(Repulsion) Compute the lattice parameters (param::lbm_*_parameters()) before enabling ", what, ".");
+  }
+  if (!(constant_pN >= 0) || !(cutoff_um > 0)) {
+    fatal("(Repulsion) The ", what, " constant (", constant_pN, " pN) must be >= 0 and its cutoff (", cutoff_um,
+          " um) positive.");
+  }
+  const T constant = constant_pN * 1e-12 / param::df;
+  hlog << "(HemoCell) (Repulsion) " << what << ": k = " << constant_pN << " pN (" << constant
+       << " lattice force units), cutoff " << cutoff_um << " um (" << cutoff_um * (1e-6 / param::dx)
+       << " lattice units)" << endl;
+  return constant;
+}
+} // namespace
+
 void HemoCell::setRepulsion(T repulsionConstant, T repulsionCutoff) {
-  hlog << "(HemoCell) (Repulsion) Setting repulsion constant to " << repulsionConstant << ". repulsionCutoff to"
-       << repulsionCutoff << " µm" << endl;
   hlogfile << "(HemoCell) (Repulsion) Enabling repulsion." << endl;
-  cellfields->repulsionConstant = repulsionConstant;
+  cellfields->repulsionConstant = repulsionConstantToLattice(repulsionConstant, repulsionCutoff, "repulsion");
   cellfields->repulsionCutoff = repulsionCutoff * (1e-6 / param::dx);
   repulsionEnabled = true;
 }
 
 void HemoCell::enableBoundaryParticles(T boundaryRepulsionConstant, T boundaryRepulsionCutoff, unsigned int timestep) {
   cellfields->populateBoundaryParticles();
-  hlog << "(HemoCell) (Repulsion) Setting boundary repulsion constant to " << boundaryRepulsionConstant
-       << ". boundary repulsionCutoff to" << boundaryRepulsionCutoff << " µm" << endl;
   hlogfile << "(HemoCell) (Repulsion) Enabling boundary repulsion" << endl;
-  cellfields->boundaryRepulsionConstant = boundaryRepulsionConstant;
+  cellfields->boundaryRepulsionConstant =
+      repulsionConstantToLattice(boundaryRepulsionConstant, boundaryRepulsionCutoff, "boundary repulsion");
   cellfields->boundaryRepulsionCutoff = boundaryRepulsionCutoff * (1e-6 / param::dx);
   cellfields->boundaryRepulsionTimescale = timestep;
   boundaryRepulsionEnabled = true;
@@ -497,6 +536,7 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
                                       (*cfg)["domain"]["mABy"].read<int>(), (*cfg)["domain"]["mABz"].read<int>());
 
       hlog << "(HemoCell) Domain management overwritten from config file." << endl;
+      attributeBlocksToRanks(sb, 0, global::mpi().getSize(), BlockToMpi);
       ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
       domain_lattice_management =
           new MultiBlockManagement3D(sb, eta, management.getEnvelopeWidth(), management.getRefinementLevel());
@@ -536,38 +576,29 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
     if (preInlet->nProcs == 0) { preInlet->nProcs = 1; }
   }
 
-  int nProcs = global::mpi().getSize() - preInlet->nProcs;
-
-  //Assign processors to PreInlet or Domain
-  unsigned int currentPreInlet = 0;
-  int currentNode = 0;
-  for (int i = 0; i < global::mpi().getSize(); i++) {
-    if (currentPreInlet >= 1) {
-      if (i == global::mpi().getRank()) { partOfpreInlet = false; }
-      BlockToMpi[currentNode] = i;
-      currentNode++;
-    } else {
-      if (i == global::mpi().getRank()) { partOfpreInlet = true; }
-      preInlet->BlockToMpi[currentNode] = i;
-      currentNode++;
-      if (preInlet->nProcs <= currentNode) {
-        currentNode = 0;
-        currentPreInlet++;
-      }
-    }
+  const int size = global::mpi().getSize();
+  if (preInlet->nProcs >= size) {
+    fatal("(PreInlet) The pre-inlet uses ", preInlet->nProcs, " of the ", size,
+          " MPI processes; the domain needs at least one more.");
   }
+  const int nProcs = size - preInlet->nProcs; // processes of the domain
+
+  // The first preInlet->nProcs ranks hold the pre-inlet, the others the domain.
+  partOfpreInlet = global::mpi().getRank() < preInlet->nProcs;
 
   try { // Look for block management info in the config file
     SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(
         preInlet->location, (*cfg)["preInlet"]["parameters"]["pABx"].read<int>(),
         (*cfg)["preInlet"]["parameters"]["pABy"].read<int>(), (*cfg)["preInlet"]["parameters"]["pABz"].read<int>());
     hlog << "(HemoCell) (PreInlet) Domain management overwritten from config file." << endl;
+    attributeBlocksToRanks(sb_preinlet, 0, preInlet->nProcs, preInlet->BlockToMpi);
     ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet->BlockToMpi);
     preinlet_lattice_management = new MultiBlockManagement3D(sb_preinlet, eta_preinlet, management.getEnvelopeWidth(),
                                                              management.getRefinementLevel());
   } catch (const std::invalid_argument & e) { // If nonexistent, fall back to the default distribution
     hlog << "(HemoCell) (PreInlet) Using default domain management." << endl;
     SparseBlockStructure3D sb_preinlet = createRegularDistribution3D(preInlet->location, preInlet->nProcs);
+    attributeBlocksToRanks(sb_preinlet, 0, preInlet->nProcs, preInlet->BlockToMpi);
     ExplicitThreadAttribution * eta_preinlet = new ExplicitThreadAttribution(preInlet->BlockToMpi);
     preinlet_lattice_management = new MultiBlockManagement3D(sb_preinlet, eta_preinlet, management.getEnvelopeWidth(),
                                                              management.getRefinementLevel());
@@ -578,12 +609,14 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
         createRegularDistribution3D(management.getBoundingBox(), (*cfg)["domain"]["mABx"].read<int>(),
                                     (*cfg)["domain"]["mABy"].read<int>(), (*cfg)["domain"]["mABz"].read<int>());
     hlog << "(HemoCell) Domain management overwritten from config file." << endl;
+    attributeBlocksToRanks(sb, preInlet->nProcs, nProcs, BlockToMpi);
     ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
     domain_lattice_management =
         new MultiBlockManagement3D(sb, eta, management.getEnvelopeWidth(), management.getRefinementLevel());
   } catch (const std::invalid_argument & e) { // If nonexistent, fall back to the default distribution
     hlog << "(HemoCell) Using default sparse domain management." << endl;
     SparseBlockStructure3D sb = createRegularDistribution3D(management.getBoundingBox(), nProcs);
+    attributeBlocksToRanks(sb, preInlet->nProcs, nProcs, BlockToMpi);
     ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(BlockToMpi);
     domain_lattice_management =
         new MultiBlockManagement3D(sb, eta, management.getEnvelopeWidth(), management.getRefinementLevel());
