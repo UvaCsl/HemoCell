@@ -76,6 +76,12 @@ Parallel correctness
   makes exact before/after comparisons possible; checkpoints of identical runs
   are byte-identical (``cmp`` their ``.dat`` files). Records written as raw
   bytes need their padding zeroed for that (see ``HemoCellParticle``).
+* Output and statistics must not change the simulation state: read complete
+  cells inside a ``HemoCellFields::CompleteCellsScope`` (a copy of the
+  particles, discarded afterwards) instead of calling ``syncEnvelopes()`` or
+  ``deleteIncompleteCells()``, and leave deleting cells to ``iterate()``.
+* Cell IDs are ``plint`` and grow with every periodic crossing; never store
+  them in an ``int``.
 * A single-rank run does not test communication. Changes to particle transfer,
   ownership, periodicity or decomposition need runs on several ranks, including
   block and periodic crossings, and a restart from a checkpoint.

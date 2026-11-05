@@ -78,14 +78,29 @@ One time step
    reset ``sv.force`` and evaluate ``ParticleMechanics`` for all complete cells
    in the block (envelope copies included).
 #. **Interior viscosity** (variant ``hemocell_interior_viscosity``, if due).
-#. **Clean-up** (velocity-update steps): drop particles further than 3 nodes
-   outside the bulk; with ``<cellsDeletedInfo>`` also delete incomplete cells.
+#. **Clean-up** (velocity-update steps): delete the cells that lost vertices
+   (``deleteBrokenCells()``: incomplete cells with a vertex within 3 nodes of
+   the bulk; with ``<cellsDeletedInfo>`` a warning per cell), then drop
+   particles further than 3 nodes outside the bulk.
 #. **Reset** the lattice external force to zero and increment ``iter``.
 
 Because of the last step a case must re-apply any body force after every
-``iterate()``. ``writeOutput()`` does not change the state used by the next
-step: it restores the lattice force after writing the fluid force field and
-evaluates force components into separate arrays (see `Force components`_).
+``iterate()``.
+
+Output and statistics do not change the state used by the next step. They need
+every cell complete in the blocks holding it, which the particles after
+``iterate()`` are not (the clean-up cuts cells at 3 nodes outside the bulk), so
+they read through a ``HemoCellFields::CompleteCellsScope``: every local block
+keeps its particles aside and works on a copy with synchronised envelopes and
+incomplete cells deleted, and the originals are put back when the scope ends.
+A new synchronisation on the originals would reorder the particles, and with
+them the summation order of force spreading. Scopes nest (``writeOutput()``
+calls the statistics), and creating one is collective. ``writeOutput()`` also
+restores the lattice force after writing the fluid force field and evaluates
+force components into separate arrays (see `Force components`_). A run with
+output and statistics therefore ends bit for bit in the same state as one
+without, apart from the stored residence times, which output brings up to
+date (test ``Output.DoesNotChangeTrajectory``).
 
 Particle ownership and caches
 -----------------------------
@@ -141,10 +156,14 @@ copied across a periodic boundary, its copy gets a shifted ID ``id + k N`` so
 that the two images are distinct cells; ``base_cell_id()`` maps back. The
 shift per crossing is ``+-1`` (x), ``+-periodicity_limit[0]`` (y) and
 ``+-periodicity_limit[0] * periodicity_limit[1]`` (z), default ``1``, ``100``,
-``10000`` (``setSystemPeriodicityLimit()``). IDs are ``int``-sized in several
-places, so ``N`` times the largest shift must fit in an ``int``; with the
-defaults this limits a run to about 212,000 cells (checked in
-``sanityCheck()``).
+``10000`` (``setSystemPeriodicityLimit()``). IDs are never folded back, so
+they grow with every crossing. They are ``plint`` (64-bit) everywhere, in the
+particle records, the lookup maps (``get_particles_per_cell()``, ``get_lpc()``,
+the maps passed to ``CellMechanics``), the statistics and the cell ID
+exchange of ``syncEnvelopes()``; do not store them in an ``int``. With ``N``
+cells an ID can overflow after about ``2^63 / (10101 N)`` crossings (about
+``10^8`` for ten million cells); ``sanityCheck()`` requires room for at least
+``10^6``.
 
 Communication
 -------------
@@ -203,9 +222,9 @@ on the first ``applyPreInlet()``.
 Output
 ------
 
-``writeOutput()`` synchronises the envelopes, deletes incomplete cells,
-evaluates the force components (see `Force components`_) and calls the
-writers, which are collective:
+``writeOutput()`` works on complete cells inside a ``CompleteCellsScope``
+(see `One time step`_), evaluates the force components (see `Force components`_)
+and calls the writers, which are collective:
 
 * ``writeCellField3D_HDF5()`` (``io/ParticleHdf5IO.cpp``) writes, per cell
   type and atomic block, the cells listed by

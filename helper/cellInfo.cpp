@@ -41,7 +41,7 @@ void CellInformationFunctionals::CellVolume::processGenericBlocks(Box3D domain, 
 
   for (const auto & pair : pf->get_lpc()) {
     T volume = 0.;
-    const int & cid = pair.first;
+    const plint cid = pair.first;
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
     const pluint ctype = pf->particles[cell[0]].sv.celltype;
     for (hemo::Array<plint, 3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
@@ -66,7 +66,7 @@ void CellInformationFunctionals::CellArea::processGenericBlocks(Box3D domain, st
 
   for (const auto & pair : pf->get_lpc()) {
     T total_area = 0.;
-    const int & cid = pair.first;
+    const plint cid = pair.first;
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
     const pluint ctype = pf->particles[cell[0]].sv.celltype;
     for (hemo::Array<plint, 3> triangle : (*hemocell->cellfields)[ctype]->mechanics->cellConstants.triangle_list) {
@@ -84,7 +84,7 @@ void CellInformationFunctionals::CellPosition::processGenericBlocks(Box3D domain
 
   for (const auto & pair : pf->get_lpc()) {
     hemo::Array<T, 3> position = {0., 0., 0.};
-    const int & cid = pair.first;
+    const plint cid = pair.first;
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
     unsigned int size = 0;
     for (const int pid : cell) {
@@ -104,7 +104,7 @@ void CellInformationFunctionals::CellStretch::processGenericBlocks(Box3D domain,
 
   for (const auto & pair : pf->get_lpc()) {
     T max_stretch = 0.;
-    const int & cid = pair.first;
+    const plint cid = pair.first;
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
     for (unsigned int i = 0; i < cell.size() - 1; i++) {
       for (unsigned int j = i + 1; j < cell.size(); j++) {
@@ -124,7 +124,7 @@ void CellInformationFunctionals::CellBoundingBox::processGenericBlocks(Box3D dom
 
   for (const auto & pair : pf->get_lpc()) {
     hemo::Array<T, 6> bbox;
-    const int & cid = pair.first;
+    const plint cid = pair.first;
     const vector<int> & cell = pf->get_particles_per_cell().at(cid);
     HemoCellParticle * particle = &pf->particles[cell[0]];
 
@@ -152,7 +152,7 @@ void CellInformationFunctionals::CellAtomicBlock::processGenericBlocks(Box3D dom
   HemoCellParticleField * pf = dynamic_cast<HemoCellParticleField *>(blocks[0]);
 
   for (const auto & pair : pf->get_lpc()) {
-    const int & cid = pair.first;
+    const plint cid = pair.first;
 
     info_per_cell[cid].blockId = pf->atomicBlockId;
   }
@@ -161,7 +161,7 @@ void CellInformationFunctionals::CellType::processGenericBlocks(Box3D domain, st
   HemoCellParticleField * pf = dynamic_cast<HemoCellParticleField *>(blocks[0]);
 
   for (const auto & pair : pf->get_lpc()) {
-    const int & cid = pair.first;
+    const plint cid = pair.first;
 
     info_per_cell[cid].cellType = pf->particles[pf->get_particles_per_cell().at(cid)[0]].sv.celltype;
   }
@@ -170,11 +170,11 @@ void CellInformationFunctionals::CellType::processGenericBlocks(Box3D domain, st
 void CellInformationFunctionals::allCellInformation::processGenericBlocks(plb::Box3D domain,
                                                                           std::vector<plb::AtomicBlock3D *> blocks) {
   HemoCellParticleField * pf = dynamic_cast<HemoCellParticleField *>(blocks[0]);
-  const map<int, vector<int>> & ppc = pf->get_particles_per_cell();
+  const map<plint, vector<int>> & ppc = pf->get_particles_per_cell();
 
 
   for (const auto & pair : pf->get_lpc()) {
-    const int & cid = pair.first;
+    const plint cid = pair.first;
     hemo::Array<T, 6> bbox;
     hemo::Array<T, 3> position = {0., 0., 0.};
     hemo::Array<T, 3> velocity = {0., 0., 0.};
@@ -266,56 +266,49 @@ void CellInformationFunctionals::allCellInformation::processGenericBlocks(plb::B
 
 void CellInformationFunctionals::calculateCellVolume(HemoCell * hemocell_) {
   hemocell = hemocell_;
-  hemocell->cellfields->syncEnvelopes();
-  hemocell->cellfields->deleteIncompleteCells(false);
+  HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyProcessingFunctional(new CellVolume(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
 }
 void CellInformationFunctionals::calculateCellArea(HemoCell * hemocell_) {
   hemocell = hemocell_;
-  hemocell->cellfields->syncEnvelopes();
-  hemocell->cellfields->deleteIncompleteCells(false);
+  HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyProcessingFunctional(new CellArea(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
 }
 void CellInformationFunctionals::calculateCellPosition(HemoCell * hemocell_) {
   hemocell = hemocell_;
-  hemocell->cellfields->syncEnvelopes();
-  hemocell->cellfields->deleteIncompleteCells(false);
+  HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyProcessingFunctional(new CellPosition(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
 }
 void CellInformationFunctionals::calculateCellStretch(HemoCell * hemocell_) {
   hemocell = hemocell_;
-  hemocell->cellfields->syncEnvelopes();
-  hemocell->cellfields->deleteIncompleteCells(false);
+  HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyProcessingFunctional(new CellStretch(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
 }
 void CellInformationFunctionals::calculateCellBoundingBox(HemoCell * hemocell_) {
   hemocell = hemocell_;
-  hemocell->cellfields->syncEnvelopes();
-  hemocell->cellfields->deleteIncompleteCells(false);
+  HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyProcessingFunctional(new CellBoundingBox(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
 }
 void CellInformationFunctionals::calculateCellAtomicBlock(HemoCell * hemocell_) {
   hemocell = hemocell_;
-  hemocell->cellfields->syncEnvelopes();
-  hemocell->cellfields->deleteIncompleteCells(false);
+  HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyProcessingFunctional(new CellAtomicBlock(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
 }
 void CellInformationFunctionals::calculateCellType(HemoCell * hemocell_) {
   hemocell = hemocell_;
-  hemocell->cellfields->syncEnvelopes();
-  hemocell->cellfields->deleteIncompleteCells(false);
+  HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
   applyProcessingFunctional(new CellType(), hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
@@ -338,8 +331,12 @@ pluint CellInformationFunctionals::getTotalNumberOfCells(HemoCell * hemocell) {
 }
 pluint CellInformationFunctionals::getNumberOfCellsFromType(HemoCell * hemocell, string type) {
   info_per_cell.clear(); //TODO thread safe n such
-  calculateCellPosition(hemocell);
-  calculateCellType(hemocell);
+  {
+    // One copy and synchronisation for both (scopes nest).
+    HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
+    calculateCellPosition(hemocell);
+    calculateCellType(hemocell);
+  }
   pluint localCells = 0;
   for (const auto & pair : info_per_cell) {
     const CellInformation & cinfo = pair.second;
@@ -355,12 +352,12 @@ pluint CellInformationFunctionals::getNumberOfCellsFromType(HemoCell * hemocell,
   return total;
 }
 
-void CellInformationFunctionals::calculateCellInformation(HemoCell * hemocell, map<int, CellInformation> & ret) {
+void CellInformationFunctionals::calculateCellInformation(HemoCell * hemocell, map<plint, CellInformation> & ret) {
   // Make it saver by not using static objects in functional;
   vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
 
-  hemocell->cellfields->syncEnvelopes();
+  HemoCellFields::CompleteCellsScope completeCells(*hemocell->cellfields);
 
   applyProcessingFunctional(new allCellInformation(hemocell, ret),
                             hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
@@ -393,7 +390,7 @@ CellInformationFunctionals::allCellInformation * CellInformationFunctionals::all
 }
 
 
-map<int, CellInformation> CellInformationFunctionals::info_per_cell = map<int, CellInformation>();
+map<plint, CellInformation> CellInformationFunctionals::info_per_cell = map<plint, CellInformation>();
 HemoCell * CellInformationFunctionals::hemocell = 0;
 
 }

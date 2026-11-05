@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
+#include <limits>
 #include <mpi.h>
 
 #include "readPositionsBloodCells.h"
@@ -191,7 +192,7 @@ void HemoCell::loadParticles() {
   // Report how many cells were actually placed: a cell is dropped as a whole
   // when one of its vertices cannot be placed.
   std::vector<long> placed(cellfields->size(), 0);
-  std::vector<int> ids;
+  std::vector<plint> ids;
   for (plint bid : cellfields->immersedParticles->getLocalInfo().getBlocks()) {
     for (pluint ctype = 0; ctype < cellfields->size(); ctype++) {
       cellfields->immersedParticles->getComponent(bid).getOutputCells(ctype, ids);
@@ -247,10 +248,10 @@ void HemoCell::writeOutput() {
   // Very naive performance approximation
   pcout << "(HemoCell) (Output) writing output at timestep " << iter << " (" << param::dt * iter
         << " s). Approx. performance: " << tpi << " s / iteration." << endl;
-  // Note: output must not change the forces used by the next iterate(),
-  // otherwise the output interval would alter the trajectory. Repulsion is
-  // therefore not recomputed here; the output shows the repulsion force that
-  // is currently applied (computed at its last update step).
+  // Output must not change the simulation, otherwise the output interval
+  // would alter the trajectory: it works on a copy of the particles (see
+  // CompleteCellsScope), and repulsion is not recomputed (the output shows the
+  // repulsion force currently applied, computed at its last update step).
 
   // update larger lattice envelopes
   lattice->getMultiBlockManagement().changeEnvelopeWidth(2);
@@ -258,45 +259,41 @@ void HemoCell::writeOutput() {
   lattice->getBlockCommunicator().duplicateOverlaps(*lattice, modif::staticVariables);
   lattice->getMultiBlockManagement().changeEnvelopeWidth(1);
 
-  cellfields->syncEnvelopes();
-  if (global.cellsDeletedInfo) {
-    cellfields->deleteIncompleteCells(true);
-  } else {
-    cellfields->deleteIncompleteCells(false);
+  {
+    // Complete cells in every block, on a copy of the particles that is
+    // discarded at the end of this block.
+    HemoCellFields::CompleteCellsScope completeCells(*cellfields);
+
+    // Store the total force that will be spread next (force_total) and repoint
+    // the per-component force pointers to separate output arrays.
+    cellfields->separate_force_vectors();
+
+    // Recompute the force components into the separate arrays only. For cell
+    // types with a material timescale separation > 1 the components reflect
+    // the current shape, while the total force is the one computed at the last
+    // material update.
+    cellfields->applyConstitutiveModel(true);
+
+    // Creating a new directory per save
+    if (global::mpi().isMainProcessor()) {
+      string folder = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter);
+      mkpath(folder.c_str(), 0777);
+      folder = global::directories().getOutputDir() + "/csv";
+      mkpath(folder.c_str(), 0777);
+    }
+    global::mpi().barrier();
+
+    // Write Output
+    global.statistics.getCurrent()["writeOutput"].start();
+    writeCellField3D_HDF5(*cellfields, param::dx, param::dt, iter);
+    writeFluidField_HDF5(*cellfields, param::dx, param::dt, iter);
+    if (global.enableCEPACfield) { writeCEPACField_HDF5(*cellfields, param::dx, param::dt, iter); }
+    writeCellInfo_CSV(*this);
+    global.statistics.getCurrent().stop();
+
+    // Free the separate output arrays.
+    cellfields->unify_force_vectors();
   }
-
-  // Store the total force that will be spread next (force_total) and repoint
-  // the per-component force pointers to separate output arrays.
-  cellfields->separate_force_vectors();
-
-  // Recompute the force components into the separate arrays only. sv.force
-  // (the force applied to the fluid) is left untouched, so writing output does
-  // not change the simulation. For cell types with a material timescale
-  // separation > 1 the components reflect the current shape, while the total
-  // force is the one computed at the last material update.
-  cellfields->applyConstitutiveModel(true);
-
-  // Creating a new directory per save
-  if (global::mpi().isMainProcessor()) {
-    string folder = global::directories().getOutputDir() + "/hdf5/" + zeroPadNumber(iter);
-    mkpath(folder.c_str(), 0777);
-    folder = global::directories().getOutputDir() + "/csv";
-    mkpath(folder.c_str(), 0777);
-  }
-  global::mpi().barrier();
-
-
-  // Write Output
-  global.statistics.getCurrent()["writeOutput"].start();
-  writeCellField3D_HDF5(*cellfields, param::dx, param::dt, iter);
-  writeFluidField_HDF5(*cellfields, param::dx, param::dt, iter);
-  if (global.enableCEPACfield) { writeCEPACField_HDF5(*cellfields, param::dx, param::dt, iter); }
-  writeCellInfo_CSV(*this);
-  global.statistics.getCurrent().stop();
-
-  // Repoint surfaceparticle forces for speed
-  cellfields->unify_force_vectors();
-  cellfields->syncEnvelopes();
   // Continue with performance measurement
   global.statistics.getCurrent().stop();
 }
@@ -385,8 +382,13 @@ void HemoCell::iterate() {
 
   // We can safely delete non-local cells here, assuming model timestep is divisible by velocity timestep
   if (iter % cellfields->particleVelocityUpdateTimescale == 0) {
-    if (global.cellsDeletedInfo) { cellfields->deleteIncompleteCells(true); }
-    cellfields->deleteNonLocalParticles(3);
+    // Cells that lost a vertex (it entered a wall or left the domain, or its
+    // force was not finite) are deleted here, at a fixed point of the step, on
+    // every block keeping vertices of them. Output and statistics do not
+    // delete cells, so that they do not change the trajectory.
+    const plint keptEnvelope = 3;
+    cellfields->deleteBrokenCells(keptEnvelope, global.cellsDeletedInfo);
+    cellfields->deleteNonLocalParticles(keptEnvelope);
   }
 
   global.statistics.getCurrent()["setExternalVector"].start();
@@ -722,11 +724,18 @@ void HemoCell::sanityCheck() {
         << endl;
   };
 
-  // Check for possible overflows in calculating new cellIds
+  // A cell ID grows by up to (1 + offset_y + offset_z) x number_of_cells at
+  // every periodic crossing and is never folded back
+  // (HemoCellParticleDataTransfer::getOffset()); check once that the 64-bit
+  // IDs allow plenty of crossings.
   if (cellfields->number_of_cells) { // running with cells
-    if (cellfields->periodicity_limit_offset_y + cellfields->periodicity_limit_offset_z >
-        INT_MAX / cellfields->number_of_cells) { //can HemoCellParticleDataTransfer::getOffset overflow?
-      fatal("(SanityCheck) Periodic cell IDs would overflow an int: too many cells (", cellfields->number_of_cells,
+    const plint maxShift =
+        (1 + plint(cellfields->periodicity_limit_offset_y) + plint(cellfields->periodicity_limit_offset_z)) *
+        plint(cellfields->number_of_cells);
+    const plint crossings = std::numeric_limits<plint>::max() / maxShift;
+    if (crossings < 1000000) {
+      fatal("(SanityCheck) Periodic cell IDs would overflow after ", crossings,
+            " periodic crossings of a cell: too many cells (", cellfields->number_of_cells,
             ") for the periodicity limits (setSystemPeriodicityLimit()).");
     }
   }

@@ -44,14 +44,14 @@ public:
 public:
   PltSimpleModel(Config & modelCfg_, HemoCellField & cellField_);
 
-  void ParticleMechanics(map<int, vector<HemoCellParticle *>> & particles_per_cell, const map<int, bool> & lpc,
-                         pluint ctype);
+  void ParticleMechanics(map<plint, vector<HemoCellParticle *>> & particles_per_cell, const map<plint, bool> & lpc,
+                         pluint ctype) override;
 #ifdef SOLIDIFY_MECHANICS
-  void solidifyMechanics(const std::map<int, std::vector<int>> &, std::vector<HemoCellParticle> &,
+  void solidifyMechanics(const std::map<plint, std::vector<int>> &, std::vector<HemoCellParticle> &,
                          plb::BlockLattice3D<T, DESCRIPTOR> *, plb::BlockLattice3D<T, CEPAC_DESCRIPTOR> *, pluint ctype,
-                         HemoCellParticleField &);
+                         HemoCellParticleField &) override;
 #endif
-  void statistics();
+  void statistics() override;
 };
 }
 #endif

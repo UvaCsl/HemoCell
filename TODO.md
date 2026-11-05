@@ -36,8 +36,8 @@ Findings of a review of the `refactor` branch (November 2026). Items marked
 reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
 before others write drivers against the API.
 
-Status: A1, A2, A3 and A5 are done (see CHANGELOG, "Hardening"), except
-placing periodic images of cells at load (A5).
+Status: A1, A2, A3, A5, A6 and A7 are done (see CHANGELOG), except placing
+periodic images of cells at load (A5) and exact cell IDs in HDF5 output (A7).
 
 ### A. Silent wrong results or lost runs
 
@@ -76,7 +76,9 @@ placing periodic images of cells at load (A5).
    regenerated); cells crossing a periodic boundary are never placed. Make a
    missing file an error, log placed versus requested cells per type with the
    reason, and consider placing periodic images.
-6. **Output and statistics change the trajectory** *(verified)*. Two identical
+6. *Done* (output and statistics read a copy of the particles,
+   `HemoCellFields::CompleteCellsScope`; `iterate()` deletes broken cells).
+   **Output and statistics change the trajectory** *(verified)*. Two identical
    2-rank pipeflow runs diverge (round-off, about 3e-10 relative, then growing)
    when one takes statistics or writes output every 100 steps. `writeOutput()`
    and the `CellInformationFunctionals` helpers call `syncEnvelopes()`, which
@@ -85,7 +87,10 @@ placing periodic images of cells at load (A5).
    independent of the output interval" holds physically, not bit for bit. Put
    envelope particles in a canonical order after a sync, or let output and
    statistics read without re-syncing; statistics must not modify state.
-7. **Cell IDs grow with every periodic lap.** A crossing adds `N` (x),
+7. *Done, except output* (IDs are `plint` throughout). Remaining: the HDF5
+   `Cell Id` dataset is float32, exact only up to 2^24; write it as a 64-bit
+   integer (writer, XDMF records, `HDF5toXDMF.py`, `outputs.rst`).
+   **Cell IDs grow with every periodic lap.** A crossing adds `N` (x),
    `100 N` (y) or `10000 N` (z) and nothing folds the ID back, while
    `sanityCheck()` and `developer/architecture.rst` assume a bounded shift. With
    200,000 cells the ID overflows `int` after about 640 laps in x; the cell is
@@ -132,7 +137,10 @@ placing periodic images of cells at load (A5).
 16. **Dead code.** `HemoCellFields::HemoSyncEnvelopes` (declares
     `modif::hemocell`; applying it would bring back arrival-order
     communication), `HemoCellFields::envelope_communicator`,
-    `tests/test_example.cpp` (`Dummy.foobar`).
+    `tests/test_example.cpp` (`Dummy.foobar`), `mechanics/NoOp.h` (does not
+    compile when used: no matching `CellMechanics` constructor, and its
+    `ParticleMechanics()` does not override; documented in
+    `mechanical_models.rst` as the null model).
 
 ### C. Tests, CI and tooling
 
@@ -140,7 +148,9 @@ placing periodic images of cells at load (A5).
     zero force at the rest shape, zero net force and torque of the internal
     forces, symmetry. Also missing: conservation of cells crossing periodic and
     block boundaries, the pre-inlet, and a determinism test (run twice, compare
-    the checkpoints with `cmp`).
+    the checkpoints with `cmp`). Tests leave their output directories in the
+    repository root (`tmp`, `tmp_0`, `tmp_1`, ...: one per simulation a test
+    constructs); write them to a temporary directory instead.
 18. **CI never runs a driver.** A 20-step smoke run of every example and case
     (with output and a checkpoint) would have caught A5 and B13; 31 of 36 pass
     today on 2 ranks, the five large ones (`AR2*`, `stent_strut`, `unbounded`)

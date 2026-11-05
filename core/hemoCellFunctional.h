@@ -53,8 +53,10 @@ class HemoCellGatheringFunctional : public plb::BoxProcessingFunctional3D {
     unsigned char b[sizeof(int)];
     int i;
   };
+  // One map entry; Key is int (rank, block) or plint (cell ID).
+  template <typename Key>
   struct IDandGatherType {
-    int ID;
+    Key ID;
     GatherType g;
   };
 
@@ -77,7 +79,10 @@ public:
    * total map size on every rank, so use gatherToRoot() when only one rank
    * needs the result (e.g. for writing output).
    */
-  static void gather(std::map<int, GatherType> & gatherValues) { exchange(gatherValues, -1); }
+  template <typename Key>
+  static void gather(std::map<Key, GatherType> & gatherValues) {
+    exchange(gatherValues, -1);
+  }
 
   /**
    * @brief Combine the maps of all ranks on rank `root` only. Collective.
@@ -85,13 +90,18 @@ public:
    * On `root` the result equals that of gather(); the other ranks keep their
    * own entries unchanged.
    */
-  static void gatherToRoot(std::map<int, GatherType> & gatherValues, int root = 0) { exchange(gatherValues, root); }
+  template <typename Key>
+  static void gatherToRoot(std::map<Key, GatherType> & gatherValues, int root = 0) {
+    exchange(gatherValues, root);
+  }
 
 private:
   // root < 0: all ranks receive (Allgatherv); otherwise only `root` (Gatherv).
-  static void exchange(std::map<int, GatherType> & gatherValues, int root) {
+  template <typename Key>
+  static void exchange(std::map<Key, GatherType> & gatherValues, int root) {
+    typedef IDandGatherType<Key> Record;
     int be = 0;
-    int sendsize = sizeof(int) + sizeof(IDandGatherType) * gatherValues.size();
+    int sendsize = sizeof(int) + sizeof(Record) * gatherValues.size();
     std::vector<unsigned char> sendbuffer(sendsize);
 
     byteint local_number;
@@ -101,13 +111,13 @@ private:
       be++;
     }
     for (auto const & entry : gatherValues) {
-      IDandGatherType bg;
+      Record bg;
       bg.ID = entry.first;
       bg.g = entry.second;
       // The records follow a 4-byte count, so they are not aligned:
       // copy bytes instead of dereferencing a cast pointer.
-      std::memcpy(&sendbuffer[be], &bg, sizeof(IDandGatherType));
-      be += sizeof(IDandGatherType);
+      std::memcpy(&sendbuffer[be], &bg, sizeof(Record));
+      be += sizeof(Record);
     }
 
     const int nRanks = plb::global::mpi().getSize();
@@ -146,9 +156,9 @@ private:
         be++;
       }
       for (int i = 0; i < local_number.i; i++) {
-        IDandGatherType bg;
-        std::memcpy(&bg, &receivebuffer[be], sizeof(IDandGatherType));
-        be += sizeof(IDandGatherType);
+        Record bg;
+        std::memcpy(&bg, &receivebuffer[be], sizeof(Record));
+        be += sizeof(Record);
         gatherValues[bg.ID] = bg.g;
       }
     }

@@ -12,7 +12,8 @@ Adding a mechanical model
    and derive from ``hemo::CellMechanics`` (``mechanics/cellMechanics.h``). The
    constructor takes ``(Config & materialConfig, HemoCellField & cellField)``;
    ``HemoCell::addCellType<Model>(name, shape)`` creates it.
-#. Implement ``ParticleMechanics(particles_per_cell, lpc, ctype)``: loop over
+#. Implement ``ParticleMechanics(particles_per_cell, lpc, ctype)`` (both maps
+   keyed by the ``plint`` cell ID; mark it ``override``): loop over
    the cells in ``lpc`` (complete cells of this block), skip other cell types
    (``cell[0]->sv.celltype != ctype``) and add forces through the component
    pointers (``*particle->force_link += f``), never to ``sv.force`` directly

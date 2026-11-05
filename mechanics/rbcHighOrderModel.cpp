@@ -34,15 +34,15 @@ RbcHighOrderModel::RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellFie
       k_bend(RbcHighOrderModel::calculate_kBend(modelCfg_, *cellField_.meshmetric)),
       eta_m(RbcHighOrderModel::calculate_etaM(modelCfg_)){};
 
-void RbcHighOrderModel::ParticleMechanics(map<int, vector<HemoCellParticle *>> & particles_per_cell,
-                                          const map<int, bool> & lpc, size_t ctype) {
+void RbcHighOrderModel::ParticleMechanics(map<plint, vector<HemoCellParticle *>> & particles_per_cell,
+                                          const map<plint, bool> & lpc, size_t ctype) {
 #ifdef FORCE_LIMIT
   // Per-edge membrane-viscosity cap: a quarter of FORCE_LIMIT, which is given
   // in pN per surface point; param::f_limit is the same limit in lattice units.
   const T viscForceLimit = param::f_limit / 4.0;
 #endif
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
-    const int & cid = pair.first;
+    const plint cid = pair.first;
     vector<HemoCellParticle *> & cell = particles_per_cell[cid];
     if (cell.size() == 0) continue;
     if (cell[0]->sv.celltype != ctype) continue; //only execute on correct particle

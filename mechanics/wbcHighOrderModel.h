@@ -47,10 +47,10 @@ public:
 public:
   WbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_);
 
-  void ParticleMechanics(map<int, vector<HemoCellParticle *>> & particles_per_cell, const map<int, bool> & lpc,
-                         size_t ctype);
+  void ParticleMechanics(map<plint, vector<HemoCellParticle *>> & particles_per_cell, const map<plint, bool> & lpc,
+                         size_t ctype) override;
 
-  void statistics();
+  void statistics() override;
 
   static T calculate_coreRadius(Config & cfg);
   static T calculate_radius(Config & cfg);

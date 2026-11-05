@@ -152,6 +152,37 @@ public:
   /// Delete any incomplete cells on a block
   void deleteIncompleteCells(bool verbose = true);
 
+  /// Delete the cells that lost vertices, on every block that holds one of
+  /// their vertices within @p envelope nodes of its bulk (see
+  /// HemoCellParticleField::deleteBrokenCells()). Called by HemoCell::iterate()
+  /// after the particles moved. Not collective.
+  void deleteBrokenCells(plint envelope, bool verbose);
+
+  /**
+   * @brief Complete cells for reading, without changing the simulation.
+   *
+   * Output and statistics need every cell complete in the blocks holding it.
+   * While an object of this class exists, every local block holds a copy of
+   * its particles, synchronised with syncEnvelopes() and with incomplete
+   * cells deleted. The destructor puts back the particles as they were, so
+   * that reading does not change the trajectory (the order of the particles,
+   * which sets the summation order of force spreading, included). Changes to
+   * the particles inside the scope are discarded.
+   *
+   * Scopes nest: only the outermost one copies and restores. Collective: all
+   * ranks must create and destroy it at the same point of the program.
+   */
+  class CompleteCellsScope {
+  public:
+    explicit CompleteCellsScope(HemoCellFields & fields);
+    ~CompleteCellsScope();
+    CompleteCellsScope(const CompleteCellsScope &) = delete;
+    CompleteCellsScope & operator=(const CompleteCellsScope &) = delete;
+
+  private:
+    HemoCellFields & fields;
+  };
+
   /// Apply the material model of the cells to the particles, updating their force
   void applyConstitutiveModel(bool forced = false);
 
@@ -248,6 +279,8 @@ private:
   /// HemoCell traffic. Created in the constructor (collective over all ranks),
   /// freed in the destructor.
   MPI_Comm particleComm = MPI_COMM_NULL;
+  /// Number of CompleteCellsScope objects that exist (they nest).
+  unsigned int completeCellsScopes = 0;
 
 public:
   /**
@@ -258,7 +291,12 @@ public:
   /// True once number_of_cells was restored from a checkpoint; it is then no
   /// longer re-derived from the .pos files (which may have changed since).
   bool number_of_cells_from_checkpoint = false;
-  inline int base_cell_id(int wrapped) { return ((wrapped % number_of_cells) + number_of_cells) % number_of_cells; }
+  /// The ID a cell was loaded with (0 .. number_of_cells - 1) from the ID of
+  /// one of its periodic images, which grows by a multiple of number_of_cells
+  /// at every periodic crossing (HemoCellParticleDataTransfer::getOffset()).
+  inline plint base_cell_id(plint wrapped) const {
+    return ((wrapped % number_of_cells) + number_of_cells) % number_of_cells;
+  }
   unsigned int max_neighbours = 0;
 
   /// Helpers created on first use through bindingFieldHelper::get() and

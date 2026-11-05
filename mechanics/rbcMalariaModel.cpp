@@ -36,15 +36,15 @@ RbcMalariaModel::RbcMalariaModel(Config & modelCfg_, HemoCellField & cellField_)
       k_inner_link(RbcMalariaModel::calculate_kInnerLink(modelCfg_, *cellField_.meshmetric)),
       eta_m(RbcMalariaModel::calculate_etaM(modelCfg_)){};
 
-void RbcMalariaModel::ParticleMechanics(map<int, vector<HemoCellParticle *>> & particles_per_cell,
-                                        const map<int, bool> & lpc, size_t ctype) {
+void RbcMalariaModel::ParticleMechanics(map<plint, vector<HemoCellParticle *>> & particles_per_cell,
+                                        const map<plint, bool> & lpc, size_t ctype) {
 #ifdef FORCE_LIMIT
   // Per-edge membrane-viscosity cap: a quarter of FORCE_LIMIT, which is given
   // in pN per surface point; param::f_limit is the same limit in lattice units.
   const T viscForceLimit = param::f_limit / 4.0;
 #endif
   for (const auto & pair : lpc) { //For all cells with at least one lsp in the local domain.
-    const int & cid = pair.first;
+    const plint cid = pair.first;
     vector<HemoCellParticle *> & cell = particles_per_cell[cid];
     if (cell.size() == 0) continue;
     if (cell[0]->sv.celltype != ctype) continue; //only execute on correct particle

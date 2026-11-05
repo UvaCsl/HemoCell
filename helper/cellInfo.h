@@ -51,7 +51,7 @@ struct CellInformation {
   pluint blockId = UINTMAX_MAX;
   pluint cellType = UINTMAX_MAX;
   bool centerLocal = false;
-  int base_cell_id = 0;
+  plint base_cell_id = 0;
 };
 
 class CellInformationFunctionals {
@@ -90,10 +90,10 @@ class CellInformationFunctionals {
 
   class allCellInformation : public HemoCellFunctional {
     HemoCell * hemocell;
-    map<int, CellInformation> & info_per_cell;
+    map<plint, CellInformation> & info_per_cell;
 
   public:
-    allCellInformation(HemoCell * hemocell_, map<int, CellInformation> & info_per_cell_)
+    allCellInformation(HemoCell * hemocell_, map<plint, CellInformation> & info_per_cell_)
         : hemocell(hemocell_), info_per_cell(info_per_cell_) {}
 
   private:
@@ -104,7 +104,7 @@ class CellInformationFunctionals {
 
 public:
   // Legacy interface, should become private at some point.
-  static map<int, CellInformation> info_per_cell;
+  static map<plint, CellInformation> info_per_cell;
   static void clear_list();
   static void calculate_vol_pos_area(HemoCell *); /*This excludes Stretch, since it is compute intensive!*/
   static void calculateCellVolume(HemoCell *);
@@ -120,7 +120,7 @@ public:
   static pluint getTotalNumberOfCells(HemoCell *);
   static pluint getNumberOfCellsFromType(HemoCell *, string type);
   /// Calculate all possible macroscopic information and return it within the reference.
-  static void calculateCellInformation(HemoCell *, map<int, CellInformation> &);
+  static void calculateCellInformation(HemoCell *, map<plint, CellInformation> &);
 };
 }
 #endif

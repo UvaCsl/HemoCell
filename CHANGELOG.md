@@ -23,6 +23,22 @@ Unreleased (refactor)
     reset the lattice force (removing a body force set before `writeOutput()`),
     and output recomputed repulsion and constitutive forces. Results are now
     independent of the output interval.
+  * Output and statistics no longer change the trajectory at all.
+    `writeOutput()` and the `CellInformationFunctionals` re-synchronised the
+    particle envelopes, which reordered the particles (and with them the
+    summation order of force spreading) and deleted incomplete cells: runs with
+    and without output differed at round-off level, growing over time. They
+    now read complete cells from a copy of the particles
+    (`HemoCellFields::CompleteCellsScope`) that is discarded afterwards; a
+    pipeflow run with output and statistics every 37 steps ends bit for bit in
+    the same state as one without (stored residence times aside, which output
+    brings up to date). Output is also faster (one synchronisation instead of
+    several). Cells that lose a vertex (to a wall or open boundary, or through
+    a non-finite force) are now deleted by `iterate()` at the next particle
+    update; before, they were deleted only at output or statistics steps (or
+    with `<cellsDeletedInfo>`), and in between their remaining vertices kept
+    moving and, with a material time-scale separation, spreading their last
+    forces. Runs in which no cell breaks are unchanged without output.
 * Fixes
   * Particle neighbour grid: replaced the fixed 10-particles-per-node grid
     (unchecked heap overflow) by a compact cell list without a capacity limit.
@@ -202,6 +218,22 @@ Unreleased (refactor)
     `cases/stentflow` and `cases/stent_strut` (whose files are named `.POS`)
     did so). `loadParticles()` logs how many cells of each type were placed out
     of those in the file, with a warning when cells were dropped.
+  * Cell IDs are 64-bit (`plint`) throughout. An ID grows by a multiple of the
+    number of cells at every periodic crossing and is never folded back, but
+    the lookup maps, the statistics and the cell ID requests of
+    `syncEnvelopes()` (sent as `int`) used `int`: with 200,000 cells an ID
+    overflowed after about 640 laps in x, the periodic transfer then reset it
+    to the base ID, and the cell was most likely deleted. This also lifts the
+    limit of about 212,000 cells with the default periodicity limits;
+    `sanityCheck()` requires room for at least 10^6 crossings per cell.
+  * Structure: `CellMechanics::ParticleMechanics()` and `solidifyMechanics()`
+    take maps keyed by `plint`, as do `get_particles_per_cell()`, `get_lpc()`,
+    `CellInformationFunctionals::info_per_cell` and
+    `calculateCellInformation()`; `getOutputCells()` returns `plint` IDs.
+    Custom cell models need the new signatures; a `solidifyMechanics()`
+    override with the old signature (not marked `override`) would silently no
+    longer be called. `HemoCellGatheringFunctional::gather()` and
+    `gatherToRoot()` accept maps with any integer key.
 * Tests
   * Unit tests for the particle grid/repulsion, the configuration reader,
     `hemo::Array`, particle copy/move and log buffering; an integration test
@@ -211,6 +243,10 @@ Unreleased (refactor)
   * Tests for `fatal()` and fatal configuration errors, for a non-finite
     vertex force (fluid stays finite, the cell is removed), and for the
     checkpoint write order and fingerprint checks.
+  * Tests that output and statistics leave the trajectory unchanged, that cell
+    IDs beyond 2^32 give the same trajectory, that `iterate()` deletes a broken
+    cell, and of `HemoCellGatheringFunctional` with 64-bit keys (1 and 2
+    ranks).
 
 2.6 (July 15 2022)
 -----------------

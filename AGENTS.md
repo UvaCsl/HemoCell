@@ -258,6 +258,13 @@ Configuration conventions:
   order, and compare outputs exactly when a change should not alter numerics.
   Do not use Palabos' `duplicateOverlaps(modif::hemocell)` for the particle
   field: it unpacks in arrival order.
+- Output and statistics must not change the state (currently they do not, bit
+  for bit): read complete cells inside a `HemoCellFields::CompleteCellsScope`
+  (a copy of the particles, discarded afterwards), never by calling
+  `syncEnvelopes()` or `deleteIncompleteCells()` directly; `iterate()` deletes
+  broken cells.
+- Cell IDs are `plint` and grow with every periodic crossing (never folded
+  back); do not store them in an `int`.
 - Global/static simulation state means only one `HemoCell` instance may exist
   at a time. Do not assume reentrancy or thread safety. Tests that construct
   multiple simulations sequentially must reset any static helper state they use.

@@ -52,7 +52,7 @@ void HemoCellParticleField::passthroughpass(int type, Box3D domain, vector<vecto
   (this->*badideapointer)(domain, output, ctype, name);
 }
 
-void HemoCellParticleField::getOutputCells(pluint ctype, vector<int> & cellIds) {
+void HemoCellParticleField::getOutputCells(pluint ctype, vector<plint> & cellIds) {
   cellIds.clear();
   for (const auto & entry : get_particles_per_cell()) {
     const vector<int> & cell = entry.second;
@@ -73,10 +73,10 @@ namespace {
 template <class RowFunction>
 void outputPerVertex(HemoCellParticleField & field, pluint ctype, vector<vector<T>> & output, RowFunction row) {
   output.clear();
-  vector<int> cellIds;
+  vector<plint> cellIds;
   field.getOutputCells(ctype, cellIds);
-  const map<int, vector<int>> & particles_per_cell = field.get_particles_per_cell();
-  for (int cellId : cellIds) {
+  const map<plint, vector<int>> & particles_per_cell = field.get_particles_per_cell();
+  for (const plint cellId : cellIds) {
     for (int index : particles_per_cell.at(cellId)) { output.push_back(row(field.particles[index])); }
   }
 }
@@ -169,7 +169,7 @@ void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>> 
                                             std::string & name) {
   name = "Triangles";
   output.clear();
-  vector<int> cellIds;
+  vector<plint> cellIds;
   getOutputCells(ctype, cellIds);
   const HemoCellField & cellField = *(*cellFields)[ctype];
   plint counter = 0;
@@ -185,7 +185,7 @@ void HemoCellParticleField::outputInnerLinks(Box3D domain, vector<vector<plint>>
                                              std::string & name) {
   name = "InnerLinks";
   output.clear();
-  vector<int> cellIds;
+  vector<plint> cellIds;
   getOutputCells(ctype, cellIds);
   const HemoCellField & cellField = *(*cellFields)[ctype];
   const auto & innerEdges = cellField.mechanics->cellConstants.inner_edge_list;

@@ -92,12 +92,12 @@ const vector<vector<unsigned int>> & HemoCellParticleField::get_particles_per_ty
   if (!ppt_up_to_date) { update_ppt(); }
   return _particles_per_type;
 }
-const map<int, vector<int>> & HemoCellParticleField::get_particles_per_cell() {
+const map<plint, vector<int>> & HemoCellParticleField::get_particles_per_cell() {
   if (!ppc_up_to_date) { update_ppc(); }
   return _particles_per_cell;
 }
 
-const map<int, bool> & HemoCellParticleField::get_lpc() {
+const map<plint, bool> & HemoCellParticleField::get_lpc() {
   if (!lpc_up_to_date) { update_lpc(); }
   return _lpc;
 }
@@ -135,7 +135,7 @@ void HemoCellParticleField::addParticle(HemoCellParticle * particle) {
 void HemoCellParticleField::addParticle(const HemoCellParticle::serializeValues_t & sv) {
   HemoCellParticle *local_sparticle, *particle;
   const hemo::Array<T, 3> & pos = sv.position;
-  const map<int, vector<int>> & particles_per_cell = get_particles_per_cell();
+  const map<plint, vector<int>> & particles_per_cell = get_particles_per_cell();
 
   if (this->isContainedABS(pos, this->getBoundingBox())) {
     //check if we have particle already, if so, we must overwrite but not
@@ -184,7 +184,7 @@ void HemoCellParticleField::addParticle(const HemoCellParticle::serializeValues_
 void HemoCellParticleField::addParticlePreinlet(const HemoCellParticle::serializeValues_t & sv) {
   HemoCellParticle * particle;
   const hemo::Array<T, 3> & pos = sv.position;
-  const map<int, vector<int>> & particles_per_cell = get_particles_per_cell();
+  const map<plint, vector<int>> & particles_per_cell = get_particles_per_cell();
 
   if (this->isContainedABS(pos, this->getBoundingBox())) {
     //check if we have particle already, if so, we must overwrite but not
@@ -381,16 +381,44 @@ void HemoCellParticleField::issueWarning(HemoCellParticle & p) {
 }
 
 int HemoCellParticleField::deleteIncompleteCells(pluint ctype, bool verbose) {
-  return deleteIncompleteCellsImpl(true, ctype, verbose);
+  return deleteIncompleteCellsImpl(true, ctype, nullptr, verbose);
 }
 
 int HemoCellParticleField::deleteIncompleteCells(const bool verbose) {
-  return deleteIncompleteCellsImpl(false, 0, verbose);
+  return deleteIncompleteCellsImpl(false, 0, nullptr, verbose);
 }
 
-int HemoCellParticleField::deleteIncompleteCellsImpl(const bool onlyType, const pluint ctype, const bool verbose) {
+int HemoCellParticleField::deleteBrokenCells(const plint envelope, const bool verbose) {
+  const Box3D near = localDomain.enlarge(envelope);
+  return deleteIncompleteCellsImpl(false, 0, &near, verbose);
+}
+
+void HemoCellParticleField::snapshotParticles() {
+  // The originals are moved aside unchanged (the vector buffer is swapped, so
+  // their addresses, and the force pointers aliasing them, stay valid).
+  particlesSnapshot.swap(particles);
+  particles = particlesSnapshot;
+  lpc_up_to_date = false;
+  ppt_up_to_date = false;
+  ppc_up_to_date = false;
+  preinlet_ppc_up_to_date = false;
+  pg_up_to_date = false;
+}
+
+void HemoCellParticleField::restoreParticles() {
+  particles.swap(particlesSnapshot);
+  vector<HemoCellParticle>().swap(particlesSnapshot); // release the copy
+  lpc_up_to_date = false;
+  ppt_up_to_date = false;
+  ppc_up_to_date = false;
+  preinlet_ppc_up_to_date = false;
+  pg_up_to_date = false;
+}
+
+int HemoCellParticleField::deleteIncompleteCellsImpl(const bool onlyType, const pluint ctype, const Box3D * near,
+                                                     const bool verbose) {
   int deleted = 0;
-  const map<int, vector<int>> & particles_per_cell = get_particles_per_cell();
+  const map<plint, vector<int>> & particles_per_cell = get_particles_per_cell();
   //Warning, TODO, high complexity, should be rewritten
   //For now abuse tagging and the remove function
   for (const auto & lpc_it : particles_per_cell) {
@@ -407,6 +435,16 @@ int HemoCellParticleField::deleteIncompleteCellsImpl(const bool onlyType, const 
     }
     if (!broken || present < 0) { continue; }
     if (onlyType && particles[present].sv.celltype != ctype) { continue; }
+    if (near) {
+      bool isNear = false;
+      for (const int index : cell) {
+        if (index >= 0 && isContainedABS(particles[index].sv.position, *near)) {
+          isNear = true;
+          break;
+        }
+      }
+      if (!isNear) { continue; }
+    }
 
     bool warningIssued = false;
     for (pluint i = 0; i < cell.size(); i++) {
@@ -429,7 +467,7 @@ int HemoCellParticleField::deleteIncompleteCellsImpl(const bool onlyType, const 
   }
 
   //We have our list, now abuse the removeall function
-  removeParticles(1);
+  if (deleted > 0) { removeParticles(1); }
 
   return deleted;
 }
@@ -510,12 +548,12 @@ void HemoCellParticleField::unifyForceVectors() {
 }
 
 void HemoCellParticleField::applyConstitutiveModel(bool forced) {
-  map<int, vector<HemoCellParticle *>> * ppc_new = new map<int, vector<HemoCellParticle *>>();
-  const map<int, vector<int>> & particles_per_cell = get_particles_per_cell();
-  map<int, bool> lpc;
+  map<plint, vector<HemoCellParticle *>> * ppc_new = new map<plint, vector<HemoCellParticle *>>();
+  const map<plint, vector<int>> & particles_per_cell = get_particles_per_cell();
+  map<plint, bool> lpc;
   //Fill it here, probably needs optimization, ah well ...
   for (const auto & pair : particles_per_cell) {
-    const int & cid = pair.first;
+    const plint cid = pair.first;
     const vector<int> & cell = pair.second;
     (*ppc_new)[cid].resize(cell.size());
     for (unsigned int i = 0; i < cell.size(); i++) {
@@ -607,7 +645,7 @@ void HemoCellParticleField::findInternalParticleGridPoints(Box3D domain) {
   InteriorViscosityHelper::get(*cellFields).empty(*this);
 
   for (const auto & pair : get_lpc()) { // Go over each cell?
-    const int & cid = pair.first;
+    const plint cid = pair.first;
     const vector<int> & cell = get_particles_per_cell().at(cid);
     const pluint ctype = particles[cell[0]].sv.celltype;
 

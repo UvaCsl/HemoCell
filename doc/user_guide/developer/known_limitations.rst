@@ -57,15 +57,17 @@ Force cap
    keeps runs stable but changes the physics when it is active (a warning is
    printed at start-up).
 
-Cell count
-   With the default periodicity limits, cell IDs limit a run to about 212,000
-   cells; lower the limits with ``setSystemPeriodicityLimit()`` for larger runs
-   (see :ref:`developer/architecture:Cell IDs and periodicity`).
+Cell IDs in HDF5 output
+   ``Cell Id`` is written as a 32-bit float, exact up to 16,777,216. IDs grow
+   by a multiple of the number of cells at every periodic crossing (see
+   :ref:`developer/architecture:Cell IDs and periodicity`), so long periodic
+   runs exceed that (200,000 cells after 84 crossings in x) and the written
+   IDs are rounded. The CSV files hold exact cell and base cell IDs.
 
-Incomplete cells
-   Cells that lose vertices (e.g. at walls or open boundaries) are skipped by
-   the constitutive model but only deleted at output steps (or every velocity
-   update with ``<verbose><cellsDeletedInfo>``).
+Broken cells
+   A cell that loses a vertex (it enters a wall node or leaves the domain, or
+   its force is not finite) is deleted as a whole at the next particle update
+   and not re-inserted; ``<verbose><cellsDeletedInfo>`` prints each deletion.
 
 Time-scale separation
    Output shows the total force from the last material update but evaluates

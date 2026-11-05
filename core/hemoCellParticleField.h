@@ -75,6 +75,25 @@ public:
   int deleteIncompleteCells(pluint ctype, bool verbose = true);
   /// Delete the particles of all cells that are not complete in this block.
   int deleteIncompleteCells(bool verbose = true);
+  /**
+   * @brief Delete the particles of cells that lost vertices.
+   *
+   * Deletes the cells that are incomplete in this block and have a vertex
+   * within @p envelope nodes of the bulk. Right after syncEnvelopes() and
+   * advanceParticles() those are the cells with a vertex missing everywhere
+   * (it entered a wall, left the domain or had a non-finite force), provided
+   * the particle envelope holds whole cells: cells cut by the edge of the
+   * particle envelope lie further out and are left alone.
+   * @param[in] envelope Distance from the bulk [lattice nodes].
+   * @param[in] verbose Print a warning per deleted cell from the block that owns its vertex.
+   * @return Number of particles deleted.
+   */
+  int deleteBrokenCells(plint envelope, bool verbose);
+  /// Replace the particles by a copy, keeping the originals aside, until
+  /// restoreParticles() (see HemoCellFields::CompleteCellsScope).
+  void snapshotParticles();
+  /// Discard the current particles and put back those kept by snapshotParticles().
+  void restoreParticles();
   void syncEnvelopes();
   void populateBoundaryParticles();
   void applyBoundaryRepulsionForce(bool resetFirst = false);
@@ -115,7 +134,7 @@ public:
    * @param[in] ctype Cell type index.
    * @param[out] cellIds Cell IDs to write.
    */
-  void getOutputCells(pluint ctype, vector<int> & cellIds);
+  void getOutputCells(pluint ctype, vector<plint> & cellIds);
   //Ugly output functions:
   void outputPositions(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
   void outputVelocities(plb::Box3D, vector<vector<T>> &, pluint, std::string &);
@@ -176,16 +195,20 @@ public:
 
 private:
   vector<vector<unsigned int>> _particles_per_type;
-  map<int, vector<int>> _particles_per_cell;
-  map<int, vector<int>> _preinlet_particles_per_cell;
-  map<int, bool> _lpc;
+  map<plint, vector<int>> _particles_per_cell;
+  map<plint, vector<int>> _preinlet_particles_per_cell;
+  map<plint, bool> _lpc;
   void update_lpc();
   void update_ppc();
   void update_preinlet_ppc();
   void update_ppt();
   void update_pg();
   void issueWarning(HemoCellParticle & p);
-  int deleteIncompleteCellsImpl(bool onlyType, pluint ctype, bool verbose);
+  /// Delete incomplete cells: only of type @p ctype if @p onlyType, only those
+  /// with a vertex in @p near if it is not null.
+  int deleteIncompleteCellsImpl(bool onlyType, pluint ctype, const plb::Box3D * near, bool verbose);
+  /// The particles kept aside by snapshotParticles().
+  vector<HemoCellParticle> particlesSnapshot;
   /// Zero the force of a vertex with a non-finite force and tag it (tag 1)
   /// for removal by spreadParticleForce(); warns for the first one (count 0).
   void dropNonFiniteParticle(HemoCellParticle & particle, plint & count);
@@ -198,9 +221,9 @@ private:
 
 public:
   const vector<vector<unsigned int>> & get_particles_per_type();
-  const map<int, vector<int>> & get_particles_per_cell();
-  const map<int, vector<int>> & get_preinlet_particles_per_cell();
-  const map<int, bool> & get_lpc();
+  const map<plint, vector<int>> & get_particles_per_cell();
+  const map<plint, vector<int>> & get_preinlet_particles_per_cell();
+  const map<plint, bool> & get_lpc();
 
   set<plb::Dot3D> internalPoints; // Store found interior points
   plb::ScalarField3D<T> * interiorViscosityField = 0;

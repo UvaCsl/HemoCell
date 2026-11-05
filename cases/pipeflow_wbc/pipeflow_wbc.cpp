@@ -99,7 +99,7 @@ std::vector<TypeMetrics> measureCells(HemoCell & hemocell, const std::vector<dou
     HemoCellParticleField & pf = fields.immersedParticles->getComponent(bid);
     for (const HemoCellParticle & particle : pf.particles) {
       if (!pf.isContainedABS(particle.sv.position, pf.localDomain)) { continue; }
-      const int cell = fields.base_cell_id(particle.sv.cellId);
+      const plint cell = fields.base_cell_id(particle.sv.cellId);
       double * v = &buffer[(size_t(cell) * maxVertices + particle.sv.vertexId) * stride];
       v[0] = particle.sv.position[0];
       v[1] = particle.sv.position[1];

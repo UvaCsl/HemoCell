@@ -315,6 +315,12 @@ void HemoCellFields::save(XMLreader * xmlr, unsigned int iter, Config * cfg) {
 }
 
 namespace {
+// MPI datatype of plint (ptrdiff_t: long or long long).
+MPI_Datatype mpiPlintType() {
+  static_assert(sizeof(plint) == sizeof(long) || sizeof(plint) == sizeof(long long), "no MPI datatype for plint");
+  return sizeof(plint) == sizeof(long) ? MPI_LONG : MPI_LONG_LONG;
+}
+
 // Compile-time choices that change the raw particle records of checkpoints.
 std::string particleLayout() {
   std::ostringstream layout;
@@ -621,12 +627,12 @@ void HemoCellFields::syncEnvelopes() {
       recv_infos[info.fromProcessId].push_back(&info);
     }
 
-    set<int> locals;
+    set<plint> locals;
     for (plint lbid : immersedParticles->getLocalInfo().getBlocks()) {
       HemoCellParticleField & pf = immersedParticles->getComponent(lbid);
       for (HemoCellParticle & particle : pf.particles) { locals.insert(particle.sv.cellId); }
     }
-    vector<int> locals_v;
+    vector<plint> locals_v;
     locals_v.insert(locals_v.end(), locals.begin(), locals.end());
 
     vector<int> recv_procs_v;
@@ -644,7 +650,7 @@ void HemoCellFields::syncEnvelopes() {
     // sent in response to our own request, so replies cannot cross calls and
     // are received in arrival order.
     for (unsigned int i = 0; i < recv_procs_v.size(); i++) {
-      MPI_Isend(locals_v.data(), locals_v.size(), MPI_INT, recv_procs_v[i], 24, particleComm, &reqs[i]);
+      MPI_Isend(locals_v.data(), locals_v.size(), mpiPlintType(), recv_procs_v[i], 24, particleComm, &reqs[i]);
     }
     sendBuffers.resize(send_procs.size());
     unsigned int send_index = 0;
@@ -652,26 +658,20 @@ void HemoCellFields::syncEnvelopes() {
       MPI_Status status;
       MPI_Probe(requesting_proc, 24, particleComm, &status);
       int count;
-      MPI_Get_count(&status, MPI_INT, &count);
-      vector<int> requested_ids(count);
+      MPI_Get_count(&status, mpiPlintType(), &count);
+      vector<plint> requested_ids(count);
       vector<NoInitChar> & sendBuffer = sendBuffers[send_index++];
       sendBuffer.clear();
-      int offset = 0;
-      MPI_Recv(requested_ids.data(), count, MPI_INT, requesting_proc, 24, particleComm, MPI_STATUS_IGNORE);
+      size_t offset = 0;
+      MPI_Recv(requested_ids.data(), count, mpiPlintType(), requesting_proc, 24, particleComm, MPI_STATUS_IGNORE);
       for (CommunicationInfo3D const * info : send_infos[requesting_proc]) {
         HemoCellParticleField & pf = immersedParticles->getComponent(info->fromBlockId);
-        int offset_p = pf.getDataTransfer().getOffset(info->absoluteOffset);
-        const map<int, vector<int>> & ppc = pf.get_particles_per_cell();
+        // The requester knows the cells by the IDs of its periodic images.
+        const plint offset_p = pf.getDataTransfer().getOffset(info->absoluteOffset);
+        const map<plint, vector<int>> & ppc = pf.get_particles_per_cell();
 
-        for (int id : requested_ids) {
-          if (((offset_p < 0) && (id > INT_MAX + offset_p)) || ((offset_p > 0) && (id < INT_MIN + offset_p))) {
-            cout
-                << "(HemoCellFields syncEnvelopes) Almost invoking overflow in periodic particle communication, resetting ID to base ID instead, this will most likely delete the particle"
-                << endl;
-            id = base_cell_id(id);
-          } else {
-            id = id - offset_p;
-          }
+        for (const plint requested : requested_ids) {
+          const plint id = requested - offset_p;
           if (ppc.find(id) == ppc.end()) { continue; }
           for (int pid : ppc.at(id)) {
             if (pid <= -1) { continue; }
@@ -886,6 +886,30 @@ void HemoCellFields::deleteIncompleteCells(bool verbose) {
 
   global.statistics.getCurrent().stop();
 }
+void HemoCellFields::deleteBrokenCells(plint envelope, bool verbose) {
+  global.statistics.getCurrent()["deleteBrokenCells"].start();
+  for (plint lbid : immersedParticles->getLocalInfo().getBlocks()) {
+    immersedParticles->getComponent(lbid).deleteBrokenCells(envelope, verbose);
+  }
+  global.statistics.getCurrent().stop();
+}
+
+HemoCellFields::CompleteCellsScope::CompleteCellsScope(HemoCellFields & fields_) : fields(fields_) {
+  if (fields.completeCellsScopes++ > 0) { return; }
+  for (plint lbid : fields.immersedParticles->getLocalInfo().getBlocks()) {
+    fields.immersedParticles->getComponent(lbid).snapshotParticles();
+  }
+  fields.syncEnvelopes();
+  fields.deleteIncompleteCells(false);
+}
+
+HemoCellFields::CompleteCellsScope::~CompleteCellsScope() {
+  if (--fields.completeCellsScopes > 0) { return; }
+  for (plint lbid : fields.immersedParticles->getLocalInfo().getBlocks()) {
+    fields.immersedParticles->getComponent(lbid).restoreParticles();
+  }
+}
+
 void HemoCellFields::HemoGetParticles::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D *> blocks) {
   HemoCellParticleField * pf = dynamic_cast<HemoCellParticleField *>(blocks[0]);
   Box3D localDomain;

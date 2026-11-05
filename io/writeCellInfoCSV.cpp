@@ -30,7 +30,7 @@ namespace hemo {
 void writeCellInfo_CSV(HemoCell & hemocell) {
   global.statistics.getCurrent()["writeCellCSVInfo"].start();
 
-  map<int, CellInformation> info_per_cell;
+  map<plint, CellInformation> info_per_cell;
   CellInformationFunctionals::calculateCellInformation(&hemocell, info_per_cell);
   for (auto it = info_per_cell.cbegin(); it != info_per_cell.cend();) {
     if (!it->second.centerLocal) {

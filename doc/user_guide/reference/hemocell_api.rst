@@ -66,8 +66,8 @@ Setting up the fluid
      - Make the whole system periodic along an axis.
    * - ``setSystemPeriodicityLimit(axis, limit)``
      - Number of periodic images of a cell distinguishable along an axis
-       (default 100). Lower it for runs with more than about 200,000 cells;
-       see :ref:`developer/architecture:Cell IDs and periodicity`.
+       (default 100); see :ref:`developer/architecture:Cell IDs and
+       periodicity`.
 
 Setting up the cells
 --------------------

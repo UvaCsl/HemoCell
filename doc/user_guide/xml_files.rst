@@ -26,9 +26,9 @@ These options are denoted with a bold **case.cpp**.
 
   * ``<verbose>`` options related to verbosity
 
-    * ``<cellsDeletedInfo>`` option to print the location of deleted cells,
-      because this option needs to aggregate location data with an if statement it
-      has a small performance impact and is disabled by default
+    * ``<cellsDeletedInfo>`` option to print the location of deleted cells (a
+      cell is deleted when it loses a vertex, e.g. to a wall), disabled by
+      default
 
   * ``<parameters>`` parameters regarding the simulation, some options might be
     moved but are still here because of legacy reasons.
