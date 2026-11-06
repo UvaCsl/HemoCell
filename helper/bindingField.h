@@ -28,35 +28,38 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "multiBlock/multiDataField3D.h"
 
 namespace hemo {
-  class bindingFieldHelper {
-  public:
-    static bindingFieldHelper& get(HemoCellFields & cellFields) {
-      static bindingFieldHelper instance(&cellFields);
-      return instance;
-    }
-      
-    void checkpoint();
-    static void restore(HemoCellFields & cellFields);
-    
-    //Called within functional, from particlefield
-    void add(HemoCellParticleField & pf, const Dot3D & bindingSite);
-    void add(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites);
-    void remove(HemoCellParticleField & pf, const Dot3D & bindingSite);
-    void remove(HemoCellParticleField & pf, const vector<Dot3D> & bindingSites);
-    
-  private:
-    HemoCellFields & cellFields;
-    plb::MultiScalarField3D<bool> * multiBindingField = 0;
-    
-    bindingFieldHelper(HemoCellFields * cellFields);
-    ~bindingFieldHelper();
-    
-    void refillBindingSites();
-    
-    //Singleton Behaviour
-  public:
-    bindingFieldHelper(bindingFieldHelper const&) = delete;
-    void operator=(bindingFieldHelper const&) = delete;  
-  };
+class bindingFieldHelper {
+public:
+  /// The helper of @p cellFields, created on first use. It is owned by
+  /// HemoCellFields (not a process-wide singleton), so it is destroyed with
+  /// its simulation and never refers to a destroyed HemoCellFields.
+  static bindingFieldHelper & get(HemoCellFields & cellFields) {
+    if (!cellFields.bindingHelper) { cellFields.bindingHelper = new bindingFieldHelper(&cellFields); }
+    return *cellFields.bindingHelper;
+  }
+  ~bindingFieldHelper();
+
+  void checkpoint();
+  static void restore(HemoCellFields & cellFields);
+
+  //Called within functional, from particlefield
+  void add(HemoCellParticleField & pf, const plb::Dot3D & bindingSite);
+  void add(HemoCellParticleField & pf, const std::vector<plb::Dot3D> & bindingSites);
+  void remove(HemoCellParticleField & pf, const plb::Dot3D & bindingSite);
+  void remove(HemoCellParticleField & pf, const std::vector<plb::Dot3D> & bindingSites);
+
+private:
+  HemoCellFields & cellFields;
+  plb::MultiScalarField3D<bool> * multiBindingField = 0;
+
+  bindingFieldHelper(HemoCellFields * cellFields);
+
+  void refillBindingSites();
+
+  //Singleton Behaviour
+public:
+  bindingFieldHelper(bindingFieldHelper const &) = delete;
+  void operator=(bindingFieldHelper const &) = delete;
+};
 }
 #endif

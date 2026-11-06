@@ -12,7 +12,7 @@
 
 import pylab as pl
 import numpy as np
-from StringIO import StringIO
+from io import StringIO
 from time import sleep
 import sys
 
@@ -26,11 +26,11 @@ fname = args[0]
 
 try:
     float(args[1])
-    axes = map(int,args[1:])
+    axes = list(map(int,args[1:]))
     tAxes = None
 except:
     tAxes = int(args[2])
-    axes = map(int,args[3:])
+    axes = list(map(int,args[3:]))
 
 
 
@@ -61,7 +61,7 @@ while True:
         sys.stdout.write("\r%d iterations, %d lines" % (i,z.shape[0]) )
         sys.stdout.flush()
     except:
-        print 'Failed!'
+        print('Failed!')
 
 
 

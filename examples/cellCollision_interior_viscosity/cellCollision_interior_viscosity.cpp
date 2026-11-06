@@ -31,74 +31,74 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.hh"
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
 
-int main(int argc, char* argv[])
-{
-	if(argc < 2)
-	{
-			cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
-			return -1;
-	}
+int main(int argc, char * argv[]) {
+  if (argc < 2) {
+    cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
+    return -1;
+  }
 
-	HemoCell hemocell(argv[1], argc, argv);
-	Config * cfg = hemocell.cfg;
+  HemoCell hemocell(argv[1], argc, argv);
+  Config * cfg = hemocell.cfg;
 
 
-
-
-// ----------------- Read in config file & calc. LBM parameters ---------------------------
-	pcout << "(CellCollision) (Parameters) calculating shear flow parameters" << endl;
-	//double nxyz = 20.0*(1e-6/(*cfg)["domain"]["dx"].read<double>());
+  // ----------------- Read in config file & calc. LBM parameters ---------------------------
+  pcout << "(CellCollision) (Parameters) calculating shear flow parameters" << endl;
+  //double nxyz = 20.0*(1e-6/(*cfg)["domain"]["dx"].read<double>());
   plint nx = 50;
   plint ny = 50;
   plint nz = 30;
-  param::lbm_shear_parameters((*cfg),ny);
+  param::lbm_shear_parameters((*cfg), ny);
   param::printParameters();
 
-	// ------------------------ Init lattice --------------------------------
+  // ------------------------ Init lattice --------------------------------
 
-	pcout << "(CellCollision) Initializing lattice: " << nx <<"x" << ny <<"x" << nz << " [lu]" << std::endl;
+  pcout << "(CellCollision) Initializing lattice: " << nx << "x" << ny << "x" << nz << " [lu]" << std::endl;
 
-	plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
+  plint extendedEnvelopeWidth = 2; // Because we might use ibmKernel with with 2.
 
-	hemocell.lattice = new MultiBlockLattice3D<double,DESCRIPTOR>(
-			defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
-			defaultMultiBlockPolicy3D().getBlockCommunicator(),
-			defaultMultiBlockPolicy3D().getCombinedStatistics(),
-			defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-			new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+  hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
+      defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
+      defaultMultiBlockPolicy3D().getBlockCommunicator(), defaultMultiBlockPolicy3D().getCombinedStatistics(),
+      defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+      new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
 
-	pcout << "(CellCollision) Re corresponds to u_max = " << (param::re * param::nu_p)/(hemocell.lattice->getBoundingBox().getNy()*param::dx) << " [m/s]" << endl;
-	// -------------------------- Define boundary conditions ---------------------
+  pcout << "(CellCollision) Re corresponds to u_max = "
+        << (param::re * param::nu_p) / (hemocell.lattice->getBoundingBox().getNy() * param::dx) << " [m/s]" << endl;
+  // -------------------------- Define boundary conditions ---------------------
 
-	OnLatticeBoundaryCondition3D<double,DESCRIPTOR>* boundaryCondition
-			= createLocalBoundaryCondition3D<double,DESCRIPTOR>();
+  OnLatticeBoundaryCondition3D<double, DESCRIPTOR> * boundaryCondition =
+      createLocalBoundaryCondition3D<double, DESCRIPTOR>();
 
-	hemocell.lattice->toggleInternalStatistics(false);
+  hemocell.lattice->toggleInternalStatistics(false);
 
-	iniLatticeSquareCouette(*hemocell.lattice, nx, ny, nz, *boundaryCondition, param::shearrate_lbm);
+  iniLatticeSquareCouette(*hemocell.lattice, nx, ny, nz, *boundaryCondition, param::shearrate_lbm);
 
-	hemocell.lattice->initialize();
+  hemocell.lattice->initialize();
 
-	// ----------------------- Init cell models --------------------------
+  // ----------------------- Init cell models --------------------------
 
-	hemocell.initializeCellfield();
-	hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
-	vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC};
-	hemocell.setOutputs("RBC", outputs);
+  hemocell.initializeCellfield();
+  hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
+  vector<int> outputs = {OUTPUT_POSITION,      OUTPUT_TRIANGLES,  OUTPUT_FORCE,      OUTPUT_FORCE_VOLUME,
+                         OUTPUT_FORCE_BENDING, OUTPUT_FORCE_LINK, OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC};
+  hemocell.setOutputs("RBC", outputs);
 
-	hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
-	hemocell.setOutputs("PLT", outputs);
+  hemocell.addCellType<PltSimpleModel>("PLT", ELLIPSOID_FROM_SPHERE);
+  hemocell.setOutputs("PLT", outputs);
 
-	outputs = {OUTPUT_VELOCITY, OUTPUT_DENSITY, OUTPUT_OMEGA};
-	hemocell.setFluidOutputs(outputs);
+  outputs = {OUTPUT_VELOCITY, OUTPUT_DENSITY, OUTPUT_OMEGA};
+  hemocell.setFluidOutputs(outputs);
 
-  hemocell.setInteriorViscosityTimeScaleSeperation((*cfg)["sim"]["interiorViscosity"].read<int>(),(*cfg)["sim"]["interiorViscosityEntireGrid"].read<int>());
+  hemocell.setInteriorViscosityTimeScaleSeperation((*cfg)["sim"]["interiorViscosity"].read<int>(),
+                                                   (*cfg)["sim"]["interiorViscosityEntireGrid"].read<int>());
 
-// ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
+  // ---------------------- Initialise particle positions if it is not a checkpointed run ---------------
 
-	//loading the cellfield
+  //loading the cellfield
   if (not cfg->checkpointed) {
     hemocell.loadParticles();
     hemocell.writeOutput();
@@ -109,7 +109,8 @@ int main(int argc, char* argv[])
 
 
   if (hemocell.iter == 0) {
-    pcout << "(CellCollision) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
+    pcout << "(CellCollision) fresh start: warming up cell-free fluid domain for "
+          << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
     for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
       hemocell.lattice->collideAndStream();
     }
@@ -121,20 +122,14 @@ int main(int argc, char* argv[])
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
 
-    // Set the property to calculate this
+  // Set the property to calculate this
 
 
-
-  while (hemocell.iter < tmax ) {
-
+  while (hemocell.iter < tmax) {
     hemocell.iterate();
 
-    if (hemocell.iter % tmeas == 0) {
-      hemocell.writeOutput();
-    }
-    if (hemocell.iter % tcheckpoint == 0) {
-      hemocell.saveCheckPoint();
-    }
+    if (hemocell.iter % tmeas == 0) { hemocell.writeOutput(); }
+    if (hemocell.iter % tcheckpoint == 0) { hemocell.saveCheckPoint(); }
   }
 
   pcout << "(CellCollision) Simulation finished :)" << std::endl;

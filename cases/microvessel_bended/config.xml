@@ -29,7 +29,7 @@
     <kBT> 4.100531391e-21 </kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
     <Re> 1 </Re>   <!--Reynolds number-->
     <particleEnvelope> 25 </particleEnvelope>
-    <kRep> 2e-22 </kRep> <!-- Repulsion Constant -->
+    <kRep> 5.0 </kRep> <!-- Repulsion constant: force at the cutoff distance [pN] -->
     <RepCutoff> 0.7 </RepCutoff> <!-- RepulsionCutoff -->
 </domain>
 

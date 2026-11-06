@@ -101,7 +101,6 @@ def cli(template, slurm, cluster, output, posfile, hematocrit, verbose):
                 "shiftPack.py",
                 "20",
                 *map(str, analysis.dimensions),
-                "--allowRotate",
                 "--rbc",
                 str(analysis.required_particles(hematocrit)),
                 "--packer",

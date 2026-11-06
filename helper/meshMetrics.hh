@@ -27,101 +27,96 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "meshMetrics.h"
 
 namespace plb {
-  
+
 /*
  * Helper function, calculates the angle between -pi and pi.
  * The edge is iVertex-jVertex.
  */
-template<typename T>
-T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plint jVertex, plint & kVertex, plint & lVertex) {
-    hemo::Array<T,3> x1 = mesh.getVertex(iVertex), x2({0.,0.,0.}), x3({0.,0.,0.}), x4({0.,0.,0.});
+template <typename T>
+T calculateSignedAngle(TriangularSurfaceMesh<T> const & mesh, plint iVertex, plint jVertex, plint & kVertex,
+                       plint & lVertex) {
+  hemo::Array<T, 3> x1 = mesh.getVertex(iVertex), x2({0., 0., 0.}), x3({0., 0., 0.}), x4({0., 0., 0.});
 
-    std::vector<plint> adjacentTriangles = mesh.getAdjacentTriangleIds(iVertex, jVertex);
-	plint iTriangle=adjacentTriangles[0], jTriangle=adjacentTriangles[1];
-    x3 = mesh.getVertex(jVertex);
-    T foundVertices=0;
-    for (pluint id = 0; id < 3; ++id) {
-        kVertex = mesh.getVertexId(iTriangle,id);
-        if ( (kVertex != iVertex) && (kVertex != jVertex) ) {
-            x2 = mesh.getVertex(kVertex);
-            foundVertices += 1;
-            break;
-        }
+  std::vector<plint> adjacentTriangles = mesh.getAdjacentTriangleIds(iVertex, jVertex);
+  plint iTriangle = adjacentTriangles[0], jTriangle = adjacentTriangles[1];
+  x3 = mesh.getVertex(jVertex);
+  T foundVertices = 0;
+  for (pluint id = 0; id < 3; ++id) {
+    kVertex = mesh.getVertexId(iTriangle, id);
+    if ((kVertex != iVertex) && (kVertex != jVertex)) {
+      x2 = mesh.getVertex(kVertex);
+      foundVertices += 1;
+      break;
     }
-    for (pluint id = 0; id < 3; ++id) {
-        lVertex = mesh.getVertexId(jTriangle,id);
-        if ( (lVertex != iVertex) && (lVertex != jVertex) ) {
-            x4 = mesh.getVertex(lVertex);
-            foundVertices += 1;
-            break;
-        }
+  }
+  for (pluint id = 0; id < 3; ++id) {
+    lVertex = mesh.getVertexId(jTriangle, id);
+    if ((lVertex != iVertex) && (lVertex != jVertex)) {
+      x4 = mesh.getVertex(lVertex);
+      foundVertices += 1;
+      break;
     }
-    PLB_ASSERT(foundVertices == 2); //Assert if some particles are outside of the domain
+  }
+  PLB_ASSERT(foundVertices == 2); //Assert if some particles are outside of the domain
 
-    hemo::Array<T,3> V1 = mesh.computeTriangleNormal(iTriangle);
-    hemo::Array<T,3> V2 = mesh.computeTriangleNormal(jTriangle);
-    T angle = angleBetweenVectors(V1, V2);
-	plint sign = dot(x2-x1, V2) >= 0?1:-1;
-	if (sign <= 0) {
-		angle = 2*PI-angle;
-	}
-	angle = (angle > PI)?angle-2*PI:angle;
-	return angle;
+  hemo::Array<T, 3> V1 = mesh.computeTriangleNormal(iTriangle);
+  hemo::Array<T, 3> V2 = mesh.computeTriangleNormal(jTriangle);
+  T angle = angleBetweenVectors(V1, V2);
+  plint sign = dot(x2 - x1, V2) >= 0 ? 1 : -1;
+  if (sign <= 0) { angle = 2 * PI - angle; }
+  angle = (angle > PI) ? angle - 2 * PI : angle;
+  return angle;
 }
 
 
 /*
  *  * Helper function, calculates the angle between -pi and pi
  *   */
-template<typename T>
-T calculateSignedAngle(TriangularSurfaceMesh<T> const& mesh, plint iVertex, plint jVertex) {
-    plint kVertex, lVertex;
-      return calculateSignedAngle(mesh, iVertex, jVertex, kVertex, lVertex);
+template <typename T>
+T calculateSignedAngle(TriangularSurfaceMesh<T> const & mesh, plint iVertex, plint jVertex) {
+  plint kVertex, lVertex;
+  return calculateSignedAngle(mesh, iVertex, jVertex, kVertex, lVertex);
 }
 
-template<typename T>
-void writeSurfaceMeshAsciiSTL(TriangularSurfaceMesh<T> const& mesh, std::string fname)
-{
-	T dx = 1;
-    // Output only from one MPI process.
+template <typename T>
+void writeSurfaceMeshAsciiSTL(TriangularSurfaceMesh<T> const & mesh, std::string fname) {
+  T dx = 1;
+  // Output only from one MPI process.
 
-    FILE *fp = fopen(fname.c_str(), "w");
-    PLB_ASSERT(fp != NULL);
+  FILE * fp = fopen(fname.c_str(), "w");
+  PLB_ASSERT(fp != NULL);
 
-    char fmt1[64] = "  facet normal ";
-    char fmt2[64] = "      vertex ";
-    if (sizeof(T) == sizeof(long double)) {
-        strcat(fmt1, "% Le % Le % Le\n");
-        strcat(fmt2, "% Le % Le % Le\n");
-    }
-    else if (sizeof(T) == sizeof(float) ||
-             sizeof(T) == sizeof(double)) {
-        strcat(fmt1, "% e % e % e\n");
-        strcat(fmt2, "% e % e % e\n");
-    }
-    else {
-        PLB_ASSERT(false);
-    }
+  char fmt1[64] = "  facet normal ";
+  char fmt2[64] = "      vertex ";
+  if (sizeof(T) == sizeof(long double)) {
+    strcat(fmt1, "% Le % Le % Le\n");
+    strcat(fmt2, "% Le % Le % Le\n");
+  } else if (sizeof(T) == sizeof(float) || sizeof(T) == sizeof(double)) {
+    strcat(fmt1, "% e % e % e\n");
+    strcat(fmt2, "% e % e % e\n");
+  } else {
+    PLB_ASSERT(false);
+  }
 
-    fprintf(fp, "solid surface\n");
-    for (plint i = 0; i < mesh.getNumTriangles(); i++) {
-        hemo::Array<T,3> n = mesh.computeTriangleNormal(i);
-        hemo::Array<T,3> v;
-        fprintf(fp, fmt1, n[0], n[1], n[2]);
-        fprintf(fp, "    outer loop\n");
-        v = dx * mesh.getVertex(i, 0);
-        fprintf(fp, fmt2, v[0], v[1], v[2]);
-        v = dx * mesh.getVertex(i, 1);
-        fprintf(fp, fmt2, v[0], v[1], v[2]);
-        v = dx * mesh.getVertex(i, 2);
-        fprintf(fp, fmt2, v[0], v[1], v[2]);
-        fprintf(fp, "    endloop\n");
-        fprintf(fp, "  endfacet\n");
-    }
-    fprintf(fp, "endsolid surface\n");
+  fprintf(fp, "solid surface\n");
+  for (plint i = 0; i < mesh.getNumTriangles(); i++) {
+    hemo::Array<T, 3> n = mesh.computeTriangleNormal(i);
+    hemo::Array<T, 3> v;
+    fprintf(fp, fmt1, n[0], n[1], n[2]);
+    fprintf(fp, "    outer loop\n");
+    v = dx * mesh.getVertex(i, 0);
+    fprintf(fp, fmt2, v[0], v[1], v[2]);
+    v = dx * mesh.getVertex(i, 1);
+    fprintf(fp, fmt2, v[0], v[1], v[2]);
+    v = dx * mesh.getVertex(i, 2);
+    fprintf(fp, fmt2, v[0], v[1], v[2]);
+    fprintf(fp, "    endloop\n");
+    fprintf(fp, "  endfacet\n");
+  }
+  fprintf(fp, "endsolid surface\n");
 
-    fclose(fp);
+  fclose(fp);
 }
 
 }
-#endif  // MESH_METRICS_HH
+#endif // MESH_METRICS_HH

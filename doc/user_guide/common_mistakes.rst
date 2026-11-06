@@ -30,7 +30,8 @@ the cells might leave their domain, without proper communication to the
 respective neighbour or periodic in/outlet.
 
 When cells are removed directly after initialisation, this is mostly due to the
-fact that the cells extend outside of the simulation domain. For multi-core
+fact that the cells extend outside of the simulation domain. The log reports
+how many cells of each type were placed (``<type>: placed N of M cells``). For multi-core
 simulations, the cells are removed, such that each cell is initialised only
 once, i.e. inside the atomic block that contains the cell's center
 (see :ref:`FAQ:Frequently Asked Questions`).

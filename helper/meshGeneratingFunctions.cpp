@@ -26,12 +26,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 
 namespace plb {
-  
+
 TriangularSurfaceMesh<T> * constructStringMeshFromConfig(hemo::Config & cfg) {
-  std::vector<plb::Array<T,3>> * vertexList = new std::vector<plb::Array<T,3>>();
+  std::vector<plb::Array<T, 3>> * vertexList = new std::vector<plb::Array<T, 3>>();
   std::vector<plint> * emanatingEdgesList = new std::vector<plint>();
   std::vector<Edge> * edgeList = new std::vector<Edge>();
-  TriangularSurfaceMesh<T> * mesh = new TriangularSurfaceMesh<T>(*vertexList,*emanatingEdgesList,*edgeList);
+  TriangularSurfaceMesh<T> * mesh = new TriangularSurfaceMesh<T>(*vertexList, *emanatingEdgesList, *edgeList);
   return mesh;
 }
 

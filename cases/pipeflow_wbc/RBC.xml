@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<hemocell>
+<MaterialModel>
+    <comment>Parameters for the HO RBC constitutive model.</comment>
+    <name>RBC</name>
+    <eta_m> 0.0 </eta_m> <!-- Membrane viscosity. [5e-10 Ns/m]-->
+    <kBend> 80.0 </kBend> <!-- Bending force modulus for membrane + cytoskeleton ( in k_BT units, 4.142e-21 N m) [80] -->
+    <kVolume> 20.0 </kVolume> <!-- Volume conservation coefficient (dimensionless) [20] --> 
+    <kArea> 5.0 </kArea> <!--Local area conservation coefficient (dimensionless) [5] --> 
+    <!-- NOTE: kBend should != kArea. The larger the difference, the more stable the model -> they are competing forces under some circumstances. -->
+    <kLink> 15.0 </kLink> <!-- Link force coefficient (dimensionless) [15.0] -->
+    <minNumTriangles> 600 </minNumTriangles> <!--Minimun numbers of triangles per cell. Not always exact. [642]-->
+    <radius> 3.91e-6 </radius> <!-- Radius of the RBC in [ 3.96 um] -->
+    <Volume> 90 </Volume> <!-- Volume of the RBC in µm³ -->
+</MaterialModel>
+</hemocell>

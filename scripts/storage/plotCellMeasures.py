@@ -12,7 +12,7 @@
 
 import pylab as pl
 import numpy as np
-from StringIO import StringIO
+from io import StringIO
 from time import sleep
 
 fname = '/home/lmount/devel/ficsion/tmp/plbCells.log'
@@ -65,9 +65,9 @@ while True:
         pl.title('z Position (LU)')
         pl.show()
         sleep(0.1)
-        print i
+        print(i)
     except:
-        print 'Failed!'
+        print('Failed!')
 
 
 

@@ -23,6 +23,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "hemoCellParticleField.h"
 #include "hemocell.h"
+
+#include <algorithm>
+
+using namespace std;
+using namespace plb;
+
 namespace hemo {
 
 void HemoCellParticleField::AddOutputMap() {
@@ -36,416 +42,182 @@ void HemoCellParticleField::AddOutputMap() {
   outputFunctionMap[OUTPUT_FORCE_BENDING] = &HemoCellParticleField::outputForceBending;
   outputFunctionMap[OUTPUT_FORCE_VISC] = &HemoCellParticleField::outputForceVisc;
   outputFunctionMap[OUTPUT_VERTEX_ID] = &HemoCellParticleField::outputVertexId;
-  outputFunctionMap[OUTPUT_CELL_ID] = &HemoCellParticleField::outputCellId;
   outputFunctionMap[OUTPUT_FORCE_REPULSION] = &HemoCellParticleField::outputForceRepulsion;
   outputFunctionMap[OUTPUT_RES_TIME] = &HemoCellParticleField::outputResTime;
-
 }
 
-void HemoCellParticleField::passthroughpass(int type, Box3D domain, vector<vector<T>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::passthroughpass(int type, Box3D domain, vector<vector<T>> & output, pluint ctype,
+                                            std::string & name) {
   if (outputFunctionMap.find(type) == outputFunctionMap.end()) { return; }
-  void (HemoCellParticleField::*badideapointer)(Box3D,vector<vector<T>>&, pluint, std::string&) = outputFunctionMap[type];
-  (this->*badideapointer)(domain,output,ctype,name);
+  void (HemoCellParticleField::*badideapointer)(Box3D, vector<vector<T>> &, pluint, std::string &) =
+      outputFunctionMap[type];
+  (this->*badideapointer)(domain, output, ctype, name);
 }
 
-void HemoCellParticleField::outputPositions(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
-  deleteIncompleteCells(ctype);
+void HemoCellParticleField::getOutputCells(pluint ctype, vector<plint> & cellIds) {
+  cellIds.clear();
+  for (const auto & entry : get_particles_per_cell()) {
+    const vector<int> & cell = entry.second;
+    if (cell.empty() || cell[0] == -1) { continue; }
+    const HemoCellParticle & vertex0 = particles[cell[0]];
+    if (vertex0.sv.celltype != ctype) { continue; }
+    // Exactly one block holds vertex 0 in its bulk; envelope copies, including
+    // the shifted images of cells across a periodic boundary, are skipped.
+    if (!isContainedABS(vertex0.sv.position, localDomain)) { continue; }
+    if (std::find(cell.begin(), cell.end(), -1) != cell.end()) { continue; }
+    cellIds.push_back(entry.first);
+  }
+}
+
+namespace {
+// One output row per vertex of the cells this block writes (getOutputCells()),
+// cell by cell in vertex ID order; `row` returns the values of one vertex.
+template <class RowFunction>
+void outputPerVertex(HemoCellParticleField & field, pluint ctype, vector<vector<T>> & output, RowFunction row) {
+  output.clear();
+  vector<plint> cellIds;
+  field.getOutputCells(ctype, cellIds);
+  const map<plint, vector<int>> & particles_per_cell = field.get_particles_per_cell();
+  for (const plint cellId : cellIds) {
+    for (int index : particles_per_cell.at(cellId)) { output.push_back(row(field.particles[index])); }
+  }
+}
+
+void scaleOutput(vector<vector<T>> & output, T factor) {
+  for (vector<T> & row : output) {
+    for (T & value : row) { value = value * factor; }
+  }
+}
+
+vector<T> components(const hemo::Array<T, 3> & v) {
+  return vector<T>{v[0], v[1], v[2]};
+}
+} // namespace
+
+void HemoCellParticleField::outputPositions(Box3D domain, vector<vector<T>> & output, pluint ctype,
+                                            std::string & name) {
   name = "Position";
-  output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      if (particles_per_cell.at(cellid)[i] == -1) { continue; }
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
-
-      vector<T> pbv;
-      pbv.push_back(sparticle->sv.position[0]);
-      pbv.push_back(sparticle->sv.position[1]);
-      pbv.push_back(sparticle->sv.position[2]);
-      output.push_back(pbv); //TODO, memory copy
-
-    }
-  }
-  if(cellFields->hemocell.outputInSiUnits) {
-    for (vector<T> & tf : output) {
-      for (T & n : tf) {
-        n = n * param::dx;
-      }
-    }
-  }
+  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return components(p.sv.position); });
+  if (cellFields->hemocell.outputInSiUnits) { scaleOutput(output, param::dx); }
 }
 
-void HemoCellParticleField::outputVelocities(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
-  deleteIncompleteCells(ctype);
+void HemoCellParticleField::outputVelocities(Box3D domain, vector<vector<T>> & output, pluint ctype,
+                                             std::string & name) {
   name = "Velocity";
-  output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      if (particles_per_cell.at(cellid)[i] == -1) { continue; }
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
-
-      vector<T> pbv;
-      pbv.push_back(sparticle->sv.v[0]);
-      pbv.push_back(sparticle->sv.v[1]);
-      pbv.push_back(sparticle->sv.v[2]);
-      output.push_back(pbv); //TODO, memory copy
-    }
-  }
-  if(cellFields->hemocell.outputInSiUnits) {
+  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return components(p.sv.v); });
+  if (cellFields->hemocell.outputInSiUnits) {
     for (vector<T> & tf : output) {
-      for (T & n : tf) {
-        n = n * param::dx/param::dt;
-      }
+      for (T & n : tf) { n = n * param::dx / param::dt; }
     }
   }
 }
 
-void HemoCellParticleField::outputForceBending(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputForceBending(Box3D domain, vector<vector<T>> & output, pluint ctype,
+                                               std::string & name) {
   name = "Bending force";
-  output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
-
-      vector<T> tf;
-      tf.push_back((*sparticle->force_bending)[0]);
-      tf.push_back((*sparticle->force_bending)[1]);
-      tf.push_back((*sparticle->force_bending)[2]);
-      output.push_back(tf);
-    }
-  }
-  if(cellFields->hemocell.outputInSiUnits) {
-    for (vector<T> & tf : output) {
-      for (T & n : tf) {
-        n = n * param::df;
-      }
-    }
-  }
+  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return components(*p.force_bending); });
+  if (cellFields->hemocell.outputInSiUnits) { scaleOutput(output, param::df); }
 }
 
-void HemoCellParticleField::outputForceArea(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputForceArea(Box3D domain, vector<vector<T>> & output, pluint ctype,
+                                            std::string & name) {
   name = "Area force";
-  output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
- 
-      vector<T> tf;
-      tf.push_back((*sparticle->force_area)[0]);
-      tf.push_back((*sparticle->force_area)[1]);
-      tf.push_back((*sparticle->force_area)[2]);
-      output.push_back(tf);
-    }
-  }
-  if(cellFields->hemocell.outputInSiUnits) {
-    for (vector<T> & tf : output) {
-      for (T & n : tf) {
-        n = n * param::df;
-      }
-    }
-  }
+  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return components(*p.force_area); });
+  if (cellFields->hemocell.outputInSiUnits) { scaleOutput(output, param::df); }
 }
 
-void HemoCellParticleField::outputForceLink(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputForceLink(Box3D domain, vector<vector<T>> & output, pluint ctype,
+                                            std::string & name) {
   name = "Link force";
-  output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
- 
-      vector<T> tf;
-      tf.push_back((*sparticle->force_link)[0]);
-      tf.push_back((*sparticle->force_link)[1]);
-      tf.push_back((*sparticle->force_link)[2]);
-      output.push_back(tf);
-    }
-  }
-  if(cellFields->hemocell.outputInSiUnits) {
-    for (vector<T> & tf : output) {
-      for (T & n : tf) {
-        n = n * param::df;
-      }
-    }
-  }
+  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return components(*p.force_link); });
+  if (cellFields->hemocell.outputInSiUnits) { scaleOutput(output, param::df); }
 }
 
-void HemoCellParticleField::outputForceInnerLink(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputForceInnerLink(Box3D domain, vector<vector<T>> & output, pluint ctype,
+                                                 std::string & name) {
   name = "Inner link force";
-  output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
- 
-      vector<T> tf;
-      tf.push_back((*sparticle->force_inner_link)[0]);
-      tf.push_back((*sparticle->force_inner_link)[1]);
-      tf.push_back((*sparticle->force_inner_link)[2]);
-      output.push_back(tf);
-    }
-  }
-  if(cellFields->hemocell.outputInSiUnits) {
-    for (vector<T> & tf : output) {
-      for (T & n : tf) {
-        n = n * param::df;
-      }
-    }
-  }
+  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return components(*p.force_inner_link); });
+  if (cellFields->hemocell.outputInSiUnits) { scaleOutput(output, param::df); }
 }
 
-void HemoCellParticleField::outputForceVolume(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputForceVolume(Box3D domain, vector<vector<T>> & output, pluint ctype,
+                                              std::string & name) {
   name = "Volume force";
-  output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
-
-      vector<T> tf;
-      tf.push_back((*sparticle->force_volume)[0]);
-      tf.push_back((*sparticle->force_volume)[1]);
-      tf.push_back((*sparticle->force_volume)[2]);
-      output.push_back(tf);
-    }
-  }
-  if(cellFields->hemocell.outputInSiUnits) {
-    for (vector<T> & tf : output) {
-      for (T & n : tf) {
-        n = n * param::df;
-      }
-    }
-  }
+  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return components(*p.force_volume); });
+  if (cellFields->hemocell.outputInSiUnits) { scaleOutput(output, param::df); }
 }
 
-void HemoCellParticleField::outputForceVisc(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputForceVisc(Box3D domain, vector<vector<T>> & output, pluint ctype,
+                                            std::string & name) {
   name = "Viscous force";
-  output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
-
-      vector<T> tf;
-      tf.push_back((*sparticle->force_visc)[0]);
-      tf.push_back((*sparticle->force_visc)[1]);
-      tf.push_back((*sparticle->force_visc)[2]);
-      output.push_back(tf);
-    }
-  }
-  if(cellFields->hemocell.outputInSiUnits) {
-    for (vector<T> & tf : output) {
-      for (T & n : tf) {
-        n = n * param::df;
-      }
-    }
-  }
+  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return components(*p.force_visc); });
+  if (cellFields->hemocell.outputInSiUnits) { scaleOutput(output, param::df); }
 }
 
-void HemoCellParticleField::outputForceRepulsion(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputForceRepulsion(Box3D domain, vector<vector<T>> & output, pluint ctype,
+                                                 std::string & name) {
   name = "Repulsion force";
-  output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
-
-      vector<T> tf;
-      tf.push_back(sparticle->sv.force_repulsion[0]);
-      tf.push_back(sparticle->sv.force_repulsion[1]);
-      tf.push_back(sparticle->sv.force_repulsion[2]);
-      output.push_back(tf);
-    }
-  }
-  if(cellFields->hemocell.outputInSiUnits) {
-    for (vector<T> & tf : output) {
-      for (T & n : tf) {
-        n = n * param::df;
-      }
-    }
-  }
+  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return components(p.sv.force_repulsion); });
+  if (cellFields->hemocell.outputInSiUnits) { scaleOutput(output, param::df); }
 }
 
-void HemoCellParticleField::outputForces(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputForces(Box3D domain, vector<vector<T>> & output, pluint ctype, std::string & name) {
   name = "Total force";
-  output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
- 
-      vector<T> tf;
-      tf.push_back(sparticle->force_total[0]);
-      tf.push_back(sparticle->force_total[1]);
-      tf.push_back(sparticle->force_total[2]);
-      output.push_back(tf);
-    }
-  }
-  if(cellFields->hemocell.outputInSiUnits) {
-    for (vector<T> & tf : output) {
-      for (T & n : tf) {
-        n = n * param::df;
-      }
-    }
-  }
+  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return components(p.force_total); });
+  if (cellFields->hemocell.outputInSiUnits) { scaleOutput(output, param::df); }
 }
 
-void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputTriangles(Box3D domain, vector<vector<plint>> & output, pluint ctype,
+                                            std::string & name) {
   name = "Triangles";
   output.clear();
-  int counter = 0;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < (*cellFields)[ctype]->triangle_list.size(); i++) {
-      vector<plint> triangle = {(*cellFields)[ctype]->triangle_list[i][0] + counter,
-                          (*cellFields)[ctype]->triangle_list[i][1] + counter,
-                          (*cellFields)[ctype]->triangle_list[i][2] + counter};
-      output.push_back(triangle);
+  vector<plint> cellIds;
+  getOutputCells(ctype, cellIds);
+  const HemoCellField & cellField = *(*cellFields)[ctype];
+  plint counter = 0;
+  for (pluint c = 0; c < cellIds.size(); c++) {
+    for (const hemo::Array<plint, 3> & triangle : cellField.triangle_list) {
+      output.push_back({triangle[0] + counter, triangle[1] + counter, triangle[2] + counter});
     }
-    counter += (*cellFields)[ctype]->numVertex;
+    counter += cellField.numVertex;
   }
-   
 }
 
-void HemoCellParticleField::outputInnerLinks(Box3D domain,vector<vector<plint>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputInnerLinks(Box3D domain, vector<vector<plint>> & output, pluint ctype,
+                                             std::string & name) {
   name = "InnerLinks";
   output.clear();
-  unsigned int counter = 0;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype)  {continue;}
-    for (pluint i = 0; i < (*cellFields)[ctype]->mechanics->cellConstants.inner_edge_list.size(); i++) {
-      vector<plint> link = {(*cellFields)[ctype]->mechanics->cellConstants.inner_edge_list[i][0] + counter,
-                            (*cellFields)[ctype]->mechanics->cellConstants.inner_edge_list[i][1] + counter,
-                           };
-      output.push_back(link);
+  vector<plint> cellIds;
+  getOutputCells(ctype, cellIds);
+  const HemoCellField & cellField = *(*cellFields)[ctype];
+  const auto & innerEdges = cellField.mechanics->cellConstants.inner_edge_list;
+  plint counter = 0;
+  for (pluint c = 0; c < cellIds.size(); c++) {
+    for (pluint i = 0; i < innerEdges.size(); i++) {
+      output.push_back({innerEdges[i][0] + counter, innerEdges[i][1] + counter});
     }
-    counter += (*cellFields)[ctype]->numVertex;
+    counter += cellField.numVertex;
   }
 }
 
-void HemoCellParticleField::outputVertexId(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputVertexId(Box3D domain, vector<vector<T>> & output, pluint ctype, std::string & name) {
   name = "Vertex Id";
-  output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype)  {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
-      vector<T> tf;
-      tf.push_back((sparticle->sv.vertexId));
-      output.push_back(tf);
-    }
-  }
+  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return vector<T>{T(p.sv.vertexId)}; });
 }
 
-void HemoCellParticleField::outputCellId(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputCellIds(vector<vector<plint>> & output, pluint ctype, std::string & name) {
   name = "Cell Id";
   output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
-      vector<T> tf;
-      tf.push_back((sparticle->sv.cellId));
-      output.push_back(tf);
-    }
-  }
+  vector<plint> cellIds;
+  getOutputCells(ctype, cellIds);
+  const pluint nVertices = (*cellFields)[ctype]->numVertex;
+  for (const plint cellId : cellIds) { output.insert(output.end(), nVertices, vector<plint>{cellId}); }
 }
 
-void HemoCellParticleField::outputResTime(Box3D domain,vector<vector<T>>& output, pluint ctype, std::string & name) {
+void HemoCellParticleField::outputResTime(Box3D domain, vector<vector<T>> & output, pluint ctype, std::string & name) {
   name = "Res Time";
-  output.clear();
-  HemoCellParticle * sparticle;
-  const map<int,bool> & lpc = get_lpc();
-  const map<int,vector<int>> & particles_per_cell = get_particles_per_cell();
-  for ( const auto &lpc_it : lpc ) {
-    int cellid = lpc_it.first;
-    if (particles_per_cell.at(cellid)[0] == -1) { continue; }
-    if (ctype != particles[particles_per_cell.at(cellid)[0]].sv.celltype) {continue;}
-    for (pluint i = 0; i < particles_per_cell.at(cellid).size(); i++) {
-      sparticle = &particles[particles_per_cell.at(cellid)[i]];
-      vector<T> tf;
-      tf.push_back((sparticle->sv.restime));
-      output.push_back(tf);
-    }
-  }
-  if(cellFields->hemocell.outputInSiUnits) {
-    for (vector<T> & tf : output) {
-      for (T & n : tf) {
-        n = n * param::dt;
-      }
-    }
-  }
+  outputPerVertex(*this, ctype, output, [](const HemoCellParticle & p) { return vector<T>{T(p.sv.restime)}; });
+  if (cellFields->hemocell.outputInSiUnits) { scaleOutput(output, param::dt); }
 }
 
 }

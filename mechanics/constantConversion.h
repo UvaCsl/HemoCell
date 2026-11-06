@@ -29,29 +29,34 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "multiBlock/multiDataField3D.h"
 
 namespace hemo {
-  class Parameters {
-
-    //Variables for the simulation
-    public:
-    static T dt,dx,dm,df;
-    static T nu_p,rho_p,kBT_p;
-    static T tau,re;
-    static T nu_lbm, u_lbm_max, kBT_lbm, shearrate_lbm, LE_force;
-  #ifdef FORCE_LIMIT
-    static T f_limit;
-  #endif
-    static T ef_lbm; //used in cellStretching
-    static T pipe_radius; //used for bodyforce calculation
-    static T tau_CEPAC; //From diffusion constant 
-
+class Parameters {
+  //Variables for the simulation
+public:
+  static T dt, dx, dm, df;
+  static T nu_p, rho_p, kBT_p;
+  static T tau, re;
+  static T nu_lbm, u_lbm_max, kBT_lbm, shearrate_lbm, LE_force;
+#ifdef FORCE_LIMIT
+  static T f_limit;
+#endif
+  static T ef_lbm;      //used in cellStretching
+  static T pipe_radius; //used for bodyforce calculation
+  static T tau_CEPAC;   //From diffusion constant
 
 
-    static void lbm_pipe_parameters(Config & cfg, plb::MultiScalarField3D<int> * sf);
-    static void lbm_pipe_parameters(Config & cfg, int nY);
-    static void lbm_shear_parameters(Config & cfg, T nx);
-    static void lbm_LE_parameters(Config & cfg, T ny);
-    static void lbm_base_parameters(Config & cfg);
-    static void printParameters();
-  };
+  static void lbm_pipe_parameters(Config & cfg, plb::MultiScalarField3D<int> * sf);
+  static void lbm_pipe_parameters(Config & cfg, int nY);
+  static void lbm_shear_parameters(Config & cfg, T nx);
+  static void lbm_LE_parameters(Config & cfg, T ny);
+  static void lbm_base_parameters(Config & cfg);
+  static void printParameters();
+  /// Set all parameters back to their initial value (zero); called when a
+  /// HemoCell object is destroyed, so a next simulation in the same process
+  /// does not inherit them.
+  static void reset();
+};
+
+/// Short name of Parameters (formerly a macro), e.g. `param::dx`.
+typedef Parameters param;
 }
 #endif

@@ -19,7 +19,7 @@ def parseArguments(config):
     "Parse the arguments based on the keys from the config file"
     parser = argparse.ArgumentParser()
     #parser.add_argument('caseId', metavar='N', nargs='+', help=' help')
-    for key in config.keys():
+    for key in list(config.keys()):
         parser.add_argument('--' + key,  nargs='+', help=key + ' help')
     args = parser.parse_args()
     dictArgs = args.__dict__
@@ -52,12 +52,12 @@ for i in tree.findall('.//*'):
 arguments = parseArguments(config)
 params = []
 param_val = []
-for key, value in arguments.items():
+for key, value in list(arguments.items()):
     if value != None:
         params += [key]
         param_val += [value]
 
-print params, param_val
+print(params, param_val)
 
 for ic, comb in enumerate( product(*param_val) ):
     caseId = []

@@ -78,6 +78,13 @@ Where to start
       Configuration tags, the HemoCell C++ API, output fields, mechanical
       models, and the full Doxygen API.
 
+   .. grid-item-card:: :octicon:`code;1.5em;sd-mr-1` Developer Guide
+      :link: developer/index
+      :link-type: doc
+
+      Internals, coding conventions, extending HemoCell, and known
+      limitations.
+
    .. grid-item-card:: :octicon:`people;1.5em;sd-mr-1` Community
       :link: community/index
       :link-type: doc
@@ -149,6 +156,7 @@ long simulations on HPC clusters with thousands of cores. See
    :hidden:
 
    advanced_cases
+   packcells
    visualization
    helper_scripts
    utilities
@@ -159,6 +167,13 @@ long simulations on HPC clusters with thousands of cores. See
    :hidden:
 
    reference/index
+
+.. toctree::
+   :caption: Developer Guide
+   :maxdepth: 1
+   :hidden:
+
+   developer/index
 
 .. toctree::
    :caption: Community

@@ -52,28 +52,31 @@ public:
   void start();
   void stop();
   void reset();
+  /// Stop this timer, zero it and remove all subtimers (the root timer
+  /// `global.statistics` is cleared when a HemoCell object is destroyed).
+  void clear();
   void printStatistics();
   void outputStatistics();
   void outputStatistics(int);
-  
+
   std::chrono::high_resolution_clock::duration elapsed();
   std::string elapsed_string();
-  Profiler & operator[] (std::string);
+  Profiler & operator[](std::string);
   Profiler & getCurrent();
 
   std::string static toString(std::chrono::high_resolution_clock::duration);
 
 private:
   void stop_nowarn();
-  template<typename T>
+  template <typename T>
   void printStatistics_inner(int level, T & out);
-  template<typename T>
+  template <typename T>
   void printStatistics_JSON(T & out);
   std::chrono::high_resolution_clock::duration total_time = std::chrono::high_resolution_clock::duration::zero();
   std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
   bool started = false;
   const std::string name;
-  std::map<std::string,Profiler> timers;
+  std::map<std::string, Profiler> timers;
   Profiler & parent;
   Profiler * current = this;
 };

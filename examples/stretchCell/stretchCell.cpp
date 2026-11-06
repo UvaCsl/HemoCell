@@ -30,11 +30,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.hh"
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
 // The used IBM kernel width.
 const plb::plint extendedEnvelopeWidth = 2;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char * argv[]) {
   if (argc < 2) {
     cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
     return -1;
@@ -42,7 +44,7 @@ int main(int argc, char *argv[]) {
 
   // Initialise HemoCell and parse the parameteres configuration file.
   HemoCell hemocell(argv[1], argc, argv);
-  Config &cfg = *hemocell.cfg;
+  Config & cfg = *hemocell.cfg;
 
   param::lbm_base_parameters(cfg);
   param::printParameters();
@@ -60,10 +62,8 @@ int main(int argc, char *argv[]) {
 
   // An default initialisation for the lattice.
   hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
-      defaultMultiBlockPolicy3D().getMultiBlockManagement(
-          nx, ny, nz, extendedEnvelopeWidth),
-      defaultMultiBlockPolicy3D().getBlockCommunicator(),
-      defaultMultiBlockPolicy3D().getCombinedStatistics(),
+      defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
+      defaultMultiBlockPolicy3D().getBlockCommunicator(), defaultMultiBlockPolicy3D().getCombinedStatistics(),
       defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
       new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
 
@@ -71,12 +71,10 @@ int main(int argc, char *argv[]) {
   hemocell.lattice->periodicity().toggleAll(false);
 
   // All boundaries are subjected to zero velocity.
-  OnLatticeBoundaryCondition3D<T, DESCRIPTOR> *boundaryCondition =
-      createLocalBoundaryCondition3D<T, DESCRIPTOR>();
+  OnLatticeBoundaryCondition3D<T, DESCRIPTOR> * boundaryCondition = createLocalBoundaryCondition3D<T, DESCRIPTOR>();
 
   boundaryCondition->setVelocityConditionOnBlockBoundaries(*hemocell.lattice);
-  setBoundaryVelocity(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
-                      plb::Array<T, 3>(0., 0., 0.));
+  setBoundaryVelocity(*hemocell.lattice, hemocell.lattice->getBoundingBox(), plb::Array<T, 3>(0., 0., 0.));
 
   // The domain is initialised with zero velocity.
   hemocell.latticeEquilibrium(1., hemo::Array<T, 3>({0., 0., 0.}));
@@ -86,11 +84,9 @@ int main(int argc, char *argv[]) {
   hemocell.initializeCellfield();
   hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
 
-  // Define any output fields of interest to be written to HDF5 output. 
-  hemocell.setOutputs("RBC", {OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE,
-                              OUTPUT_FORCE_VOLUME, OUTPUT_FORCE_BENDING,
-                              OUTPUT_FORCE_LINK, OUTPUT_FORCE_AREA,
-                              OUTPUT_FORCE_VISC});
+  // Define any output fields of interest to be written to HDF5 output.
+  hemocell.setOutputs("RBC", {OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE, OUTPUT_FORCE_VOLUME,
+                              OUTPUT_FORCE_BENDING, OUTPUT_FORCE_LINK, OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC});
   hemocell.setFluidOutputs({OUTPUT_VELOCITY, OUTPUT_FORCE});
 
   // HDF5 output in SI units (except location (so fluid location, particle
@@ -110,8 +106,7 @@ int main(int argc, char *argv[]) {
   unsigned n_forced_lsps = 1 + 6;
   HemoCellStretch cellStretch(*rbc_field, n_forced_lsps, stretch_force_si);
 
-  hlog << "External stretching force" << stretch_force << " [pN(flb)] ("
-       << stretch_force_si << ")" << endl;
+  hlog << "External stretching force" << stretch_force << " [pN(flb)] (" << stretch_force_si << ")" << endl;
 
   // Get undeformed values
   T volume_lbm = rbc_field->meshmetric->getVolume();
@@ -163,22 +158,20 @@ int main(int argc, char *argv[]) {
       T largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch) / (1e-6 / param::dx);
 
       hlog << "\tCell center at: {" << position[0] << ", " << position[1] << ", " << position[2] << "} µm" << endl;
-      hlog << "\tDiameters: {" << bbox[1] - bbox[0] << ", " << bbox[3] - bbox[2] << ", " << bbox[5] - bbox[4] << "} µm" << endl;
+      hlog << "\tDiameters: {" << bbox[1] - bbox[0] << ", " << bbox[3] - bbox[2] << ", " << bbox[5] - bbox[4] << "} µm"
+           << endl;
       hlog << "\tSurface: " << surface << " µm^2" << " (" << surface / surface_eq * 100.0 << "%)" << endl;
       hlog << "\tVolume: " << volume << " µm^3" << " (" << volume / volume_eq * 100.0 << "%)" << endl;
       hlog << "\tLargest diameter: " << largest_diam << " µm." << endl;
 
       // Track (iteration, axial, transverse) in the output file for
       // possible post-processing.
-      fOut << hemocell.iter << " " << bbox[1] - bbox[0] << " "
-           << bbox[3] - bbox[2] << endl;
+      fOut << hemocell.iter << " " << bbox[1] - bbox[0] << " " << bbox[3] - bbox[2] << endl;
 
       CellInformationFunctionals::clear_list();
     }
 
-    if (hemocell.iter % tcheckpoint == 0) {
-      hemocell.saveCheckPoint();
-    }
+    if (hemocell.iter % tcheckpoint == 0) { hemocell.saveCheckPoint(); }
   }
 
   fOut.close();

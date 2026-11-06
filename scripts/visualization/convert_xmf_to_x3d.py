@@ -3,6 +3,7 @@
 import argparse
 import os
 import pathlib
+import re
 
 
 def convert_particle_file_to_x3d(xmf_path,
@@ -60,12 +61,14 @@ def convert_particle_file_to_x3d(xmf_path,
 def is_valid_cell_file(cell_file):
     """Returns True for possibly valid cell XMF files.
 
-    Any file matching `cell-type.*.xmf` is considered valid, where the
-    cell-type can be RBC, PLT, etc. """
-    if not cell_file.endswith('.xmf'):
+    Any step file matching `cell-type.<iteration>.xmf` is considered valid,
+    where the cell-type can be RBC, PLT, etc. The fluid and CEPAC fields and
+    the `cell-type.xmf` files (all steps) are skipped."""
+    match = re.match(r'^(.+)\.\d+\.xmf$', cell_file)
+    if not match:
         return False
 
-    if 'Fluid' in cell_file:
+    if match.group(1).split('_')[0] in ('Fluid', 'CEPAC'):
         return False
 
     return True

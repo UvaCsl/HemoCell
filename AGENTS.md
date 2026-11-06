@@ -48,28 +48,43 @@ cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build --target hemocell --parallel 2
 cmake --build build --target pipeflow stretchCell --parallel 2
 cmake --build build --target hemocell_test --parallel 2
+# or with presets (CMake >= 3.21), building into build-<preset>/:
+cmake --preset release            # also: portable, debug, sanitize
+cmake --build --preset release    # builds hemocell_test (and the library)
 ```
 
-Choose parallelism to fit available memory: each library includes Palabos sources
-and compilation can be expensive. Initial configuration with `BUILD_TESTING=ON`
-fetches GoogleTest if it is not already populated. `-DBUILD_TESTING=OFF` skips
-that dependency and the tests; it is useful for a library-only build, not a
-substitute for testing a code change.
+Machine-specific settings (e.g. `HDF5_ROOT`, MPI header paths) belong in a
+`CMakeUserPresets.json` (ignored by git) that inherits from these presets.
+Choose parallelism to fit available memory: Palabos is compiled once (as an
+object library archived into every HemoCell library variant), but it is large.
+Initial configuration with `BUILD_TESTING=ON` fetches GoogleTest (pinned
+v1.17.0) unless an installed GoogleTest >= 1.17 is found. `-DBUILD_TESTING=OFF`
+skips that dependency and the tests; it is useful for a library-only build, not
+a substitute for testing a code change.
 
 Build details that matter:
 
 - The default build compiles `hemocell` only. Examples, cases, tests and optional
-  library variants are excluded from `all`; request their targets explicitly.
-- Example/case targets normally match their directory names and put executables
-  into those source directories. `hemocell_test` is written to the repository
-  root, not `build/`.
+  library variants are excluded from `all`; request their targets explicitly
+  (`hemocell_examples` and `hemocell_cases` build all examples/cases).
+- Example/case targets match their directory names and put executables into
+  those source directories (so the last build tree built wins). `hemocell_test`
+  is written to the build directory.
 - Library `.cpp` files and test sources are discovered recursively with CMake
-  globs. Reconfigure after adding/removing files. Additional source files for an
-  example must be registered explicitly in its `add_executable` call.
-- Root CMake currently forces `Release` and adds `-O3 -march=native -ggdb` and
-  warning flags. Passing `-DCMAKE_BUILD_TYPE=Debug` alone does not produce a debug
-  build. Inspect the actual compile command when enabling debugging/sanitizers.
-  Binaries built with `-march=native` may not be portable to other cluster nodes.
+  globs (`CONFIGURE_DEPENDS`). Additional source files for an example must be
+  registered explicitly in its `add_executable` call, and the directory added
+  to the list in `examples/CMakeLists.txt` or `cases/CMakeLists.txt`.
+- The build type is honoured (default `Release`: `-O3 -DNDEBUG`). Options:
+  `HEMOCELL_NATIVE_ARCH` (default ON, `-march=native`; binaries may not run on
+  other CPUs, use the `portable` preset for those), `HEMOCELL_DEBUG_INFO`
+  (`-ggdb`, default ON), `HEMOCELL_PALABOS_DEBUG` (`PLB_DEBUG` run-time checks),
+  `HEMOCELL_SANITIZERS` (e.g. `address;undefined`) and `HEMOCELL_WERROR`
+  (library and tests only). These flags apply to all targets; warnings are
+  only enabled for HemoCell code, not for Palabos or vendored tinyxml2.
+- MPI and HDF5 are linked through `MPI::MPI_CXX` and an interface target that
+  keeps MPI's include directories before HDF5's: an HDF5 prefix such as a conda
+  environment may ship another MPI's `mpi.h`, which must not shadow the MPI the
+  code is built with.
 
 ### Compile-time variants
 
@@ -88,11 +103,16 @@ in an executable or link incompatible variants together. Combined features need
 an explicitly consistent build; the existing targets do not represent every
 combination.
 
-Also inspect `config/constant_defaults.h`: it currently defines
-`SOLIDIFY_MECHANICS` even for the base target. Target names alone therefore do not
-tell you all enabled macros. Runtime switches in XML/per-cell setup are separate
-from compiled support. Changes to these defaults affect every target and can
-change particle layout, performance and checkpoint compatibility.
+`config/constant_defaults.h` is the one place for the compile-time
+configuration (and the version, which CMake and the docs read from it). The
+optional features are off there; the variants switch them on. The effective
+configuration (`HEMOCELL_BUILD_CONFIGURATION`) is logged at start-up and stored
+in checkpoints, and `HemoCell`'s constructor compares the case's configuration
+(a default argument, evaluated in the case) with the library's: add any new
+layout- or behaviour-changing macro to that string. Runtime switches in
+XML/per-cell setup are separate from compiled support. Changes to these
+defaults affect every target and can change particle layout, performance and
+checkpoint compatibility.
 
 ## Source layout and responsibilities
 
@@ -113,7 +133,7 @@ change particle layout, performance and checkpoint compatibility.
 | `cases/` | Research cases, including experimental or incompletely validated features; validate before treating them as reference behavior |
 | `tests/` | GoogleTest runner, validation cases and performance-related inputs |
 | `tools/` | Standalone `packCells`, cell material templates/tester and position conversion tools |
-| `scripts/` | Postprocessing, analysis, cluster environments and batch templates; older Python 2 variants also exist |
+| `scripts/` | Postprocessing, analysis, cluster environments and batch templates (Python 3); `scripts/ci/` holds the driver smoke run |
 | `patch/`, `cmake/`, `external/` | Palabos integration patch, build/dependency helpers and vendored dependencies |
 | `doc/`, `legacy/` | Sphinx/Doxygen sources and historical implementations respectively |
 
@@ -146,11 +166,14 @@ Typical initialization order (see `examples/pipeflow/pipeflow.cpp`):
 
 1. Construct `HemoCell` with the configuration and command-line arguments.
 2. Compute `param::lbm_*_parameters` and print them. Create the domain/lattice,
-   boundary conditions and equilibrium, then initialize the lattice.
+   boundary conditions and equilibrium, then initialize the lattice. For an
+   STL geometry, `getFlagMatrixFromSTL(*cfg, voxelizedDomain, flagMatrix)` and
+   `initializeLatticeFromFlagMatrix()` do the common part.
 3. Call `initializeCellfield()`. Register each type with
    `addCellType<Mechanics>(name, shape)`, configure outputs and update intervals,
    and set periodicity through `setSystemPeriodicity()` so both fields agree.
-4. Set initial clearance controls before `loadParticles()`. On a restart follow
+4. Set initial clearance controls (and `setPlaceCellsAcrossPeriodicBoundaries()`
+   for `.pos` files packed periodically for the domain) before `loadParticles()`. On a restart follow
    the case's `cfg->checkpointed`/`loadCheckPoint()` branch instead of loading
    fresh positions. Enable interactions before stepping.
 5. Run `iterate()` with case-specific forcing and output/checkpoint intervals.
@@ -181,7 +204,8 @@ Configuration conventions:
   rotations are in **degrees**, applied in X, Y, Z order by the loader.
 - Settings such as `tmax`, `tmeas`, `tcsv`, `tcheckpoint` and warmup are consumed
   by individual drivers; adding an XML tag alone does not activate behavior.
-- Missing XML children throw `std::invalid_argument`. `XMLElement::read` uses
+- Missing XML children throw `std::invalid_argument` naming the file, line and
+  element path. `XMLElement::read` uses
   stream extraction and does not provide comprehensive value validation. Check
   new required values and cross-field constraints before entering collective or
   numerical work; optional values need explicit defaults.
@@ -203,8 +227,10 @@ Configuration conventions:
   constants, force caps or resolution.
 - `FORCE_LIMIT` is specified in pN per surface point and converted to lattice
   force in `Parameters`. Check the actual use site for new terms rather than
-  assuming every model applies the same scaling. Repulsion cutoffs supplied to
-  `setRepulsion`/`enableBoundaryParticles` are micrometres and converted there.
+  assuming every model applies the same scaling. Repulsion constants supplied
+  to `setRepulsion`/`enableBoundaryParticles` are pN and their cutoffs
+  micrometres, both converted there; the repulsion force per vertex is capped
+  at `FORCE_LIMIT` separately from the membrane force.
 - Update intervals must be positive. The material intervals and the enabled
   repulsion/interior-viscosity intervals checked in `HemoCell::sanityCheck()`
   must be divisible by the particle-velocity update interval. Preserve these
@@ -226,17 +252,38 @@ Configuration conventions:
   and save/load together; do not serialize owning pointers or dynamic containers
   by copying their object bytes.
 - Distinguish absolute coordinates from atomic-block-local coordinates and real
-  owned particles from halo copies. Preserve periodic cell-ID mapping and
-  center-based ownership; avoid double-counting ghost cells in statistics.
-  Particle envelopes must cover stretched cells and coupling support. A single
-  rank run cannot establish communication correctness.
+  owned particles from halo copies. Round a coordinate to its lattice node
+  with `nearestNode()` (`core/particleGrid.h`), not `int(x + 0.5)`, which is
+  one node too high for x < -0.5 (halo copies have negative local
+  coordinates). Preserve periodic cell-ID mapping and center-based ownership;
+  avoid double-counting ghost cells in statistics. Particle envelopes must
+  cover stretched cells and coupling support. A single rank run cannot
+  establish communication correctness.
 - Keep MPI collectives in matching order on all participating ranks. A routine
   that gathers data or writes coordinated output may need to be called by every
   rank even if only rank zero writes. Use `pcout`/`hlog` and existing profiler
   conventions; avoid per-particle logging and extra barriers in hot loops.
+  Report errors with `hemo::fatal()` (`config/error.h`; prints with the rank on
+  any rank, ends the job with `MPI_Abort`), never `exit()`: `hlog` prints on
+  rank 0 only.
+- Runs with the same rank count and decomposition are bit-for-bit
+  reproducible, checkpoint files included (received particles are unpacked by
+  source rank, not arrival order). Keep received data processed in a fixed
+  order, and compare outputs exactly when a change should not alter numerics.
+  Do not use Palabos' `duplicateOverlaps(modif::hemocell)` for the particle
+  field: it unpacks in arrival order.
+- Output and statistics must not change the state (currently they do not, bit
+  for bit): read complete cells inside a `HemoCellFields::CompleteCellsScope`
+  (a copy of the particles, discarded afterwards), never by calling
+  `syncEnvelopes()` or `deleteIncompleteCells()` directly; `iterate()` deletes
+  broken cells.
+- Cell IDs are `plint` and grow with every periodic crossing (never folded
+  back); do not store them in an `int`.
 - Global/static simulation state means only one `HemoCell` instance may exist
-  at a time. Do not assume reentrancy or thread safety. Tests that construct
-  multiple simulations sequentially must reset any static helper state they use.
+  at a time. Do not assume reentrancy or thread safety. `~HemoCell` resets all
+  of it (`resetGlobalState()` in `core/hemoCell.cpp`), so sequential
+  simulations in one process start alike; reset any new static state there,
+  or keep per-simulation data in an object.
 
 ## Outputs and supporting tools
 
@@ -247,21 +294,32 @@ Configuration conventions:
 when selecting tolerances: double-precision computation does not imply every
 HDF5 dataset is stored as doubles.
 
-Runs write `hdf5/<iteration>/`, `csv/`, logs and `checkpoint/` under the selected
-output directory. `writeOutput()` includes both HDF5 and CSV; drivers can call
+Runs write `hdf5/<iteration>/`, XDMF `*.xmf` descriptors, `csv/`, logs and
+`checkpoint/` under the selected output directory. `writeOutput()` includes
+HDF5, XDMF and CSV; drivers can call
 `writeCellInfo_CSV` separately for a different CSV frequency. Checkpoints include
-XML and lattice/particle `.dat` files, with previous copies renamed `.old`.
+lattice/particle `.dat` files and, written last, `checkpoint.xml`, with previous
+copies renamed `.old`; the XML records a build fingerprint (particle layout,
+cell types, dx, dt) that a restart checks.
 Restarting may use a different number of ranks, but requires compatible state
 and a driver that implements restart handling.
 
-For ParaView, run `scripts/batchPostProcess.sh` from a case or output directory
-to generate XMF descriptors; use the legacy XDMF reader. When changing output
-constants, dataset names/shapes, units or CSV columns, update writers, relevant
-readers/converters and `doc/user_guide/reference/outputs.rst` together. Do not
-commit generated results, binaries, build trees or dependency downloads.
+HDF5 files are written per atomic block; every cell is written once (by the
+block holding its vertex 0) and fluid files hold bulk nodes only. Rank 0 writes
+`<name>.<iteration>.xmf` per step and `<name>.xmf` with all steps (XDMF 3,
+readable by ParaView's XDMF3 and legacy readers); `scripts/batchPostProcess.sh`
+(`scripts/HDF5toXDMF.py`) writes the same for output of older versions. When
+changing output constants, dataset names/shapes, units or CSV columns, update
+writers, the XDMF records (`io/xdmfOutput.h`), `scripts/HDF5toXDMF.py` and
+`doc/user_guide/reference/outputs.rst` together. Do not commit generated
+results, binaries, build trees or dependency downloads.
 
 `tools/packCells` has an independent CMake build and writes its binary into that
-directory. It produces `.pos` inputs with domain dimensions in micrometres:
+directory (`-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=<dir>` elsewhere; several build
+trees otherwise overwrite each other's binary). It produces `.pos` inputs with
+domain dimensions in micrometres; `doc/user_guide/packcells.rst` documents it,
+and `tools/packCells/check_packing.py` checks a packing (the CI `packcells` job
+packs a box, a slab and a pipe and checks them):
 
 ```bash
 cmake -S tools/packCells -B tools/packCells/build
@@ -269,24 +327,41 @@ cmake --build tools/packCells/build --parallel 2
 tools/packCells/packCells --help
 ```
 
+It is built without FMA contraction (`-ffp-contract=off`), so a `--seed` gives
+the same packing with any number of threads and with or without OpenMP or
+`-march=native`; keep it so, and keep its cell-type table equal to the one in
+`check_packing.py`.
+
 ## Testing and verification
 
 Build `hemocell_test` explicitly. All discovered tests share `tests/main.cpp`,
 which initializes MPI once. Construct simulations in tests with
 `HemoCell::MPIHandle::External`; do not initialize/finalize MPI for each test.
+Give them a configuration from `hemo_test::testConfig()` (`tests/test_support.h`),
+which redirects the output into a per-run temporary directory
+(`hemo_test::outputRoot()`, removed afterwards unless
+`HEMOCELL_KEEP_TEST_OUTPUT` is set); tests must not write into the repository.
 Use meaningful assertions on behavior, not just successful execution.
 
-Run the test binary **from the repository root** with this checkout:
+Run the tests with CTest, or run the binary **from the repository root** (the
+tests read their inputs relative to it):
 
 ```bash
 cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build --target hemocell_test --parallel 2
-./hemocell_test --gtest_list_tests
-./hemocell_test --gtest_filter='-*Validation*:Performance.*'
-./hemocell_test --gtest_filter='*Validation*'
+ctest --test-dir build -L unit --output-on-failure        # unit, 1 and 2 ranks
+ctest --test-dir build -L validation --output-on-failure  # validation, 1 and 2 ranks
+# or directly:
+build/hemocell_test --gtest_list_tests
+build/hemocell_test --gtest_filter='-*Validation*:Performance.*'
+build/hemocell_test --gtest_filter='*Validation*'
 # For changes to communication, ownership, periodicity or decomposition:
-mpirun -n 2 ./hemocell_test --gtest_filter='*Validation*'
+mpirun -n 2 build/hemocell_test --gtest_filter='*Validation*'
 ```
+
+CTest registers `unit`, `validation`, `unit_mpi` and `validation_mpi` (labels
+`unit`, `validation`, `mpi`; rank count `HEMOCELL_TEST_MPI_RANKS`, default 2),
+all running in the repository root.
 
 The broad `*Validation*` pattern includes parameterized stretch tests named
 `Validation/ValidationForceDisplacement...` as well as the `Validation` suite.
@@ -294,16 +369,25 @@ The documented `Validation.*` pattern misses those parameterized tests.
 Exclude `Performance.*` from ordinary test runs: `Performance.cube` expects a
 configuration as its first positional argument and asserts hardware-dependent
 timings. Run it deliberately with a matching rank count and configuration, e.g.
-`mpirun -n 2 ./hemocell_test tests/performance/configs/config-2.xml --gtest_filter='Performance.*'`.
-Currently the remaining non-validation/non-performance coverage is only a dummy
-test; passing it is not sufficient verification for solver changes.
+`mpirun -n 2 build/hemocell_test tests/performance/configs/config-2.xml --gtest_filter='Performance.*'`
+(GitHub workflow `performance.yml`, manual, self-hosted runner).
+The unit tests cover selected components (particle grid and repulsion, config
+reader, arrays, particle copies, logging, checkpoint restart, membrane forces
+of every model, determinism, periodic/block/pre-inlet transfer); passing them
+is not sufficient verification for solver changes.
 
-CTest is registered, but `tests/CMakeLists.txt` sets its working directory to
-`tests/` while existing validation code loads `tests/validation/...` and
-`examples/...` paths relative to the repository root. Thus the documented
-`ctest` invocation has a path mismatch; use the direct commands above until the
-runner/fixtures are corrected. If changing the test infrastructure, make CTest
-and direct runs agree rather than duplicating test assets.
+`scripts/ci/smoke_drivers.py` (from the repository root, after building
+`hemocell_examples hemocell_cases`) runs every built driver for 20 steps on 2
+ranks in a temporary copy of its directory and checks for errors, NaN, output
+and a checkpoint; `--slow` adds the large drivers it lists in `SLOW`. Run it
+after changing an interface the drivers use.
+
+Before submitting larger changes, also build and run the unit tests with the
+`sanitize` (AddressSanitizer + UBSan; set `ASAN_OPTIONS=detect_leaks=0`) and
+`debug` (Palabos assertions) presets. CI (`.github/workflows/ci.yml`) builds
+everything with GCC (`-Werror`) and Clang and runs unit and validation tests
+on 1 and 2 ranks, the unit tests under the sanitizers, the driver smoke run
+(GCC release job) and `py_compile` of all Python files (warnings are errors).
 
 Match verification to the change:
 
@@ -323,13 +407,25 @@ validation. Do not claim a simulation or build was verified from inspection alon
 
 ## C++ style and code documentation
 
-Follow the surrounding file's formatting and naming; there is no checked-in
-project-wide clang-format configuration. Keep edits focused and avoid whole-file
-reformatting, broad modernization or unsolicited dependency/toolchain changes.
+Formatting is defined by `.clang-format` (clang-format >= 14; `.editorconfig`
+for editors); all HemoCell sources follow it. Format the lines you change with
+`git clang-format`; CI checks the changed lines of pull requests.
+`scripts/format.sh [--check]` formats or checks whole files, but do not
+reformat unrelated files in a functional change. Pure reformatting commits are
+listed in `.git-blame-ignore-revs` (enable locally with
+`git config blame.ignoreRevsFile .git-blame-ignore-revs`). Vendored and
+historical code (`external/`, `legacy/`, generated `palabos/`) is excluded.
+Follow the surrounding file's naming. Keep edits focused and avoid broad
+modernization or unsolicited dependency/toolchain changes. Internals,
+conventions, extension recipes and known limitations are documented in
+`doc/user_guide/developer/`.
 
-- Keep library symbols in `namespace hemo`; qualify `hemo::`/`plb::` where it
-  prevents ambiguity. Do not add new global `using namespace` directives to
-  headers. Use include guards and keep template definitions visible in headers
+- Keep library symbols, constants included (`OUTPUT_*`, cell shapes), in
+  `namespace hemo`; no new macros except compile-time options. Headers contain
+  no `using namespace` at all: qualify `std::` and `plb::` there. Library
+  `.cpp` files may use `using namespace std; using namespace plb;`; drivers
+  and tests declare their own (`hemo`, `plb`, `std`), and then `Array` is
+  ambiguous between `hemo::Array` and `plb::Array`. Use include guards and keep template definitions visible in headers
   or included `.hh` files, following the existing layout.
 - Use existing `T`, `plint`/`pluint`, `hemo::Array` and Palabos types at their
   interfaces. Check conversions between signed indices, container sizes and

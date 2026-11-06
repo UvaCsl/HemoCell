@@ -19,12 +19,9 @@ After :ref:`compilation<compilation>`, the example can be run using single core 
    # run the simulation from the `examples/oneCellShear` directory
    mpirun -n 1 ./oneCellShear config.xml
 
-   # generate Paraview compatible output files
-   ../../scripts/batchPostProcess.sh
-
 The outcome files are generated in ``tmp/``, where the flow field and particle
 fields can be visualised separately by respectively viewing the
-``tmp/Fluid.*.xmf`` and ``tmp/RBC.*.xmf`` files.
+``tmp/Fluid.xmf`` and ``tmp/RBC.xmf`` files.
 
 .. figure:: ../_static/cases/one-cell-shear.png
    :alt: A single shearing cell

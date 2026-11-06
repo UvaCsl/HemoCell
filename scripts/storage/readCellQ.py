@@ -26,7 +26,7 @@ def readVTKField(myfile, nPoints, dataDict, skipline=0):
     fieldId = rest.strip()[::-1].split(' ', vtkEnding)[-1][::-1]
     _ = myfile.readline()
     for i in range(nPoints):
-        line = map(float, myfile.readline().split())
+        line = list(map(float, myfile.readline().split()))
         if len(line) == 1: line = line[0]
         dataDict[i][fieldId] = dataDict[i].get(fieldId, []) + [line]
     [myfile.readline() for i in range(skipline)]
@@ -82,8 +82,8 @@ def readCellQDirectory(dirname):
         parseCellQFile(cellQFile, dataDict)
     for i in range(len(dataDict)):
         d = dataDict[i]
-        for key, value in d.items():
-            d[key] = np.hemo::Array(value)
+        for key, value in list(d.items()):
+            d[key] = np.array(value)
     return dataDict
 
 
@@ -94,9 +94,9 @@ class IBMCaseRun (object):
         if caseId == None:
             try: caseId = dirname.rstrip('/').split('/')[-1]
             except: caseId = 'caseId'
-        print caseId
+        print(caseId)
         try:
-            params = dict(map(lambda param: param.split('-',1), caseId.split('_')))
+            params = dict([param.split('-',1) for param in caseId.split('_')])
             self.ibmKernel = int(params['ibmKernel'])
             self.tau = float(params['tau'])
             self.minNumOfTriangles = int(params['minNumOfTriangles'])
@@ -109,9 +109,9 @@ class IBMCaseRun (object):
         except:
             pass
         fname = saveDir + '/' + caseId + '.npy'
-        print "Saving data to: ", fname, "...",
+        print("Saving data to: ", fname, "...", end=' ')
         np.save(fname, dataDict)
-        print "OK"
+        print("OK")
 
 def main():
     savePath = './'

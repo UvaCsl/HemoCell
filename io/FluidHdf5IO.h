@@ -27,12 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellFields.h"
 
 namespace hemo {
-void writeFluidField_HDF5(HemoCellFields& cellFields, T dx, T dt, plint iter, string preString="");
-void writeCEPACField_HDF5(HemoCellFields& cellfields, T dx, T dt, plint iter, string preString=""); 
-
-#ifndef hsize_t
-typedef long long unsigned int hsize_t;
-#endif
-
+void writeFluidField_HDF5(HemoCellFields & cellFields, T dx, T dt, plint iter, std::string preString = "");
+void writeCEPACField_HDF5(HemoCellFields & cellfields, T dx, T dt, plint iter, std::string preString = "");
 }
 #endif

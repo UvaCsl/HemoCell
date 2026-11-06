@@ -18,12 +18,9 @@ or multiple cores, as:
    # run the simulation from the `examples/parachuting` direc
    mpirun -n 1 ./parachuting config.xml
 
-   # generate Paraview compatible output files
-   ../../scripts/batchPostProcess.sh
-
 The output files are generated in ``tmp/``, where the flow field and particle
-fields can be visualised separately by viewing the ``tmp/Fluid.*.xmf`` and
-``tmp/RBC.*.xmf`` files in `Paraview`_.
+fields can be visualised separately by viewing the ``tmp/Fluid.xmf`` and
+``tmp/RBC.xmf`` files in `Paraview`_.
 
 The RBC will be transported and deformed due to the available flow profile in
 the pipe. This results in the typical deformation profile of the RBC within the

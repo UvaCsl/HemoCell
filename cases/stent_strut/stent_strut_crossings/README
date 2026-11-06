@@ -1,0 +1,14 @@
+---------------------------------
+Hemocell - stent_strut_crossings
+---------------------------------
+The stent_strut case (in the parent directory) for the strut crossings of three
+stents: config_casper.xml, config_protege.xml and config_wallstent.xml, with the
+geometries crossing-*.stl. The source differs from ../stent_strut.cpp only in
+the height nz used for the shear parameters (0.55 instead of 0.75 refDirN).
+
+The cell files are those of the parent case, and the initial positions are in
+cell_pos_files/, one directory per stent. Run from this directory, e.g.:
+
+  cp ../RBC.xml ../PLT.xml .
+  cp cell_pos_files/casper/*.pos .
+  mpirun -n <ranks> ./stent_strut_crossings config_casper.xml

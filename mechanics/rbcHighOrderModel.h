@@ -32,8 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace hemo {
 
 class RbcHighOrderModel : public CellMechanics {
-
-  public:
+public:
   //Variables
   HemoCellField & cellField;
   const T k_volume;
@@ -42,12 +41,13 @@ class RbcHighOrderModel : public CellMechanics {
   const T k_bend;
   const T eta_m;
 
-  public:
-  RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_) ;
+public:
+  RbcHighOrderModel(Config & modelCfg_, HemoCellField & cellField_);
 
-  void ParticleMechanics(map<int,vector<HemoCellParticle *>> & particles_per_cell, const map<int,bool> &lpc, size_t ctype) ;
+  void ParticleMechanics(std::map<plint, std::vector<HemoCellParticle *>> & particles_per_cell,
+                         const std::map<plint, bool> & lpc, size_t ctype) override;
 
-  void statistics();
+  void statistics() override;
 };
 }
 #endif

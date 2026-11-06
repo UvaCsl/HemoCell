@@ -22,5 +22,5 @@ sphinx-design>=0.5
 # Bridges Doxygen XML into Sphinx for the C++ API reference
 breathe>=4.35
 
-# BibTeX bibliography support (publication list)
+# BibTeX bibliography support (publication list). Sometimes sphinxcontrib.bibtex.
 sphinxcontrib-bibtex>=2.6

@@ -33,32 +33,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.hh"
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
 /// A functional, used to instantiate bounce-back nodes at the locations of the sphere
-template<typename T>
+template <typename T>
 class SphereShapeDomain3D : public plb::DomainFunctional3D {
 public:
-    SphereShapeDomain3D(plint cx_, plint cy_, plint cz_, plint radius)
-        : cx(cx_),
-          cy(cy_),
-          cz(cz_),
-          radiusSqr(radius*radius)
-    { }
-    virtual bool operator() (plint iX, plint iY, plint iZ) const {
-        return (iX-cx) * (iX-cx) + (iY-cy) * (iY-cy) + (iZ-cz) * (iZ-cz) <= radiusSqr;
-    }
-    virtual SphereShapeDomain3D<T>* clone() const {
-        return new SphereShapeDomain3D<T>(*this);
-    }
+  SphereShapeDomain3D(plint cx_, plint cy_, plint cz_, plint radius)
+      : cx(cx_), cy(cy_), cz(cz_), radiusSqr(radius * radius) {}
+  virtual bool operator()(plint iX, plint iY, plint iZ) const {
+    return (iX - cx) * (iX - cx) + (iY - cy) * (iY - cy) + (iZ - cz) * (iZ - cz) <= radiusSqr;
+  }
+  virtual SphereShapeDomain3D<T> * clone() const { return new SphereShapeDomain3D<T>(*this); }
+
 private:
-    plint cx, cy, cz;
-    plint radiusSqr;
+  plint cx, cy, cz;
+  plint radiusSqr;
 };
 
 // ----------------------------------------------------------------------------------------------
 
-int main(int argc, char *argv[]) {
-  if(argc < 2) {
+int main(int argc, char * argv[]) {
+  if (argc < 2) {
     cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
     return -1;
   }
@@ -67,93 +64,97 @@ int main(int argc, char *argv[]) {
   Config * cfg = hemocell.cfg;
 
 
-//  pcout << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl;
-//  MultiScalarField3D<int> *flagMatrix = 0;
-//  VoxelizedDomain3D<double> * voxelizedDomain = 0;
-// getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),
-//                       (*cfg)["domain"]["fluidEnvelope"].read<int>(),
-//                       (*cfg)["domain"]["refDirN"].read<int>(),
-//                       (*cfg)["domain"]["refDir"].read<int>(),
-//                       voxelizedDomain, flagMatrix,
-//                       (*cfg)["domain"]["blockSize"].read<int>());
+  //  pcout << "(PipeFlow) (Geometry) reading and voxelizing STL file " << (*cfg)["domain"]["geometry"].read<string>() << endl;
+  //  MultiScalarField3D<int> *flagMatrix = 0;
+  //  VoxelizedDomain3D<double> * voxelizedDomain = 0;
+  // getFlagMatrixFromSTL((*cfg)["domain"]["geometry"].read<string>(),
+  //                       (*cfg)["domain"]["fluidEnvelope"].read<int>(),
+  //                       (*cfg)["domain"]["refDirN"].read<int>(),
+  //                       (*cfg)["domain"]["refDir"].read<int>(),
+  //                       voxelizedDomain, flagMatrix,
+  //                       (*cfg)["domain"]["blockSize"].read<int>());
 
   pcout << "(Flowaroundsphere) (Parameters) calculating flow parameters" << endl;
   param::lbm_base_parameters((*cfg));
   param::printParameters();
 
-// ---------------------------- Create sphere geometry ------------------------------------------------
+  // ---------------------------- Create sphere geometry ------------------------------------------------
 
   pcout << "(main) Flowaroundsphere geometry ..." << std::endl;
 
-  plint lengthChannel = 2*(*cfg)["domain"]["refDirN"].read<int>();
+  plint lengthChannel = 2 * (*cfg)["domain"]["refDirN"].read<int>();
 
-  plint nx = 2*lengthChannel;
+  plint nx = 2 * lengthChannel;
   plint ny = lengthChannel;
   plint nz = lengthChannel;
 
-  plint sphere_diameter = 15*2; // 2, 5, 9 or 15 um.
+  plint sphere_diameter = 15 * 2; // 2, 5, 9 or 15 um.
 
-  plint sphere_x = 2*lengthChannel/4;
-  plint sphere_y = lengthChannel/2;
-  plint sphere_z = sphere_diameter/2;
+  plint sphere_x = 2 * lengthChannel / 4;
+  plint sphere_y = lengthChannel / 2;
+  plint sphere_z = sphere_diameter / 2;
 
-// ----------------------------------------------------------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------------------------------------------------------
   double shear_rate = 1800; //input shear rate s-1
   pcout << "shear_rate = " << shear_rate << endl;
 
-  double velocity_max = (shear_rate*(lengthChannel/1e6))/4;
+  double velocity_max = (shear_rate * (lengthChannel / 1e6)) / 4;
   pcout << "velocity_max = " << velocity_max << endl;
 
-  double velocity_max_lbm = velocity_max * ( (*cfg)["domain"]["dt"].read<double>() /(*cfg)["domain"]["dx"].read<double>() );
+  double velocity_max_lbm =
+      velocity_max * ((*cfg)["domain"]["dt"].read<double>() / (*cfg)["domain"]["dx"].read<double>());
   pcout << "velocity_max_lbm = " << velocity_max_lbm << endl;
 
-// ---------------------------------------------------------------------------------------------
-  plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.
+  // ---------------------------------------------------------------------------------------------
+  plint extendedEnvelopeWidth = 2; // Because we might use ibmKernel with with 2.
 
   pcout << "(Flowaroundsphere) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
-            defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
-       //voxelizedDomain->getMultiBlockManagement(),
-            defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            defaultMultiBlockPolicy3D().getMultiCellAccess<double, DESCRIPTOR>(),
-            new GuoExternalForceBGKdynamics<double, DESCRIPTOR>(1.0/param::tau));
+      defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
+      //voxelizedDomain->getMultiBlockManagement(),
+      defaultMultiBlockPolicy3D().getBlockCommunicator(), defaultMultiBlockPolicy3D().getCombinedStatistics(),
+      defaultMultiBlockPolicy3D().getMultiCellAccess<double, DESCRIPTOR>(),
+      new GuoExternalForceBGKdynamics<double, DESCRIPTOR>(1.0 / param::tau));
 
-//  pcout << "(PipeFlow) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl;
-//  defineDynamics(*hemocell.lattice, *flagMatrix, (*hemocell.lattice).getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
+  //  pcout << "(PipeFlow) (Fluid) Setting up boundaries in Palabos Fluid Field" << endl;
+  //  defineDynamics(*hemocell.lattice, *flagMatrix, (*hemocell.lattice).getBoundingBox(), new BounceBack<T, DESCRIPTOR>(1.), 0);
 
-//--------------------------------- boundary conditions ---------------------------------------------------
-  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
+  //--------------------------------- boundary conditions ---------------------------------------------------
+  OnLatticeBoundaryCondition3D<T, DESCRIPTOR> * boundaryCondition = createLocalBoundaryCondition3D<T, DESCRIPTOR>();
 
   defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-              new SphereShapeDomain3D<T>(sphere_x,sphere_y,sphere_z, sphere_diameter/2.0),
-              new BounceBack<T, DESCRIPTOR> ); //b
+                 new SphereShapeDomain3D<T>(sphere_x, sphere_y, sphere_z, sphere_diameter / 2.0),
+                 new BounceBack<T, DESCRIPTOR>); //b
 
-  Box3D topChannel(0, 2*lengthChannel-1, 0, lengthChannel-1, lengthChannel-1, lengthChannel-1 );
-  Box3D bottomChannel( 0, 2*lengthChannel-1, 0, lengthChannel-1, 0, 0);
+  Box3D topChannel(0, 2 * lengthChannel - 1, 0, lengthChannel - 1, lengthChannel - 1, lengthChannel - 1);
+  Box3D bottomChannel(0, 2 * lengthChannel - 1, 0, lengthChannel - 1, 0, 0);
 
-  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
+  defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR>);
 
-  boundaryCondition->setVelocityConditionOnBlockBoundaries (*hemocell.lattice, topChannel );
-  setBoundaryVelocity(*hemocell.lattice, topChannel, plb::Array<T,3>(0.75*velocity_max_lbm,0,0)); // #calculated form: vmax=shearrate*h/32 = 0.04375, v_topwall,p = 0.75*vmax, v_top_lbm=v_topwall*(dt/dx)
+  boundaryCondition->setVelocityConditionOnBlockBoundaries(*hemocell.lattice, topChannel);
+  setBoundaryVelocity(
+      *hemocell.lattice, topChannel,
+      plb::Array<T, 3>(
+          0.75 * velocity_max_lbm, 0,
+          0)); // #calculated form: vmax=shearrate*h/32 = 0.04375, v_topwall,p = 0.75*vmax, v_top_lbm=v_topwall*(dt/dx)
 
-//  defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR> );
+  //  defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR> );
 
-// -----------------------------------
+  // -----------------------------------
 
   hemocell.lattice->toggleInternalStatistics(false);
   hemocell.lattice->periodicity().toggleAll(false);
-  hemocell.lattice->periodicity().toggle(0,true);
-  hemocell.lattice->periodicity().toggle(1,true); //b
-  hemocell.latticeEquilibrium(1.,plb::Array<double, 3>(0.,0.,0.));
+  hemocell.lattice->periodicity().toggle(0, true);
+  hemocell.lattice->periodicity().toggle(1, true); //b
+  hemocell.latticeEquilibrium(1., plb::Array<double, 3>(0., 0., 0.));
 
   //Driving Force
-//  pcout << "(PipeFlow) (Fluid) Setting up driving Force" << endl;
-//  double rPipe = (*cfg)["domain"]["refDirN"].read<int>()/2.0;
-//  double poiseuilleForce = 0.0; // 8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
-//  setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-//                    DESCRIPTOR<double>::ExternalField::forceBeginsAt,
-//                    plb::Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
+  //  pcout << "(PipeFlow) (Fluid) Setting up driving Force" << endl;
+  //  double rPipe = (*cfg)["domain"]["refDirN"].read<int>()/2.0;
+  //  double poiseuilleForce = 0.0; // 8 * param::nu_lbm * (param::u_lbm_max * 0.5) / rPipe / rPipe;
+  //  setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
+  //                    DESCRIPTOR<double>::ExternalField::forceBeginsAt,
+  //                    plb::Array<double, DESCRIPTOR<double>::d>(poiseuilleForce, 0.0, 0.0));
 
   hemocell.lattice->initialize();
 
@@ -174,11 +175,12 @@ int main(int argc, char *argv[]) {
   hemocell.setRepulsion((*cfg)["domain"]["kRep"].read<double>(), (*cfg)["domain"]["RepCutoff"].read<double>());
   hemocell.setRepulsionTimeScaleSeperation((*cfg)["ibm"]["stepMaterialEvery"].read<int>());
 
-  vector<int> outputs = {OUTPUT_POSITION,OUTPUT_TRIANGLES,OUTPUT_FORCE,OUTPUT_FORCE_VOLUME,OUTPUT_FORCE_BENDING,OUTPUT_FORCE_LINK,OUTPUT_FORCE_AREA,OUTPUT_FORCE_VISC};
+  vector<int> outputs = {OUTPUT_POSITION,      OUTPUT_TRIANGLES,  OUTPUT_FORCE,      OUTPUT_FORCE_VOLUME,
+                         OUTPUT_FORCE_BENDING, OUTPUT_FORCE_LINK, OUTPUT_FORCE_AREA, OUTPUT_FORCE_VISC};
   hemocell.setOutputs("RBC", outputs);
   hemocell.setOutputs("PLT", outputs);
 
-  outputs = {OUTPUT_VELOCITY,OUTPUT_DENSITY,OUTPUT_FORCE};
+  outputs = {OUTPUT_VELOCITY, OUTPUT_DENSITY, OUTPUT_FORCE};
   hemocell.setFluidOutputs(outputs);
 
   //todo add statistics here
@@ -192,7 +194,8 @@ int main(int argc, char *argv[]) {
   }
 
   if (hemocell.iter == 0) {
-    pcout << "(PipeFlow) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
+    pcout << "(PipeFlow) fresh start: warming up cell-free fluid domain for "
+          << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
     for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
       hemocell.lattice->collideAndStream();
     }
@@ -205,14 +208,14 @@ int main(int argc, char *argv[]) {
 
   pcout << "(Flowaroundsphere) Starting simulation..." << endl;
 
-  while (hemocell.iter < tmax ) {
+  while (hemocell.iter < tmax) {
     hemocell.iterate();
-  pcout << hemocell.iter << endl;
+    pcout << hemocell.iter << endl;
 
-//    //Set driving force as required after each iteration
-//    setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
-//               DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-//               plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
+    //    //Set driving force as required after each iteration
+    //    setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
+    //               DESCRIPTOR<T>::ExternalField::forceBeginsAt,
+    //               plb::Array<T, DESCRIPTOR<T>::d>(poiseuilleForce, 0.0, 0.0));
 
     // Only enable if PARMETIS build is available
     // if (hemocell.iter % tbalance == 0) {
@@ -222,14 +225,18 @@ int main(int argc, char *argv[]) {
     // }
 
     if (hemocell.iter % tmeas == 0) {
-      pcout << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
+      pcout << "(main) Stats. @ " << hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
       pcout << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
       pcout << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC");
       pcout << ", PLT: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "PLT") << endl;
-      FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell); double toMpS = param::dx / param::dt;
-      pcout << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg * toMpS<< " m/s, rel. app. viscosity: " << (param::u_lbm_max*0.5) / finfo.avg << endl;
-      ParticleStatistics pinfo = ParticleInfo::calculateForceStatistics(&hemocell); double topN = param::df * 1.0e12;
-      pcout << "\t Force  -  min.: " << pinfo.min * topN << " pN, max.: " << pinfo.max * topN << " pN (" << pinfo.max << " lf), mean: " << pinfo.avg * topN << " pN" << endl;
+      FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell);
+      double toMpS = param::dx / param::dt;
+      pcout << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg * toMpS
+            << " m/s, rel. app. viscosity: " << (param::u_lbm_max * 0.5) / finfo.avg << endl;
+      ParticleStatistics pinfo = ParticleInfo::calculateForceStatistics(&hemocell);
+      double topN = param::df * 1.0e12;
+      pcout << "\t Force  -  min.: " << pinfo.min * topN << " pN, max.: " << pinfo.max * topN << " pN (" << pinfo.max
+            << " lf), mean: " << pinfo.avg * topN << " pN" << endl;
 
       // Additional useful stats, if needed
       //finfo = FluidInfo::calculateForceStatistics(&hemocell);
@@ -243,9 +250,7 @@ int main(int argc, char *argv[]) {
 
       hemocell.writeOutput();
     }
-    if (hemocell.iter % tcheckpoint == 0) {
-      hemocell.saveCheckPoint();
-    }
+    if (hemocell.iter % tcheckpoint == 0) { hemocell.saveCheckPoint(); }
   }
 
   pcout << "(main) Simulation finished :) " << endl;

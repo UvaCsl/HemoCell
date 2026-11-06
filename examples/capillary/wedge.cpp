@@ -23,8 +23,7 @@
 template <typename T>
 class TriangleShapeDomain3D : public plb::DomainFunctional3D {
 public:
-  TriangleShapeDomain3D(unsigned channel_length, unsigned channel_height,
-                        unsigned wedge_length, unsigned gap_size) {
+  TriangleShapeDomain3D(unsigned channel_length, unsigned channel_height, unsigned wedge_length, unsigned gap_size) {
     bottom_height = (channel_height - gap_size) / 2;
     top_height = channel_height - 1 - bottom_height;
     start_wedge = (channel_length - wedge_length) / 2;
@@ -35,13 +34,10 @@ public:
 
   bool operator()(plint x, plint y, plint) const override {
     auto dy = slope * (x - start_wedge);
-    return (x > start_wedge && x <= end_wedge) &&
-           (y <= bottom_height - dy || y >= top_height + dy);
+    return (x > start_wedge && x <= end_wedge) && (y <= bottom_height - dy || y >= top_height + dy);
   }
 
-  TriangleShapeDomain3D<T> *clone() const override {
-    return new TriangleShapeDomain3D<T>(*this);
-  }
+  TriangleShapeDomain3D<T> * clone() const override { return new TriangleShapeDomain3D<T>(*this); }
 
 private:
   plint start_wedge;
@@ -56,7 +52,7 @@ std::tuple<unsigned, unsigned, unsigned> Wedge::domain_size(unsigned resolution)
   return std::make_tuple(resolution, 36, 36);
 }
 
-int Wedge::geometry(plb::MultiBlockLattice3D<double, DESCRIPTOR> *&lattice, unsigned resolution) {
+int Wedge::geometry(plb::MultiBlockLattice3D<double, DESCRIPTOR> *& lattice, unsigned resolution) {
   auto nx = 0;
   auto ny = 0;
   auto nz = 0;
@@ -65,15 +61,13 @@ int Wedge::geometry(plb::MultiBlockLattice3D<double, DESCRIPTOR> *&lattice, unsi
   unsigned wedge_length = 50;
   unsigned gap_size = 12;
 
-  defineDynamics(*lattice, lattice->getBoundingBox(),
-                 new TriangleShapeDomain3D<T>(nx, ny, wedge_length, gap_size),
+  defineDynamics(*lattice, lattice->getBoundingBox(), new TriangleShapeDomain3D<T>(nx, ny, wedge_length, gap_size),
                  new plb::BounceBack<T, DESCRIPTOR>);
 
   return 0;
 }
 
 plb::Array<double, 3> Wedge::driving_force(double force) {
-  auto scaling = hemo::param::dx * hemo::param::dx * hemo::param::dt *
-                 hemo::param::dt / hemo::param::dm;
+  auto scaling = hemo::param::dx * hemo::param::dx * hemo::param::dt * hemo::param::dt / hemo::param::dm;
   return {force * scaling, 0, 0};
 }

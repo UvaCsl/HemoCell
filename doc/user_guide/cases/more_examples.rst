@@ -36,7 +36,9 @@ case`).
    * - ``microcontraction``
      - Flow through a stenotic microfluidic contraction, reproducing a
        strain-rate micro-gradient device :cite:`van2019identifying`. The
-       contraction angle is set by ``c_angle_degrees``.
+       contraction angle is set by ``c_angle_degrees``. Copy the cell positions
+       of one of the ``initial_states/`` (e.g. ``initial_states/Ht30/*.pos``)
+       into the case's folder before running.
    * - ``curvedflow_with_preinlet``
      - Flow through a curved geometry voxelised from an STL file, combined with a
        :ref:`pre-inlet <cases/pipeflow_with_preinlet:Pipe flow with periodic

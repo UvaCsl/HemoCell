@@ -89,9 +89,21 @@ the HemoCell library::
   cmake ..
   cmake --build .
 
-By default only the standard ``hemocell`` library is compiled. 
-This operation can take a while, we suggest a coffee. Note: there might be a set of warning depending
-on the versions of the dependencies you are using.
+By default only the standard ``hemocell`` library is compiled, as a ``Release``
+build optimised for the CPU of the build machine (``-march=native``). Use
+``-DHEMOCELL_NATIVE_ARCH=OFF`` for binaries that must run on other CPUs (e.g.
+other nodes of a cluster), and ``-DCMAKE_BUILD_TYPE=Debug`` for a debug build.
+This operation can take a while, we suggest a coffee.
+
+With ``CMake >= 3.21`` the predefined presets are a convenient alternative; each
+builds into its own ``build-<preset>`` directory::
+
+  cmake --list-presets              # release, portable, debug, sanitize
+  cmake --preset release
+  cmake --build --preset release
+
+Machine-specific settings (for example ``-DHDF5_ROOT=...``) can be kept in a
+``CMakeUserPresets.json`` that inherits from these presets.
 
 To compile specific examples (that link to the library), you should specify their corresponding compile targets.
 These targets are defined for each example and match the example's directory
@@ -117,40 +129,32 @@ your machine::
 
 Afterwards, the ``pipeflow`` and ``parachuting`` executables are placed within
 the corresponding example's directories, i.e. ``examples/pipeflow`` and
-``examples/parachuting``.
+``examples/parachuting``. The targets ``hemocell_examples`` and
+``hemocell_cases`` build all examples and all research cases.
 
 
-To test if the library is successfully compiled, you can evaluate the defined
-tests::
+To test if the library is successfully compiled, build the test runner and run
+the tests (``unit`` takes seconds, ``validation`` a few minutes; both also run
+on two MPI ranks)::
 
-  make test
-
-.. _packcells:
-
+  cmake --build . --target hemocell_test
+  ctest -L unit --output-on-failure
+  ctest -L validation --output-on-failure
 
 Generating initial positions for cells
 --------------------------------------
 
-At some point you might want to run a slightly different geometry, or run your
-simulation with a different concentration of cells. For this we offer the
-``packCells`` tool which can be found in the ``./hemocell/packCells`` directory.
+The initial positions of the cells (the ``<type>.pos`` files) for another
+geometry or hematocrit are made with the ``packCells`` tool in
+``tools/packCells``. It has its own CMake project; from the repository root::
 
-This tool has a CMake file and can be build with::
+  cmake -S tools/packCells -B tools/packCells/build
+  cmake --build tools/packCells/build
+  tools/packCells/packCells --help
 
-  cd ./tools/packCells
-  mkdir build && cd build
-  cmake ../
-  make
-
-The result should be a ``packCells`` binary. This program offers a rich suite of
-options to generate initial conditions for cells. Type ``./packCells --help``
-for an overview of the possible parameters.
-
-The resulting ``*.pos`` files can be copied to the case where you want to use
-them.
-
-.. note:: 
-  The domain size is defined in microns, not in lattice units. This is to remain independent of the numerical resolution.
+The binary is written to ``tools/packCells/packCells``. Sizes are in µm, not
+lattice units. See :ref:`packcells` for how to pack for a case, its walls
+and its hematocrit, and how to check the result.
 
 
 Running a HemoCell case
@@ -180,22 +184,21 @@ Post-processing the output of a HemoCell case
 ---------------------------------------------
 
 A HemoCell case produces multiple types of output by default. The simplest is the ``csv``
-output which consists of all the information about cells in csv files. 
-On older HemoCell versions you might want to merge the csv files into a single one per time-step with the script :any:`ccsv`
-in the ``tmp`` directory. Note: HemoCell now does this automatically.
+output which consists of all the information about cells in csv files, one per
+cell type and time step.
 
 The more detailed output on both the fluid field and particle field is stored in compressed
-``hdf5`` format. We recommend using the `XDMF`_ format to make these
-readable for visualization tools such as `Paraview`_ . To generate ``*.xmf`` files run the :any:`bpp`
-script, e.g. from the folder of a case::
-  
+``hdf5`` format. HemoCell describes these files in the `XDMF`_ format, which
+visualization tools such as `Paraview`_ read: next to the ``hdf5`` directory
+the output directory holds ``Fluid.xmf``, ``RBC.xmf``, etc. with all output
+steps, and one ``.xmf`` file per step. Open e.g. ``tmp/RBC.xmf`` in Paraview
+(any of its XDMF readers) to get the time series. See
+:ref:`reference/outputs:Files` for the layout.
+
+For output of older HemoCell versions, generate the ``*.xmf`` files with the
+:any:`bpp` script, e.g. from the folder of a case::
+
   ../../scripts/batchPostProcess.sh
-
-When you have created the ``*.xmf`` files, they can be opened in Paraview.
-Please select the *Legacy* XDMF file format when loading them in. 
-
-.. note:: 
-  The HemoCell ``.xmf`` files are not yet XDMF3 compatible. Opening it with an XDMF3 reader might crash the visualization app.
 
 Resuming from a checkpoint
 --------------------------

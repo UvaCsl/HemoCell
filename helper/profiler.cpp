@@ -29,14 +29,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parallelism/mpiManager.h"
 
 namespace hemo {
-  
-Profiler::Profiler(std::string name_) :
-name(name_), parent(*this), current(this)
-{}
 
-Profiler::Profiler(std::string name_, Profiler & parent_) :
-name(name_), parent(parent_)
-{}
+Profiler::Profiler(std::string name_) : name(name_), parent(*this), current(this) {}
+
+Profiler::Profiler(std::string name_, Profiler & parent_) : name(name_), parent(parent_) {}
 
 void Profiler::start() {
   if (started) {
@@ -44,41 +40,43 @@ void Profiler::start() {
   } else {
     //Not root node and parent not started
     if (&parent != this && !parent.started) {
-      hemo::hlog << "(Profiler) (Warning) Starting timer " << name << " but parent has not been started, starting it for now but you should fix this in the code " << std::endl;
+      hemo::hlog << "(Profiler) (Warning) Starting timer " << name
+                 << " but parent has not been started, starting it for now but you should fix this in the code "
+                 << std::endl;
       parent.start();
     }
     start_time = std::chrono::high_resolution_clock::now();
     started = true;
   }
-  
+
   //Check siblings for started
-  for (std::pair<const std::string,Profiler> & timer_pair : parent.timers) {
+  for (std::pair<const std::string, Profiler> & timer_pair : parent.timers) {
     Profiler & timer = timer_pair.second;
-    if (&timer == this) {continue;}
+    if (&timer == this) { continue; }
     if (timer.started) {
-      hemo::hlog << "(Profiler) (Warning) Starting timer " << name << " but sibling " << timer.name << " has also been started, starting it for now but you should fix this in the code " << std::endl;
+      hemo::hlog << "(Profiler) (Warning) Starting timer " << name << " but sibling " << timer.name
+                 << " has also been started, starting it for now but you should fix this in the code " << std::endl;
     }
   }
-  
+
   //Set current
   current = this;
   Profiler * root = this;
-  do  {
+  do {
     root = &root->parent;
     root->current = this;
-  } while (root != &root->parent);  
+  } while (root != &root->parent);
 }
 
 void Profiler::stop_nowarn() {
-  if (started)
-  {
+  if (started) {
     std::chrono::high_resolution_clock::time_point stop_time = std::chrono::high_resolution_clock::now();
     total_time = total_time + (stop_time - start_time);
     started = false;
   }
-  
+
   //Stop all child timers
-  for (std::pair<const std::string,Profiler> & timer_pair : timers) {
+  for (std::pair<const std::string, Profiler> & timer_pair : timers) {
     Profiler & timer = timer_pair.second;
     timer.stop_nowarn();
   }
@@ -92,31 +90,38 @@ void Profiler::stop() {
     total_time = total_time + (stop_time - start_time);
     started = false;
   }
-  
+
   //Stop all child timers
-  for (std::pair<const std::string,Profiler> & timer_pair : timers) {
+  for (std::pair<const std::string, Profiler> & timer_pair : timers) {
     Profiler & timer = timer_pair.second;
     timer.stop_nowarn();
   }
-  
+
   //Adjust current timer
   current = &parent;
   Profiler * root = this;
-  do  {
+  do {
     root = &root->parent;
     root->current = &parent;
-  } while (root != &root->parent);  
+  } while (root != &root->parent);
 }
 
 void Profiler::reset() {
   started = false;
   total_time = std::chrono::high_resolution_clock::duration::zero();
-  
+
   //Reset all child timers
-  for (std::pair<const std::string,Profiler> & timer_pair : timers) {
+  for (std::pair<const std::string, Profiler> & timer_pair : timers) {
     Profiler & timer = timer_pair.second;
     timer.reset();
   }
+}
+
+void Profiler::clear() {
+  started = false;
+  total_time = std::chrono::high_resolution_clock::duration::zero();
+  timers.clear();
+  current = this;
 }
 
 std::chrono::high_resolution_clock::duration Profiler::elapsed() {
@@ -129,41 +134,50 @@ std::chrono::high_resolution_clock::duration Profiler::elapsed() {
 
 std::string Profiler::elapsed_string() {
   if (!started) {
-    return std::to_string(((double)std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count())/1000.0);
+    return std::to_string(((double)std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count()) / 1000.0);
   } else {
-    return std::to_string(((double)std::chrono::duration_cast<std::chrono::milliseconds>(total_time+(std::chrono::high_resolution_clock::now() - start_time)).count())/1000.0);
+    return std::to_string(((double)std::chrono::duration_cast<std::chrono::milliseconds>(
+                               total_time + (std::chrono::high_resolution_clock::now() - start_time))
+                               .count()) /
+                          1000.0);
   }
 }
 
-template<typename T>
+template <typename T>
 void Profiler::printStatistics_inner(int level, T & out) {
   if (!started) {
-    out << std::string(level,' ') << name << ": " << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count()/1000.0) << std::endl;
+    out << std::string(level, ' ') << name << ": "
+        << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count() / 1000.0)
+        << std::endl;
   } else {
-    out << std::string(level,' ') << name << ": " << 
-           std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time + (std::chrono::high_resolution_clock::now() - start_time)).count()/1000.0) << std::endl;
+    out << std::string(level, ' ') << name << ": "
+        << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(
+                              total_time + (std::chrono::high_resolution_clock::now() - start_time))
+                              .count() /
+                          1000.0)
+        << std::endl;
   }
   //Print all child timers
-  for (std::pair<const std::string,Profiler> & timer_pair : timers) {
+  for (std::pair<const std::string, Profiler> & timer_pair : timers) {
     Profiler & timer = timer_pair.second;
-    timer.printStatistics_inner(level+1, out);
+    timer.printStatistics_inner(level + 1, out);
   }
 }
 
-template<typename T>
+template <typename T>
 void Profiler::printStatistics_JSON(T & out) {
-
-  if(started) this->stop_nowarn();
+  if (started) this->stop_nowarn();
 
   /* If has children current timer has children, print as object */
-  if( timers.size() > 0 ) {
+  if (timers.size() > 0) {
     // Print as element with children
 
     /* Begin new object and add total timer > { "Name" : { "Total": xx, $CHILDREN}} */
-    out << "\"" << name << "\":{\"Total\":" << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count()/1000.0);
+    out << "\"" << name << "\":{\"Total\":"
+        << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count() / 1000.0);
 
     /* Output Childtimers */
-    for (std::pair<const std::string,Profiler> & timer_pair : timers) {
+    for (std::pair<const std::string, Profiler> & timer_pair : timers) {
       out << ",";
 
       Profiler & timer = timer_pair.second;
@@ -173,7 +187,8 @@ void Profiler::printStatistics_JSON(T & out) {
     out << "}";
   } else {
     /* If timer does not have childres, print; "NAMA": xxx */
-    out << "\"" << name << "\":" << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count()/1000.0);
+    out << "\"" << name
+        << "\":" << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count() / 1000.0);
   }
 }
 
@@ -188,75 +203,72 @@ void Profiler::outputStatistics() {
 }
 
 /* Write statistics to file hlog.filename + ".statistics" */
-void Profiler::outputStatistics(int batchsize=INT_MAX) {
+void Profiler::outputStatistics(int batchsize = INT_MAX) {
   std::fstream sout;
   bool opened = false;
-//  global.statistics.getCurrent()["outputStats"].start();
+  //  global.statistics.getCurrent()["outputStats"].start();
   // TODO: Don't static the extention
   int rank = plb::global::mpi().getRank();
-  batchsize = std::min(batchsize,plb::global::mpi().getSize());
+  batchsize = std::min(batchsize, plb::global::mpi().getSize());
 
   for (int batchid = 0; batchid < batchsize; batchid++) {
     /* Let all mpi processes wait for turn */
     if (rank % batchsize == batchid) {
-
       // TODO: Don't static the extention
-      sout.open(hlog.filename + ".statistics." + std::to_string(rank / batchsize) ,std::fstream::app);
+      sout.open(hlog.filename + ".statistics." + std::to_string(rank / batchsize), std::fstream::app);
 
       /* If file failed to open, write to logfile */
       if (!sout.is_open()) {
-        std::cout << "(Profiler) (Error) Opening " + hlog.filename << ".statistics, outputting everything to logfile instead" << std::endl;
+        std::cout << "(Profiler) (Error) Opening " + hlog.filename
+                  << ".statistics, outputting everything to logfile instead" << std::endl;
         hemo::hlog << "Process " << plb::global::mpi().getRank() << ":" << std::endl;
-        printStatistics_inner(1,hlog.logfile);
-     } else {
+        printStatistics_inner(1, hlog.logfile);
+      } else {
         opened = true;
-        
+
         /* If first write start of JSON output */
-        if(rank / batchsize == 0){
-          sout << "{";
-        }
+        if (rank / batchsize == 0) { sout << "{"; }
 
         sout << "\"" << rank << "\"" << ": {";
         printStatistics_JSON(sout);
         sout << "}";
 
         /* If last write closing JSON ouptut */
-        if(rank / batchsize == batchsize - 1){
+        if (rank / batchsize == batchsize - 1) {
           sout << "}" << std::endl;
         } else {
           sout << "," << std::endl;
         }
+      }
+      if (opened) { sout.close(); }
+    }
 
-     }
-     if (opened) {
-       sout.close();
-     }
-   }
- 
     plb::global::mpi().barrier();
-  }  
+  }
 
-//  global.statistics.getCurrent().stop();
+  //  global.statistics.getCurrent().stop();
 }
 
 
-Profiler & Profiler::operator[] (std::string name) {
+Profiler & Profiler::operator[](std::string name) {
   //try_emplace from c++17 would be sooo nice here, but gcc 5.4 does not yet have it
   if (timers.find(name) == timers.end()) {
-    timers.insert(std::pair<std::string,Profiler>(name,Profiler(name, *this)));
+    timers.insert(std::pair<std::string, Profiler>(name, Profiler(name, *this)));
   }
   return timers.at(name);
 };
 
 Profiler & Profiler::getCurrent() {
   if (this != &parent) {
-    hemo::hlog << "(Profiler) (Warning) getCurrent called from non-root Profiler object, this will probably be incorrect" << std::endl;
+    hemo::hlog
+        << "(Profiler) (Warning) getCurrent called from non-root Profiler object, this will probably be incorrect"
+        << std::endl;
   }
   return *current;
 }
 
 std::string Profiler::toString(std::chrono::high_resolution_clock::duration time) {
-  return std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(time).count()/1000.0);
+  return std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(time).count() / 1000.0);
 }
 
 }

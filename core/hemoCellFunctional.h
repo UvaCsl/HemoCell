@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "constant_defaults.h"
 #include "mpi.h"
+#include <cstring>
 
 #include "atomicBlock/dataProcessingFunctional3D.hh"
 #include "core/globalDefs.h"
@@ -35,103 +36,138 @@ namespace hemo {
 
 class HemoCellFunctional : public plb::BoxProcessingFunctional3D {
 public:
-    HemoCellFunctional(){}
-    void getModificationPattern(std::vector<bool>& isWritten) const {
-        for (pluint i = 0; i < isWritten.size(); i++) {
-            isWritten[i] = false;       
-        }
-    }
-    plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
-    void getTypeOfModification(std::vector<plb::modif::ModifT>& modified) const {
-        for (pluint i = 0; i < modified.size(); i++) {
-            modified[i] = plb::modif::nothing;       
-        }
-        
-    }
+  HemoCellFunctional() {}
+  void getModificationPattern(std::vector<bool> & isWritten) const {
+    for (pluint i = 0; i < isWritten.size(); i++) { isWritten[i] = false; }
+  }
+  plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
+  void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const {
+    for (pluint i = 0; i < modified.size(); i++) { modified[i] = plb::modif::nothing; }
+  }
 };
 
-template<class GatherType>
+template <class GatherType>
 class HemoCellGatheringFunctional : public plb::BoxProcessingFunctional3D {
-    //Make the structures byte accessible for easy mpi serialization
-    union byteint {
-        unsigned char b[sizeof(int)];
-        int i;
-    };
-    struct IDandGatherType {
-        int ID;
-        GatherType g;
-    };
-public:
-    //Numblocks should be larger than the maximum number of blocks per process
-    //The total can be retrieved from Multiblock.getManagment.getsparseblock.getnumblocks
-    HemoCellGatheringFunctional(std::map<int,GatherType> & gatherValues_) : 
-      gatherValues(gatherValues_) {}
-    void getModificationPattern(std::vector<bool>& isWritten) const {
-        for (pluint i = 0; i < isWritten.size(); i++) {
-            isWritten[i] = false;       
-        }
-    }
-    plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
-    void getTypeOfModification(std::vector<plb::modif::ModifT>& modified) const {
-        for (pluint i = 0; i < modified.size(); i++) {
-            modified[i] = plb::modif::nothing;       
-        }
-        
-    }
-    static void gather(std::map<int,GatherType> & gatherValues) {
-        int be = 0;
-        int sendsize = sizeof(int) + sizeof(IDandGatherType)*gatherValues.size();
-        std::vector<unsigned char> sendbuffer(sendsize);
+  //Make the structures byte accessible for easy mpi serialization
+  union byteint {
+    unsigned char b[sizeof(int)];
+    int i;
+  };
+  // One map entry; Key is int (rank, block) or plint (cell ID).
+  template <typename Key>
+  struct IDandGatherType {
+    Key ID;
+    GatherType g;
+  };
 
-        byteint local_number;
-        local_number.i = gatherValues.size();
-        for (unsigned int i = 0; i < sizeof(int) ; i++) {
-            sendbuffer[be] = local_number.b[i];
-            be++;
-        }
-        for (auto const & entry : gatherValues) {
-            IDandGatherType bg;
-            bg.ID = entry.first;
-            bg.g = entry.second;
-            *((IDandGatherType*)&sendbuffer[be]) = bg;
-            be+=sizeof(IDandGatherType);
-        }
-        
-        std::vector<int> sendcounts(plb::global::mpi().getSize());
-        MPI_Allgather(&sendsize,sizeof(int),MPI_BYTE,&sendcounts[0],sizeof(int),MPI_BYTE,MPI_COMM_WORLD);
-              
-        int receivesize = 0;
-        std::vector<int> displacements(1,0);
-        for (int & size : sendcounts) {
-          receivesize += size;
-          displacements.push_back(displacements.back() + size);
-        }
-        displacements.pop_back();
-        std::vector<unsigned char> receivebuffer(receivesize);        
-        
-        MPI_Allgatherv(&sendbuffer[0],sendsize,MPI_BYTE,&receivebuffer[0],&sendcounts[0],&displacements[0],MPI_BYTE,MPI_COMM_WORLD);
-        be = 0;
-        
-        for (int j = 0 ; j < plb::global::mpi().getSize() ; j++) {
-            be = displacements[j];
-            for (unsigned int i = 0; i < sizeof(int) ; i++) {
-                local_number.b[i] = receivebuffer[be];
-                be++;
-            }
-            for (int i = 0 ; i < local_number.i ; i++) {
-                IDandGatherType bg;
-                bg = *((IDandGatherType*)&receivebuffer[be]);
-                be += sizeof(IDandGatherType);
-                gatherValues[bg.ID] = bg.g;
-            }
-        }
-        
+public:
+  //Numblocks should be larger than the maximum number of blocks per process
+  //The total can be retrieved from Multiblock.getManagment.getsparseblock.getnumblocks
+  HemoCellGatheringFunctional(std::map<int, GatherType> & gatherValues_) : gatherValues(gatherValues_) {}
+  void getModificationPattern(std::vector<bool> & isWritten) const {
+    for (pluint i = 0; i < isWritten.size(); i++) { isWritten[i] = false; }
+  }
+  plb::BlockDomain::DomainT appliesTo() const { return plb::BlockDomain::bulk; }
+  void getTypeOfModification(std::vector<plb::modif::ModifT> & modified) const {
+    for (pluint i = 0; i < modified.size(); i++) { modified[i] = plb::modif::nothing; }
+  }
+  /**
+   * @brief Combine the maps of all ranks on every rank. Collective.
+   *
+   * Afterwards every rank holds the entries of all ranks; for a key present on
+   * several ranks the value of the highest rank wins. The data volume is the
+   * total map size on every rank, so use gatherToRoot() when only one rank
+   * needs the result (e.g. for writing output).
+   */
+  template <typename Key>
+  static void gather(std::map<Key, GatherType> & gatherValues) {
+    exchange(gatherValues, -1);
+  }
+
+  /**
+   * @brief Combine the maps of all ranks on rank `root` only. Collective.
+   *
+   * On `root` the result equals that of gather(); the other ranks keep their
+   * own entries unchanged.
+   */
+  template <typename Key>
+  static void gatherToRoot(std::map<Key, GatherType> & gatherValues, int root = 0) {
+    exchange(gatherValues, root);
+  }
+
+private:
+  // root < 0: all ranks receive (Allgatherv); otherwise only `root` (Gatherv).
+  template <typename Key>
+  static void exchange(std::map<Key, GatherType> & gatherValues, int root) {
+    typedef IDandGatherType<Key> Record;
+    int be = 0;
+    int sendsize = sizeof(int) + sizeof(Record) * gatherValues.size();
+    std::vector<unsigned char> sendbuffer(sendsize);
+
+    byteint local_number;
+    local_number.i = gatherValues.size();
+    for (unsigned int i = 0; i < sizeof(int); i++) {
+      sendbuffer[be] = local_number.b[i];
+      be++;
     }
-        
-    //This map should be set in the processingGenericBlocks function and is local to the mpi processor;
-    std::map<int,GatherType> & gatherValues; 
+    for (auto const & entry : gatherValues) {
+      Record bg;
+      bg.ID = entry.first;
+      bg.g = entry.second;
+      // The records follow a 4-byte count, so they are not aligned:
+      // copy bytes instead of dereferencing a cast pointer.
+      std::memcpy(&sendbuffer[be], &bg, sizeof(Record));
+      be += sizeof(Record);
+    }
+
+    const int nRanks = plb::global::mpi().getSize();
+    const bool allReceive = root < 0;
+    const bool receiving = allReceive || plb::global::mpi().getRank() == root;
+    std::vector<int> sendcounts(nRanks);
+    if (allReceive) {
+      MPI_Allgather(&sendsize, 1, MPI_INT, sendcounts.data(), 1, MPI_INT, MPI_COMM_WORLD);
+    } else {
+      MPI_Gather(&sendsize, 1, MPI_INT, sendcounts.data(), 1, MPI_INT, root, MPI_COMM_WORLD);
+    }
+
+    int receivesize = 0;
+    std::vector<int> displacements(nRanks, 0);
+    if (receiving) {
+      for (int j = 0; j < nRanks; j++) {
+        displacements[j] = receivesize;
+        receivesize += sendcounts[j];
+      }
+    }
+    std::vector<unsigned char> receivebuffer(receivesize);
+
+    if (allReceive) {
+      MPI_Allgatherv(sendbuffer.data(), sendsize, MPI_BYTE, receivebuffer.data(), sendcounts.data(),
+                     displacements.data(), MPI_BYTE, MPI_COMM_WORLD);
+    } else {
+      MPI_Gatherv(sendbuffer.data(), sendsize, MPI_BYTE, receivebuffer.data(), sendcounts.data(), displacements.data(),
+                  MPI_BYTE, root, MPI_COMM_WORLD);
+    }
+    if (!receiving) { return; }
+
+    for (int j = 0; j < nRanks; j++) {
+      be = displacements[j];
+      for (unsigned int i = 0; i < sizeof(int); i++) {
+        local_number.b[i] = receivebuffer[be];
+        be++;
+      }
+      for (int i = 0; i < local_number.i; i++) {
+        Record bg;
+        std::memcpy(&bg, &receivebuffer[be], sizeof(Record));
+        be += sizeof(Record);
+        gatherValues[bg.ID] = bg.g;
+      }
+    }
+  }
+
+public:
+  //This map should be set in the processingGenericBlocks function and is local to the mpi processor;
+  std::map<int, GatherType> & gatherValues;
 };
 
 }
 #endif /* HEMOCELLFUNCTIONAL_H */
-

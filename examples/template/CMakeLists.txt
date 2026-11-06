@@ -15,7 +15,9 @@ add_executable(${EXEC_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${MAIN}.cpp")
 # - `${PROJECT_NAME}_interior_viscosity`: enables interior viscosity
 # - `${PROJECT_NAME}_solidify_mechanics`: enables solidification mechanics
 # - `${PROJECT_NAME}_parmetis`: enables linking with PARMETIS/METIS
+# The libraries carry their dependencies (Palabos, MPI, HDF5) and compile
+# definitions, so linking one of them is all that is needed.
 target_link_libraries(${EXEC_NAME} ${PROJECT_NAME})
 
-# link the executable with `HDF5`
-target_link_libraries(${EXEC_NAME} ${HDF5_C_HL_LIBRARIES} ${HDF5_LIBRARIES})
+# To build it, add `"<directory name>"` to the list in examples/CMakeLists.txt
+# (or cases/CMakeLists.txt) and add the executable's path to .gitignore.

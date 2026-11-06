@@ -1,0 +1,33 @@
+name: Performance
+
+# Weak-scaling performance test (Performance.cube). Its assertions depend on
+# the hardware, so it only runs on demand on the self-hosted runner.
+on:
+  workflow_dispatch:
+
+jobs:
+  performance:
+    runs-on: self-hosted
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update --yes -qq
+          sudo apt-get install --yes -qq git g++ cmake make patch wget \
+            libopenmpi-dev openmpi-bin libhdf5-openmpi-dev
+
+      - name: Download and patch Palabos
+        run: ./setup.sh > /dev/null
+
+      - name: Build
+        run: |
+          cmake --preset release
+          cmake --build build-release --target hemocell_test --parallel 8
+
+      - name: Run performance tests
+        run: |
+          mpirun -n 1 build-release/hemocell_test tests/performance/configs/config-1.xml --gtest_filter='Performance.*'
+          mpirun -n 2 build-release/hemocell_test tests/performance/configs/config-2.xml --gtest_filter='Performance.*'
+          mpirun -n 6 build-release/hemocell_test tests/performance/configs/config-6.xml --gtest_filter='Performance.*'

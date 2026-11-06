@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include "test_support.h"
 #include <hemocell.h>
 #include <helper/voxelizeDomain.h>
 #include "rbcHighOrderModel.h"
@@ -16,52 +17,46 @@ const auto geometry_file = "examples/pipeflow/tube.stl";
 
 /// Detailed validation test of the cell stretch problem.
 TEST(Validation, Pipeflow) {
-  char *args[] = {(char *)"test", (char *)"path", NULL};
-  char *inp = (char *)"tests/validation/pipeflow/config_pipeflow.xml";
+  char * args[] = {(char *)"test", (char *)"path", NULL};
+  const std::string inp =
+      hemo_test::testConfig("tests/validation/pipeflow/config_pipeflow.xml"); // output in the tests' directory
 
   hemo::HemoCell hemocell(inp, 0, args, hemo::HemoCell::MPIHandle::External);
   hemo::Config * cfg = hemocell.cfg;
 
-  std::auto_ptr<plb::MultiScalarField3D<int>> flagMatrix;
-  std::auto_ptr<hemo::VoxelizedDomain3D<T>> voxelizedDomain;
+  std::unique_ptr<plb::MultiScalarField3D<int>> flagMatrix;
+  std::unique_ptr<plb::VoxelizedDomain3D<T>> voxelizedDomain;
 
-  hemo::getFlagMatrixFromSTL(geometry_file,
-                       (*cfg)["domain"]["fluidEnvelope"].read<int>(),
-                       (*cfg)["domain"]["refDirN"].read<int>(),
-                       (*cfg)["domain"]["refDir"].read<int>(),
-                       voxelizedDomain, flagMatrix,
-                       (*cfg)["domain"]["blockSize"].read<int>(),
-                       (*cfg)["domain"]["particleEnvelope"].read<int>());
+  hemo::getFlagMatrixFromSTL(geometry_file, (*cfg)["domain"]["fluidEnvelope"].read<int>(),
+                             (*cfg)["domain"]["refDirN"].read<int>(), (*cfg)["domain"]["refDir"].read<int>(),
+                             voxelizedDomain, flagMatrix, (*cfg)["domain"]["blockSize"].read<int>(),
+                             (*cfg)["domain"]["particleEnvelope"].read<int>());
 
   hemo::param::lbm_pipe_parameters((*cfg), flagMatrix.get());
   hemo::param::printParameters();
 
-  hemocell.lattice = new plb::MultiBlockLattice3D<T, DESCRIPTOR>(
-            voxelizedDomain.get()->getMultiBlockManagement(),
-            plb::defaultMultiBlockPolicy3D().getBlockCommunicator(),
-            plb::defaultMultiBlockPolicy3D().getCombinedStatistics(),
-            plb::defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-            new plb::GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/hemo::param::tau));
-
-  defineDynamics(*hemocell.lattice, *flagMatrix.get(), (*hemocell.lattice).getBoundingBox(), new hemo::BounceBack<T, DESCRIPTOR>(1.), 0);
-
-  hemocell.lattice->toggleInternalStatistics(false);
-  hemocell.lattice->periodicity().toggleAll(false);
-  hemocell.latticeEquilibrium(1., {0., 0., 0.});
+  hemocell.initializeLatticeFromFlagMatrix(voxelizedDomain->getMultiBlockManagement(), *flagMatrix);
 
   //Driving Force
-  auto poiseuilleForce =  8 * hemo::param::nu_lbm * (hemo::param::u_lbm_max * 0.5) / hemo::param::pipe_radius / hemo::param::pipe_radius;
-  auto driving_force = plb::Array<T, 3> {poiseuilleForce, 0., 0.};
+  auto poiseuilleForce =
+      8 * hemo::param::nu_lbm * (hemo::param::u_lbm_max * 0.5) / hemo::param::pipe_radius / hemo::param::pipe_radius;
+  auto driving_force = plb::Array<T, 3>{poiseuilleForce, 0., 0.};
 
   hemocell.lattice->initialize();
   hemocell.initializeCellfield();
 
-  hemocell.addCellType<hemo::RbcHighOrderModel>("tests/validation/pipeflow/RBC", RBC_FROM_SPHERE);
-  hemocell.setMaterialTimeScaleSeparation("tests/validation/pipeflow/RBC", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  hemocell.setInitialMinimumDistanceFromSolid("tests/validation/pipeflow/RBC", 0.5);
+  hemocell.addCellType<hemo::RbcHighOrderModel>("tests/validation/pipeflow/RBC", hemo::RBC_FROM_SPHERE);
+  hemocell.setMaterialTimeScaleSeparation("tests/validation/pipeflow/RBC",
+                                          (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  // The expected cell count and viscosity bounds below were established while
+  // a requested 0.5 um minimum distance was truncated to 0 (integer member).
+  // Keep that effective setting explicitly so the validated configuration is
+  // unchanged; 0.5 um now excludes the first wall node and leaves 36 cells.
+  hemocell.setInitialMinimumDistanceFromSolid("tests/validation/pipeflow/RBC", 0.0);
 
-  hemocell.addCellType<hemo::PltSimpleModel>("tests/validation/pipeflow/PLT", ELLIPSOID_FROM_SPHERE);
-  hemocell.setMaterialTimeScaleSeparation("tests/validation/pipeflow/PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  hemocell.addCellType<hemo::PltSimpleModel>("tests/validation/pipeflow/PLT", hemo::ELLIPSOID_FROM_SPHERE);
+  hemocell.setMaterialTimeScaleSeparation("tests/validation/pipeflow/PLT",
+                                          (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
 
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
@@ -71,18 +66,15 @@ TEST(Validation, Pipeflow) {
 
   // Enable the external force from the start.
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-                    DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-                    driving_force);
+                    DESCRIPTOR<T>::ExternalField::forceBeginsAt, driving_force);
 
   // Perform warmup iterations on the fluid field only.
-  for (unsigned i = 0; i < warmup_iterations; ++i)
-    hemocell.lattice->collideAndStream();
+  for (unsigned i = 0; i < warmup_iterations; ++i) hemocell.lattice->collideAndStream();
 
-  while (hemocell.iter < max_iteration ) {
+  while (hemocell.iter < max_iteration) {
     hemocell.iterate();
     setExternalVector(*hemocell.lattice, hemocell.lattice->getBoundingBox(),
-                DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-                driving_force);
+                      DESCRIPTOR<T>::ExternalField::forceBeginsAt, driving_force);
 
     // After initialisation only 42 partiles (either RBC or PLT) remain within
     // the pipe for the currently specified resolution. NOTE: the initial .pos
@@ -96,7 +88,7 @@ TEST(Validation, Pipeflow) {
 
     // Enforce bounds on the viscosity observed in the pipe.
     auto fluid_info = hemo::FluidInfo::calculateVelocityStatistics(&hemocell);
-    auto viscosity = 0.5*hemo::param::u_lbm_max / fluid_info.avg;
+    auto viscosity = 0.5 * hemo::param::u_lbm_max / fluid_info.avg;
     ASSERT_LT(viscosity, 3.0);
     ASSERT_GT(viscosity, 1.03);
 

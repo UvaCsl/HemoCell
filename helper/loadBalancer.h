@@ -24,12 +24,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef LOADBALANCER_H
 #define LOADBALANCER_H
 namespace hemo {
-  class LoadBalancer;
+class LoadBalancer;
 }
 #include "hemocell.h"
 namespace hemo {
-class LoadBalancer {  
-  public:
+class LoadBalancer {
+public:
 #ifdef HEMO_PARMETIS
   LoadBalancer(HemoCell & hemocell_);
   T calculateFractionalLoadImbalance();
@@ -37,11 +37,16 @@ class LoadBalancer {
    * Restructure blocks to reduce communication on one processor
    * Set checkpoint_available to false if not called in the same iteration right after doLoadBalance()
    */
-  void restructureBlocks(bool checkpoint_available=true);
+  void restructureBlocks(bool checkpoint_available = true);
 #else
-  LoadBalancer(HemoCell & hemocell_):hemocell(hemocell_){};
-  double calculateFractionalLoadImbalance() {return 0.0;}
-  void restructureBlocks(bool checkpoint_available=true) {}
+  LoadBalancer(HemoCell & hemocell_) : hemocell(hemocell_){};
+  double calculateFractionalLoadImbalance() { return 0.0; }
+  /// Without ParMETIS restructuring is unavailable; say so instead of silently doing nothing.
+  void restructureBlocks(bool checkpoint_available = true) {
+    hlog
+        << "(LoadBalancer) WARNING: doRestructure() has no effect, HemoCell was built without ParMETIS (HEMO_PARMETIS)."
+        << std::endl;
+  }
 #endif
 
   void doLoadBalance();
@@ -50,17 +55,17 @@ class LoadBalancer {
    * used to reload a checkpoint, but first reload the config file
    */
   void reloadCheckpoint();
-  
+
   //Functionals for gathering data
-  struct TOAB_t{
+  struct TOAB_t {
     double fluid_time;
     double particle_time;
     int n_lsp;
     int mpi_proc;
   };
   struct Box3D_simple {
-    plint x0,x1,y0,y1,z0,z1;
-    inline Box3D_simple & operator=(const Box3D & box) {
+    plint x0, x1, y0, y1, z0, z1;
+    inline Box3D_simple & operator=(const plb::Box3D & box) {
       x0 = box.x0;
       x1 = box.x1;
       y0 = box.y0;
@@ -69,24 +74,23 @@ class LoadBalancer {
       z1 = box.z1;
       return *this;
     }
-    inline Box3D getBox3D() const {
-      return Box3D(x0,x1,y0,y1,z0,z1);
-    }
+    inline plb::Box3D getBox3D() const { return plb::Box3D(x0, x1, y0, y1, z0, z1); }
   };
-  
+
   class GatherTimeOfAtomicBlocks : public HemoCellGatheringFunctional<TOAB_t> {
-  public:  
+  public:
     using HemoCellGatheringFunctional<TOAB_t>::HemoCellGatheringFunctional; //Inherit Constructor
-    void processGenericBlocks(Box3D, vector<AtomicBlock3D*>);
+    void processGenericBlocks(plb::Box3D, std::vector<plb::AtomicBlock3D *>);
     GatherTimeOfAtomicBlocks * clone() const;
   };
-  private:
+
+private:
   bool FLI_iscalled = false;
-  map<int,TOAB_t> gatherValues;
+  std::map<int, TOAB_t> gatherValues;
   HemoCell & hemocell;
   bool original_block_stored = true;
-  SparseBlockStructure3D * original_block_structure = 0;
-  ThreadAttribution * original_thread_attribution = 0;
+  plb::SparseBlockStructure3D * original_block_structure = 0;
+  plb::ThreadAttribution * original_thread_attribution = 0;
 };
 }
 #endif

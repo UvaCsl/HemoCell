@@ -25,77 +25,81 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemoCellParticleField.h"
 #include "hemocell.h"
 
+using namespace std;
+using namespace plb;
+
 namespace hemo {
-  
-void GatherParticleVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-    HemoCellParticleField* pf = dynamic_cast<HemoCellParticleField*>(blocks[0]);
-    vector<HemoCellParticle *> localParticles;
-    pf->findParticles(pf->localDomain,localParticles);
-    
-    if (localParticles.size() > 0) {
-      //initial value
-      hemo::Array<T,3> vel_vec = localParticles[0]->sv.v;
-      T vel = sqrt(vel_vec[0]*vel_vec[0]+vel_vec[1]*vel_vec[1]+vel_vec[2]*vel_vec[2]);
-      T min=vel,max=vel,avg=0.;
+
+void GatherParticleVelocity::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D *> blocks) {
+  HemoCellParticleField * pf = dynamic_cast<HemoCellParticleField *>(blocks[0]);
+  vector<HemoCellParticle *> localParticles;
+  pf->findParticles(pf->localDomain, localParticles);
+
+  if (localParticles.size() > 0) {
+    //initial value
+    hemo::Array<T, 3> vel_vec = localParticles[0]->sv.v;
+    T vel = sqrt(vel_vec[0] * vel_vec[0] + vel_vec[1] * vel_vec[1] + vel_vec[2] * vel_vec[2]);
+    T min = vel, max = vel, avg = 0.;
 
 
-      for (const HemoCellParticle * particle : localParticles) {
-        vel_vec = particle->sv.v;
-        vel = sqrt(vel_vec[0]*vel_vec[0]+vel_vec[1]*vel_vec[1]+vel_vec[2]*vel_vec[2]);
-        min = min > vel ? vel : min;
-        max = max < vel ? vel : max;
-        avg += vel;   
-      }
-
-
-      gatherValues[pf->atomicBlockId].min = min;
-      gatherValues[pf->atomicBlockId].max = max;
-      gatherValues[pf->atomicBlockId].avg = avg/localParticles.size();
-      gatherValues[pf->atomicBlockId].ncells = localParticles.size();
+    for (const HemoCellParticle * particle : localParticles) {
+      vel_vec = particle->sv.v;
+      vel = sqrt(vel_vec[0] * vel_vec[0] + vel_vec[1] * vel_vec[1] + vel_vec[2] * vel_vec[2]);
+      min = min > vel ? vel : min;
+      max = max < vel ? vel : max;
+      avg += vel;
     }
+
+
+    gatherValues[pf->atomicBlockId].min = min;
+    gatherValues[pf->atomicBlockId].max = max;
+    gatherValues[pf->atomicBlockId].avg = avg / localParticles.size();
+    gatherValues[pf->atomicBlockId].ncells = localParticles.size();
+  }
 }
-void GatherParticleForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D*> blocks) {
-    HemoCellParticleField* pf = dynamic_cast<HemoCellParticleField*>(blocks[0]);
-    vector<HemoCellParticle *> localParticles;
-    pf->findParticles(pf->localDomain,localParticles);
-    
-    if (localParticles.size() > 0) {
-      //initial value
-      hemo::Array<T,3> force_vec = localParticles[0]->sv.force +localParticles[0]->sv.force_repulsion;
-      T force = sqrt(force_vec[0]*force_vec[0]+force_vec[1]*force_vec[1]+force_vec[2]*force_vec[2]);
-      T min=force,max=force,avg=0.;
+void GatherParticleForce::processGenericBlocks(Box3D domain, std::vector<AtomicBlock3D *> blocks) {
+  HemoCellParticleField * pf = dynamic_cast<HemoCellParticleField *>(blocks[0]);
+  vector<HemoCellParticle *> localParticles;
+  pf->findParticles(pf->localDomain, localParticles);
+
+  if (localParticles.size() > 0) {
+    //initial value
+    hemo::Array<T, 3> force_vec = localParticles[0]->sv.force + localParticles[0]->sv.force_repulsion;
+    T force = sqrt(force_vec[0] * force_vec[0] + force_vec[1] * force_vec[1] + force_vec[2] * force_vec[2]);
+    T min = force, max = force, avg = 0.;
 
 
-      for (const HemoCellParticle * particle : localParticles) {
-        force_vec = particle->sv.force + particle->sv.force_repulsion;
-        force = sqrt(force_vec[0]*force_vec[0]+force_vec[1]*force_vec[1]+force_vec[2]*force_vec[2]);
-        min = min > force ? force : min;
-        max = max < force ? force : max;
-        avg += force;   
-      }
-
-
-      gatherValues[pf->atomicBlockId].min = min;
-      gatherValues[pf->atomicBlockId].max = max;
-      gatherValues[pf->atomicBlockId].avg = avg/localParticles.size();
-      gatherValues[pf->atomicBlockId].ncells = localParticles.size();
+    for (const HemoCellParticle * particle : localParticles) {
+      force_vec = particle->sv.force + particle->sv.force_repulsion;
+      force = sqrt(force_vec[0] * force_vec[0] + force_vec[1] * force_vec[1] + force_vec[2] * force_vec[2]);
+      min = min > force ? force : min;
+      max = max < force ? force : max;
+      avg += force;
     }
+
+
+    gatherValues[pf->atomicBlockId].min = min;
+    gatherValues[pf->atomicBlockId].max = max;
+    gatherValues[pf->atomicBlockId].avg = avg / localParticles.size();
+    gatherValues[pf->atomicBlockId].ncells = localParticles.size();
+  }
 }
-ParticleStatistics ParticleInfo::calculateVelocityStatistics(HemoCell* hemocell) {
-  map<int,ParticleStatistics> gatherValues;
-  
+ParticleStatistics ParticleInfo::calculateVelocityStatistics(HemoCell * hemocell) {
+  map<int, ParticleStatistics> gatherValues;
+
   //hemocell->cellfields->interpolateFluidVelocity();
 
-  vector<MultiBlock3D*> wrapper;
+  vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyProcessingFunctional(new GatherParticleVelocity(gatherValues),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new GatherParticleVelocity(gatherValues),
+                            hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
   //int numAtomicBlock = hemocell->lattice->getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
   HemoCellGatheringFunctional<ParticleStatistics>::gather(gatherValues);
-  
+
   ParticleStatistics result = gatherValues.begin()->second;
   result.avg = 0.;
   result.ncells = 0;
-  
+
   for (const auto & pair : gatherValues) {
     const ParticleStatistics & cur = pair.second;
     result.avg += (cur.avg * cur.ncells);
@@ -103,23 +107,24 @@ ParticleStatistics ParticleInfo::calculateVelocityStatistics(HemoCell* hemocell)
     result.min = result.min > cur.min ? cur.min : result.min;
     result.max = result.max < cur.max ? cur.max : result.max;
   }
-  
+
   result.avg /= result.ncells;
 
   return result;
 }
 
-ParticleStatistics ParticleInfo::calculateForceStatistics(HemoCell* hemocell) {
-  map<int,ParticleStatistics> gatherValues;
-  
+ParticleStatistics ParticleInfo::calculateForceStatistics(HemoCell * hemocell) {
+  map<int, ParticleStatistics> gatherValues;
+
   //hemocell->cellfields->interpolateFluidVelocity();
 
-  vector<MultiBlock3D*> wrapper;
+  vector<MultiBlock3D *> wrapper;
   wrapper.push_back(hemocell->cellfields->immersedParticles);
-  applyProcessingFunctional(new GatherParticleForce(gatherValues),hemocell->cellfields->immersedParticles->getBoundingBox(),wrapper);
+  applyProcessingFunctional(new GatherParticleForce(gatherValues),
+                            hemocell->cellfields->immersedParticles->getBoundingBox(), wrapper);
   //int numAtomicBlock = hemocell->lattice->getMultiBlockManagement().getSparseBlockStructure().getNumBlocks();
   HemoCellGatheringFunctional<ParticleStatistics>::gather(gatherValues);
-  
+
   if (gatherValues.size() > 0) {
     ParticleStatistics result = gatherValues.begin()->second;
     result.avg = 0.;
@@ -147,7 +152,11 @@ ParticleStatistics ParticleInfo::calculateForceStatistics(HemoCell* hemocell) {
   }
 }
 
-GatherParticleVelocity * GatherParticleVelocity::clone() const { return new GatherParticleVelocity(*this); }
-GatherParticleForce * GatherParticleForce::clone() const { return new GatherParticleForce(*this); }
+GatherParticleVelocity * GatherParticleVelocity::clone() const {
+  return new GatherParticleVelocity(*this);
+}
+GatherParticleForce * GatherParticleForce::clone() const {
+  return new GatherParticleForce(*this);
+}
 
 }

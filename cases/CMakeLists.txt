@@ -1,24 +1,44 @@
-add_subdirectory("atherosclerosis")
-add_subdirectory("AR2")
-add_subdirectory("AR2_pulsatile")
-add_subdirectory("AR2_stiff")
-add_subdirectory("cellCollision")
-add_subdirectory("cellCollision_sphere")
-add_subdirectory("CEPAC")
-add_subdirectory("fc_solidified_stenosis")
-add_subdirectory("kolmogorovFlow")
-add_subdirectory("leesEdwards")
-add_subdirectory("microvessel_bended")
-add_subdirectory("performance_testing")
-add_subdirectory("pipeflowMalaria")
-add_subdirectory("pipeflow_interior_viscosity")
-add_subdirectory("preinlet_shear")
-add_subdirectory("solidify_example")
-add_subdirectory("stenosis")
-add_subdirectory("stentflow")
-add_subdirectory("stent_strut")
-add_subdirectory("stl_preinlet")
-add_subdirectory("stretchCell_interior_viscosity")
-add_subdirectory("stretchMalaria")
-add_subdirectory("unbounded")
-add_subdirectory("vasoconstriction_pipe")
+# Each subdirectory builds one executable named after it (see its CMakeLists.txt).
+# `--target hemocell_cases` builds all research cases.
+add_compile_options(${HEMOCELL_WARNING_FLAGS})
+
+set(HEMOCELL_CASES
+  "atherosclerosis"
+  "AR2"
+  "AR2_pulsatile"
+  "AR2_stiff"
+  "cellCollision"
+  "cellCollision_sphere"
+  "CEPAC"
+  "fc_solidified_stenosis"
+  "flowchamber_stenosis"
+  "injured_vessel"
+  "kolmogorovFlow"
+  "leesEdwards"
+  "microvessel_bended"
+  "performance_testing"
+  "pipeflowMalaria"
+  "pipeflow_interior_viscosity"
+  "pipeflow_wbc"
+  "preinlet_shear"
+  "solidify_example"
+  "stenosis"
+  "stentflow"
+  "stent_strut"
+  "stent_strut/stent_strut_crossings"
+  "stl_preinlet"
+  "stretchCell_interior_viscosity"
+  "stretchMalaria"
+  "unbounded"
+  "vasoconstriction_pipe"
+)
+# The target of each directory is named after its last component.
+set(HEMOCELL_CASE_TARGETS "")
+foreach(dir IN LISTS HEMOCELL_CASES)
+  add_subdirectory("${dir}")
+  get_filename_component(target "${dir}" NAME)
+  list(APPEND HEMOCELL_CASE_TARGETS "${target}")
+endforeach()
+
+add_custom_target(hemocell_cases)
+add_dependencies(hemocell_cases ${HEMOCELL_CASE_TARGETS})

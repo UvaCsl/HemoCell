@@ -35,15 +35,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 typedef double T;
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char * argv[]) {
   if (argc < 2) {
     cout << "Usage: " << argv[0] << " <configuration.xml>" << endl;
     return -1;
   }
 
   HemoCell hemocell(argv[1], argc, argv);
-  Config *cfg = hemocell.cfg;
+  Config * cfg = hemocell.cfg;
 
   // number of cells along each axis
   int nx, ny, nz;
@@ -56,36 +58,36 @@ int main(int argc, char *argv[]) {
   param::printParameters();
 
   hlog << "(unbounded) (Fluid) Initializing Palabos Fluid Field" << endl;
-  hemocell.initializeLattice(defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, (*cfg)["domain"]["fluidEnvelope"].read<int>()));
+  hemocell.initializeLattice(
+      defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, (*cfg)["domain"]["fluidEnvelope"].read<int>()));
 
-  OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
-                = createLocalBoundaryCondition3D<T,DESCRIPTOR>();
+  OnLatticeBoundaryCondition3D<T, DESCRIPTOR> * boundaryCondition = createLocalBoundaryCondition3D<T, DESCRIPTOR>();
 
   hemocell.lattice->toggleInternalStatistics(false);
 
   // extract sides of the rectangular domain for assignment of boundary
   // conditions along the outer planes of the domain
-  Box3D top = Box3D(0, nx-1, 0, ny-1, nz-1, nz-1);
-  Box3D bottom = Box3D(0, nx-1, 0, ny-1, 0, 0);
-  Box3D front = Box3D(0, nx-1, 0, 0, 0, nz-1);
-  Box3D back  = Box3D(0, nx-1, ny-1, ny-1, 0, nz-1);
+  Box3D top = Box3D(0, nx - 1, 0, ny - 1, nz - 1, nz - 1);
+  Box3D bottom = Box3D(0, nx - 1, 0, ny - 1, 0, 0);
+  Box3D front = Box3D(0, nx - 1, 0, 0, 0, nz - 1);
+  Box3D back = Box3D(0, nx - 1, ny - 1, ny - 1, 0, nz - 1);
 
   // all directions have periodicity
   hemocell.lattice->periodicity().toggleAll(false);
 
   // bounce back conditions along the front and back of the domain
-  defineDynamics(*hemocell.lattice, front, new BounceBack<T, DESCRIPTOR> );
-  defineDynamics(*hemocell.lattice, back, new BounceBack<T, DESCRIPTOR> );
+  defineDynamics(*hemocell.lattice, front, new BounceBack<T, DESCRIPTOR>);
+  defineDynamics(*hemocell.lattice, back, new BounceBack<T, DESCRIPTOR>);
 
   // assign velocity at top/bottom
-  (*boundaryCondition).setVelocityConditionOnBlockBoundaries ( *hemocell.lattice, top );
-  (*boundaryCondition).setVelocityConditionOnBlockBoundaries ( *hemocell.lattice, bottom );
+  (*boundaryCondition).setVelocityConditionOnBlockBoundaries(*hemocell.lattice, top);
+  (*boundaryCondition).setVelocityConditionOnBlockBoundaries(*hemocell.lattice, bottom);
 
   // define shear velocity along top/bottom planes (z axis)
   // shear velocity given by `height * shear rate / 2`
-  T vHalf = (nz-1)*param::shearrate_lbm*0.5;
-  setBoundaryVelocity(*hemocell.lattice, top, plb::Array<T,3>(-vHalf,0.0,0.0));
-  setBoundaryVelocity(*hemocell.lattice, bottom, plb::Array<T,3>(vHalf,0.0,0.0));
+  T vHalf = (nz - 1) * param::shearrate_lbm * 0.5;
+  setBoundaryVelocity(*hemocell.lattice, top, plb::Array<T, 3>(-vHalf, 0.0, 0.0));
+  setBoundaryVelocity(*hemocell.lattice, bottom, plb::Array<T, 3>(vHalf, 0.0, 0.0));
 
   hemocell.latticeEquilibrium(1., plb::Array<T, 3>(0.0, 0.0, 0.0));
 
@@ -94,9 +96,7 @@ int main(int argc, char *argv[]) {
 
   // assign force vector equal in x, y, z directions
   setExternalVector(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-                    DESCRIPTOR<T>::ExternalField::forceBeginsAt,
-                    plb::Array<T, DESCRIPTOR<T>::d>(
-                        0.0, 0.0, 0.0));
+                    DESCRIPTOR<T>::ExternalField::forceBeginsAt, plb::Array<T, DESCRIPTOR<T>::d>(0.0, 0.0, 0.0));
 
   // initialise the lattic
   hemocell.lattice->initialize();
@@ -108,10 +108,8 @@ int main(int argc, char *argv[]) {
   hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
 
   // define update increments
-  hemocell.setMaterialTimeScaleSeparation(
-      "RBC", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  hemocell.setParticleVelocityUpdateTimeScaleSeparation(
-      (*cfg)["ibm"]["stepParticleEvery"].read<int>());
+  hemocell.setMaterialTimeScaleSeparation("RBC", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
   // hemocell output fields
   vector<int> outputs = {OUTPUT_POSITION, OUTPUT_TRIANGLES, OUTPUT_FORCE};
@@ -134,10 +132,8 @@ int main(int argc, char *argv[]) {
 
   if (hemocell.iter == 0) {
     hlog << "(unbounded) fresh start: warming up cell-free fluid domain for "
-         << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..."
-         << endl;
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>();
-         ++itrt) {
+         << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
+    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {
       hemocell.lattice->collideAndStream();
     }
   }
@@ -146,29 +142,21 @@ int main(int argc, char *argv[]) {
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
 
   hlog << "(unbounded) Starting simulation..." << endl;
-  int ncells =
-      CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC");
-  hlog << " | RBC Volume ratio [x100%]: "
-       << ncells * 77.0 * 100 / (nx * ny * nz) << endl;
+  int ncells = CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC");
+  hlog << " | RBC Volume ratio [x100%]: " << ncells * 77.0 * 100 / (nx * ny * nz) << endl;
   hlog << "(main)   nCells (global) = " << ncells << endl;
 
   while (hemocell.iter < tmax) {
     hemocell.iterate();
 
     if (hemocell.iter % tmeas == 0) {
-      hlog << "(main) Stats. @ " << hemocell.iter << " ("
-           << hemocell.iter * param::dt << " s):" << endl;
-      hlog << "\t # of cells: "
-           << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
-      hlog << " | # of RBC: "
-           << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell,
-                                                                   "RBC");
+      hlog << "(main) Stats. @ " << hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
+      hlog << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
+      hlog << " | # of RBC: " << CellInformationFunctionals::getNumberOfCellsFromType(&hemocell, "RBC");
       FluidStatistics finfo = FluidInfo::calculateVelocityStatistics(&hemocell);
       double toMpS = param::dx / param::dt;
-      hlog << "\t Velocity  -  max.: " << finfo.max * toMpS
-           << " m/s, mean: " << finfo.avg * toMpS
-           << " m/s, rel. app. viscosity: "
-           << (param::u_lbm_max * 0.5) / finfo.avg << endl;
+      hlog << "\t Velocity  -  max.: " << finfo.max * toMpS << " m/s, mean: " << finfo.avg * toMpS
+           << " m/s, rel. app. viscosity: " << (param::u_lbm_max * 0.5) / finfo.avg << endl;
 
       hemocell.writeOutput();
     }

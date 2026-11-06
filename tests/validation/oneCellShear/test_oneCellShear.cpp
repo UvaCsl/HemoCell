@@ -26,100 +26,98 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "helper/hemocellInit.hh"
 #include "helper/cellInfo.h"
 #include "gtest/gtest.h"
+#include "test_support.h"
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
 using namespace hemo;
+using namespace plb;
+using namespace std;
 
 // upper and lower bound for the deformation index
 const T exp_def_upper = 0.0127919;
 const T exp_def_lower = 0.0127918;
 
-TEST(Validation, oneCellShear)
-{   
-	char *args[] = {(char *)"test", (char *)"path", NULL};
-  char *inp = (char *)"tests/validation/oneCellShear/config.xml";
+TEST(Validation, oneCellShear) {
+  char * args[] = {(char *)"test", (char *)"path", NULL};
+  const std::string inp =
+      hemo_test::testConfig("tests/validation/oneCellShear/config.xml"); // output in the tests' directory
 
   hemo::HemoCell hemocell(inp, 0, args, hemo::HemoCell::MPIHandle::External);
   Config * cfg = hemocell.cfg;
 
-// ----------------- Read in config file & calc. LBM parameters ---------------------------
-	pcout << "(OneCellShear) (Parameters) calculating shear flow parameters" << endl;
-	plint nz = 10.0*(1e-6/(*cfg)["domain"]["dx"].read<T>());
-  plint nx = 2*nz;
-  plint ny = 2*nz;
-  param::lbm_shear_parameters((*cfg),ny);
+  // ----------------- Read in config file & calc. LBM parameters ---------------------------
+  pcout << "(OneCellShear) (Parameters) calculating shear flow parameters" << endl;
+  plint nz = 10.0 * (1e-6 / (*cfg)["domain"]["dx"].read<T>());
+  plint nx = 2 * nz;
+  plint ny = 2 * nz;
+  param::lbm_shear_parameters((*cfg), ny);
   param::printParameters();
-  plint max_iteration = (*cfg)["sim"]["tmax"].read<plint>(); // number of iterations
+  plint max_iteration = (*cfg)["sim"]["tmax"].read<plint>();   // number of iterations
   plint warmup = (*cfg)["parameters"]["warmup"].read<plint>(); // warm-up iterations for the fluid
   T D0 = 2.0 * (*cfg)["ibm"]["radius"].read<T>() * 1e6;
   T def_idx; // deformation index
 
-// ------------------------ Init lattice --------------------------------
+  // ------------------------ Init lattice --------------------------------
 
-  pcout << "(CellStretch) Initializing lattice: " << nx <<"x" << ny <<"x" << nz << " [lu]" << std::endl;
+  pcout << "(CellStretch) Initializing lattice: " << nx << "x" << ny << "x" << nz << " [lu]" << std::endl;
 
-  plint extendedEnvelopeWidth = 2;  // Because we might use ibmKernel with with 2.  
+  plint extendedEnvelopeWidth = 2; // Because we might use ibmKernel with with 2.
 
-  hemocell.lattice = new MultiBlockLattice3D<T,DESCRIPTOR>(
-    defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
-    defaultMultiBlockPolicy3D().getBlockCommunicator(),
-    defaultMultiBlockPolicy3D().getCombinedStatistics(),
-    defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
-    new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0/param::tau));
+  hemocell.lattice = new MultiBlockLattice3D<T, DESCRIPTOR>(
+      defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, extendedEnvelopeWidth),
+      defaultMultiBlockPolicy3D().getBlockCommunicator(), defaultMultiBlockPolicy3D().getCombinedStatistics(),
+      defaultMultiBlockPolicy3D().getMultiCellAccess<T, DESCRIPTOR>(),
+      new GuoExternalForceBGKdynamics<T, DESCRIPTOR>(1.0 / param::tau));
 
-	pcout << "(OneCellShear) Re corresponds to u_max = " << (param::re * param::nu_p)/(hemocell.lattice->getBoundingBox().getNy()*param::dx) << " [m/s]" << endl;
-	// -------------------------- Define boundary conditions ---------------------
+  pcout << "(OneCellShear) Re corresponds to u_max = "
+        << (param::re * param::nu_p) / (hemocell.lattice->getBoundingBox().getNy() * param::dx) << " [m/s]" << endl;
+  // -------------------------- Define boundary conditions ---------------------
 
-	OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundaryCondition
-			= createLocalBoundaryCondition3D<T,DESCRIPTOR>();
+  OnLatticeBoundaryCondition3D<T, DESCRIPTOR> * boundaryCondition = createLocalBoundaryCondition3D<T, DESCRIPTOR>();
 
-	hemocell.lattice->toggleInternalStatistics(false);
+  hemocell.lattice->toggleInternalStatistics(false);
 
-	iniLatticeSquareCouette(*hemocell.lattice, nx, ny, nz, *boundaryCondition, param::shearrate_lbm);
+  iniLatticeSquareCouette(*hemocell.lattice, nx, ny, nz, *boundaryCondition, param::shearrate_lbm);
 
-	hemocell.lattice->initialize();
+  hemocell.lattice->initialize();
   hemocell.outputInSiUnits = true;
-	
+
   // ---------------------- Initialise particle positions and perform warm-up iterations for the fluid ---------------
 
-	hemocell.initializeCellfield();
-	hemocell.addCellType<RbcHighOrderModel>("tests/validation/oneCellShear/RBC", RBC_FROM_SPHERE);
-  
+  hemocell.initializeCellfield();
+  hemocell.addCellType<RbcHighOrderModel>("tests/validation/oneCellShear/RBC", RBC_FROM_SPHERE);
+
   hemocell.loadParticles();
 
-  if (hemocell.iter == 0) { 
-    pcout << "(OneCellShear) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl; 
-    for (plint itrt = 0; itrt < warmup; ++itrt) {  
-      hemocell.lattice->collideAndStream();  
-    } 
+  if (hemocell.iter == 0) {
+    pcout << "(OneCellShear) fresh start: warming up cell-free fluid domain for "
+          << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl;
+    for (plint itrt = 0; itrt < warmup; ++itrt) { hemocell.lattice->collideAndStream(); }
   }
-  
+
   pcout << "(OneCellShea) Shear rate: " << (*cfg)["domain"]["shearrate"].read<T>() << " s^-1." << endl;
 
   // --------------------- Run the simulation --------------------------------------------
 
-  while (hemocell.iter < max_iteration) {    
-
+  while (hemocell.iter < max_iteration) {
     hemocell.iterate();
 
-      // Fill up the static info structure with desired data
-      CellInformationFunctionals::calculateCellVolume(&hemocell);
-      CellInformationFunctionals::calculateCellArea(&hemocell);
-      CellInformationFunctionals::calculateCellPosition(&hemocell);
-      CellInformationFunctionals::calculateCellStretch(&hemocell);
-      CellInformationFunctionals::calculateCellBoundingBox(&hemocell);
+    // Fill up the static info structure with desired data
+    CellInformationFunctionals::calculateCellVolume(&hemocell);
+    CellInformationFunctionals::calculateCellArea(&hemocell);
+    CellInformationFunctionals::calculateCellPosition(&hemocell);
+    CellInformationFunctionals::calculateCellStretch(&hemocell);
+    CellInformationFunctionals::calculateCellBoundingBox(&hemocell);
 
-      T largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch)/(1e-6/param::dx);
-      T rel_D2 = (largest_diam/D0)*(largest_diam/D0);
-      def_idx = (rel_D2 - 1.0) / (rel_D2 + 1.0) * 100.0;
+    T largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch) / (1e-6 / param::dx);
+    T rel_D2 = (largest_diam / D0) * (largest_diam / D0);
+    def_idx = (rel_D2 - 1.0) / (rel_D2 + 1.0) * 100.0;
 
-      CellInformationFunctionals::clear_list();
-
+    CellInformationFunctionals::clear_list();
   }
   // --------------------- Perform the assertions --------------------------------------
 
   ASSERT_LT(def_idx, exp_def_upper);
   ASSERT_GT(def_idx, exp_def_lower);
-
 }

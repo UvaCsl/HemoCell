@@ -39,50 +39,61 @@ class HemoCellField;
 
 namespace hemo {
 /*contains information about one particular cellfield, structlike*/
-class HemoCellField{
-  static vector<int> default_output;
-  public:
+class HemoCellField {
+  static std::vector<int> default_output;
 
-  HemoCellField(HemoCellFields& cellFields_, string & name_, unsigned int ctype_, int contructType);
+public:
+  HemoCellField(HemoCellFields & cellFields_, std::string & name_, unsigned int ctype_, int contructType);
   ~HemoCellField();
   T getVolumeFraction();
   //ShellModel3D<T> * model;
   plb::TriangularSurfaceMesh<T> & getMesh();
   std::string name;
   HemoCellFields & cellFields;
-  vector<int> desiredOutputVariables;
+  std::vector<int> desiredOutputVariables;
   plb::TriangularSurfaceMesh<T> * meshElement = 0;
-  plb::TriangleBoundary3D<T> * boundaryElement = 0 ;
-  Config *materialCfg = 0;
+  plb::TriangleBoundary3D<T> * boundaryElement = 0;
+  Config * materialCfg = 0;
   unsigned char ctype;
-  
+
   int numVertex = 0;
   T volume = 0;
   T volumeFractionOfLspPerNode = 0;
   T restingCellVolume = 0;
   unsigned int timescale = 1;
-  unsigned int minimumDistanceFromSolid = 0;
+  /// Minimum initial distance of cell vertices from solid nodes [micrometre], see HemoCell::setInitialMinimumDistanceFromSolid()
+  T minimumDistanceFromSolid = 0;
+  /// Number of cells listed in `<name>.pos` (set by loadParticles()).
+  plint cellsInPositionFile = 0;
+  /// Cells of `<name>.pos` centred in the domain that cross a periodic
+  /// boundary and were not placed because image placement is off (see
+  /// HemoCell::setPlaceCellsAcrossPeriodicBoundaries()); set by loadParticles()
+  /// on the main rank.
+  plint cellsCrossingPeriodicBoundary = 0;
   bool outputTriangles = false;
-  vector<hemo::Array<plint,3>> triangle_list;
-  void(*kernelMethod)(plb::BlockLattice3D<T,DESCRIPTOR> &,HemoCellParticle&);
+  std::vector<hemo::Array<plint, 3>> triangle_list;
+  void (*kernelMethod)(plb::BlockLattice3D<T, DESCRIPTOR> &, HemoCellParticle &);
   plb::MultiParticleField3D<HemoCellParticleField> * getParticleField3D();
-  plb::MultiBlockLattice3D<T,DESCRIPTOR> * getFluidField3D();
+  plb::MultiBlockLattice3D<T, DESCRIPTOR> * getFluidField3D();
+  /// Total number of cells of this type in the simulation. Collective: all
+  /// ranks must call it (it synchronises the particle envelopes).
   int getNumberOfCells_Global();
+  /// Name used for the output files and datasets of this cell type: the
+  /// name without a leading directory (e.g. "RBC" for "cells/RBC").
   std::string getIdentifier();
   plb::MultiParticleField3D<HemoCellParticleField> * getParticleArg();
-  void setOutputVariables(const vector<int> &);
+  void setOutputVariables(const std::vector<int> &);
   CellMechanics * mechanics = 0;
   void statistics();
   /* position is in micrometers, so we still have to convert it*/
-  void addSingleCell(hemo::Array<T,3> position, plint cellId);
-  hemo::Array<T,6> getOriginalBoundingBox();
+  void addSingleCell(hemo::Array<T, 3> position, plint cellId);
+  hemo::Array<T, 6> getOriginalBoundingBox();
   plb::MeshMetrics<T> * meshmetric = 0;
   bool doSolidifyMechanics = false;
   bool doInteriorViscosity = false;
   T interiorViscosityTau = 1.0;
-  plb::Dynamics<T,DESCRIPTOR> * innerViscosityDynamics = 0;
+  plb::Dynamics<T, DESCRIPTOR> * innerViscosityDynamics = 0;
 };
 }
 
 #endif /* HEMOCELLFIELD_H */
-

@@ -28,56 +28,100 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "external/tinyxml2/tinyxml2.h"
 #include "constant_defaults.h"
+#include "error.h"
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 namespace hemo {
 
-  class XMLElement {
-    tinyxml2::XMLElement * orig;
-  public:
-    XMLElement(tinyxml2::XMLElement * orig_) : orig(orig_){}
-    XMLElement operator[] (std::string name) const;
-    
-    template<typename T>
-    T read() {
-      std::stringstream value(orig->GetText());
-      T ret = T();
-      if (!(value>>ret)) {
-        std::cout << "Cannot convert value from XML element" << std::endl;
-      }
-      return ret;
-    }
-    
-    tinyxml2::XMLElement * getOrig() { return orig;}
-    
-  };
-  
-  
-  class Config {
-    tinyxml2::XMLDocument * orig;
-  public:
-    bool checkpointed;
+class XMLElement {
+  tinyxml2::XMLElement * orig;
 
-    Config(std::string paramXmlFilename); 
-    ~Config();
-    
-    void reload(std::string paramXmlFilename);
-  
-    hemo::XMLElement operator[] (std::string name) const;
-    
-    tinyxml2::XMLNode* ShallowClone(tinyxml2::XMLDocument* document) const;
-    bool ShallowEqual(const tinyxml2::XMLNode* compare ) const;
-    bool Accept( tinyxml2::XMLVisitor* visitor ) const;
-  private:
-    void load(std::string paramXmlFilename);
-  };
+public:
+  XMLElement(tinyxml2::XMLElement * orig_) : orig(orig_) {}
+  /// The child element @p name.
+  /// @throws std::invalid_argument if there is none; the message names the
+  /// file, the element path (e.g. `hemocell/sim`) and its line.
+  XMLElement operator[](std::string name) const;
+
+  /**
+     * @brief Read the text of this element as a value of type T.
+     *
+     * Numbers are parsed with stream extraction and must make up the whole
+     * text (surrounding whitespace is ignored), e.g. "1e6" is rejected for an
+     * integer instead of silently becoming 1. Booleans accept 0/1/true/false.
+     * Strings return the whole text with surrounding whitespace removed.
+     *
+     * @throws std::invalid_argument if the element is empty or its text cannot
+     * be converted. Callers that treat a value as optional catch this exception
+     * (the same one that is thrown for a missing element) and use a default.
+     */
+  template <typename T>
+  T read() {
+    const char * text = orig->GetText();
+    if (!text) { throw std::invalid_argument(where() + " is empty."); }
+    T ret = T();
+    if (!parseValue(text, ret)) { throw std::invalid_argument(where() + ": cannot convert \"" + text + "\"."); }
+    return ret;
+  }
+
+  tinyxml2::XMLElement * getOrig() { return orig; }
+
+  /// Path of this element from the root, e.g. `hemocell/sim/tmax`.
+  std::string path() const;
+
+private:
+  /// "<file>, line <n>: <path>" of this element, for error messages.
+  std::string where() const;
+
+  template <typename V>
+  static bool parseValue(const std::string & text, V & value) {
+    std::istringstream stream(text);
+    if (!(stream >> value)) { return false; }
+    stream >> std::ws;
+    return stream.eof(); // nothing but whitespace may follow the value
+  }
+  static bool parseValue(const std::string & text, bool & value);
+  static bool parseValue(const std::string & text, std::string & value);
+};
+
+
+class Config {
+  tinyxml2::XMLDocument * orig;
+  /// Name of the loaded file; the document refers to it (user data), so
+  /// that error messages of its elements can name it.
+  std::string fileName;
+
+public:
+  /// True if the root element is `Checkpoint` (a checkpoint.xml written by HemoCell).
+  bool checkpointed = false;
+
+  Config(std::string paramXmlFilename);
+  ~Config();
+
+  void reload(std::string paramXmlFilename);
+
+  hemo::XMLElement operator[](std::string name) const;
+
+  tinyxml2::XMLNode * ShallowClone(tinyxml2::XMLDocument * document) const;
+  bool ShallowEqual(const tinyxml2::XMLNode * compare) const;
+  bool Accept(tinyxml2::XMLVisitor * visitor) const;
+
+private:
+  void load(std::string paramXmlFilename);
+};
 
 void loadDirectories(hemo::Config * cfg, bool edit_out_dir = true);
 
+/// Process-wide settings of the running simulation. They are set from the
+/// configuration when a HemoCell object is constructed and reset to these
+/// defaults when it is destroyed (resetGlobalConfigValues()).
 struct ConfigValues {
-  bool hemoCellInitialized = false; // Keep track since two hemocells cannot run at the same time, because of static variables
+  /// True while a HemoCell object exists; only one may exist at a time,
+  /// because of this and other process-wide state.
+  bool hemoCellInitialized = false;
   bool cellsDeletedInfo = false;
 
   bool enableCEPACfield = false;
@@ -85,7 +129,7 @@ struct ConfigValues {
   bool enableSolidifyMechanics = false;
 
   bool enableInteriorViscosity = false;
-  
+
   std::string checkpointDirectory = "./checkpoint/";
 
   Profiler statistics = Profiler("HemoCell");
@@ -94,6 +138,8 @@ struct ConfigValues {
 extern ConfigValues global;
 
 void loadGlobalConfigValues(hemo::Config * cfg);
-
+/// Put `global` back to its defaults (except hemoCellInitialized) and clear
+/// the run statistics; called when a HemoCell object is destroyed.
+void resetGlobalConfigValues();
 }
 #endif

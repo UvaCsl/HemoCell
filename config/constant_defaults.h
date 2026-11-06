@@ -27,19 +27,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef CONSTANT_DEFAULTS_H
 #define CONSTANT_DEFAULTS_H
 // ============== Compile time options - Set these
+//
+// This file is the one place for HemoCell's compile-time configuration; every
+// library and every case is compiled with it. The effective configuration of a
+// run is printed at the top of its log and stored in its checkpoints
+// (HEMOCELL_BUILD_CONFIGURATION below), and a case compiled with another
+// configuration than the library it links is rejected at start-up.
 
 /*
- * Which version are we at
+ * Which version are we at (CMake and the documentation read it from here).
  */
-#define VERSION_MAJOR 2
-#define VERSION_MINOR "8"
+#define VERSION_MAJOR 3
+#define VERSION_MINOR "0"
 
-// Use for solidifying, performance impact so only enable when using
+/*
+ * Optional features. They are off by default, i.e. in the base library
+ * `hemocell`. The library variants switch one on for themselves and for the
+ * cases that link them (CMakeLists.txt): hemocell_solidify_mechanics defines
+ * SOLIDIFY_MECHANICS, hemocell_interior_viscosity INTERIOR_VISCOSITY. To
+ * change a default for every library, uncomment its #define here.
+ */
+// Solidification of platelets near binding sites (cases/solidify_example).
 #ifndef SOLIDIFY_MECHANICS
-#define SOLIDIFY_MECHANICS
+//#define SOLIDIFY_MECHANICS
 #endif
 
-// Use for Interior Viscosity mechanics, performance impact so only enable when using
+// Interior viscosity of cells; adds data to every particle, performance impact.
 #ifndef INTERIOR_VISCOSITY
 //#define INTERIOR_VISCOSITY
 #endif
@@ -67,55 +80,64 @@ Select BGK dynamics with Guo's forcing method.
 
 /*
 Force unconditional stability on the material model. Note: it will not make the model magically correct, only stable!
-FORCE_LIMIT sets the allowed maximal force coming from the constitutive model (in LBM units).
+FORCE_LIMIT sets the allowed maximal force per surface particle, in [pN]. It is
+converted to lattice units in Parameters (param::f_limit) and applied to the
+total membrane force when spreading it to the fluid; a quarter of it caps the
+membrane-viscosity force per edge. Define FORCE_LIMIT differently (or remove
+this default) at compile time to change or disable the cap.
 */
-// in [pN / surface particle].
 #ifndef FORCE_LIMIT
-#define FORCE_LIMIT 50.0 
+#define FORCE_LIMIT 50.0
 #endif
 
+namespace hemo {
 /*
- * Used for defining the shape of the cells through constructMeshElement function
+ * Shape of the reference mesh of a cell type (HemoCell::addCellType(),
+ * constructMeshElement()). Constants in namespace hemo (formerly macros).
  */
-#define RBC_FROM_SPHERE 1
-#define ELLIPSOID_FROM_SPHERE 6
-#define STRING_FROM_VERTEXES 7
-#define WBC_SPHERE 0
-#define MESH_FROM_STL 2
+constexpr int WBC_SPHERE = 0;
+constexpr int RBC_FROM_SPHERE = 1;
+constexpr int MESH_FROM_STL = 2;
+constexpr int ELLIPSOID_FROM_SPHERE = 6;
+constexpr int STRING_FROM_VERTEXES = 7;
 
 /*
- * Defines for desired output per celltype, can save space/time etc. etc. also works for specific fluid ones (vel, force etc)
+ * Output fields per cell type (HemoCell::setOutputs()) and of the fluid
+ * (HemoCell::setFluidOutputs(), setCEPACOutputs()); see
+ * doc/user_guide/reference/outputs.rst. Constants in namespace hemo
+ * (formerly macros).
  */
-#define OUTPUT_POSITION 1
-#define OUTPUT_FORCE 2
-#define OUTPUT_FORCE_VOLUME 21
-#define OUTPUT_FORCE_BENDING 22
-#define OUTPUT_FORCE_AREA 23
-#define OUTPUT_FORCE_LINK 24
-#define OUTPUT_FORCE_VISC 25
-#define OUTPUT_FORCE_INNER_LINK 26
-#define OUTPUT_FORCE_REPULSION 27
-#define OUTPUT_TRIANGLES 3
-#define OUTPUT_VELOCITY 4
-#define OUTPUT_DENSITY 5
-#define OUTPUT_VERTEX_ID 7
-#define OUTPUT_CELL_ID 8
-#define OUTPUT_CELL_DENSITY 9
-#define OUTPUT_SHEAR_STRESS 10
-#define OUTPUT_INNER_LINKS 11
-#define OUTPUT_OMEGA 12
-#define OUTPUT_BOUNDARY 13
-#define OUTPUT_BINDING_SITES 14
-#define OUTPUT_INTERIOR_POINTS 15
-#define OUTPUT_SHEAR_RATE 16
-#define OUTPUT_STRAIN_RATE 17
-#define OUTPUT_RES_TIME 18
-
-//==================== Not really an option but a nice shortcut
-#define param Parameters
+constexpr int OUTPUT_POSITION = 1;
+constexpr int OUTPUT_FORCE = 2;
+constexpr int OUTPUT_FORCE_VOLUME = 21;
+constexpr int OUTPUT_FORCE_BENDING = 22;
+constexpr int OUTPUT_FORCE_AREA = 23;
+constexpr int OUTPUT_FORCE_LINK = 24;
+constexpr int OUTPUT_FORCE_VISC = 25;
+constexpr int OUTPUT_FORCE_INNER_LINK = 26;
+constexpr int OUTPUT_FORCE_REPULSION = 27;
+constexpr int OUTPUT_TRIANGLES = 3;
+constexpr int OUTPUT_VELOCITY = 4;
+constexpr int OUTPUT_DENSITY = 5;
+constexpr int OUTPUT_VERTEX_ID = 7;
+constexpr int OUTPUT_CELL_ID = 8;
+constexpr int OUTPUT_CELL_DENSITY = 9;
+constexpr int OUTPUT_SHEAR_STRESS = 10;
+constexpr int OUTPUT_INNER_LINKS = 11;
+constexpr int OUTPUT_OMEGA = 12;
+constexpr int OUTPUT_BOUNDARY = 13;
+constexpr int OUTPUT_BINDING_SITES = 14;
+constexpr int OUTPUT_INTERIOR_POINTS = 15;
+constexpr int OUTPUT_SHEAR_RATE = 16;
+constexpr int OUTPUT_STRAIN_RATE = 17;
+constexpr int OUTPUT_RES_TIME = 18;
+} // namespace hemo
 
 #ifndef T
 typedef double T;
+#define HEMOCELL_CONFIGURATION_T "double"
+#else
+#define HEMOCELL_CONFIGURATION_T HEMOCELL_STRINGIFY(T)
 #endif
 
 #ifndef PI
@@ -174,18 +196,58 @@ constexpr T MaxCellPersistenceLength = 9.0;
 
 /** @} */ // end of the cell group constants
 
+/*
+ * The compile-time configuration above as a string, e.g.
+ * "version=3.0,T=double,DESCRIPTOR=...,MATERIAL_INTEGRATION=1,FORCE_LIMIT=50.0".
+ * It is expanded where it is used, so the HemoCell constructor's default
+ * argument carries the configuration of the case and the library compares it
+ * with its own (HemoCell::HemoCell()). No spaces (Palabos' XML reader stops at
+ * the first space).
+ */
+#define HEMOCELL_STRINGIFY_(x) #x
+#define HEMOCELL_STRINGIFY(x) HEMOCELL_STRINGIFY_(x)
+#ifdef FORCE_LIMIT
+#define HEMOCELL_CONFIGURATION_FORCE_LIMIT ",FORCE_LIMIT=" HEMOCELL_STRINGIFY(FORCE_LIMIT)
+#else
+#define HEMOCELL_CONFIGURATION_FORCE_LIMIT ",FORCE_LIMIT=none"
+#endif
+#ifdef SOLIDIFY_MECHANICS
+#define HEMOCELL_CONFIGURATION_SOLIDIFY ",SOLIDIFY_MECHANICS"
+#else
+#define HEMOCELL_CONFIGURATION_SOLIDIFY ""
+#endif
+#ifdef INTERIOR_VISCOSITY
+#define HEMOCELL_CONFIGURATION_INTERIOR ",INTERIOR_VISCOSITY"
+#else
+#define HEMOCELL_CONFIGURATION_INTERIOR ""
+#endif
+#ifdef HEMO_PARMETIS
+#define HEMOCELL_CONFIGURATION_PARMETIS ",HEMO_PARMETIS"
+#else
+#define HEMOCELL_CONFIGURATION_PARMETIS ""
+#endif
+#define HEMOCELL_CONFIGURATION_VERSION "version=" HEMOCELL_STRINGIFY(VERSION_MAJOR) "." VERSION_MINOR
+#define HEMOCELL_CONFIGURATION_TYPES ",T=" HEMOCELL_CONFIGURATION_T ",DESCRIPTOR=" HEMOCELL_STRINGIFY(DESCRIPTOR)
+#define HEMOCELL_CONFIGURATION_INTEGRATION ",MATERIAL_INTEGRATION=" HEMOCELL_STRINGIFY(HEMOCELL_MATERIAL_INTEGRATION)
+// clang-format off
+#define HEMOCELL_BUILD_CONFIGURATION                                                 \
+  HEMOCELL_CONFIGURATION_VERSION HEMOCELL_CONFIGURATION_TYPES                        \
+  HEMOCELL_CONFIGURATION_INTEGRATION HEMOCELL_CONFIGURATION_FORCE_LIMIT              \
+  HEMOCELL_CONFIGURATION_SOLIDIFY HEMOCELL_CONFIGURATION_INTERIOR                    \
+  HEMOCELL_CONFIGURATION_PARMETIS
+// clang-format on
+
 namespace hemo {
 ///Used to circumvent buffer initialization of characters
-struct NoInitChar
-{
-    char value;
-    NoInitChar() {
-        // do nothing
-        static_assert(sizeof *this == sizeof value, "invalid size");
-        static_assert(__alignof *this == __alignof value, "invalid alignment");
-    }
-    ~NoInitChar() {};
+struct NoInitChar {
+  char value;
+  NoInitChar() {
+    // do nothing
+    static_assert(sizeof *this == sizeof value, "invalid size");
+    static_assert(__alignof * this == __alignof value, "invalid alignment");
+  }
+  ~NoInitChar(){};
 };
-} 
+}
 
 #endif

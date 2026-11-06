@@ -41,6 +41,18 @@ Firstly we have to include the headers we need in ``newCase.cpp``.
   // HemoCell but can be handy nonetheless
   #include <cellInfo.h>
   #include <fluidInfo.h>
+  // Palabos, used directly for the lattice and boundary conditions
+  #include <palabos3D.h>
+  #include <palabos3D.hh>
+
+  // HemoCell's headers do not import any namespace: a case file chooses what to
+  // use unqualified. All examples use these three.
+  using namespace hemo;
+  using namespace plb;
+  using namespace std;
+
+With both ``hemo`` and ``plb`` imported, ``Array`` is ambiguous (``hemo::Array``
+and ``plb::Array``): write ``hemo::Array`` or ``plb::Array`` explicitly.
 
 After that we have to define a main function as this will become the main
 program. it is useful to include the ``config.xml`` file as first argument,
@@ -261,59 +273,50 @@ Creating the initial positions for the Cells
 
 As a final touch we must create an RBC.pos file which contains the positions
 of the RBC's that we want in our simulation. For this we use the tool that is
-described in :ref:`packcells`. Run packCells with the following command to
-create only RBC in a 25x25x25 domain:
+described in :ref:`packcells` (``./packCells --help`` lists its options). Run
+packCells with the following command to create only RBCs in a 25x25x25 µm
+domain (``--seed`` makes the run reproducible; without it a random seed is
+used and printed):
 
 .. code-block:: console
 
-    user@local:~/hemocell/tools/packCells$ ./packCells
-    Insufficient arguments.
-
-    USAGE: packCells sX sY sZ [OPTIONAL ARGUMENTS ...]
-
-    OPTIONAL ARGUMENTS:
-      --hematocrit <0-1.0>                 -h The hematocrit of the solution
-      --plt_ratio <ratio>                     The ratio of PLT per RBC, default=0.07
-      --rbc <n>                               Number of Red Blood Cells
-      --plt <n>                               Number of Platelets
-      --wbc <n>                               Number of White Blood Cells
-      --vrbc <n>                              Number of Stage V gametocytes
-      --cell <name> <n> <e1, e2, diameter>    Custom Celltype described by ellipsoid
-      --allowRotate                        -r Allow for rotation of ellipsoids
-      --scale <ratio>                         Scales the neighbourhood grid (only change this if you know what you are doing!)
-      --maxiter <n>                           Maximum number of iterations
-      --help                                  Print this
-    OUTPUT:
-      <Cell>.pos for every celltype. First line is the number of cells.
-      The rest of the lines is the cells in "Location<X Y Z> Rotation<X Y Z>" format.
-      Cells.pov for visualization in, for example, povray
-
-    NOTE:
-      sX, sY and sZ are the domain size
-      sX, sY, sZ and output are in micrometers[µm]
-      --hematocrit and --RBC are mutually exclusive
-      --hematocrit and --PLT are mutually exclusive
-      --PLT-ratio is an No-Op without --hematocrit
-    user@local:~/hemocell/tools/packCells$ ./packCells  25 25 25 --plt_ratio 0 --hematocrit 0.3 -r
-    Loaded parameters, we found:
-      Domain Size (µm): ( 25.000000 , 25.000000 , 25.000000 )
+    user@local:~/hemocell/tools/packCells$ ./packCells 25 25 25 --hematocrit 0.3 --plt_ratio 0 --seed 1
+    Parameters:
+      Domain Size [µm]: ( 25.000000 , 25.000000 , 25.000000 )
       Maximum Iterations : 2147483547
-      Scale              : 0.250000
+      Start scale        : 1.000000
+      Minimum scale      : 0.931000
       Rotation           : 1
+      Seed               : 1
       Hematocrit    : 0.300000
       PLT/RBC Ratio : 0.000000
-    We have found the following Cells:
+    The following cell types are defined:
       RBC
         No   : 48
         Sizes: (8.400000 , 4.400000 , 8.400000 )
+        Ellipsoid volume: 162.558570 [µm3].
+        Mesh fit: 0.931000
 
-    Nominal requested volume fraction: 0.499380
+    Collision-check grid: 3 x 3 x 3 cells of about 7.000000 um
 
-         Steps     Actual       Nominal        Inner         Outer             Force
-                  density       density       diameter      diameter       per particle
+    Volume fraction of the nominal ellipsoids: 0.499380
 
-        68764  0.1604380013  0.1604380013  1.2985355219  1.2985355219  0.000000000000000 PACKING DONE
+        Steps  Vol.fraction  Vol.fraction         Scale         Scale              Force
+                    (inner)       (outer)       (inner)       (outer)       per particle
+    ...
+           71  0.4991832451  0.4991832451  0.9998686981  0.9998686981  0.000000000000000 PACKING DONE
+    Final scale of the ellipsoids: 0.9999 (start 1.0000, minimum 0.9310)
+    The ellipsoids do not overlap at their nominal size: the cells start out of each other's interaction range.
     user@local:~/hemocell/tools/packCells$ cp RBC.pos ../../examples/newCase/RBC.pos
+
+Each cell is represented by an ellipsoid somewhat larger than the cell itself
+(its effective size, which includes the interaction range of the immersed
+boundary method). The ellipsoids start at their nominal size (``--start_scale``,
+default 1) and shrink until none overlap. A final scale below 1 means that cells
+start within each other's interaction range; packCells stops, with exit status
+3, once the scale falls below the point where an ellipsoid still contains its
+cell's mesh (``--min_scale``, 0.93 for RBCs), for example at a hematocrit of
+about 0.5 or more.
 
 With the RBC.pos file present in the newCase directory all the pieces should
 be there to run our first newly created case!

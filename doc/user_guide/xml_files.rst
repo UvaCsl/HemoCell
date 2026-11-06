@@ -9,7 +9,13 @@ should be valid XML. The first tag should always be ``<hemocell>``. Within the
 HemoCell you can specify any tag that can be used in your simulation after you 
 initialized the config file like this:: 
    
-  (*hemocell.cfg)["domain"]["<your attribute>"].read<type>() 
+  (*hemocell.cfg)["domain"]["<your attribute>"].read<type>()
+
+``read<type>()`` throws ``std::invalid_argument`` if the tag is missing, empty,
+or its text cannot be converted in full: for example ``1e6`` is rejected for an
+integer setting instead of being read as ``1``. Booleans accept ``0``, ``1``,
+``true`` and ``false``; strings are returned without surrounding whitespace.
+Optional settings catch this exception and fall back to their default.
 
 Most tags are used within the HemoCell framework to configure options. However
 some are used from the **case.cpp** file and thus are not present in all cases.
@@ -20,9 +26,9 @@ These options are denoted with a bold **case.cpp**.
 
   * ``<verbose>`` options related to verbosity
 
-    * ``<cellsDeletedInfo>`` option to print the location of deleted cells,
-      because this option needs to aggregate location data with an if statement it
-      has a small performance impact and is disabled by default
+    * ``<cellsDeletedInfo>`` option to print the location of deleted cells (a
+      cell is deleted when it loses a vertex, e.g. to a wall), disabled by
+      default
 
   * ``<parameters>`` parameters regarding the simulation, some options might be
     moved but are still here because of legacy reasons.
@@ -71,10 +77,14 @@ These options are denoted with a bold **case.cpp**.
     * ``<particleEnvelope>`` This option is denoted in ``<dx>``. Should be a bit larger than the longest stretch of
       a particle in the current simulation. otherwise particles will be deleted.
       Usually a value of 25 is used, otherwise a warning is displayed.
-    * ``<kRep>`` **case.cpp** Repulsion constant used for repulsion force. 
+    * ``<kRep>`` **case.cpp** Repulsion constant: the repulsion force at the
+      cutoff distance, in **pN** (5 in the examples).
       Uncomment line in pipeflow.cpp if you want to use this.
     * ``<RepCutoff>`` **case.cpp** Cutoff distance in **micrometer!** for the
       repulsion force. Uncomment line in pipeflow.cpp if you want to use this.
+      The neighbour search only covers adjacent lattice nodes, so a cutoff
+      larger than one ``<dx>`` is only partially effective (a warning is
+      printed at the first iteration).
 
   * ``<sim>``
 
@@ -120,17 +130,26 @@ the rotation in degrees in X,Y,Z respectively
 config/constant_defaults.h
 --------------------------
 
-This file is used to define compile time constants for the HemoCell library. The
-HemoCell library (in build/hemocell) is used to link all the **case.cpp** files
-against. For example, whenever you want to use HemoCell with interior viscosity
-you must uncomment ``#define INTERIOR_VISCOSITY`` such that it is enabled. Below
-we listed the options present in this file and when you can use them
+This file is the one place for the compile-time configuration of HemoCell:
+every library and every **case.cpp** is compiled with it. The optional
+features are off by default; the library variants switch one on for themselves
+and the cases that link them (``hemocell_solidify_mechanics``,
+``hemocell_interior_viscosity``; a case selects one in its ``CMakeLists.txt``). To change a default for every library, edit this file.
+The effective configuration is printed at the top of the log of every run
+(``Compile-time configuration: ...``) and stored in its checkpoints; a case
+compiled with another configuration than the library it links (e.g. linked
+against the wrong variant) stops with an error at start-up. The version
+(``VERSION_MAJOR``, ``VERSION_MINOR``) is defined here as well; CMake and the
+documentation read it from this file. Below we listed the options present in
+this file and when you can use them
 
-* ``SOLIDIFY_MECHANICS`` Used for thrombus formation, relevant examples and
-  source code is not yet available in V2.0
+* ``SOLIDIFY_MECHANICS`` Solidification of platelets near binding sites
+  (``cases/solidify_example``); off by default, on in
+  ``hemocell_solidify_mechanics``.
 * ``INTERIOR_VISCOSITY`` Enable if you want to run cases with interior
   viscosity, adds two vectors to the HemoCellparticle class, and thus has a
-  measurable performance impact (don't enable when not needed)
+  measurable performance impact (don't enable when not needed); off by
+  default, on in ``hemocell_interior_viscosity``.
 * ``HEMOCELL_MATERIAL_INTEGRATION`` Defines how the velocity of the fluid is
   integrated to the particles. Euler [1] or Adams-Bashforth [2]. See
   ``src/hemoCellParticle.h`` for implementation details
@@ -143,10 +162,10 @@ we listed the options present in this file and when you can use them
 * ``HEMOCELL_PARTICLE_FILED`` This has been built in and can't change anymore,
   it used to be interchangable with Palabos particle fields very early on.
 * ``OUTPUT_XXX`` Defines the outputs that can be requested in a **case.cpp** for
-  either the fluid or the cells.
+  either the fluid or the cells (constants in ``namespace hemo``).
 * ``T`` It is possible to define ``T`` as float instead of double, this
   decreases accuracy but increases speed, also decreases memory footprint.
-* ``constructMeshElement``
+* ``constructMeshElement`` (shape constants in ``namespace hemo``)
 
   * ``RBC_FROM_SPHERE`` create the RBC model from mathematical equations (see
     HemoCell paper), accepts a minimum number of to be created vertices.

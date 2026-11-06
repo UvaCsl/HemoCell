@@ -1,0 +1,49 @@
+<?xml version="1.0" ?>
+<hemocell>
+
+<parameters>
+    <warmup> 10 </warmup> <!-- Cell-free LBM iterations before the cells start moving -->
+    <outputDirectory> output </outputDirectory> <!-- Appended with _x when it already exists -->
+</parameters>
+
+<ibm>
+    <stepMaterialEvery> 20 </stepMaterialEvery> <!-- Update the cell material forces every this many fluid steps -->
+    <stepParticleEvery> 5 </stepParticleEvery> <!-- Update the particle velocities every this many fluid steps -->
+</ibm>
+
+<domain>
+    <geometry> tube.stl </geometry> <!-- 20 um diameter, 60 um long with refDirN 40 and dx 0.5 um -->
+    <fluidEnvelope> 2 </fluidEnvelope>
+    <rhoP> 1025 </rhoP> <!-- Plasma density [kg/m^3] -->
+    <nuP> 1.1e-6 </nuP> <!-- Plasma kinematic viscosity [m^2/s] -->
+    <dx> 5e-7 </dx> <!-- Lattice spacing [m] -->
+    <dt> 1e-7 </dt> <!-- Time step [s]; negative: tau = 1 -->
+    <refDir> 1 </refDir> <!-- Direction across the pipe (y) -->
+    <refDirN> 40 </refDirN> <!-- Lattice nodes across the pipe diameter -->
+    <blockSize> -1 </blockSize>
+    <kBT> 4.100531391e-21 </kBT> <!-- [J] -->
+    <wallShearRate> 1000 </wallShearRate> <!-- Wall shear rate of cell-free Poiseuille flow with the same pressure gradient [1/s] -->
+    <particleEnvelope> 25 </particleEnvelope> <!-- [LU] -->
+    <repulsion> 0 </repulsion> <!-- 1: cell-cell repulsion with kRep and RepCutoff -->
+    <kRep> 5.0 </kRep> <!-- Repulsion constant: force at the cutoff distance [pN] -->
+    <RepCutoff> 0.7 </RepCutoff> <!-- Repulsion cutoff [um] -->
+</domain>
+
+<sim>
+    <wallStrain> 40 </wallStrain> <!-- Run length: wall shear rate x time -->
+    <minIterations> 4000 </minIterations> <!-- At least this many iterations (flow development) -->
+    <tmax> 10000000 </tmax> <!-- At most this many iterations -->
+    <tcheck> 200 </tcheck> <!-- Iterations between stability checks; a multiple of stepMaterialEvery -->
+    <outputStrain> 10 </outputStrain> <!-- HDF5 output every this many units of wall strain; 0: none -->
+</sim>
+
+<!-- Optional limits for stopping a run as unstable (defaults shown):
+<stability>
+    <maxEdgeStrain> 2.0 </maxEdgeStrain>
+    <maxAreaChange> 0.3 </maxAreaChange>
+    <maxVolumeChange> 0.1 </maxVolumeChange>
+    <maxLatticeVelocity> 0.3 </maxLatticeVelocity>
+</stability>
+-->
+
+</hemocell>

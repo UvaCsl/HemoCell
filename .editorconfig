@@ -1,0 +1,35 @@
+# Editor settings matching .clang-format (https://editorconfig.org).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{c,cc,cpp,h,hh,hpp}]
+indent_style = space
+indent_size = 2
+
+[{CMakeLists.txt,*.cmake,CMakePresets.json,*.yml,*.yaml,*.xml,*.json}]
+indent_style = space
+indent_size = 2
+
+[*.{py,sh}]
+indent_style = space
+indent_size = 4
+
+[*.{rst,md}]
+indent_style = space
+# Markdown uses trailing spaces for line breaks.
+trim_trailing_whitespace = false
+
+[{Makefile,*.mk}]
+indent_style = tab
+
+# Vendored, generated and historical code keeps its own formatting.
+[{external,legacy,palabos}/**]
+indent_style = unset
+indent_size = unset
+trim_trailing_whitespace = unset
+insert_final_newline = unset

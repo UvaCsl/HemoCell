@@ -25,13 +25,19 @@ The script can be evaluated from the ``hemocell/patch`` directory as
 hemocell/scripts/batchPostProcess.sh
 ------------------------------------
 
-This scripts uses the ``*XMF.py`` files to generate all necessary xmf-files so
-that the output of a job can be read into ParaView and others. This script
-should be run within the ``hemocell/examples/<case>`` or
-``hemocell/examples/<case>/tmp`` directory. For instance::
+HemoCell writes the ``*.xmf`` (XDMF) files that make its HDF5 output readable
+by ParaView and others while it runs (see :ref:`reference/outputs:Files`). This
+script writes the same files for output of older HemoCell versions, or rewrites
+them. It runs ``scripts/HDF5toXDMF.py`` (Python 3 with ``h5py``) on an output
+directory, or on every output directory in a case directory (``tmp``,
+``tmp_0``, ...). For instance::
 
   cd hemocell/examples/<case>
   ../../scripts/batchPostProcess.sh
+
+Existing per-step files are kept unless ``--force`` is given; the files with
+all steps (``RBC.xmf`` etc.) are always rewritten. Directories can be passed as
+arguments.
 
 hemocell/scripts/[_system_]_env.sh
 ----------------------------------
@@ -41,25 +47,12 @@ For instance, ``snellius_env.sh`` contains the module settings to compile on the
 
   . ./scripts/snellius_env.sh
 
-.. _ccsv:
-
-hemocell/scripts/CellInfoMergeCSV.sh
-------------------------------------
-
-This script merges the CSV output from multiple processors into a single one in
-the current directory. Use it in the ``tmp`` directory like this::
-
-  cd hemocell/examples/<case>/tmp/
-  . ./scripts/CellInfoMergeCSV.sh
-
-Note: this script is depracated, HemoCell now does this automatically on saving.
-
 .. _helper_scripts:xmf_to_x3d:
 
 convert_xmf_to_x3d.py
 ----------------------------------------------------
 
-This script converts generated ``*.xmf`` particle files (RBC, PLT, etc.) to the
+This script converts the per-step ``*.xmf`` particle files (RBC, PLT, etc.) to the
 X3D format for rendering purposes, e.g. using :ref:`visualization:Blender`. The
 script creates a ``x3d`` directory in the output directory of an example case
 and populates this with the ``*.x3d`` files. The script is used as follows

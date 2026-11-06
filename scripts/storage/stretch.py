@@ -46,8 +46,8 @@ def plotValidationData(dataDir="/home/lmount/devel/ficsion/validation/"):
 
 
 def plotMultipleStretchingData(filenames, var='kBend', val='1000', var2='kWLC'):
-    finames = map(lambda f: "-".join(f.split('-')[:-1]), filenames)
-    fchars = map(lambda z: dict(map(lambda x:x.split('-'), z.split('_'))[:-1]), finames)
+    finames = ["-".join(f.split('-')[:-1]) for f in filenames]
+    fchars = [dict([x.split('-') for x in z.split('_')][:-1]) for z in finames]
     clrs = 'rgbcmyk'
     for ifn, fn in enumerate(filenames):
         t, f, DAX, DTX = readStretchingData(fn)
@@ -67,7 +67,7 @@ if 0:
     kBend = {'75':0,'150':1,'200':2,'1000':3}
     var='kWLC'; val='0.5'; var2='eqLengthRatio'
     filenames = glob('./*' + var + '-' + val + '_*log')
-    print filenames
+    print(filenames)
     plotValidationData()
     plotMultipleStretchingData(filenames, var, val, var2)
     pass
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     try:
         fname = sys.argv[1]
     except:
-        print "Error: No or wrong filename as input."
+        print("Error: No or wrong filename as input.")
     plotValidationData()
     t, f, DAX, DTX = readStretchingData(fname)
     pl.plot(f, DAX, label="DA sim")
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     pl.axis([0, 200, 0, 25])
     pl.legend(loc="best")
     pl.savefig(fname + '.png')
-    print "Saving plot as ", fname + '.png'
+    print("Saving plot as ", fname + '.png')
 
 
 

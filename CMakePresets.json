@@ -1,0 +1,85 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build-${presetName}",
+      "cacheVariables": { "BUILD_TESTING": "ON" }
+    },
+    {
+      "name": "release",
+      "inherits": "base",
+      "displayName": "Release, optimised for this CPU (default for production runs)",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "portable",
+      "inherits": "base",
+      "displayName": "Release without -march=native (runs on other CPUs)",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "HEMOCELL_NATIVE_ARCH": "OFF" }
+    },
+    {
+      "name": "debug",
+      "inherits": "base",
+      "displayName": "Debug (-O0 -g) with Palabos run-time checks",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "HEMOCELL_PALABOS_DEBUG": "ON",
+        "HEMOCELL_NATIVE_ARCH": "OFF"
+      }
+    },
+    {
+      "name": "sanitize",
+      "inherits": "base",
+      "displayName": "AddressSanitizer + UndefinedBehaviorSanitizer (RelWithDebInfo)",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "HEMOCELL_SANITIZERS": "address;undefined",
+        "HEMOCELL_NATIVE_ARCH": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "release", "configurePreset": "release", "targets": ["hemocell_test"] },
+    { "name": "portable", "configurePreset": "portable", "targets": ["hemocell_test"] },
+    { "name": "debug", "configurePreset": "debug", "targets": ["hemocell_test"] },
+    { "name": "sanitize", "configurePreset": "sanitize", "targets": ["hemocell_test"] }
+  ],
+  "testPresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "release-unit",
+      "inherits": "base",
+      "configurePreset": "release",
+      "filter": { "include": { "label": "unit" } }
+    },
+    {
+      "name": "release-validation",
+      "inherits": "base",
+      "configurePreset": "release",
+      "filter": { "include": { "label": "validation" } }
+    },
+    {
+      "name": "debug-unit",
+      "inherits": "base",
+      "configurePreset": "debug",
+      "filter": { "include": { "label": "unit" } }
+    },
+    {
+      "name": "sanitize-unit",
+      "inherits": "base",
+      "configurePreset": "sanitize",
+      "filter": { "include": { "label": "unit" } },
+      "environment": {
+        "ASAN_OPTIONS": "detect_leaks=0",
+        "UBSAN_OPTIONS": "print_stacktrace=1"
+      }
+    }
+  ]
+}
