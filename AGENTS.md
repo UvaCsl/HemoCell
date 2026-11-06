@@ -315,13 +315,22 @@ writers, the XDMF records (`io/xdmfOutput.h`), `scripts/HDF5toXDMF.py` and
 results, binaries, build trees or dependency downloads.
 
 `tools/packCells` has an independent CMake build and writes its binary into that
-directory. It produces `.pos` inputs with domain dimensions in micrometres:
+directory (`-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=<dir>` elsewhere; several build
+trees otherwise overwrite each other's binary). It produces `.pos` inputs with
+domain dimensions in micrometres; `doc/user_guide/packcells.rst` documents it,
+and `tools/packCells/check_packing.py` checks a packing (the CI `packcells` job
+packs a box, a slab and a pipe and checks them):
 
 ```bash
 cmake -S tools/packCells -B tools/packCells/build
 cmake --build tools/packCells/build --parallel 2
 tools/packCells/packCells --help
 ```
+
+It is built without FMA contraction (`-ffp-contract=off`), so a `--seed` gives
+the same packing with any number of threads and with or without OpenMP or
+`-march=native`; keep it so, and keep its cell-type table equal to the one in
+`check_packing.py`.
 
 ## Testing and verification
 

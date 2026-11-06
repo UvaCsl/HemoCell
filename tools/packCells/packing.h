@@ -246,10 +246,7 @@ public:
   // overlap; the packing stops at maxSteps iterations or below minScale.
   void initBlood(double sizeX, double sizeY, double sizeZ, int maxSteps, double startScale, double minScale,
                  vector<CellType> & ctypes);
-  // void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps, double sizing);
-  void savePov(const char * fileName, int wbcNumber);
   void saveBloodCellPositions();
-  void getOutput(vector<vector<vector3>> & positions, vector<vector<vector3>> & angles);
   void setRndRotation(bool rndRotation_) { rndRotation = rndRotation_; }
   // Before initBlood(): walls[a] puts walls at both faces of the box along
   // axis a (no longer periodic); cylinderAxis >= 0 confines the cells to a
@@ -560,8 +557,11 @@ void Packing::iterate() {
   DensityNominal = nomPackDens * Douter * Douter * Douter;
   Pactual = nomPackDens * Dinner * Dinner * Dinner;
 
-  // Stop criterion
-  isFinished = (Force_step < 1e-15);
+  // Stop criterion: no net force, and nothing overlaps (Dinner == Douter).
+  // The net force alone also vanished when overlaps balance: a cell pressed
+  // into both walls of a slab it was too tall for stayed so (the torques,
+  // which would have turned it free, are not in Force_step).
+  isFinished = (Force_step < 1e-15) && (Dinner >= Douter * (1 - 1e-9));
 
   if (isFinished) {
     output();
@@ -777,8 +777,11 @@ void Packing::calc_motion() {
       if (!Periodic[a]) continue;
       if (buff[a] < 0)
         buff[a] += Box[a];
-      else if (buff[a] > Box[a])
+      else if (buff[a] >= Box[a])
         buff[a] -= Box[a];
+      // In [0, L), which the loader requires: a tiny negative coordinate plus
+      // L rounds to L itself (and L used to stay, the test was > L).
+      if (buff[a] >= Box[a]) buff[a] = 0;
     }
     p->get_pos() = buff;
 
@@ -824,90 +827,14 @@ void Packing::output() {
   cout << std::flush;
 }
 
-void Packing::getOutput(vector<vector<vector3>> & positions, vector<vector<vector3>> & angles) {
-  positions.resize(NumSpecies);
-  angles.resize(NumSpecies);
-
-  int counter = 0;
-  for (int ns = 0; ns < NumSpecies; ns++) {
-    int numCells = species[ns]->getNum();
-
-    positions[ns].resize(numCells);
-    angles[ns].resize(numCells);
-
-    for (int nc = 0; nc < numCells; nc++) {
-      Ellipsoid * pi = particles[counter];
-
-      vector3 pos = pi->get_pos();
-      matrix33 Q = pi->get_q().countQ();
-      vector3 euler(atan2(Q(1, 2), Q(2, 2)), -asin(Q(0, 2)), atan2(Q(0, 1), Q(0, 0)));
-      //euler *= 180 / PI; //Rad to Deg
-
-      positions[ns][nc] = vector3(pos[0], pos[1], pos[2]) * (1. / Sizing);
-      angles[ns][nc] = vector3(euler[0], euler[1], euler[2]); // Euler angles in RAD
-
-      counter++;
-    }
-  }
-}
-
-//Legacy, needs rewriting
-void Packing::savePov(const char * fileName, int wbcNumber) {
-  ofstream povf(fileName);
-  povf.setf(ios::fixed, ios::floatfield);
-  povf.precision(6);
-
-
-  // Write out ellipsoids
-  for (int i = 0; i < NumParts; i++) {
-    Ellipsoid * pi = particles[i];
-    vector3 pos = pi->get_pos() * (1. / Sizing);
-    Species * k = pi->getSpecies();
-    vector3 rad = 0.5 * Dinner * k->getSize() * (1. / Sizing);
-    bool sph = k->getIsSphere();
-
-    if (i < k->getNum())
-      povf << "object { RBC" << endl;
-    else if (k->getNum() == wbcNumber)
-      povf << "object { WBC" << endl;
-    else
-      povf << "object { PLT" << endl;
-
-    povf << "scale <" << setw(12) << rad[0] << ", " << setw(12) << rad[1] << ", " << setw(12) << rad[2] << "> " << endl;
-    if (!sph) { //	sphere
-      matrix33 Q = pi->get_q().countQ();
-      vector3 euler(atan2(Q(1, 2), Q(2, 2)), -asin(Q(0, 2)), atan2(Q(0, 1), Q(0, 0)));
-      euler *= 180 / PI;
-      povf << "rotate " << setw(12) << euler[0] << "*x" << endl;
-      povf << "rotate " << setw(12) << euler[1] << "*y" << endl;
-      povf << "rotate " << setw(12) << euler[2] << "*z" << endl;
-    }
-    povf << "translate <" << setw(12) << pos[0] << ", " << setw(12) << pos[1] << ", " << setw(12) << pos[2] << "> "
-         << endl;
-
-    if (NumSpecies > 1) {
-      povf << "pigment { color ";
-      if (i < k->getNum())
-        povf << "Red";
-      else if (k->getNum() == wbcNumber)
-        povf << "White";
-      else
-        povf << "Yellow";
-      povf << " }" << endl;
-    }
-
-    povf << "}" << endl;
-  }
-  povf.close();
-}
-
 void Packing::saveBloodCellPositions() {
   int speciesCounter = 0;
 
   for (int j = 0; j < NumSpecies; j++) {
     ofstream cellsFile(species[j]->name + ".pos");
-
-    //cellsFile << No_cells_x << " " << No_cells_y << " " << No_cells_z << endl; // Dimensions
+    // 9 significant digits: with the default 6, a centre just below the box
+    // length was written as the length, outside the domain for the loader
+    cellsFile.precision(9);
 
     cellsFile << species[j]->getNum() << endl; // Num. of cells of this type
 
@@ -919,11 +846,8 @@ void Packing::saveBloodCellPositions() {
       vector3 euler(atan2(Q(1, 2), Q(2, 2)), -asin(Q(0, 2)), atan2(Q(0, 1), Q(0, 0)));
       euler *= 180 / PI; //Rad to Deg
 
-      //if(i < species[0]->getn())
       cellsFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2]
                 << endl;
-      //else
-      //    pltFile << pos[0] << " " << pos[1] << " " << pos[2] << " " << euler[0] << " " << euler[1] << " " << euler[2] << endl;
     }
 
     cellsFile.close();
@@ -1011,7 +935,7 @@ double Packing::zeroin(BinaryEllipsoidSystem & ell, double ax, double bx) const 
     if (fabs(new_step) <= tol_act || fb == (double)0) return b;
 
     if (fabs(prev_step) >= tol_act && fabs(fa) > fabs(fb)) {
-      register double t1, cb, t2;
+      double t1, cb, t2;
       cb = c - b;
       if (a == c) {
         t1 = fb / fa;

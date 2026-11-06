@@ -12,7 +12,7 @@ Viewing of cell packings
 ------------------------
 
 When you are willing to inspect a distribution of cells, for instance as result
-of running the ``packCell`` tool, the ``pos_to_vtk`` command-line utility
+of running the ``packCells`` tool (:ref:`packcells`), the ``pos_to_vtk`` command-line utility
 provides direct visualisation using using the corresponding cell position
 ``pos``-files only. Default usage illustrates the cells positions, considering
 red blood cells, platelets, or a combination thereof, in a small GUI window.

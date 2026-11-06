@@ -36,9 +36,9 @@ Findings of a review of the `refactor` branch (November 2026). Items marked
 reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
 before others write drivers against the API.
 
-Status: A1-A9, B11-B16, C17-C20, E23-E24 and F26-F32 are done (see
-CHANGELOG). B10 is deferred (special case, lower priority). D21-D22, E25 and
-F33-F35 (`tools/packCells`) are open.
+Status: A1-A9, B11-B16, C17-C20, E23-E24 and F26-F35 are done (see
+CHANGELOG). B10 is deferred (special case, lower priority). D21-D22 and E25
+are open, and the vRBC ellipsoid (F27).
 
 ### A. Silent wrong results or lost runs
 
@@ -425,14 +425,28 @@ then F29 with the check of F35, then F30-F31, then the rest.
     (an ellipsoid-plane distance check, O(N) per step) and an origin offset,
     so the box can be the fluid region; optionally a cylinder for pipes
     (`cases/pipeflow_wbc/README.md`).
-33. **Hematocrit and volume fractions.** `--hematocrit` counts RBCs by their
+33. *Done* (the effective volume explained in the help and the user guide;
+    per type the number of cells, the volume fraction by the mesh volume and
+    for RBCs the hematocrit by the effective volume are printed).
+    **Hematocrit and volume fractions.** `--hematocrit` counts RBCs by their
     effective volume, 97 um^3 (the 81 um^3 mesh plus the IBM interaction
     range). This is intended, but it is explained nowhere: the code only says
     "set to match the model". Document it in the help and the user guide,
     and print the cell counts with the effective and mesh volume fractions.
     `--hematocrit` always adds human RBCs (no `RBC_m`; WBCs are not counted),
     and the "nominal volume fraction" printed is the ellipsoids'.
-34. **Build and code.**
+34. *Done* (CMake: build type, `find_package(OpenMP)`, `PACKCELLS_NATIVE_ARCH`,
+    `PACKCELLS_WERROR`, no `g++-7`; the binary stays in `tools/packCells/`
+    unless `-DCMAKE_RUNTIME_OUTPUT_DIRECTORY` is given; `register` and the
+    dead code removed; centres in [0, L), written with 9 digits). Found on
+    the way: build trees sharing the output path overwrote each other's
+    binary; FMA contraction made every build (OpenMP or not, `-march=native`
+    or not) pack differently for a seed, now off (`-ffp-contract=off`, no
+    cost in speed; the gcc variants give identical files); a packing whose
+    overlaps balanced (a cell pressed into both walls of a slab) was
+    reported done, now it also requires that nothing overlaps. Clang is not
+    installed here: the CI job builds packCells with clang.
+    **Build and code.**
     * The CMake file forces `g++-7` on macOS (after `project()`) and
       hard-codes `-fopenmp -march=native -O3 -g`; use `find_package(OpenMP)`
       and the build type.
@@ -442,7 +456,11 @@ then F29 with the check of F35, then F30-F31, then the rest.
     * Dead code: `savePov()`, `getOutput()`, `scene.pov`, `compile.sh`.
     * A centre exactly at L stays there (`pbc()` uses `>`), which the loader
       rejects.
-35. **Documentation and a check.**
+35. *Done* (user guide page `packcells.rst` under How-to Guides, the README,
+    the QuickStart; `check_packing.py`; the CI job `packcells`, with gcc and
+    clang, packs and checks a periodic box, a slab and the pipeflow pipe in
+    about 2 s).
+    **Documentation and a check.**
     * QuickStart.rst gives the path `./hemocell/packCells`, and its build
       steps don't put the binary in `build/`.
     * Case.rst shows an old help and output, and its command (`... -r`) now

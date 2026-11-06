@@ -44,37 +44,39 @@ namespace {
 // interact from about one kernel width apart), the effective size of the
 // cells. meshFit is the scale of the ellipsoid at which it just contains the
 // mesh (measured on the generated meshes): below it, packed cells may
-// intersect.
+// intersect; meshVolume is the volume of the mesh. The same table is in
+// check_packing.py: keep them equal.
 struct BuiltinType {
   const char * option;      // --<option> <n>
   const char * name;        // output file <name>.pos
   double dx, dy, dz;        // diameters of the enclosing ellipsoid [um]
   double meshFit;           // see above
+  double meshVolume;        // volume of the mesh [um^3]
   const char * description; // for --help
 };
 const BuiltinType builtinTypes[] = {
     // RBC_FROM_SPHERE, radius 3.91 um: 7.82 x 2.29 x 7.82 um.
-    {"rbc", "RBC", 8.4, 4.4, 8.4, 0.931, "human RBCs"},
+    {"rbc", "RBC", 8.4, 4.4, 8.4, 0.931, 81.08, "human RBCs"},
     // ELLIPSOID_FROM_SPHERE, radius 1.25 um, aspect ratio 0.435: 2.50 x 1.09 x
     // 2.50 um (the RBC's margin; it was 2.4 x 1.05 x 2.4, smaller than the
     // mesh).
-    {"plt", "PLT", 2.7, 1.17, 2.7, 0.929, "human platelets"},
+    {"plt", "PLT", 2.7, 1.17, 2.7, 0.929, 3.24, "human platelets"},
     // WBC_SPHERE, radius 4.0 um: 8.0 um.
-    {"wbc", "WBC", 8.4, 8.4, 8.4, 0.952, "white blood cells"},
+    {"wbc", "WBC", 8.4, 8.4, 8.4, 0.952, 265.83, "white blood cells"},
     // MESH_FROM_STL of cases/pipeflowMalaria/vRBC_uniform.stl at radius 5.4 um:
     // 2.94 x 4.83 x 10.8 um. The ellipsoid does not contain the mesh (fit
     // 1.089), so these pack from a larger start; with the RBC's margin the
     // ellipsoid would be 3.85 x 5.3 x 14.5 um.
-    {"vrbc", "vRBC", 3.5, 6.0, 11.0, 1.089, "stage V gametocytes"},
+    {"vrbc", "vRBC", 3.5, 6.0, 11.0, 1.089, 64.94, "stage V gametocytes"},
     // RBC_FROM_SPHERE, radius 2.9 um: 5.80 x 1.70 x 5.80 um (the human RBC's
     // ellipsoid scaled by 2.9 / 3.91; it was 5.8 x 3.4 x 5.8).
-    {"rbc_m", "RBC_m", 6.23, 3.26, 6.23, 0.931, "mouse RBCs"},
+    {"rbc_m", "RBC_m", 6.23, 3.26, 6.23, 0.931, 33.09, "mouse RBCs"},
     // ELLIPSOID_FROM_SPHERE, radius 0.95 um, aspect ratio 0.57: 1.90 x 1.08 x
     // 1.90 um (it was 1.84 x 1.05 x 1.84).
-    {"plt_m", "PLT_m", 2.05, 1.17, 2.05, 0.927, "mouse wild-type PLTs"},
+    {"plt_m", "PLT_m", 2.05, 1.17, 2.05, 0.927, 1.87, "mouse wild-type PLTs"},
     // ELLIPSOID_FROM_SPHERE, radius 1.71 um, aspect ratio 1: 3.42 um (it was
     // 1.71 um, the radius taken as the diameter).
-    {"plt_mko", "PLT_mko", 3.68, 3.68, 3.68, 0.929, "mouse knockout PLTs"},
+    {"plt_mko", "PLT_mko", 3.68, 3.68, 3.68, 0.929, 19.10, "mouse knockout PLTs"},
 };
 const int numBuiltinTypes = sizeof(builtinTypes) / sizeof(builtinTypes[0]);
 
@@ -292,7 +294,7 @@ int main(int argc, char * argv[]) {
         const int n = int(parseInteger(argv[optind], what + ": the number of cells", 0, maxCount));
         double d[3];
         for (int k = 0; k < 3; k++) { d[k] = parsePositive(argv[optind + 1 + k], what + ": diameter"); }
-        cellTypes.push_back({name, d[0], d[1], d[2], n, 0.0});
+        cellTypes.push_back({name, d[0], d[1], d[2], n, 0.0, 0.0});
         optind += 4;
         break;
       }
@@ -347,7 +349,7 @@ int main(int argc, char * argv[]) {
         if (val >= OPT_BUILTIN && val < OPT_BUILTIN + numBuiltinTypes) {
           const BuiltinType & t = builtinTypes[val - OPT_BUILTIN];
           const int n = int(parseInteger(optarg, std::string("--") + t.option, 0, maxCount));
-          cellTypes.push_back({t.name, t.dx, t.dy, t.dz, n, t.meshFit});
+          cellTypes.push_back({t.name, t.dx, t.dy, t.dz, n, t.meshFit, t.meshVolume});
           if (std::string(t.option) == "rbc" || std::string(t.option) == "plt") { rbc_plt_set = true; }
           break;
         }
@@ -388,9 +390,9 @@ int main(int argc, char * argv[]) {
     const double nRBC = std::round(hematocrit * volume / rbcEffectiveVolume);
     if (nRBC < 1) { usageError("the box holds no RBC at this hematocrit"); }
     if (nRBC > maxCount) { usageError("too many RBCs for this hematocrit and box"); }
-    cellTypes.push_back({rbc.name, rbc.dx, rbc.dy, rbc.dz, int(nRBC), rbc.meshFit});
+    cellTypes.push_back({rbc.name, rbc.dx, rbc.dy, rbc.dz, int(nRBC), rbc.meshFit, rbc.meshVolume});
     const int nPLT = int(std::round(nRBC * plt_ratio));
-    if (nPLT > 0) { cellTypes.push_back({plt.name, plt.dx, plt.dy, plt.dz, nPLT, plt.meshFit}); }
+    if (nPLT > 0) { cellTypes.push_back({plt.name, plt.dx, plt.dy, plt.dz, nPLT, plt.meshFit, plt.meshVolume}); }
   } else if (plt_ratio_set) {
     usageError("--plt_ratio needs --hematocrit (give the platelets with --plt otherwise)");
   }
@@ -457,6 +459,21 @@ int main(int argc, char * argv[]) {
     cout << "    Sizes: (" << cell.dx << " , " << cell.dy << " , " << cell.dz << " )" << endl;
     cout << "    Ellipsoid volume: " << 4.0 / 3.0 * PI * cell.dx * cell.dy * cell.dz / 8.0 << " [µm3]." << endl;
     if (cell.meshFit > 0) { cout << "    Mesh fit: " << cell.meshFit << endl; }
+  }
+  // The fractions of the volume the cells fill (the box, or the cylinder):
+  // by the mesh volume, and for human RBCs the hematocrit by their effective
+  // volume (as --hematocrit counts them).
+  cout << "Volume fractions in the " << (cylinderAxis >= 0 ? "cylinder" : "box") << " (" << volume << " µm3):" << endl;
+  for (CellType & cell : cellTypes) {
+    cout << "  " << cell.name << ": " << cell.number << " cells";
+    if (cell.name == "RBC") {
+      cout << ", hematocrit " << cell.number * rbcEffectiveVolume / volume << " by the effective volume ("
+           << rbcEffectiveVolume << " µm3 per RBC)";
+    }
+    if (cell.meshVolume > 0) {
+      cout << ", " << cell.number * cell.meshVolume / volume << " by the mesh volume (" << cell.meshVolume << " µm3)";
+    }
+    cout << endl;
   }
 
   Random::init(seed);

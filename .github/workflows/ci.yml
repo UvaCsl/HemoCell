@@ -108,6 +108,45 @@ jobs:
         if: always()
         run: ccache --show-stats
 
+  packcells:
+    # The cell packing tool (its own CMake project, without Palabos): build it
+    # with warnings as errors, pack RBCs and PLTs at Ht 0.3 in a periodic box,
+    # a slab with walls and the pipe of examples/pipeflow, and check every
+    # packing with check_packing.py (no overlap below the mesh fit).
+    name: packCells (${{ matrix.cxx }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        cxx: [g++, clang++]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends cmake g++ clang libomp-dev
+          python -m pip install numpy
+      - name: Build
+        run: |
+          cmake -S tools/packCells -B "$RUNNER_TEMP/packcells" -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DPACKCELLS_WERROR=ON -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$RUNNER_TEMP/packcells/bin"
+          cmake --build "$RUNNER_TEMP/packcells" --parallel 2
+      - name: Pack and check
+        working-directory: ${{ runner.temp }}
+        run: |
+          P="$RUNNER_TEMP/packcells/bin/packCells"
+          C="python $GITHUB_WORKSPACE/tools/packCells/check_packing.py"
+          mkdir box slab pipe
+          (cd box && timeout 120 $P 40 40 40 --hematocrit 0.3 --seed 1 && $C 40 40 40 RBC.pos PLT.pos)
+          (cd slab && timeout 120 $P 40 40 30 --hematocrit 0.3 --walls z --seed 2 &&
+            $C 40 40 30 --walls z RBC.pos PLT.pos)
+          (cd pipe && timeout 120 $P 51.5 22.9 22.9 --hematocrit 0.3 --cylinder x 11.45 --offset 0 1.55 1.55 --seed 3 &&
+            $C 51.5 22.9 22.9 --cylinder x 11.45 --offset 0 1.55 1.55 RBC.pos PLT.pos)
+
   format:
     # Only the lines a pull request changes must follow .clang-format, so the
     # check works without reformatting the whole code base.

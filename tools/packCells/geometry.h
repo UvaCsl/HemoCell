@@ -375,7 +375,7 @@ inline matrix33 transp(const matrix33 & m) {
 
 
 class Quaternion;
-Quaternion operator*(const Quaternion &, const Quaternion &);
+inline Quaternion operator*(const Quaternion &, const Quaternion &);
 
 class Quaternion {
   double s;
@@ -436,7 +436,7 @@ public:
   }
 };
 
-Quaternion operator*(const Quaternion & q1, const Quaternion & q2) {
+inline Quaternion operator*(const Quaternion & q1, const Quaternion & q2) {
   Quaternion q(q1);
   q *= q2;
   return q;

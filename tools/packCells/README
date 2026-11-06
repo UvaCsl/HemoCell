@@ -1,3 +1,31 @@
+packCells: initial positions of cells for HemoCell
+===================================================
+
+Places cells at random positions and orientations in a box (periodic, or with
+walls, or in a pipe) so that their enclosing ellipsoids do not overlap, and
+writes one <type>.pos file per cell type for HemoCell's loadParticles().
+The user guide describes it in full: doc/user_guide/packcells.rst
+(Initial cell positions), including how to pack for the walls of a case.
+
+Build (from the repository root; the binary is tools/packCells/packCells):
+
+  cmake -S tools/packCells -B tools/packCells/build
+  cmake --build tools/packCells/build
+
+Examples (sizes in um):
+
+  ./packCells --help
+  ./packCells 40 40 40 --hematocrit 0.3 --seed 1
+  ./packCells 50 50 98 --hematocrit 0.3 --walls z --offset 0 0 0.75
+  ./packCells 51.5 22.9 22.9 --hematocrit 0.3 --cylinder x 11.45 --offset 0 1.55 1.55
+
+Check a packing (Python 3 with numpy; the same box and walls as above):
+
+  python3 check_packing.py 40 40 40 RBC.pos PLT.pos
+
+Credits
+-------
+
 The source of this tool uses algorithms and data structures from the work of Monika Bargieł. 
 For the original code please visit: https://github.com/malawski/ellipsoids
 

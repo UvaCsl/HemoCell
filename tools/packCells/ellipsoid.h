@@ -36,6 +36,7 @@ struct CellType {
   // The scale of the ellipsoid at which it still contains the cell's mesh
   // (0: not known).
   double meshFit;
+  double meshVolume; // volume of the cell's mesh [um^3] (0: not known)
 };
 
 class Species {

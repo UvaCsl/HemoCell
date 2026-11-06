@@ -507,6 +507,40 @@ Unreleased (refactor)
     at the walls. `--hematocrit` counts the cylinder's volume. A box thinner
     than twice the reach of a cell along a periodic axis checks every image,
     and a cell against its own (it took the nearest image only).
+  * `tools/packCells` reports, per cell type, the number of cells and their
+    volume fraction by the mesh volume, and for RBCs the hematocrit by the
+    effective volume of 97 um^3 (the 81 um^3 mesh plus the IBM interaction
+    range) that `--hematocrit` counts with.
+  * `tools/packCells` is built without FMA contraction (`-ffp-contract=off`):
+    the compiler fused multiply-adds differently with and without OpenMP,
+    with `-march=native` or not and after small code changes, and the
+    packing is chaotic, so a seed gave a different packing with every build.
+    Now the documented, `-Werror`, portable and single-thread (no OpenMP)
+    builds give the same files, at no cost in speed. The CMake file uses the
+    build type (default Release), finds OpenMP (without it, one thread) and
+    has `PACKCELLS_NATIVE_ARCH` and `PACKCELLS_WERROR`; it no longer forces
+    `g++-7` on macOS, and `-DCMAKE_RUNTIME_OUTPUT_DIRECTORY` moves the
+    binary (build trees sharing `tools/packCells/packCells` overwrite each
+    other's and may take another's as up to date). The code compiles as
+    C++17 and C++20 (`register` removed); `savePov()`, `getOutput()`,
+    `scene.pov` and `compile.sh` are removed.
+  * `tools/packCells`: a packing whose overlaps balanced each other was
+    reported done, e.g. a cell pressed into both walls of a slab it was too
+    tall for (zero net force; the turning, which would have freed it, was
+    not counted). It now also requires that nothing overlaps; other packings
+    are unchanged. Cell centres stay in [0, L) along the periodic axes (a
+    tiny negative coordinate plus L gave L) and are written with 9
+    significant digits (with 6, a centre just below L was written as L,
+    outside the domain for the loader).
+  * `tools/packCells` is documented in the user guide (Initial cell
+    positions: the ellipsoids and their scale, the hematocrit, file names,
+    positions and rotations, periodic axes, walls and pipes, run time) and
+    its README; the QuickStart gave a wrong path and build steps.
+    `tools/packCells/check_packing.py` checks a packing independently
+    (Perram-Wertheim contacts through the periodic images, walls and
+    cylinder), and a CI job builds packCells with gcc and clang (`-Werror`)
+    and packs and checks a periodic box, a slab with walls and the pipe of
+    `examples/pipeflow`.
 * Rounding to the nearest lattice node (`nearestNode()`) rounds negative
   coordinates down; `plint(x + 0.5)` gave a node one too high for x < -0.5
   (particle grid, wall removal in `advanceParticles()`, `nearestCell()`, the

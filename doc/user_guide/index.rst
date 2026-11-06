@@ -156,6 +156,7 @@ long simulations on HPC clusters with thousands of cores. See
    :hidden:
 
    advanced_cases
+   packcells
    visualization
    helper_scripts
    utilities
