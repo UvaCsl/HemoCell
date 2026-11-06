@@ -304,7 +304,7 @@ used and printed):
         Steps  Vol.fraction  Vol.fraction         Scale         Scale              Force
                     (inner)       (outer)       (inner)       (outer)       per particle
     ...
-           71  0.4992015284  0.4992015284  0.9998809052  0.9998809052  0.000000000000000 PACKING DONE
+           71  0.4991832451  0.4991832451  0.9998686981  0.9998686981  0.000000000000000 PACKING DONE
     Final scale of the ellipsoids: 0.9999 (start 1.0000, minimum 0.9310)
     The ellipsoids do not overlap at their nominal size: the cells start out of each other's interaction range.
     user@local:~/hemocell/tools/packCells$ cp RBC.pos ../../examples/newCase/RBC.pos

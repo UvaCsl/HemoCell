@@ -36,9 +36,9 @@ Findings of a review of the `refactor` branch (November 2026). Items marked
 reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
 before others write drivers against the API.
 
-Status: A1-A9, B11-B16, C17-C20, E23-E24 and F26-F30 are done (see
+Status: A1-A9, B11-B16, C17-C20, E23-E24 and F26-F31 are done (see
 CHANGELOG). B10 is deferred (special case, lower priority). D21-D22, E25 and
-F31-F35 (`tools/packCells`) are open.
+F32-F35 (`tools/packCells`) are open.
 
 ### A. Silent wrong results or lost runs
 
@@ -387,7 +387,12 @@ then F29 with the check of F35, then F30-F31, then the rest.
     The grid cell size may win time back (larger cells: fewer cells to visit,
     but more candidate pairs). Compare the same case and thread count before
     and after.
-31. *(verified)* **All cells start with the same orientation** and rotate
+31. *Done* (uniformly random start orientations, Shoemake; spheres and
+    `--noRotate` keep theirs). At Ht 0.1 no RBC is left unrotated and the
+    thin axes are isotropic (mean |cos| 0.50 / 0.47 / 0.52 along x / y / z);
+    run time and final scale unchanged (Ht 0.45, four seeds); `--noRotate`
+    gives the same files as before.
+    *(verified)* **All cells start with the same orientation** and rotate
     only when they collide. At Ht 0.1, 19 of 66 RBCs come out unrotated and
     the RBCs lie mostly in the xz-plane (mean |cos| of the thin axis with y:
     0.83; isotropic is 0.5). Start from uniform random orientations; tried at

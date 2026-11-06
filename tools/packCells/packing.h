@@ -362,10 +362,20 @@ void Packing::init() {
   double alpha = Rc_max;
   if (Epsilon_rot > .1) Epsilon_rot = 50. / (alpha * alpha * alpha);
 
+  // Random positions and, unless rotation is off, uniformly random orientations
+  // (spheres keep theirs). All cells used to start with the same orientation
+  // and turned only when they collided, so at low volume fractions most kept
+  // it (at Ht 0.1, 19 of 66 RBCs came out unrotated, lying mostly flat in the
+  // xz-plane).
   particles = new Ellipsoid *[NumParts];
   int ipart = 0;
-  for (int is = 0; is < NumSpecies; is++)
-    for (int ip = 0; ip < species[is]->getNum(); ip++) particles[ipart++] = new Ellipsoid(species[is], Box);
+  for (int is = 0; is < NumSpecies; is++) {
+    for (int ip = 0; ip < species[is]->getNum(); ip++) {
+      Ellipsoid * e = new Ellipsoid(species[is], Box);
+      if (rndRotation && !species[is]->getIsSphere()) e->get_q().random();
+      particles[ipart++] = e;
+    }
+  }
 
   Link_head = new int[No_cells];
   Link_list = new int[NumParts];

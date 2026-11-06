@@ -413,11 +413,14 @@ public:
     return *this;
   }
 
+  // A uniformly distributed rotation (K. Shoemake, Uniform random rotations,
+  // Graphics Gems III, 1992: uniform on the unit quaternions). It used to take
+  // the vector part from the positive octant only, without normalising.
   Quaternion & random() {
-    double phi = Random::getRandLimits(0, PI);
-    s = cos(phi);
-    p.random();
-    p *= sin(phi);
+    const double u1 = Random::getRand(), u2 = Random::getRand(), u3 = Random::getRand();
+    const double a = std::sqrt(1 - u1), b = std::sqrt(u1);
+    s = b * std::cos(2 * PI * u3);
+    p = vector3(a * std::sin(2 * PI * u2), a * std::cos(2 * PI * u2), b * std::sin(2 * PI * u3));
     return *this;
   }
 

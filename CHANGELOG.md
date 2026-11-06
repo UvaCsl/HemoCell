@@ -484,6 +484,16 @@ Unreleased (refactor)
     0.7 s instead of 4.4 s in a 40 um cube and in 2.9 s instead of 22.5 s in
     a 100 x 50 x 50 um box (85 and 352 instead of 578 and 2,768 us per
     iteration); one thread is now about as fast as 24 threads were.
+  * `tools/packCells` starts the cells with uniformly random orientations
+    (spheres and `--noRotate` keep theirs). All cells started with the same
+    orientation and turned only in collisions, so dilute packings came out
+    aligned: at Ht 0.1, 10 to 19 of 66 RBCs were not rotated at all and the
+    thin axes stayed close to y (mean |cos| 0.74 to 0.83, isotropic is 0.5;
+    now 0.50 / 0.47 / 0.52 along x / y / z). The run time and the final scale
+    do not change (Ht 0.45: 7,850-8,060 iterations over four seeds, against
+    7,840-8,020). `Quaternion::random()`, unused before, drew its vector part
+    from the positive octant without normalising; it now follows Shoemake
+    (uniform rotations).
 * Rounding to the nearest lattice node (`nearestNode()`) rounds negative
   coordinates down; `plint(x + 0.5)` gave a node one too high for x < -0.5
   (particle grid, wall removal in `advanceParticles()`, `nearestCell()`, the
