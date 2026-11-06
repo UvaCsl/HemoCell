@@ -494,6 +494,19 @@ Unreleased (refactor)
     7,840-8,020). `Quaternion::random()`, unused before, drew its vector part
     from the positive octant without normalising; it now follows Shoemake
     (uniform rotations).
+  * `tools/packCells` packs for walls: `--walls <axes>` closes the box along
+    those axes and `--cylinder <axis> <R>` confines the cells to a pipe (the
+    ellipsoids touch a wall as they touch each other: the force and the
+    turning grow as the scale at which they would touch falls below the
+    current one; for the cylinder from the farthest point of the cell's
+    cross-section, exact to the brute-force check), and `--offset` moves the
+    positions onto the fluid region. The user guide gives the box, radius and
+    offset for walls at given nodes; with them HemoCell placed every cell of
+    `examples/parallelplanes` and `examples/pipeflow`, where periodic
+    packings of the whole domain lost 8 % of the cells and 70 % of the RBCs
+    at the walls. `--hematocrit` counts the cylinder's volume. A box thinner
+    than twice the reach of a cell along a periodic axis checks every image,
+    and a cell against its own (it took the nearest image only).
 * Rounding to the nearest lattice node (`nearestNode()`) rounds negative
   coordinates down; `plint(x + 0.5)` gave a node one too high for x < -0.5
   (particle grid, wall removal in `advanceParticles()`, `nearestCell()`, the

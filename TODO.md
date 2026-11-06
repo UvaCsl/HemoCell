@@ -36,9 +36,9 @@ Findings of a review of the `refactor` branch (November 2026). Items marked
 reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
 before others write drivers against the API.
 
-Status: A1-A9, B11-B16, C17-C20, E23-E24 and F26-F31 are done (see
+Status: A1-A9, B11-B16, C17-C20, E23-E24 and F26-F32 are done (see
 CHANGELOG). B10 is deferred (special case, lower priority). D21-D22, E25 and
-F32-F35 (`tools/packCells`) are open.
+F33-F35 (`tools/packCells`) are open.
 
 ### A. Silent wrong results or lost runs
 
@@ -399,7 +399,24 @@ then F29 with the check of F35, then F30-F31, then the rest.
     Ht 0.3 and 0.4, the step count is unchanged and the result isotropic
     (0.45-0.53). Keep `--noRotate` (aligned and fixed) as an option.
     `Quaternion::random()` is unused and not uniform.
-32. *(verified estimate)* **Walls.** The packing is periodic along all three
+32. *Done* (`--walls <axes>`, `--cylinder <axis> <R>`, `--offset`; all
+    periodic images within reach in thin boxes, a cell's own included; the
+    user guide gives box, radius and offset for walls at given nodes). An
+    independent check (pairs through the periodic axes only, walls from 4000
+    surface points per cell) confirms the final scale of slabs, channels,
+    closed boxes and pipes; the cylinder contact matches brute force to
+    1e-5. In a 6 um slab the RBCs turn flat (mean |cos| of the thin axis
+    with z 0.86). HemoCell placed every cell of `parallelplanes` (`--walls z`)
+    and `pipeflow` (`--cylinder`) packed this way; periodic packings of the
+    whole domain lost 63 of 773 RBCs and 62 of 89 RBCs at the walls. The safe
+    pipe radius, (r - (k + 0.5) sqrt(2)) dx, was measured on the voxelised
+    tube (22.92 of 25 nodes for k = 1). With walls, Ht 0.45 in a 100 x 50 x
+    50 um channel or pipe packs at 0.95 in 2.2-2.5 s (about 200 us per
+    iteration, as without walls). Both drivers skip the cells crossing their
+    periodic x (and y) boundary; they could call
+    `setPlaceCellsAcrossPeriodicBoundaries(true)` for packings of their
+    domain.
+    *(verified estimate)* **Walls.** The packing is periodic along all three
     axes, and the loader drops every cell crossing a wall. In the Case.rst
     tutorial (25 um cube, walls in y and z), 29 of the 48 RBCs touch the
     walls, so the requested Ht 0.3 becomes at most 0.11 (a geometric

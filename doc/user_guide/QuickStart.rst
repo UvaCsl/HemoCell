@@ -169,13 +169,47 @@ them.
   The domain size is defined in microns, not in lattice units. This is to remain independent of the numerical resolution.
 
 .. note::
-  The packing is periodic in all three directions: the cell centres lie in the
-  box, but cells may cross its faces. By default HemoCell skips the cells that
-  cross a periodic boundary of the domain (and counts them in the log). If the
-  box equals the periodic domain of the case, call
+  Without walls the packing is periodic in all three directions: the cell
+  centres lie in the box, but cells may cross its faces. By default HemoCell
+  skips the cells that cross a periodic boundary of the domain (and counts them
+  in the log). If the box equals the periodic domain of the case (number of
+  nodes times ``dx``), call
   ``hemocell.setPlaceCellsAcrossPeriodicBoundaries(true)`` before
   ``loadParticles()`` to place them as well; with a different box they would
   overlap cells at the opposite end.
+
+Walls and pipes
+~~~~~~~~~~~~~~~
+
+HemoCell does not place a cell that reaches a wall (any of its vertices
+within the ``setInitialMinimumDistanceFromSolid()`` distance of a wall node),
+so a periodic packing loses the cells near the walls, and with them part of
+the hematocrit. Pack for the walls instead; the positions are measured from
+lattice node 0 of the case, ``--offset`` moves the box there. With ``dx`` in
+µm and a minimum distance from solid of ``k`` nodes (the distance divided by
+``dx``, rounded down):
+
+* Flat walls at the nodes ``w0`` and ``w1`` of an axis: ``--walls`` with that
+  axis, a box of ``(w1 - w0 - 1 - 2k) dx`` along it and the offset
+  ``(w0 + 0.5 + k) dx``. For ``examples/parallelplanes`` (walls at the z
+  nodes 0 and 199, ``dx`` 0.5 µm, ``k`` 1)::
+
+    ./packCells 50 50 98 --hematocrit 0.3 --walls z --offset 0 0 0.75
+
+* A pipe whose axis lies at the nodes ``(yc, zc)``, with the nearest wall node
+  ``r`` nodes from it: ``--cylinder`` with the radius
+  ``R = (r - (k + 0.5) sqrt(2)) dx``, a box of ``2R`` across it and the offset
+  ``yc dx - R``, ``zc dx - R``. For ``examples/pipeflow`` (axis at the nodes
+  26, 26, ``r`` 25, 103 nodes long, ``k`` 1)::
+
+    ./packCells 51.5 22.9 22.9 --hematocrit 0.3 --cylinder x 11.45 --offset 0 1.55 1.55
+
+With these, HemoCell places every cell of both examples (except those across
+the periodic boundary, as above); periodic packings of the whole domain lost
+8 % of the cells at the walls of ``parallelplanes`` and 70 % of the RBCs in
+the pipe. The
+hematocrit is that of the packing region (the box, or the cylinder), so the
+thin layer kept free at the walls is not counted.
 
 
 Running a HemoCell case

@@ -45,6 +45,89 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 
+// The scale mu at which an ellipse just touches a circle of radius R from
+// inside (its largest distance from the circle's centre is R). The ellipse is
+// the projection of a cell's nominal ellipsoid onto the plane across a
+// cylinder: {x : x^T P^-1 x <= 1}, P = [[pbb, pbc], [pbc, pcc]], centred at
+// (cb, cc) from the axis. Returns 0 if the centre lies outside the circle and
+// muMax if the ellipse scaled by muMax does not reach it; (nb, nc) is the
+// outward unit vector at the touching point.
+//
+// The largest squared distance at scale mu, F(mu) = max_t |c + mu e(t)|^2
+// over the ellipse e(t) = a1 cos(t) u1 + a2 sin(t) u2, is found from 16 angles
+// refined by Newton's method in t. |c + mu e| grows with mu and is convex in
+// it (the ellipse contains its centre), so Newton's method in mu from muMax
+// approaches the root from above.
+inline double cylinderTouchScale(double pbb, double pbc, double pcc, double cb, double cc, double R, double muMax,
+                                 double & nb, double & nc) {
+  const double rc = std::sqrt(cb * cb + cc * cc);
+  if (rc >= R) {
+    nb = cb / rc;
+    nc = cc / rc;
+    return 0;
+  }
+  // Principal axes of P: l1 >= l2 along u1 = (u1b, u1c), u2 = (-u1c, u1b)
+  const double half = 0.5 * (pbb + pcc), diff = 0.5 * (pbb - pcc);
+  const double root = std::sqrt(diff * diff + pbc * pbc);
+  const double l1 = half + root, l2 = std::max(half - root, 0.0);
+  const double angle = 0.5 * std::atan2(2 * pbc, pbb - pcc);
+  const double u1b = std::cos(angle), u1c = std::sin(angle);
+  const double a1 = std::sqrt(l1), a2 = std::sqrt(l2);
+  const double A = a1 * (cb * u1b + cc * u1c), B = a2 * (-cb * u1c + cc * u1b);
+  const double c2 = rc * rc, K = l2 - l1;
+  auto F = [&](double mu, double t) {
+    const double co = std::cos(t), s = std::sin(t);
+    return c2 + 2 * mu * (A * co + B * s) + mu * mu * (l1 * co * co + l2 * s * s);
+  };
+  // The largest F at scale mu; t: the start angle, then the angle of the maximum
+  auto maximise = [&](double mu, double & t) {
+    double best = F(mu, t);
+    for (int k = 0; k < 16; k++) {
+      const double v = F(mu, k * PI / 8);
+      if (v > best) {
+        best = v;
+        t = k * PI / 8;
+      }
+    }
+    double tn = t;
+    for (int it = 0; it < 20; it++) {
+      const double co = std::cos(tn), s = std::sin(tn);
+      const double d1 = 2 * mu * (-A * s + B * co) + 2 * mu * mu * K * s * co;
+      const double d2 = 2 * mu * (-A * co - B * s) + 2 * mu * mu * K * (co * co - s * s);
+      if (!(d2 < 0)) break;
+      const double step = d1 / d2;
+      tn -= step;
+      if (std::fabs(step) < 1e-14) break;
+    }
+    const double v = F(mu, tn);
+    if (v >= best) {
+      t = tn;
+      best = v;
+    }
+    return best;
+  };
+  double t = 0, mu = muMax;
+  double Fm = maximise(mu, t);
+  if (Fm <= R * R) return muMax;
+  for (int it = 0; it < 60; it++) {
+    const double g = std::sqrt(Fm) - R;
+    const double co = std::cos(t), s = std::sin(t);
+    const double dg = (2 * (A * co + B * s) + 2 * mu * (l1 * co * co + l2 * s * s)) / (2 * std::sqrt(Fm));
+    if (!(dg > 0)) break;
+    const double next = std::max(0.0, mu - g / dg);
+    const bool converged = std::fabs(next - mu) <= 1e-13 * muMax;
+    mu = next;
+    Fm = maximise(mu, t);
+    if (converged) break;
+  }
+  const double co = std::cos(t), s = std::sin(t);
+  const double pb = cb + mu * (a1 * co * u1b - a2 * s * u1c), pc = cc + mu * (a1 * co * u1c + a2 * s * u1b);
+  const double pn = std::sqrt(pb * pb + pc * pc);
+  nb = pb / pn;
+  nc = pc / pn;
+  return mu;
+}
+
 class Packing {
   bool isFinished;
 
@@ -88,17 +171,37 @@ class Packing {
 
   bool rndRotation = true;
 
+  // The confinement (see setWalls()): Periodic per axis, the cylinder axis
+  // (-1: none) and radius [scaled]; OutputOffset [um] is added to the positions
+  // written.
+  bool Periodic[3] = {true, true, true};
+  bool Walls[3] = {false, false, false};
+  int CylinderAxis = -1;
+  double CylinderRadius = 0;
+  vector3 OutputOffset;
+
   // An overlapping pair (i, j), j < i, found for particle i, and the forces it
   // gives. The contacts are searched in parallel (each thread writes only the
   // list of its own particle i) and then applied in the order of i, so the
   // result does not depend on the number of threads: it equals the result of
   // one thread with the earlier code, which applied each pair as it was found.
+  // j == i: the contact of i with its own periodic image (thin boxes);
+  // j == wallContact: a contact of i with a wall, f and fu_i act on i.
+  static const int wallContact = -1;
   struct Contact {
     int j;
     double f_AB_scl;    // squared scale at which the pair touches
-    vector3 f;          // translation force on j (-f on i)
-    vector3 fu_i, fu_j; // rotation forces on i (subtracted) and j (zero if not rotated)
+    vector3 f;          // translation force on j (-f on i); on i for a wall
+    vector3 fu_i, fu_j; // rotation forces on i (subtracted; added for a wall) and j (zero if not rotated)
   };
+  // The contacts of particle i with the walls and the cylinder, appended to
+  // found.
+  void collectWallContacts(const Ellipsoid & pi, std::vector<Contact> & found) const;
+  // A wall contact: the particle touches the wall at scale mu, pushed along
+  // inward (a unit vector), lever arm: the point of its nominal ellipsoid
+  // nearest the wall, relative to its centre.
+  void addWallContact(const Ellipsoid & pi, double mu, const vector3 & inward, const vector3 & lever,
+                      std::vector<Contact> & found) const;
   std::vector<std::vector<Contact>> contacts; // per particle i
   std::vector<double> forceMagnitude;         // |force| per particle, for Force_step
 
@@ -148,6 +251,20 @@ public:
   void saveBloodCellPositions();
   void getOutput(vector<vector<vector3>> & positions, vector<vector<vector3>> & angles);
   void setRndRotation(bool rndRotation_) { rndRotation = rndRotation_; }
+  // Before initBlood(): walls[a] puts walls at both faces of the box along
+  // axis a (no longer periodic); cylinderAxis >= 0 confines the cells to a
+  // cylinder of cylinderRadius [um] along that axis, through the centre of the
+  // box (the two other axes are then not periodic); offset [um] is added to the
+  // positions written.
+  void setWalls(const bool walls[3], int cylinderAxis, double cylinderRadius, const vector3 & offset) {
+    for (int a = 0; a < 3; a++) {
+      Walls[a] = walls[a];
+      Periodic[a] = !walls[a] && (cylinderAxis < 0 || a == cylinderAxis);
+    }
+    CylinderAxis = cylinderAxis;
+    CylinderRadius = cylinderRadius; // scaled in initBlood()
+    OutputOffset = offset;
+  }
 };
 
 
@@ -280,6 +397,7 @@ void Packing::initBlood(double sizeX, double sizeY, double sizeZ, int maxSteps, 
   sizeX *= Sizing;
   sizeY *= Sizing;
   sizeZ *= Sizing;
+  CylinderRadius *= Sizing;
 
   // Collision-check cells of at least unit size (in the same quantity as the
   // cell diameters); the box keeps its exact size. (It used to be rounded up to
@@ -306,8 +424,12 @@ void Packing::initBlood(double sizeX, double sizeY, double sizeZ, int maxSteps, 
     counter++;
   }
 
-  // Calc nominal packing density
+  // Calc nominal packing density (in the cylinder, if there is one)
   double domainVol = sizeX * sizeY * sizeZ;
+  if (CylinderAxis >= 0) {
+    const double length = CylinderAxis == 0 ? sizeX : (CylinderAxis == 1 ? sizeY : sizeZ);
+    domainVol = PI * CylinderRadius * CylinderRadius * length;
+  }
   double cellVol = 0;
   for (CellType & ctype : ctypes) {
     cellVol += ((4. / 3. * PI * ctype.dx / 2. * ctype.dy / 2. * ctype.dz / 2.) * ctype.number);
@@ -485,8 +607,13 @@ void Packing::calc_forces() {
   for (int i = 0; i < NumParts; i++) {
     Ellipsoid & pi = *particles[i];
     for (const Contact & c : contacts[i]) {
-      Ellipsoid & pj = *particles[c.j];
       if (c.f_AB_scl < Dinner) Dinner = c.f_AB_scl;
+      if (c.j == wallContact) {
+        pi.get_f() += c.f;
+        pi.get_fu() += c.fu_i;
+        continue;
+      }
+      Ellipsoid & pj = *particles[c.j];
       pi.get_f() -= c.f;
       pj.get_f() += c.f;
       pi.get_fu() -= c.fu_i;
@@ -529,11 +656,16 @@ void Packing::collectContacts(int ipart) {
     const int lim_cell_x = (int)((pos[0] + rcut) / CellSize[0] + No_cells_x);
     const int lim_cell_y = (int)((pos[1] + rcut) / CellSize[1] + No_cells_y);
     const int lim_cell_z = (int)((pos[2] + rcut) / CellSize[2] + No_cells_z);
+    // Along an axis with walls, only the box itself (no periodic images).
+    auto inBox = [](int leap, int n, bool periodic) { return periodic || (leap >= n && leap < 2 * n); };
     for (int leap_x = low_cell_x; leap_x <= lim_cell_x; leap_x++) {
+      if (!inBox(leap_x, No_cells_x, Periodic[0])) continue;
       const int icell_x = Ncell_bound_x[leap_x];
       for (int leap_y = low_cell_y; leap_y <= lim_cell_y; leap_y++) {
+        if (!inBox(leap_y, No_cells_y, Periodic[1])) continue;
         const int icell_xy = Ncell_bound_y[leap_y] + icell_x;
         for (int leap_z = low_cell_z; leap_z <= lim_cell_z; leap_z++) {
+          if (!inBox(leap_z, No_cells_z, Periodic[2])) continue;
           const int icell = Ncell_bound_z[leap_z] + icell_xy;
           int jpart = Link_head[icell];
           while (jpart >= ipart) jpart = Link_list[jpart]; // the lists run downwards; -1 ends them
@@ -545,12 +677,87 @@ void Packing::collectContacts(int ipart) {
       }
     }
   } else {
-    // The contact range reaches across the box: all partners, nearest image.
-    for (int jpart = 0; jpart < ipart; jpart++) {
-      vector3 rij = particles[jpart]->get_pos() - pos;
-      rij.pbc_diff(Half, Box);
-      consider(jpart, rij);
+    // The contact range reaches across the box: all partners, in every
+    // periodic image within reach (it was the nearest image only, so in a box
+    // thinner than twice the reach a pair touching through two images, and a
+    // cell overlapping its own image, went unnoticed). The cell's own images
+    // are taken from one side (each such contact is one pair).
+    const double maxReach = 1.01 * Douter * Rc_max;
+    int range[3];
+    for (int a = 0; a < 3; a++) { range[a] = Periodic[a] ? std::max(1, int(std::ceil(maxReach / Box[a]))) : 0; }
+    for (int jpart = 0; jpart <= ipart; jpart++) {
+      const vector3 base = particles[jpart]->get_pos() - pos;
+      for (int sx = -range[0]; sx <= range[0]; sx++) {
+        for (int sy = -range[1]; sy <= range[1]; sy++) {
+          for (int sz = -range[2]; sz <= range[2]; sz++) {
+            if (jpart == ipart && !(sx > 0 || (sx == 0 && (sy > 0 || (sy == 0 && sz > 0))))) continue;
+            vector3 rij = base;
+            if (sx) rij[0] += sx * Box[0];
+            if (sy) rij[1] += sy * Box[1];
+            if (sz) rij[2] += sz * Box[2];
+            consider(jpart, rij);
+          }
+        }
+      }
     }
+  }
+
+  collectWallContacts(pi, found);
+}
+
+void Packing::addWallContact(const Ellipsoid & pi, double mu, const vector3 & inward, const vector3 & lever,
+                             std::vector<Contact> & found) const {
+  Contact c;
+  c.j = wallContact;
+  c.f_AB_scl = mu * mu;
+  // As for a pair: 1 - (mu / Douter)^2, mu being the scale at which it touches
+  const double strength = 1 - c.f_AB_scl / Douter2;
+  c.f = strength * inward;
+  c.fu_i = vector3();
+  c.fu_j = vector3();
+  if (!(Epsilon_rot < 1e-10 || NumSteps % Nrot_step) && !pi.getSpecies()->getIsSphere()) {
+    // As for a pair: along lever x force (none if they are parallel)
+    const vector3 torque = prod(lever, inward);
+    if (torque * torque > 1e-20 * (lever * lever)) c.fu_i = strength * norm(torque);
+  }
+  found.push_back(c);
+}
+
+void Packing::collectWallContacts(const Ellipsoid & pi, std::vector<Contact> & found) const {
+  if (!Walls[0] && !Walls[1] && !Walls[2] && CylinderAxis < 0) return;
+  const vector3 & pos = pi.get_pos();
+  // The nominal ellipsoid {x : x^T M^-1 x <= 1} (countX_m1() is built from the
+  // diameters). Its point farthest along a unit vector d is M d / sqrt(d^T M d).
+  matrix33 M = pi.countX_m1();
+  M *= 0.25;
+  // The faces of the box along the axes with walls: the ellipsoid reaches
+  // sqrt(M_aa) along axis a, so it touches the face at the distance of its
+  // centre over that reach.
+  for (int a = 0; a < 3; a++) {
+    if (!Walls[a]) continue;
+    const double reach = std::sqrt(M(a, a));
+    for (int side = 0; side < 2; side++) {
+      const double distance = side == 0 ? pos[a] : Box[a] - pos[a];
+      const double mu = std::max(distance, 0.0) / reach;
+      if (mu >= Douter) continue;
+      vector3 inward;
+      inward[a] = side == 0 ? 1 : -1;
+      addWallContact(pi, mu, inward, (M * inward) * (-1.0 / reach), found);
+    }
+  }
+  if (CylinderAxis >= 0) {
+    const int b = (CylinderAxis + 1) % 3, c = (CylinderAxis + 2) % 3;
+    const double cb = pos[b] - 0.5 * Box[b], cc = pos[c] - 0.5 * Box[c];
+    // Only if the bounding sphere reaches the wall
+    if (std::sqrt(cb * cb + cc * cc) + 0.5 * Douter * pi.getSpecies()->getMaxDiameter() <= CylinderRadius) return;
+    double nb, nc; // outward direction at the contact
+    const double mu = cylinderTouchScale(M(b, b), M(b, c), M(c, c), cb, cc, CylinderRadius, Douter, nb, nc);
+    if (mu >= Douter) return;
+    vector3 outward;
+    outward[b] = nb;
+    outward[c] = nc;
+    const double reach = std::sqrt(outward * (M * outward));
+    addWallContact(pi, mu, -1.0 * outward, (M * outward) * (1.0 / reach), found);
   }
 }
 
@@ -564,7 +771,15 @@ void Packing::calc_motion() {
     forceMagnitude[i] = sqrt(p->get_f() * p->get_f());
     //	translation
     vector3 buff = p->get_pos() + p->get_f() * Epsilon_scl;
-    buff.pbc(Box);
+    // Back into the box along the periodic axes (the walls keep the cells in
+    // along the others)
+    for (int a = 0; a < 3; a++) {
+      if (!Periodic[a]) continue;
+      if (buff[a] < 0)
+        buff[a] += Box[a];
+      else if (buff[a] > Box[a])
+        buff[a] -= Box[a];
+    }
     p->get_pos() = buff;
 
     //	rotation
@@ -699,7 +914,7 @@ void Packing::saveBloodCellPositions() {
     for (int i = speciesCounter; i < (speciesCounter + species[j]->getNum()); i++) {
       Ellipsoid * pi = particles[i];
 
-      vector3 pos = pi->get_pos() * (1. / Sizing);
+      vector3 pos = pi->get_pos() * (1. / Sizing) + OutputOffset;
       matrix33 Q = pi->get_q().countQ();
       vector3 euler(atan2(Q(1, 2), Q(2, 2)), -asin(Q(0, 2)), atan2(Q(0, 1), Q(0, 0)));
       euler *= 180 / PI; //Rad to Deg

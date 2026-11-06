@@ -94,6 +94,9 @@ enum OptionId {
   OPT_MAXITER,
   OPT_SEED,
   OPT_HELP,
+  OPT_WALLS,
+  OPT_CYLINDER,
+  OPT_OFFSET,
   OPT_BUILTIN = 2000 // + index into builtinTypes
 };
 
@@ -101,8 +104,8 @@ void printHelp(std::ostream & out) {
   out << "USAGE: packCells sX sY sZ [OPTIONS]\n"
          "\n"
          "Places cells at random positions and orientations in a box of sX x sY x sZ um,\n"
-         "periodic in all three directions, so that their enclosing ellipsoids do not\n"
-         "overlap, and writes <type>.pos for every cell type.\n"
+         "periodic in all three directions unless it has walls, so that their enclosing\n"
+         "ellipsoids do not overlap, and writes <type>.pos for every cell type.\n"
          "\n"
          "The ellipsoids are larger than the cells: they stand for the cells' effective\n"
          "size, which includes the IBM interaction range. They start at --start_scale\n"
@@ -114,7 +117,7 @@ void printHelp(std::ostream & out) {
          "\n"
          "CELL TYPES (the number of cells of a type; 0 writes a file without cells):\n";
   char line[200];
-  snprintf(line, sizeof(line), "  %-14s  %-21s %-12s %-21s  %s\n", "", "cells", "file", "ellipsoid [um]", "mesh fit");
+  snprintf(line, sizeof(line), "  %-14s  %-21s %-12s %-21s  %s\n", "", "cells", "file", "ellipsoid [um]", "fit");
   out << line;
   for (int i = 0; i < numBuiltinTypes; i++) {
     const BuiltinType & t = builtinTypes[i];
@@ -127,42 +130,61 @@ void printHelp(std::ostream & out) {
          "                 enclosing ellipsoid along the cell's x, y and z axes; its mesh\n"
          "                 fit is taken as 1\n"
          "  --hematocrit <Ht>, -h <Ht>\n"
-         "                 RBCs for this hematocrit of the box (0 < Ht < 1), counted with the\n"
-         "                 effective RBC volume of 97 um^3 (the mesh plus the IBM interaction\n"
-         "                 range), and PLTs by --plt_ratio; not with --rbc or --plt\n"
+         "                 RBCs for this hematocrit of the box, or of the cylinder\n"
+         "                 (0 < Ht < 1), counted with the effective RBC volume of\n"
+         "                 97 um^3 (the mesh plus the IBM interaction range), and PLTs\n"
+         "                 by --plt_ratio; not with --rbc or --plt\n"
          "  --plt_ratio <r>  platelets per RBC with --hematocrit (default 0.07)\n"
+         "\n"
+         "WALLS (the ellipsoids stay inside; they touch a wall as they touch each other):\n"
+         "  --walls <axes>   walls at both box faces along these axes (e.g. z or yz),\n"
+         "                 which are then not periodic\n"
+         "  --cylinder <axis> <R>\n"
+         "                 a cylinder of radius R [um] along the axis (x, y or z),\n"
+         "                 through the centre of the box (at least 2R across it); the\n"
+         "                 box is then periodic only along the axis\n"
+         "  --offset <x> <y> <z>\n"
+         "                 added to the positions written [um], e.g. to place a box\n"
+         "                 with walls on the fluid region of a case\n"
          "\n"
          "PACKING:\n"
          "  --start_scale <s>\n"
          "                 starting scale of the ellipsoids (default 1, or 5 % above\n"
          "                 --min_scale if that is larger); a larger start leaves more room\n"
-         "                 between the cells but takes longer: the ellipsoids shrink by about\n"
-         "                 0.5 % of the start every 1000 iterations (1 to 0.93: 14,000)\n"
+         "                 between the cells but takes longer: the ellipsoids shrink by\n"
+         "                 about 0.5 % of the start every 1000 iterations (1 to 0.93:\n"
+         "                 14,000)\n"
          "  --min_scale <s>\n"
          "                 smallest scale accepted (default: the largest mesh fit of the\n"
          "                 types packed); lower it to accept intersecting meshes\n"
          "  --noRotate       keep the orientation of the cells fixed (all angles 0)\n"
          "  --maxiter <n>    stop after n iterations\n"
-         "  --seed <n>       seed of the random numbers (default: a random one, printed): the\n"
-         "                 same seed gives the same packing, with any number of threads\n"
-         "                 (OMP_NUM_THREADS)\n"
+         "  --seed <n>       seed of the random numbers (default: a random one,\n"
+         "                 printed): the same seed gives the same packing, with any\n"
+         "                 number of threads (OMP_NUM_THREADS)\n"
          "  --help           print this\n"
          "\n"
          "OUTPUT (in the current directory; existing files are overwritten):\n"
          "  <type>.pos: the number of cells, then one line per cell, \"x y z rx ry rz\": the\n"
-         "  centre [um] in [0, sX) x [0, sY) x [0, sZ), and the rotation [degrees] about x,\n"
-         "  then y, then z, as HemoCell's loader applies it. The file names must match the\n"
-         "  cell type names of the case (addCellType); rename them where they differ.\n"
+         "  centre [um] in [0, sX) x [0, sY) x [0, sZ) (plus --offset), and the rotation\n"
+         "  [degrees] about x, then y, then z, as HemoCell's loader applies it. HemoCell\n"
+         "  measures the positions from lattice node 0 of the case. The file names must\n"
+         "  match the cell type names of the case (addCellType); rename them where they\n"
+         "  differ.\n"
          "  The progress shows the volume fraction of the ellipsoids and their scale, both\n"
          "  at the outer scale (their current size) and the inner one (at which the\n"
          "  closest overlapping pair touches; equal to the outer once none overlap).\n"
          "\n"
          "NOTES:\n"
          "  Sizes are in um, not lattice units.\n"
-         "  The packing is periodic in all three directions: cell centres lie in the box,\n"
-         "  but cells may cross its faces. Placing those cells in HemoCell needs\n"
+         "  Along the periodic axes, cell centres lie in the box but cells may cross its\n"
+         "  faces. Placing those cells in HemoCell needs\n"
          "  setPlaceCellsAcrossPeriodicBoundaries(true), and is correct only if the box\n"
-         "  equals the periodic domain of the case.\n"
+         "  equals the periodic domain of the case (number of nodes x dx).\n"
+         "  HemoCell drops cells that reach a wall. For a wall at the nodes w0 and w1 of\n"
+         "  an axis (dx in um, and a minimum distance from solid of k nodes), use\n"
+         "  --walls with the box (w1 - w0 - 1 - 2k) dx along it and the offset\n"
+         "  (w0 + 0.5 + k) dx.\n"
          "\n"
          "EXIT STATUS:\n"
          "  0 packed; 1 invalid arguments; 2 not finished within --maxiter; 3 stopped below\n"
@@ -219,6 +241,12 @@ int main(int argc, char * argv[]) {
   bool doRotate = true;
   long seed = long(std::random_device()() & 0x7fffffff);
   vector<CellType> cellTypes;
+  bool walls[3] = {false, false, false};
+  int cylinderAxis = -1;
+  double cylinderRadius = 0;
+  vector3 offset;
+  // Axis index of "x", "y" or "z"; -1 otherwise.
+  auto axisIndex = [](char c) { return c == 'x' ? 0 : (c == 'y' ? 1 : (c == 'z' ? 2 : -1)); };
 
   if (argc == 1) {
     printHelp(std::cerr);
@@ -234,6 +262,9 @@ int main(int argc, char * argv[]) {
                                   {"scale", required_argument, nullptr, OPT_SCALE_REMOVED},
                                   {"maxiter", required_argument, nullptr, OPT_MAXITER},
                                   {"seed", required_argument, nullptr, OPT_SEED},
+                                  {"walls", required_argument, nullptr, OPT_WALLS},
+                                  {"cylinder", required_argument, nullptr, OPT_CYLINDER},
+                                  {"offset", required_argument, nullptr, OPT_OFFSET},
                                   {"help", no_argument, nullptr, OPT_HELP}};
   for (int i = 0; i < numBuiltinTypes; i++) {
     longOpts.push_back({builtinTypes[i].option, required_argument, nullptr, OPT_BUILTIN + i});
@@ -284,6 +315,31 @@ int main(int argc, char * argv[]) {
       case OPT_SEED:
         seed = parseInteger(optarg, "--seed", 0, LONG_MAX);
         break;
+      case OPT_WALLS:
+        for (const char * c = optarg; *c; c++) {
+          if (axisIndex(*c) < 0) {
+            usageError("--walls: expected axes x, y and/or z, got '" + std::string(optarg) + "'");
+          }
+          walls[axisIndex(*c)] = true;
+        }
+        break;
+      case OPT_CYLINDER:
+        // --cylinder <axis> <R>: optarg is the axis, the radius follows it.
+        if (optind + 1 > argc) { usageError("--cylinder needs <axis> <R>"); }
+        if (std::string(optarg).size() != 1 || axisIndex(optarg[0]) < 0) {
+          usageError("--cylinder: expected the axis x, y or z, got '" + std::string(optarg) + "'");
+        }
+        cylinderAxis = axisIndex(optarg[0]);
+        cylinderRadius = parsePositive(argv[optind], "--cylinder: the radius");
+        optind += 1;
+        break;
+      case OPT_OFFSET:
+        // --offset <x> <y> <z>: optarg is x, the other two follow it.
+        if (optind + 2 > argc) { usageError("--offset needs <x> <y> <z>"); }
+        offset = vector3(parseReal(optarg, "--offset x"), parseReal(argv[optind], "--offset y"),
+                         parseReal(argv[optind + 1], "--offset z"));
+        optind += 2;
+        break;
       case OPT_HELP:
         printHelp(std::cout);
         return 0;
@@ -309,6 +365,19 @@ int main(int argc, char * argv[]) {
   const double sX = parsePositive(argv[optind], "sX");
   const double sY = parsePositive(argv[optind + 1], "sY");
   const double sZ = parsePositive(argv[optind + 2], "sZ");
+  const double size[3] = {sX, sY, sZ};
+
+  // The volume the cells fill: the box, or the cylinder in it.
+  double volume = sX * sY * sZ;
+  if (cylinderAxis >= 0) {
+    for (int a = 0; a < 3; a++) {
+      if (a != cylinderAxis && size[a] < 2 * cylinderRadius) {
+        usageError("--cylinder: the box (" + std::to_string(size[a]) + " um along " + "xyz"[a] +
+                   ") is narrower than the cylinder (" + std::to_string(2 * cylinderRadius) + " um)");
+      }
+    }
+    volume = PI * cylinderRadius * cylinderRadius * size[cylinderAxis];
+  }
 
   if (hematocrit_set) {
     if (rbc_plt_set) { usageError("--hematocrit sets the RBCs and PLTs; it cannot be combined with --rbc or --plt"); }
@@ -316,7 +385,7 @@ int main(int argc, char * argv[]) {
     if (!(plt_ratio >= 0)) { usageError("--plt_ratio: must not be negative"); }
     const BuiltinType & rbc = builtinTypes[0];
     const BuiltinType & plt = builtinTypes[1];
-    const double nRBC = std::round(hematocrit * sX * sY * sZ / rbcEffectiveVolume);
+    const double nRBC = std::round(hematocrit * volume / rbcEffectiveVolume);
     if (nRBC < 1) { usageError("the box holds no RBC at this hematocrit"); }
     if (nRBC > maxCount) { usageError("too many RBCs for this hematocrit and box"); }
     cellTypes.push_back({rbc.name, rbc.dx, rbc.dy, rbc.dz, int(nRBC), rbc.meshFit});
@@ -359,6 +428,24 @@ int main(int argc, char * argv[]) {
   cout << "  Minimum scale      : " << minScale << endl;
   cout << "  Rotation           : " << doRotate << endl;
   cout << "  Seed               : " << seed << endl;
+  cout << "  Periodic axes      : ";
+  for (int a = 0; a < 3; a++) {
+    if (!walls[a] && (cylinderAxis < 0 || a == cylinderAxis)) cout << "xyz"[a];
+  }
+  cout << endl;
+  if (walls[0] || walls[1] || walls[2]) {
+    cout << "  Walls along        : ";
+    for (int a = 0; a < 3; a++) {
+      if (walls[a]) cout << "xyz"[a];
+    }
+    cout << endl;
+  }
+  if (cylinderAxis >= 0) {
+    cout << "  Cylinder           : along " << "xyz"[cylinderAxis] << ", radius " << cylinderRadius << " um" << endl;
+  }
+  if (offset * offset > 0) {
+    cout << "  Offset [um]        : ( " << offset[0] << " , " << offset[1] << " , " << offset[2] << " )" << endl;
+  }
   if (hematocrit_set) {
     cout << "  Hematocrit    : " << hematocrit << endl;
     cout << "  PLT/RBC Ratio : " << plt_ratio << endl;
@@ -377,6 +464,7 @@ int main(int argc, char * argv[]) {
   Packing pack;
 
   pack.setRndRotation(doRotate); // This needs to be set first!
+  pack.setWalls(walls, cylinderAxis, cylinderRadius, offset);
 
   pack.initBlood(sX, sY, sZ, maxIter, startScale, minScale, cellTypes);
 
