@@ -6,8 +6,8 @@ In this changelog, we consider the following classes of changes:
 * Structure: any changes to the structure of HemoCell that may break existing cases.
 * Fixes: (small) changes that do not fall in the other categories.
 
-Unreleased (refactor)
----------------------
+3.0 (unreleased)
+----------------
 * Fixes that change simulation results
   * Repulsion: particle pairs within the same lattice node received twice the
     force of pairs in neighbouring nodes; every pair is now counted once.

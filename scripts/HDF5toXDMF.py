@@ -48,7 +48,7 @@ def number(value):
 
 def hdf_item(dimensions, h5dataset, path, dataset):
     # NumberType and Precision from the stored type (e.g. "Cell Id" is a
-    # 64-bit integer since HemoCell 2.8, older files store float).
+    # 64-bit integer since HemoCell 3.0, older files store float).
     kind = h5dataset.dtype.kind
     number_type = 'Float' if kind == 'f' else ('UInt' if kind == 'u' else 'Int')
     return ('<DataItem Dimensions="%s" NumberType="%s" Precision="%d" Format="HDF">%s:/%s</DataItem>'

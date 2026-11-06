@@ -37,8 +37,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*
  * Which version are we at (CMake and the documentation read it from here).
  */
-#define VERSION_MAJOR 2
-#define VERSION_MINOR "8"
+#define VERSION_MAJOR 3
+#define VERSION_MINOR "0"
 
 /*
  * Optional features. They are off by default, i.e. in the base library
@@ -198,7 +198,7 @@ constexpr T MaxCellPersistenceLength = 9.0;
 
 /*
  * The compile-time configuration above as a string, e.g.
- * "version=2.8,T=double,DESCRIPTOR=...,MATERIAL_INTEGRATION=1,FORCE_LIMIT=50.0".
+ * "version=3.0,T=double,DESCRIPTOR=...,MATERIAL_INTEGRATION=1,FORCE_LIMIT=50.0".
  * It is expanded where it is used, so the HemoCell constructor's default
  * argument carries the configuration of the case and the library compares it
  * with its own (HemoCell::HemoCell()). No spaces (Palabos' XML reader stops at
