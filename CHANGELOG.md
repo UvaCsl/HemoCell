@@ -447,8 +447,43 @@ Unreleased (refactor)
     `--hematocrit` (ignored) are refused. A packing that is not finished
     within `--maxiter` exits with status 2. `--seed` makes a packing
     reproducible (with one thread); the seed is printed. The help lists the
-    ellipsoid of every type and describes `--cell`, `--scale`, the output
-    and the effective RBC volume behind `--hematocrit`.
+    ellipsoid of every type and describes `--cell`, the output and the
+    effective RBC volume behind `--hematocrit`.
+  * `tools/packCells`: the ellipsoids start at `--start_scale` times their
+    nominal size (default 1) and shrink until they no longer overlap; below
+    1 the cells start within each other's IBM interaction range, a relaxation
+    for high volume fractions. The packing stops (exit status 3) once the
+    scale falls below `--min_scale`, by default the scale at which every
+    ellipsoid still contains its cell's mesh (0.93 for RBCs and PLTs, 0.95
+    for WBCs; 1.09 for vRBCs, whose ellipsoid is smaller than the mesh, so
+    they start at 1.14), and it reports the final scale. `--scale` is
+    removed: it set the collision-check grid, but also the starting scale
+    (`scale * (mean dx * dy * dz)^(1/3)`), so by default RBCs started at
+    0.97, a mixture of 200 RBCs and 150 PLTs at 0.81 (with RBC meshes
+    intersecting) and vRBCs at 0.67, while larger values were slow (79,000
+    iterations from 1.69). The grid is now set from the largest diameter. A
+    40 um cube at Ht 0.3 packs at scale 1.00 in about 120 iterations
+    (< 0.1 s), Ht 0.45 at 0.96 (7,500 iterations, 4 s on 24 threads); Ht 0.5
+    reaches the RBC's 0.93 and stops. The progress columns are the volume
+    fraction and the scale of the ellipsoids. The cube example's
+    `preprocess/weakscaling.py` no longer passes the removed `--allowRotate`.
+  * `tools/packCells` gives the same packing on any number of threads: the
+    parallel contact search ran while the collision-check cell lists were
+    being built (each cell was added after its own search), with the contact
+    range in variables shared by all threads, the forces of both cells of a
+    pair updated by different threads at once and the force sum of the stop
+    criterion unsynchronised, so which contacts a thread saw depended on
+    timing. The cell lists are now complete before the search, every thread
+    collects the contacts of its own cells, and they are applied in a fixed
+    order, as one thread did before (byte-identical to the earlier code on
+    one thread when both are built without FMA contraction; with
+    `-march=native` the compiler fuses multiply-adds differently, which
+    changes the last bits and, in long runs, the packing). Pairs whose
+    bounding spheres are apart skip the contact function, and the contact
+    search is shared out in small chunks: on 24 threads Ht 0.45 packs in
+    0.7 s instead of 4.4 s in a 40 um cube and in 2.9 s instead of 22.5 s in
+    a 100 x 50 x 50 um box (85 and 352 instead of 578 and 2,768 us per
+    iteration); one thread is now about as fast as 24 threads were.
 * Rounding to the nearest lattice node (`nearestNode()`) rounds negative
   coordinates down; `plint(x + 0.5)` gave a node one too high for x < -0.5
   (particle grid, wall removal in `advanceParticles()`, `nearestCell()`, the

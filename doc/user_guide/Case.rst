@@ -281,11 +281,11 @@ used and printed):
 .. code-block:: console
 
     user@local:~/hemocell/tools/packCells$ ./packCells 25 25 25 --hematocrit 0.3 --plt_ratio 0 --seed 1
-    ...
     Parameters:
       Domain Size [µm]: ( 25.000000 , 25.000000 , 25.000000 )
       Maximum Iterations : 2147483547
-      Scale              : 0.142857
+      Start scale        : 1.000000
+      Minimum scale      : 0.931000
       Rotation           : 1
       Seed               : 1
       Hematocrit    : 0.300000
@@ -295,14 +295,28 @@ used and printed):
         No   : 48
         Sizes: (8.400000 , 4.400000 , 8.400000 )
         Ellipsoid volume: 162.558570 [µm3].
-    ...
-    Nominal requested volume fraction: 0.499380
+        Mesh fit: 0.931000
 
-         Steps     Actual       Nominal        Inner         Outer             Force
-                  density       density       diameter      diameter       per particle
+    Collision-check grid: 3 x 3 x 3 cells of about 7.000000 um
+
+    Volume fraction of the nominal ellipsoids: 0.499380
+
+        Steps  Vol.fraction  Vol.fraction         Scale         Scale              Force
+                    (inner)       (outer)       (inner)       (outer)       per particle
     ...
-           85  0.4992115844  0.4992115844  0.9672162112  0.9672162112  0.000000000000000 PACKING DONE
+           71  0.4992015284  0.4992015284  0.9998809052  0.9998809052  0.000000000000000 PACKING DONE
+    Final scale of the ellipsoids: 0.9999 (start 1.0000, minimum 0.9310)
+    The ellipsoids do not overlap at their nominal size: the cells start out of each other's interaction range.
     user@local:~/hemocell/tools/packCells$ cp RBC.pos ../../examples/newCase/RBC.pos
+
+Each cell is represented by an ellipsoid somewhat larger than the cell itself
+(its effective size, which includes the interaction range of the immersed
+boundary method). The ellipsoids start at their nominal size (``--start_scale``,
+default 1) and shrink until none overlap. A final scale below 1 means that cells
+start within each other's interaction range; packCells stops, with exit status
+3, once the scale falls below the point where an ellipsoid still contains its
+cell's mesh (``--min_scale``, 0.93 for RBCs), for example at a hematocrit of
+about 0.5 or more.
 
 With the RBC.pos file present in the newCase directory all the pieces should
 be there to run our first newly created case!

@@ -54,14 +54,19 @@ class Packing {
   Species ** species;
 
   double Force_step;
-  double Dinner, Douter0, Douter, Douter2;
+  // Scale of the ellipsoids relative to their nominal size (1): Douter is the
+  // current scale, which starts at Douter0 and only shrinks; Dinner the scale
+  // at which the closest overlapping pair touches (Douter once no pair
+  // overlaps). The packing stops below MinScale.
+  double Dinner, Douter0, Douter, Douter2, MinScale;
+  // Volume fractions of the ellipsoids: nomPackDens at scale 1,
+  // DensityNominal at Douter and Pactual at Dinner.
   double Pactual, nomPackDens, DensityNominal;
 
   int No_cells_x, No_cells_y, No_cells_z;
   int No_cells, Ncell_min;
   int Max_steps, NumSteps = 0, Ntau;
-  double Sphere_vol, Diam_dens;
-  double Rc_max, Rcut, Rcut2, Relax;
+  double Rc_max, Relax;
   vector3 Box, Half;
   // Edge lengths of the collision-check cells: Box / No_cells per axis, at
   // least 1 (the interaction range in scaled units), so that the box itself is
@@ -83,15 +88,32 @@ class Packing {
 
   bool rndRotation = true;
 
+  // An overlapping pair (i, j), j < i, found for particle i, and the forces it
+  // gives. The contacts are searched in parallel (each thread writes only the
+  // list of its own particle i) and then applied in the order of i, so the
+  // result does not depend on the number of threads: it equals the result of
+  // one thread with the earlier code, which applied each pair as it was found.
+  struct Contact {
+    int j;
+    double f_AB_scl;    // squared scale at which the pair touches
+    vector3 f;          // translation force on j (-f on i)
+    vector3 fu_i, fu_j; // rotation forces on i (subtracted) and j (zero if not rotated)
+  };
+  std::vector<std::vector<Contact>> contacts; // per particle i
+  std::vector<double> forceMagnitude;         // |force| per particle, for Force_step
+
   void init();
   void iterate();
   void calc_forces();
   void calc_motion();
-  void force_part(int ipart_p);
-  void force_all(int ipart_p);
+  // Finds the contacts of particle ipart with the particles j < ipart (the
+  // collision-check cell lists must be complete).
+  void collectContacts(int ipart);
+  // The contact of ei and ej (ej at ei + rij); false if they do not overlap.
+  bool evaluatePair(const Ellipsoid & ei, const Ellipsoid & ej, const vector3 & rij, Contact & contact) const;
   void outputHeader();
   void output();
-  double zeroin(BinaryEllipsoidSystem & ell, double ax, double bx);
+  double zeroin(BinaryEllipsoidSystem & ell, double ax, double bx) const;
   // Collision-check cell of a position in the box (a position on the upper
   // face belongs to the last cell).
   int cellIndex(const vector3 & pos) const {
@@ -102,16 +124,25 @@ class Packing {
   }
 
 public:
+  enum Result {
+    Packed,           // no overlap at the final scale, which is at least the minimum
+    NotFinished,      // the maximum number of iterations was reached first
+    BelowMinimumScale // the scale fell below the minimum before the overlaps were resolved
+  };
+
   Packing();
   ~Packing();
-  // Packs the cells; returns whether an overlap-free packing was reached
-  // within the maximum number of iterations.
-  bool execute();
+  // Packs the cells.
+  Result execute();
+  // The scale of the ellipsoids at the end (relative to their nominal size).
+  double getFinalScale() const { return Douter; }
 
-  double calc_forces(BinaryEllipsoidSystem & e, Ellipsoid & ei, Ellipsoid & ej);
-
-  // Initialise blood suspension with RBCs and platelets
-  void initBlood(double sizeX, double sizeY, double sizeZ, int maxSteps, double sizing, vector<CellType> & ctypes);
+  // Sets up the packing of ctypes in a periodic box of sizeX x sizeY x sizeZ
+  // [um] (the cell diameters in ctypes are in um as well). The ellipsoids start
+  // at startScale times their nominal size and shrink until they no longer
+  // overlap; the packing stops at maxSteps iterations or below minScale.
+  void initBlood(double sizeX, double sizeY, double sizeZ, int maxSteps, double startScale, double minScale,
+                 vector<CellType> & ctypes);
   // void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps, double sizing);
   void savePov(const char * fileName, int wbcNumber);
   void saveBloodCellPositions();
@@ -120,39 +151,50 @@ public:
 };
 
 
-double Packing::calc_forces(BinaryEllipsoidSystem & e, Ellipsoid & ei, Ellipsoid & ej) {
+// The Perram-Wertheim contact function of the pair: f_AB_scl is the square of
+// the scale at which the two nominal ellipsoids touch; they overlap at the
+// current scale Douter if f_AB = f_AB_scl / Douter^2 < 1. Reads the particles
+// only, so it may run on several threads at once.
+bool Packing::evaluatePair(const Ellipsoid & ei, const Ellipsoid & ej, const vector3 & rij, Contact & contact) const {
+  BinaryEllipsoidSystem e(ei, ej, rij);
   double lambda = zeroin(e, 0., 1.);
   e.get_lambda() = lambda;
 
   if (fabs(lambda) < 1e-10) {
-    cout << "e1" << endl << ei << endl;
-    cout << "e2" << endl << ej << endl;
-    cout << "lambda too small, returning!" << endl;
-    return 0;
+#pragma omp critical(packing_messages)
+    {
+      cout << "e1" << endl << ei << endl;
+      cout << "e2" << endl << ej << endl;
+      cout << "lambda too small, returning!" << endl;
+    }
+    return false;
   }
   double f_AB_scl = 4 * e.f_AB(lambda);
   double f_AB = f_AB_scl / Douter2;
   vector3 n = e.count_n();
-  if (f_AB >= 1) return f_AB;
+  if (f_AB >= 1) return false;
   if (f_AB <= 0) {
-    cout << "fab " << f_AB << endl;
-    cout << ei << endl;
-    cout << ej << endl;
-    cout << e << endl;
-    cout << "-----------------------------------------------" << endl;
+#pragma omp critical(packing_messages)
+    {
+      cout << "fab " << f_AB << endl;
+      cout << ei << endl;
+      cout << ej << endl;
+      cout << e << endl;
+      cout << "-----------------------------------------------" << endl;
+    }
   }
+  contact.f_AB_scl = f_AB_scl;
   //	shift
-  if (f_AB_scl < Dinner) Dinner = f_AB_scl;
-  vector3 f = (1 - f_AB) * norm(n);
-  ei.get_f() -= f;
-  ej.get_f() += f;
+  contact.f = (1 - f_AB) * norm(n);
 
   //	rotation
-  if (Epsilon_rot < 1e-10 || NumSteps % Nrot_step) return f_AB;
+  contact.fu_i = vector3();
+  contact.fu_j = vector3();
+  if (Epsilon_rot < 1e-10 || NumSteps % Nrot_step) return true;
 
-  if (!ei.getSpecies()->getIsSphere()) ei.get_fu() -= (1 - f_AB) * norm(prod(e.count_rac(), n));
-  if (!ej.getSpecies()->getIsSphere()) ej.get_fu() += (1 - f_AB) * norm(prod(e.count_rbc(), n));
-  return f_AB;
+  if (!ei.getSpecies()->getIsSphere()) contact.fu_i = (1 - f_AB) * norm(prod(e.count_rac(), n));
+  if (!ej.getSpecies()->getIsSphere()) contact.fu_j = (1 - f_AB) * norm(prod(e.count_rbc(), n));
+  return true;
 }
 
 
@@ -162,7 +204,6 @@ Packing::Packing() {
   doExit = 0;
   Nfig = 16; //8;
   Nsf = 1;
-  Sphere_vol = PI / 6.;
   cout.setf(ios::fixed, ios::floatfield);
 }
 
@@ -181,39 +222,53 @@ Packing::~Packing() {
   delete[] species;
 }
 
-bool Packing::execute() {
+Packing::Result Packing::execute() {
   init();
   calc_forces();
 
-  Pactual = Dinner * Dinner * Dinner / Diam_dens;
+  Pactual = nomPackDens * Dinner * Dinner * Dinner;
   outputHeader();
 
-  for (NumSteps = 0; NumSteps < Max_steps && !isFinished; NumSteps++) {
+  // The scale only shrinks: once below the minimum, the packing cannot succeed.
+  for (NumSteps = 0; NumSteps < Max_steps && !isFinished && Douter >= MinScale; NumSteps++) {
     iterate();
     if (NumSteps % printEveryNSteps == 0) output();
   }
 
-  if (isFinished) {
-    cout << " PACKING DONE " << endl; // A configuration close to equilibrium found
-  } else {
-    // No equilibrium within the maximum number of iterations
-    cout << " PACKING TERMINATED(!) " << endl;
-    cout << "WARNING: no overlap-free packing within " << Max_steps
-         << " iterations: the cells may overlap (inner diameter < outer diameter)." << endl;
+  if (Douter < MinScale) {
+    output();
+    cout << " PACKING STOPPED(!) " << endl;
+    return BelowMinimumScale;
   }
-  return isFinished;
+  if (!isFinished) {
+    cout << " PACKING TERMINATED(!) " << endl;
+    return NotFinished;
+  }
+  cout << " PACKING DONE " << endl; // A configuration close to equilibrium found
+  return Packed;
 }
 
 
 // Takes dimensions in um!
-void Packing::initBlood(double sizeX, double sizeY, double sizeZ, int maxSteps, double sizing,
+void Packing::initBlood(double sizeX, double sizeY, double sizeZ, int maxSteps, double startScale, double minScale,
                         vector<CellType> & ctypes) {
   NumParts = 0;
   NumSpecies = 0;
   Epsilon = 0.1;
   Epsilon_rot = 3.0;
+  Douter0 = startScale;
+  MinScale = minScale;
 
-  Sizing = sizing;
+  // Internal length unit: 1 / 1.2 of the largest diameter. The collision-check
+  // cells are about that size (at least one unit), and the translation step
+  // (Epsilon) and the rotation step (Epsilon_rot) are in this unit. This was
+  // the --scale option (default 1.2 / the largest diameter of the most numerous
+  // type), which also set the starting scale of the ellipsoids.
+  double maxDiameter = 0;
+  for (const CellType & ctype : ctypes) {
+    maxDiameter = std::max(maxDiameter, std::max(ctype.dx, std::max(ctype.dy, ctype.dz)));
+  }
+  Sizing = 1.2 / maxDiameter;
   for (CellType & ctype : ctypes) {
     NumParts += ctype.number;
     NumSpecies++;
@@ -235,8 +290,9 @@ void Packing::initBlood(double sizeX, double sizeY, double sizeZ, int maxSteps, 
   No_cells_z = std::max(1, int(floor(sizeZ)));
   RequestedBox = vector3(sizeX, sizeY, sizeZ);
 
-  cout << endl << "Sizing parameter: " << Sizing << endl;
-  cout << "Resolution of collision check: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << endl;
+  cout << endl
+       << "Collision-check grid: " << No_cells_x << " x " << No_cells_y << " x " << No_cells_z << " cells of about "
+       << 1. / Sizing << " um" << endl;
 
   Ntau = 102400;
 
@@ -257,14 +313,14 @@ void Packing::initBlood(double sizeX, double sizeY, double sizeZ, int maxSteps, 
     cellVol += ((4. / 3. * PI * ctype.dx / 2. * ctype.dy / 2. * ctype.dz / 2.) * ctype.number);
   }
 
-  // Get nominal volume ratio
+  // Volume fraction of the ellipsoids at their nominal size
   nomPackDens = cellVol / domainVol;
 
-  cout << endl << "Nominal requested volume fraction: " << nomPackDens << endl;
+  cout << endl << "Volume fraction of the nominal ellipsoids: " << nomPackDens << endl;
 
   if (nomPackDens > 0.7) {
     cout << "*** WARNING ***" << endl;
-    cout << "For the requested cells the enclosing ellipsoids yield a nominal volume ratio of: " << nomPackDens << endl;
+    cout << "The enclosing ellipsoids fill " << nomPackDens << " of the box at their nominal size." << endl;
     cout << "Highest possible dense packing is around 0.77!!! You might want to reconsider..." << endl;
   }
 
@@ -287,20 +343,17 @@ void Packing::init() {
   Box = RequestedBox;
   Half = 0.5 * Box;
   CellSize = vector3(Box[0] / No_cells_x, Box[1] / No_cells_y, Box[2] / No_cells_z);
-  Diam_dens = Box[0] * Box[1] * Box[2] / Sphere_vol;
   double corr = 0;
   // Rc_max: the largest diameter of all types, along any axis (it used to be
   // the x diameter only, which missed contacts of cells elongated along y or z,
   // e.g. vRBC).
   Rc_max = 0;
-  for (int is = 0; is < NumSpecies; is++) {
-    corr += species[is]->getNum();
-    Rc_max = std::max(Rc_max, species[is]->getMaxDiameter());
-  }
-  Diam_dens /= corr;
-  DensityNominal = nomPackDens;
-  Douter0 = pow(Diam_dens * nomPackDens, 1. / 3.);
+  for (int is = 0; is < NumSpecies; is++) { Rc_max = std::max(Rc_max, species[is]->getMaxDiameter()); }
+  // The ellipsoids start at the given scale (Douter0, from initBlood()). It
+  // used to be (scale * the mean of dx * dy * dz)^(1/3), so the --scale option
+  // set it: 0.97 for RBCs by default, less for mixtures with small cells.
   Douter = Douter0;
+  DensityNominal = nomPackDens * Douter * Douter * Douter;
   Relax = 0.5 * Douter / Ntau;
   Douter2 = Douter * Douter;
   // Rotation step from the largest diameter of all types (it was the x
@@ -316,6 +369,8 @@ void Packing::init() {
 
   Link_head = new int[No_cells];
   Link_list = new int[NumParts];
+  contacts.resize(NumParts);
+  forceMagnitude.resize(NumParts);
 
   ndim_x = 3 * No_cells_x - 1;
   ndim_y = 3 * No_cells_y - 1;
@@ -370,8 +425,8 @@ void Packing::iterate() {
   Douter2 = Douter * Douter;
   calc_motion();
   calc_forces();
-  DensityNominal = Douter * Douter * Douter / Diam_dens;
-  Pactual = Dinner * Dinner * Dinner / Diam_dens;
+  DensityNominal = nomPackDens * Douter * Douter * Douter;
+  Pactual = nomPackDens * Dinner * Dinner * Dinner;
 
   // Stop criterion
   isFinished = (Force_step < 1e-15);
@@ -389,49 +444,116 @@ void Packing::iterate() {
   }
 }
 
+// The overlap forces of all pairs. The contact search used to run in parallel
+// while the cell lists were being built (each particle was inserted after its
+// own search), with the contact range in shared members and the forces of both
+// particles of a pair updated without synchronisation: which pairs a thread
+// saw depended on timing. Now the cell lists are complete before the search,
+// every thread writes only the contacts of its own particles, and the forces
+// are applied afterwards in the order of the particles (as one thread did).
 void Packing::calc_forces() {
   Dinner = Douter * Douter;
-  int i;
 
-#pragma omp parallel for private(i)
-  for (i = 0; i < No_cells; i++) Link_head[i] = -1;
-
-#pragma omp parallel for private(i)
-  for (i = 0; i < NumParts; i++) {
+  for (int i = 0; i < No_cells; i++) Link_head[i] = -1;
+  for (int i = 0; i < NumParts; i++) {
     particles[i]->set_force();
     particles[i]->set_forceu();
   }
+  // Each cell list runs from the highest particle index down.
+  for (int i = 0; i < NumParts; i++) {
+    const int icell = cellIndex(particles[i]->get_pos());
+    Link_list[i] = Link_head[icell];
+    Link_head[icell] = i;
+  }
 
-  int ipart;
+  // Small chunks: the work per particle varies with its contacts, and a few
+  // hundred particles in chunks of 16 left most of 24 threads idle (Ht 0.45 in
+  // a 40 um cube: 74 instead of 263 us per iteration).
+#pragma omp parallel for schedule(dynamic, 4)
+  for (int ipart = 0; ipart < NumParts; ipart++) collectContacts(ipart);
 
-#pragma omp parallel for private(ipart) schedule(static)
-  for (ipart = 0; ipart < NumParts; ipart++) {
-    Species * k = particles[ipart]->getSpecies();
-    // Contact range: half the sum of the largest diameters, plus 10 %.
-    Rcut = 0.55 * Douter * (k->getMaxDiameter() + Rc_max);
-    Rcut2 = Rcut * Rcut;
-
-    const double minCellSize = std::min(CellSize[0], std::min(CellSize[1], CellSize[2]));
-    if ((int)(2.0 * Rcut / minCellSize) < Ncell_min - 1)
-      force_part(ipart);
-    else
-      force_all(ipart);
+  for (int i = 0; i < NumParts; i++) {
+    Ellipsoid & pi = *particles[i];
+    for (const Contact & c : contacts[i]) {
+      Ellipsoid & pj = *particles[c.j];
+      if (c.f_AB_scl < Dinner) Dinner = c.f_AB_scl;
+      pi.get_f() -= c.f;
+      pj.get_f() += c.f;
+      pi.get_fu() -= c.fu_i;
+      pj.get_fu() += c.fu_j;
+    }
   }
   Dinner = sqrt(Dinner);
 }
 
+void Packing::collectContacts(int ipart) {
+  std::vector<Contact> & found = contacts[ipart];
+  found.clear();
+  const Ellipsoid & pi = *particles[ipart];
+  const vector3 pos = pi.get_pos();
+  const double diameter_i = pi.getSpecies()->getMaxDiameter();
+  // Contact range: half the sum of the largest diameters, plus 10 %.
+  const double rcut = 0.55 * Douter * (diameter_i + Rc_max);
+
+  Contact contact;
+  // Pairs whose bounding spheres (radius: half the largest diameter at the
+  // current scale) are more than 1 % apart cannot overlap: skip the contact
+  // function (the expensive part) for them. The result does not change.
+  auto consider = [&](int jpart, const vector3 & rij) {
+    const Ellipsoid & pj = *particles[jpart];
+    const double reach = 0.505 * Douter * (diameter_i + pj.getSpecies()->getMaxDiameter());
+    if (rij * rij > reach * reach) return;
+    if (evaluatePair(pi, pj, rij, contact)) {
+      contact.j = jpart;
+      found.push_back(contact);
+    }
+  };
+
+  const double minCellSize = std::min(CellSize[0], std::min(CellSize[1], CellSize[2]));
+  if ((int)(2.0 * rcut / minCellSize) < Ncell_min - 1) {
+    // The cells within the contact range, in a search index over three periods
+    // (see init()); the partners j < ipart, as each pair is found once.
+    const int low_cell_x = (int)((pos[0] - rcut) / CellSize[0] + No_cells_x);
+    const int low_cell_y = (int)((pos[1] - rcut) / CellSize[1] + No_cells_y);
+    const int low_cell_z = (int)((pos[2] - rcut) / CellSize[2] + No_cells_z);
+    const int lim_cell_x = (int)((pos[0] + rcut) / CellSize[0] + No_cells_x);
+    const int lim_cell_y = (int)((pos[1] + rcut) / CellSize[1] + No_cells_y);
+    const int lim_cell_z = (int)((pos[2] + rcut) / CellSize[2] + No_cells_z);
+    for (int leap_x = low_cell_x; leap_x <= lim_cell_x; leap_x++) {
+      const int icell_x = Ncell_bound_x[leap_x];
+      for (int leap_y = low_cell_y; leap_y <= lim_cell_y; leap_y++) {
+        const int icell_xy = Ncell_bound_y[leap_y] + icell_x;
+        for (int leap_z = low_cell_z; leap_z <= lim_cell_z; leap_z++) {
+          const int icell = Ncell_bound_z[leap_z] + icell_xy;
+          int jpart = Link_head[icell];
+          while (jpart >= ipart) jpart = Link_list[jpart]; // the lists run downwards; -1 ends them
+          // The neighbour cell may lie in a periodic image of the box: shift
+          // the neighbour into it.
+          const vector3 shift(Pbc_x[leap_x], Pbc_y[leap_y], Pbc_z[leap_z]);
+          for (; jpart != -1; jpart = Link_list[jpart]) { consider(jpart, particles[jpart]->get_pos() - pos + shift); }
+        }
+      }
+    }
+  } else {
+    // The contact range reaches across the box: all partners, nearest image.
+    for (int jpart = 0; jpart < ipart; jpart++) {
+      vector3 rij = particles[jpart]->get_pos() - pos;
+      rij.pbc_diff(Half, Box);
+      consider(jpart, rij);
+    }
+  }
+}
+
 void Packing::calc_motion() {
-  vector3 buff;
   Force_step = 0;
   Epsilon_scl = Epsilon * Douter0;
-  int i;
 
-#pragma omp parallel for private(i, buff)
-  for (i = 0; i < NumParts; i++) {
+#pragma omp parallel for schedule(static)
+  for (int i = 0; i < NumParts; i++) {
     Ellipsoid * p = particles[i];
-    Force_step += sqrt(p->get_f() * p->get_f());
+    forceMagnitude[i] = sqrt(p->get_f() * p->get_f());
     //	translation
-    buff = p->get_pos() + p->get_f() * Epsilon_scl;
+    vector3 buff = p->get_pos() + p->get_f() * Epsilon_scl;
     buff.pbc(Box);
     p->get_pos() = buff;
 
@@ -448,91 +570,21 @@ void Packing::calc_motion() {
     p->rotate(q);
   }
 
+  // Summed in a fixed order, so that the stop criterion does not depend on the
+  // number of threads (it was summed by all threads without synchronisation).
+  for (int i = 0; i < NumParts; i++) Force_step += forceMagnitude[i];
   Force_step /= NumParts;
 }
 
-void Packing::force_part(int ipart_p) {
-  int jpart, ifirst;
-  int icell_x, icell_xy, icell;
-  int leap_x, leap_y, leap_z;
-  Ellipsoid *pi = particles[ipart_p], *pj;
-  vector3 rij;
-  vector3 pos = pi->get_pos();
-
-  int low_cell_x = (int)((pos[0] - Rcut) / CellSize[0] + No_cells_x);
-  int low_cell_y = (int)((pos[1] - Rcut) / CellSize[1] + No_cells_y);
-  int low_cell_z = (int)((pos[2] - Rcut) / CellSize[2] + No_cells_z);
-  int lim_cell_x = (int)((pos[0] + Rcut) / CellSize[0] + No_cells_x);
-  int lim_cell_y = (int)((pos[1] + Rcut) / CellSize[1] + No_cells_y);
-  int lim_cell_z = (int)((pos[2] + Rcut) / CellSize[2] + No_cells_z);
-
-#pragma omp parallel
-  for (leap_x = low_cell_x; leap_x <= lim_cell_x; leap_x++) {
-    icell_x = Ncell_bound_x[leap_x];
-    for (leap_y = low_cell_y; leap_y <= lim_cell_y; leap_y++) {
-      icell_xy = Ncell_bound_y[leap_y] + icell_x;
-#pragma omp for private(leap_z)
-      for (leap_z = low_cell_z; leap_z <= lim_cell_z; leap_z++) {
-        icell = Ncell_bound_z[leap_z] + icell_xy;
-        jpart = Link_head[icell];
-        while (jpart != -1) {
-          pj = particles[jpart];
-          // The neighbour cell may lie in a periodic image of the box: shift
-          // the neighbour into it (the shift was computed but not applied, so
-          // cells were not repelled across the box faces and overlapped there).
-          rij = pj->get_pos() - pi->get_pos() + vector3(Pbc_x[leap_x], Pbc_y[leap_y], Pbc_z[leap_z]);
-          BinaryEllipsoidSystem eij(*pi, *pj, rij);
-          calc_forces(eij, *pi, *pj);
-          jpart = Link_list[jpart];
-        }
-      }
-    }
-  }
-
-  icell = cellIndex(pos);
-  ifirst = Link_head[icell];
-  Link_list[ipart_p] = ifirst;
-  Link_head[icell] = ipart_p;
-}
-
-void Packing::force_all(int ipart_p) {
-  Ellipsoid *pi = particles[ipart_p], *pj;
-  vector3 pos = pi->get_pos();
-  vector3 rij;
-  int jpart;
-
-#pragma omp parallel for private(jpart)
-  for (jpart = 0; jpart < ipart_p; jpart++) {
-    pj = particles[jpart];
-    rij = pj->get_pos() - pi->get_pos();
-    rij.pbc_diff(Half, Box);
-    BinaryEllipsoidSystem eij(*pi, *pj, rij);
-    calc_forces(eij, *pi, *pj);
-  }
-  int icell = cellIndex(pos);
-  int ifirst = Link_head[icell];
-  Link_list[ipart_p] = ifirst;
-  Link_head[icell] = ipart_p;
-}
-
+// Columns: the volume fraction of the ellipsoids at the inner and the outer
+// scale, the inner scale (at which the closest overlapping pair touches; the
+// outer scale once nothing overlaps), the outer scale (the current size of the
+// ellipsoids, 1 = nominal) and the mean overlap force per cell.
 void Packing::outputHeader() {
   cout << endl;
-  cout << "     Steps";
-  cout << "     Actual";
-  cout << "       Nominal";
-  cout << "        Inner";
-  cout << "         Outer";
-  cout << "             Force";
+  cout << "    Steps  Vol.fraction  Vol.fraction         Scale         Scale              Force" << endl;
+  cout << "                (inner)       (outer)       (inner)       (outer)       per particle" << endl;
   cout << endl;
-  cout << "         ";
-  cout << "     density";
-  cout << "       density";
-  cout << "       diameter";
-  cout << "      diameter";
-  cout << "       per particle";
-  cout << endl;
-  cout << endl;
-  return;
 }
 void Packing::output() {
   cout.precision(10);
@@ -701,7 +753,7 @@ void Packing::saveBloodCellPositions() {
  ************************************************************************
  */
 
-double Packing::zeroin(BinaryEllipsoidSystem & ell, double ax, double bx) {
+double Packing::zeroin(BinaryEllipsoidSystem & ell, double ax, double bx) const {
   double a, b, c;
   double fa, fb, fc;
   double EPSILON = 1e-15;

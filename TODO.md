@@ -36,9 +36,9 @@ Findings of a review of the `refactor` branch (November 2026). Items marked
 reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
 before others write drivers against the API.
 
-Status: A1-A9, B11-B16, C17-C20, E23-E24 and F26-F28 are done (see
+Status: A1-A9, B11-B16, C17-C20, E23-E24 and F26-F30 are done (see
 CHANGELOG). B10 is deferred (special case, lower priority). D21-D22, E25 and
-F29-F35 (`tools/packCells`) are open.
+F31-F35 (`tools/packCells`) are open.
 
 ### A. Silent wrong results or lost runs
 
@@ -321,7 +321,19 @@ then F29 with the check of F35, then F30-F31, then the rest.
     * `--cell <name> <n> <e1, e2, diameter>` takes the three full diameters
       along body x, y, z in um (y is the thin axis);
     * the "Volume" it prints is the ellipsoid's.
-29. *(verified)* **Make the relaxation explicit and bounded.** The ellipsoids
+29. *Done* (`--start_scale`, default 1; `--min_scale`, default the largest
+    mesh fit of the types packed, below which the packing stops with exit
+    status 3; `--scale` removed, the grid set from the largest diameter; the
+    final scale reported). With the defaults (40 um cube, 24 threads): Ht 0.3
+    at 1.00 in about 120 iterations (< 0.1 s, also with PLTs and in a
+    100 x 50 x 50 um box), Ht 0.4 at 1.00 (850, 0.4 s), Ht 0.45 at 0.96
+    (7,500, 4 s); Ht 0.5 and 0.55 stop at the RBC's 0.93 after 14,000
+    iterations (8-9 s; `--min_scale 0.8` packs Ht 0.55 at 0.90 in 13 s).
+    200 RBC + 150 PLT end at 1.00 (were 0.81); vRBCs start at 1.14 (5 %
+    above their mesh fit, 1.09), so dense vRBC packings now stop instead of
+    returning intersecting cells. An independent overlap check (the script
+    F35 would ship) confirmed every final scale.
+    *(verified)* **Make the relaxation explicit and bounded.** The ellipsoids
     start at `scale * (mean dx*dy*dz)^(1/3)` and only shrink, so `--scale`,
     documented as a grid setting, sets the start and with it the final margin
     and the run time.
@@ -347,7 +359,19 @@ then F29 with the check of F35, then F30-F31, then the rest.
     present. Report the final scale against 1 and the floor; below the floor
     exit with an error (or require an explicit `--allow_overlap`). Drop the
     "most numerous species" heuristic and its warning.
-30. **Data races in the OpenMP loop** (from reading; no missed contact in 16
+30. *Done* (cell lists complete before a parallel search in which every
+    thread writes only the contacts of its own particles; contacts applied
+    and `Force_step` summed in a fixed order; `Rcut` local). Results are
+    identical on 1, 4 and 24 threads, and byte-identical to the earlier code
+    on one thread in all ten test cases when both are built without FMA
+    contraction (with `-march=native` the compiler fuses multiply-adds
+    differently, which changes long runs in the last bits). A bounding-sphere
+    test skips the contact function for pairs that cannot overlap, and the
+    search runs in chunks of 4 (chunks of 16 left most threads idle). On 24
+    threads: Ht 0.45 in a 40 um cube 85 instead of 578 us per iteration
+    (0.7 s instead of 4.4 s), in 100 x 50 x 50 um 352 instead of 2,768 us
+    (2.9 s instead of 22.5 s); one thread is about as fast as 24 were.
+    **Data races in the OpenMP loop** (from reading; no missed contact in 16
     repeated runs). `calc_forces()` builds the cell list incrementally inside
     the parallel loop over particles, so which pairs a thread sees depends on
     timing. `Rcut`, `Rcut2` and `Dinner` are shared members written by every
@@ -360,8 +384,8 @@ then F29 with the check of F35, then F30-F31, then the rest.
       pair count as now);
     * make `Rcut` local, and reduce `Force_step` and `Dinner`.
 
-    Grid cells the size of the contact range (27 neighbour cells instead of
-    up to 64) can win time back. Compare the same case and thread count before
+    The grid cell size may win time back (larger cells: fewer cells to visit,
+    but more candidate pairs). Compare the same case and thread count before
     and after.
 31. *(verified)* **All cells start with the same orientation** and rotate
     only when they collide. At Ht 0.1, 19 of 66 RBCs come out unrotated and

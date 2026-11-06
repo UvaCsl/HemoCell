@@ -42,37 +42,39 @@ namespace {
 // are larger than the meshes HemoCell builds from the templates in
 // tools/cell_templates: the margin stands for the IBM interaction range (cells
 // interact from about one kernel width apart), the effective size of the
-// cells. The comments give the mesh and its "fit": the factor by which the
-// ellipsoid must be scaled to just contain the mesh (below it, packed cells may
-// intersect).
+// cells. meshFit is the scale of the ellipsoid at which it just contains the
+// mesh (measured on the generated meshes): below it, packed cells may
+// intersect.
 struct BuiltinType {
   const char * option;      // --<option> <n>
   const char * name;        // output file <name>.pos
   double dx, dy, dz;        // diameters of the enclosing ellipsoid [um]
+  double meshFit;           // see above
   const char * description; // for --help
 };
 const BuiltinType builtinTypes[] = {
-    // RBC_FROM_SPHERE, radius 3.91 um: 7.82 x 2.29 x 7.82 um, fit 0.931.
-    {"rbc", "RBC", 8.4, 4.4, 8.4, "human red blood cells"},
+    // RBC_FROM_SPHERE, radius 3.91 um: 7.82 x 2.29 x 7.82 um.
+    {"rbc", "RBC", 8.4, 4.4, 8.4, 0.931, "human RBCs"},
     // ELLIPSOID_FROM_SPHERE, radius 1.25 um, aspect ratio 0.435: 2.50 x 1.09 x
-    // 2.50 um, fit 0.929 (the RBC's margin; it was 2.4 x 1.05 x 2.4, smaller
-    // than the mesh).
-    {"plt", "PLT", 2.7, 1.17, 2.7, "human platelets"},
-    // WBC_SPHERE, radius 4.0 um: 8.0 um, fit 0.952.
-    {"wbc", "WBC", 8.4, 8.4, 8.4, "white blood cells"},
+    // 2.50 um (the RBC's margin; it was 2.4 x 1.05 x 2.4, smaller than the
+    // mesh).
+    {"plt", "PLT", 2.7, 1.17, 2.7, 0.929, "human platelets"},
+    // WBC_SPHERE, radius 4.0 um: 8.0 um.
+    {"wbc", "WBC", 8.4, 8.4, 8.4, 0.952, "white blood cells"},
     // MESH_FROM_STL of cases/pipeflowMalaria/vRBC_uniform.stl at radius 5.4 um:
-    // 2.94 x 4.83 x 10.8 um, fit 1.089 (does not contain the mesh; with the
-    // RBC's margin it would be 3.85 x 5.3 x 14.5 um).
-    {"vrbc", "vRBC", 3.5, 6.0, 11.0, "stage V gametocytes"},
-    // RBC_FROM_SPHERE, radius 2.9 um: 5.80 x 1.70 x 5.80 um, fit 0.931 (the
-    // human RBC's ellipsoid scaled by 2.9 / 3.91; it was 5.8 x 3.4 x 5.8).
-    {"rbc_m", "RBC_m", 6.23, 3.26, 6.23, "mouse red blood cells"},
+    // 2.94 x 4.83 x 10.8 um. The ellipsoid does not contain the mesh (fit
+    // 1.089), so these pack from a larger start; with the RBC's margin the
+    // ellipsoid would be 3.85 x 5.3 x 14.5 um.
+    {"vrbc", "vRBC", 3.5, 6.0, 11.0, 1.089, "stage V gametocytes"},
+    // RBC_FROM_SPHERE, radius 2.9 um: 5.80 x 1.70 x 5.80 um (the human RBC's
+    // ellipsoid scaled by 2.9 / 3.91; it was 5.8 x 3.4 x 5.8).
+    {"rbc_m", "RBC_m", 6.23, 3.26, 6.23, 0.931, "mouse RBCs"},
     // ELLIPSOID_FROM_SPHERE, radius 0.95 um, aspect ratio 0.57: 1.90 x 1.08 x
-    // 1.90 um, fit 0.927 (it was 1.84 x 1.05 x 1.84).
-    {"plt_m", "PLT_m", 2.05, 1.17, 2.05, "mouse wild-type platelets"},
-    // ELLIPSOID_FROM_SPHERE, radius 1.71 um, aspect ratio 1: 3.42 um, fit 0.929
-    // (it was 1.71 um, the radius taken as the diameter).
-    {"plt_mko", "PLT_mko", 3.68, 3.68, 3.68, "mouse knockout platelets"},
+    // 1.90 um (it was 1.84 x 1.05 x 1.84).
+    {"plt_m", "PLT_m", 2.05, 1.17, 2.05, 0.927, "mouse wild-type PLTs"},
+    // ELLIPSOID_FROM_SPHERE, radius 1.71 um, aspect ratio 1: 3.42 um (it was
+    // 1.71 um, the radius taken as the diameter).
+    {"plt_mko", "PLT_mko", 3.68, 3.68, 3.68, 0.929, "mouse knockout PLTs"},
 };
 const int numBuiltinTypes = sizeof(builtinTypes) / sizeof(builtinTypes[0]);
 
@@ -86,7 +88,9 @@ enum OptionId {
   OPT_PLT_RATIO,
   OPT_CELL,
   OPT_NOROTATE,
-  OPT_SCALE,
+  OPT_START_SCALE,
+  OPT_MIN_SCALE,
+  OPT_SCALE_REMOVED,
   OPT_MAXITER,
   OPT_SEED,
   OPT_HELP,
@@ -100,33 +104,48 @@ void printHelp(std::ostream & out) {
          "periodic in all three directions, so that their enclosing ellipsoids do not\n"
          "overlap, and writes <type>.pos for every cell type.\n"
          "\n"
+         "The ellipsoids are larger than the cells: they stand for the cells' effective\n"
+         "size, which includes the IBM interaction range. They start at --start_scale\n"
+         "times this nominal size and shrink until they no longer overlap. Below scale 1,\n"
+         "cells may start within each other's interaction range: a relaxation that makes\n"
+         "high volume fractions reachable. Below the scale at which an ellipsoid still\n"
+         "contains its cell's mesh (\"mesh fit\"), the meshes may intersect, so the\n"
+         "packing stops there (--min_scale).\n"
+         "\n"
          "CELL TYPES (the number of cells of a type; 0 writes a file without cells):\n";
   char line[200];
+  snprintf(line, sizeof(line), "  %-14s  %-21s %-12s %-21s  %s\n", "", "cells", "file", "ellipsoid [um]", "mesh fit");
+  out << line;
   for (int i = 0; i < numBuiltinTypes; i++) {
     const BuiltinType & t = builtinTypes[i];
-    snprintf(line, sizeof(line), "  --%-8s <n>  %s (%s.pos), ellipsoid %.2f x %.2f x %.2f um\n", t.option,
-             t.description, t.name, t.dx, t.dy, t.dz);
+    snprintf(line, sizeof(line), "  --%-8s <n>  %-21s %-12s %5.2f x %5.2f x %5.2f  %.2f\n", t.option, t.description,
+             (std::string(t.name) + ".pos").c_str(), t.dx, t.dy, t.dz, t.meshFit);
     out << line;
   }
   out << "  --cell <name> <n> <dx> <dy> <dz>\n"
          "                 a type of your own (<name>.pos): the full diameters [um] of its\n"
-         "                 enclosing ellipsoid along the cell's x, y and z axes\n"
+         "                 enclosing ellipsoid along the cell's x, y and z axes; its mesh\n"
+         "                 fit is taken as 1\n"
          "  --hematocrit <Ht>, -h <Ht>\n"
          "                 RBCs for this hematocrit of the box (0 < Ht < 1), counted with the\n"
          "                 effective RBC volume of 97 um^3 (the mesh plus the IBM interaction\n"
          "                 range), and PLTs by --plt_ratio; not with --rbc or --plt\n"
          "  --plt_ratio <r>  platelets per RBC with --hematocrit (default 0.07)\n"
          "\n"
-         "OTHER OPTIONS:\n"
+         "PACKING:\n"
+         "  --start_scale <s>\n"
+         "                 starting scale of the ellipsoids (default 1, or 5 % above\n"
+         "                 --min_scale if that is larger); a larger start leaves more room\n"
+         "                 between the cells but takes longer: the ellipsoids shrink by about\n"
+         "                 0.5 % of the start every 1000 iterations (1 to 0.93: 14,000)\n"
+         "  --min_scale <s>\n"
+         "                 smallest scale accepted (default: the largest mesh fit of the\n"
+         "                 types packed); lower it to accept intersecting meshes\n"
          "  --noRotate       keep the orientation of the cells fixed (all angles 0)\n"
-         "  --scale <s>, -s <s>\n"
-         "                 internal length scale [1/um] (default: 1.2 / the largest diameter\n"
-         "                 of the most numerous type). It also sets the starting size of the\n"
-         "                 ellipsoids, and with it the final clearance and the run time: a\n"
-         "                 larger scale is slower and leaves more room between the cells.\n"
          "  --maxiter <n>    stop after n iterations\n"
-         "  --seed <n>       seed of the random numbers (default: a random one, printed); the\n"
-         "                 packing is reproducible with one thread (OMP_NUM_THREADS=1)\n"
+         "  --seed <n>       seed of the random numbers (default: a random one, printed): the\n"
+         "                 same seed gives the same packing, with any number of threads\n"
+         "                 (OMP_NUM_THREADS)\n"
          "  --help           print this\n"
          "\n"
          "OUTPUT (in the current directory; existing files are overwritten):\n"
@@ -134,6 +153,9 @@ void printHelp(std::ostream & out) {
          "  centre [um] in [0, sX) x [0, sY) x [0, sZ), and the rotation [degrees] about x,\n"
          "  then y, then z, as HemoCell's loader applies it. The file names must match the\n"
          "  cell type names of the case (addCellType); rename them where they differ.\n"
+         "  The progress shows the volume fraction of the ellipsoids and their scale, both\n"
+         "  at the outer scale (their current size) and the inner one (at which the\n"
+         "  closest overlapping pair touches; equal to the outer once none overlap).\n"
          "\n"
          "NOTES:\n"
          "  Sizes are in um, not lattice units.\n"
@@ -143,8 +165,9 @@ void printHelp(std::ostream & out) {
          "  equals the periodic domain of the case.\n"
          "\n"
          "EXIT STATUS:\n"
-         "  0 packed; 1 invalid arguments; 2 not finished within --maxiter (the files are\n"
-         "  written, but the cells may overlap).\n";
+         "  0 packed; 1 invalid arguments; 2 not finished within --maxiter; 3 stopped below\n"
+         "  --min_scale (lower the hematocrit or enlarge the box). With 2 and 3 the files\n"
+         "  are written, but the cells may overlap.\n";
 }
 
 [[noreturn]] void usageError(const std::string & message) {
@@ -185,7 +208,8 @@ double parsePositive(const char * text, const std::string & what) {
 
 int main(int argc, char * argv[]) {
   const int maxCount = INT_MAX / 2;
-  double scale = -1.0; // automatic
+  double startScale = -1.0; // default: from minScale
+  double minScale = -1.0;   // default: the largest mesh fit
   double plt_ratio = 0.07;
   bool plt_ratio_set = false;
   int maxIter = INT_MAX - 100; // Nrot_step = maxIter + 1 must not overflow
@@ -205,7 +229,9 @@ int main(int argc, char * argv[]) {
                                   {"plt_ratio", required_argument, nullptr, OPT_PLT_RATIO},
                                   {"cell", required_argument, nullptr, OPT_CELL},
                                   {"noRotate", no_argument, nullptr, OPT_NOROTATE},
-                                  {"scale", required_argument, nullptr, OPT_SCALE},
+                                  {"start_scale", required_argument, nullptr, OPT_START_SCALE},
+                                  {"min_scale", required_argument, nullptr, OPT_MIN_SCALE},
+                                  {"scale", required_argument, nullptr, OPT_SCALE_REMOVED},
                                   {"maxiter", required_argument, nullptr, OPT_MAXITER},
                                   {"seed", required_argument, nullptr, OPT_SEED},
                                   {"help", no_argument, nullptr, OPT_HELP}};
@@ -235,17 +261,23 @@ int main(int argc, char * argv[]) {
         const int n = int(parseInteger(argv[optind], what + ": the number of cells", 0, maxCount));
         double d[3];
         for (int k = 0; k < 3; k++) { d[k] = parsePositive(argv[optind + 1 + k], what + ": diameter"); }
-        cellTypes.push_back({name, d[0], d[1], d[2], n});
+        cellTypes.push_back({name, d[0], d[1], d[2], n, 0.0});
         optind += 4;
         break;
       }
       case OPT_NOROTATE:
         doRotate = false;
         break;
-      case 's':
-      case OPT_SCALE:
-        scale = parsePositive(optarg, "--scale");
+      case OPT_START_SCALE:
+        startScale = parsePositive(optarg, "--start_scale");
         break;
+      case OPT_MIN_SCALE:
+        minScale = parsePositive(optarg, "--min_scale");
+        break;
+      case 's':
+      case OPT_SCALE_REMOVED:
+        usageError("--scale (-s) no longer exists: the ellipsoids start at --start_scale (default 1) times "
+                   "their nominal size, and the collision-check grid is set automatically");
       case OPT_MAXITER:
         maxIter = int(parseInteger(optarg, "--maxiter", 1, INT_MAX - 100));
         break;
@@ -259,7 +291,7 @@ int main(int argc, char * argv[]) {
         if (val >= OPT_BUILTIN && val < OPT_BUILTIN + numBuiltinTypes) {
           const BuiltinType & t = builtinTypes[val - OPT_BUILTIN];
           const int n = int(parseInteger(optarg, std::string("--") + t.option, 0, maxCount));
-          cellTypes.push_back({t.name, t.dx, t.dy, t.dz, n});
+          cellTypes.push_back({t.name, t.dx, t.dy, t.dz, n, t.meshFit});
           if (std::string(t.option) == "rbc" || std::string(t.option) == "plt") { rbc_plt_set = true; }
           break;
         }
@@ -287,15 +319,16 @@ int main(int argc, char * argv[]) {
     const double nRBC = std::round(hematocrit * sX * sY * sZ / rbcEffectiveVolume);
     if (nRBC < 1) { usageError("the box holds no RBC at this hematocrit"); }
     if (nRBC > maxCount) { usageError("too many RBCs for this hematocrit and box"); }
-    cellTypes.push_back({rbc.name, rbc.dx, rbc.dy, rbc.dz, int(nRBC)});
+    cellTypes.push_back({rbc.name, rbc.dx, rbc.dy, rbc.dz, int(nRBC), rbc.meshFit});
     const int nPLT = int(std::round(nRBC * plt_ratio));
-    if (nPLT > 0) { cellTypes.push_back({plt.name, plt.dx, plt.dy, plt.dz, nPLT}); }
+    if (nPLT > 0) { cellTypes.push_back({plt.name, plt.dx, plt.dy, plt.dz, nPLT, plt.meshFit}); }
   } else if (plt_ratio_set) {
     usageError("--plt_ratio needs --hematocrit (give the platelets with --plt otherwise)");
   }
 
   std::set<std::string> names;
   long totalCells = 0;
+  double largestMeshFit = 0; // of the types with cells; 1 for --cell types
   for (const CellType & cell : cellTypes) {
     if (cell.name.empty() || cell.name.find('/') != std::string::npos) {
       usageError("--cell: invalid name '" + cell.name + "'");
@@ -304,33 +337,26 @@ int main(int argc, char * argv[]) {
       usageError("the cell type " + cell.name + " is given twice (both would be written to " + cell.name + ".pos)");
     }
     totalCells += cell.number;
+    if (cell.number > 0) { largestMeshFit = std::max(largestMeshFit, cell.meshFit > 0 ? cell.meshFit : 1.0); }
   }
   if (totalCells == 0) {
     usageError("no cells to pack: give at least one cell (--rbc, --plt, --wbc, --cell, ...) or --hematocrit");
   }
   if (totalCells > maxCount) { usageError("too many cells"); }
 
-  if (scale <= 0.0) { // Calculate optimal scaling automatically
-    cout
-        << "Setting the resolution according to the most numerous species. Overlap between smaller cell types might occur! (e.g., If you have many platelets, but they are not the most numerous, you will need an increased scaling factor to avoid overlap between them)."
-        << endl;
-    double maxCellD = 0.0;
-    int maxCellCount = 0;
-    for (auto cell : cellTypes) {
-      if (maxCellCount < cell.number) {
-        maxCellCount = cell.number;
-        maxCellD = max(max(cell.dx, cell.dy), cell.dz);
-      }
-    }
-
-    scale = (1. / maxCellD) * 1.2; // The 1.2 is an added "safety" range
+  if (minScale < 0) { minScale = largestMeshFit; }
+  if (startScale < 0) { startScale = std::max(1.0, 1.05 * minScale); }
+  if (startScale < minScale) {
+    usageError("--start_scale " + std::to_string(startScale) + " is below the minimum scale " +
+               std::to_string(minScale) + " (--min_scale)");
   }
 
   cout.setf(ios::fixed, ios::floatfield);
   cout << "Parameters:" << endl;
   cout << "  Domain Size [µm]: ( " << sX << " , " << sY << " , " << sZ << " )" << endl;
   cout << "  Maximum Iterations : " << maxIter << endl;
-  cout << "  Scale              : " << scale << endl;
+  cout << "  Start scale        : " << startScale << endl;
+  cout << "  Minimum scale      : " << minScale << endl;
   cout << "  Rotation           : " << doRotate << endl;
   cout << "  Seed               : " << seed << endl;
   if (hematocrit_set) {
@@ -343,6 +369,7 @@ int main(int argc, char * argv[]) {
     cout << "    No   : " << cell.number << endl;
     cout << "    Sizes: (" << cell.dx << " , " << cell.dy << " , " << cell.dz << " )" << endl;
     cout << "    Ellipsoid volume: " << 4.0 / 3.0 * PI * cell.dx * cell.dy * cell.dz / 8.0 << " [µm3]." << endl;
+    if (cell.meshFit > 0) { cout << "    Mesh fit: " << cell.meshFit << endl; }
   }
 
   Random::init(seed);
@@ -351,16 +378,42 @@ int main(int argc, char * argv[]) {
 
   pack.setRndRotation(doRotate); // This needs to be set first!
 
-  pack.initBlood(sX, sY, sZ, maxIter, scale, cellTypes);
+  pack.initBlood(sX, sY, sZ, maxIter, startScale, minScale, cellTypes);
 
-  const bool finished = pack.execute();
+  const Packing::Result result = pack.execute();
 
   pack.saveBloodCellPositions();
 
-  if (!finished) {
-    cout << "The packing is not finished (--maxiter " << maxIter << "); rerun with --seed " << seed
-         << " to reproduce it." << endl;
-    return 2;
+  const double finalScale = pack.getFinalScale();
+  cout.precision(4);
+  cout << "Final scale of the ellipsoids: " << finalScale << " (start " << startScale << ", minimum " << minScale << ")"
+       << endl;
+  switch (result) {
+    case Packing::Packed:
+      // Within 0.1 % of the nominal size counts as nominal: the scale shrinks
+      // a little in every iteration, so a start at 1 ends just below it.
+      if (finalScale >= 0.999) {
+        cout << "The ellipsoids do not overlap at their nominal size: the cells start out of each other's "
+                "interaction range."
+             << endl;
+      } else if (finalScale >= largestMeshFit) {
+        cout << "The ellipsoids do not overlap at this scale: cells may start within each other's interaction "
+                "range, but their meshes do not intersect."
+             << endl;
+      } else {
+        cout << "WARNING: the ellipsoids do not overlap at this scale, which is below the mesh fit of the cells ("
+             << largestMeshFit << "): some meshes may intersect." << endl;
+      }
+      return 0;
+    case Packing::NotFinished:
+      cout << "WARNING: not finished within --maxiter " << maxIter << ": the cells may overlap. Rerun with --seed "
+           << seed << " to reproduce it." << endl;
+      return 2;
+    case Packing::BelowMinimumScale:
+      cout << "WARNING: the ellipsoids shrank below the minimum scale " << minScale
+           << " before they stopped overlapping: the cells may overlap. Lower the hematocrit or enlarge the box"
+           << (minScale > 1.0 ? "." : ", or accept a smaller scale with --min_scale.") << endl;
+      return 3;
   }
   return 0;
 }

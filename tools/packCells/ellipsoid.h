@@ -31,8 +31,11 @@ using namespace std;
 
 struct CellType {
   string name;
-  double dx, dy, dz;
+  double dx, dy, dz; // diameters of the enclosing ellipsoid along the cell's x, y and z axes
   int number;
+  // The scale of the ellipsoid at which it still contains the cell's mesh
+  // (0: not known).
+  double meshFit;
 };
 
 class Species {
@@ -117,7 +120,7 @@ public:
   const Quaternion & get_q() const { return q; }
   Quaternion & get_q() { return q; }
 
-  friend ostream & operator<<(ostream & o, Ellipsoid & e) {
+  friend ostream & operator<<(ostream & o, const Ellipsoid & e) {
     o << *e.kind << endl;
     o << e.pos << endl;
     o << e.q << endl;
