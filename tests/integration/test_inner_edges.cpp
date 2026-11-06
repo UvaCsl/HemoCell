@@ -28,7 +28,8 @@ std::string writeMaterial(const std::string & extraEdge) {
   const size_t at = xml.find("</InnerEdges>");
   EXPECT_NE(at, std::string::npos);
   xml.insert(at, "<Edge>" + extraEdge + "</Edge>\n");
-  const std::string name = testing::TempDir() + "hemocell_inner_edges_r" + std::to_string(plb::global::mpi().getRank());
+  const std::string name =
+      hemo_test::outputRoot() + "hemocell_inner_edges_r" + std::to_string(plb::global::mpi().getRank());
   std::ofstream out(name + ".xml");
   out << xml;
   return name;

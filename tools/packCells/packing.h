@@ -104,12 +104,14 @@ class Packing {
 public:
   Packing();
   ~Packing();
-  void execute();
+  // Packs the cells; returns whether an overlap-free packing was reached
+  // within the maximum number of iterations.
+  bool execute();
 
   double calc_forces(BinaryEllipsoidSystem & e, Ellipsoid & ei, Ellipsoid & ej);
 
   // Initialise blood suspension with RBCs and platelets
-  void initBlood(float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing, vector<CellType> & ctypes);
+  void initBlood(double sizeX, double sizeY, double sizeZ, int maxSteps, double sizing, vector<CellType> & ctypes);
   // void initSuspension(vector<int> nPartsPerComponent, vector<vector3> diametersPerComponent, vector<int> domainSize, double nominalPackingDensity, int maxSteps, double sizing);
   void savePov(const char * fileName, int wbcNumber);
   void saveBloodCellPositions();
@@ -161,7 +163,6 @@ Packing::Packing() {
   Nfig = 16; //8;
   Nsf = 1;
   Sphere_vol = PI / 6.;
-  Random::init();
   cout.setf(ios::fixed, ios::floatfield);
 }
 
@@ -180,12 +181,9 @@ Packing::~Packing() {
   delete[] species;
 }
 
-void Packing::execute() {
-  //cout << "execute begin" << endl;
+bool Packing::execute() {
   init();
-  //cout << "init end" << endl;
   calc_forces();
-  //cout << "calc_forces end" << endl;
 
   Pactual = Dinner * Dinner * Dinner / Diam_dens;
   outputHeader();
@@ -194,19 +192,22 @@ void Packing::execute() {
     iterate();
     if (NumSteps % printEveryNSteps == 0) output();
   }
-  if (NumSteps == Max_steps - 1)
-    cout << "WARNING: Force-free packing was NOT achieved! Potential overlaps might still exist." << endl;
 
-  if (isFinished)
+  if (isFinished) {
     cout << " PACKING DONE " << endl; // A configuration close to equilibrium found
-  else
-    cout << " PACKING TERMINATED(!) "
-         << endl; // No equilibrium yet, but used up maximal iterations, or there is no better configuration
+  } else {
+    // No equilibrium within the maximum number of iterations
+    cout << " PACKING TERMINATED(!) " << endl;
+    cout << "WARNING: no overlap-free packing within " << Max_steps
+         << " iterations: the cells may overlap (inner diameter < outer diameter)." << endl;
+  }
+  return isFinished;
 }
 
 
 // Takes dimensions in um!
-void Packing::initBlood(float sizeX, float sizeY, float sizeZ, int maxSteps, double sizing, vector<CellType> & ctypes) {
+void Packing::initBlood(double sizeX, double sizeY, double sizeZ, int maxSteps, double sizing,
+                        vector<CellType> & ctypes) {
   NumParts = 0;
   NumSpecies = 0;
   Epsilon = 0.1;
@@ -263,8 +264,7 @@ void Packing::initBlood(float sizeX, float sizeY, float sizeZ, int maxSteps, dou
 
   if (nomPackDens > 0.7) {
     cout << "*** WARNING ***" << endl;
-    cout << "For the requested hematocrit the enclosing ellipsoids yield a nominal volume ratio of: " << nomPackDens
-         << endl;
+    cout << "For the requested cells the enclosing ellipsoids yield a nominal volume ratio of: " << nomPackDens << endl;
     cout << "Highest possible dense packing is around 0.77!!! You might want to reconsider..." << endl;
   }
 
@@ -289,12 +289,13 @@ void Packing::init() {
   CellSize = vector3(Box[0] / No_cells_x, Box[1] / No_cells_y, Box[2] / No_cells_z);
   Diam_dens = Box[0] * Box[1] * Box[2] / Sphere_vol;
   double corr = 0;
-  vector3 r;
+  // Rc_max: the largest diameter of all types, along any axis (it used to be
+  // the x diameter only, which missed contacts of cells elongated along y or z,
+  // e.g. vRBC).
   Rc_max = 0;
   for (int is = 0; is < NumSpecies; is++) {
-    r = species[is]->getSize();
-    corr += species[is]->getNum(); // * r[0]*r[1]*r[2];
-    if (r[0] > Rc_max) Rc_max = r[0];
+    corr += species[is]->getNum();
+    Rc_max = std::max(Rc_max, species[is]->getMaxDiameter());
   }
   Diam_dens /= corr;
   DensityNominal = nomPackDens;
@@ -302,7 +303,10 @@ void Packing::init() {
   Douter = Douter0;
   Relax = 0.5 * Douter / Ntau;
   Douter2 = Douter * Douter;
-  double alpha = species[0]->getSize()[0];
+  // Rotation step from the largest diameter of all types (it was the x
+  // diameter of the first type given, so it depended on the order of the
+  // options; unchanged for the human cell types).
+  double alpha = Rc_max;
   if (Epsilon_rot > .1) Epsilon_rot = 50. / (alpha * alpha * alpha);
 
   particles = new Ellipsoid *[NumParts];
@@ -403,7 +407,8 @@ void Packing::calc_forces() {
 #pragma omp parallel for private(ipart) schedule(static)
   for (ipart = 0; ipart < NumParts; ipart++) {
     Species * k = particles[ipart]->getSpecies();
-    Rcut = 0.55 * Douter * ((k->getSize())[0] + Rc_max);
+    // Contact range: half the sum of the largest diameters, plus 10 %.
+    Rcut = 0.55 * Douter * (k->getMaxDiameter() + Rc_max);
     Rcut2 = Rcut * Rcut;
 
     const double minCellSize = std::min(CellSize[0], std::min(CellSize[1], CellSize[2]));

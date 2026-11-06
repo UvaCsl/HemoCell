@@ -3,6 +3,7 @@
 #include "config.h"
 #include "error.h"
 #include "parallelism/mpiManager.h"
+#include "test_support.h"
 
 #include <fstream>
 #include <string>
@@ -32,8 +33,8 @@ TEST(Error, MissingConfigFileIsFatal) {
 TEST(Error, MalformedConfigFileIsFatal) {
   hemo::FatalErrorsThrow guard;
   // The rank is part of the name, so concurrent ranks do not write the same file.
-  const std::string path =
-      testing::TempDir() + "hemocell_error_test_malformed_r" + std::to_string(plb::global::mpi().getRank()) + ".xml";
+  const std::string path = hemo_test::outputRoot() + "hemocell_error_test_malformed_r" +
+                           std::to_string(plb::global::mpi().getRank()) + ".xml";
   {
     std::ofstream file(path);
     file << "<hemocell><domain></hemocell>";

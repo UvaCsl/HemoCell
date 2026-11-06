@@ -3,6 +3,7 @@
 #include "hemoCellParticle.h"
 #include "logfile.h"
 #include "parallelism/mpiManager.h"
+#include "test_support.h"
 
 #include <fstream>
 #include <sstream>
@@ -87,7 +88,7 @@ TEST(Logfile, MessagesBeforeOpenAreWrittenToTheFile) {
   log << "early message " << 42 << std::endl;
 
   const std::string path =
-      testing::TempDir() + "hemocell_logfile_test_r" + std::to_string(plb::global::mpi().getRank());
+      hemo_test::outputRoot() + "hemocell_logfile_test_r" + std::to_string(plb::global::mpi().getRank());
   ASSERT_TRUE(log.open(path));
   log << "late message" << std::endl;
   log.close();

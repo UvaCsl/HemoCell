@@ -36,8 +36,9 @@ Findings of a review of the `refactor` branch (November 2026). Items marked
 reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
 before others write drivers against the API.
 
-Status: A1-A9, B11-B16, C17-C20 and E23-E24 are done (see CHANGELOG). B10 is
-deferred (special case, lower priority). D21-D22 and E25 are open.
+Status: A1-A9, B11-B16, C17-C20, E23-E24 and F26-F28 are done (see
+CHANGELOG). B10 is deferred (special case, lower priority). D21-D22, E25 and
+F29-F35 (`tools/packCells`) are open.
 
 ### A. Silent wrong results or lost runs
 
@@ -243,3 +244,175 @@ deferred (special case, lower priority). D21-D22 and E25 are open.
     at `x0 + 1`. Fixing the loop order would change their geometry, and would
     open the closed low end of `examples/curvedflow_with_preinlet` (a U-bend
     with both openings at `x1`), which needs a way to keep an end closed.
+
+### F. `tools/packCells`
+
+Review of the packing tool (November 2026), revised with the author's
+comments, which every change here has to respect:
+
+* It must stay fast at high hematocrit (0.3 and above); today a 40 um cube at
+  Ht 0.3 (198 RBCs) packs in under a second.
+* Letting the ellipsoids shrink below their nominal size is a deliberate
+  relaxation that makes high volume fractions reachable, at some cost in
+  accuracy. Keep it, but make it explicit and bounded.
+* The enlarged ellipsoids and the 97 um^3 RBC volume describe the cells'
+  *effective* size, which includes the IBM interaction range (cells interact
+  from about one kernel width apart). For collision-based viscosity this
+  matters more than the mesh.
+
+So scale 1 (the nominal ellipsoids) means "out of each other's interaction
+range". Between 1 and the scale at which an ellipsoid still contains its mesh
+(the type's *floor*: RBC 0.93, WBC 0.95), cells start within each other's
+IBM range; below the floor their meshes may intersect.
+
+Measured with an independent check of the output (the Perram-Wertheim
+contact function over all periodic images, and the RBC shape itself) and the
+meshes HemoCell builds from the templates. Confirmed correct: the angles
+packCells writes and the loader's rotation agree to 1.6e-13 over 1e5
+orientations, and the RBC and PLT meshes have their thin axis along y, as
+packCells assumes. Suggested order: F26-F28 (small, no cost in run time),
+then F29 with the check of F35, then F30-F31, then the rest.
+
+26. *Done* (largest diameter for the contact range and the rotation step;
+    the vRBC packing is now clear at its final scale, 1.53).
+    *(verified)* **The contact range uses only the x diameter.** `Rcut` and
+    `Rc_max` read `getSize()[0]`, so cells whose largest diameter is not
+    along x miss contacts: vRBCs (3.5 x 6 x 11 um) packed with `--scale 0.25`
+    reported no contact at scale 1.53, yet overlap at scale 1 (min 0.95). Use
+    the largest diameter; RBC, PLT and WBC are unaffected (x is their
+    largest), so it costs them nothing. `Epsilon_rot` is set from the first
+    species only.
+27. *Done* (PLT 2.7 x 1.17 x 2.7, PLT_m 2.05 x 1.17 x 2.05, PLT_mko 3.68,
+    RBC_m 6.23 x 3.26 x 6.23 um: each mesh fits at 0.93; the sources are
+    commented in `packCells.cpp`). Open: the vRBC ellipsoid (3.5 x 6 x 11 um)
+    does not contain the gametocyte mesh either (`vRBC_uniform.stl` at radius
+    5.4 um, 2.94 x 4.83 x 10.8 um, fit 1.09); with the RBC's margin it would
+    be 3.85 x 5.3 x 14.5 um, 28 % more volume and much longer, which changes
+    how densely they pack. Left as it is until that is decided.
+    *(verified)* **Some ellipsoids are smaller than the cells.** Scale at
+    which each ellipsoid contains the mesh HemoCell builds from its template:
+    RBC 0.93, WBC 0.95, but PLT 1.04 (2.4 x 1.05 um against 2.50 x 1.09),
+    PLT_m 1.03, RBC_m 1.00 (no margin) and PLT_mko 2.0 (1.71 um is the
+    template's radius, used as the diameter). Give them the RBC's relative
+    margin. Platelets are 0.14 % of the ellipsoid volume at the default PLT
+    ratio, so this costs no packing density or time.
+28. *Done* (inputs checked once before packing, exit status 1 with a
+    message, 2 when not finished; `--seed`, reproducible with one thread;
+    help rewritten; `-h` stays the hematocrit, as before).
+    *(verified)* **Command line.**
+    * Domain sizes are read with `atoi` (`30.5 20.7 20.9` becomes
+      30 x 20 x 20).
+    * Two crashes: `-s` is declared without an argument (`"h:s"`), and
+      `--cell` as the last option reads past `argv` (check `optind + 4`).
+    * Zero cells (`--rbc 0`, `--rbc abc`, a hematocrit that rounds to 0) loop
+      forever on NaN.
+    * Repeated names (`--rbc 3 --rbc 5`, or `--cell RBC ...` with `--rbc`)
+      overwrite `RBC.pos`.
+    * Hitting `--maxiter` writes the files and exits 0, and its `WARNING`
+      (`NumSteps == Max_steps - 1`) never fires.
+
+    Validate all inputs once at the start; exit non-zero when the packing is
+    not finished. Add `--seed`: today it is `time(NULL)`, so no packing can be
+    reproduced and two runs in the same second are identical. Fix the help:
+    * `-h` is the hematocrit;
+    * it names `--RBC`, `--PLT` and `--PLT_ratio`, which are rejected;
+    * it promises `Cells.pov`, which `savePov()` (commented out) no longer
+      writes;
+    * `--cell <name> <n> <e1, e2, diameter>` takes the three full diameters
+      along body x, y, z in um (y is the thin axis);
+    * the "Volume" it prints is the ellipsoid's.
+29. *(verified)* **Make the relaxation explicit and bounded.** The ellipsoids
+    start at `scale * (mean dx*dy*dz)^(1/3)` and only shrink, so `--scale`,
+    documented as a grid setting, sets the start and with it the final margin
+    and the run time.
+    * The automatic scale (1.2 / the largest diameter of the most numerous
+      type) starts RBCs at 0.97, which is fast and above their floor. But a
+      mixture's small cells pull it down: 200 RBC + 150 PLT end at 0.81, with
+      186 RBC pairs whose shapes intersect; vRBCs start at 0.67.
+    * A large scale is slow: `--scale 0.25` starts at 1.69 and takes 79k
+      steps (41 s), since each step shrinks by a fixed fraction (`Ntau`).
+
+    Size the neighbour grid from the largest contact range, and give the
+    start scale directly (default 1.0). Measured with the start set that way
+    (emulated with `--scale`; 40 um cube unless noted; 24 threads):
+    * RBC, Ht 0.3, start 1.0 / 1.05: 123 / 230 steps, < 1 s, final scale
+      1.00 / 1.05 (100 x 50 x 50 um, 773 RBCs: 146 steps);
+    * RBC, Ht 0.4, start 1.0 / 1.05: 700 / 9,300 steps, 1 / 5 s, final
+      1.00 / 1.00;
+    * RBC, Ht 0.45, start 1.0: 7,600 steps, 5 s, final 0.96;
+    * RBC, Ht 0.5, start 1.0: 14,400 steps, 10 s, final 0.93 (the floor);
+    * 200 RBC + 150 PLT, start 1.0: 232 steps, < 1 s, final 1.00.
+
+    Keep shrinking below 1 as the relaxation, down to the floor of the types
+    present. Report the final scale against 1 and the floor; below the floor
+    exit with an error (or require an explicit `--allow_overlap`). Drop the
+    "most numerous species" heuristic and its warning.
+30. **Data races in the OpenMP loop** (from reading; no missed contact in 16
+    repeated runs). `calc_forces()` builds the cell list incrementally inside
+    the parallel loop over particles, so which pairs a thread sees depends on
+    timing. `Rcut`, `Rcut2` and `Dinner` are shared members written by every
+    thread, the partner's force is updated without atomics, and
+    `calc_motion()` sums `Force_step` without a reduction. Results are not
+    reproducible, even with a seed. Keep the speed-up (24 threads: 41 s,
+    1 thread: 179 s, same packing):
+    * build the cell list before the force loop;
+    * accumulate pair forces in per-thread buffers and reduce them (the same
+      pair count as now);
+    * make `Rcut` local, and reduce `Force_step` and `Dinner`.
+
+    Grid cells the size of the contact range (27 neighbour cells instead of
+    up to 64) can win time back. Compare the same case and thread count before
+    and after.
+31. *(verified)* **All cells start with the same orientation** and rotate
+    only when they collide. At Ht 0.1, 19 of 66 RBCs come out unrotated and
+    the RBCs lie mostly in the xz-plane (mean |cos| of the thin axis with y:
+    0.83; isotropic is 0.5). Start from uniform random orientations; tried at
+    Ht 0.3 and 0.4, the step count is unchanged and the result isotropic
+    (0.45-0.53). Keep `--noRotate` (aligned and fixed) as an option.
+    `Quaternion::random()` is unused and not uniform.
+32. *(verified estimate)* **Walls.** The packing is periodic along all three
+    axes, and the loader drops every cell crossing a wall. In the Case.rst
+    tutorial (25 um cube, walls in y and z), 29 of the 48 RBCs touch the
+    walls, so the requested Ht 0.3 becomes at most 0.11 (a geometric
+    estimate, not run in HemoCell). A box thinner than a cell is never checked
+    against the cell's own periodic image. Add per-axis walls with a clearance
+    (an ellipsoid-plane distance check, O(N) per step) and an origin offset,
+    so the box can be the fluid region; optionally a cylinder for pipes
+    (`cases/pipeflow_wbc/README.md`).
+33. **Hematocrit and volume fractions.** `--hematocrit` counts RBCs by their
+    effective volume, 97 um^3 (the 81 um^3 mesh plus the IBM interaction
+    range). This is intended, but it is explained nowhere: the code only says
+    "set to match the model". Document it in the help and the user guide,
+    and print the cell counts with the effective and mesh volume fractions.
+    `--hematocrit` always adds human RBCs (no `RBC_m`; WBCs are not counted),
+    and the "nominal volume fraction" printed is the ellipsoids'.
+34. **Build and code.**
+    * The CMake file forces `g++-7` on macOS (after `project()`) and
+      hard-codes `-fopenmp -march=native -O3 -g`; use `find_package(OpenMP)`
+      and the build type.
+    * The binary always lands in `tools/packCells/`.
+    * `register` (removed in C++17), and a non-inline `operator*` in
+      `geometry.h`.
+    * Dead code: `savePov()`, `getOutput()`, `scene.pov`, `compile.sh`.
+    * A centre exactly at L stays there (`pbc()` uses `>`), which the loader
+      rejects.
+35. **Documentation and a check.**
+    * QuickStart.rst gives the path `./hemocell/packCells`, and its build
+      steps don't put the binary in `build/`.
+    * Case.rst shows an old help and output, and its command (`... -r`) now
+      fails ("option '-r' is ambiguous").
+    * `tools/packCells/README` has only credits. Document:
+      * the box: the periodic length is nx*dx um from lattice node 0, and
+        positions are relative to the pre-inlet's corner;
+      * that cells crossing walls are dropped, so the hematocrit must be
+        checked after loading;
+      * that the file names must match the `addCellType` names (`RBC_HO`,
+        `WBC_HO` and `PLT_HO` in some cases);
+      * the rotation convention (body thin axis y; degrees about x, then y,
+        then z, about the centre);
+      * each type's ellipsoid and what it means (effective size, floor);
+      * the progress columns and what to check at the end;
+      * the run time against the start scale.
+    * Ship the overlap check (a short numpy script, Perram-Wertheim) with the
+      tool, and run it in CI on a small RBC + PLT packing at Ht 0.3: the final
+      scale at least the floor, no pair below it, and a time limit.

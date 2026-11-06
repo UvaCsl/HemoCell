@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "parallelism/mpiManager.h"
+#include "test_support.h"
 
 #include <fstream>
 #include <stdexcept>
@@ -13,7 +14,7 @@ namespace {
 // part of the name, so concurrent ranks do not write the same file.
 std::string writeTempXml(const std::string & name, const std::string & content) {
   const std::string path =
-      testing::TempDir() + "hemocell_config_test_r" + std::to_string(plb::global::mpi().getRank()) + "_" + name;
+      hemo_test::outputRoot() + "hemocell_config_test_r" + std::to_string(plb::global::mpi().getRank()) + "_" + name;
   std::ofstream file(path);
   file << content;
   return path;

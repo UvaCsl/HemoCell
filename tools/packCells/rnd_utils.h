@@ -47,7 +47,7 @@ inline double sign(double a, double b) {
 
 class Random {
 public:
-  static void init() { srand48(time(NULL)); }
+  static void init(long seed) { srand48(seed); }
   static double getRand() { return drand48(); }
   static double getRandLimits(double xFrom, double xTo) { return getRand() * (xTo - xFrom) + xFrom; }
 };

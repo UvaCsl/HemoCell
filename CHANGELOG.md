@@ -403,7 +403,9 @@ Unreleased (refactor)
     byte-identical checkpoints (1 and 2 ranks); `nearestNode()`.
   * The tests' simulations write into one temporary directory per run
     (removed afterwards; `HEMOCELL_KEEP_TEST_OUTPUT` keeps it) instead of
-    `tmp`, `tmp_0`, ... in the repository root.
+    `tmp`, `tmp_0`, ... in the repository root. The configuration, error,
+    log-file, mechanics and inner-edge tests write their files there too
+    (they were left in the system's temporary directory).
 * Tools and scripts
   * `scripts/ci/smoke_drivers.py` runs every built example and case for 20
     steps with output and a checkpoint; CI runs it (gcc release job) for all
@@ -427,6 +429,26 @@ Unreleased (refactor)
     repel across the box faces (the periodic shift of the neighbour search
     was computed but not applied, so cells overlapped across the faces). It
     needs CMake >= 3.16, and its help describes the periodic packing.
+  * `tools/packCells`: the contact search and the rotation step use the
+    largest diameter of the cells (they used the x diameter, of the first
+    type given for the rotation step), so cells elongated along y or z are
+    no longer packed overlapping (vRBCs reported clear at scale 1.53 still
+    overlapped at scale 1). The platelet and mouse ellipsoids enclose the
+    cells HemoCell builds from `tools/cell_templates` with the RBC's margin
+    (the meshes fit at about 0.93 of the ellipsoid): PLT 2.7 x 1.17 x 2.7 um
+    (was 2.4 x 1.05 x 2.4, smaller than the 2.50 x 1.09 um platelet), PLT_m
+    2.05 x 1.17 x 2.05 (was 1.84 x 1.05 x 1.84), PLT_mko 3.68 um (was
+    1.71 um, the radius taken as the diameter) and RBC_m 6.23 x 3.26 x 6.23
+    (was 5.8 x 3.4 x 5.8, no margin). The command line is checked before
+    packing (exit status 1 with a message): domain sizes may be fractional
+    (they were truncated to integers), and invalid or missing numbers, a
+    trailing `--cell`, `-s` (both crashed), no cells (looped forever), a
+    type given twice (overwrote its file) and `--plt_ratio` without
+    `--hematocrit` (ignored) are refused. A packing that is not finished
+    within `--maxiter` exits with status 2. `--seed` makes a packing
+    reproducible (with one thread); the seed is printed. The help lists the
+    ellipsoid of every type and describes `--cell`, `--scale`, the output
+    and the effective RBC volume behind `--hematocrit`.
 * Rounding to the nearest lattice node (`nearestNode()`) rounds negative
   coordinates down; `plint(x + 0.5)` gave a node one too high for x < -0.5
   (particle grid, wall removal in `advanceParticles()`, `nearestCell()`, the

@@ -51,6 +51,9 @@ public:
   }
   int getNum() { return number; }
   vector3 getSize() { return rad; }
+  // The largest of the three diameters (the reach of the ellipsoid in any
+  // orientation).
+  double getMaxDiameter() const { return std::max(rad[0], std::max(rad[1], rad[2])); }
   bool getIsSphere() { return sph; }
   friend ostream & operator<<(ostream & o, const Species & s) {
     o << s.number << endl;

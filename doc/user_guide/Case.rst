@@ -273,58 +273,35 @@ Creating the initial positions for the Cells
 
 As a final touch we must create an RBC.pos file which contains the positions
 of the RBC's that we want in our simulation. For this we use the tool that is
-described in :ref:`packcells`. Run packCells with the following command to
-create only RBC in a 25x25x25 domain:
+described in :ref:`packcells` (``./packCells --help`` lists its options). Run
+packCells with the following command to create only RBCs in a 25x25x25 µm
+domain (``--seed`` makes the run reproducible; without it a random seed is
+used and printed):
 
 .. code-block:: console
 
-    user@local:~/hemocell/tools/packCells$ ./packCells
-    Insufficient arguments.
-
-    USAGE: packCells sX sY sZ [OPTIONAL ARGUMENTS ...]
-
-    OPTIONAL ARGUMENTS:
-      --hematocrit <0-1.0>                 -h The hematocrit of the solution
-      --plt_ratio <ratio>                     The ratio of PLT per RBC, default=0.07
-      --rbc <n>                               Number of Red Blood Cells
-      --plt <n>                               Number of Platelets
-      --wbc <n>                               Number of White Blood Cells
-      --vrbc <n>                              Number of Stage V gametocytes
-      --cell <name> <n> <e1, e2, diameter>    Custom Celltype described by ellipsoid
-      --allowRotate                        -r Allow for rotation of ellipsoids
-      --scale <ratio>                         Scales the neighbourhood grid (only change this if you know what you are doing!)
-      --maxiter <n>                           Maximum number of iterations
-      --help                                  Print this
-    OUTPUT:
-      <Cell>.pos for every celltype. First line is the number of cells.
-      The rest of the lines is the cells in "Location<X Y Z> Rotation<X Y Z>" format.
-      Cells.pov for visualization in, for example, povray
-
-    NOTE:
-      sX, sY and sZ are the domain size
-      sX, sY, sZ and output are in micrometers[µm]
-      --hematocrit and --RBC are mutually exclusive
-      --hematocrit and --PLT are mutually exclusive
-      --PLT-ratio is an No-Op without --hematocrit
-    user@local:~/hemocell/tools/packCells$ ./packCells  25 25 25 --plt_ratio 0 --hematocrit 0.3 -r
-    Loaded parameters, we found:
-      Domain Size (µm): ( 25.000000 , 25.000000 , 25.000000 )
+    user@local:~/hemocell/tools/packCells$ ./packCells 25 25 25 --hematocrit 0.3 --plt_ratio 0 --seed 1
+    ...
+    Parameters:
+      Domain Size [µm]: ( 25.000000 , 25.000000 , 25.000000 )
       Maximum Iterations : 2147483547
-      Scale              : 0.250000
+      Scale              : 0.142857
       Rotation           : 1
+      Seed               : 1
       Hematocrit    : 0.300000
       PLT/RBC Ratio : 0.000000
-    We have found the following Cells:
+    The following cell types are defined:
       RBC
         No   : 48
         Sizes: (8.400000 , 4.400000 , 8.400000 )
-
+        Ellipsoid volume: 162.558570 [µm3].
+    ...
     Nominal requested volume fraction: 0.499380
 
          Steps     Actual       Nominal        Inner         Outer             Force
                   density       density       diameter      diameter       per particle
-
-        68764  0.1604380013  0.1604380013  1.2985355219  1.2985355219  0.000000000000000 PACKING DONE
+    ...
+           85  0.4992115844  0.4992115844  0.9672162112  0.9672162112  0.000000000000000 PACKING DONE
     user@local:~/hemocell/tools/packCells$ cp RBC.pos ../../examples/newCase/RBC.pos
 
 With the RBC.pos file present in the newCase directory all the pieces should

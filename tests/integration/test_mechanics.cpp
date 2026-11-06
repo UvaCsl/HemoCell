@@ -27,7 +27,7 @@ using namespace pipeflow_test;
 namespace {
 
 const std::string tempDir() {
-  return testing::TempDir();
+  return hemo_test::outputRoot();
 }
 
 // A material file of another case, copied to the temporary directory (with
