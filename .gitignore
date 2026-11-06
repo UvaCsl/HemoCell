@@ -56,6 +56,7 @@ rules.ninja
 /cases/solidify_example/solidify_example
 /cases/stenosis/stenosis
 /cases/stent_strut/stent_strut
+/cases/stent_strut/stent_strut_crossings/stent_strut_crossings
 /cases/stentflow/stentflow
 /cases/stl_preinlet/stl_preinlet
 /cases/stretchCell_interior_viscosity/stretchCell_interior_viscosity

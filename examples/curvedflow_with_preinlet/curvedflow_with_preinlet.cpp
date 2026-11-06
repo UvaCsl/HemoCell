@@ -142,8 +142,9 @@ int main(int argc, char * argv[]) {
     Box3D bb = hemocell.lattice->getBoundingBox();
     //Box3D outlet(bb.x0,bb.x0+2,bb.y0,bb.y1,bb.z0,bb.z1);
 
-    /*Used the x, y, z values of the outlet of the curved vessel*/
-    Box3D outlet(100, 102, 80, 122, 0, 42);
+    // The outlet of the curved vessel: on the x1 face, like the inlet (y 0..42),
+    // at y 80..122; a plane facing +x (addPressureBoundary0P).
+    Box3D outlet(bb.x1, bb.x1, 80, 122, bb.z0, bb.z1);
 
     //outlet.y0 = (plint) ((2 * outlet.y1) / 3);
     //outlet.y0 = 80;
@@ -151,7 +152,7 @@ int main(int argc, char * argv[]) {
 
     OnLatticeBoundaryCondition3D<T, DESCRIPTOR> * boundary =
         new BoundaryConditionInstantiator3D<T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T, DESCRIPTOR>>();
-    boundary->addPressureBoundary0N(outlet, *hemocell.lattice, boundary::density);
+    boundary->addPressureBoundary0P(outlet, *hemocell.lattice, boundary::density);
     setBoundaryDensity(*hemocell.lattice, outlet, 1.0);
   }
 

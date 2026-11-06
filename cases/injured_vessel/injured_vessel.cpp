@@ -30,9 +30,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "particleInfo.h"
 #include "preInlet.h"
 #include <fenv.h>
+#include "palabos3D.h"
+#include "palabos3D.hh"
+#include "voxelizeDomain.h"
 
 using namespace hemo;
 using namespace plb;
+using namespace std;
 
 int main(int argc, char * argv[]) {
   if (argc < 2) {
@@ -109,7 +113,9 @@ int main(int argc, char * argv[]) {
 
   if (!hemocell.partOfpreInlet) {
     Box3D bb = hemocell.lattice->getBoundingBox();
-    Box3D outlet(bb.x0, bb.x0 + 2, bb.y0, bb.y1, bb.z0, bb.z1);
+    // The outlet: a plane, as addPressureBoundary0N() requires; x0 + 1 is the
+    // first plane the voxeliser opens (x0 keeps most of the STL's end cap).
+    Box3D outlet(bb.x0 + 1, bb.x0 + 1, bb.y0, bb.y1, bb.z0, bb.z1);
     OnLatticeBoundaryCondition3D<T, DESCRIPTOR> * boundary =
         new BoundaryConditionInstantiator3D<T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T, DESCRIPTOR>>();
     boundary->addPressureBoundary0N(outlet, *hemocell.lattice, boundary::density);

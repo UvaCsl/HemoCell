@@ -117,7 +117,9 @@ int main(int argc, char * argv[]) {
   // For the main simulation domain we have to define outlets
   if (!hemocell.partOfpreInlet) {
     Box3D bb = hemocell.lattice->getBoundingBox();
-    Box3D outlet(bb.x0, bb.x0 + 2, bb.y0, bb.y1, bb.z0, bb.z1);
+    // The outlet: a plane, as addPressureBoundary0N() requires; x0 + 1 is the
+    // first plane the voxeliser opens (x0 keeps most of the STL's end cap).
+    Box3D outlet(bb.x0 + 1, bb.x0 + 1, bb.y0, bb.y1, bb.z0, bb.z1);
     OnLatticeBoundaryCondition3D<T, DESCRIPTOR> * boundary =
         new BoundaryConditionInstantiator3D<T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T, DESCRIPTOR>>();
     boundary->addPressureBoundary0N(outlet, *hemocell.lattice, boundary::density);

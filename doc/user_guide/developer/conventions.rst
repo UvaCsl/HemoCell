@@ -130,6 +130,6 @@ the unit tests (``ctest -L unit``), the validation tests when touching physics,
 mechanics or communication (``ctest -L validation``), and the unit tests with
 the ``sanitize`` preset. ``scripts/ci/smoke_drivers.py`` runs every built
 example and case for 20 steps on 2 ranks, with output and a checkpoint, in a
-temporary copy of its directory (CI does so in the gcc release job; the three
-large drivers it lists in ``SLOW`` run only with ``--slow``); run it after
+temporary copy of its directory (CI does so in the gcc release job; the large
+drivers it lists in ``SLOW`` run only with ``--slow``); run it after
 changing an interface the drivers use.

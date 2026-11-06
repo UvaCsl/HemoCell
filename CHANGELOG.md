@@ -50,6 +50,19 @@ Unreleased (refactor)
     membrane force; `k * r_c / d` grew without bound before. Drivers that
     passed tuned lattice-force values must convert them to pN (multiply by
     `param::df * 1e12`); the setup log prints both.
+  * Pressure outlets of the pre-inlet drivers: nine drivers set the Zou/He
+    pressure condition on a slab three nodes thick, which Palabos accepts only
+    without `PLB_DEBUG` (the `debug` preset aborted at set-up). They now use
+    one plane: the domain face for `examples/pipeflow_with_preinlet`,
+    `cases/stl_preinlet`, `cases/preinlet_shear` and
+    `cases/fc_solidified_stenosis` (the outlet moves two nodes downstream:
+    same flux, pressure field shifted by two nodes), and the first plane the
+    voxeliser opens (`x0 + 1`) for `cases/AR2`, `cases/AR2_pulsatile`,
+    `cases/AR2_stiff` and `cases/injured_vessel`, whose `x0` plane keeps most
+    of the STL's end cap. `examples/curvedflow_with_preinlet` had its outlet
+    on the `+x` face with the orientation of a `-x` face (`0N`); with a `0P`
+    plane the outflow equals the inflow (to 1 % after 2000 steps; it was 81 %
+    and, after 3000 steps, 94 %).
 * Fixes
   * Particle neighbour grid: replaced the fixed 10-particles-per-node grid
     (unchecked heap overflow) by a compact cell list without a capacity limit.
@@ -394,9 +407,15 @@ Unreleased (refactor)
 * Tools and scripts
   * `scripts/ci/smoke_drivers.py` runs every built example and case for 20
     steps with output and a checkpoint; CI runs it (gcc release job) for all
-    but the three large drivers (`microcontraction`, `stent_strut`,
-    `unbounded`: `--slow`). The `microcontraction` README says where its
+    but the five large drivers (`microcontraction`, `stent_strut`,
+    `stent_strut_crossings`, `flowchamber_stenosis`, `unbounded`: `--slow`).
+    The `microcontraction` README and the examples page say where its
     initial positions are.
+  * `cases/flowchamber_stenosis`, `cases/injured_vessel` and
+    `cases/stent_strut/stent_strut_crossings` are built (`hemocell_cases`)
+    and smoke-tested; they did not compile (missing `using namespace std` and
+    includes, a stand-alone CMake file). `stent_strut_crossings` has a README
+    (it uses the parent case's cell files).
   * The eight Python 2 scripts (`scripts/hemocell_h5utils.py`,
     `scripts/ParticleField3D_HDF5toXMF.py`, `scripts/conficsion.py`,
     `scripts/storage/*.py`) run under Python 3; two of them were broken by an

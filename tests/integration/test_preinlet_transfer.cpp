@@ -76,8 +76,7 @@ TEST(PreInlet, CellsAreTransferredIntoTheDomain) {
   hemocell.addCellType<hemo::PltSimpleModel>(plt, hemo::ELLIPSOID_FROM_SPHERE);
   hemocell.setParticleVelocityUpdateTimeScaleSeparation(1);
   if (!hemocell.partOfpreInlet) {
-    // A plane, as addPressureBoundary0N() requires (the example passes three
-    // layers, which only a build without PLB_DEBUG accepts).
+    // The outlet: a plane, as addPressureBoundary0N() requires.
     plb::Box3D bb = hemocell.lattice->getBoundingBox();
     plb::Box3D outlet(bb.x0, bb.x0, bb.y0, bb.y1, bb.z0, bb.z1);
     plb::OnLatticeBoundaryCondition3D<T, DESCRIPTOR> * boundary =

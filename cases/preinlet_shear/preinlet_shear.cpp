@@ -77,7 +77,7 @@ int main(int argc, char * argv[]) {
   //Set up boundaries (to help preinlet creation)
   //Outlet
   Box3D bb = hemocell.lattice->getBoundingBox();
-  Box3D outlet(bb.x1 - 2, bb.x1, bb.y0, bb.y1, bb.z0, bb.z1);
+  Box3D outlet(bb.x1, bb.x1, bb.y0, bb.y1, bb.z0, bb.z1); // a plane, as addPressureBoundary0P() requires
   OnLatticeBoundaryCondition3D<T, DESCRIPTOR> * boundary =
       new BoundaryConditionInstantiator3D<T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T, DESCRIPTOR>>();
   boundary->addPressureBoundary0P(outlet, *hemocell.lattice, boundary::density);
@@ -171,7 +171,7 @@ int main(int argc, char * argv[]) {
   // For the main simulation domain we have to define outlets
   if (!hemocell.partOfpreInlet) {
     Box3D bb = hemocell.lattice->getBoundingBox();
-    Box3D outlet(bb.x1 - 2, bb.x1, bb.y0, bb.y1, bb.z0, bb.z1);
+    Box3D outlet(bb.x1, bb.x1, bb.y0, bb.y1, bb.z0, bb.z1); // a plane, as addPressureBoundary0P() requires
     OnLatticeBoundaryCondition3D<T, DESCRIPTOR> * boundary =
         new BoundaryConditionInstantiator3D<T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T, DESCRIPTOR>>();
     boundary->addPressureBoundary0P(outlet, *hemocell.lattice, boundary::density);

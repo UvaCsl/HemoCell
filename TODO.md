@@ -36,8 +36,8 @@ Findings of a review of the `refactor` branch (November 2026). Items marked
 reading the code. Suggested order: A1-A3 and A5 first, then A6-A7, then B10-B12
 before others write drivers against the API.
 
-Status: A1-A9 and B11-B16 are done (see CHANGELOG). B10 is deferred (special
-case, lower priority).
+Status: A1-A9, B11-B16, C17-C20 and E23-E24 are done (see CHANGELOG). B10 is
+deferred (special case, lower priority). D21-D22 and E25 are open.
 
 ### A. Silent wrong results or lost runs
 
@@ -177,12 +177,10 @@ case, lower priority).
     repository root (`tmp`, `tmp_0`, `tmp_1`, ...: one per simulation a test
     constructs); write them to a temporary directory instead.
 18. *Done* (`scripts/ci/smoke_drivers.py`, run in the gcc release CI job for
-    34 of the 39 built drivers: `cube` and `performance_testing` need
-    generated configurations, `microcontraction`, `stent_strut` and
-    `unbounded` take minutes (`--slow`). Not built at all, so not covered:
-    `cases/flowchamber_stenosis`, `cases/injured_vessel` and
-    `cases/stent_strut/stent_strut_crossings`, which are missing from
-    `cases/CMakeLists.txt`.)
+    35 of the 42 drivers: `cube` and `performance_testing` need generated
+    configurations; `microcontraction`, `stent_strut`,
+    `stent_strut_crossings`, `flowchamber_stenosis` and `unbounded` take
+    minutes (`--slow`). The last three cases were registered in E24.)
     **CI never runs a driver.** A 20-step smoke run of every example and case
     (with output and a checkpoint) would have caught A5 and B13; 31 of 36 pass
     today on 2 ranks, the five large ones (`AR2*`, `stent_strut`, `unbounded`)
@@ -216,7 +214,9 @@ case, lower priority).
 
 ### E. Found while testing C
 
-23. **Pressure boundaries on a slab.** Nine drivers pass a box three nodes
+23. *Done* (one plane each; `curvedflow_with_preinlet` also had the wrong
+    orientation, `0N` on its `+x` face, and lost up to 19 % of its flow).
+    **Pressure boundaries on a slab.** Nine drivers pass a box three nodes
     thick to `addPressureBoundary0N()`/`0P()`, whose precondition requires a
     plane: `examples/pipeflow_with_preinlet`,
     `examples/curvedflow_with_preinlet`, `cases/AR2`, `cases/AR2_pulsatile`,
@@ -227,7 +227,19 @@ case, lower priority).
     condition is applied on three layers. Use the face plane; this changes
     their results. (`tests/integration/test_preinlet_transfer.cpp` uses the
     plane.)
-24. **Unregistered drivers.** `cases/flowchamber_stenosis`,
+24. *Done* (all three registered, compiled after small fixes, smoke-tested;
+    `flowchamber_stenosis` and `stent_strut_crossings` with `--slow`).
+    **Unregistered drivers.** `cases/flowchamber_stenosis`,
     `cases/injured_vessel` and `cases/stent_strut/stent_strut_crossings` are
     missing from `cases/CMakeLists.txt`, so they are never built, run or
     smoke-tested; build them or move them to `legacy/`.
+25. **The voxeliser opens only one plane at `x0`.**
+    `getFlagMatrixFromSTL()` opens both x ends by copying the neighbouring
+    plane (`CopyFromNeighbor`), but at the low end it loops in the direction
+    of the copy: `x0` gets the old `x0 + 1` (the STL's end cap) before
+    `x0 + 1` is opened, so for capped geometries `x0` stays mostly solid
+    (`cases/AR2*`: 17 of 882 fluid nodes; `cases/injured_vessel`: 0), while
+    the high end is opened fully. The outlets of those drivers therefore sit
+    at `x0 + 1`. Fixing the loop order would change their geometry, and would
+    open the closed low end of `examples/curvedflow_with_preinlet` (a U-bend
+    with both openings at `x1`), which needs a way to keep an end closed.

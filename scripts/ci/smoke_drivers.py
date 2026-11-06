@@ -37,14 +37,18 @@ SHORT_RUN = {'tmax': 20, 'tmeas': 10, 'tcheckpoint': 20, 'tcsv': 10, 'warmup': 0
 # entries run the driver once per configuration.
 CONFIGS = {
     'examples/capillary': ['wedge_config.xml', 'bifurcation_config.xml'],
+    'cases/stent_strut/stent_strut_crossings': ['config_casper.xml'],
 }
 
 # Inputs to put into the driver's directory before the run: a glob pattern
-# (relative to that directory) of files to copy there, or a (file name,
-# contents) pair for a file to write.
+# (relative to the driver's directory in the repository) of files to copy
+# there, or a (file name, contents) pair for a file to write.
 PREPARE = {
     'examples/microcontraction': ['initial_states/Ht30/*.pos'],
     'cases/stent_strut': ['cell_pos_files/reference/*.pos'],
+    'cases/stent_strut/stent_strut_crossings': ['cell_pos_files/casper/*.pos', '../RBC.xml', '../PLT.xml'],
+    # No positions in the repository: a run without cells.
+    'cases/flowchamber_stenosis': [('RBC.pos', '0\n'), ('WBC_HO.pos', '0\n'), ('PLT.pos', '0\n')],
     # No positions in the repository: a run without cells.
     'cases/stentflow': [('RBC.pos', '0\n'), ('PLT.pos', '0\n')],
 }
@@ -59,17 +63,27 @@ SKIP = {
 SLOW = {
     'examples/microcontraction': '13000 RBCs',
     'cases/stent_strut': 'domain of 1000 lattice nodes along the reference direction',
+    'cases/stent_strut/stent_strut_crossings': 'domain of 500 lattice nodes along the reference direction',
     'cases/unbounded': '72701 RBCs in a 256^3 domain',
+    'cases/flowchamber_stenosis': '18 million lattice nodes',
 }
 
 
 def drivers(root):
+    """Directories under examples/ and cases/ (one or two levels deep) that
+    hold an executable named after them."""
     found = []
     for top in ('examples', 'cases'):
         for name in sorted(os.listdir(os.path.join(root, top))):
             directory = os.path.join(top, name)
+            if not os.path.isdir(os.path.join(root, directory)):
+                continue
             if os.access(os.path.join(root, directory, name), os.X_OK):
                 found.append(directory)
+            for sub in sorted(os.listdir(os.path.join(root, directory))):
+                nested = os.path.join(directory, sub)
+                if os.access(os.path.join(root, nested, sub), os.X_OK) and os.path.isdir(os.path.join(root, nested)):
+                    found.append(nested)
     return found
 
 
@@ -117,7 +131,7 @@ def run(root, directory, config, ranks, timeout, keep):
             with open(os.path.join(cwd, item[0]), 'w') as f:
                 f.write(item[1])
         else:
-            for path in glob.glob(os.path.join(cwd, item)):
+            for path in glob.glob(os.path.join(root, directory, item)):
                 shutil.copy(path, cwd)
     checkpoint = shorten(os.path.join(cwd, config), 'smoke_out')
     command = ['mpirun', '-n', str(ranks), './' + name, config]
