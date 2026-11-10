@@ -125,6 +125,14 @@ void WbcHighOrderModel::ParticleMechanics(map<plint, vector<HemoCellParticle *>>
       *cell[triangle[1]]->force_volume += local_volume_force;
       *cell[triangle[2]]->force_volume += local_volume_force;
 
+    #ifdef INTERIOR_VISCOSITY
+      // Outward normal per vertex, needed to decide which fluid nodes are inside the WBC membrane (for interiorViscosity)
+      const hemo::Array<T, 3> local_normal_dir = (triangle_normals[triangle_n]) * (triangle_areas[triangle_n] / cellConstants.area_mean_eq);
+      cell[triangle[0]]->normalDirection += local_normal_dir;
+      cell[triangle[1]]->normalDirection += local_normal_dir;
+      cell[triangle[2]]->normalDirection += local_normal_dir;
+    #endif
+
       triangle_n++;
     }
 
