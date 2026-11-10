@@ -9,6 +9,13 @@ In this changelog, we consider the following classes of changes:
 3.0 (unreleased)
 ----------------
 * Fixes that change simulation results
+  * WBC model with interior viscosity: the vertex normals (`normalDirection`)
+    were never computed for WBC model (only the RBC model did it), so the membrane
+    update marked every node near a WBC membrane as outside. The WBC model now
+    computes them as the RBC model does. Only runs with interior viscosity
+    enabled for WBCs are affected.
+  * Repulsion: particle pairs within the same lattice node received twice the
+    force of pairs in neighbouring nodes; every pair is now counted once.
   * Repulsion: particle pairs within the same lattice node received twice the
     force of pairs in neighbouring nodes; every pair is now counted once.
   * Membrane viscosity cap: the per-edge cap compared a lattice-unit force to
